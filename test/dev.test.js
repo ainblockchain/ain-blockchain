@@ -83,6 +83,7 @@ describe('API Tests', () => {
 
   describe('/increase ref', () => {
     it('increase simple', () => {
+      sleep(20)
       return chai.request(server4)
           .post(`/increase`).send({diff: {test: 10}})
           .then((res) => {

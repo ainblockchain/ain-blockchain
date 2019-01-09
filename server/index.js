@@ -80,6 +80,9 @@ app.get('/get', (req, res, next) => {
 app.post('/set', (req, res, next) => {
   var ref = req.body.ref;
   var value = req.body.value;
+  if (typeof value === "string"){
+    value = JSON.parse(value)
+  }
   db.set(ref, value)
   res
     .status(200)

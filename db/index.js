@@ -13,34 +13,54 @@ class DB {
         if (ref == '/') {
             return this.db
           }
-
-        var result = this.db;
-        ref.split("/").forEach(function(key){
-        result = result[key];
-        });
+        var result = this.db
+        try{
+            ref.split("/").forEach(function(key){
+                result = result[key]
+            })
+        } catch (e) {
+            console.log(e.message)
+            return null
+        }
         return result
     }
 
     set(ref, value){
         if (ref == '/') {
-            ref = value
-          } else {
+            this.db = value
+        } else if (!ref.includes("/")) {
             this.db[ref] = value
-          }
+        } else {
+            var path_to_key = ref.substring(0, ref.lastIndexOf("/"))
+            var ref_key = ref.substring(ref.lastIndexOf("/") + 1, ref.length)
+            this._force_path(path_to_key)[ref_key] = value
+        } 
+    }
+
+    _force_path(db_path){
+        // Returns reference to provided path if exists, otherwise creates path
+        var sub_db = this.db
+        db_path.split("/").forEach(function(key){
+            if (! (key in sub_db)) {
+                sub_db[key] = {}
+            }   
+            sub_db = sub_db[key]
+        })
+        return sub_db
     }
 
     increase(diff){
         for (var k in diff) {
-            if (this.db[k] && typeof this.db[k] != 'number') {
-              return {code: -1, error_message: "Not a number type: " + k}
+            if (this.get(k) && typeof this.get(k) != 'number') {
+                return {code: -1, error_message: "Not a number type: " + k}
             }
-          }
-          var result = {}
-          for (var k in diff) {
-            this.db[k] = (this.db[k] || 0) + diff[k]
-            result[k] = this.db[k]
-          }
-          return {code: 0, result: result}
+        }
+        var result = {}
+        for (var k in diff) {
+            this.set(k, (this.get(k) || 0) + diff[k])
+            result[k] = this.get(k)
+        }
+        return {code: 0, result: result}
     }
 
     createTransaction(data, transactionPool){
