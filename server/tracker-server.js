@@ -3,7 +3,6 @@ const WebSocketServer = require("ws").Server
 const webSocketServer = new WebSocketServer({port: 3001})
 var PEERS = []
 
-
 webSocketServer.on('connection', (ws) => {
     var peerList = PEERS.map((peer) => peer[1])
     ws.send(JSON.stringify(peerList))
