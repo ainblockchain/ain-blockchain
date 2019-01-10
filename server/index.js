@@ -69,20 +69,18 @@ app.get('/mine-transactions', (req, res) => {
 })
 
 app.get('/get', (req, res, next) => {
-  var ref = req.query.ref
+  var result = db.get(req.query.ref)
   res
-    .status(200)
+    .status(result ? 200 : 404)
     .set('Content-Type', 'application/json')
-    .send({code: 0 , result: db.get(ref)})
+    .send({code: result ? 0 : -1, result})
     .end();
 })
 
 app.post('/set', (req, res, next) => {
+  console.log(req.body, "something")
   var ref = req.body.ref;
-  var value = req.body.value;
-  if (typeof value === "string"){
-    value = JSON.parse(value)
-  }
+  var value = req.body.value
   db.set(ref, value)
   res
     .status(200)
