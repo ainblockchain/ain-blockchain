@@ -36,13 +36,14 @@ const Miner = require('./miner')
 
 
 const app = express();
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
 
 const db = new Database()
 const tp = new TransactionPool()
-const bc = new Blockchain();
+const bc = new Blockchain(String(PORT));
 const p2pServer = new P2pServer(db, bc, tp)
 const miner = new Miner(bc, tp, p2pServer)
 
@@ -103,8 +104,6 @@ app.post('/increase', (req, res, next) => {
   let transaction = db.createTransaction({type: "INCREASE", diff}, tp)
   p2pServer.broadcastTransaction(transaction)
 })
-
-const PORT = process.env.PORT || 8080;
 
 // We will want changes in ports and the database to be broadcaste across
 // all instances so lets pass this info into the p2p server

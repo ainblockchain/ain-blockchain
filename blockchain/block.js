@@ -1,5 +1,6 @@
 const {DIFFICULTY, MINE_RATE} = require("../config")
 const ChainUtil = require('../chain-util')
+const fs = require("fs")
 
 
 class Block {
@@ -24,8 +25,26 @@ class Block {
         Data      : ${this.data}`;
     }
 
+    toJson(){
+        return {
+            timestamp: this.timestamp,
+            lastHash : this.lastHash,
+            hash: this.hash,
+            nonce: this.nonce,
+            difficulty: this.difficulty,
+            data: this.data
+        }
+    }
+
     static genesis(){
         return new this('Genesis time', '-----', 'f1r57-h45h', [], 0, DIFFICULTY);
+    }
+
+    static loadBlock(block_path){
+        var block_info = fs.readFileSync(block_path.toString())
+        block_info = JSON.parse(block_info)
+        return new this(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
+                        block_info["data"], block_info["nonce"], block_info["difficulty"])
     }
 
     static mineBlock(lastBlock, data){

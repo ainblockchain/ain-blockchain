@@ -66,17 +66,17 @@ describe('Integration Tests', () => {
 
     beforeEach(() => {
       let random_set_item, random_increase_item
-      for(var i = 0; i<3; i++){
+      for(var i = 0; i<2; i++){
         for(var j = 0; j<SERVERS.length; j++){
         random_set_item = RANDOM_SET_ITEMS[Math.floor(Math.random()*RANDOM_SET_ITEMS.length)]
         syncRequest("POST", SERVERS[i] + "/set", {json: random_set_item})
-        sleep(50)
+        sleep(100)
         }
       }
     })
 
     itParam('syncs accross all peers after one mine', SERVERS, (server) => {
-      sleep(500)
+      sleep(100)
       syncRequest('GET', server3 + '/mine-transactions')
       console.log("mine-transactions")
      

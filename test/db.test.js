@@ -1,4 +1,4 @@
-const DB = require('./index')
+const DB = require('../db/index')
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
