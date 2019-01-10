@@ -13,80 +13,89 @@ const syncRequest = require('sync-request')
 var itParam = require('mocha-param');
 
 
+// Server configurations
 const server1 = 'http://localhost:8080'
 const server2 = 'http://localhost:8081'
 const server3 = 'http://localhost:8082'
 const server4 = 'http://localhost:8083'
 const server5 = 'http://localhost:8084'
 const SERVERS = [server1, server2, server3, server4, server5]
+const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080}, {P2P_PORT:5002, PORT: 8081}, 
+  {P2P_PORT:5003, PORT: 8082}, {P2P_PORT:5004, PORT: 8083}, {P2P_PORT:5005, PORT: 8084}]
+
+// Data options
+RANDOM_SET_ITEMS = [
+  {ref: "comeonnnnnnn", value: "testme"},
+  {ref: "comeonnnnnnn", value: "no meeeee"},
+  {ref: "comeon/nnnnnn", value: "through"},
+  {ref: "comeonnnnnnn/new", value: {"new": "path"}},
+  {ref: "builed/some/deep", value: {"place": {"next":1, "level": "down"}}},
+  {ref: "builed/heliii", value: {"range": [1, 2, 3, 01, 4, 5]}},
+  {ref: "b/u/i/l/e/d/hel", value: {"range": [1, 4, 5], "another": [234]}},
+  {ref: "b/u/i/l/e/d/hel", value: "very nested"},
+  {ref: "b/u/i/l/e/d/hel", value: {1:2,3:4,5:6}},
+  {ref: "new/final/path", value: {"neste": [1, 2, 3, 4, 5]}},
+  {ref: "new/final/path", value: {"more": {"now":12, "hellloooo": 123}}},
+]
+
+
 
 describe('Integration Tests', () => {
-  let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc, server5_proc
+  let procs = []
 
   before(() => {
-    tracker_proc = spawn('node', [TRACKER_SERVER])
+    // Start up all servers
+    var tracker_proc = spawn('node', [TRACKER_SERVER])
+    procs.push(tracker_proc)
     sleep(100)
-    server1_proc = spawn('node', [APP_SERVER])
-    sleep(100)
-    server2_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5002, PORT: 8081}})
-    sleep(100)
-    server3_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5003, PORT: 8082}})
-    sleep(100)
-    server4_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5004, PORT: 8083}})
-    sleep(100)
-    server5_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5005, PORT: 8084}})
-    sleep(100)
-
+    for(var i=0; i<ENV_VARIABLES.length; i++){
+      var proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]})
+      sleep(100)
+      procs.push(proc)
+    };
   });
 
   after(() => {
-    tracker_proc.kill()
-    server1_proc.kill()
-    server2_proc.kill()
-    server3_proc.kill()
-    server4_proc.kill()
-    server5_proc.kill()
+    // Teardown all servers
+    for(var i=0; i<procs.length; i++){
+      procs[i].kill()
+    }
   });
 
-
-
-  describe(`blockchain database`, () => {
-    let base_db
+  describe(`blockchain database mining`, () => {
 
     beforeEach(() => {
-
-      syncRequest("POST", server1 + "/set", {json: {ref: "comeonnnnnnn", value: "testme"}})
-      sleep(50)
-      syncRequest("POST", server2 + "/set", {json: {ref: "comeonnnnnnn", value: "no meeeee"}})
-      sleep(50)
-      syncRequest("POST", server3 + "/set", {json: {ref: "comeonnnnnnn", value: "through"}})
-      sleep(50)
-      syncRequest("POST", server4 + "/set", {json: {ref: "comeonnnnnnn/new", value: {"new": "path"}}})
-      sleep(50)
-      syncRequest("POST", server5 + "/set", {json: {ref: "builed/hel", value: {"range": [1, 2, 3, 4, 5]}}})
-      sleep(50)
-
+      let random_set_item, random_increase_item
+      for(var i = 0; i<3; i++){
+        for(var j = 0; j<SERVERS.length; j++){
+        random_set_item = RANDOM_SET_ITEMS[Math.floor(Math.random()*RANDOM_SET_ITEMS.length)]
+        syncRequest("POST", SERVERS[i] + "/set", {json: random_set_item})
+        sleep(50)
+        }
+      }
     })
 
-    itParam('syncs accross all peers after mining', SERVERS, (server) => {
-      syncRequest('GET', server2 + '/mine-transactions')
-      sleep(50)
+    itParam('syncs accross all peers after one mine', SERVERS, (server) => {
+      sleep(500)
+      syncRequest('GET', server3 + '/mine-transactions')
+      console.log("mine-transactions")
+     
       base_db = JSON.parse(syncRequest('GET', server1 + '/get?ref=/').body.toString("utf-8"))
-
+      console.log(base_db)
       return chai.request(server).get(`/get?ref=/`).then((res) => {
               res.should.have.status(200);
               res.body.should.be.deep.eql(base_db)
       })
     })
 
-    it("will sync to new peers after mining", () => {
+    it("will sync to new peers after one mine", () => {
       const new_server = "http://localhost:8085"
       const new_server_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5006, PORT: 8085}})
-      sleep(100)
+      sleep(200)
       syncRequest('GET', server2 + '/mine-transactions')
-      sleep(100)
-      base_db = JSON.parse(syncRequest('GET', server1 + '/get?ref=/').body.toString("utf-8"))
-      return chai.request(new_server).get(`/get?ref=/`).then((res) => {
+      sleep(200)
+      base_db = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8"))
+      return chai.request(new_server).get(`/blocks`).then((res) => {
         new_server_proc.kill()
         res.should.have.status(200);
         res.body.should.be.deep.eql(base_db)
