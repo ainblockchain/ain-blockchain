@@ -18,6 +18,7 @@
 
 // Require process, so we can mock environment variables
 const process = require('process');
+const PORT = process.env.PORT || 8080;
 
 // [START gae_flex_mysql_app]
 const express = require('express');
@@ -36,7 +37,6 @@ const Miner = require('./miner')
 
 
 const app = express();
-const PORT = process.env.PORT || 8080;
 
 app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
@@ -107,7 +107,6 @@ app.post('/increase', (req, res, next) => {
 
 // We will want changes in ports and the database to be broadcaste across
 // all instances so lets pass this info into the p2p server
-
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
   console.log('Press Ctrl+C to quit.');

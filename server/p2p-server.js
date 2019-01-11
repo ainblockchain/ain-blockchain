@@ -1,5 +1,7 @@
 var ip = require("ip")
 const Websocket = require('ws');
+const Blockchain = require('../blockchain');
+const Block = require('../blockchain/block');
 const P2P_PORT = process.env.P2P_PORT || 5001;
 const trackerWebSocket = new Websocket("ws://localhost:3001")
 const HOST = process.env.HOST || "ws://localhost"

@@ -10,8 +10,8 @@ describe('Blockchain', () => {
     let bc, bc2;
 
     beforeEach(() => {
-        bc = new Blockchain("8080");
-        bc2 = new Blockchain("8081");
+        bc = new Blockchain("first-blockchain");
+        bc2 = new Blockchain("second-blockchain");
     });
 
     afterEach(() => {
@@ -27,7 +27,6 @@ describe('Blockchain', () => {
     it('adds new block', () => {
         const data = 'foo';
         bc.addBlock(data);
-        
         expect(bc.chain[bc.chain.length -1].data).to.equal(data);
     });
 
@@ -65,5 +64,5 @@ describe('Blockchain', () => {
         bc.addBlock({ref:123})
         sleep(500)
         assert.deepEqual(Blockchain.loadChain(bc._blockchainDir()), bc.chain)
-    }).timeout(3000)
+    })
 })

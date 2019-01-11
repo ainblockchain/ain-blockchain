@@ -25,16 +25,6 @@ class Block {
         Data      : ${this.data}`;
     }
 
-    toJson(){
-        return {
-            timestamp: this.timestamp,
-            lastHash : this.lastHash,
-            hash: this.hash,
-            nonce: this.nonce,
-            difficulty: this.difficulty,
-            data: this.data
-        }
-    }
 
     static genesis(){
         return new this('Genesis time', '-----', 'f1r57-h45h', [], 0, DIFFICULTY);
@@ -60,7 +50,7 @@ class Block {
         } while(hash.substring(0, difficulty) !== '0'.repeat(difficulty));
 
         
-        return new this(timestamp, lastHash, hash, data, nonce, difficulty)
+        return new Block(timestamp, lastHash, hash, data, nonce, difficulty)
     }
 
     static hash(timestamp, lastHash, data, nonce, difficulty){
