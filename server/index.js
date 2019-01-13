@@ -20,6 +20,25 @@
 const process = require('process');
 const PORT = process.env.PORT || 8080;
 
+// Initiate logging
+const LOG = process.env.LOG || false;
+if(LOG){
+  var fs = require('fs');
+  var util = require('util');
+  var log_dir = __dirname + '/' + ".logs"
+  if (!(fs.existsSync(log_dir))){
+    fs.mkdirSync(log_dir);
+}
+  var log_file = fs.createWriteStream(log_dir + '/' + PORT +'debug.log', {flags : 'w'});
+  var log_stdout = process.stdout;
+
+  console.log = function(d) { 
+    log_file.write(util.format(d) + '\n');
+    log_stdout.write(util.format(d) + '\n');
+  }
+}
+
+
 // [START gae_flex_mysql_app]
 const express = require('express');
 // const crypto = require('crypto');
@@ -48,61 +67,87 @@ const p2pServer = new P2pServer(db, bc, tp)
 const miner = new Miner(bc, tp, p2pServer)
 
 app.get('/', (req, res, next) => {
-  res
-    .status(200)
-    .set('Content-Type', 'text/plain')
-    .send('Welcome to afan-tx-server')
-    .end();
+  try{
+    res
+      .status(200)
+      .set('Content-Type', 'text/plain')
+      .send('Welcome to afan-tx-server')
+      .end();
+    } catch (error){
+      console.log(error)
+    }
 })
 
 app.get('/transactions', (req, res) => {
-  res.json(tp.transactions)
+  try{
+    res.json(tp.transactions)
+  } catch (error){
+    console.log(error)
+  }
 })
 
 app.get('/blocks', (req, res) => {
-  res.json(bc.chain);
+  try{
+    res.json(bc.chain);
+  } catch (error){
+    console.log(error)
+  }
 });
 
 app.get('/mine-transactions', (req, res) => {
-  const block = miner.mine()
-  console.log(`New block added: ${block.toString()}`)
-  res.redirect('/blocks')
+  try{
+    const block = miner.mine()
+    console.log(`New block added: ${block.toString()}`)
+    res.redirect('/blocks')
+  } catch (error){
+    console.log(error)
+  }
 })
 
 app.get('/get', (req, res, next) => {
-  var result = db.get(req.query.ref)
-  res
-    .status(result ? 200 : 404)
-    .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : -1, result})
-    .end();
+  try{
+    var result = db.get(req.query.ref)
+    res
+      .status(result ? 200 : 404)
+      .set('Content-Type', 'application/json')
+      .send({code: result ? 0 : -1, result})
+      .end();
+  } catch (error){
+    console.log(error)
+  }
 })
 
 app.post('/set', (req, res, next) => {
-  console.log(req.body, "something")
-  var ref = req.body.ref;
-  var value = req.body.value
-  db.set(ref, value)
-  res
-    .status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0})
-    .end();
-  let transaction = db.createTransaction({type: "SET", ref, value}, tp)
-  p2pServer.broadcastTransaction(transaction)
-
+  try{
+    var ref = req.body.ref;
+    var value = req.body.value
+    db.set(ref, value)
+    res
+      .status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0})
+      .end();
+    let transaction = db.createTransaction({type: "SET", ref, value}, tp)
+    p2pServer.broadcastTransaction(transaction)
+  } catch (error){
+    console.log(error)
+  }
 })
 
 app.post('/increase', (req, res, next) => {
-  var diff = req.body.diff;
-  var result = db.increase(diff)
-  res
-    .status(200)
-    .set('Content-Type', 'application/json')
-    .send(result)
-    .end();
-  let transaction = db.createTransaction({type: "INCREASE", diff}, tp)
-  p2pServer.broadcastTransaction(transaction)
+  try{
+    var diff = req.body.diff;
+    var result = db.increase(diff)
+    res
+      .status(200)
+      .set('Content-Type', 'application/json')
+      .send(result)
+      .end();
+    let transaction = db.createTransaction({type: "INCREASE", diff}, tp)
+    p2pServer.broadcastTransaction(transaction)
+  } catch (error){
+    console.log(error)
+  }
 })
 
 // We will want changes in ports and the database to be broadcaste across
