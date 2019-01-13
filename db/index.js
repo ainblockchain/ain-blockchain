@@ -26,24 +26,30 @@ class DB {
     }
 
     set(ref, value){
+        let value_copy
+        if (ChainUtil.isDict(value)){
+            value_copy = JSON.parse(JSON.stringify(value))
+        } else {
+            value_copy = value
+        }
         if (ref == '/') {
-            this.db = value
+            this.db = value_copy
         } else if (!ref.includes("/")) {
-            this.db[ref] = value
+            this.db[ref] = value_copy
         } else {
             var path_to_key = ref.substring(0, ref.lastIndexOf("/"))
             var ref_key = ref.substring(ref.lastIndexOf("/") + 1, ref.length)
-            this._force_path(path_to_key)[ref_key] = value
+            this._force_path(path_to_key)[ref_key] = value_copy
         } 
     }
 
     _force_path(db_path){
         // Returns reference to provided path if exists, otherwise creates path
         var sub_db = this.db
-        db_path.split("/").forEach(function(key){
-            if (! (key in sub_db)) {
+        db_path.split("/").forEach((key) => {
+            if ((!ChainUtil.isDict(sub_db[key])) || (!(key in sub_db))) {
                 sub_db[key] = {}
-            }   
+            }
             sub_db = sub_db[key]
         })
         return sub_db
@@ -91,9 +97,8 @@ class DB {
                 }
             }
         })
-        
     }
-
 }
 
 module.exports = DB
+

@@ -29,7 +29,7 @@ describe('API Tests', () => {
     server3_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5003, PORT: 8082}})
     sleep(100)
     server4_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5004, PORT: 8083}})
-    sleep(200)
+    sleep(300)
 
   });
 
@@ -44,6 +44,7 @@ describe('API Tests', () => {
   beforeEach(() => {
     return chai.request(server2)
         .post(`/set`).send({ref: 'test', value: 1})
+      
   });
 
   afterEach(() => {
@@ -53,7 +54,7 @@ describe('API Tests', () => {
 
   describe('/get ref', () => {
     it('get simple', () => {
-      sleep(100)
+      sleep(200)
       return chai.request(server1)
           .get(`/get?ref=test`)
           .then((res) => {
@@ -76,7 +77,7 @@ describe('API Tests', () => {
 
   describe('/increase ref', () => {
     it('increase simple', () => {
-      sleep(100)
+      sleep(200)
       return chai.request(server4)
           .post(`/increase`).send({diff: {test: 10}})
           .then((res) => {

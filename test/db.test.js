@@ -16,19 +16,19 @@ describe("DB", () => {
     describe("get operations work successfully", () => {
 
         it("when retrieving entire database", () => {
-            expect(db.get("/")).to.equal(test_db)
+            assert.deepEqual(db.get("/"), test_db)
         })
 
         it("when retrieving high value near top of database", () => {
-            expect(db.get("ai")).to.equal(test_db["ai"])
+            assert.deepEqual(db.get("ai"), test_db["ai"])
         })
 
         it("when retrieving shallow nested value", () => {
-            expect(db.get("ai/comcom")).to.equal(test_db["ai"]["comcom"])
+            assert.deepEqual(db.get("ai/comcom"), test_db["ai"]["comcom"])
         })
 
         it("when retrieving deeply nested value", () => {
-            expect(db.get("nested/far/down")).to.equal(test_db["nested"]["far"]["down"])
+            assert.deepEqual(db.get("nested/far/down"), test_db["nested"]["far"]["down"])
         })
 
         it("by failing when value is not present", () => {
@@ -41,13 +41,13 @@ describe("DB", () => {
         it(" when setting root database", () => {
             var new_db = {"basic": {"new":"db"}}
             db.set("/", new_db)
-            expect(db.get("/")).to.equal(new_db)
+            assert.deepEqual(db.get("/"), new_db)
         })
 
         it(" when overwriting nested value", () => {
             var new_val = {"new": 12345}
             db.set("nested/far/down", new_val)
-            expect(db.get("nested/far/down")).to.equal(new_val)
+            assert.deepEqual(db.get("nested/far/down"), new_val)
         })
 
         it(" when creating new path in database", () => {

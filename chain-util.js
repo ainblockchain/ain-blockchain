@@ -19,6 +19,10 @@ class ChainUtil {
     static verifySignature(publicKey, signature, dataHash){
         return ec.keyFromPublic(publicKey, 'hex').verify(dataHash, signature)
     }
+
+    static isDict(data){
+        return (typeof data==='object' && data!==null && !(data instanceof Array))
+    }
 }
 
 module.exports = ChainUtil
