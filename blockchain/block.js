@@ -27,6 +27,8 @@ class Block {
     }
 
     static genesis(){
+        // Gensis block will set all the rules for the database if any rules are
+        // specified in the proj/database/database.rules.json 
         const data = []
         if (fs.existsSync(RULES_FILE_PATH)) {
             data.push({output: {type: "SET", ref: "rules", 
@@ -36,13 +38,14 @@ class Block {
     }
 
     static loadBlock(block_path){
-        var block_info = fs.readFileSync(block_path.toString())
-        block_info = JSON.parse(block_info)
+        // Returns block stored at the file path provided by "block_path"
+        var block_info = JSON.parse(fs.readFileSync(block_path.toString()))
         return new this(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
                         block_info["data"], block_info["nonce"], block_info["difficulty"])
     }
 
     static mineBlock(lastBlock, data){
+        // Adds a new block containing the "data" hp thd 
         const lastHash = lastBlock.hash;
         let nonce = 0;
         let hash, timestamp
@@ -63,6 +66,8 @@ class Block {
     }
 
     static adjustDifficulty(lastBlock, currentTime) {
+        // In order to keep mining occring at a consistent rate 
+        // TODO: Allow for mining at inconsistent periods as this will cause bgs currently
         let {difficulty} = lastBlock;
         difficulty = lastBlock.timestamp + MINE_RATE > currentTime ? difficulty + 1 : difficulty - 1
         return difficulty 

@@ -57,7 +57,7 @@ describe('Integration Tests', () => {
     sleep(100)
     for(var i=0; i<ENV_VARIABLES.length; i++){
       var proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]})
-      sleep(2000)
+      sleep(1500)
       procs.push(proc)
     };
   })

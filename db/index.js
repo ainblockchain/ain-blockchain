@@ -17,22 +17,46 @@ class DB {
     }
 
     canRead(ref){
+        let lastRuleSet, wildCard, subbedValue
         var read = false
         var currentRuleSet = this.db["rules"]
         var i = 0
         var pathKeys = ref.split("/")
         do{
             if (".read" in currentRuleSet) read = currentRuleSet[".read"]
+            lastRuleSet = currentRuleSet
             currentRuleSet = currentRuleSet[pathKeys[i]]
+            if (!currentRuleSet){
+                // If no rule set is available for specific key, check for wildcards
+                var keys = Object.keys(lastRuleSet)
+                for(var j=0; j<keys.length; j++){
+                    if (keys[j].startsWith("$")) {
+                        wildCard = keys[j]
+                        subbedValue = pathKeys[i]
+                        currentRuleSet = lastRuleSet[wildCard]
+                        break
+                    }
+                }
+            }
             i++
         } while(currentRuleSet &&  i <= pathKeys.length);
-        
+
+
+        if (typeof read == "string"){
+            read = this.verifyAuth(read, wildCard, subbedValue)
+        }
+
         console.log(`Read access for user ${this.publicKey.substring(0, 10)} for path ${ref} is ${read}`)
         return read
     }
 
-    get(ref){
+    verifyAuth(read, wildCard, subbedValue){
+        return eval(read.replace(wildCard, `'${subbedValue}'`)
+                    .replace("auth", `'${this.publicKey}'`))
+    }
 
+    get(ref){
+        
         if (ref == '/') {
             return this.db
           }

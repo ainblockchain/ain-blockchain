@@ -1,18 +1,24 @@
-{
-    "rules": {
-      ".read": true,
-      ".write": true,
-      "ai-ai": {
-        ".read": true
+{ "rules": {
+    ".read": true,
+    ".write": false,
+    "test": {
+      "ai": {
+      ".read": true
       },
-      "comcomcom": {
-        ".read": false,
+      "comcom": {
+      ".read": false
+      },
       "billing_keys": {
-        "update_billing": {
-          ".read": true
-        }
+          ".read": false,
+          "update_billing": {
+              ".read": true
+          }
+      },
+      "users":{
+          "$uid": {
+              ".read": "auth == $uid"
+          }
       }
     }
   }
 }
-  

@@ -21,13 +21,13 @@ describe('API Tests', () => {
 
   before(() => {
     tracker_proc = spawn('node', [TRACKER_SERVER])
-    sleep(100)
+    sleep(500)
     server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true}})
-    sleep(100)
+    sleep(500)
     server2_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5002, PORT: 8081}})
-    sleep(100)
+    sleep(500)
     server3_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5003, PORT: 8082}})
-    sleep(100)
+    sleep(500)
     server4_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5004, PORT: 8083}})
     sleep(500)
 

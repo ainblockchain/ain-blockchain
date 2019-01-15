@@ -102,49 +102,43 @@ describe("DB", () => {
 
 })
 
-RULES_SET = {
-     ".read": true,
-     ".write": false,
-     "test": {
-        "ai": {
-        ".read": true
-        },
-        "comcom": {
-        ".read": false,
-        "billing_keys": {
-            ".read": false,
-        "update_billing": {
-            ".read": true
-        }
-    }
-  }
- }
-}
-
 describe("DB rules", () => {
-    let db, test_db, bc
+    let db1, db2, test_db, bc
 
     beforeEach(() => {
         bc = new Blockchain()
-        db = DB.getDabase(bc)
-        db.set("rules", RULES_SET)
+        db1 = DB.getDabase(bc)
+        db2 = DB.getDabase(bc)
         test_db = {
             "comcom": "unreadable value",
             "unspecified": {"nested": "readable"},
             "ai" : "readable",
-            "blling_keys": {"other": "unreadable", "update_billing": "readable"}
+            "billing_keys": {"other": "unreadable", "update_billing": "readable"},
+            "users": {}
         }
-        db.set("test", test_db)
+        test_db["users"][db1.publicKey] = "some info for user 1"
+        test_db["users"][db2.publicKey] = "some info for user 2"
+        db1.set("test", test_db)
+        db2.set("test", test_db)
     })
 
     it("makes readable values readable", () => {
-        expect(db.canRead('test/unspecified/nested')).to.equal(true)
-        expect(db.canRead('test/ai')).to.equal(true)
-        expect(db.canRead('test/blling_keys/update_billing')).to.equal(true)
+        expect(db1.canRead('test/unspecified/nested')).to.equal(true)
+        expect(db1.canRead('test/ai')).to.equal(true)
+        expect(db1.canRead('test/blling_keys/update_billing')).to.equal(true)
     })
 
     it("makes unreadable values unreadable", () => {
-        expect(db.canRead('test/comcom')).to.equal(false)
-       // expect(db.canRead('test/blling_keys/other')).to.equal(false)
+        expect(db1.canRead(`test/users/`)).to.equal(false)
+        expect(db1.canRead('test/billing_keys/other')).to.equal(false)
     })
+
+
+    it("only allows certain users to read certain info", () => {
+        expect(db2.canRead(`test/users/${db1.publicKey}`)).to.equal(false)
+        expect(db1.canRead(`test/users/${db1.publicKey}`)).to.equal(true)
+        expect(db1.canRead(`test/users/${db2.publicKey}`)).to.equal(false)
+        expect(db2.canRead(`test/users/${db2.publicKey}`)).to.equal(true)
+    })
+    
 })
