@@ -1,38 +1,38 @@
 const DB = require('../db/index')
+const Blockchain = require('../blockchain/index')
 const chai = require('chai');
+const fs = require("fs")
 const expect = chai.expect;
 const assert = chai.assert;
+const {RULES_FILE_PATH} = require('../config')
 
 describe("DB", () => {
-    let db, test_db
+    let db, test_db, bc
 
     beforeEach(() => {
-        db = new DB()
+        bc = new Blockchain()
+        db = DB.getDabase(bc)
         test_db = {"ai": {"comcom": 123, "foo": "bar"}, "increase": 
                     {"value": 10, "nested": {"value": 20}}, "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
-        db.set("/", test_db)
+        db.set("test", test_db)
     })
 
     describe("get operations work successfully", () => {
 
-        it("when retrieving entire database", () => {
-            assert.deepEqual(db.get("/"), test_db)
-        })
-
         it("when retrieving high value near top of database", () => {
-            assert.deepEqual(db.get("ai"), test_db["ai"])
+            assert.deepEqual(db.get("test"), test_db)
         })
 
         it("when retrieving shallow nested value", () => {
-            assert.deepEqual(db.get("ai/comcom"), test_db["ai"]["comcom"])
+            assert.deepEqual(db.get("test/ai/comcom"), test_db["ai"]["comcom"])
         })
 
         it("when retrieving deeply nested value", () => {
-            assert.deepEqual(db.get("nested/far/down"), test_db["nested"]["far"]["down"])
+            assert.deepEqual(db.get("test/nested/far/down"), test_db["nested"]["far"]["down"])
         })
 
         it("by failing when value is not present", () => {
-            expect(db.get("nested/far/down/to/nowhere")).to.equal(null)
+            expect(db.get("test/nested/far/down/to/nowhere")).to.equal(null)
         })
     })
 
@@ -60,35 +60,91 @@ describe("DB", () => {
     describe("increase operations work succesfully", () => {
 
         it("increasing one value succesfully", () => {
-            assert.deepEqual(db.increase({"increase/value": 10}), 
-                                         {code: 0, result: {"increase/value": 20}})
-            expect(db.get("increase/value")).to.equal(20)
+            assert.deepEqual(db.increase({"test/increase/value": 10}), 
+                                         {code: 0, result: {"test/increase/value": 20}})
+            expect(db.get("test/increase/value")).to.equal(20)
         })
 
         it("decrementing one value succesfully", () => {
-            assert.deepEqual(db.increase({"increase/value": -9}), 
-                                         {code: 0, result: {"increase/value": 1}})
-            expect(db.get("increase/value")).to.equal(1)
+            assert.deepEqual(db.increase({"test/increase/value": -9}), 
+                                         {code: 0, result: {"test/increase/value": 1}})
+            expect(db.get("test/increase/value")).to.equal(1)
         })
 
         it("returning error code and leaving value unchanged if path is not numerical", () => {
-            expect(db.increase({"ai/foo": 10}).code).to.equal(-1)
-            expect(db.get("ai/foo")).to.equal("bar")
+            expect(db.increase({"test/ai/foo": 10}).code).to.equal(-1)
+            expect(db.get("test/ai/foo")).to.equal("bar")
         })
 
         it("creating and increasing given path from 0 if not currently in database", () => {
-            assert.deepEqual(db.increase({"completely/new/path/test": 100}), 
-                                         {code: 0, result: {"completely/new/path/test": 100}})
-            expect(db.get("completely/new/path/test")).to.equal(100)
+            assert.deepEqual(db.increase({"test/completely/new/path/test": 100}), 
+                                         {code: 0, result: {"test/completely/new/path/test": 100}})
+            expect(db.get("test/completely/new/path/test")).to.equal(100)
         })
 
         it("incrementing multiple paths if provided in initial diff dict", () => {
-            assert.deepEqual(db.increase({"completely/new/path/test": 100, "increase/value": 10, "increase/nested/value": 10}), 
-                {code: 0, result: {"completely/new/path/test": 100, "increase/value": 20, "increase/nested/value": 30}})
-                expect(db.get("completely/new/path/test")).to.equal(100)
-                expect(db.get("increase/value")).to.equal(20)
-                expect(db.get("increase/nested/value")).to.equal(30)
+            assert.deepEqual(db.increase({"test/completely/new/path/test": 100, "test/increase/value": 10, "test/increase/nested/value": 10}), 
+                {code: 0, result: {"test/completely/new/path/test": 100, "test/increase/value": 20, "test/increase/nested/value": 30}})
+                expect(db.get("test/completely/new/path/test")).to.equal(100)
+                expect(db.get("test/increase/value")).to.equal(20)
+                expect(db.get("test/increase/nested/value")).to.equal(30)
         })
     })
 
+    describe("rules work correctly", () => {
+
+        it("loading properly on initatiion", () => {
+            assert.deepEqual(db.get("rules"), JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"])
+
+        })
+
+    })
+
+})
+
+RULES_SET = {
+     ".read": true,
+     ".write": false,
+     "test": {
+        "ai": {
+        ".read": true
+        },
+        "comcom": {
+        ".read": false,
+        "billing_keys": {
+            ".read": false,
+        "update_billing": {
+            ".read": true
+        }
+    }
+  }
+ }
+}
+
+describe("DB rules", () => {
+    let db, test_db, bc
+
+    beforeEach(() => {
+        bc = new Blockchain()
+        db = DB.getDabase(bc)
+        db.set("rules", RULES_SET)
+        test_db = {
+            "comcom": "unreadable value",
+            "unspecified": {"nested": "readable"},
+            "ai" : "readable",
+            "blling_keys": {"other": "unreadable", "update_billing": "readable"}
+        }
+        db.set("test", test_db)
+    })
+
+    it("makes readable values readable", () => {
+        expect(db.canRead('test/unspecified/nested')).to.equal(true)
+        expect(db.canRead('test/ai')).to.equal(true)
+        expect(db.canRead('test/blling_keys/update_billing')).to.equal(true)
+    })
+
+    it("makes unreadable values unreadable", () => {
+        expect(db.canRead('test/comcom')).to.equal(false)
+       // expect(db.canRead('test/blling_keys/other')).to.equal(false)
+    })
 })

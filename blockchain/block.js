@@ -1,6 +1,7 @@
 const {DIFFICULTY, MINE_RATE} = require("../config")
 const ChainUtil = require('../chain-util')
 const fs = require("fs")
+const {RULES_FILE_PATH} = require('../config')
 
 
 class Block {
@@ -25,9 +26,13 @@ class Block {
         Data      : ${this.data}`;
     }
 
-
     static genesis(){
-        return new this('Genesis time', '-----', 'f1r57-h45h', [], 0, DIFFICULTY);
+        const data = []
+        if (fs.existsSync(RULES_FILE_PATH)) {
+            data.push({output: {type: "SET", ref: "rules", 
+                                value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}})
+        }   
+        return new this('Genesis time', '-----', 'f1r57-h45h', data, 0, DIFFICULTY);
     }
 
     static loadBlock(block_path){

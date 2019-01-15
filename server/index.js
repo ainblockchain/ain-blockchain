@@ -60,9 +60,9 @@ const app = express();
 app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
 
-const db = new Database()
-const tp = new TransactionPool()
 const bc = new Blockchain(String(PORT));
+const db = Database.getDabase(bc)
+const tp = new TransactionPool()
 const p2pServer = new P2pServer(db, bc, tp)
 const miner = new Miner(bc, tp, p2pServer)
 
@@ -106,7 +106,9 @@ app.get('/mine-transactions', (req, res) => {
 
 app.get('/get', (req, res, next) => {
   try{
-    var result = db.get(req.query.ref)
+    var result = null
+    if(db.canRead(req.query.ref))
+      var result = db.get(req.query.ref)
     res
       .status(result ? 200 : 404)
       .set('Content-Type', 'application/json')

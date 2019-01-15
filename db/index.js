@@ -1,6 +1,7 @@
 const ChainUtil = require('../chain-util')
 const Transaction = require("./transaction")
 
+
 class DB {
 
     constructor(){
@@ -9,7 +10,29 @@ class DB {
         this.publicKey = this.keyPair.getPublic().encode('hex')
     }
 
+    static getDabase(blockchain){
+        const db = new DB()
+        db.createDatabase(blockchain)
+        return db
+    }
+
+    canRead(ref){
+        var read = false
+        var currentRuleSet = this.db["rules"]
+        var i = 0
+        var pathKeys = ref.split("/")
+        do{
+            if (".read" in currentRuleSet) read = currentRuleSet[".read"]
+            currentRuleSet = currentRuleSet[pathKeys[i]]
+            i++
+        } while(currentRuleSet &&  i <= pathKeys.length);
+        
+        console.log(`Read access for user ${this.publicKey.substring(0, 10)} for path ${ref} is ${read}`)
+        return read
+    }
+
     get(ref){
+
         if (ref == '/') {
             return this.db
           }

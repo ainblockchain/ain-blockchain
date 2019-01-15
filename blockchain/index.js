@@ -80,7 +80,7 @@ class Blockchain{
 
     static loadChain(chain_path){
         var newChain = []
-        fs.readdirSync(chain_path).forEach(block => {
+        fs.readdirSync(chain_path).sort().forEach(block => {
             newChain.push(Block.loadBlock(chain_path + "/" + block))
         })
 

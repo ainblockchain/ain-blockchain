@@ -1,0 +1,18 @@
+{
+    "rules": {
+      ".read": true,
+      ".write": true,
+      "ai-ai": {
+        ".read": true
+      },
+      "comcomcom": {
+        ".read": false,
+      "billing_keys": {
+        "update_billing": {
+          ".read": true
+        }
+      }
+    }
+  }
+}
+  
