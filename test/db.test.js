@@ -10,7 +10,7 @@ describe("DB", () => {
     let db, test_db, bc
 
     beforeEach(() => {
-        bc = new Blockchain()
+        bc = new Blockchain("db-test")
         db = DB.getDabase(bc)
         test_db = {"ai": {"comcom": 123, "foo": "bar"}, "increase": 
                     {"value": 10, "nested": {"value": 20}}, "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
@@ -106,7 +106,7 @@ describe("DB rules", () => {
     let db1, db2, test_db, bc
 
     beforeEach(() => {
-        bc = new Blockchain()
+        bc = new Blockchain("db-test")
         db1 = DB.getDabase(bc)
         db2 = DB.getDabase(bc)
         test_db = {

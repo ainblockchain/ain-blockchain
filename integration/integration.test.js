@@ -10,7 +10,10 @@ const sleep = require('system-sleep');
 const expect = chai.expect
 chai.use(chaiHttp);
 const syncRequest = require('sync-request')
-var itParam = require('mocha-param');
+const itParam = require('mocha-param');
+const Blockchain = require('../blockchain');
+const {BLOCKCHAINS_DIR} = require('../config') 
+
 
 
 // Server configurations
@@ -21,6 +24,8 @@ const server4 = 'http://localhost:8083'
 const SERVERS = [server1, server2, server3, server4]
 const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true}, {P2P_PORT:5002, PORT: 8081}, {P2P_PORT:5003, PORT: 8082}, {P2P_PORT:5004, PORT: 8083}]
 
+// Paths to current Blockchains (These will be needed in order to assure that all db operations are recorded by this test case)
+const CHAIN_LOCATION = BLOCKCHAINS_DIR + "/" + "8080"
 
 // Data options
 RANDOM_OPERATION = [
@@ -48,7 +53,9 @@ RANDOM_OPERATION = [
 
 describe('Integration Tests', () => {
   let procs = []
+  let preTestChainInfo  = {}
   let operationCounter = 0
+  let numMines = 0
 
   before(() => {
     // Start up all servers
@@ -60,6 +67,13 @@ describe('Integration Tests', () => {
       sleep(1500)
       procs.push(proc)
     };
+
+    var chain = Blockchain.loadChain(CHAIN_LOCATION)
+    preTestChainInfo["numBlocks"] = chain.length
+    preTestChainInfo["numTransactions"] = chain.reduce((acc, block) => {
+        return acc + block.data.length
+      }, 0)
+      console.log(`Initial block chain is ${preTestChainInfo["numBlocks"]} blocks long containing ${preTestChainInfo["numTransactions"]} database transactions` )
   })
 
   after(() => {
@@ -84,6 +98,7 @@ describe('Integration Tests', () => {
       }
 
       syncRequest('GET', server3 + '/mine-transactions')
+      numMines++
       sleep(100)
     })
 
@@ -127,8 +142,12 @@ describe('Integration Tests', () => {
         blocks.forEach(block => block.data.forEach(_ => {
           numTransactions = numTransactions + 1
         }))
-        // Subtract 1 from number of transactions as one is the rule transaction set loaded in initial block 
-        expect(operationCounter).to.equal(numTransactions - 1)
+        // Subtract pe chain number of transactions as one is the rule transaction set loaded in initial block 
+        expect(operationCounter).to.equal(numTransactions - preTestChainInfo["numTransactions"])
+      })
+
+      it('all having correct number of blocks', () => {
+        expect(numMines).to.equal(blocks.length - preTestChainInfo["numBlocks"])
       })
     })
   })

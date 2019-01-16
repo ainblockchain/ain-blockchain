@@ -1,13 +1,20 @@
 
-const Block = require('./block');
-const PATH_TO_DIR = require('path').dirname(__dirname) + "/blockchain/.blockchains"
+const Block = require('./block')
+const {BLOCKCHAINS_DIR} = require('../config') 
+const rimraf = require("rimraf")
+const path = require('path')
 const fs = require('fs')
+
 
 class Blockchain{
     constructor(blockchain_dir){
         this.chain = [Block.genesis()];
         this.blockchain_dir = blockchain_dir
-        this.createBlockchainDir()
+        let new_chain
+        if(this.createBlockchainDir()){
+            new_chain =  Blockchain.loadChain(this._blockchainDir())
+            this.chain = new_chain ? new_chain: this.chain
+        }
         this.writeChain()
     }
 
@@ -29,7 +36,7 @@ class Blockchain{
             const lastBlock = chain[i - 1];
 
             if(block.lastHash !== lastBlock.hash || block.hash !== Block.blockHash(block)){
-                console.log("Invalid hashing")
+                console.log(`Invalid hashing for block ${i}`)
                 return false;
             }
         }
@@ -53,7 +60,7 @@ class Blockchain{
     }
 
     _blockchainDir(){
-        return PATH_TO_DIR + '/' + this.blockchain_dir
+        return BLOCKCHAINS_DIR + '/' + this.blockchain_dir
     }
 
     _path_to_block(blockNum, blockHash){
@@ -61,11 +68,15 @@ class Blockchain{
     }
 
     createBlockchainDir(){
-        [PATH_TO_DIR, this._blockchainDir()].forEach((directory) => {
+        var alreadyExists = true
+        var dirs = [BLOCKCHAINS_DIR, this._blockchainDir()]
+        dirs.forEach((directory) => {
             if (!(fs.existsSync(directory))){
                 fs.mkdirSync(directory);
+                alreadyExists = false
             }
         })
+        return alreadyExists
     }
 
     writeChain(){
@@ -80,7 +91,12 @@ class Blockchain{
 
     static loadChain(chain_path){
         var newChain = []
-        fs.readdirSync(chain_path).sort().forEach(block => {
+        var blockFiles =  fs.readdirSync(chain_path)
+        blockFiles.sort(function(file1, file2) {
+            return fs.statSync(path.resolve(chain_path, file1)).mtime.getTime() - 
+                   fs.statSync(path.resolve(chain_path, file2)).mtime.getTime();
+        });
+        blockFiles.forEach(block => {
             newChain.push(Block.loadBlock(chain_path + "/" + block))
         })
 
@@ -89,6 +105,7 @@ class Blockchain{
             return newChain
         }
         console.log("Invalid chain")
+        rimraf.sync(chain_path + "/*")
         return null
         
     }

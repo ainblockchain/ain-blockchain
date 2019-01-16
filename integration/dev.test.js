@@ -10,10 +10,10 @@ const APP_SERVER = PROJECT_ROOT + "server/index.js"
 const sleep = require('system-sleep');
 chai.use(chaiHttp);
 
-const server1 = 'http://localhost:8080'
-const server2 = 'http://localhost:8081'
-const server3 = 'http://localhost:8082'
-const server4 = 'http://localhost:8083'
+const server1 = 'http://localhost:8085'
+const server2 = 'http://localhost:8089'
+const server3 = 'http://localhost:8087'
+const server4 = 'http://localhost:8088'
 
 
 describe('API Tests', () => {
@@ -22,13 +22,13 @@ describe('API Tests', () => {
   before(() => {
     tracker_proc = spawn('node', [TRACKER_SERVER])
     sleep(500)
-    server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true}})
+    server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5001, PORT: 8085}})
     sleep(500)
-    server2_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5002, PORT: 8081}})
+    server2_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5002, PORT: 8089}})
     sleep(500)
-    server3_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5003, PORT: 8082}})
+    server3_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5003, PORT: 8087}})
     sleep(500)
-    server4_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5004, PORT: 8083}})
+    server4_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5004, PORT: 8088}})
     sleep(500)
 
   });
