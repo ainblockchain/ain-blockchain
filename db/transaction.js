@@ -2,30 +2,21 @@ const ChainUtil = require('../chain-util')
 
 class Transaction {
 
-    constructor(){
+    constructor(timestamp, data, address, signature){
         this.id = ChainUtil.id()
-        this.input = null
-        this.output = null
+        this.timestamp = timestamp
+        this.output = data
+        this.address = address
+        this.signature = signature
     }
 
     static newTransaction(db, data) {
-        const transaction = new this()
-        transaction.output = data
-        Transaction.signTransaction(transaction, db)
-        return transaction
+        return new this(Date.now(), data, db.publicKey, db.sign(ChainUtil.hash(data)))
     } 
-
-    static  signTransaction(transaction, db){
-        transaction.input = {
-            timestamp: Date.now(),
-            address:  db.publicKey,
-            signature: db.sign(ChainUtil.hash(transaction.output))
-        }
-    }
     
     static verifyTransaction(transaction) {
         return ChainUtil.verifySignature(
-            transaction.input.address, transaction.input.signature, ChainUtil.hash(transaction.output)
+            transaction.address, transaction.signature, ChainUtil.hash(transaction.output)
         )
     }
 }

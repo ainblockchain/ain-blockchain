@@ -6,7 +6,7 @@ class Miner {
     }
 
     mine() {
-        const block = this.blockchain.addBlock(this.transactionPool.transactions)
+        const block = this.blockchain.addBlock(this.transactionPool.validTransactions())
         this.p2pServer.syncChains()
         this.transactionPool.clear()
         this.p2pServer.broadcastClearTransactions()

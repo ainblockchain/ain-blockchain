@@ -22,7 +22,7 @@ const server2 = 'http://localhost:8081'
 const server3 = 'http://localhost:8082'
 const server4 = 'http://localhost:8083'
 const SERVERS = [server1, server2, server3, server4]
-const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true}, {P2P_PORT:5002, PORT: 8081}, {P2P_PORT:5003, PORT: 8082}, {P2P_PORT:5004, PORT: 8083}]
+const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true}, {P2P_PORT:5002, PORT: 8081}, {P2P_PORT:5003, PORT: 8082, LOG: true}, {P2P_PORT:5004, PORT: 8083}]
 
 // Paths to current Blockchains (These will be needed in order to assure that all db operations are recorded by this test case)
 const CHAIN_LOCATION = BLOCKCHAINS_DIR + "/" + "8080"

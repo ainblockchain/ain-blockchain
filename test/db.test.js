@@ -13,7 +13,8 @@ describe("DB", () => {
         bc = new Blockchain("db-test")
         db = DB.getDabase(bc)
         test_db = {"ai": {"comcom": 123, "foo": "bar"}, "increase": 
-                    {"value": 10, "nested": {"value": 20}}, "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
+                    {"value": 10, "nested": {"value": 20}}, 
+                    "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
         db.set("test", test_db)
     })
 
