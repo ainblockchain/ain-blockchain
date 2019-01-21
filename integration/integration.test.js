@@ -12,7 +12,8 @@ chai.use(chaiHttp);
 const syncRequest = require('sync-request')
 const itParam = require('mocha-param');
 const Blockchain = require('../blockchain');
-const {BLOCKCHAINS_DIR} = require('../config') 
+const {BLOCKCHAINS_DIR, METHOD} = require('../config') 
+const rimraf = require("rimraf")
 
 
 
@@ -22,7 +23,8 @@ const server2 = 'http://localhost:8081'
 const server3 = 'http://localhost:8082'
 const server4 = 'http://localhost:8083'
 const SERVERS = [server1, server2, server3, server4]
-const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true}, {P2P_PORT:5002, PORT: 8081}, {P2P_PORT:5003, PORT: 8082, LOG: true}, {P2P_PORT:5004, PORT: 8083}]
+const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true}, {P2P_PORT:5002, PORT: 8081, LOG: true}, 
+                        {P2P_PORT:5003, PORT: 8082, LOG: true}, {P2P_PORT:5004, PORT: 8083, LOG: true}]
 
 // Paths to current Blockchains (These will be needed in order to assure that all db operations are recorded by this test case)
 const CHAIN_LOCATION = BLOCKCHAINS_DIR + "/" + "8080"
@@ -55,7 +57,8 @@ describe('Integration Tests', () => {
   let procs = []
   let preTestChainInfo  = {}
   let operationCounter = 0
-  let numMines = 0
+  let numNewBlocks = 0
+  let numBlocks
 
   before(() => {
     // Start up all servers
@@ -74,6 +77,7 @@ describe('Integration Tests', () => {
         return acc + block.data.length
       }, 0)
       console.log(`Initial block chain is ${preTestChainInfo["numBlocks"]} blocks long containing ${preTestChainInfo["numTransactions"]} database transactions` )
+    numBlocks = preTestChainInfo["numBlocks"]
   })
 
   after(() => {
@@ -81,9 +85,10 @@ describe('Integration Tests', () => {
     for(var i=0; i<procs.length; i++){
       procs[i].kill()
     }
+    rimraf.sync(BLOCKCHAINS_DIR)
   });
 
-  describe(`blockchain database mining`, () => {
+  describe(`blockchain database mining/forging`, () => {
     let random_operation
    
     beforeEach(() => {
@@ -96,10 +101,17 @@ describe('Integration Tests', () => {
           sleep(100)
         }
       }
-
-      syncRequest('GET', server3 + '/mine-transactions')
-      numMines++
-      sleep(100)
+      if (METHOD == "POW"){
+        syncRequest('GET', server3 + '/mine-transactions')
+        sleep(100)
+      }
+      else{
+          while(!(JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length > numBlocks)){
+            sleep(200)
+          }
+          numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length 
+      }
+      numNewBlocks++
     })
 
     itParam('syncs accross all peers after mine', SERVERS, (server) => {
@@ -147,7 +159,7 @@ describe('Integration Tests', () => {
       })
 
       it('all having correct number of blocks', () => {
-        expect(numMines).to.equal(blocks.length - preTestChainInfo["numBlocks"])
+        expect(numNewBlocks).to.equal(blocks.length - preTestChainInfo["numBlocks"])
       })
     })
   })

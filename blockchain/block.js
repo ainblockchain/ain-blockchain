@@ -1,4 +1,4 @@
-const {DIFFICULTY, MINE_RATE} = require("../config")
+const {DIFFICULTY, MINE_RATE, METHOD} = require("../config")
 const ChainUtil = require('../chain-util')
 const fs = require("fs")
 const {RULES_FILE_PATH} = require('../config')
@@ -11,8 +11,8 @@ class Block {
         this.lastHash = lastHash
         this.hash = hash
         this.data = data
-        this.nonce = nonce
-        this.difficulty = difficulty || DIFFICULTY
+        this.nonce = nonce !== undefined ? nonce : -1
+        this.difficulty = difficulty !== undefined ? (difficulty || DIFFICULTY) : -1
 
     }
 
@@ -60,6 +60,11 @@ class Block {
         return new Block(timestamp, lastHash, hash, data, nonce, difficulty)
     }
 
+    static forgeBlock(lastBlock, data){
+        var timestamp = Date.now()
+        return new Block(timestamp, lastBlock.hash,  Block.hash(timestamp, lastBlock.hash, data), data)
+    }
+
     static hash(timestamp, lastHash, data, nonce, difficulty){
         return ChainUtil.hash(`${timestamp}${lastHash}${data}${nonce}${difficulty}`).toString();
     }
@@ -69,12 +74,17 @@ class Block {
         // TODO: Allow for mining at inconsistent periods as this will cause bgs currently
         let {difficulty} = lastBlock;
         difficulty = lastBlock.timestamp + MINE_RATE > currentTime ? difficulty + 1 : difficulty - 1
-        return difficulty 
+        return difficulty > 0 ? difficulty : 1
     }
 
     static blockHash(block){
-        const {timestamp, lastHash, data, nonce, difficulty} = block;
-        return Block.hash(timestamp, lastHash, data, nonce, difficulty)
+        if (METHOD === "POW"){
+            const {timestamp, lastHash, data, nonce, difficulty} = block;
+            return Block.hash(timestamp, lastHash, data, nonce, difficulty)
+        } else {
+            const {timestamp, lastHash, data,} = block;
+            return Block.hash(timestamp, lastHash, data)
+        }
     }
 }
 

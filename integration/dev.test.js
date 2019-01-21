@@ -9,6 +9,9 @@ const TRACKER_SERVER = PROJECT_ROOT + "server/tracker-server.js"
 const APP_SERVER = PROJECT_ROOT + "server/index.js"
 const sleep = require('system-sleep');
 chai.use(chaiHttp);
+const rimraf = require("rimraf")
+const {BLOCKCHAINS_DIR} = require('../config') 
+
 
 const server1 = 'http://localhost:8085'
 const server2 = 'http://localhost:8089'
@@ -24,11 +27,11 @@ describe('API Tests', () => {
     sleep(500)
     server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5001, PORT: 8085}})
     sleep(500)
-    server2_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5002, PORT: 8089}})
+    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5002, PORT: 8089}})
     sleep(500)
-    server3_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5003, PORT: 8087}})
+    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5003, PORT: 8087}})
     sleep(500)
-    server4_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5004, PORT: 8088}})
+    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5004, PORT: 8088}})
     sleep(500)
 
   });
@@ -39,6 +42,7 @@ describe('API Tests', () => {
     server2_proc.kill()
     server3_proc.kill()
     server4_proc.kill()
+    rimraf.sync(BLOCKCHAINS_DIR)
   });
 
   beforeEach(() => {

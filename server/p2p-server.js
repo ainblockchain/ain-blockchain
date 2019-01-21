@@ -6,11 +6,7 @@ const P2P_PORT = process.env.P2P_PORT || 5001;
 const trackerWebSocket = new Websocket("ws://localhost:3001")
 const HOST = process.env.HOST || "ws://localhost"
 const SERVER = HOST + ":" + P2P_PORT
-const MESSAGE_TYPES = {
-    chain: "CHAIN",
-    transaction: "TRANSACTION",
-    clear_transactions: "CLEAR_TRANSACTIONS"
-}
+const {MESSAGE_TYPES} = require("../config") 
 
 class P2pServer {
 
@@ -24,11 +20,25 @@ class P2pServer {
     connectTracker(){
  
         trackerWebSocket.on('message', message => {
-            const peers = JSON.parse(message);
-            this.connectToPeers(peers)
+            const data = JSON.parse(message);
+            switch(data.type){ 
+                case MESSAGE_TYPES.peers:
+                    console.log(`Connecting to peers ${data.peers}`)
+                    this.connectToPeers(data.peers)
+                    break
+                case MESSAGE_TYPES.forge:
+                    console.log("Selected to forge new block")
+                    const block = this.blockchain.addBlock(this.transactionPool.validTransactions())
+                    console.log(`New block added: ${block.toString()}`)
+                    this.syncChains()
+                    this.transactionPool.clear()
+                    this.broadcastClearTransactions()
+                    break
+            }
         });
 
-        trackerWebSocket.send(JSON.stringify(SERVER))
+        trackerWebSocket.send(JSON.stringify({type: MESSAGE_TYPES.server_register, 
+            url: SERVER, address: this.db.publicKey, chain: this.blockchain.chain}))
     }
      
     listen(){
@@ -57,6 +67,7 @@ class P2pServer {
             const data = JSON.parse(message);
             switch(data.type){
                 case MESSAGE_TYPES.chain:
+                    console.log("Received chain to consider adapting")
                     if (this.blockchain.replaceChain(data.chain)){
                         this.db.createDatabase(this.blockchain)
                     }
@@ -86,7 +97,7 @@ class P2pServer {
     }
 
     syncChains() {
-        this.sockets.forEach(socket => this.sendChain(socket));
+        this.sockets.concat(trackerWebSocket).forEach(socket => this.sendChain(socket));
     }
 
     broadcastTransaction(transaction){

@@ -1,6 +1,6 @@
 
 const Block = require('./block')
-const {BLOCKCHAINS_DIR} = require('../config') 
+const {BLOCKCHAINS_DIR, METHOD} = require('../config') 
 const rimraf = require("rimraf")
 const path = require('path')
 const fs = require('fs')
@@ -19,7 +19,13 @@ class Blockchain{
     }
 
     addBlock(data){
-        const block = Block.mineBlock(this.chain[this.chain.length -1], data);
+        let block
+        // Now supportin POW and POS implementations
+        if (METHOD == "POW"){
+            block = Block.mineBlock(this.chain[this.chain.length -1], data);
+        } else {
+            block = Block.forgeBlock(this.chain[this.chain.length -1], data)
+        }
         this.chain.push(block);
         this.writeChain()
         return block;
