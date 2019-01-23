@@ -69,11 +69,58 @@ class DB {
             console.log(e.message)
             return null
         }
-        return result
+        return result ? result : null
+    }
+
+    canWrite(ref, value){
+
+        if (! this.canRead(ref)){
+            return false
+        }
+        let lastRuleSet
+        var write = null
+        var wildCards = {}
+        var currentRuleSet = this.db["rules"]
+        var i = 0
+        var pathKeys = ref.split("/")
+        do{
+            if (".write" in currentRuleSet) write = currentRuleSet[".write"]
+            lastRuleSet = currentRuleSet
+            currentRuleSet = currentRuleSet[pathKeys[i]]
+            if (!currentRuleSet){
+                // If no rule set is available for specific key, check for wildcards
+                var keys = Object.keys(lastRuleSet)
+                for(var j=0; j<keys.length; j++){
+                    if (keys[j].startsWith("$")) {
+                        wildCards[keys[j]] = pathKeys[i]
+                        currentRuleSet = lastRuleSet[keys[j]]
+                    }
+                }
+            }
+            i++
+        } while(currentRuleSet &&  i <= pathKeys.length);
+
+        if (typeof write == "string"){
+            write = this.verifyWriteAuth(write, wildCards, value, ref)
+        }
+
+        console.log(`Write access for user ${this.publicKey.substring(0, 10)} for path ${ref} is ${write}`)
+        return write
+    }
+
+    verifyWriteAuth(write, wildCards, newValue, ref){
+        console.log(write)
+        write = write.replace(/newData/g, newValue).replace(/oldData/g, this.get(ref)).replace("db.get", "this.get")
+        for (var wildCard in wildCards){
+            write = write.replace(wildCard, wildCards[wildCard])
+        }
+        console.log(write)
+        return eval(write)
     }
 
     set(ref, value){
         let value_copy
+
         if (ChainUtil.isDict(value)){
             value_copy = JSON.parse(JSON.stringify(value))
         } else {

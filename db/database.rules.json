@@ -2,23 +2,43 @@
     ".read": true,
     ".write": false,
     "test": {
-      "ai": {
-      ".read": true
-      },
-      "comcom": {
-      ".read": false
-      },
-      "billing_keys": {
-          ".read": false,
-          "update_billing": {
-              ".read": true
+        "ai": {
+        ".read": true
+        },
+        "comcom": {
+        ".read": false
+        },
+        "billing_keys": {
+            ".read": false,
+            "update_billing": {
+                ".read": true
+            }
+        },
+        "users":{
+            "$uid": {
+                ".read": "auth === $uid",
+                ".write": true,
+                "balance": {
+                    ".write": "typeof newData === 'number' && newData >= 0"
+                    },
+                "info": {
+                    ".write": "oldData !== null"
+                },
+                "balance_info": {
+                    ".write": "db.get('test/billing_keys/update_billing/$uid') !== null"
+                },
+                "next_counter": {
+                    ".write": "typeof newData === 'number' && newData === oldData + 1"
+                }
+            }
+          },
+          "second_users": {
+              "$wcard1":{
+                  "$wcard2": {
+                      ".write": "'$wcard1' == '$wcard2'"
+                  }
+              }
           }
-      },
-      "users":{
-          "$uid": {
-              ".read": "auth == $uid"
-          }
-      }
+        }
     }
-  }
 }

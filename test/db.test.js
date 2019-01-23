@@ -114,13 +114,29 @@ describe("DB rules", () => {
             "comcom": "unreadable value",
             "unspecified": {"nested": "readable"},
             "ai" : "readable",
-            "billing_keys": {"other": "unreadable", "update_billing": "readable"},
-            "users": {}
+            "billing_keys": {"other": "unreadable", "update_billing": {}},
+            "users": {},
+            "second_users": {}
         }
-        test_db["users"][db1.publicKey] = "some info for user 1"
-        test_db["users"][db2.publicKey] = "some info for user 2"
+        test_db["users"][db1.publicKey] = {}
+        test_db["users"][db2.publicKey] = {}
+        test_db["users"][db1.publicKey]["balance"] = 100
+        test_db["users"][db2.publicKey]["balance"] = 50
+        test_db["users"][db1.publicKey]["info"] = 8474
+        test_db["billing_keys"]["update_billing"][db2.publicKey] = "'not null'"
+
+
+        test_db["users"][db1.publicKey]["next_counter"] = 10
+
+
+        test_db["second_users"][db1.publicKey] = {}
+        test_db["second_users"][db2.publicKey] = {}
+        test_db["second_users"][db2.publicKey][db2.publicKey] = "i can write"
+        test_db["second_users"][db1.publicKey]["something_else"] = "i can write"
+
         db1.set("test", test_db)
         db2.set("test", test_db)
+        
     })
 
     it("makes readable values readable", () => {
@@ -136,10 +152,40 @@ describe("DB rules", () => {
 
 
     it("only allows certain users to read certain info", () => {
-        expect(db2.canRead(`test/users/${db1.publicKey}`)).to.equal(false)
-        expect(db1.canRead(`test/users/${db1.publicKey}`)).to.equal(true)
-        expect(db1.canRead(`test/users/${db2.publicKey}`)).to.equal(false)
-        expect(db2.canRead(`test/users/${db2.publicKey}`)).to.equal(true)
+        expect(db2.canRead(`test/users/${db1.publicKey}/balance`)).to.equal(false)
+        expect(db1.canRead(`test/users/${db1.publicKey}/balance`)).to.equal(true)
+        expect(db1.canRead(`test/users/${db2.publicKey}/balance`)).to.equal(false)
+        expect(db2.canRead(`test/users/${db2.publicKey}/balance`)).to.equal(true)
+    })
+
+
+    it("only allows certain users to write certain info if balance is greater than 0", () => {
+        expect(db2.canWrite(`test/users/${db2.publicKey}/balance`, 0)).to.equal(true)  
+        expect(db2.canWrite(`test/users/${db2.publicKey}/balance`, -1)).to.equal(false)       
+        expect(db1.canWrite(`test/users/${db1.publicKey}/balance`, 1)).to.equal(true)
+        
+    })
+
+    it("only allows certain users to write certain info if data exists", () => {
+        expect(db1.canWrite(`test/users/${db1.publicKey}/info`, "something")).to.equal(true)     
+        expect(db2.canWrite(`test/users/${db2.publicKey}/info`, "something else")).to.equal(false)
+        expect(db2.canWrite(`test/users/${db2.publicKey}/new_info`, "something")).to.equal(true)
+        
+    })
+
+    it("only allows certain users to write certain info if data at other locations exists", () => {
+        expect(db2.canWrite(`test/users/${db2.publicKey}/balance_info`, "something")).to.equal(true)     
+        expect(db1.canWrite(`test/users/${db1.publicKey}/balance_info`, "something")).to.equal(false)        
+    })
+
+    it("validates old data and new data together", () => {
+        expect(db1.canWrite(`test/users/${db1.publicKey}/next_counter`, 11)).to.equal(true)
+        expect(db1.canWrite(`test/users/${db1.publicKey}/next_counter`, 12)).to.equal(false)        
+    })
+
+    it("can handle nested wildcards", () => {
+        expect(db2.canWrite(`test/second_users/${db2.publicKey}/${db2.publicKey}`, "some value")).to.equal(true)
+        expect(db1.canWrite(`test/second_users/${db1.publicKey}/next_counter`, "some other value")).to.equal(false)        
     })
     
 })
