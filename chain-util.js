@@ -23,6 +23,15 @@ class ChainUtil {
     static isDict(data){
         return (typeof data==='object' && data!==null && !(data instanceof Array))
     }
+
+    static queryParser(queryString) {
+        var queryList = queryString.split("/").filter(endpoint => {
+            if(endpoint) {
+              return endpoint
+            } 
+        })
+        return queryList
+      }    
 }
 
 module.exports = ChainUtil

@@ -1,6 +1,6 @@
 const ChainUtil = require('../chain-util')
 const Transaction = require("./transaction")
-
+const InvalidPerissonsError = require("../errors")
 
 class DB {
 
@@ -8,6 +8,7 @@ class DB {
         this.db = {}
         this.keyPair = ChainUtil.genKeyPair()
         this.publicKey = this.keyPair.getPublic().encode('hex')
+
     }
 
     static getDabase(blockchain){
@@ -16,151 +17,82 @@ class DB {
         return db
     }
 
-    canRead(ref){
-        let lastRuleSet, wildCard, subbedValue
-        var read = false
-        var currentRuleSet = this.db["rules"]
-        var i = 0
-        var pathKeys = ref.split("/")
-        do{
-            if (".read" in currentRuleSet) read = currentRuleSet[".read"]
-            lastRuleSet = currentRuleSet
-            currentRuleSet = currentRuleSet[pathKeys[i]]
-            if (!currentRuleSet){
-                // If no rule set is available for specific key, check for wildcards
-                var keys = Object.keys(lastRuleSet)
-                for(var j=0; j<keys.length; j++){
-                    if (keys[j].startsWith("$")) {
-                        wildCard = keys[j]
-                        subbedValue = pathKeys[i]
-                        currentRuleSet = lastRuleSet[wildCard]
-                        break
-                    }
-                }
-            }
-            i++
-        } while(currentRuleSet &&  i <= pathKeys.length);
+    get(queryPath){
+        var listQueryPath = ChainUtil.queryParser(queryPath)
 
-
-        if (typeof read == "string"){
-            read = this.verifyAuth(read, wildCard, subbedValue)
+        if (!this.getPermissisons(listQueryPath, [".read"])[".read"]){
+            throw new InvalidPerissonsError(`Invalid get permissons for ${queryPath}`)
         }
 
-        console.log(`Read access for user ${this.publicKey.substring(0, 10)} for path ${ref} is ${read}`)
-        return read
-    }
-
-    verifyAuth(read, wildCard, subbedValue){
-        return eval(read.replace(wildCard, `'${subbedValue}'`)
-                    .replace("auth", `'${this.publicKey}'`))
-    }
-
-    get(ref){
-        
-        if (ref == '/') {
+        if (listQueryPath.length < 1) {
             return this.db
           }
         var result = this.db
         try{
-            ref.split("/").forEach(function(key){
+            listQueryPath.forEach(function(key){
                 result = result[key]
             })
-        } catch (e) {
-            console.log(e.message)
-            return null
+        } catch (error) {
+            if (error instanceof TypeError){
+                console.log(error.stack)
+                return null
+            }
+            throw error
         }
         return result ? result : null
     }
 
-    canWrite(ref, value){
+    set(queryPath, value){
 
-        if (! this.canRead(ref)){
-            return false
+        let valueCopy
+        var listQueryPath = ChainUtil.queryParser(queryPath)
+        // TODO: Find a better way to manage seeting of rules than this dodgy condition
+        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissisons(listQueryPath, [".read", ".write"], value)).includes(false)){
+            throw new InvalidPerissonsError(`Invalid set permissons for ${queryPath}`)
         }
-        let lastRuleSet
-        var write = null
-        var wildCards = {}
-        var currentRuleSet = this.db["rules"]
-        var i = 0
-        var pathKeys = ref.split("/")
-        do{
-            if (".write" in currentRuleSet) write = currentRuleSet[".write"]
-            lastRuleSet = currentRuleSet
-            currentRuleSet = currentRuleSet[pathKeys[i]]
-            if (!currentRuleSet){
-                // If no rule set is available for specific key, check for wildcards
-                var keys = Object.keys(lastRuleSet)
-                for(var j=0; j<keys.length; j++){
-                    if (keys[j].startsWith("$")) {
-                        wildCards[keys[j]] = pathKeys[i]
-                        currentRuleSet = lastRuleSet[keys[j]]
-                    }
-                }
-            }
-            i++
-        } while(currentRuleSet &&  i <= pathKeys.length);
-
-        if (typeof write == "string"){
-            write = this.verifyWriteAuth(write, wildCards, value, ref)
-        }
-
-        console.log(`Write access for user ${this.publicKey.substring(0, 10)} for path ${ref} is ${write}`)
-        return write
-    }
-
-    verifyWriteAuth(write, wildCards, newValue, ref){
-        console.log(write)
-        write = write.replace(/newData/g, newValue).replace(/oldData/g, this.get(ref)).replace("db.get", "this.get")
-        for (var wildCard in wildCards){
-            write = write.replace(wildCard, wildCards[wildCard])
-        }
-        console.log(write)
-        return eval(write)
-    }
-
-    set(ref, value){
-        let value_copy
-
+        
         if (ChainUtil.isDict(value)){
-            value_copy = JSON.parse(JSON.stringify(value))
+            valueCopy = JSON.parse(JSON.stringify(value))
         } else {
-            value_copy = value
+            valueCopy = value
         }
-        if (ref == '/') {
-            this.db = value_copy
-        } else if (!ref.includes("/")) {
-            this.db[ref] = value_copy
+        if (listQueryPath.length < 1) {
+            this.db = valueCopy
+        } else if (listQueryPath.length  == 1) {
+            this.db[listQueryPath[0]] = valueCopy
         } else {
-            var path_to_key = ref.substring(0, ref.lastIndexOf("/"))
-            var ref_key = ref.substring(ref.lastIndexOf("/") + 1, ref.length)
-            this._force_path(path_to_key)[ref_key] = value_copy
+            var pathToKey = listQueryPath.splice(0, listQueryPath.length - 1)
+            var refKey = listQueryPath[listQueryPath.length - 1]
+            this._forcePath(pathToKey)[refKey] = valueCopy
         } 
     }
 
-    _force_path(db_path){
+    _forcePath(listQueryPath){
         // Returns reference to provided path if exists, otherwise creates path
-        var sub_db = this.db
-        db_path.split("/").forEach((key) => {
-            if ((!ChainUtil.isDict(sub_db[key])) || (!(key in sub_db))) {
-                sub_db[key] = {}
+        var subDb = this.db
+        listQueryPath.forEach((key) => {
+            if ((!ChainUtil.isDict(subDb[key])) || (!(key in subDb))) {
+                subDb[key] = {}
             }
-            sub_db = sub_db[key]
+            subDb = subDb[key]
         })
-        return sub_db
+        return subDb
     }
 
     increase(diff){
+
         for (var k in diff) {
             if (this.get(k) && typeof this.get(k) != 'number') {
                 return {code: -1, error_message: "Not a number type: " + k}
             }
         }
-        var result = {}
+        var results = {}
         for (var k in diff) {
-            this.set(k, (this.get(k) || 0) + diff[k])
-            result[k] = this.get(k)
+            var result = (this.get(k) || 0) + diff[k]
+            this.set(k, result)
+            results[k] = result
         }
-        return {code: 0, result: result}
+        return {code: 0, result: results}
     }
 
     createTransaction(data, transactionPool){
@@ -192,6 +124,74 @@ class DB {
             }
         })
     }
+
+    getPermissisons(queryPath, permissionQueries, newValue) {
+        // Checks permissions for thegien query path. Specify permissionQueries as a list of the permissions of interest i.e [".read", ".write"]
+        let lastRuleSet
+        var rules = {}
+        var wildCards = {}
+        var currentRuleSet = this.db["rules"]
+        var i = 0
+        do{
+            for(var j=0; j <permissionQueries.length; j++){
+                if (permissionQueries[j] in currentRuleSet){ 
+                    rules[permissionQueries[j]] = currentRuleSet[permissionQueries[j]]
+                }
+            }
+
+            lastRuleSet = currentRuleSet
+            currentRuleSet = currentRuleSet[queryPath[i]]
+            if (!currentRuleSet && queryPath[i]){
+                // If no rule set is available for specific key, check for wildcards
+                var keys = Object.keys(lastRuleSet)
+                for(var j=0; j<keys.length; j++){
+                    if (keys[j].startsWith("$")) {
+                        wildCards[keys[j]] = queryPath[i]
+                        currentRuleSet = lastRuleSet[keys[j]]
+                    }
+                }
+            }
+            i++
+        } while(currentRuleSet &&  i <= queryPath.length);
+        for(var permission in rules)
+            if (typeof rules[permission] === "string"){
+                rules[permission] = this.verifyAuth(rules[permission], wildCards, queryPath, newValue)
+            }
+
+        console.log(`Access for user ${this.publicKey.substring(0, 10)} for path ${queryPath.join("/")} is ${Object.values(rules)}`)
+        return rules
+    }
+
+
+    verifyAuth(ruleString, wildCards, queryPath, newValue){
+
+        if (ruleString.includes("auth")){
+            ruleString = ruleString.replace(/auth/g, `'${this.publicKey}'`)
+        } 
+        if (Object.keys(wildCards).length > 0){
+            for(var wildCard in wildCards){
+                if (ruleString.includes(wildCard)){
+                    // May need to come back here to figure out how to change ALL occurances of wildCards
+                    ruleString = ruleString.replace(wildCard, `${wildCards[wildCard]}`)
+                } 
+            }
+
+        }  
+        if (ruleString.includes("newData")){
+            ruleString = ruleString.replace(/newData/g, newValue)
+        }  
+        if (ruleString.includes("oldData")){
+            ruleString = ruleString.replace(/oldData/g, this.get(queryPath.join("/")))
+        }  
+        if (ruleString.includes("db.get")){
+            ruleString = ruleString.replace(/db.get.*\)/g, function replacer(match){
+                return match.replace("db.get", "this.get").replace(/'/g, "") ;
+            } );
+        } 
+        console.log(`Evaluating: ${ruleString}`)
+        return eval(ruleString)
+    }
+
 }
 
 module.exports = DB

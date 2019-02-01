@@ -53,6 +53,7 @@ const Database = require('../db')
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../db/transaction-pool')
 const Miner = require('./miner')
+const InvalidPerissonsError = require("../errors")
 
 
 const app = express();
@@ -105,51 +106,65 @@ app.get('/mine-transactions', (req, res) => {
 })
 
 app.get('/get', (req, res, next) => {
+  var statusCode = 200
+  var result = null
   try{
-    var result = null
-    if(db.canRead(req.query.ref))
-      var result = db.get(req.query.ref)
-    res
-      .status(result ? 200 : 404)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+    result = db.get(req.query.ref)
   } catch (error){
-    console.log(error)
+    if(error instanceof InvalidPerissonsError){
+      statusCode = 401
+    } else {
+      statusCode = 400
+    }
+    console.log(error.stack)
   }
+  res
+  .status(statusCode)
+  .set('Content-Type', 'application/json')
+  .send({code: result ? 0 : -1, result})
+  .end();
 })
 
 app.post('/set', (req, res, next) => {
+  var statusCode = 201
   try{
     var ref = req.body.ref;
     var value = req.body.value
     db.set(ref, value)
-    res
-      .status(200)
-      .set('Content-Type', 'application/json')
-      .send({code: 0})
-      .end();
     let transaction = db.createTransaction({type: "SET", ref, value}, tp)
     p2pServer.broadcastTransaction(transaction)
   } catch (error){
-    console.log(error)
+    if(error instanceof InvalidPerissonsError){
+      statusCode = 401
+    } else {
+      statusCode = 400
+    }
+    console.log(error.stack)
   }
+  res.status(statusCode).set('Content-Type', 'application/json').send({code: statusCode < 299? 0: 1}).end();
 })
 
 app.post('/increase', (req, res, next) => {
+  var statusCode = 201
   try{
     var diff = req.body.diff;
     var result = db.increase(diff)
-    res
-      .status(200)
-      .set('Content-Type', 'application/json')
-      .send(result)
-      .end();
+
     let transaction = db.createTransaction({type: "INCREASE", diff}, tp)
     p2pServer.broadcastTransaction(transaction)
   } catch (error){
-    console.log(error)
+    if(error instanceof InvalidPerissonsError){
+      statusCode = 401
+    } else {
+      statusCode = 400
+    }
+    console.log(error.stack)
   }
+  res
+  .status(200)
+  .set('Content-Type', 'application/json')
+  .send(result)
+  .end();
 })
 
 // We will want changes in ports and the database to be broadcaste across

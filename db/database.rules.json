@@ -1,7 +1,14 @@
 { "rules": {
     ".read": true,
     ".write": false,
+    "nested":{
+        ".write": true
+    },
+    "new":{
+        ".write": true
+    },
     "test": {
+        ".write": true,
         "ai": {
         ".read": true
         },
@@ -15,8 +22,9 @@
             }
         },
         "users":{
+            ".read": false,
             "$uid": {
-                ".read": "auth === $uid",
+                ".read": "auth === '$uid'",
                 ".write": true,
                 "balance": {
                     ".write": "typeof newData === 'number' && newData >= 0"
@@ -25,7 +33,7 @@
                     ".write": "oldData !== null"
                 },
                 "balance_info": {
-                    ".write": "db.get('test/billing_keys/update_billing/$uid') !== null"
+                    ".write": "db.get(`test/billing_keys/update_billing/$uid`) !== null"
                 },
                 "next_counter": {
                     ".write": "typeof newData === 'number' && newData === oldData + 1"

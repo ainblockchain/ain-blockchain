@@ -1,4 +1,5 @@
 const DB = require('../db/index')
+const ChainUtil = require('../chain-util')
 const Blockchain = require('../blockchain/index')
 const chai = require('chai');
 const fs = require("fs")
@@ -41,8 +42,10 @@ describe("DB", () => {
         
         it(" when setting root database", () => {
             var new_db = {"basic": {"new":"db"}}
+            // Overwriting the default rules manually for this area
+            db.db["rules"][".write"] = true
             db.set("/", new_db)
-            assert.deepEqual(db.get("/"), new_db)
+            assert.deepEqual(db.db, new_db)
         })
 
         it(" when overwriting nested value", () => {
@@ -140,52 +143,52 @@ describe("DB rules", () => {
     })
 
     it("makes readable values readable", () => {
-        expect(db1.canRead('test/unspecified/nested')).to.equal(true)
-        expect(db1.canRead('test/ai')).to.equal(true)
-        expect(db1.canRead('test/blling_keys/update_billing')).to.equal(true)
+        expect(db1.getPermissisons(ChainUtil.queryParser('test/unspecified/nested'), [".read"])[".read"]).to.equal(true)
+        expect(db1.getPermissisons(ChainUtil.queryParser('test/ai'), [".read"])[".read"]).to.equal(true)
+        expect(db1.getPermissisons(ChainUtil.queryParser('test/blling_keys/update_billing'), [".read"])[".read"]).to.equal(true)
     })
 
     it("makes unreadable values unreadable", () => {
-        expect(db1.canRead(`test/users/`)).to.equal(false)
-        expect(db1.canRead('test/billing_keys/other')).to.equal(false)
+        expect(db1.getPermissisons(ChainUtil.queryParser('test/billing_keys/other'), [".read"])[".read"]).to.equal(false)
+        expect(db1.getPermissisons(ChainUtil.queryParser('test/users/'), [".read"])[".read"]).to.equal(false)
     })
 
 
     it("only allows certain users to read certain info", () => {
-        expect(db2.canRead(`test/users/${db1.publicKey}/balance`)).to.equal(false)
-        expect(db1.canRead(`test/users/${db1.publicKey}/balance`)).to.equal(true)
-        expect(db1.canRead(`test/users/${db2.publicKey}/balance`)).to.equal(false)
-        expect(db2.canRead(`test/users/${db2.publicKey}/balance`)).to.equal(true)
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/users/${db1.publicKey}/balance`), [".read"])[".read"]).to.equal(false)
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/users/${db1.publicKey}/balance`), [".read"])[".read"]).to.equal(true)
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance`), [".read"])[".read"]).to.equal(false)
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance`), [".read"])[".read"]).to.equal(true)
     })
 
 
     it("only allows certain users to write certain info if balance is greater than 0", () => {
-        expect(db2.canWrite(`test/users/${db2.publicKey}/balance`, 0)).to.equal(true)  
-        expect(db2.canWrite(`test/users/${db2.publicKey}/balance`, -1)).to.equal(false)       
-        expect(db1.canWrite(`test/users/${db1.publicKey}/balance`, 1)).to.equal(true)
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance`), [".write"], 0)[".write"]).to.equal(true)  
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance`), [".write"], -1)[".write"]).to.equal(false)       
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/users/${db1.publicKey}/balance`), [".write"], 1)[".write"]).to.equal(true)
         
     })
 
     it("only allows certain users to write certain info if data exists", () => {
-        expect(db1.canWrite(`test/users/${db1.publicKey}/info`, "something")).to.equal(true)     
-        expect(db2.canWrite(`test/users/${db2.publicKey}/info`, "something else")).to.equal(false)
-        expect(db2.canWrite(`test/users/${db2.publicKey}/new_info`, "something")).to.equal(true)
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/users/${db1.publicKey}/info`), [".write"], "something")[".write"]).to.equal(true)     
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/users/${db2.publicKey}/info`), [".write"], "something else")[".write"]).to.equal(false)
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/users/${db2.publicKey}/new_info`), [".write"], "something")[".write"]).to.equal(true)
         
     })
 
     it("only allows certain users to write certain info if data at other locations exists", () => {
-        expect(db2.canWrite(`test/users/${db2.publicKey}/balance_info`, "something")).to.equal(true)     
-        expect(db1.canWrite(`test/users/${db1.publicKey}/balance_info`, "something")).to.equal(false)        
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance_info`), [".write"], "something")[".write"]).to.equal(true)     
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/users/${db1.publicKey}/balance_info`), [".write"], "something")[".write"]).to.equal(false)        
     })
 
     it("validates old data and new data together", () => {
-        expect(db1.canWrite(`test/users/${db1.publicKey}/next_counter`, 11)).to.equal(true)
-        expect(db1.canWrite(`test/users/${db1.publicKey}/next_counter`, 12)).to.equal(false)        
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/users/${db1.publicKey}/next_counter`), [".write"], 11)[".write"]).to.equal(true)
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/users/${db1.publicKey}/next_counter`), [".write"], 12)[".write"]).to.equal(false)        
     })
 
     it("can handle nested wildcards", () => {
-        expect(db2.canWrite(`test/second_users/${db2.publicKey}/${db2.publicKey}`, "some value")).to.equal(true)
-        expect(db1.canWrite(`test/second_users/${db1.publicKey}/next_counter`, "some other value")).to.equal(false)        
+        expect(db2.getPermissisons(ChainUtil.queryParser(`test/second_users/${db2.publicKey}/${db2.publicKey}`), [".write"], "some value")[".write"]).to.equal(true)
+        expect(db1.getPermissisons(ChainUtil.queryParser(`test/second_users/${db1.publicKey}/next_counter`), [".write"], "some other value")[".write"]).to.equal(false)        
     })
     
 })

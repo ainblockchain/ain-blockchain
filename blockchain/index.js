@@ -32,7 +32,6 @@ class Blockchain{
     }
 
     static isValidChain(chain){
-    
         if(JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis())) {
             console.log("first block not genesis")
             return false
@@ -51,6 +50,7 @@ class Blockchain{
 
     replaceChain(newChain){
         // This operation is too slow !!!!! must speed up !!!!!!
+
         if (newChain.length <= this.chain.length){
             console.log('Received chain is not longer than current chain')
             return false;

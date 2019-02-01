@@ -67,7 +67,7 @@ class P2pServer {
             const data = JSON.parse(message);
             switch(data.type){
                 case MESSAGE_TYPES.chain:
-                    console.log("Received chain to consider adapting")
+                    console.log("Received chain to consider adapting!")
                     if (this.blockchain.replaceChain(data.chain)){
                         this.db.createDatabase(this.blockchain)
                     }

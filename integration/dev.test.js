@@ -71,9 +71,9 @@ describe('API Tests', () => {
   describe('/set ref', () => {
     it('set simple', () => {
       return chai.request(server3)
-          .post(`/set`).send({ref: ''})
+          .post(`/set`).send({ref: 'test/value', value: "something"})
           .then((res) => {
-            res.should.have.status(200);
+            res.should.have.status(201);
             res.body.should.be.deep.eql({code:0});
           });
     })

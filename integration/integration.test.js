@@ -31,24 +31,24 @@ const CHAIN_LOCATION = BLOCKCHAINS_DIR + "/" + "8080"
 
 // Data options
 RANDOM_OPERATION = [
-  ["set", {ref: "comeonnnnnnn", value: "testme"}],
-  ["set", {ref: "comeonnnnnnn", value: "no meeeee"}],
-  ["set", {ref: "comeon/nnnnnn", value: "through"}],
-  ["set", {ref: "comeonnnnnnn/new", value: {"new": "path"}}],
-  ["set", {ref: "builed/some/deep", value: {"place": {"next":1, "level": "down"}}}],
-  ["set", {ref: "builed/heliii", value: {"range": [1, 2, 3, 01, 4, 5]}}],
-  ["set", {ref: "b/u/i/l/e/d/hel", value: {"range": [1, 4, 5], "another": [234]}}],
-  ["set", {ref: "b/u/i/l/e/d/hel", value: "very nested"}],
-  ["set", {ref: "b/u/i/l/e/d/hel", value: {1:2,3:4,5:6}}],
-  ["set", {ref: "new/final/path", value: {"neste": [1, 2, 3, 4, 5]}}],
-  ["set", {ref: "new/final/path", value: {"more": {"now":12, "hellloooo": 123}}}],
-  ["increase", {diff: {"increase/first/level": 10, "increase/first/level2": 20}}],
-  ["increase", {diff: {"increase/second/level/deeper": 20, "increase/second/level/deeper": 1000}}],
-  ["increase", {diff: {"increase": 1}}],
-  ["increase", {diff: {"new":1, "b": 30}}],
+  ["set", {ref: "test/comeonnnnnnn", value: "testme"}],
+  ["set", {ref: "test/comeonnnnnnn", value: "no meeeee"}],
+  ["set", {ref: "test/comeon/nnnnnn", value: "through"}],
+  ["set", {ref: "test/comeonnnnnnn/new", value: {"new": "path"}}],
+  ["set", {ref: "test/builed/some/deep", value: {"place": {"next":1, "level": "down"}}}],
+  ["set", {ref: "test/builed/heliii", value: {"range": [1, 2, 3, 01, 4, 5]}}],
+  ["set", {ref: "test/b/u/i/l/e/d/hel", value: {"range": [1, 4, 5], "another": [234]}}],
+  ["set", {ref: "test/b/u/i/l/e/d/hel", value: "very nested"}],
+  ["set", {ref: "test/b/u/i/l/e/d/hel", value: {1:2,3:4,5:6}}],
+  ["set", {ref: "test/new/final/path", value: {"neste": [1, 2, 3, 4, 5]}}],
+  ["set", {ref: "test/new/final/path", value: {"more": {"now":12, "hellloooo": 123}}}],
+  ["increase", {diff: {"test/increase/first/level": 10, "test/increase/first/level2": 20}}],
+  ["increase", {diff: {"test/increase/second/level/deeper": 20, "test/increase/second/level/deeper": 1000}}],
+  ["increase", {diff: {"test/increase": 1}}],
+  ["increase", {diff: {"test/new":1, "test/b": 30}}],
   ["increase", {diff: {"test/increase": -10000, "test/increase": 10000}}],
-  ["increase", {diff: {"b/u": 10000}}],
-  ["increase", {diff: {"builed/some/deep/place/next": 100002}}]
+  ["increase", {diff: {"test/b/u": 10000}}],
+  ["increase", {diff: {"test/builed/some/deep/place/next": 100002}}]
 ]
 
 
@@ -101,6 +101,7 @@ describe('Integration Tests', () => {
           sleep(100)
         }
       }
+    
       if (METHOD == "POW"){
         syncRequest('GET', server3 + '/mine-transactions')
         sleep(100)
@@ -160,6 +161,14 @@ describe('Integration Tests', () => {
 
       it('all having correct number of blocks', () => {
         expect(numNewBlocks).to.equal(blocks.length - preTestChainInfo["numBlocks"])
+      })
+    })
+
+    describe('and rules', ()=> {
+      it('prevent users from restructed areas', () => {
+        return chai.request(server2).post(`/set`).send( {ref: "restricted/path", value: "anything"}).then((res) => {
+          res.should.have.status(401);
+        })
       })
     })
   })
