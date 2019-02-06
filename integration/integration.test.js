@@ -93,13 +93,11 @@ describe('Integration Tests', () => {
    
     beforeEach(() => {
       
-      for(var i=0; i<6; i++){
-        for(var j=0; j<SERVERS.length; j++){
+      for(var i=0; i<30; i++){
           random_operation = RANDOM_OPERATION[Math.floor(Math.random()*RANDOM_OPERATION.length)]
-          syncRequest("POST", SERVERS[j] + "/" + random_operation[0], {json: random_operation[1]})
+          syncRequest("POST", SERVERS[Math.floor(Math.random() * SERVERS.length)] + "/" + random_operation[0], {json: random_operation[1]})
           operationCounter++
           sleep(100)
-        }
       }
     
       if (METHOD == "POW"){

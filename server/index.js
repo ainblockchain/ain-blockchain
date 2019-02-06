@@ -19,6 +19,8 @@
 // Require process, so we can mock environment variables
 const process = require('process');
 const PORT = process.env.PORT || 8080;
+const {METHOD, FORGE_RATE} = require("../config")
+
 
 // Initiate logging
 const LOG = process.env.LOG || false;
@@ -62,7 +64,7 @@ app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
 
 const bc = new Blockchain(String(PORT));
-const db = Database.getDabase(bc)
+const db = Database.getDatabase(bc)
 const tp = new TransactionPool()
 const p2pServer = new P2pServer(db, bc, tp)
 const miner = new Miner(bc, tp, p2pServer)
@@ -104,6 +106,29 @@ app.get('/mine-transactions', (req, res) => {
     console.log(error)
   }
 })
+
+
+app.get('/stake', (req, res, next) => {
+  var statusCode = 201
+  var result = null
+
+  try{
+    result = db.stake(Number(req.query.ref))
+  } catch (error){
+    if(error instanceof InvalidPerissonsError){
+      statusCode = 401
+    } else {
+      statusCode = 400
+    }
+    console.log(error.stack)
+  }
+  res
+  .status(statusCode)
+  .set('Content-Type', 'application/json')
+  .send({code: result ? 0 : -1, result})
+  .end();
+})
+
 
 app.get('/get', (req, res, next) => {
   var statusCode = 200

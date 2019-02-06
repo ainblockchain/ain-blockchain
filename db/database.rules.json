@@ -1,6 +1,11 @@
 { "rules": {
     ".read": true,
     ".write": false,
+    "stakes": {
+        "$uid": {
+            ".write": "auth === '$uid'"
+        }
+    },
     "nested":{
         ".write": true
     },

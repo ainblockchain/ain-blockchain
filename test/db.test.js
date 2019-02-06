@@ -12,7 +12,7 @@ describe("DB", () => {
 
     beforeEach(() => {
         bc = new Blockchain("db-test")
-        db = DB.getDabase(bc)
+        db = DB.getDatabase(bc)
         test_db = {"ai": {"comcom": 123, "foo": "bar"}, "increase": 
                     {"value": 10, "nested": {"value": 20}}, 
                     "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
@@ -111,8 +111,8 @@ describe("DB rules", () => {
 
     beforeEach(() => {
         bc = new Blockchain("db-test")
-        db1 = DB.getDabase(bc)
-        db2 = DB.getDabase(bc)
+        db1 = DB.getDatabase(bc)
+        db2 = DB.getDatabase(bc)
         test_db = {
             "comcom": "unreadable value",
             "unspecified": {"nested": "readable"},

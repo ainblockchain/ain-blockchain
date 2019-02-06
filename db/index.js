@@ -11,7 +11,7 @@ class DB {
 
     }
 
-    static getDabase(blockchain){
+    static getDatabase(blockchain){
         const db = new DB()
         db.createDatabase(blockchain)
         return db
@@ -40,6 +40,10 @@ class DB {
             throw error
         }
         return result ? result : null
+    }
+
+    stake(stakeAmount){
+        return this.set(["stakes", this.publicKey].join("/"), stakeAmount)
     }
 
     set(queryPath, value){
