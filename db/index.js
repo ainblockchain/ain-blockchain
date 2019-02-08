@@ -17,10 +17,10 @@ class DB {
         return db
     }
 
-    get(queryPath){
+    get(queryPath, ruleCheck=true){
         var listQueryPath = ChainUtil.queryParser(queryPath)
 
-        if (!this.getPermissisons(listQueryPath, [".read"])[".read"]){
+        if (ruleCheck && !this.getPermissisons(listQueryPath, [".read"])[".read"]){
             throw new InvalidPerissonsError(`Invalid get permissons for ${queryPath}`)
         }
 
@@ -34,7 +34,7 @@ class DB {
             })
         } catch (error) {
             if (error instanceof TypeError){
-                console.log(error.stack)
+                console.log(error.message)
                 return null
             }
             throw error
@@ -46,12 +46,12 @@ class DB {
         return this.set(["stakes", this.publicKey].join("/"), stakeAmount)
     }
 
-    set(queryPath, value){
+    set(queryPath, value, ruleCheck=true){
 
         let valueCopy
         var listQueryPath = ChainUtil.queryParser(queryPath)
         // TODO: Find a better way to manage seeting of rules than this dodgy condition
-        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissisons(listQueryPath, [".read", ".write"], value)).includes(false)){
+        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && ruleCheck && Object.values(this.getPermissisons(listQueryPath, [".read", ".write"], value)).includes(false)){
             throw new InvalidPerissonsError(`Invalid set permissons for ${queryPath}`)
         }
         
@@ -83,17 +83,17 @@ class DB {
         return subDb
     }
 
-    increase(diff){
+    increase(diff, skipRuleCheck=false){
 
         for (var k in diff) {
-            if (this.get(k) && typeof this.get(k) != 'number') {
+            if (this.get(k, skipRuleCheck) && typeof this.get(k, skipRuleCheck) != 'number') {
                 return {code: -1, error_message: "Not a number type: " + k}
             }
         }
         var results = {}
         for (var k in diff) {
-            var result = (this.get(k) || 0) + diff[k]
-            this.set(k, result)
+            var result = (this.get(k, skipRuleCheck) || 0) + diff[k]
+            this.set(k, result, skipRuleCheck)
             results[k] = result
         }
         return {code: 0, result: results}
@@ -115,14 +115,15 @@ class DB {
         blockchain.chain.forEach(block => block.data.forEach(transaction => {
             outputs.push(transaction.output)
         }))
-        console.log(outputs)
         outputs.forEach(output => {
+            // This ruleCheck 'false' is used to add values that were written by a user with different auth permissions to their local database.
+            // This will need to be improved as it is unsafe 
             switch(output.type){
                 case "SET":
-                    this.set(output.ref, output.value)
+                    this.set(output.ref, output.value, false)
                     break
                 case "INCREASE": {
-                    this.increase(output.diff)
+                    this.increase(output.diff, false)
                     break
                 }
             }

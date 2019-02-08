@@ -56,6 +56,7 @@ const Blockchain = require('../blockchain');
 const TransactionPool = require('../db/transaction-pool')
 const Miner = require('./miner')
 const InvalidPerissonsError = require("../errors")
+const Validator = require('./validator') 
 
 
 const app = express();
@@ -66,7 +67,8 @@ app.use(express.json()); // support json encoded bodies
 const bc = new Blockchain(String(PORT));
 const db = Database.getDatabase(bc)
 const tp = new TransactionPool()
-const p2pServer = new P2pServer(db, bc, tp)
+const val = new Validator(db)
+const p2pServer = new P2pServer(db, bc, tp, val)
 const miner = new Miner(bc, tp, p2pServer)
 
 app.get('/', (req, res, next) => {
@@ -114,6 +116,9 @@ app.get('/stake', (req, res, next) => {
 
   try{
     result = db.stake(Number(req.query.ref))
+    console.log(`Successfully staked ${req.query.ref}`)
+    let transaction = db.createTransaction({type: "SET", ref: ["stakes", db.publicKey].join("/"), value: Number(req.query.ref)}, tp)
+    p2pServer.broadcastTransaction(transaction)
   } catch (error){
     if(error instanceof InvalidPerissonsError){
       statusCode = 401
@@ -206,3 +211,26 @@ app.listen(PORT, () => {
 p2pServer.listen()
 
 module.exports = app;
+
+if (METHOD == "POS"){
+
+  const cron = require("node-cron");
+  // schedule tasks to be run on the server
+
+  setTimeout(setCron,  1000);
+
+  function setCron(){
+    console.log("Setting Cron")
+    cron.schedule("*/10 * * * * *", function() {
+      if (p2pServer.votingRound.status === "SUCCESS" || p2pServer.votingRound.status === "FAILURE" ){
+        try{
+        p2pServer.startNewRound()
+        } catch (err){
+          console.log(err.stack)
+        }
+      } else {
+        console.log(`Current round status ${p2pServer.votingRound.status}`)
+      }
+  })
+  }
+}

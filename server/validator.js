@@ -11,7 +11,7 @@ class Validator{
 
     getRankedValidators(lastBlock){
         var orderedValidators = []
-        var stakeHolders = this.db.get("stakes")
+        var stakeHolders = this.getStakeHolders()
         var alphabeticallyOrderedStakeHolders  = Object.keys(stakeHolders).sort()
         var totalStakedAmount = Object.values(stakeHolders).reduce(function(a, b) { return a + b; }, 0);
         var lastBlockHash = ChainUtil.hash(lastBlock)
@@ -34,6 +34,12 @@ class Validator{
         }
         return orderedValidators
     }
+
+    getStakeHolders(){
+        return this.db.get("stakes")
+    }
+
+
 
 }
 

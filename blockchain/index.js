@@ -1,5 +1,5 @@
 
-const Block = require('./block')
+const {Block, MinedBlock, ForgedBlock} = require('./block')
 const {BLOCKCHAINS_DIR, METHOD} = require('../config') 
 const rimraf = require("rimraf")
 const path = require('path')
@@ -20,15 +20,17 @@ class Blockchain{
 
     addBlock(data){
         let block
-        // Now supportin POW and POS implementations
-        if (METHOD == "POW"){
-            block = Block.mineBlock(this.chain[this.chain.length -1], data);
-        } else {
-            block = Block.forgeBlock(this.chain[this.chain.length -1], data)
-        }
+        // Now supporting POW and POS implementations
+        block = MinedBlock.mineBlock(this.chain[this.chain.length -1], data);
         this.chain.push(block);
         this.writeChain()
         return block;
+    }
+
+    addForgedBlock(votingRound){
+        console.log(`Adding new block at height ${votingRound.height}`)
+        this.chain[votingRound.height] = votingRound.newBlock
+        this.writeChain()
     }
 
     static isValidChain(chain){
@@ -40,7 +42,8 @@ class Blockchain{
             const block = chain[i];
             const lastBlock = chain[i - 1];
 
-            if(block.lastHash !== lastBlock.hash || block.hash !== Block.blockHash(block)){
+            if(block.lastHash !== lastBlock.hash || block.hash !== (METHOD === "POW" ? MinedBlock.blockHash(block): ForgedBlock.blockHash(block))){
+                console.log(block.hash, ForgedBlock.blockHash(block))
                 console.log(`Invalid hashing for block ${i}`)
                 return false;
             }
@@ -103,7 +106,7 @@ class Blockchain{
                    fs.statSync(path.resolve(chain_path, file2)).mtime.getTime();
         });
         blockFiles.forEach(block => {
-            newChain.push(Block.loadBlock(chain_path + "/" + block))
+            newChain.push(MinedBlock.loadBlock(chain_path + "/" + block))
         })
 
         if (Blockchain.isValidChain(newChain)){

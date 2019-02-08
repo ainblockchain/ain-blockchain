@@ -78,6 +78,13 @@ describe('Integration Tests', () => {
       }, 0)
       console.log(`Initial block chain is ${preTestChainInfo["numBlocks"]} blocks long containing ${preTestChainInfo["numTransactions"]} database transactions` )
     numBlocks = preTestChainInfo["numBlocks"]
+
+    if(METHOD == "POS"){
+      for(var i=0; i<SERVERS.length; i++){
+        operationCounter++
+        syncRequest("GET", [SERVERS[i], "stake?ref=250"].join("/"))
+      }
+    }
   })
 
   after(() => {

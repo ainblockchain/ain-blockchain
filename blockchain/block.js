@@ -21,8 +21,6 @@ class Block {
         Timestamp : ${this.timestamp}
         Last Hash : ${this.lastHash.substring(0, 10)}
         Hash      : ${this.hash.substring(0, 10)}
-        Nonce     : ${this.nonce}
-        Difficulty: ${this.difficulty}
         Data      : ${this.data}`;
     }
 
@@ -34,14 +32,18 @@ class Block {
             data.push({output: {type: "SET", ref: "rules", 
                                 value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}})
         }   
-        return new this('Genesis time', '-----', 'f1r57-h45h', data, 0, DIFFICULTY);
+        return new this('Genesis time', '-----', 'f1r57-h45h', data, 0);
     }
 
-    static loadBlock(block_path){
-        // Returns block stored at the file path provided by "block_path"
-        var block_info = JSON.parse(fs.readFileSync(block_path.toString()))
-        return new this(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
-                        block_info["data"], block_info["nonce"], block_info["difficulty"])
+}
+
+class MinedBlock extends Block {
+
+    constructor(timestamp, lastHash, hash, data, nonce, difficulty){
+        super(timestamp, lastHash, hash, data)
+        this.nonce = nonce 
+        this.difficulty = difficulty || DIFFICULTY 
+
     }
 
     static mineBlock(lastBlock, data){
@@ -53,20 +55,11 @@ class Block {
         do{
             nonce++
             timestamp = Date.now()
-            difficulty = Block.adjustDifficulty(lastBlock, timestamp)
-            hash = Block.hash(timestamp, lastHash, data, nonce, difficulty)
+            difficulty = MinedBlock.adjustDifficulty(lastBlock, timestamp)
+            hash = MinedBlock.hash(timestamp, lastHash, data, nonce, difficulty)
         } while(hash.substring(0, difficulty) !== '0'.repeat(difficulty));
 
-        return new Block(timestamp, lastHash, hash, data, nonce, difficulty)
-    }
-
-    static forgeBlock(lastBlock, data){
-        var timestamp = Date.now()
-        return new Block(timestamp, lastBlock.hash,  Block.hash(timestamp, lastBlock.hash, data), data)
-    }
-
-    static hash(timestamp, lastHash, data, nonce, difficulty){
-        return ChainUtil.hash(`${timestamp}${lastHash}${data}${nonce}${difficulty}`).toString();
+        return new MinedBlock(timestamp, lastHash, hash, data, nonce, difficulty)
     }
 
     static adjustDifficulty(lastBlock, currentTime) {
@@ -77,15 +70,53 @@ class Block {
         return difficulty > 0 ? difficulty : 1
     }
 
+
     static blockHash(block){
-        if (METHOD === "POW"){
-            const {timestamp, lastHash, data, nonce, difficulty} = block;
-            return Block.hash(timestamp, lastHash, data, nonce, difficulty)
-        } else {
-            const {timestamp, lastHash, data,} = block;
-            return Block.hash(timestamp, lastHash, data)
-        }
+        const {timestamp, lastHash, data, nonce, difficulty} = block;
+        return MinedBlock.hash(timestamp, lastHash, data, nonce, difficulty)
     }
+
+    static hash(timestamp, lastHash, data, nonce, difficulty){
+        return ChainUtil.hash(`${timestamp}${lastHash}${data}${nonce}${difficulty}`).toString();
+    }
+
+    static loadBlock(block_path){
+        // Returns block stored at the file path provided by "block_path"
+        var block_info = JSON.parse(fs.readFileSync(block_path.toString()))
+        return new this(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
+                        block_info["data"], block_info["nonce"], block_info["difficulty"])
+    }
+
 }
 
-module.exports = Block;
+class ForgedBlock extends Block {
+
+
+    constructor(timestamp, lastHash, hash, data, height, signature){
+        super(timestamp, lastHash, hash, data)
+        this.height = height
+        this.signature = signature
+    }
+
+    static forgeBlock(votingRound, data, db){
+        var timestamp = Date.now()
+        var lastHash = votingRound.lastBlock.hash
+        var height = votingRound.height
+        var signature = db.sign(ChainUtil.hash(data))
+        var hash = ForgedBlock.hash(timestamp, lastHash, data, height, signature)       
+        return new ForgedBlock(timestamp, lastHash, hash, data, height, signature)
+    }
+
+    static blockHash(block){
+        const {timestamp, lastHash, data, height, signature} = block;
+        console.log(timestamp, lastHash, data, height, signature)
+        return ForgedBlock.hash(timestamp, lastHash, data, height, signature) 
+    }
+
+    static hash(timestamp, lastHash, data, height, signature){
+        return ChainUtil.hash(`${timestamp}${lastHash}${data}${height}${signature}`).toString();
+    }
+
+}
+
+module.exports = {Block, MinedBlock, ForgedBlock};

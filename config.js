@@ -11,7 +11,10 @@ const MESSAGE_TYPES = {
     clear_transactions: "CLEAR_TRANSACTIONS",
     server_register : "SERVER_REGISTER",
     forge: "FORGE",
-    peers: "PEERS"
+    peers: "PEERS",
+    proposed_block: "PROPOSED_BLOCK",
+    pre_vote: "PRE_VOTE",
+    pre_COMMIT: "PRE_COMMIT"
 }
 
 module.exports = {DIFFICULTY, MINE_RATE, RULES_FILE_PATH, BLOCKCHAINS_DIR, METHOD, MESSAGE_TYPES, FORGE_RATE}

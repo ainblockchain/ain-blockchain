@@ -6,7 +6,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const {RULES_FILE_PATH} = require('../config')
 
-describe("DB", () => {
+describe("Validator", () => {
     let db, val, bc
 
     beforeEach(() => {

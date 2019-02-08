@@ -1,5 +1,6 @@
 const Blockchain = require('../blockchain/index');
-const Block = require('../blockchain/block')
+const {METHOD} = require("../config")
+const {Block} = require('../blockchain/block')
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require("rimraf");
@@ -31,8 +32,10 @@ describe('Blockchain', () => {
     });
 
     it('validates a valid chain', () => {
-        bc2.addBlock('foo');
-        expect(Blockchain.isValidChain(bc2.chain)).to.equal(true)
+        if(METHOD == "POW"){
+            bc2.addBlock('foo');
+            expect(Blockchain.isValidChain(bc2.chain)).to.equal(true)
+        }
     });
 
     it('invalidates chain with corrupt genesis block', () => {
@@ -47,9 +50,11 @@ describe('Blockchain', () => {
     });
 
     it('replaces chain with valid chain', () => {
-        bc2.addBlock('goo');
-        bc.replaceChain(bc2.chain);
-        expect(bc.chain).to.equal(bc2.chain);
+        if(METHOD == "POW"){
+            bc2.addBlock('goo');
+            bc.replaceChain(bc2.chain);
+            expect(bc.chain).to.equal(bc2.chain);
+        }
     });
 
     it('does not replace chain with <= to chain', () => {
@@ -59,10 +64,12 @@ describe('Blockchain', () => {
     })
 
     it("writes blocks to specified file", () => {
-        bc.addBlock('foo')
-        bc.addBlock([1,2,3,4])
-        bc.addBlock({ref:123})
-        sleep(500)
-        assert.deepEqual(Blockchain.loadChain(bc._blockchainDir()), bc.chain)
+        if(METHOD == "POW"){
+            bc.addBlock('foo')
+            bc.addBlock([1,2,3,4])
+            bc.addBlock({ref:123})
+            sleep(500)
+            assert.deepEqual(Blockchain.loadChain(bc._blockchainDir()), bc.chain)
+        }
     })
 })
