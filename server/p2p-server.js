@@ -71,6 +71,7 @@ class P2pServer {
                             this.transactionPool.addTransaction(data.transaction)
                             break
                         case MESSAGE_TYPES.clear_transactions:
+                            // TODO: Add only transactions on blockchain cleared functionality
                             this.transactionPool.clear()
                             break
                         case MESSAGE_TYPES.proposed_block:
@@ -89,7 +90,7 @@ class P2pServer {
                             this.votingRound.registerPreCommit(data.address, data.preCommit)
                             if (this.votingRound.havePreCommitsBeenReceived()){
                                 this.blockchain.addForgedBlock(this.votingRound)
-                                this.transactionPool.clear()
+                                this.transactionPool.removeCommitedTransactions(this.votingRound.newBlock)
                                 this.votingRound.status = "SUCCESS"
                                 this.db.createDatabase(this.blockchain)
                             

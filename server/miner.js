@@ -8,7 +8,7 @@ class Miner {
     mine() {
         const block = this.blockchain.addBlock(this.transactionPool.validTransactions())
         this.p2pServer.syncChains()
-        this.transactionPool.clear()
+        this.transactionPool.removeCommitedTransactions(block)
         this.p2pServer.broadcastClearTransactions()
         return block
     }
