@@ -17,10 +17,11 @@ class DB {
         return db
     }
 
-    get(queryPath, ruleCheck=true){
+    get(queryPath, auth){
+        auth = auth || this.publicKey
         var listQueryPath = ChainUtil.queryParser(queryPath)
 
-        if (ruleCheck && !this.getPermissisons(listQueryPath, [".read"])[".read"]){
+        if (!this.getPermissisons(listQueryPath, auth, [".read"])[".read"]){
             throw new InvalidPerissonsError(`Invalid get permissons for ${queryPath}`)
         }
 
@@ -34,7 +35,7 @@ class DB {
             })
         } catch (error) {
             if (error instanceof TypeError){
-                console.log(error.message)
+                //console.log(error.message)
                 return null
             }
             throw error
@@ -46,12 +47,12 @@ class DB {
         return this.set(["stakes", this.publicKey].join("/"), stakeAmount)
     }
 
-    set(queryPath, value, ruleCheck=true){
-
+    set(queryPath, value, auth=null){
         let valueCopy
         var listQueryPath = ChainUtil.queryParser(queryPath)
         // TODO: Find a better way to manage seeting of rules than this dodgy condition
-        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && ruleCheck && Object.values(this.getPermissisons(listQueryPath, [".read", ".write"], value)).includes(false)){
+        console.log(listQueryPath)
+        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissisons(listQueryPath, auth, [".read", ".write"], value)).includes(false)){
             throw new InvalidPerissonsError(`Invalid set permissons for ${queryPath}`)
         }
         
@@ -83,17 +84,16 @@ class DB {
         return subDb
     }
 
-    increase(diff, skipRuleCheck=false){
-
+    increase(diff, auth=null){
         for (var k in diff) {
-            if (this.get(k, skipRuleCheck) && typeof this.get(k, skipRuleCheck) != 'number') {
+            if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
                 return {code: -1, error_message: "Not a number type: " + k}
             }
         }
         var results = {}
         for (var k in diff) {
-            var result = (this.get(k, skipRuleCheck) || 0) + diff[k]
-            this.set(k, result, skipRuleCheck)
+            var result = (this.get(k, auth) || 0) + diff[k]
+            this.set(k, result, auth)
             results[k] = result
         }
         return {code: 0, result: results}
@@ -112,27 +112,30 @@ class DB {
     createDatabase(blockchain){
         this.db = {}
         let outputs = []
+ 
         blockchain.chain.forEach(block => block.data.forEach(transaction => {
-            outputs.push(transaction.output)
+            outputs.push([transaction.output, transaction.address])
         }))
         outputs.forEach(output => {
             // This ruleCheck 'false' is used to add values that were written by a user with different auth permissions to their local database.
             // This will need to be improved as it is unsafe 
-            switch(output.type){
+            switch(output[0].type){
                 case "SET":
-                    this.set(output.ref, output.value, false)
+                    console.log(output[0].ref, output[0].value, output[1])
+                    this.set(output[0].ref, output[0].value, output[1])
                     break
                 case "INCREASE": {
-                    this.increase(output.diff, false)
+                    this.increase(output[0].diff, output[1])
                     break
                 }
             }
         })
     }
 
-    getPermissisons(queryPath, permissionQueries, newValue) {
+    getPermissisons(queryPath, auth, permissionQueries, newValue) {
         // Checks permissions for thegien query path. Specify permissionQueries as a list of the permissions of interest i.e [".read", ".write"]
         let lastRuleSet
+        auth = auth || this.publicKey
         var rules = {}
         var wildCards = {}
         var currentRuleSet = this.db["rules"]
@@ -160,18 +163,18 @@ class DB {
         } while(currentRuleSet &&  i <= queryPath.length);
         for(var permission in rules)
             if (typeof rules[permission] === "string"){
-                rules[permission] = this.verifyAuth(rules[permission], wildCards, queryPath, newValue)
+                rules[permission] = this.verifyAuth(rules[permission], wildCards, queryPath, newValue, auth)
             }
 
-        console.log(`Access for user ${this.publicKey.substring(0, 10)} for path ${queryPath.join("/")} is ${Object.values(rules)}`)
+        console.log(`Access for user ${auth.substring(0, 10)} for path ${queryPath.join("/")} is ${Object.values(rules)}`)
         return rules
     }
 
 
-    verifyAuth(ruleString, wildCards, queryPath, newValue){
+    verifyAuth(ruleString, wildCards, queryPath, newValue, auth){
 
         if (ruleString.includes("auth")){
-            ruleString = ruleString.replace(/auth/g, `'${this.publicKey}'`)
+            ruleString = ruleString.replace(/auth/g, `'${auth}'`)
         } 
         if (Object.keys(wildCards).length > 0){
             for(var wildCard in wildCards){

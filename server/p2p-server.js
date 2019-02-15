@@ -64,9 +64,9 @@ class P2pServer {
                             break
                         case MESSAGE_TYPES.transaction:
                             if(data.transaction.output.type === "SET"){
-                                this.db.set(data.transaction.output.ref, data.transaction.output.value, false)
+                                this.db.set(data.transaction.output.ref, data.transaction.output.value, data.transaction.address)
                             } else if (data.transaction.output.type === "INCREASE"){
-                                this.db.increase(data.transaction.output.diff, false)
+                                this.db.increase(data.transaction.output.diff, data.transaction.address)
                             }
                             this.transactionPool.addTransaction(data.transaction)
                             break
@@ -75,9 +75,14 @@ class P2pServer {
                             this.transactionPool.clear()
                             break
                         case MESSAGE_TYPES.proposed_block:
-                            var preVote = this.votingRound.validateAndAddBlock(data.block)
-                            this.votingRound.registerPreVote(this.db.publicKey, preVote)
-                            this.broadcastPreVote(preVote)
+                            if (this.votingRound.height != this.blockchain.chain.length){
+                                console.log(`Unprepared proposal height votingRoundHeight=${this.votingRound.height}, blockchainHeight=${this.blockchain.chain.length}`)
+                            }
+                            if (this.votingRound.newBlock === null){
+                                var preVote = this.votingRound.validateAndAddBlock(data.block, this.blockchain)
+                                this.votingRound.registerPreVote(this.db.publicKey, preVote)
+                                this.broadcastPreVote(preVote)
+                            }
                             break
                         case MESSAGE_TYPES.pre_vote:
                             this.votingRound.registerPreVote(data.address, data.preVote)
@@ -87,13 +92,15 @@ class P2pServer {
                             }
                             break
                         case MESSAGE_TYPES.pre_commit:
-                            this.votingRound.registerPreCommit(data.address, data.preCommit)
-                            if (this.votingRound.havePreCommitsBeenReceived()){
-                                this.blockchain.addForgedBlock(this.votingRound)
-                                this.transactionPool.removeCommitedTransactions(this.votingRound.newBlock)
-                                this.votingRound.status = "SUCCESS"
-                                this.db.createDatabase(this.blockchain)
-                            
+                            if (this.votingRound.status == "INCOMPLETE"){
+                                this.votingRound.registerPreCommit(data.address, data.preCommit)
+                                if (this.votingRound.havePreCommitsBeenReceived() && this.votingRound.newBlock != null){
+                                    this.blockchain.addForgedBlock(this.votingRound)
+                                    this.transactionPool.removeCommitedTransactions(this.votingRound.newBlock)
+                                    this.votingRound.status = "SUCCESS"
+                                    this.db.createDatabase(this.blockchain)
+                                
+                                }
                             }
                             break
                 }
@@ -148,19 +155,21 @@ class P2pServer {
         this.intervals = []
         this.votingRound = this.votingRound.getNextRound(this.val)
         this.checkIfForger()
+        while(Date.now() % 1000){}
         var iterationInterval = setInterval(() => {
             this.startNextIteration()
-        }, 10000)
+        }, 3000)
         this.intervals.push(iterationInterval)
         
     }
 
     checkIfForger(){
         console.log(`Designated forger is ${this.votingRound.validators[this.votingRound.iteration]}`)
-        if (this.votingRound.validators[this.votingRound.iteration] === this.db.publicKey){
+        if (this.votingRound.status != "SUCCESS" && this.votingRound.validators[this.votingRound.iteration] === this.db.publicKey){
             console.log("Selected as designated forger")
             const block = ForgedBlock.forgeBlock(this.votingRound, this.transactionPool.validTransactions(), this.db)
             this.votingRound.validateAndAddBlock(block)
+            this.votingRound.registerPreVote(this.publicKey, true)
             this.broadcastBlock(block)
         }
         

@@ -221,7 +221,7 @@ if (METHOD == "POS"){
 
   function setCron(){
     console.log("Setting Cron")
-    cron.schedule("*/10 * * * * *", function() {
+    cron.schedule("*/6 * * * * *", function() {
       if (p2pServer.votingRound.status === "SUCCESS" || p2pServer.votingRound.status === "FAILURE" ){
         try{
         p2pServer.startNewRound()

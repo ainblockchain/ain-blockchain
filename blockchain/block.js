@@ -28,9 +28,10 @@ class Block {
         // Gensis block will set all the rules for the database if any rules are
         // specified in the proj/database/database.rules.json 
         const data = []
+        // Hack here to simulate a transaction for the initial settting of rules
         if (fs.existsSync(RULES_FILE_PATH)) {
             data.push({output: {type: "SET", ref: "rules", 
-                                value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}})
+                                value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}, address: null})
         }   
         return new this('Genesis time', '-----', 'f1r57-h45h', data, 0);
     }
@@ -115,6 +116,15 @@ class ForgedBlock extends Block {
 
     static hash(timestamp, lastHash, data, height, signature){
         return ChainUtil.hash(`${timestamp}${lastHash}${data}${height}${signature}`).toString();
+    }
+
+    toString(){
+        return `Block -
+        Timestamp : ${this.timestamp}
+        Last Hash : ${this.lastHash.substring(0, 10)}
+        Hash      : ${this.hash.substring(0, 10)}
+        Data      : ${this.data}
+        Height    : ${this.height}`;
     }
 
 }
