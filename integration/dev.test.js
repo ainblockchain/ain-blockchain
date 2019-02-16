@@ -1,4 +1,3 @@
-
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const assert = chai.assert;
@@ -47,7 +46,7 @@ describe('API Tests', () => {
 
   beforeEach(() => {
     return chai.request(server2)
-        .post(`/set`).send({ref: 'test', value: 1})
+        .post(`/set`).send({ref: 'test/test', value: 1})
       
   });
 
@@ -60,7 +59,7 @@ describe('API Tests', () => {
     it('get simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get(`/get?ref=test`)
+          .get(`/get?ref=test/test`)
           .then((res) => {
             res.should.have.status(200);
             res.body.should.be.deep.eql({code:0, result: 1});
@@ -83,11 +82,46 @@ describe('API Tests', () => {
     it('increase simple', () => {
       sleep(200)
       return chai.request(server4)
-          .post(`/increase`).send({diff: {test: 10}})
+          .post(`/increase`).send({diff: {"test/test": 10}})
           .then((res) => {
             res.should.have.status(200);
-            res.body.should.be.deep.eql({code:0, result: {test: 11}});
+            res.body.should.be.deep.eql({code:0, result: {"test/test": 11}});
           });
+    })
+  })
+
+  describe('/update', () => {
+    it('update simple', () => {
+      return chai.request(server2)
+          .post(`/update`).send({data: {"test/balance": {a:1, b:2}}})
+          .then((res) => {
+            res.should.have.status(201);
+            res.body.should.be.deep.eql({code:0, result: true});
+          });
+     })
+   })
+
+   describe('/batch', () => {
+    it('batch simple', () => {
+      return chai.request(server1)
+          .post(`/batch`).send({
+            batch_list: [
+              {op: 'set', ref: 'test/a', value: 1},
+              {op: 'increase', diff: {"test/test": 10}},
+              {op: 'update', data: {"test/balance": {a:1, b:2}}},
+              {op: 'get', ref: 'test/a'},
+              {op: 'get', ref: 'test/balance/b'}
+          ]})
+          .then((res) => {
+            res.should.have.status(200);
+            res.body.should.be.deep.eql([
+              true,
+              {"test/test": 11},
+              true,
+              1,
+              2
+            ]);
+      });
     })
   })
 })

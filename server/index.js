@@ -134,6 +134,17 @@ app.get('/stake', (req, res, next) => {
   .end();
 })
 
+app.post('/update', (req, res, next) => {
+  var data = req.body.data;
+  let result = db.update(data)
+  let transaction = db.createTransaction({type: "UPDATE", data}, tp)
+  p2pServer.broadcastTransaction(transaction)
+  res
+    .status(201)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+})
 
 app.get('/get', (req, res, next) => {
   var statusCode = 200
@@ -174,6 +185,22 @@ app.post('/set', (req, res, next) => {
   res.status(statusCode).set('Content-Type', 'application/json').send({code: statusCode < 299? 0: 1}).end();
 })
 
+app.post('/batch', (req, res, next) => {
+  var batch_list = req.body.batch_list
+  try{
+    var result_list = db.batch(batch_list)
+    let transaction = db.createTransaction({type: "BATCH", batch_list}, tp)
+    p2pServer.broadcastTransaction(transaction)
+  }catch (err){
+    console.log(err)
+  }
+  res
+    .status(200)
+    .set('Content-Type', 'application/json')
+    .send(result_list)
+    .end();
+})
+
 app.post('/increase', (req, res, next) => {
   var statusCode = 201
   try{
@@ -193,7 +220,7 @@ app.post('/increase', (req, res, next) => {
   res
   .status(200)
   .set('Content-Type', 'application/json')
-  .send(result)
+  .send({code: result ? 0 : -1, result})
   .end();
 })
 

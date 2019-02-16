@@ -17,7 +17,7 @@ class TransactionPool {
         // Method now removes invalid transactions befroe returning valid ones ! This is too 
         this.transactions = this.transactions.filter(transaction => {
 
-            if (!(["SET", "INCREASE"].indexOf(transaction.output.type) > -1)){
+            if (!(["SET", "INCREASE", "UPDATE", "BATCH"].indexOf(transaction.output.type) > -1)){
                 console.log(`Invalid transaction type ${transaction.output.type}.`)
                 return
             }

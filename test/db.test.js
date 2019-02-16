@@ -65,13 +65,13 @@ describe("DB", () => {
 
         it("increasing one value succesfully", () => {
             assert.deepEqual(db.increase({"test/increase/value": 10}), 
-                                         {code: 0, result: {"test/increase/value": 20}})
+                                         {"test/increase/value": 20})
             expect(db.get("test/increase/value")).to.equal(20)
         })
 
         it("decrementing one value succesfully", () => {
             assert.deepEqual(db.increase({"test/increase/value": -9}), 
-                                         {code: 0, result: {"test/increase/value": 1}})
+                                         {"test/increase/value": 1})
             expect(db.get("test/increase/value")).to.equal(1)
         })
 
@@ -82,13 +82,13 @@ describe("DB", () => {
 
         it("creating and increasing given path from 0 if not currently in database", () => {
             assert.deepEqual(db.increase({"test/completely/new/path/test": 100}), 
-                                         {code: 0, result: {"test/completely/new/path/test": 100}})
+                                         {"test/completely/new/path/test": 100})
             expect(db.get("test/completely/new/path/test")).to.equal(100)
         })
 
         it("incrementing multiple paths if provided in initial diff dict", () => {
             assert.deepEqual(db.increase({"test/completely/new/path/test": 100, "test/increase/value": 10, "test/increase/nested/value": 10}), 
-                {code: 0, result: {"test/completely/new/path/test": 100, "test/increase/value": 20, "test/increase/nested/value": 30}})
+                {"test/completely/new/path/test": 100, "test/increase/value": 20, "test/increase/nested/value": 30})
                 expect(db.get("test/completely/new/path/test")).to.equal(100)
                 expect(db.get("test/increase/value")).to.equal(20)
                 expect(db.get("test/increase/nested/value")).to.equal(30)

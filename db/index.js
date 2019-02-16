@@ -70,6 +70,30 @@ class DB {
             var refKey = listQueryPath[listQueryPath.length - 1]
             this._forcePath(pathToKey)[refKey] = valueCopy
         } 
+        return true
+    }
+
+    update(data, auth=null){
+        for (let key in data) {
+            this.set(key, data[key], auth)
+          }
+          return true
+    }
+
+    batch(batch_list, auth=null){
+        var result_list = []
+        batch_list.forEach((item) => {
+            if (item.op === 'set') {
+              result_list.push(this.set(item.ref, item.value, auth))
+            } else if (item.op === 'increase') {
+              result_list.push(this.increase(item.diff, auth))
+            } else if (item.op === 'get') {
+              result_list.push(this.get(item.ref, auth))
+            } else if (item.op === 'update') {
+              result_list.push(this.update(item.data, auth))
+            }
+          })
+          return result_list
     }
 
     _forcePath(listQueryPath){
@@ -87,6 +111,7 @@ class DB {
     increase(diff, auth=null){
         for (var k in diff) {
             if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
+                // TODO: Raise rerror here
                 return {code: -1, error_message: "Not a number type: " + k}
             }
         }
@@ -96,7 +121,7 @@ class DB {
             this.set(k, result, auth)
             results[k] = result
         }
-        return {code: 0, result: results}
+        return results
     }
 
     createTransaction(data, transactionPool){
@@ -121,11 +146,17 @@ class DB {
             // This will need to be improved as it is unsafe 
             switch(output[0].type){
                 case "SET":
-                    console.log(output[0].ref, output[0].value, output[1])
                     this.set(output[0].ref, output[0].value, output[1])
                     break
                 case "INCREASE": {
                     this.increase(output[0].diff, output[1])
+                    break
+                }
+                case "UPDATE":
+                    this.set(output[0].data, output[1])
+                    break
+                case "BATCH": {
+                    this.increase(output[0].batch_list, output[1])
                     break
                 }
             }
