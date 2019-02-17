@@ -36,7 +36,7 @@ RANDOM_OPERATION = [
   ["set", {ref: "test/comeon/nnnnnn", value: "through"}],
   ["set", {ref: "test/comeonnnnnnn/new", value: {"new": "path"}}],
   ["set", {ref: "test/builed/some/deep", value: {"place": {"next":1, "level": "down"}}}],
-  ["set", {ref: "test/builed/heliii", value: {"range": [1, 2, 3, 01, 4, 5]}}],
+  ["set", {ref: "test/builed/heliii", value: {"range": [1, 2, 3, 1, 4, 5]}}],
   ["set", {ref: "test/b/u/i/l/e/d/hel", value: {"range": [1, 4, 5], "another": [234]}}],
   ["set", {ref: "test/b/u/i/l/e/d/hel", value: "very nested"}],
   ["set", {ref: "test/b/u/i/l/e/d/hel", value: {1:2,3:4,5:6}}],
@@ -48,7 +48,24 @@ RANDOM_OPERATION = [
   ["increase", {diff: {"test/new":1, "test/b": 30}}],
   ["increase", {diff: {"test/increase": -10000, "test/increase": 10000}}],
   ["increase", {diff: {"test/b/u": 10000}}],
-  ["increase", {diff: {"test/builed/some/deep/place/next": 100002}}]
+  ["increase", {diff: {"test/builed/some/deep/place/next": 100002}}],
+  ["update", {data: {"test/increase/first/level": 10, "test/increase/first/level2": 20}}],
+  ["update", {data: {"test/increase/second/level/deeper": 20, "test/increase/second/level/deeper": 1000}}],
+  ["update", {data: {"test/increase": 1}}],
+  ["update", {data: {"test/new":1, "test/b": 30}}],
+  ["update", {data: {"test/increase": 10000, "test/increase": 10000}}],
+  ["update", {data: {"test/b/u": 10000}}],
+  ["update", {data: {"test/builed/some/deep/place/next": 100002}}],
+  ["batch", {batch_list: [{op: "set", ref: "test/comeonnnnnnn", value: "testme"}, {op: "update", data: {"test/b/u": 10000}}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/comeonnnnnnn", value: "no meeeee"}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/comeon/nnnnnn", value: "through"}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/comeonnnnnnn/new", value: {"new": "path"}}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/builed/some/deep", value: {"place": {"next":1, "level": "down"}}}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/builed/heliii", value: {"range": [1, 2, 3, 1, 4, 5]}}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/b/u/i/l/e/d/hel", value: {"range": [1, 4, 5], "another": [234]}}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/b/u/i/l/e/d/hel", value: "very nested"}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/b/u/i/l/e/d/hel", value: {1:2,3:4,5:6}}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/new/final/path", value: {"neste": [1, 2, 3, 4, 5]}}]}]
 ]
 
 

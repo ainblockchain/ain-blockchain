@@ -153,10 +153,10 @@ class DB {
                     break
                 }
                 case "UPDATE":
-                    this.set(output[0].data, output[1])
+                    this.update(output[0].data, output[1])
                     break
                 case "BATCH": {
-                    this.increase(output[0].batch_list, output[1])
+                    this.batch(output[0].batch_list, output[1])
                     break
                 }
             }

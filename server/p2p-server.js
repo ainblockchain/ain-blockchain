@@ -68,7 +68,7 @@ class P2pServer {
                             } else if (data.transaction.output.type === "INCREASE"){
                                 this.db.increase(data.transaction.output.diff, data.transaction.address)
                             } else if(data.transaction.output.type === "BATCH"){
-                                this.db.set(data.transaction.output.batch_list, data.transaction.address)
+                                this.db.batch(data.transaction.output.batch_list, data.transaction.address)
                             } else if (data.transaction.output.type === "UPDATE"){
                                 this.db.increase(data.transaction.output.data, data.transaction.address)
                             }
