@@ -1,6 +1,9 @@
 { "rules": {
     ".read": true,
     ".write": false,
+    "afan": {
+        ".write": true
+    },
     "stakes": {
         "$uid": {
             ".write": "auth === '$uid'"

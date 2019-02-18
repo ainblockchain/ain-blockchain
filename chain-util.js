@@ -25,6 +25,8 @@ class ChainUtil {
     }
 
     static queryParser(queryString) {
+        // Need to remove quotes that come in 
+        var queryString = queryString.replace(/^"(.*)"$/, '$1')
         var queryList = queryString.split("/").filter(endpoint => {
             if(endpoint) {
               return endpoint
