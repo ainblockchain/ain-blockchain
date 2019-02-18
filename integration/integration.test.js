@@ -4,7 +4,7 @@ const assert = chai.assert;
 const should = chai.should();
 const spawn = require("child_process").spawn;
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../" 
-const TRACKER_SERVER = PROJECT_ROOT + "server/tracker-server.js"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "server/index.js"
 const sleep = require('system-sleep');
 const expect = chai.expect
@@ -147,8 +147,8 @@ describe('Integration Tests', () => {
     })
 
     it("will sync to new peers on startup", () => {
-      const new_server = "http://localhost:8085"
-      const new_server_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5006, PORT: 8085}})
+      const new_server = "http://localhost:8090"
+      const new_server_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5006, PORT: 8090}})
       sleep(500)
       base_db = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8"))
       return chai.request(new_server).get(`/blocks`).then((res) => {

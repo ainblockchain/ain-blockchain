@@ -4,7 +4,7 @@ const assert = chai.assert;
 const should = chai.should();
 const spawn = require("child_process").spawn;
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../" 
-const TRACKER_SERVER = PROJECT_ROOT + "server/tracker-server.js"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "server/index.js"
 const sleep = require('system-sleep');
 chai.use(chaiHttp);
@@ -26,11 +26,11 @@ describe('API Tests', () => {
     sleep(500)
     server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5001, PORT: 8085}})
     sleep(500)
-    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5002, PORT: 8089}})
+    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5002, PORT: 8089}})
     sleep(500)
-    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5003, PORT: 8087}})
+    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8087}})
     sleep(500)
-    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5004, PORT: 8088}})
+    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8088}})
     sleep(500)
 
   });

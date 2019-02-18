@@ -9,7 +9,7 @@ const {BLOCKCHAINS_DIR} = require('../config')
 const sleep = require('system-sleep')
 const spawn = require("child_process").spawn;
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../" 
-const TRACKER_SERVER = PROJECT_ROOT + "server/tracker-server.js"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "server/index.js"
 
 chai.use(chaiHttp);
