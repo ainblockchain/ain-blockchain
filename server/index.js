@@ -19,7 +19,7 @@
 // Require process, so we can mock environment variables
 const process = require('process');
 const PORT = process.env.PORT || 8080;
-const {METHOD, FORGE_RATE} = require("../config")
+const {METHOD} = require("../config")
 
 
 // Initiate logging
@@ -115,10 +115,7 @@ app.get('/stake', (req, res, next) => {
   var result = null
 
   try{
-    result = db.stake(Number(req.query.ref))
-    console.log(`Successfully staked ${req.query.ref}`)
-    let transaction = db.createTransaction({type: "SET", ref: ["stakes", db.publicKey].join("/"), value: Number(req.query.ref)}, tp)
-    p2pServer.broadcastTransaction(transaction)
+    result = stake(req.query.ref)
   } catch (error){
     if(error instanceof InvalidPerissonsError){
       statusCode = 401
@@ -238,6 +235,20 @@ app.listen(PORT, () => {
 p2pServer.listen()
 
 module.exports = app;
+
+
+if (process.env.STAKE){
+  stake(process.env.STAKE)
+}
+
+function stake(stakeAmount){
+  stakeAmount = Number(stakeAmount)
+  var result = db.stake(stakeAmount)
+  console.log(`Successfully staked ${stakeAmount}`)
+  let transaction = db.createTransaction({type: "SET", ref: ["stakes", db.publicKey].join("/"), value: stakeAmount}, tp)
+  p2pServer.broadcastTransaction(transaction)
+  return result
+}
 
 if (METHOD == "POS"){
 
