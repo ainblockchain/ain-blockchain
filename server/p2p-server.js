@@ -16,7 +16,7 @@ const {
     getForger,
     registerForNextRound
 } =  require('./blockchain-voting-interface')
-const WAIT_TIME_FOR_STAKING = 40000
+const WAIT_TIME_FOR_STAKING = 20000
 
 
 
@@ -272,7 +272,7 @@ class P2pServer {
                 this.broadcastTransaction(registerForNextRound(this.blockchain.height(), this.db, this.transactionPool))
                 this.checkIfForger()
 
-                }, 15000)
+                }, 10000)
         }
         console.log(`New blockchain height is ${this.blockchain.height()}`)
 

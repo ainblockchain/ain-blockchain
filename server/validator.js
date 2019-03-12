@@ -12,11 +12,8 @@ function getForger(stakeHolders, bc){
     var cumulativeStakeFromPotentialValidators = 0
     var randomNumGenerator = seedrandom(seed)
     var targetValue = randomNumGenerator() * totalStakedAmount
-    console.log(seed, targetValue, stakeHolders)
-    console.log("================================")
     for(var i=0; i < alphabeticallyOrderedStakeHolders.length; i++){
         cumulativeStakeFromPotentialValidators += stakeHolders[alphabeticallyOrderedStakeHolders[i]]
-        console.log(`Cum stake ${cumulativeStakeFromPotentialValidators} from ${alphabeticallyOrderedStakeHolders[i]} and number ${i}`)
         if(targetValue < cumulativeStakeFromPotentialValidators){
             console.log(`Forger is ${alphabeticallyOrderedStakeHolders[i]}`)
             return alphabeticallyOrderedStakeHolders[i]

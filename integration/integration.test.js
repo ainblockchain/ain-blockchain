@@ -21,13 +21,9 @@ const rimraf = require("rimraf")
 
 // Server configurations
 const server1 = 'http://localhost:8080'
-// const server2 = 'http://localhost:8081'
+const server2 = 'http://localhost:8081'
 const server3 = 'http://localhost:8082'
 const server4 = 'http://localhost:8083'
-const server2 = 'http://localhost:8089'
-// const server2 = 'http://localhost:8079'
-// const server3 = 'http://localhost:8087'
-// const server4 = 'http://localhost:8070'
 const SERVERS = [server1, server2, server3, server4]
 const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true, STAKE: 250}, {P2P_PORT:5002, PORT: 8081, LOG: true, STAKE: 250},
                        {P2P_PORT:5003, PORT: 8082, LOG: true, STAKE: 250}, {P2P_PORT:5004, PORT: 8083, LOG: true, STAKE: 250}]
@@ -78,39 +74,46 @@ RANDOM_OPERATION = [
 
 describe('Integration Tests', () => {
   let procs = []
-  let preTestChainInfo  = {}
+  // let preTestChainInfo  = {}
   let operationCounter = 0
   let numNewBlocks = 0
-  let numBlocks
+  let numBlocks, numBlocksOnStartup
   let sentOperations = []
 
-  // before(() => {
-  //   // Start up all servers
-  //   var tracker_proc = spawn('node', [TRACKER_SERVER])
-  //   procs.push(tracker_proc)
-  //   sleep(100)
-  //   for(var i=0; i<ENV_VARIABLES.length; i++){
-  //     var proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]})
-  //     sleep(1500)
-  //     procs.push(proc)
-  //   };
+  before(() => {
+    // Start up all servers
+    var tracker_proc = spawn('node', [TRACKER_SERVER])
+    procs.push(tracker_proc)
+    sleep(100)
+    for(var i=0; i<ENV_VARIABLES.length; i++){
+      var proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]})
+      sleep(1000)
+      procs.push(proc)
+    };
+    sleep(25000)
 
-  //   var chain = Blockchain.loadChain(CHAIN_LOCATION)
-  //   preTestChainInfo["numBlocks"] = chain.length
-  //   preTestChainInfo["numTransactions"] = chain.reduce((acc, block) => {
-  //       return acc + block.data.length
-  //     }, 0)
-  //     console.log(`Initial block chain is ${preTestChainInfo["numBlocks"]} blocks long containing ${preTestChainInfo["numTransactions"]} database transactions` )
-  //   numBlocks = preTestChainInfo["numBlocks"]
-  // })
+    // TODO: REWRITE LOADCHAIN FUNCTION TO HANDLE POS !!
+    // var chain = Blockchain.loadChain(CHAIN_LOCATION)
+    // preTestChainInfo["numBlocks"] = chain.length
+    // preTestChainInfo["numTransactions"] = chain.reduce((acc, block) => {
+    //     return acc + block.data.length
+    //   }, 0)
+    //   console.log(`Initial block chain is ${preTestChainInfo["numBlocks"]} blocks long containing ${preTestChainInfo["numTransactions"]} database transactions` )
+    // numBlocks = preTestChainInfo["numBlocks"]
+    numBlocksOnStartup = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length
+    // preTestChainInfo["numTransactions"] = 0
 
-  // after(() => {
-  //   // Teardown all servers
-  //   for(var i=0; i<procs.length; i++){
-  //     procs[i].kill()
-  //   }
-  //   rimraf.sync(BLOCKCHAINS_DIR)
-  // });
+
+
+  })
+
+  after(() => {
+    // Teardown all servers
+    for(var i=0; i<procs.length; i++){
+      procs[i].kill()
+    }
+    rimraf.sync(BLOCKCHAINS_DIR)
+  });
 
   describe(`blockchain database mining/forging`, () => {
     let random_operation
@@ -124,6 +127,7 @@ describe('Integration Tests', () => {
           operationCounter++
           sleep(100)
       }
+
     
       if (METHOD == "POW"){
         syncRequest('GET', server3 + '/mine-transactions')
@@ -173,19 +177,21 @@ describe('Integration Tests', () => {
           res.body.should.be.deep.eql(blocks)
         })
       })
+      
 
+      // SINECE VOTING IS NOW PART OF TRANSACTIONS THIS TEST IS NO LONGER REALLY NECESSARY
       // it('all having correct number of transactions', () => {
       //   var numTransactions = 0
       //   blocks.forEach(block => block.data.forEach(_ => {
       //     numTransactions = numTransactions + 1
       //   }))
-      //   // Subtract pe chain number of transactions as one is the rule transaction set loaded in initial block 
+        // Subtract pe chain number of transactions as one is the rule transaction set loaded in initial block 
       //   expect(operationCounter + SERVERS.length).to.equal(numTransactions - preTestChainInfo["numTransactions"])
       // })
 
-      // it('all having correct number of blocks', () => {
-      //   expect(numNewBlocks).to.equal(blocks.length - preTestChainInfo["numBlocks"])
-      // })
+      it('all having correct number of blocks', () => {
+        expect(numNewBlocks + numBlocksOnStartup).to.equal(blocks.length)
+      })
     })
 
     describe('and rules', ()=> {
@@ -209,7 +215,6 @@ describe('Integration Tests', () => {
           db.execute(op)
           
         })
-        
 
       })
 

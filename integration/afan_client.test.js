@@ -16,36 +16,36 @@ chai.use(chaiHttp);
 
 // Before running this test, bring up server at localhost:8080.
 // npm start
-const server1 = 'http://localhost:8086'
-const server2 = 'http://localhost:8079'
+const server1 = 'http://localhost:8085'
+const server2 = 'http://localhost:8089'
 const server3 = 'http://localhost:8087'
-const server4 = 'http://localhost:8070'
+const server4 = 'http://localhost:8088'
 
 describe('aFan Client Test', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
-  // before(() => {
-  //   tracker_proc = spawn('node', [TRACKER_SERVER])
-  //   sleep(500)
-  //   server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5001, PORT: 8085}})
-  //   sleep(500)
-  //   server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5002, PORT: 8089}})
-  //   sleep(500)
-  //   server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5003, PORT: 8087}})
-  //   sleep(500)
-  //   server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true,P2P_PORT:5004, PORT: 8088}})
-  //   sleep(500)
+  before(() => {
+    tracker_proc = spawn('node', [TRACKER_SERVER])
+    sleep(2000)
+    server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5001, PORT: 8085}})
+    sleep(500)
+    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5002, PORT: 8089}})
+    sleep(500)
+    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8087}})
+    sleep(500)
+    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8088}})
+    sleep(500)
 
-  // });
+  });
 
-  // after(() => {
-  //   tracker_proc.kill()
-  //   server1_proc.kill()
-  //   server2_proc.kill()
-  //   server3_proc.kill()
-  //   server4_proc.kill()
-  //   rimraf.sync(BLOCKCHAINS_DIR)
-  // });
+  after(() => {
+    tracker_proc.kill()
+    server1_proc.kill()
+    server2_proc.kill()
+    server3_proc.kill()
+    server4_proc.kill()
+    rimraf.sync(BLOCKCHAINS_DIR)
+  });
 
   set = (ref, value) => {
     return chai.request(server1)
