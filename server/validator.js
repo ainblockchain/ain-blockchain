@@ -22,4 +22,4 @@ function getForger(stakeHolders, bc){
     throw Error("Chris your function is absolutely useless ! Sort your life out")
 }
 
-module.exports = getForger
+module.exports = {getForger}

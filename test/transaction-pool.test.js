@@ -1,7 +1,6 @@
 const TransactionPool = require('../db/transaction-pool')
 const {ForgedBlock} = require('../blockchain/block')
 const DB = require('../db')
-const BlockGenRound = require('../server/block-gen-round')
 const chai = require('chai')
 const expect = chai.expect
 const assert = chai.assert
@@ -47,7 +46,7 @@ describe('TransactionPool', () => {
         })
 
         it('grabs valid transactions', () => {
-            assert.deepEqual(tp.validTransactions(), validTransactions)
+            assert.deepEqual(tp.validTransactions(), JSON.parse(JSON.stringify(validTransactions)))
         })
 
         it('removes invalid transactions after grabbing valid transactions', () => {
@@ -57,8 +56,8 @@ describe('TransactionPool', () => {
 
         it('removes transactions included in block', () => {
             tp.validTransactions()
-            var blockGenRound = new BlockGenRound(1 , BlockGenRound.getGenesisRound())
-            var block = ForgedBlock.forgeBlock(blockGenRound, validTransactions.splice(20, validTransactions.length), db)
+            var height = 1
+            var block = ForgedBlock._forgeBlock(validTransactions.splice(20, validTransactions.length), db, height, ForgedBlock.genesis())
             tp.removeCommitedTransactions(block)
             assert.deepEqual(validTransactions, tp.transactions)
         })

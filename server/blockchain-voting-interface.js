@@ -1,5 +1,5 @@
 
-const getForger =  require('./validator')
+const {getForger} =  require('./validator')
 
 function checkPreVotes(db){
     var total  = Object.values(db.get("_voting/validators")).reduce(function(a, b) { return a + b; }, 0)

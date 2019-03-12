@@ -13,7 +13,6 @@ const {
     startNewRound,
     instantiate,
     checkIfFirstNode,
-    getForger,
     registerForNextRound
 } =  require('./blockchain-voting-interface')
 const WAIT_TIME_FOR_STAKING = 20000

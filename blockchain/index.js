@@ -39,11 +39,6 @@ class Blockchain{
         return block;
     }
 
-    addForgedBlock(votingRound){
-        console.log(`Adding new block at height ${votingRound.height}`)
-        this.chain[votingRound.height] = votingRound.newBlock
-        this.writeChain()
-    }
 
     static isValidChain(chain){
         if(JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis())) {

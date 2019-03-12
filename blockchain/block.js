@@ -100,10 +100,6 @@ class ForgedBlock extends Block {
         
     }
 
-    static forgeBlock(votingRound, data, db){
-        return ForgedBlock._forgeBlock(data, db, votingRound.height, votingRound.lastBlock)
-
-    }
 
     static _forgeBlock(data, db, height, lastBlock){
         var lastHash = lastBlock.hash

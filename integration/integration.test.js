@@ -90,7 +90,7 @@ describe('Integration Tests', () => {
       sleep(1000)
       procs.push(proc)
     };
-    sleep(25000)
+    sleep(32000)
 
     // TODO: REWRITE LOADCHAIN FUNCTION TO HANDLE POS !!
     // var chain = Blockchain.loadChain(CHAIN_LOCATION)
