@@ -1,9 +1,9 @@
-class InvalidPerissonsError extends Error {
+class InvalidPermissionsError extends Error {
     constructor(...args) {
         super(...args)
-        Error.captureStackTrace(this, InvalidPerissonsError)
+        Error.captureStackTrace(this, InvalidPermissionsError)
     }
 }
 
 
-module.exports = InvalidPerissonsError
+module.exports = InvalidPermissionsError

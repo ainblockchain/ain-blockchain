@@ -18,6 +18,18 @@ class Blockchain{
         this.writeChain()
     }
 
+    height(){
+        return this.chain.length
+    }
+
+    addNewBlock(block){
+        if (block.height != this.chain.length){
+            throw Error("Blockchain height is wrong")
+        }
+        this.chain.push(block);
+        this.writeChain()
+    }
+
     addBlock(data){
         let block
         // Now supporting POW and POS implementations
@@ -41,9 +53,8 @@ class Blockchain{
         for(let i =1; i < chain.length; i++) {
             const block = chain[i];
             const lastBlock = chain[i - 1];
-
+``
             if(block.lastHash !== lastBlock.hash || block.hash !== (METHOD === "POW" ? MinedBlock.blockHash(block): ForgedBlock.blockHash(block))){
-                console.log(block.hash, ForgedBlock.blockHash(block))
                 console.log(`Invalid hashing for block ${i}`)
                 return false;
             }

@@ -14,7 +14,12 @@ const MESSAGE_TYPES = {
     peers: "PEERS",
     proposed_block: "PROPOSED_BLOCK",
     pre_vote: "PRE_VOTE",
-    pre_COMMIT: "PRE_COMMIT"
+    pre_commit: "PRE_COMMIT",
+    request_block: "REQUEST_BLOCK",
+    requested_block: "REQUESTED_BLOCK",
+    request_sync: "REQUEST_SYNC",
+    new_voting: "NEW_VOTING"
+
 }
 
 module.exports = {DIFFICULTY, MINE_RATE, RULES_FILE_PATH, BLOCKCHAINS_DIR, METHOD, MESSAGE_TYPES, FORGE_RATE}

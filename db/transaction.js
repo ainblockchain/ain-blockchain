@@ -10,6 +10,15 @@ class Transaction {
         this.signature = signature
     }
 
+    toString(){
+        return `${this.id},
+                ${this.timestamp},
+                ${this.output},
+                ${this.address},
+                ${this.signature}
+                `
+    }
+
     static newTransaction(db, data) {
         return new this(Date.now(), data, db.publicKey, db.sign(ChainUtil.hash(data)))
     } 

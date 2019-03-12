@@ -93,24 +93,29 @@ class MinedBlock extends Block {
 class ForgedBlock extends Block {
 
 
-    constructor(timestamp, lastHash, hash, data, height, signature){
+    constructor(timestamp, lastHash, hash, data, height, signature){  
         super(timestamp, lastHash, hash, data)
         this.height = height
         this.signature = signature
+        
     }
 
     static forgeBlock(votingRound, data, db){
+        return ForgedBlock._forgeBlock(data, db, votingRound.height, votingRound.lastBlock)
+
+    }
+
+    static _forgeBlock(data, db, height, lastBlock){
+        var lastHash = lastBlock.hash
         var timestamp = Date.now()
-        var lastHash = votingRound.lastBlock.hash
-        var height = votingRound.height
         var signature = db.sign(ChainUtil.hash(data))
         var hash = ForgedBlock.hash(timestamp, lastHash, data, height, signature)       
         return new ForgedBlock(timestamp, lastHash, hash, data, height, signature)
     }
+    
 
     static blockHash(block){
         const {timestamp, lastHash, data, height, signature} = block;
-        console.log(timestamp, lastHash, data, height, signature)
         return ForgedBlock.hash(timestamp, lastHash, data, height, signature) 
     }
 

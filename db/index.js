@@ -1,6 +1,6 @@
 const ChainUtil = require('../chain-util')
 const Transaction = require("./transaction")
-const InvalidPerissonsError = require("../errors")
+const InvalidPermissionsError = require("../errors")
 
 class DB {
 
@@ -21,8 +21,8 @@ class DB {
         auth = auth || this.publicKey
         var listQueryPath = ChainUtil.queryParser(queryPath)
 
-        if (!this.getPermissisons(listQueryPath, auth, [".read"])[".read"]){
-            throw new InvalidPerissonsError(`Invalid get permissons for ${queryPath}`)
+        if (!this.getPermissions(listQueryPath, auth, [".read"])[".read"]){
+            throw new InvalidPermissionsError(`Invalid get permissons for ${queryPath}`)
         }
 
         if (listQueryPath.length < 1) {
@@ -51,9 +51,8 @@ class DB {
         let valueCopy
         var listQueryPath = ChainUtil.queryParser(queryPath)
         // TODO: Find a better way to manage seeting of rules than this dodgy condition
-        console.log(listQueryPath)
-        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissisons(listQueryPath, auth, [".read", ".write"], value)).includes(false)){
-            throw new InvalidPerissonsError(`Invalid set permissons for ${queryPath}`)
+        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissions(listQueryPath, auth, [".read", ".write"], value)).includes(false)){
+            throw new InvalidPermissionsError(`Invalid set permissons for ${queryPath}`)
         }
         
         if (ChainUtil.isDict(value)){
@@ -108,6 +107,12 @@ class DB {
         return subDb
     }
 
+    // push(ref, val, auth=null){
+    //     var dbList = this.get(ref, auth) || []
+    //     this.dbList.push(val)
+    //     return this.set(ref, dbList, auth)
+    // }
+
     increase(diff, auth=null){
         for (var k in diff) {
             if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
@@ -134,6 +139,13 @@ class DB {
         return this.keyPair.sign(dataHash)
     }
 
+    reconstruct(blockchain, transactionPool){
+        console.log("Reconstructing dataabse")
+        this.createDatabase(blockchain)
+        this.addTransactionPool(transactionPool.validTransactions())
+        
+    }
+
     createDatabase(blockchain){
         this.db = {}
         let outputs = []
@@ -144,26 +156,37 @@ class DB {
         outputs.forEach(output => {
             // This ruleCheck 'false' is used to add values that were written by a user with different auth permissions to their local database.
             // This will need to be improved as it is unsafe 
-            switch(output[0].type){
-                case "SET":
-                    this.set(output[0].ref, output[0].value, output[1])
-                    break
-                case "INCREASE": {
-                    this.increase(output[0].diff, output[1])
-                    break
-                }
-                case "UPDATE":
-                    this.update(output[0].data, output[1])
-                    break
-                case "BATCH": {
-                    this.batch(output[0].batch_list, output[1])
-                    break
-                }
-            }
+            this.execute(output[0], output[1])
+
         })
     }
 
-    getPermissisons(queryPath, auth, permissionQueries, newValue) {
+    addTransactionPool(transactions){
+        transactions.forEach(trans => {
+            this.execute(trans.output, trans.address)
+        })
+    }
+
+    execute(transaction, address) {
+        switch(transaction.type){
+            case "SET":
+                this.set(transaction.ref, transaction.value, address)
+                break
+            case "INCREASE": {
+                this.increase(transaction.diff, address)
+                break
+            }
+            case "UPDATE":
+                this.update(transaction.data, address)
+                break
+            case "BATCH": {
+                this.batch(transaction.batch_list, address)
+                break
+            }
+        }
+    }
+
+    getPermissions(queryPath, auth, permissionQueries, newValue) {
         // Checks permissions for thegien query path. Specify permissionQueries as a list of the permissions of interest i.e [".read", ".write"]
         let lastRuleSet
         auth = auth || this.publicKey
@@ -197,7 +220,7 @@ class DB {
                 rules[permission] = this.verifyAuth(rules[permission], wildCards, queryPath, newValue, auth)
             }
 
-        console.log(`Access for user ${auth.substring(0, 10)} for path ${queryPath.join("/")} is ${Object.values(rules)}`)
+        //console.log(`Access for user ${auth.substring(0, 10)} for path ${queryPath.join("/")} is ${Object.values(rules)}`)
         return rules
     }
 
@@ -227,7 +250,7 @@ class DB {
                 return match.replace("db.get", "this.get").replace(/'/g, "") ;
             } );
         } 
-        console.log(`Evaluating: ${ruleString}`)
+        //console.log(`Evaluating: ${ruleString}`)
         return eval(ruleString)
     }
 

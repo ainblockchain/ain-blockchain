@@ -24,6 +24,7 @@ const {METHOD} = require("../config")
 
 // Initiate logging
 const LOG = process.env.LOG || false;
+
 if(LOG){
   var fs = require('fs');
   var util = require('util');
@@ -56,7 +57,6 @@ const Blockchain = require('../blockchain');
 const TransactionPool = require('../db/transaction-pool')
 const Miner = require('./miner')
 const InvalidPerissonsError = require("../errors")
-const Validator = require('./validator') 
 
 
 const app = express();
@@ -67,8 +67,8 @@ app.use(express.json()); // support json encoded bodies
 const bc = new Blockchain(String(PORT));
 const db = Database.getDatabase(bc)
 const tp = new TransactionPool()
-const val = new Validator(db)
-const p2pServer = new P2pServer(db, bc, tp, val)
+db.sign("uhisgdi")
+const p2pServer = new P2pServer(db, bc, tp)
 const miner = new Miner(bc, tp, p2pServer)
 
 app.get('/', (req, res, next) => {
@@ -182,6 +182,7 @@ app.post('/set', (req, res, next) => {
   res.status(statusCode).set('Content-Type', 'application/json').send({code: statusCode < 299? 0: 1}).end();
 })
 
+
 app.post('/batch', (req, res, next) => {
   var batch_list = req.body.batch_list
   try{
@@ -237,38 +238,10 @@ p2pServer.listen()
 module.exports = app;
 
 
-if (process.env.STAKE){
-  stake(process.env.STAKE)
+if (METHOD == "POS" && process.env.STAKE){
+    setTimeout(() => {
+      p2pServer.registerStakeWithNetwork(process.env.STAKE)
+    }, 5000)
+    
 }
 
-function stake(stakeAmount){
-  stakeAmount = Number(stakeAmount)
-  var result = db.stake(stakeAmount)
-  console.log(`Successfully staked ${stakeAmount}`)
-  let transaction = db.createTransaction({type: "SET", ref: ["stakes", db.publicKey].join("/"), value: stakeAmount}, tp)
-  p2pServer.broadcastTransaction(transaction)
-  return result
-}
-
-if (METHOD == "POS"){
-
-  const cron = require("node-cron");
-  // schedule tasks to be run on the server
-
-  setTimeout(setCron,  1000);
-
-  function setCron(){
-    console.log("Setting Cron")
-    cron.schedule("*/6 * * * * *", function() {
-      if (p2pServer.votingRound.status === "SUCCESS" || p2pServer.votingRound.status === "FAILURE" ){
-        try{
-        p2pServer.startNewRound()
-        } catch (err){
-          console.log(err.stack)
-        }
-      } else {
-        console.log(`Current round status ${p2pServer.votingRound.status}`)
-      }
-  })
-  }
-}

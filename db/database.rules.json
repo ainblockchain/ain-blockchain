@@ -9,6 +9,15 @@
             ".write": "auth === '$uid'"
         }
     },
+    "_voting": {
+        ".write": true,
+        "preVotes":{
+            ".write": "db.get(`_voting/blockHash`) !== null"
+        },
+        "preCommits": {
+            ".write":  "db.get(`_voting/preVotes`) !== 0"
+        }
+    },
     "nested":{
         ".write": true
     },

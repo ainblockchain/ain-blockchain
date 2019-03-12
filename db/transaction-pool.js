@@ -3,10 +3,18 @@ const Transaction = require("./transaction")
 class TransactionPool {
     constructor() {
         this.transactions = []
+        this.lastTimestamp = 0
     }
 
     addTransaction(transaction) {
         this.transactions.push(transaction)
+        if (transaction.timestamp >= this.lastTimestamp){
+            this.lastTimestamp = transaction.timestamp
+        } else {
+            this.transactions = this.transactions.sort(function(a, b) {
+                return a.timestamp - b.timestamp  
+            })
+        }
     }
 
     clear() {
@@ -15,8 +23,8 @@ class TransactionPool {
 
     validTransactions(){
         // Method now removes invalid transactions befroe returning valid ones ! This is too 
+        let lastTime = 0
         this.transactions = this.transactions.filter(transaction => {
-
             if (!(["SET", "INCREASE", "UPDATE", "BATCH"].indexOf(transaction.output.type) > -1)){
                 console.log(`Invalid transaction type ${transaction.output.type}.`)
                 return
@@ -26,9 +34,14 @@ class TransactionPool {
                 console.log(`Invalid signature from ${transaction.address}.`)
                 return
             }
+            if (transaction.timestamp < lastTime){
+                throw Error("Timestamp issue is your new biggest problem !!!!!")
+            }
+            lastTime = transaction.timestamp
             return transaction
         })
-        return this.transactions
+
+        return JSON.parse(JSON.stringify(this.transactions))
     }
 
     removeCommitedTransactions(block){
