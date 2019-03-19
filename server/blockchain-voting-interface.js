@@ -3,7 +3,8 @@ const {getForger} =  require('./validator')
 
 function checkPreVotes(db){
     var total  = Object.values(db.get("_voting/validators")).reduce(function(a, b) { return a + b; }, 0)
-    return db.get("_voting/preVotes") > total *.6666 || total === 0
+    console.log(`Total preVotes from validators : ${total}\nReceived preVotes ${db.get("_voting/preVotes")}`)
+    return (db.get("_voting/preVotes") > (total *.6666)) || total === 0
 }
 
 function preVote(db, tp, votingHelper){
@@ -26,7 +27,8 @@ function preCommit(db, tp){
 
 function checkPreCommits(db){
     var total  = Object.values(db.get("_voting/validators")).reduce(function(a, b) { return a + b; }, 0)
-    return  db.get("_voting/preCommits") > total *.6666 || total === 0
+    console.log(`Total preCommits from validators : ${total}\nReceived preCommits ${db.get("_voting/preCommits")}`)
+    return  (db.get("_voting/preCommits") > (total *.6666)) || total === 0
 }
 
 

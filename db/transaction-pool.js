@@ -35,7 +35,7 @@ class TransactionPool {
                 return
             }
             if (transaction.timestamp < lastTime){
-                throw Error("Timestamp issue is your new biggest problem !!!!!")
+                throw Error("Transactions are not being ordered correctly")
             }
             lastTime = transaction.timestamp
             return transaction

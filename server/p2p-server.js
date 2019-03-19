@@ -1,7 +1,9 @@
 const Websocket = require('ws');
 const P2P_PORT = process.env.P2P_PORT || 5001;
-const trackerWebSocket = new Websocket("ws://localhost:3001")
-const HOST = process.env.HOST || "ws://localhost"
+const ip = require("ip")
+const trackerWebSocketAddr =  process.env.TRACKER_IP || "ws://localhost:3001"
+const trackerWebSocket = new Websocket(trackerWebSocketAddr)
+const HOST = "ws://" + ip.address()
 const {ForgedBlock} = require("../blockchain/block")
 const SERVER = HOST + ":" + P2P_PORT
 const {MESSAGE_TYPES} = require("../config")
