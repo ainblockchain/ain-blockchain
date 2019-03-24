@@ -156,15 +156,7 @@ class P2pServer {
     }
 
     executeTransaction(transaction){
-        if(transaction.output.type === "SET"){
-            this.db.set(transaction.output.ref, transaction.output.value, transaction.address)
-        } else if (transaction.output.type === "INCREASE"){
-            this.db.increase(transaction.output.diff, transaction.address)
-        } else if(transaction.output.type === "BATCH"){
-            this.db.batch(transaction.output.batch_list, transaction.address)
-        } else if (transaction.output.type === "UPDATE"){
-            this.db.increase(transaction.output.data, transaction.address)
-        }
+        this.db.execute(transaction.output, transaction.output, transaction.address)
         this.transactionPool.addTransaction(transaction)
     }
 

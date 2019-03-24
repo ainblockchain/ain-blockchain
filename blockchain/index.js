@@ -4,12 +4,14 @@ const {BLOCKCHAINS_DIR, METHOD} = require('../config')
 const rimraf = require("rimraf")
 const path = require('path')
 const fs = require('fs')
-
+const zipper = require("zip-local")
+const naturalSort = require("node-natural-sort")
 
 class Blockchain{
     constructor(blockchain_dir){
         this.chain = [Block.genesis()];
         this.blockchain_dir = blockchain_dir
+        this.database50BlockBefore = {}
         let new_chain
         if(this.createBlockchainDir()){
             new_chain =  Blockchain.loadChain(this._blockchainDir())
@@ -75,11 +77,11 @@ class Blockchain{
     }
 
     _blockchainDir(){
-        return BLOCKCHAINS_DIR + '/' + this.blockchain_dir
+        return path.resolve(BLOCKCHAINS_DIR, this.blockchain_dir)
     }
 
-    _path_to_block(blockNum, blockHash){
-        return this._blockchainDir() + "/block" + blockNum + "-" + blockHash.substring(0, 5) + ".json"
+    _path_to_block(blockNum, block){
+        return path.resolve(this._blockchainDir(),`${blockNum}-${block.lastHash.substring(0, 5)}-${block.hash.substring(0, 5)}.json.zip`)
     }
 
     createBlockchainDir(){
@@ -94,23 +96,20 @@ class Blockchain{
         return alreadyExists
     }
 
-    writeChain(){
-        for(var i=0; i< this.chain.length; i++){
-            if (!(fs.existsSync(this._path_to_block(i, this.chain[i].hash)))) {
-                fs.writeFile(this._path_to_block(i, this.chain[i].hash), JSON.stringify(this.chain[i]), function(err){
-                    if (err) throw err;
-                })
+    writeChain(){ 
+        for(var i=1; i< this.chain.length; i++){
+            var file_path = this._path_to_block(i, this.chain[i])
+            if (!(fs.existsSync(file_path))) {
+                // Change to async implementation
+                zipper.sync.zip(Buffer.from(JSON.stringify(this.chain[i]))).compress().save(file_path);
             }
         }
     }
 
     static loadChain(chain_path){
         var newChain = []
-        var blockFiles =  fs.readdirSync(chain_path)
-        blockFiles.sort(function(file1, file2) {
-            return fs.statSync(path.resolve(chain_path, file1)).mtime.getTime() - 
-                   fs.statSync(path.resolve(chain_path, file2)).mtime.getTime();
-        });
+        var blockFiles =  fs.readdirSync(chain_path).sort(naturalSort())
+
         blockFiles.forEach(block => {
             newChain.push(MinedBlock.loadBlock(chain_path + "/" + block))
         })
