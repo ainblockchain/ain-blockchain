@@ -62,7 +62,10 @@ class P2pServer {
     connectSocket(socket) {
         this.sockets.push(socket);
         this.messageHandler(socket);
-        this.sendChain(socket)
+        const chainSubsection =  this.blockchain.requestBlockchainSection(this.blockchain.chain[0])
+        if(chainSubsection){
+            this.sendChainSubsection(socket, chainSubsection)
+        }
     }
 
     messageHandler(socket){
@@ -137,7 +140,18 @@ class P2pServer {
                         console.log("Syncing request received")
                         this.syncChains()
                         break
-                        
+                    case MESSAGE_TYPES.chain_subsection:
+                        if(this.blockchain.merge(data.chainSubsection)){
+                            this.db.reconstruct(this.blockchain, this.transactionPool)
+                            this.requestChainSubsection(this.blockchain.lastBlock())
+                        }
+                        break
+                    case MESSAGE_TYPES.chain_subsection_request:
+                        const chainSubsection = this.blockchain.requestBlockchainSection(data.lastBlock)
+                        if(chainSubsection){
+                            this.broadcastChainSubsection(chainSubsection)
+                        }
+                        break
                 }
             } catch (error){
                 console.log(error.stack)
@@ -181,6 +195,18 @@ class P2pServer {
 
     sendChain(socket){
         socket.send(JSON.stringify({type: MESSAGE_TYPES.chain,  chain: this.blockchain.chain}));
+    }
+
+    sendChainSubsection(socket, chainSubsection){
+        socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection, chainSubsection}))
+    }
+
+    requestChainSubsection(lastBlock){
+        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection_request, lastBlock})))
+    }
+
+    broadcastChainSubsection(chainSubsection){
+        this.sockets.forEach(socket => this.sendChainSubsection(socket, chainSubsection))
     }
 
     syncChains() {

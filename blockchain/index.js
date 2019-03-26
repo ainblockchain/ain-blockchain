@@ -6,6 +6,7 @@ const path = require('path')
 const fs = require('fs')
 const zipper = require("zip-local")
 const naturalSort = require("node-natural-sort")
+const CHAIN_SUBSECT_LENGTH = 20
 
 class Blockchain{
     constructor(blockchain_dir){
@@ -25,7 +26,11 @@ class Blockchain{
     }
 
     height(){
-        return this.chain[this.chain.length -1].height
+        return this.lastBlock().height
+    }
+
+    lastBlock(){
+        return this.chain[this.chain.length -1]
     }
 
     addNewBlock(block){
@@ -50,13 +55,19 @@ class Blockchain{
 
 
     static isValidChain(chain){
+
         if(JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis())) {
             console.log("first block not genesis")
             return false
         }
-        for(let i =1; i < chain.length; i++) {
-            const block = chain[i];
-            const lastBlock = chain[i - 1];
+        return  Blockchain.isValidChainSubsection(chain)
+    }
+
+    static isValidChainSubsection(chainSubSection){
+
+        for(let i=1; i < chainSubSection.length; i++) {
+            const block = chainSubSection[i];
+            const lastBlock = chainSubSection[i - 1];
 ``
             if(block.lastHash !== lastBlock.hash || block.hash !== (METHOD === "POW" ? MinedBlock.blockHash(block): ForgedBlock.blockHash(block))){
                 console.log(`Invalid hashing for block ${i}`)
@@ -104,7 +115,7 @@ class Blockchain{
     }
 
     writeChain(){ 
-        for(var i=1; i< this.chain.length; i++){
+        for(var i=0; i< this.chain.length; i++){
             var file_path = this._path_to_block(i, this.chain[i])
             if (!(fs.existsSync(file_path))) {
                 // Change to async implementation
@@ -113,12 +124,47 @@ class Blockchain{
         }
     }
 
+    requestBlockchainSection(lastBlock){
+        var blockFiles = Blockchain.getBlockFiles(this._blockchainDir())
+        if (blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash.substring(0, 5)}-${lastBlock.hash.substring(0, 5)}`) < 0){
+            console.log("Invalid blockchain request")
+            return 
+        }
+        if (lastBlock.hash === this.lastBlock().hash){
+            console.log("Requesters blockchain is up to date with this blockchain")
+            return
+        }
+
+        const chainSectionFiles = blockFiles.slice(lastBlock.height, lastBlock.height + CHAIN_SUBSECT_LENGTH)
+        const chainSubSection = []
+        chainSectionFiles.forEach((blockFile) => {
+            chainSubSection.push(ForgedBlock.loadBlock(blockFile))
+        })
+        return chainSubSection
+    }
+
+    merge(chainSubSection){
+        // Call to shift here is important as it removes the first element from the list !!
+
+        const firstBlock = chainSubSection.shift()
+        if (this.lastBlock().hash !== ForgedBlock.blockHash(firstBlock) && this.lastBlock().hash !== Block.genesis().hash){
+            console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.blockHash(firstBlock).substring(0, 5)}`)
+            return false
+        }
+        if (!Blockchain.isValidChainSubsection(chainSubSection)){
+            console.log("Invalid chain subsection")
+            return false
+        }
+        this.chain.push(...chainSubSection)
+        return true
+    }
+
     static loadChain(chain_path){
         var newChain = []
-        var blockFiles =  fs.readdirSync(chain_path).sort(naturalSort())
+        var blockFiles =  Blockchain.getBlockFiles(chain_path)
 
         blockFiles.forEach(block => {
-            newChain.push(MinedBlock.loadBlock(chain_path + "/" + block))
+            newChain.push(MinedBlock.loadBlock(block))
         })
 
         if (Blockchain.isValidChain(newChain)){
@@ -129,6 +175,10 @@ class Blockchain{
         rimraf.sync(chain_path + "/*")
         return null
         
+    }
+
+    static getBlockFiles(chainPath){
+        return fs.readdirSync(chainPath).sort(naturalSort()).map(fileName => path.resolve(chainPath, fileName))
     }
 }
 

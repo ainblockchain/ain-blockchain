@@ -18,7 +18,9 @@ const MESSAGE_TYPES = {
     request_block: "REQUEST_BLOCK",
     requested_block: "REQUESTED_BLOCK",
     request_sync: "REQUEST_SYNC",
-    new_voting: "NEW_VOTING"
+    new_voting: "NEW_VOTING",
+    chain_subsection: "CHAIN_SUBSECTION",
+    chain_subsection_request: "CHAIN_SUBSECTION_REQUEST"
 
 }
 

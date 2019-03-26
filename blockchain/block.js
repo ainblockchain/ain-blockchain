@@ -26,16 +26,16 @@ class Block {
     }
 
     static genesis(){
-        // Gensis block will set all the rules for the database if any rules are
+        // Genesis block will set all the rules for the database if any rules are
         // specified in the proj/database/database.rules.json 
         const data = []
-        // Hack here to simulate a transaction for the initial settting of rules
+        // Hack here to simulate a transaction for the initial setting of rules
         if (fs.existsSync(RULES_FILE_PATH)) {
             data.push({output: {type: "SET", ref: "rules", 
                                 value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}, address: null})
         }   
         // Change this to use 
-        const genesis = new this('Genesis time', '-----', 'f1r57-h45h', data, 0);
+        const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, 0);
         genesis.height = 0
         return genesis
     }
@@ -131,6 +131,18 @@ class ForgedBlock extends Block {
         Hash      : ${this.hash.substring(0, 10)}
         Data      : ${this.data}
         Height    : ${this.height}`;
+    }
+
+    static loadBlock(blockZipFile){ 
+        // Hack to return global genesis. Need to return separate genesis blocks for mined and forged implementations
+        if (blockZipFile.indexOf("0-#####-f1r57") >= 0){
+            return Block.genesis()
+        }
+        var unzippedfs = zipper.sync.unzip(blockZipFile).memory()
+        var block_info = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], "buffer").toString())
+        return new this(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
+                        block_info["data"], block_info["height"], block_info["signature"])
+    
     }
 
 }

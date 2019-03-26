@@ -156,9 +156,12 @@ describe('Integration Tests', () => {
 
     it("will sync to new peers on startup", () => {
       const new_server = "http://localhost:8090"
-      const new_server_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5006, PORT: 8090}})
-      sleep(500)
+      const new_server_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5006, PORT: 8090, LOG: true}})
+      console.log("seelpinh")
+      sleep(3000)
       base_db = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8"))
+      new_db = JSON.parse(syncRequest('GET', new_server + '/blocks').body.toString("utf-8"))
+      expect(base_db.length).to.equal(new_db.length)
       return chai.request(new_server).get(`/blocks`).then((res) => {
         new_server_proc.kill()
         res.should.have.status(200);
@@ -181,7 +184,7 @@ describe('Integration Tests', () => {
       })
       
 
-      // SINECE VOTING IS NOW PART OF TRANSACTIONS THIS TEST IS NO LONGER REALLY NECESSARY
+      // SINCE VOTING IS NOW PART OF TRANSACTIONS THIS TEST IS NO LONGER REALLY NECESSARY
       // it('all having correct number of transactions', () => {
       //   var numTransactions = 0
       //   blocks.forEach(block => block.data.forEach(_ => {
