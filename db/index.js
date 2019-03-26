@@ -11,9 +11,10 @@ class DB {
 
     }
 
-    static getDatabase(blockchain){
+    static getDatabase(blockchain, tp){
         const db = new DB()
-        db.createDatabase(blockchain)
+        blockchain.setBackDb(new BackUpDB(db.keyPair))
+        db.reconstruct(blockchain, tp)
         return db
     }
 
@@ -22,7 +23,7 @@ class DB {
         var listQueryPath = ChainUtil.queryParser(queryPath)
 
         if (!this.getPermissions(listQueryPath, auth, [".read"])[".read"]){
-            throw new InvalidPermissionsError(`Invalid get permissons for ${queryPath}`)
+            throw new InvalidPermissionsError(`Invalid get permissions for ${queryPath}`)
         }
 
         if (listQueryPath.length < 1) {
@@ -107,16 +108,10 @@ class DB {
         return subDb
     }
 
-    // push(ref, val, auth=null){
-    //     var dbList = this.get(ref, auth) || []
-    //     this.dbList.push(val)
-    //     return this.set(ref, dbList, auth)
-    // }
-
     increase(diff, auth=null){
         for (var k in diff) {
             if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
-                // TODO: Raise rerror here
+                // TODO: Raise error here
                 return {code: -1, error_message: "Not a number type: " + k}
             }
         }
@@ -140,7 +135,8 @@ class DB {
     }
 
     reconstruct(blockchain, transactionPool){
-        console.log("Reconstructing dataabse")
+        console.log("Reconstructing database")
+        this.setDBToBackUp(blockchain.backUpDB)
         this.createDatabase(blockchain)
         this.addTransactionPool(transactionPool.validTransactions())
         
@@ -148,16 +144,14 @@ class DB {
 
     createDatabase(blockchain){
         this.db = {}
-        let outputs = []
- 
         blockchain.chain.forEach(block => block.data.forEach(transaction => {
-            outputs.push([transaction.output, transaction.address])
+            this.executeBlockTransactions(block)
         }))
-        outputs.forEach(output => {
-            // This ruleCheck 'false' is used to add values that were written by a user with different auth permissions to their local database.
-            // This will need to be improved as it is unsafe 
-            this.execute(output[0], output[1])
+    }
 
+    executeBlockTransactions(block){
+        block.data.forEach(transaction =>{
+            this.execute(transaction.output, transaction.address)
         })
     }
 
@@ -167,27 +161,31 @@ class DB {
         })
     }
 
+    setDBToBackUp(backUpDB){
+        if (this.db.publicKey === backUpDB.publicKey){
+            this.db = backUpDB.db
+        }
+    }
+
     execute(transaction, address) {
         switch(transaction.type){
             case "SET":
                 this.set(transaction.ref, transaction.value, address)
                 break
-            case "INCREASE": {
+            case "INCREASE": 
                 this.increase(transaction.diff, address)
                 break
-            }
             case "UPDATE":
                 this.update(transaction.data, address)
                 break
-            case "BATCH": {
+            case "BATCH": 
                 this.batch(transaction.batch_list, address)
                 break
-            }
         }
     }
 
     getPermissions(queryPath, auth, permissionQueries, newValue) {
-        // Checks permissions for thegien query path. Specify permissionQueries as a list of the permissions of interest i.e [".read", ".write"]
+        // Checks permissions for the given query path. Specify permissionQueries as a list of the permissions of interest i.e [".read", ".write"]
         let lastRuleSet
         auth = auth || this.publicKey
         var rules = {}
@@ -253,6 +251,17 @@ class DB {
         //console.log(`Evaluating: ${ruleString}`)
         return eval(ruleString)
     }
+
+}
+
+class BackUpDB extends DB{
+    constructor(keyPair){
+        super()
+        this.keyPair = keyPair
+        this.publicKey = this.keyPair.getPublic().encode('hex')
+
+    }
+
 
 }
 

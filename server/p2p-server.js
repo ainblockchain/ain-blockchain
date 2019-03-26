@@ -90,7 +90,7 @@ class P2pServer {
                         this.votingHelper = new VotingHelper()
                         if (this.stake){
                             // Need to implement this method 
-                            this.broadcastTransaction(registerForNextRound(this.blockchain.height(), this.db, this.transactionPool))
+                            this.broadcastTransaction(registerForNextRound(this.blockchain.height() + 1, this.db, this.transactionPool))
                             this.checkIfForger()
                         }
                         break
@@ -150,21 +150,21 @@ class P2pServer {
     }
 
     validateBlock(block){
-        var validity = block.height == this.blockchain.height()
+        var validity = block.height == (this.blockchain.height() + 1)
         console.log(`Validity of block is ${validity}`)
         return validity
     }
 
     executeTransaction(transaction){
-        this.db.execute(transaction.output, transaction.output, transaction.address)
+        this.db.execute(transaction.output, transaction.address)
         this.transactionPool.addTransaction(transaction)
     }
 
     forgeBlock(){
         var data = this.transactionPool.validTransactions()
-        var blockHeight = this.blockchain.height()
+        var blockHeight = this.blockchain.height() + 1
         this.votingHelper = new VotingHelper()
-        this.votingHelper.votingBlock =  ForgedBlock._forgeBlock(data, this.db, blockHeight, this.blockchain.chain[blockHeight -1])
+        this.votingHelper.votingBlock =  ForgedBlock._forgeBlock(data, this.db, blockHeight, this.blockchain.chain[this.blockchain.height()])
         var ref = "_voting/blockHash"
         var value = this.votingHelper.votingBlock.hash
         console.log(`Forged block with hash ${this.votingHelper.votingBlock.hash} at height ${blockHeight}`)
@@ -200,11 +200,11 @@ class P2pServer {
     }
 
     broadcastPreVote(transaction){
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_vote, address: this.db.publicKey, transaction,  height: this.blockchain.height()})))
+        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_vote, address: this.db.publicKey, transaction,  height: this.blockchain.height() + 1})))
     }
 
     broadcastPreCommit(transaction){
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_commit, address: this.db.publicKey, transaction, height: this.blockchain.height()})))
+        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_commit, address: this.db.publicKey, transaction, height: this.blockchain.height() + 1})))
     }
 
     broadcastNewRound(transaction){
@@ -262,12 +262,12 @@ class P2pServer {
             this.votingInterval = setInterval(()=> {
                 this.broadcastNewRound(startNewRound(this.db, this.transactionPool, this.blockchain))  
                 this.votingHelper = new VotingHelper()
-                this.broadcastTransaction(registerForNextRound(this.blockchain.height(), this.db, this.transactionPool))
+                this.broadcastTransaction(registerForNextRound(this.blockchain.height() + 1, this.db, this.transactionPool))
                 this.checkIfForger()
 
                 }, 10000)
         }
-        console.log(`New blockchain height is ${this.blockchain.height()}`)
+        console.log(`New blockchain height is ${this.blockchain.height() + 1}`)
 
     }
 

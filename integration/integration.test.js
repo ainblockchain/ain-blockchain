@@ -14,6 +14,7 @@ const syncRequest = require('sync-request')
 const itParam = require('mocha-param');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
+const TransactionPool = require('../db/transaction-pool');
 const {BLOCKCHAINS_DIR, METHOD} = require('../config') 
 const rimraf = require("rimraf")
 
@@ -42,6 +43,7 @@ RANDOM_OPERATION = [
   ["set", {ref: "test/b/u/i/l/e/d/hel", value: {"range": [1, 4, 5], "another": [234]}}],
   ["set", {ref: "test/b/u/i/l/e/d/hel", value: "very nested"}],
   ["set", {ref: "test/b/u/i/l/e/d/hel", value: {1:2,3:4,5:6}}],
+  
   ["set", {ref: "test/new/final/path", value: {"neste": [1, 2, 3, 4, 5]}}],
   ["set", {ref: "test/new/final/path", value: {"more": {"now":12, "hellloooo": 123}}}],
   ["increase", {diff: {"test/increase/first/level": 10, "test/increase/first/level2": 20}}],
@@ -208,7 +210,7 @@ describe('Integration Tests', () => {
 
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, "test-integration"))
-        db = DB.getDatabase(new Blockchain("test-integration"))
+        db = DB.getDatabase(new Blockchain("test-integration"), new TransactionPool())
         let op
         sentOperations.forEach(operation  => {
           op = Object.assign({}, {type: operation[0].toUpperCase()}, operation[1])

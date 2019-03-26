@@ -2,6 +2,7 @@ const {DIFFICULTY, MINE_RATE, METHOD} = require("../config")
 const ChainUtil = require('../chain-util')
 const fs = require("fs")
 const {RULES_FILE_PATH} = require('../config')
+var zipper = require("zip-local")
 
 
 class Block {
@@ -33,7 +34,10 @@ class Block {
             data.push({output: {type: "SET", ref: "rules", 
                                 value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}, address: null})
         }   
-        return new this('Genesis time', '-----', 'f1r57-h45h', data, 0);
+        // Change this to use 
+        const genesis = new this('Genesis time', '-----', 'f1r57-h45h', data, 0);
+        genesis.height = 0
+        return genesis
     }
 
 }
@@ -83,7 +87,8 @@ class MinedBlock extends Block {
 
     static loadBlock(block_path){
         // Returns block stored at the file path provided by "block_path"
-        var block_info = JSON.parse(fs.readFileSync(block_path.toString()))
+        var unzippedfs = zipper.sync.unzip(block_path).memory()
+        var block_info = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], "buffer").toString())
         return new this(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
                         block_info["data"], block_info["nonce"], block_info["difficulty"])
     }

@@ -65,9 +65,8 @@ app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
 
 const bc = new Blockchain(String(PORT));
-const db = Database.getDatabase(bc)
 const tp = new TransactionPool()
-db.sign("uhisgdi")
+const db = Database.getDatabase(bc, tp)
 const p2pServer = new P2pServer(db, bc, tp)
 const miner = new Miner(bc, tp, p2pServer)
 

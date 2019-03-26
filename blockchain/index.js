@@ -11,7 +11,7 @@ class Blockchain{
     constructor(blockchain_dir){
         this.chain = [Block.genesis()];
         this.blockchain_dir = blockchain_dir
-        this.database50BlockBefore = {}
+        this.backUpDB = null
         let new_chain
         if(this.createBlockchainDir()){
             new_chain =  Blockchain.loadChain(this._blockchainDir())
@@ -20,15 +20,19 @@ class Blockchain{
         this.writeChain()
     }
 
+    setBackDb(backUpDB){
+        this.backUpDB = backUpDB
+    }
+
     height(){
-        return this.chain.length
+        return this.chain[this.chain.length -1].height
     }
 
     addNewBlock(block){
-        if (block.height != this.chain.length){
+        if (block.height != this.height() + 1){
             throw Error("Blockchain height is wrong")
         }
-        this.chain.push(block);
+        this.chain.push(block)
         this.writeChain()
     }
 
@@ -38,6 +42,9 @@ class Blockchain{
         block = MinedBlock.mineBlock(this.chain[this.chain.length -1], data);
         this.chain.push(block);
         this.writeChain()
+        while (this.chain.length > 50){
+            this.backUpDB.executeBlockTransactions(this.chain.splice(0, 1)[0])
+        }
         return block;
     }
 

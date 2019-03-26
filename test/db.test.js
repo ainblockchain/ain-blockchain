@@ -1,6 +1,7 @@
-const DB = require('../db/index')
+const DB = require('../db')
+const TransactionPool = require("../db/transaction-pool")
 const ChainUtil = require('../chain-util')
-const Blockchain = require('../blockchain/index')
+const Blockchain = require('../blockchain')
 const chai = require('chai');
 const fs = require("fs")
 const expect = chai.expect;
@@ -8,11 +9,12 @@ const assert = chai.assert;
 const {RULES_FILE_PATH} = require('../config')
 
 describe("DB", () => {
-    let db, test_db, bc
+    let db, test_db, bc, tp
 
     beforeEach(() => {
+        tp = new TransactionPool()
         bc = new Blockchain("db-test")
-        db = DB.getDatabase(bc)
+        db = DB.getDatabase(bc, tp)
         test_db = {"ai": {"comcom": 123, "foo": "bar"}, "increase": 
                     {"value": 10, "nested": {"value": 20}}, 
                     "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
@@ -107,12 +109,13 @@ describe("DB", () => {
 })
 
 describe("DB rules", () => {
-    let db1, db2, test_db, bc
+    let db1, db2, test_db, bc, tp
 
     beforeEach(() => {
+        tp = new TransactionPool()
         bc = new Blockchain("db-test")
-        db1 = DB.getDatabase(bc)
-        db2 = DB.getDatabase(bc)
+        db1 = DB.getDatabase(bc, tp)
+        db2 = DB.getDatabase(bc, tp)
         test_db = {
             "comcom": "unreadable value",
             "unspecified": {"nested": "readable"},
