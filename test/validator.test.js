@@ -32,7 +32,10 @@ describe("Validator", () => {
         answers = {"a": 0, "b": 0, "c":0, "d":0}
         for(var i = 0; i<1700; i++){
             //let i represent a fake block here
-            bc.addNewBlock(ForgedBlock._forgeBlock([i], db, bc.height() + 1, bc.chain[bc.height()]))
+            db.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
+            var block = ForgedBlock._forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
+            bc.addNewBlock(block)
+            tp.removeCommitedTransactions(block)
             answers[getForger(stakeHolders, bc)] += 1
         }
         assert.isAbove(answers["a"], answers["b"])
@@ -44,7 +47,10 @@ describe("Validator", () => {
 
         for(var i = 0; i<2000; i++){
             //let i represent a fake block here
-            bc.addNewBlock(ForgedBlock._forgeBlock([i], db, bc.height() + 1, bc.chain[bc.height()]))
+            db.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
+            var block = ForgedBlock._forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
+            bc.addNewBlock(block)
+            tp.removeCommitedTransactions(block)
             assert.deepEqual(getForger(stakeHolders, bc), getForger(stakeHolders, bc))
         }
     })

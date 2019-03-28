@@ -157,7 +157,6 @@ describe('Integration Tests', () => {
     it("will sync to new peers on startup", () => {
       const new_server = "http://localhost:8090"
       const new_server_proc = spawn('node', [APP_SERVER], {env: {P2P_PORT:5006, PORT: 8090, LOG: true}})
-      console.log("seelpinh")
       sleep(3000)
       base_db = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8"))
       new_db = JSON.parse(syncRequest('GET', new_server + '/blocks').body.toString("utf-8"))

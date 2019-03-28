@@ -32,12 +32,16 @@ class Blockchain{
     lastBlock(){
         return this.chain[this.chain.length -1]
     }
+    
 
     addNewBlock(block){
         if (block.height != this.height() + 1){
             throw Error("Blockchain height is wrong")
         }
         this.chain.push(block)
+        while (this.chain.length > 50){
+            this.backUpDB.executeBlockTransactions(this.chain.shift())
+        }
         this.writeChain()
     }
 
@@ -47,9 +51,6 @@ class Blockchain{
         block = MinedBlock.mineBlock(this.chain[this.chain.length -1], data);
         this.chain.push(block);
         this.writeChain()
-        while (this.chain.length > 50){
-            this.backUpDB.executeBlockTransactions(this.chain.splice(0, 1)[0])
-        }
         return block;
     }
 
@@ -68,9 +69,8 @@ class Blockchain{
         for(let i=1; i < chainSubSection.length; i++) {
             const block = chainSubSection[i];
             const lastBlock = chainSubSection[i - 1];
-``
             if(block.lastHash !== lastBlock.hash || block.hash !== (METHOD === "POW" ? MinedBlock.blockHash(block): ForgedBlock.blockHash(block))){
-                console.log(`Invalid hashing for block ${i}`)
+                console.log(`Invalid hashing for block ${block.height}`)
                 return false;
             }
         }
@@ -115,11 +115,12 @@ class Blockchain{
     }
 
     writeChain(){ 
-        for(var i=0; i< this.chain.length; i++){
-            var file_path = this._path_to_block(i, this.chain[i])
+        for(var i=this.chain[0].height; i<this.height() + 1; i++){
+            var block = this.chain[i - this.chain[0].height]
+            var file_path = this._path_to_block(i, block)
             if (!(fs.existsSync(file_path))) {
                 // Change to async implementation
-                zipper.sync.zip(Buffer.from(JSON.stringify(this.chain[i]))).compress().save(file_path);
+                zipper.sync.zip(Buffer.from(JSON.stringify(block))).compress().save(file_path);
             }
         }
     }
@@ -155,7 +156,7 @@ class Blockchain{
             console.log("Invalid chain subsection")
             return false
         }
-        this.chain.push(...chainSubSection)
+        chainSubSection.forEach(block => this.addNewBlock(block))
         return true
     }
 

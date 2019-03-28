@@ -1,18 +1,26 @@
 const Blockchain = require('../blockchain/index');
 const {METHOD} = require("../config")
-const {Block} = require('../blockchain/block')
+const {Block, ForgedBlock} = require('../blockchain/block')
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require("rimraf");
 const assert = chai.assert;
 const sleep = require("system-sleep")
+const DB = require("../db")
+const TransactionPool = require("../db/transaction-pool")
 
 describe('Blockchain', () => {
-    let bc, bc2;
+    let bc, bc2, tp;
 
     beforeEach(() => {
+        db = new DB()
         bc = new Blockchain("first-blockchain");
         bc2 = new Blockchain("second-blockchain");
+        // Manage use of these transaction pools beer
+        tp = new TransactionPool()
+        db1 = DB.getDatabase(bc, tp)
+        db2 = DB.getDatabase(bc2, new TransactionPool())
+
     });
 
     afterEach(() => {
@@ -70,6 +78,25 @@ describe('Blockchain', () => {
             bc.addBlock({ref:123})
             sleep(500)
             assert.deepEqual(Blockchain.loadChain(bc._blockchainDir()), bc.chain)
+        }
+    })
+
+    it("blockchains can sync on startup", () => {
+        if(METHOD == "POS"){
+            for(var i = 0; i<1000; i++){
+                //let i represent a fake block here
+                db1.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
+                var block = ForgedBlock._forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock())
+                bc.addNewBlock(block)
+                tp.removeCommitedTransactions(block)
+            }
+            while(bc.lastBlock().hash !== bc2.lastBlock().hash){
+                var blockSection = bc.requestBlockchainSection(bc2.lastBlock())
+                if(blockSection){
+                    bc2.merge(blockSection)
+                }
+            }
+            assert.deepEqual(JSON.stringify(bc.chain), JSON.stringify(bc2.chain))
         }
     })
 })
