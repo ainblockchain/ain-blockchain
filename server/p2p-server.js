@@ -172,7 +172,7 @@ class P2pServer {
         var data = this.transactionPool.validTransactions()
         var blockHeight = this.blockchain.height() + 1
         this.votingHelper = new VotingHelper()
-        this.votingHelper.votingBlock =  ForgedBlock._forgeBlock(data, this.db, blockHeight, this.blockchain.chain[this.blockchain.height()])
+        this.votingHelper.votingBlock =  ForgedBlock._forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock())
         var ref = "_voting/blockHash"
         var value = this.votingHelper.votingBlock.hash
         console.log(`Forged block with hash ${this.votingHelper.votingBlock.hash} at height ${blockHeight}`)

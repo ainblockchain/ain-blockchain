@@ -118,7 +118,7 @@ describe('Integration Tests', () => {
   });
 
   describe(`blockchain database mining/forging`, () => {
-    let random_operation
+    let random_operation, chain
    
     beforeEach(() => {
       
@@ -136,11 +136,11 @@ describe('Integration Tests', () => {
         sleep(100)
       }
       else{
-          numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length
-          while(!(JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length > numBlocks)){
+          numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height
+          while(!(JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height > numBlocks)){
             sleep(200)
           }
-          numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length 
+          numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height
       }
       numNewBlocks++
     })
@@ -194,7 +194,7 @@ describe('Integration Tests', () => {
       // })
 
       it('all having correct number of blocks', () => {
-        expect(numNewBlocks + numBlocksOnStartup).to.equal(blocks.length)
+        expect(numNewBlocks + numBlocksOnStartup -1).to.equal(blocks.pop().height)
       })
     })
 

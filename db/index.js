@@ -145,10 +145,9 @@ class DB {
     }
 
     createDatabase(blockchain){
-        this.db = {}
-        blockchain.chain.forEach(block => block.data.forEach(transaction => {
+        blockchain.chain.forEach(block => {
             this.executeBlockTransactions(block)
-        }))
+        })
     }
 
     executeBlockTransactions(block){

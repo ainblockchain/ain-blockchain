@@ -39,7 +39,7 @@ class Blockchain{
             throw Error("Blockchain height is wrong")
         }
         this.chain.push(block)
-        while (this.chain.length > 50){
+        while (this.chain.length > 10){
             this.backUpDB.executeBlockTransactions(this.chain.shift())
         }
         this.writeChain()

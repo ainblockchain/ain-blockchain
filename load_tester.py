@@ -45,7 +45,7 @@ import time
 import json
 from itertools import cycle
 
-urls = ['http://35.246.32.94:8080', 'http://35.243.181.32:8080', 'http://35.246.32.94:8080'] * 1000
+urls = ['http://127.0.0.1:8080', 'http://127.0.0.1:8081', 'http://127.0.0.1:8082'] * 300
 start = time.time()
 rs = (grequests.post("{}/{}".format(url, op[0]), json=op[1]) for url, op in zip(urls, cycle(RANDOM_OPERATION)))
 res = grequests.map(rs)
