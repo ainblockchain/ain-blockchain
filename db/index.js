@@ -8,6 +8,8 @@ class DB {
         this.db = {}
         this.keyPair = ChainUtil.genKeyPair()
         this.publicKey = this.keyPair.getPublic().encode('hex')
+        this.nonce = 0
+        console.log(`creating new db with id ${this.publicKey}`)
 
     }
 
@@ -248,8 +250,11 @@ class DB {
                 return match.replace("db.get", "this.get").replace(/'/g, "") ;
             } );
         } 
-        //console.log(`Evaluating: ${ruleString}`)
-        return eval(ruleString)
+        var permission = eval(ruleString)
+        if (!permission){
+            console.log(`"${ruleString}" evaluated as false`)
+        }
+        return permission
     }
 
 }

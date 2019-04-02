@@ -98,7 +98,7 @@ class P2pServer {
                         }
                         break
                     case MESSAGE_TYPES.proposed_block:
-                        if (!this.validateBlock(data.block) || !(this.votingHelper.votingStage === VOTING_STAGE.WAITING_FOR_BLOCK)){
+                        if (!ForgedBlock.validateBlock(data.block, this.blockchain) || !(this.votingHelper.votingStage === VOTING_STAGE.WAITING_FOR_BLOCK)){
                             break
                         }
                         this.votingHelper.votingStage = VOTING_STAGE.BLOCK_RECEIVED
@@ -161,12 +161,6 @@ class P2pServer {
         socket.on('close', () => {
             this.sockets.splice(this.sockets.indexOf(socket), 1)
         })
-    }
-
-    validateBlock(block){
-        var validity = block.height == (this.blockchain.height() + 1)
-        console.log(`Validity of block is ${validity}`)
-        return validity
     }
 
     executeTransaction(transaction){

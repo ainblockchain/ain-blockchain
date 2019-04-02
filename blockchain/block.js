@@ -145,6 +145,34 @@ class ForgedBlock extends Block {
     
     }
 
+    static validateBlock(block, blockchain){
+        
+        if(block.height !== (blockchain.height() + 1)){
+            console.log(`Height is not correct. Expected: ${(blockchain.height() + 1)} Actual: ${block.height}`)
+            return false
+        } 
+        const nonceTracker = {}
+        let transaction
+
+        for(var i=0; i<block.data.length; i++) {
+            transaction = block.data[i]
+            if (!(transaction.address in nonceTracker)){
+                nonceTracker[transaction.address] = transaction.nonce
+                continue
+            }  
+            
+            if (transaction.nonce != nonceTracker[transaction.address] + 1){
+                console.log(`Invalid noncing for ${transaction.address}. Expected ${nonceTracker[transaction.address] + 1}. Received ${transaction.nonce}`)
+                return false
+            }
+            nonceTracker[transaction.address] = transaction.nonce
+
+
+        }
+        console.log(`Valid block at height ${block.height}`)
+        return true
+    }
+
 }
 
 module.exports = {Block, MinedBlock, ForgedBlock};

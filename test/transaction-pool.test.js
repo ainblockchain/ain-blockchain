@@ -4,6 +4,7 @@ const DB = require('../db')
 const chai = require('chai')
 const expect = chai.expect
 const assert = chai.assert
+const shuffleSeed = require('shuffle-seed')
 
 describe('TransactionPool', () => {
     let tp, db, transaction;
@@ -25,41 +26,42 @@ describe('TransactionPool', () => {
     })
 
 
-    describe('mixing valid and corrupt transations', () => {
-        let validTransactions
+    describe('sorting transactions by nonces', () => {
+        let db2
+
 
         beforeEach(() => {
-            validTransactions = [...tp.transactions]
-            for(let i=0; i<100; i++){
-                db = new DB("test-db")
-                transaction = db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp)
-                if(i%2){
-                    transaction.output.type = "SOMETHING_ELSE"
-                } else {
-                    validTransactions.push(transaction)
-                }
+            for(let i=0; i<10; i++){
+                db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp)
             }
-        
-        })
-        it('shows a difference between valid and corrupt transactions', () => {
-            expect(JSON.stringify(tp.transactions)).not.to.equal(JSON.stringify(validTransactions))
+            db2 = new DB("test-db2")
+            for(let i=0; i<11; i++){
+                db2.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp)
+            }
+
+            // Shuffle transactions and see if the transaction-pool can re-sort them according to them according to their proper ordering
+            tp.transactions = shuffleSeed.shuffle(tp.transactions) 
+            
         })
 
-        it('grabs valid transactions', () => {
-            assert.deepEqual(tp.validTransactions(), JSON.parse(JSON.stringify(validTransactions)))
+        it('when sort function is called', () => {
+            var sortedNonces1 = tp.validTransactions().filter(transaction => {if (transaction.address === db.publicKey) return transaction}).map(transaction => {return transaction.nonce})
+            var sortedNonces2 = tp.validTransactions().filter(transaction => {if (transaction.address === db2.publicKey) return transaction}).map(transaction => {return transaction.nonce})
+            assert.deepEqual(sortedNonces1, [...Array(11).keys()])
+            assert.deepEqual(sortedNonces2, [...Array(11).keys()])
+
         })
 
-        it('removes invalid transactions after grabbing valid transactions', () => {
-            tp.validTransactions()
-            assert.deepEqual(tp.transactions, validTransactions)
-        })
 
         it('removes transactions included in block', () => {
-            tp.validTransactions()
             var height = 1
-            var block = ForgedBlock._forgeBlock(validTransactions.splice(20, validTransactions.length), db, height, ForgedBlock.genesis())
+            var block = ForgedBlock._forgeBlock(tp.validTransactions(), db, height, ForgedBlock.genesis())
+            var newTransactions = []
+            for(let i=0; i<10; i++){
+                newTransactions.push(db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp))
+            }
             tp.removeCommitedTransactions(block)
-            assert.deepEqual(validTransactions, tp.transactions)
+            assert.deepEqual(newTransactions, tp.transactions)
         })
     })
 });

@@ -16,6 +16,15 @@ describe('Transaction', () => {
         transaction = Transaction.newTransaction(db, data)
     });
 
+    it('assigns nonces correctly', () => { 
+        let t;
+        for(var currentNonce = db.nonce -1; currentNonce < 50; currentNonce++){
+            t = Transaction.newTransaction(db, data)
+        }
+        expect(t.nonce).to.equal(currentNonce)
+    })
+    
+
     it('validates a valid transaction', () => {
         expect(Transaction.verifyTransaction(transaction)).to.equal(true)
     })
