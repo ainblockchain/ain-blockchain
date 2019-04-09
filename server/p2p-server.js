@@ -76,18 +76,9 @@ class P2pServer {
                     this.executeTransaction(data.transaction)
                 }
                 switch(data.type){
-                    case MESSAGE_TYPES.chain:
-                        if (this.blockchain.replaceChain(data.chain)){
-                            this.db.reconstruct(this.blockchain, this.transactionPool)
-                        }
-                        break
-                    case MESSAGE_TYPES.clear_transactions:
-                        // TODO: Add only transactions on blockchain cleared functionality
-                        this.transactionPool.clear()
-                        break
                     case MESSAGE_TYPES.new_voting:
                         if ([VOTING_STAGE.COMMITTED, VOTING_STAGE.NEW].indexOf(this.votingHelper.votingStage) < 0){
-                            this.requestSync()
+                            this.requestChainSubsection(this.blockchain.lastBlock())
                         }
                         this.votingHelper = new VotingHelper()
                         if (this.stake){
@@ -134,10 +125,6 @@ class P2pServer {
                             this.votingHelper.votingStage = VOTING_STAGE.COMMITTED                            
                             this.cleanupAfterVotingRound()
                         }
-                        break
-                    case MESSAGE_TYPES.request_sync:
-                        console.log("Syncing request received")
-                        this.syncChains()
                         break
                     case MESSAGE_TYPES.chain_subsection:
                         if(this.blockchain.merge(data.chainSubsection)){
@@ -186,10 +173,6 @@ class P2pServer {
         }
     }
 
-    sendChain(socket){
-        socket.send(JSON.stringify({type: MESSAGE_TYPES.chain,  chain: this.blockchain.chain}));
-    }
-
     sendChainSubsection(socket, chainSubsection){
         socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection, chainSubsection}))
     }
@@ -202,20 +185,8 @@ class P2pServer {
         this.sockets.forEach(socket => this.sendChainSubsection(socket, chainSubsection))
     }
 
-    syncChains() {
-        this.sockets.forEach(socket => this.sendChain(socket));
-    }
-
     broadcastTransaction(transaction){
         this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.transaction, transaction})))
-    }
-
-    broadcastClearTransactions() {
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.clear_transactions})))
-    }
-
-    requestBlock(){
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.request_block, address: this.db.publicKey})))
     }
 
     broadcastPreVote(transaction){
@@ -236,14 +207,8 @@ class P2pServer {
         this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.proposed_block, block: this.votingHelper.votingBlock,  address: this.db.publicKey})))
     }
 
-
     sendRequestedBlock(){
         this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.requested_block,  block: this.votingHelper.votingBlock, address: this.db.publicKey})))
-    }
-
-    requestSync(){
-        console.log("Requesting sync")
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.request_sync})))
     }
 
     registerStakeWithNetwork(stake){
@@ -261,7 +226,6 @@ class P2pServer {
         }
     }
 
-    
     addBlockToChain(){
         this.blockchain.addNewBlock(this.votingHelper.votingBlock)
         this.transactionPool.removeCommitedTransactions(this.votingHelper.votingBlock)
