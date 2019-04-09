@@ -15,7 +15,7 @@ const itParam = require('mocha-param');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
-const {BLOCKCHAINS_DIR, METHOD} = require('../config') 
+const {BLOCKCHAINS_DIR} = require('../config') 
 const rimraf = require("rimraf")
 
 
@@ -29,8 +29,7 @@ const SERVERS = [server1, server2, server3, server4]
 const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true, STAKE: 250}, {P2P_PORT:5002, PORT: 8081, LOG: true, STAKE: 250},
                        {P2P_PORT:5003, PORT: 8082, LOG: true, STAKE: 250}, {P2P_PORT:5004, PORT: 8083, LOG: true, STAKE: 250}]
 
-// Paths to current Blockchains (These will be needed in order to assure that all db operations are recorded by this test case)
-const CHAIN_LOCATION = BLOCKCHAINS_DIR + "/" + "8080"
+
 
 // Data options
 RANDOM_OPERATION = [
@@ -77,7 +76,6 @@ RANDOM_OPERATION = [
 describe('Integration Tests', () => {
   let procs = []
   // let preTestChainInfo  = {}
-  let operationCounter = 0
   let numNewBlocks = 0
   let numBlocks, numBlocksOnStartup
   let sentOperations = []
@@ -105,8 +103,6 @@ describe('Integration Tests', () => {
     numBlocksOnStartup = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length
     // preTestChainInfo["numTransactions"] = 0
 
-
-
   })
 
   after(() => {
@@ -126,21 +122,11 @@ describe('Integration Tests', () => {
           random_operation = RANDOM_OPERATION[Math.floor(Math.random()*RANDOM_OPERATION.length)]
           sentOperations.push(random_operation)
           syncRequest("POST", SERVERS[Math.floor(Math.random() * SERVERS.length)] + "/" + random_operation[0], {json: random_operation[1]})
-          operationCounter++
           sleep(100)
       }
-
-    
-      if (METHOD == "POW"){
-        syncRequest('GET', server3 + '/mine-transactions')
-        sleep(100)
-      }
-      else{
-          numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height
-          while(!(JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height > numBlocks)){
-            sleep(200)
-          }
-          numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height
+      numBlocks = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height
+      while(!(JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height > numBlocks)){
+        sleep(200)
       }
       numNewBlocks++
     })

@@ -114,8 +114,9 @@ describe("DB rules", () => {
     beforeEach(() => {
         tp = new TransactionPool()
         bc = new Blockchain("db-test")
+        bc2 = new Blockchain("db-test")
         db1 = DB.getDatabase(bc, tp)
-        db2 = DB.getDatabase(bc, tp)
+        db2 = DB.getDatabase(bc2, tp)
         test_db = {
             "comcom": "unreadable value",
             "unspecified": {"nested": "readable"},

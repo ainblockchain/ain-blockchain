@@ -6,7 +6,6 @@ const {getForger} = require('../server/validator')
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const {RULES_FILE_PATH} = require('../config')
 const rimraf = require("rimraf")
 const {BLOCKCHAINS_DIR} = require('../config') 
 
@@ -33,7 +32,7 @@ describe("Validator", () => {
         for(var i = 0; i<1700; i++){
             //let i represent a fake block here
             db.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
-            var block = ForgedBlock._forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
+            var block = ForgedBlock.forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
             bc.addNewBlock(block)
             tp.removeCommitedTransactions(block)
             answers[getForger(stakeHolders, bc)] += 1
@@ -48,7 +47,7 @@ describe("Validator", () => {
         for(var i = 0; i<2000; i++){
             //let i represent a fake block here
             db.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
-            var block = ForgedBlock._forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
+            var block = ForgedBlock.forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
             bc.addNewBlock(block)
             tp.removeCommitedTransactions(block)
             assert.deepEqual(getForger(stakeHolders, bc), getForger(stakeHolders, bc))

@@ -55,7 +55,7 @@ describe('TransactionPool', () => {
 
         it('removes transactions included in block', () => {
             var height = 1
-            var block = ForgedBlock._forgeBlock(tp.validTransactions(), db, height, ForgedBlock.genesis())
+            var block = ForgedBlock.forgeBlock(tp.validTransactions(), db, height, ForgedBlock.genesis())
             var newTransactions = []
             for(let i=0; i<10; i++){
                 newTransactions.push(db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp))

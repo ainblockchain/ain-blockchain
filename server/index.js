@@ -19,8 +19,6 @@
 // Require process, so we can mock environment variables
 const process = require('process');
 const PORT = process.env.PORT || 8080;
-const {METHOD} = require("../config")
-
 
 // Initiate logging
 const LOG = process.env.LOG || false;
@@ -55,7 +53,6 @@ const Database = require('../db')
 // Applictation dependencies
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../db/transaction-pool')
-const Miner = require('./miner')
 const InvalidPerissonsError = require("../errors")
 
 
@@ -68,7 +65,6 @@ const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool()
 const db = Database.getDatabase(bc, tp)
 const p2pServer = new P2pServer(db, bc, tp)
-const miner = new Miner(bc, tp, p2pServer)
 
 app.get('/', (req, res, next) => {
   try{
@@ -97,16 +93,6 @@ app.get('/blocks', (req, res) => {
     console.log(error)
   }
 });
-
-app.get('/mine-transactions', (req, res) => {
-  try{
-    const block = miner.mine()
-    console.log(`New block added: ${block.toString()}`)
-    res.redirect('/blocks')
-  } catch (error){
-    console.log(error)
-  }
-})
 
 
 app.get('/stake', (req, res, next) => {
@@ -237,7 +223,7 @@ p2pServer.listen()
 module.exports = app;
 
 
-if (METHOD == "POS" && process.env.STAKE){
+if (process.env.STAKE){
     setTimeout(() => {
       p2pServer.registerStakeWithNetwork(process.env.STAKE)
     }, 5000)

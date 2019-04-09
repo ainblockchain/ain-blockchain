@@ -1,6 +1,6 @@
 
-const {Block, MinedBlock, ForgedBlock} = require('./block')
-const {BLOCKCHAINS_DIR, METHOD} = require('../config') 
+const {ForgedBlock} = require('./block')
+const {BLOCKCHAINS_DIR} = require('../config') 
 const rimraf = require("rimraf")
 const path = require('path')
 const fs = require('fs')
@@ -9,8 +9,9 @@ const naturalSort = require("node-natural-sort")
 const CHAIN_SUBSECT_LENGTH = 20
 
 class Blockchain{
+
     constructor(blockchain_dir){
-        this.chain = [Block.genesis()];
+        this.chain = [ForgedBlock.genesis()];
         this.blockchain_dir = blockchain_dir
         this.backUpDB = null
         let new_chain
@@ -22,6 +23,9 @@ class Blockchain{
     }
 
     setBackDb(backUpDB){
+        if (this.backUpDB !== null){
+            throw Error("Already set backupDB")
+        }
         this.backUpDB = backUpDB
     }
 
@@ -45,19 +49,10 @@ class Blockchain{
         this.writeChain()
     }
 
-    addBlock(data){
-        let block
-        // Now supporting POW and POS implementations
-        block = MinedBlock.mineBlock(this.chain[this.chain.length -1], data);
-        this.chain.push(block);
-        this.writeChain()
-        return block;
-    }
-
 
     static isValidChain(chain){
 
-        if(JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis())) {
+        if(JSON.stringify(chain[0]) !== JSON.stringify(ForgedBlock.genesis())) {
             console.log("first block not genesis")
             return false
         }
@@ -69,7 +64,7 @@ class Blockchain{
         for(let i=1; i < chainSubSection.length; i++) {
             const block = chainSubSection[i];
             const lastBlock = chainSubSection[i - 1];
-            if(block.lastHash !== lastBlock.hash || block.hash !== (METHOD === "POW" ? MinedBlock.blockHash(block): ForgedBlock.blockHash(block))){
+            if(block.lastHash !== lastBlock.hash || block.hash !== ForgedBlock.blockHash(block)){
                 console.log(`Invalid hashing for block ${block.height}`)
                 return false;
             }
@@ -146,9 +141,9 @@ class Blockchain{
 
     merge(chainSubSection){
         // Call to shift here is important as it removes the first element from the list !!
-
         const firstBlock = chainSubSection.shift()
-        if (this.lastBlock().hash !== ForgedBlock.blockHash(firstBlock) && this.lastBlock().hash !== Block.genesis().hash){
+        if (this.lastBlock().hash !== ForgedBlock.blockHash(firstBlock) && this.lastBlock().hash !== ForgedBlock.genesis().hash){
+            console.log(chainSubSection)
             console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.blockHash(firstBlock).substring(0, 5)}`)
             return false
         }
@@ -165,7 +160,7 @@ class Blockchain{
         var blockFiles =  Blockchain.getBlockFiles(chain_path)
 
         blockFiles.forEach(block => {
-            newChain.push(MinedBlock.loadBlock(block))
+            newChain.push(ForgedBlock.loadBlock(block))
         })
 
         if (Blockchain.isValidChain(newChain)){

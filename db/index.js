@@ -266,7 +266,6 @@ class BackUpDB extends DB{
 
     }
 
-
 }
 
 module.exports = DB
