@@ -214,6 +214,12 @@ describe('Integration Tests', () => {
         assert.deepEqual(db.db["test"], body.result)
         
         })
+
+      it('can be queried by index ', () => {
+        body = JSON.parse(syncRequest('GET', server1 + '/blocks?from=5&to=11').body.toString("utf-8"))
+        assert.deepEqual([5, 6, 7, 8, 9, 10], body.map(block =>{return block.height}))
+        
+        })
       })
   })
 })

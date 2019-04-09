@@ -176,6 +176,31 @@ class Blockchain{
     static getBlockFiles(chainPath){
         return fs.readdirSync(chainPath).sort(naturalSort()).map(fileName => path.resolve(chainPath, fileName))
     }
+
+    blockFiles(){
+        return Blockchain.getBlockFiles(this._blockchainDir())
+    }
+
+    getChainSection(from, to){
+        var from = Number(from)
+        var to = to ? Number(to) : this.height()
+        let chain 
+        if (from < this.chain[0].height){
+            chain = []
+            var blockFiles = this.blockFiles()
+            var endPoint = to > blockFiles.length ? blockFiles.length: to
+            for(var i = from; i < endPoint; i++){
+                chain.push(ForgedBlock.loadBlock(blockFiles[i]))
+            }
+        } else {
+            chain = this.chain.filter(block => {
+                if (from <= block.height < to){
+                    return block
+                }
+            })
+        }
+        return chain
+    }
 }
 
 module.exports = Blockchain;

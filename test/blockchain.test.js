@@ -56,20 +56,36 @@ describe('Blockchain', () => {
         expect(Blockchain.isValidChain(bc.chain)).to.equal(false)
     });
 
-    it("blockchains can sync on startup", () => {
-        for(var i = 0; i<1000; i++){
-            //let i represent a fake block here
-            db1.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
-            var block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock())
-            bc.addNewBlock(block)
-            tp.removeCommitedTransactions(block)
-        }
-        while(bc.lastBlock().hash !== bc2.lastBlock().hash){
-            var blockSection = bc.requestBlockchainSection(bc2.lastBlock())
-            if(blockSection){
-                bc2.merge(blockSection)
+
+    describe("with lots of blocks", () => {
+        let blocks
+
+        beforeEach(() => {
+            blocks = []
+        
+            for(var i = 0; i<1000; i++){
+                //let i represent a fake block here
+                db1.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
+                var block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock())
+                blocks.push(block)
+                bc.addNewBlock(block)
+                tp.removeCommitedTransactions(block)
             }
-        }
-        assert.deepEqual(JSON.stringify(bc.chain), JSON.stringify(bc2.chain))
+        })
+
+        it(" can sync on startup", () => {
+            while(bc.lastBlock().hash !== bc2.lastBlock().hash){
+                var blockSection = bc.requestBlockchainSection(bc2.lastBlock())
+                if(blockSection){
+                    bc2.merge(blockSection)
+                }
+            }
+            assert.deepEqual(JSON.stringify(bc.chain), JSON.stringify(bc2.chain))
+        })
+
+        it("can be queried by index", () => {
+            assert.deepEqual(JSON.stringify(bc.getChainSection(10, 30)), JSON.stringify(blocks.slice(9, 29)))
+            assert.deepEqual(JSON.stringify(bc.getChainSection(980, 1010)), JSON.stringify(blocks.slice(979, 1010)))
+        })
     })
 })

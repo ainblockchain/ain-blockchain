@@ -87,10 +87,15 @@ app.get('/transactions', (req, res) => {
 })
 
 app.get('/blocks', (req, res) => {
-  try{
-    res.json(bc.chain);
-  } catch (error){
-    console.log(error)
+  if (req.query.to && typeof req.query.from === "undefined"){
+    res.json({error: "Most specify valid 'from'"})
+  } else{ 
+      try{
+        var chainSection = req.query ? bc.getChainSection(req.query.from, req.query.to): bc.chain
+        res.json(chainSection)
+      } catch (error){
+        console.log(error)
+      }
   }
 });
 
