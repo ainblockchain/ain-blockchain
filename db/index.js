@@ -128,7 +128,7 @@ class DB {
 
     createTransaction(data, transactionPool){
         let transaction = Transaction.newTransaction(this, data)
-        transactionPool.addTransaction(transaction)
+        transactionPool.addTransaction(transaction, false)
         return transaction
     }
 

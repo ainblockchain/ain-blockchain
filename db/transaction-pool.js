@@ -7,19 +7,20 @@ class TransactionPool {
         this.nonceTracker = {}
     }
 
-    addTransaction(transaction) {
+    addTransaction(transaction, verify=true) {
         // Quick verification of transaction on entry
-        if (Transaction.verifyTransaction(transaction)){
-            this.transactions.push(transaction)
-
-            // Sort by timestamps
-            if (transaction.timestamp >= this.lastTimestamp){
-                this.lastTimestamp = transaction.timestamp
-            } else {
-                this.transactions = this.transactions.sort(function(a, b) {
-                    return a.timestamp - b.timestamp  
-                })
-            }
+        if (verify && !Transaction.verifyTransaction(transaction)){
+            console.log("Invalid transaction")
+            return
+        }
+        this.transactions.push(transaction)
+        // Sort by timestamps
+        if (transaction.timestamp >= this.lastTimestamp){
+            this.lastTimestamp = transaction.timestamp
+        } else {
+            this.transactions = this.transactions.sort(function(a, b) {
+                return a.timestamp - b.timestamp  
+            })
         }
     }
 
