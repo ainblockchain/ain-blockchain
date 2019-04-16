@@ -9,13 +9,23 @@ const PORT = process.env.PORT || 8080;
 const express = require('express');
 // const crypto = require('crypto');
 // var Promise = require("bluebird");
-
+const thisDict = {}
 const app = express();
 
 app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
 
-
+app.get('/', (req, res, next) => {
+  try{
+    res
+      .status(200)
+      .set('Content-Type', 'text/plain')
+      .send('Welcome to afan-tx-server')
+      .end();
+    } catch (error){
+      console.log(error)
+    }
+})
 
 
 app.post('/update', (req, res, next) => {
@@ -29,7 +39,9 @@ app.post('/update', (req, res, next) => {
 
 app.post('/set', (req, res, next) => {
   var statusCode = 201
-
+  
+  thisDict[req.body.ref] = req.body.value
+  console.log(thisDict)
   res.status(statusCode)
   .set('Content-Type', 'application/json')
   .send({code: statusCode < 299? 0: 1}).end();
