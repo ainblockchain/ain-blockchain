@@ -102,6 +102,7 @@ describe('aFan Client Test', () => {
 
     it('two fans', () => {
       const afanClient = new AfanClient(server2)
+      sleep(100)
 
       return set('/afan/balance/uid0', 30)
           .then(() => set('/afan/balance/uid1', 10))
