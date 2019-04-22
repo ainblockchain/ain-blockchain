@@ -121,8 +121,9 @@ class Blockchain{
     }
 
     requestBlockchainSection(lastBlock){
+        console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash.substring(0, 5)}`)
         var blockFiles = Blockchain.getBlockFiles(this._blockchainDir())
-        if (blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash.substring(0, 5)}-${lastBlock.hash.substring(0, 5)}`) < 0){
+        if (blockFiles.length > lastBlock.height && blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash.substring(0, 5)}-${lastBlock.hash.substring(0, 5)}`) < 0){
             console.log("Invalid blockchain request")
             return 
         }
@@ -136,15 +137,19 @@ class Blockchain{
         chainSectionFiles.forEach((blockFile) => {
             chainSubSection.push(ForgedBlock.loadBlock(blockFile))
         })
-        return chainSubSection
+        return chainSubSection.length > 0 ? chainSubSection: null
     }
 
     merge(chainSubSection){
         // Call to shift here is important as it removes the first element from the list !!
+        console.log(`Current height before merge: ${this.height()}`)
+        if (chainSubSection[chainSubSection.length - 1].height <= this.height()){
+            console.log("Received chain is of lower height than current height")
+            return false
+        }
         const firstBlock = chainSubSection.shift()
-        if (this.lastBlock().hash !== ForgedBlock.blockHash(firstBlock) && this.lastBlock().hash !== ForgedBlock.genesis().hash){
-            console.log(chainSubSection)
-            console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.blockHash(firstBlock).substring(0, 5)}`)
+        if (this.lastBlock().hash !== ForgedBlock.blockHash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== ForgedBlock.genesis().hash){
+            console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.blockHash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`)
             return false
         }
         if (!Blockchain.isValidChainSubsection(chainSubSection)){
@@ -152,6 +157,7 @@ class Blockchain{
             return false
         }
         chainSubSection.forEach(block => this.addNewBlock(block))
+        console.log(`Height after merge: ${this.height()}`)
         return true
     }
 

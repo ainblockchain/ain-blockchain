@@ -14,4 +14,14 @@ const MESSAGE_TYPES = {
 
 }
 
-module.exports = {RULES_FILE_PATH, BLOCKCHAINS_DIR, MESSAGE_TYPES}
+const VOTING_STATUS = {
+    WAITING_FOR_BLOCK: "wait_for_block",
+    BLOCK_RECEIVED: "block_received",
+    PRE_VOTE: "pre_vote",
+    PRE_COMMIT: "pre_commit",
+    COMMITTED: "committed",
+    SYNCING: "syncing"
+}
+
+
+module.exports = {RULES_FILE_PATH, BLOCKCHAINS_DIR, MESSAGE_TYPES, VOTING_STATUS}

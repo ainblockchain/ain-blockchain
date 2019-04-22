@@ -2,7 +2,7 @@ const Blockchain = require('../blockchain/index')
 const DB = require('../db/index')
 const TransactionPool = require("../db/transaction-pool")
 const {ForgedBlock} = require('../blockchain/block')
-const {getForger} = require('../server/validator')
+const VotingUtil = require('../server/voting-util')
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -12,7 +12,7 @@ const {BLOCKCHAINS_DIR} = require('../config')
 
 
 describe("Validator", () => {
-    let stakeHolders, bc, db, tp
+    let stakeHolders, bc, db, tp, vu
 
     beforeEach(() => {
        
@@ -20,6 +20,8 @@ describe("Validator", () => {
         tp = new TransactionPool()
         db = DB.getDatabase(bc, tp)
         stakeHolders = {"a": 1000, "b": 500, "c": 100, "d":250}
+        vu = new VotingUtil(db)
+
          
     })
 
@@ -35,7 +37,7 @@ describe("Validator", () => {
             var block = ForgedBlock.forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
             bc.addNewBlock(block)
             tp.removeCommitedTransactions(block)
-            answers[getForger(stakeHolders, bc)] += 1
+            answers[vu.getForger(stakeHolders, bc)] += 1
         }
         assert.isAbove(answers["a"], answers["b"])
         assert.isAbove(answers["b"], answers["d"])
@@ -50,7 +52,7 @@ describe("Validator", () => {
             var block = ForgedBlock.forgeBlock(tp.validTransactions(), db, bc.height() + 1, bc.lastBlock())
             bc.addNewBlock(block)
             tp.removeCommitedTransactions(block)
-            assert.deepEqual(getForger(stakeHolders, bc), getForger(stakeHolders, bc))
+            assert.deepEqual(vu.getForger(stakeHolders, bc), vu.getForger(stakeHolders, bc))
         }
     })
 })
