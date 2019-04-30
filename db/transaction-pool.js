@@ -9,9 +9,14 @@ class TransactionPool {
 
     addTransaction(transaction, verify=true) {
         // Quick verification of transaction on entry
-        if (verify && !Transaction.verifyTransaction(transaction)){
+        if(this.isAlreadyAdded(transaction)){
+            //console.log("Transaction already received")
+            return false
+        }
+
+        if ( verify && (!Transaction.verifyTransaction(transaction))){
             console.log("Invalid transaction")
-            return
+            return false
         }
         this.transactions.push(transaction)
         // Sort by timestamps
@@ -22,12 +27,18 @@ class TransactionPool {
                 return a.timestamp - b.timestamp  
             })
         }
+
+        return true
     }
 
     clear() {
         this.transactions = []
     }
     
+    isAlreadyAdded(transaction){
+        return  Boolean(this.transactions.find(trans => trans.id === transaction.id)) || transaction.nonce <= this.nonceTracker[transaction.address]
+
+    }
 
     validTransactions(){
         // Method now removes invalid transactions before returning valid ones. 

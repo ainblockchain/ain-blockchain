@@ -65,7 +65,11 @@ class P2pServer {
                 const data = JSON.parse(message);
 
                 if ("transaction" in data){
-                    this.executeTransaction(data.transaction)
+                    if (this.transactionPool.addTransaction(data.transaction)){
+                        this.executeTransaction(data, socket)
+                    } else {
+                        return 
+                    }
                 }
                 switch(data.type){
                     case MESSAGE_TYPES.new_voting:
@@ -78,18 +82,20 @@ class P2pServer {
                         this.checkIfForger()
                         break
                     case MESSAGE_TYPES.proposed_block:
-                        if (!ForgedBlock.validateBlock(data.block, this.blockchain) || !(this.votingUtil.status === VOTING_STATUS.WAITING_FOR_BLOCK || this.votingUtil.status === VOTING_STATUS.SYNCING)){
+                        if (!ForgedBlock.validateBlock(data.block, this.blockchain) || data.block === this.votingUtil.block || !(this.votingUtil.status === VOTING_STATUS.WAITING_FOR_BLOCK || this.votingUtil.status === VOTING_STATUS.SYNCING)){
                             break
                         }
                         this.votingUtil.setBlock(data.block)
+                        this.broadcastBlock(data.address, socket)
                         if(this.votingUtil.isValidator()){
-                            this.broadcastPreVote(this.votingUtil.preVote(this.transactionPool))
+                            this.broadcastPreVote(this.votingUtil.preVote(this.transactionPool),  this.blockchain.height() + 1)
                         }
                     case MESSAGE_TYPES.pre_vote:
+                        // Currently have height information but are not using 
                         if (!this.votingUtil.checkPreVotes()){
                             break
                         } 
-                        this.broadcastPreCommit(this.votingUtil.preCommit(this.transactionPool))
+                        this.broadcastPreCommit(this.votingUtil.preCommit(this.transactionPool),  this.blockchain.height() + 1)
                     case MESSAGE_TYPES.pre_commit:
                         if (this.votingUtil.isCommit()){
                             this.addBlockToChain()
@@ -105,7 +111,7 @@ class P2pServer {
                     case MESSAGE_TYPES.chain_subsection_request:
                         const chainSubsection = this.blockchain.requestBlockchainSection(data.lastBlock)
                         if(chainSubsection){
-                            this.broadcastChainSubsection(chainSubsection)
+                            this.sendChainSubsection(socket, chainSubsection)
                         }
                         break
                 }
@@ -119,9 +125,24 @@ class P2pServer {
         })
     }
 
-    executeTransaction(transaction){
+    executeTransaction(data, socket){
+        const transaction = data.transaction
         this.db.execute(transaction.output, transaction.address)
-        this.transactionPool.addTransaction(transaction)
+        switch(data.type){
+            case MESSAGE_TYPES.pre_vote:
+                this.broadcastPreVote(transaction, data.height, socket)
+                break
+            case MESSAGE_TYPES.pre_commit:
+                this.broadcastPreCommit(transaction, data.height, socket)
+                break
+            case MESSAGE_TYPES.new_voting:
+                this.broadcastNewRound(transaction, socket)
+                break
+            default:
+                this.broadcastTransaction(transaction, socket)
+                break
+
+        }
     }
 
     forgeBlock(){
@@ -133,7 +154,7 @@ class P2pServer {
         console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`)
         this.db.set(ref, value)
         this.broadcastTransaction(this.db.createTransaction({type: "SET", ref, value}, this.transactionPool))
-        this.broadcastBlock()
+        this.broadcastBlock(this.db.publicKey)
         if (!Object.keys(this.db.get("_voting/validators")).length){
             console.log("No validators registered for this round")
             this.addBlockToChain()                         
@@ -153,32 +174,50 @@ class P2pServer {
         this.sockets.forEach(socket => this.sendChainSubsection(socket, chainSubsection))
     }
 
-    broadcastTransaction(transaction){
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.transaction, transaction})))
+    broadcastTransaction(transaction, previousSocket=null){
+        this.sockets.forEach(socket => {
+            if (socket !== previousSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.transaction, transaction}))
+            }
+        })
     }
 
-    broadcastPreVote(transaction){
+    broadcastPreVote(transaction, height, previousSocket=null){
         if (transaction === null){
             return
         }
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_vote, address: this.db.publicKey, transaction,  height: this.blockchain.height() + 1})))
+        this.sockets.forEach(socket => {
+            if (socket !== previousSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_vote, transaction, height}))
+            }
+        })
     }
 
-    broadcastPreCommit(transaction){
+    broadcastPreCommit(transaction, height, previousSocket=null){
         if (transaction === null){
             return
         }
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_commit, address: this.db.publicKey, transaction, height: this.blockchain.height() + 1})))
+        this.sockets.forEach(socket => {
+            if (socket !== previousSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_commit, transaction, height}))
+            }
+        })
     }
 
-    broadcastNewRound(transaction){
-        console.log(`Starting new round ${this.db.publicKey}`)
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.new_voting, address: this.db.publicKey, transaction})))
+    broadcastNewRound(transaction, previousSocket=null){
+        if (previousSocket){
+            console.log(`Starting new round ${this.db.publicKey}`)
+        }
+        this.sockets.forEach(socket => {socket.send(JSON.stringify({type: MESSAGE_TYPES.new_voting, transaction}))})
     }
 
-    broadcastBlock(){
+    broadcastBlock(address, broadcasterSocket=null){
         console.log(`Broadcasting new block ${this.votingUtil.block.hash}`)
-        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.proposed_block, block: this.votingUtil.block,  address: this.db.publicKey})))
+        this.sockets.forEach(socket => {
+            if (socket !== broadcasterSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.proposed_block, block: this.votingUtil.block, address}))
+            }
+        })
     }
 
     sendRequestedBlock(){

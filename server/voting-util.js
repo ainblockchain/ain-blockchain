@@ -29,6 +29,7 @@ class VotingUtil {
     }
 
     isCommit(){
+        console.log(`Checking status ${this.status}`)
         return  this.status !== VOTING_STATUS.COMMITTED && this.checkPreCommits()
     }
 
@@ -120,6 +121,7 @@ class VotingUtil {
     } 
 
     setBlock(block){
+        console.log(`Setting block ${block.hash.substring(0, 5)} at height ${block.height}`)
         this.block = block
         this.status = VOTING_STATUS.BLOCK_RECEIVED
     }

@@ -69,7 +69,7 @@ class ForgedBlock extends Block {
     static validateBlock(block, blockchain){
         
         if(block.height !== (blockchain.height() + 1)){
-            console.log(`Height is not correct. Expected: ${(blockchain.height() + 1)} Actual: ${block.height}`)
+            console.log(`Height is not correct for block ${block.hash}. Expected: ${(blockchain.height() + 1)} Actual: ${block.height}`)
             return false
         } 
         const nonceTracker = {}

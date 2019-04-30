@@ -12,7 +12,7 @@ STAKE=250 P2P_PORT=5020 PORT=8081 LOG=true node $0/../server/index.js > log2.txt
 sleep 20
 ab -p post.txt -T application/json  -c 50 -n 10000 http://localhost:8080/set > load1.txt &
 sleep 1
-ab -p post.txt -T application/json  -c 50 -n 10000 http://localhost:8080/set > load2.txt 
+ab -p post.txt -T application/json  -c 50 -n 10000 http://localhost:8081/set > load2.txt 
 
 
 

@@ -73,7 +73,7 @@ describe('aFan Client Test', () => {
   describe('tx_invest', () => {
     it('send_one', () => {
       const afanClient = new AfanClient(server1)
-
+      sleep(100)
       return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
           .then(() => afanClient.tx_invest('uid0', 'uid1', 1))
           .then(() => get('/afan'))
@@ -89,9 +89,10 @@ describe('aFan Client Test', () => {
   describe('crushOnPost', () => {
     it('no fan', () => {
       const afanClient = new AfanClient(server1)
-
+      
       return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
           .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 1))
+          .then(() => sleep(100))
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_crushOnPost_no_fan_result.js')
@@ -102,13 +103,13 @@ describe('aFan Client Test', () => {
 
     it('two fans', () => {
       const afanClient = new AfanClient(server2)
-      sleep(100)
 
       return set('/afan/balance/uid0', 30)
           .then(() => set('/afan/balance/uid1', 10))
           .then(() => set('/afan/investors/uid1/uid2', 3))
           .then(() => set('/afan/investors/uid1/uid3', 7))
           .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
+          .then(() => {sleep(100)})
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_crushOnPost_two_fans_result.js')
@@ -121,9 +122,9 @@ describe('aFan Client Test', () => {
   describe('crushOnReply', () => {
     it('no fan', () => {
       const afanClient = new AfanClient(server3)
-
       return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
           .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
+          .then(() => sleep(100))
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_crushOnReply_no_fan_result.js')
@@ -140,7 +141,9 @@ describe('aFan Client Test', () => {
           .then(() => set('/afan/investors/uid1/uid2', 3))
           .then(() => set('/afan/investors/uid1/uid3', 2))
           .then(() => set('/afan/investors/uid1/uid4', 1))
+          .then(() => sleep(300))
           .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
+          .then(() => sleep(300))
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_crushOnReply_three_fans_result.js')
@@ -158,6 +161,7 @@ describe('aFan Client Test', () => {
       initialData['/afan/balance/uid1'] = 10
       return update(initialData)
           .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
+          .then(() => {sleep(100)})
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_adpropose_result.js')
