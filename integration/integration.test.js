@@ -208,7 +208,7 @@ describe('Integration Tests', () => {
 
       })
 
-      itParam('maintaining correct oder', SERVERS, (server) => {
+      itParam('maintaining correct order', SERVERS, (server) => {
         body = JSON.parse(syncRequest('GET', server + '/get?ref=test').body.toString("utf-8"))
         console.log(body.result)
         assert.deepEqual(db.db["test"], body.result)

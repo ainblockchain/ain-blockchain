@@ -93,6 +93,8 @@ class DB {
               result_list.push(this.get(item.ref, auth))
             } else if (item.op === 'update') {
               result_list.push(this.update(item.data, auth))
+            } else if (item.op === 'batch') {
+                result_list.push(this.batch(item.batch_list, auth))
             }
           })
           return result_list

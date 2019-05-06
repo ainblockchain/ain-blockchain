@@ -58,6 +58,8 @@ const InvalidPerissonsError = require("../errors")
 
 const app = express();
 
+const transactionBatch = []
+
 app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
 
@@ -124,8 +126,7 @@ app.get('/stake', (req, res, next) => {
 app.post('/update', (req, res, next) => {
   var data = req.body.data;
   let result = db.update(data)
-  let transaction = db.createTransaction({type: "UPDATE", data}, tp)
-  p2pServer.broadcastTransaction(transaction)
+  createTreansaction({op: "update", data})
   res
     .status(201)
     .set('Content-Type', 'application/json')
@@ -159,8 +160,7 @@ app.post('/set', (req, res, next) => {
     var ref = req.body.ref;
     var value = req.body.value
     db.set(ref, value)
-    let transaction = db.createTransaction({type: "SET", ref, value}, tp)
-    p2pServer.broadcastTransaction(transaction)
+    createTreansaction({op: "set", ref, value})
   } catch (error){
     if(error instanceof InvalidPerissonsError){
       statusCode = 401
@@ -177,8 +177,7 @@ app.post('/batch', (req, res, next) => {
   var batch_list = req.body.batch_list
   try{
     var result_list = db.batch(batch_list)
-    let transaction = db.createTransaction({type: "BATCH", batch_list}, tp)
-    p2pServer.broadcastTransaction(transaction)
+    createTreansaction({op: "batch", batch_list})
   }catch (err){
     console.log(err)
   }
@@ -194,9 +193,7 @@ app.post('/increase', (req, res, next) => {
   try{
     var diff = req.body.diff;
     var result = db.increase(diff)
-
-    let transaction = db.createTransaction({type: "INCREASE", diff}, tp)
-    p2pServer.broadcastTransaction(transaction)
+    createTreansaction({op: "increase", diff})
   } catch (error){
     if(error instanceof InvalidPerissonsError){
       statusCode = 401
@@ -235,3 +232,13 @@ if (process.env.STAKE){
     
 }
 
+function createTreansaction(trans){
+  if (transactionBatch.length == 0){
+    setTimeout(() => {
+      let transaction = db.createTransaction({type: "BATCH", batch_list: transactionBatch}, tp)
+      p2pServer.broadcastTransaction(transaction)
+      transactionBatch.length = 0
+    }, 100)
+  } 
+  transactionBatch.push(trans)
+}
