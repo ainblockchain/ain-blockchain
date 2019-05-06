@@ -104,6 +104,9 @@ class P2pServer {
                         break
                     case MESSAGE_TYPES.chain_subsection:
                         if(this.blockchain.merge(data.chainSubsection)){
+                            for(var i=0; i<data.chainSubsection.length; i++){
+                                this.transactionPool.removeCommitedTransactions(data.chainSubsection[i])
+                            }
                             this.db.reconstruct(this.blockchain, this.transactionPool)
                             this.requestChainSubsection(this.blockchain.lastBlock())
                         }

@@ -2,7 +2,7 @@ const Transaction = require("./transaction")
 
 class TransactionPool {
     constructor() {
-        this.transactions = []
+        this.transactions = {}
         this.lastTimestamp = 0
         this.nonceTracker = {}
     }
@@ -18,56 +18,59 @@ class TransactionPool {
             console.log("Invalid transaction")
             return false
         }
-        this.transactions.push(transaction)
-        // Sort by timestamps
-        if (transaction.timestamp >= this.lastTimestamp){
-            this.lastTimestamp = transaction.timestamp
-        } else {
-            this.transactions = this.transactions.sort(function(a, b) {
-                return a.timestamp - b.timestamp  
-            })
-        }
+        if (!(transaction.address in this.transactions)){
+            this.transactions[transaction.address] = []
+        } 
+        this.transactions[transaction.address].push(transaction)
 
         return true
     }
 
     clear() {
-        this.transactions = []
+        this.transactions = {}
     }
     
     isAlreadyAdded(transaction){
-        return  Boolean(this.transactions.find(trans => trans.id === transaction.id)) || transaction.nonce <= this.nonceTracker[transaction.address]
-
+        return Boolean((transaction.address in this.transactions) && this.transactions[transaction.address].find(trans => trans.id === transaction.id)) || Boolean(transaction.nonce <= this.nonceTracker[transaction.address])
     }
 
     validTransactions(){
         // Method now removes invalid transactions before returning valid ones. 
-        const tempNonceTracker = Object.assign({}, this.nonceTracker)
-        const validatedTransactions = []
-        const unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions))
+        //
+       // const tempNonceTracker = JSON.parse(JSON.stringify(this.nonceTracker))
+        const unvalidatedTransactions =  JSON.parse(JSON.stringify(this.transactions))
+        for (var address in unvalidatedTransactions){
+            unvalidatedTransactions[address].sort((a,b) => (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0))
+        }
 
-        let lastValidatedNumber = validatedTransactions.length
-
-        // Code here reiterates over transactions until they are processed in such a way that they are ordered by nonce, 
-        // TODO: Make this much more efficient !!!!
-        do{
-            lastValidatedNumber = validatedTransactions.length
-            unvalidatedTransactions.filter((transaction) => {
-                if (!(transaction.address in tempNonceTracker)){
-                    tempNonceTracker[transaction.address] = -1
-                }
-                if (tempNonceTracker[transaction.address] === (transaction.nonce - 1)){
-                    validatedTransactions.push(transaction)
-                    tempNonceTracker[transaction.address] = transaction.nonce
+        let orderedUnvalidatedTransactions = Object.values(unvalidatedTransactions)
+        while (orderedUnvalidatedTransactions.length > 1){
+            var tempNonceTracker = JSON.parse(JSON.stringify(this.nonceTracker))
+            var list1 = orderedUnvalidatedTransactions.shift()
+            var list2 = orderedUnvalidatedTransactions.shift()
+            var newList = []
+            let listToTakeValue
+            while (list1.length + list2.length > 0){
+                if ((list2.length == 0 || (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))){
+                    listToTakeValue = list1
                 } else{
-                    return transaction
+                    listToTakeValue = list2
                 }
-                   
-            })
+                if (listToTakeValue[0].nonce === tempNonceTracker[listToTakeValue[0].address] + 1){
+                    tempNonceTracker[listToTakeValue[0].address] = listToTakeValue[0].nonce
+                    newList.push(listToTakeValue.shift())
+                } else if (!(listToTakeValue[0].address in tempNonceTracker) && listToTakeValue[0].nonce === 0){
+                    tempNonceTracker[listToTakeValue[0].address] = 0
+                    newList.push(listToTakeValue.shift())
+                } else {
+                    listToTakeValue.length = 0
+                }
+            }
 
-        } while(lastValidatedNumber !== validatedTransactions.length)
-
-        return validatedTransactions
+            orderedUnvalidatedTransactions.push(newList)
+        }
+        return orderedUnvalidatedTransactions.length > 0 ?  orderedUnvalidatedTransactions[0]: []
+         
     }
 
     removeCommitedTransactions(block){
@@ -79,11 +82,17 @@ class TransactionPool {
             return transaction.id
         })
 
-        this.transactions = this.transactions.filter(transaction => {
-            if (transactionIds.indexOf(transaction.id) < 0){
-                return transaction
-            }
-        })
+        for (var address in this.transactions){
+            this.transactions[address] =  this.transactions[address].filter(transaction => {
+                if (transactionIds.indexOf(transaction.id) < 0){
+                    return transaction
+                } 
+            })
+
+           if (this.transactions[address].length === 0){
+               delete this.transactions[address] 
+           }
+        }
     }
 }
 
