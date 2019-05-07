@@ -79,6 +79,7 @@ class P2pServer {
                         if (this.stake){
                             this.broadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1, this.transactionPool))
                         }
+
                         this.checkIfForger()
                         break
                     case MESSAGE_TYPES.proposed_block:
@@ -91,13 +92,16 @@ class P2pServer {
                             this.broadcastPreVote(this.votingUtil.preVote(this.transactionPool),  this.blockchain.height() + 1)
                         }
                     case MESSAGE_TYPES.pre_vote:
+                        this.votingUtil.registerValidatingTransaction(data.transaction)
                         // Currently have height information but are not using 
                         if (!this.votingUtil.checkPreVotes()){
                             break
                         } 
                         this.broadcastPreCommit(this.votingUtil.preCommit(this.transactionPool),  this.blockchain.height() + 1)
                     case MESSAGE_TYPES.pre_commit:
+                        this.votingUtil.registerValidatingTransaction(data.transaction)
                         if (this.votingUtil.isCommit()){
+                            this.votingUtil.addValidatorTransactionsToBlock()
                             this.addBlockToChain()
                             this.cleanupAfterVotingRound()
                         }                       
@@ -151,7 +155,7 @@ class P2pServer {
     forgeBlock(){
         var data = this.transactionPool.validTransactions()
         var blockHeight = this.blockchain.height() + 1
-        this.votingUtil.setBlock(ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock()))
+        this.votingUtil.setBlock(ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(), this.db.publicKey, Object.keys(this.db.get("_voting/validators")), this.db.get("_voting/threshold")))
         var ref = "_voting/blockHash"
         var value = this.votingUtil.block.hash
         console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`)

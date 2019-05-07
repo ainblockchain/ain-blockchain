@@ -15,7 +15,7 @@
             ".write": "db.get(`_voting/blockHash`) !== null"
         },
         "preCommits": {
-            ".write":  "db.get(`_voting/preVotes`) !== 0"
+            ".write":  "db.get(`_voting/preVotes`) > db.get(`_voting/threshold`)"
         }
     },
     "nested":{

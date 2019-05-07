@@ -155,7 +155,7 @@ describe('Integration Tests', () => {
     })
 
     describe("leads to blockchains", () => {
-      let blocks
+      let blocks, headers
 
       beforeEach(() =>{
         blocks = JSON.parse(syncRequest('GET', server2 + '/blocks').body.toString("utf-8"))
@@ -166,6 +166,31 @@ describe('Integration Tests', () => {
           res.should.have.status(200);
           res.body.should.be.deep.eql(blocks)
         })
+      })
+
+      itParam('having blocks with valid headers', SERVERS, (server) => {
+        let transaction, preVotes, preCommits
+        headers = JSON.parse(syncRequest('GET', server + '/headers').body.toString("utf-8"))
+        for (var i=0; i<headers.length; i++){
+          preVotes = 0
+          preCommits = 0
+          for(var j=0;j<headers[i].validatorTransactions.length; j++){
+            transaction = headers[i].validatorTransactions[j]
+            if (headers[i].validators.indexOf(transaction.address) < 0){
+              assert.fail(`Invalid validator is validating block ${transaction.address}`)
+            }
+            if ("_voting/preVotes" in transaction.output.diff){
+              preVotes += transaction.output.diff["_voting/preVotes"]
+            } else if (preVotes <= headers[i].threshold){
+                assert.fail("PreCommits were made before PreVotes reached threshold")
+            } else {
+              preCommits += transaction.output.diff["_voting/preCommits"]
+            }
+          }
+          expect(preVotes).greaterThan(headers[i].threshold)
+          expect(preCommits).greaterThan(headers[i].threshold)
+        }
+        
       })
       
 

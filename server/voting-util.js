@@ -9,13 +9,28 @@ class VotingUtil {
         this.db = db
         this.status = VOTING_STATUS.SYNCING
         this.block = null
+        this.validatorTransactions = []
     }
 
+    registerValidatingTransaction(transaction){
+
+        // Transactions can be null (when cascading from proposed_block) and duplicate (when cascading from pre_cote)
+        if (transaction && !this.validatorTransactions.find(trans => {return trans.id === transaction.id})){
+            this.validatorTransactions.push(transaction)
+        }
+    }
 
     checkPreVotes(){
         var total  = Object.values(this.db.get("_voting/validators")).reduce(function(a, b) { return a + b; }, 0)
         console.log(`Total preVotes from validators : ${total}\nReceived preVotes ${this.db.get("_voting/preVotes")}`)
         return (this.db.get("_voting/preVotes") > (total *.6666)) || total === 0
+    }
+
+    addValidatorTransactionsToBlock() {
+        for(var i=0; i<this.validatorTransactions.length; i++){
+            this.block.validatorTransactions.push(this.validatorTransactions[i])
+        }
+        
     }
     
     preVote(tp){
@@ -24,7 +39,9 @@ class VotingUtil {
         this.db.increase(diff)
         this.status = VOTING_STATUS.PRE_VOTE
         console.log(`Current prevotes are ${this.db.db._voting.preVotes}`)
-        return this.db.createTransaction({type: "INCREASE", diff}, tp)
+        var transaction =  this.db.createTransaction({type: "INCREASE", diff}, tp)
+        this.registerValidatingTransaction(transaction)
+        return transaction
     
     }
 
@@ -36,6 +53,7 @@ class VotingUtil {
     reset(){
         this.status = VOTING_STATUS.COMMITTED
         this.block = null
+        this.validatorTransactions.length = []
     }
 
     isSyncedWithNetwork(bc){
@@ -56,7 +74,10 @@ class VotingUtil {
         this.db.increase(diff)
         console.log(`Current precommits are ${this.db.db._voting.preCommits}`)
         this.status = VOTING_STATUS.PRE_COMMIT
-        return this.db.createTransaction({type: "INCREASE", diff}, tp)
+        var transaction =  this.db.createTransaction({type: "INCREASE", diff}, tp)
+        this.registerValidatingTransaction(transaction)
+        return transaction
+
     }
     
     checkPreCommits(){
@@ -72,7 +93,7 @@ class VotingUtil {
         // This user should establish themselves as the first node on the network, instantiate the first _voting entry t db
         // and commit this to the blockchain so it will be picked up by new peers on the network
         var time = Date.now()
-        var firstVotingData = {validators: {}, next_round_validators: {}, forger: this.db.publicKey, preVotes: 1, preCommits: 1, time, blockHash: "", height: 1,  lastHash: genesis.hash}
+        var firstVotingData = {validators: {}, next_round_validators: {}, threshold: 0, forger: this.db.publicKey, preVotes: 1, preCommits: 1, time, blockHash: "", height: 1,  lastHash: genesis.hash}
         this.db.set("_voting", firstVotingData)
         return this.db.createTransaction({type: "SET", ref: "_voting", value: firstVotingData}, tp)
     }
@@ -93,7 +114,8 @@ class VotingUtil {
         } else{
             forger = this.db.publicKey
         }
-        var nextRound = {validators: lastRound.next_round_validators, next_round_validators:{}, forger:forger, preVotes: 0, preCommits: 0, time, blockHash: null}
+        var threshold = Math.round(Object.values(lastRound.next_round_validators).reduce(function(a, b) { return a + b; }, 0) * .666) - 1
+        var nextRound = {validators: lastRound.next_round_validators, next_round_validators:{}, threshold, forger:forger, preVotes: 0, preCommits: 0, time, blockHash: null}
         if (this.checkPreCommits()){
             // Should be1
             nextRound =  Object.assign({}, nextRound, {height: lastRound.height + 1, lastHash: lastRound.blockHash})
@@ -124,6 +146,7 @@ class VotingUtil {
         console.log(`Setting block ${block.hash.substring(0, 5)} at height ${block.height}`)
         this.block = block
         this.status = VOTING_STATUS.BLOCK_RECEIVED
+        this.validatorTransactions.length = 0 
     }
 
     getForger(stakeHolders, bc){

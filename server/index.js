@@ -96,7 +96,28 @@ app.get('/blocks', (req, res) => {
   } else{ 
       try{
         var chainSection = req.query ? bc.getChainSection(req.query.from, req.query.to): bc.chain
-        res.json(chainSection)
+        var chainList = []
+        for(var i=0; i< chainSection.length; i++){
+          chainList.push(chainSection[i].body())
+        }
+        res.json(chainList)
+      } catch (error){
+        console.log(error)
+      }
+  }
+});
+
+app.get('/headers', (req, res) => {
+  if (req.query.to && typeof req.query.from === "undefined"){
+    res.json({error: "Most specify valid 'from'"})
+  } else{ 
+      try{
+        var chainSection = req.query ? bc.getChainSection(req.query.from, req.query.to): bc.chain
+        var chainList = []
+        for(var i=0; i< chainSection.length; i++){
+          chainList.push(chainSection[i].header())
+        }
+        res.json(chainList)
       } catch (error){
         console.log(error)
       }

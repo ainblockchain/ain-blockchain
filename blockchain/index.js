@@ -42,6 +42,10 @@ class Blockchain{
         if (block.height != this.height() + 1){
             throw Error("Blockchain height is wrong")
         }
+        if (!(block instanceof ForgedBlock)){
+            block =  ForgedBlock.parse(block)
+        }
+
         this.chain.push(block)
         while (this.chain.length > 10){
             this.backUpDB.executeBlockTransactions(this.chain.shift())

@@ -19,22 +19,46 @@ class Block {
 class ForgedBlock extends Block {
 
 
-    constructor(timestamp, lastHash, hash, data, height, signature){  
+    constructor(timestamp, lastHash, hash, data, height, signature, forger, validators, threshold){  
         super(timestamp, lastHash, hash, data)
+        this.validatorTransactions = []
         this.height = height
         this.signature = signature
-        
+        this.forger = forger
+        this.validators = validators
+        this.threshold = threshold
     }
 
 
-    static forgeBlock(data, db, height, lastBlock){
-        var lastHash = lastBlock.hash
-        var timestamp = Date.now()
-        var signature = db.sign(ChainUtil.hash(data))
-        var hash = ForgedBlock.hash(timestamp, lastHash, data, height, signature)       
-        return new ForgedBlock(timestamp, lastHash, hash, data, height, signature)
+    static forgeBlock(data, db, height, lastBlock, forger, validators, threshold){
+        const lastHash = lastBlock.hash
+        const timestamp = Date.now()
+        const signature = db.sign(ChainUtil.hash(data))
+        const hash = ForgedBlock.hash(timestamp, lastHash, data, height, signature)       
+        return new ForgedBlock(timestamp, lastHash, hash, data, height, signature, forger, validators, threshold)
     }
-    
+
+    header(){
+        return {
+            hash: this.hash,
+            height: this.height,
+            threshold: this.threshold,
+            validators: this.validators,
+            validatorTransactions: this.validatorTransactions
+        }
+    }
+
+    body(){
+        return {
+            timestamp: this.timestamp,
+            lastHash: this.lastHash,
+            hash: this.hash,
+            data: this.data,
+            forger: this.forger,
+            height: this.height,
+            signature: this.signature
+        }
+    }
 
     static blockHash(block){
         const {timestamp, lastHash, data, height, signature} = block;
@@ -61,9 +85,18 @@ class ForgedBlock extends Block {
         }
         var unzippedfs = zipper.sync.unzip(blockZipFile).memory()
         var block_info = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], "buffer").toString())
-        return new this(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
-                        block_info["data"], block_info["height"], block_info["signature"])
+        return ForgedBlock.parse(block_info)
     
+    }
+
+    static parse(block_info){
+        const block =  new ForgedBlock(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
+                                        block_info["data"], block_info["height"], block_info["signature"],
+                                        block_info["forger"], block_info["validators"], block_info["threshold"])
+        block_info["validatorTransactions"].forEach(transaction => {
+            block.validatorTransactions.push(transaction)
+        })
+        return block
     }
 
     static validateBlock(block, blockchain){
@@ -104,7 +137,7 @@ class ForgedBlock extends Block {
                                 value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}, address: null})
         }   
         // Change this to use 
-        const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, 0, );
+        const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, 0, "----", "genesis", [], -1);
         genesis.height = 0
         return genesis
     }

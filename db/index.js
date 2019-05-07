@@ -234,7 +234,7 @@ class DB {
         if (Object.keys(wildCards).length > 0){
             for(var wildCard in wildCards){
                 if (ruleString.includes(wildCard)){
-                    // May need to come back here to figure out how to change ALL occurances of wildCards
+                    // May need to come back here to figure out how to change ALL occurrences of wildCards
                     ruleString = ruleString.replace(wildCard, `${wildCards[wildCard]}`)
                 } 
             }
@@ -247,9 +247,7 @@ class DB {
             ruleString = ruleString.replace(/oldData/g, this.get(queryPath.join("/")))
         }  
         if (ruleString.includes("db.get")){
-            ruleString = ruleString.replace(/db.get.*\)/g, function replacer(match){
-                return match.replace("db.get", "this.get").replace(/'/g, "") ;
-            } );
+            ruleString = ruleString.replace(/db.get/g, "this.get")
         } 
         var permission = eval(ruleString)
         if (!permission){

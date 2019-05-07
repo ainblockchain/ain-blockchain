@@ -23,7 +23,7 @@ ab -p post.txt -T application/json  -c 50 -n 7400 http://localhost:8081/set >> l
 
 
 
-sleep 5
+sleep 15
 
 wget -O b1.txt http://localhost:8080/blocks
 wget -O b2.txt http://localhost:8081/blocks
