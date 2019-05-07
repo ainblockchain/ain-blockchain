@@ -29,5 +29,5 @@ wget -O b1.txt http://localhost:8080/blocks
 wget -O b2.txt http://localhost:8081/blocks
 
 diff b1.txt b2.txt
-# kill  -9 $PID1 $PID2 $PID3
-# rm -rf $BASEDIR/blockchain/.blockchains
+kill  -9 $PID1 $PID2 $PID3
+rm -rf $BASEDIR/blockchain/.blockchains
