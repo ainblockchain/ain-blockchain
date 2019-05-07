@@ -22,6 +22,8 @@ const PORT = process.env.PORT || 8080;
 
 // Initiate logging
 const LOG = process.env.LOG || false;
+var LAST_NONCE = 0
+var CURRENT_NONCE = 0
 
 if(LOG){
   var fs = require('fs');
@@ -126,7 +128,7 @@ app.get('/stake', (req, res, next) => {
 app.post('/update', (req, res, next) => {
   var data = req.body.data;
   let result = db.update(data)
-  createTreansaction({op: "update", data})
+  createTransaction({op: "update", data})
   res
     .status(201)
     .set('Content-Type', 'application/json')
@@ -160,7 +162,7 @@ app.post('/set', (req, res, next) => {
     var ref = req.body.ref;
     var value = req.body.value
     db.set(ref, value)
-    createTreansaction({op: "set", ref, value})
+    createTransaction({op: "set", ref, value})
   } catch (error){
     if(error instanceof InvalidPerissonsError){
       statusCode = 401
@@ -177,7 +179,7 @@ app.post('/batch', (req, res, next) => {
   var batch_list = req.body.batch_list
   try{
     var result_list = db.batch(batch_list)
-    createTreansaction({op: "batch", batch_list})
+    createTransaction({op: "batch", batch_list})
   }catch (err){
     console.log(err)
   }
@@ -193,7 +195,7 @@ app.post('/increase', (req, res, next) => {
   try{
     var diff = req.body.diff;
     var result = db.increase(diff)
-    createTreansaction({op: "increase", diff})
+    createTransaction({op: "increase", diff})
   } catch (error){
     if(error instanceof InvalidPerissonsError){
       statusCode = 401
@@ -232,13 +234,55 @@ if (process.env.STAKE){
     
 }
 
-function createTreansaction(trans){
+function createBatchTransaction(trans){
   if (transactionBatch.length == 0){
     setTimeout(() => {
-      let transaction = db.createTransaction({type: "BATCH", batch_list: transactionBatch}, tp)
-      p2pServer.broadcastTransaction(transaction)
-      transactionBatch.length = 0
+      broadcastBatchTransaction()
     }, 100)
-  } 
+  }
+  CURRENT_NONCE += 1
   transactionBatch.push(trans)
 }
+
+function broadcastBatchTransaction(){
+  if (transactionBatch.length > 0){
+    var batch_list =  JSON.parse(JSON.stringify(transactionBatch))
+    transactionBatch.length = 0
+    let transaction =  db.createTransaction({type: "BATCH", batch_list}, tp)
+    p2pServer.broadcastTransaction(transaction)
+  }
+}
+
+function createSingularTransaction(trans){
+  CURRENT_NONCE += 1
+  let transaction
+  switch(trans.op){
+    case "batch":
+      transaction = db.createTransaction({type: "BATCH", batch_list: trans.batch_list}, tp)
+      break
+    case "increase":
+      transaction = db.createTransaction({type: "INCREASE", diff: trans.diff}, tp)
+      break
+    case "update":
+      transaction = db.createTransaction({type: "UPDATE", data: trans.data}, tp)
+      break
+    case "set":
+      transaction = db.createTransaction({type: "SET", ref: trans.ref, value: trans.value}, tp)
+      break
+  }
+  p2pServer.broadcastTransaction(transaction)
+}
+
+let createTransaction 
+createTransaction = createSingularTransaction
+
+setInterval(() => {
+  if(CURRENT_NONCE - LAST_NONCE > 200){
+    createTransaction = createBatchTransaction
+  } else {
+    broadcastBatchTransaction()
+    createTransaction = createSingularTransaction
+  }
+
+  LAST_NONCE = CURRENT_NONCE
+}, 1000)
