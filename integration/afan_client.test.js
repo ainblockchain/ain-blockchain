@@ -3,14 +3,14 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const assert = chai.assert;
 const should = chai.should();
-const AfanClient = require('../client/afan_client')
+const AfanClient = require('../afan_client')
 const rimraf = require("rimraf")
 const {BLOCKCHAINS_DIR} = require('../config') 
 const sleep = require('system-sleep')
 const spawn = require("child_process").spawn;
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../" 
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
-const APP_SERVER = PROJECT_ROOT + "server/index.js"
+const APP_SERVER = PROJECT_ROOT + "client/index.js"
 
 chai.use(chaiHttp);
 

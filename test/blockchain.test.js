@@ -1,4 +1,4 @@
-const Blockchain = require('../blockchain/index');
+const Blockchain = require('../blockchain/');
 const {METHOD} = require("../config")
 const {Block, ForgedBlock} = require('../blockchain/block')
 const chai = require('chai');

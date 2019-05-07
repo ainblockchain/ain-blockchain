@@ -1,4 +1,9 @@
 node_modules
 package-lock.json
 blockchain/.blockchains
-server/.logs
+client/.logs
+b1.txt
+b2.txt
+log1.txt
+log2.txt
+

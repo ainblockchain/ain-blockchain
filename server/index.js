@@ -1,309 +1,290 @@
-#! /usr/bin/node
-/**
- * Copyright 2017, Google, Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-'use strict';
-
-// Require process, so we can mock environment variables
-const process = require('process');
-const PORT = process.env.PORT || 8080;
-
-// Initiate logging
-const LOG = process.env.LOG || false;
-var LAST_NONCE = 0
-var CURRENT_NONCE = 0
-
-if(LOG){
-  var fs = require('fs');
-  var util = require('util');
-  var log_dir = __dirname + '/' + ".logs"
-  if (!(fs.existsSync(log_dir))){
-    fs.mkdirSync(log_dir);
-}
-  var log_file = fs.createWriteStream(log_dir + '/' + PORT +'debug.log', {flags : 'w'});
-  var log_stdout = process.stdout;
-
-  console.log = function(d) { 
-    log_file.write(util.format(d) + '\n');
-    log_stdout.write(util.format(d) + '\n');
-  }
-}
+const Websocket = require('ws');
+const P2P_PORT = process.env.P2P_PORT || 5001;
+const ip = require("ip")
+const trackerWebSocketAddr =  process.env.TRACKER_IP || "ws://localhost:3001"
+const trackerWebSocket = new Websocket(trackerWebSocketAddr)
+const HOST = "ws://" + ip.address()
+const {ForgedBlock} = require("../blockchain/block")
+const SERVER = HOST + ":" + P2P_PORT
+const {MESSAGE_TYPES, VOTING_STATUS} = require("../config")
+const VotingUtil =  require('./voting-util')
+const WAIT_TIME_FOR_STAKING = 20000
 
 
-// [START gae_flex_mysql_app]
-const express = require('express');
-// const crypto = require('crypto');
-// var Promise = require("bluebird");
-// var bodyParser = require('body-parser')
-const P2pServer = require('./p2p-server')
-const Database = require('../db')
-// Define peer2peer server here which will broadcast changes in the database
-// and also track which servers are in the network
 
-// Applictation dependencies
-const Blockchain = require('../blockchain');
-const TransactionPool = require('../db/transaction-pool')
-const InvalidPerissonsError = require("../errors")
+class P2pServer {
 
-
-const app = express();
-
-const transactionBatch = []
-
-app.use(express.json()); // support json encoded bodies
-// app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
-
-const bc = new Blockchain(String(PORT));
-const tp = new TransactionPool()
-const db = Database.getDatabase(bc, tp)
-const p2pServer = new P2pServer(db, bc, tp)
-
-app.get('/', (req, res, next) => {
-  try{
-    res
-      .status(200)
-      .set('Content-Type', 'text/plain')
-      .send('Welcome to afan-tx-server')
-      .end();
-    } catch (error){
-      console.log(error)
+    constructor(db, bc, tp){
+        this.db = db
+        this.blockchain = bc
+        this.transactionPool = tp
+        this.sockets = []
+        this.stake = null
+        this.votingInterval = null
+        this.votingUtil = new VotingUtil(db)
     }
-})
 
-app.get('/transactions', (req, res) => {
-  try{
-    res.json(tp.transactions)
-  } catch (error){
-    console.log(error)
-  }
-})
+    connectTracker(){
+ 
+        trackerWebSocket.on('message', message => {
+            const peers = JSON.parse(message);
+            this.connectToPeers(peers)
+        });
 
-app.get('/blocks', (req, res) => {
-  if (req.query.to && typeof req.query.from === "undefined"){
-    res.json({error: "Most specify valid 'from'"})
-  } else{ 
-      try{
-        var chainSection = req.query ? bc.getChainSection(req.query.from, req.query.to): bc.chain
-        var chainList = []
-        for(var i=0; i< chainSection.length; i++){
-          chainList.push(chainSection[i].body())
+        trackerWebSocket.send(JSON.stringify(SERVER))
+    }
+     
+    listen(){
+        const server = new Websocket.Server({port: P2P_PORT});
+        server.on('connection', socket => this.connectSocket(socket));
+        trackerWebSocket.on('open', () => this.connectTracker());
+        console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`)
+        this.requestChainSubsection(this.blockchain.lastBlock())
+    }
+
+    connectToPeers(peers) {
+        peers.forEach(peer => {
+            console.log(`Connecting to peer ${peer}`)
+            const socket = new Websocket(peer);
+            socket.on('open', () => this.connectSocket(socket));
+        });
+    }
+
+    connectSocket(socket) {
+        this.sockets.push(socket);
+        this.messageHandler(socket);
+        const chainSubsection =  this.requestChainSubsection(this.blockchain.lastBlock())
+        if(chainSubsection){
+            this.sendChainSubsection(socket, chainSubsection)
         }
-        res.json(chainList)
-      } catch (error){
-        console.log(error)
-      }
-  }
-});
+    }
 
-app.get('/headers', (req, res) => {
-  if (req.query.to && typeof req.query.from === "undefined"){
-    res.json({error: "Most specify valid 'from'"})
-  } else{ 
-      try{
-        var chainSection = req.query ? bc.getChainSection(req.query.from, req.query.to): bc.chain
-        var chainList = []
-        for(var i=0; i< chainSection.length; i++){
-          chainList.push(chainSection[i].header())
+    messageHandler(socket){
+        socket.on('message', (message) => {
+            try{
+                const data = JSON.parse(message);
+
+                if ("transaction" in data){
+                    if (this.transactionPool.addTransaction(data.transaction)){
+                        this.executeTransaction(data, socket)
+                    } else {
+                        return 
+                    }
+                }
+                switch(data.type){
+                    case MESSAGE_TYPES.new_voting:
+                        if (!this.votingUtil.isSyncedWithNetwork(this.blockchain)){
+                            this.requestChainSubsection(this.blockchain.lastBlock())
+                        }
+                        if (this.stake){
+                            this.broadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1, this.transactionPool))
+                        }
+
+                        this.checkIfForger()
+                        break
+                    case MESSAGE_TYPES.proposed_block:
+                        if (!ForgedBlock.validateBlock(data.block, this.blockchain) || data.block === this.votingUtil.block || !(this.votingUtil.status === VOTING_STATUS.WAITING_FOR_BLOCK || this.votingUtil.status === VOTING_STATUS.SYNCING)){
+                            break
+                        }
+                        this.votingUtil.setBlock(data.block)
+                        this.broadcastBlock(data.address, socket)
+                        if(this.votingUtil.isValidator()){
+                            this.broadcastPreVote(this.votingUtil.preVote(this.transactionPool),  this.blockchain.height() + 1)
+                        }
+                    case MESSAGE_TYPES.pre_vote:
+                        this.votingUtil.registerValidatingTransaction(data.transaction)
+                        // Currently have height information but are not using 
+                        if (!this.votingUtil.checkPreVotes()){
+                            break
+                        } 
+                        this.broadcastPreCommit(this.votingUtil.preCommit(this.transactionPool),  this.blockchain.height() + 1)
+                    case MESSAGE_TYPES.pre_commit:
+                        this.votingUtil.registerValidatingTransaction(data.transaction)
+                        if (this.votingUtil.isCommit()){
+                            this.votingUtil.addValidatorTransactionsToBlock()
+                            this.addBlockToChain()
+                            this.cleanupAfterVotingRound()
+                        }                       
+                        break
+                    case MESSAGE_TYPES.chain_subsection:
+                        if(this.blockchain.merge(data.chainSubsection)){
+                            for(var i=0; i<data.chainSubsection.length; i++){
+                                this.transactionPool.removeCommitedTransactions(data.chainSubsection[i])
+                            }
+                            this.db.reconstruct(this.blockchain, this.transactionPool)
+                            this.requestChainSubsection(this.blockchain.lastBlock())
+                        }
+                        break
+                    case MESSAGE_TYPES.chain_subsection_request:
+                        const chainSubsection = this.blockchain.requestBlockchainSection(data.lastBlock)
+                        if(chainSubsection){
+                            this.sendChainSubsection(socket, chainSubsection)
+                        }
+                        break
+                }
+            } catch (error){
+                console.log(error.stack)
+            }
+        })
+
+        socket.on('close', () => {
+            this.sockets.splice(this.sockets.indexOf(socket), 1)
+        })
+    }
+
+    executeTransaction(data, socket){
+        const transaction = data.transaction
+        this.db.execute(transaction.output, transaction.address)
+        switch(data.type){
+            case MESSAGE_TYPES.pre_vote:
+                this.broadcastPreVote(transaction, data.height, socket)
+                break
+            case MESSAGE_TYPES.pre_commit:
+                this.broadcastPreCommit(transaction, data.height, socket)
+                break
+            case MESSAGE_TYPES.new_voting:
+                this.broadcastNewRound(transaction, socket)
+                break
+            default:
+                this.broadcastTransaction(transaction, socket)
+                break
+
         }
-        res.json(chainList)
-      } catch (error){
-        console.log(error)
-      }
-  }
-});
-
-
-app.get('/stake', (req, res, next) => {
-  var statusCode = 201
-  var result = null
-
-  try{
-    result = stake(req.query.ref)
-  } catch (error){
-    if(error instanceof InvalidPerissonsError){
-      statusCode = 401
-    } else {
-      statusCode = 400
     }
-    console.log(error.stack)
-  }
-  res
-  .status(statusCode)
-  .set('Content-Type', 'application/json')
-  .send({code: result ? 0 : -1, result})
-  .end();
-})
 
-app.post('/update', (req, res, next) => {
-  var data = req.body.data;
-  let result = db.update(data)
-  createTransaction({op: "update", data})
-  res
-    .status(201)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-})
-
-app.get('/get', (req, res, next) => {
-  var statusCode = 200
-  var result = null
-  try{
-    result = db.get(req.query.ref)
-  } catch (error){
-    if(error instanceof InvalidPerissonsError){
-      statusCode = 401
-    } else {
-      statusCode = 400
+    forgeBlock(){
+        var data = this.transactionPool.validTransactions()
+        var blockHeight = this.blockchain.height() + 1
+        this.votingUtil.setBlock(ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(), this.db.publicKey, Object.keys(this.db.get("_voting/validators")), this.db.get("_voting/threshold")))
+        var ref = "_voting/blockHash"
+        var value = this.votingUtil.block.hash
+        console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`)
+        this.db.set(ref, value)
+        this.broadcastTransaction(this.db.createTransaction({type: "SET", ref, value}, this.transactionPool))
+        this.broadcastBlock(this.db.publicKey)
+        if (!Object.keys(this.db.get("_voting/validators")).length){
+            console.log("No validators registered for this round")
+            this.addBlockToChain()                         
+            this.cleanupAfterVotingRound()
+        }
     }
-    console.log(error.stack)
-  }
-  res
-  .status(statusCode)
-  .set('Content-Type', 'application/json')
-  .send({code: result ? 0 : -1, result})
-  .end();
-})
 
-app.post('/set', (req, res, next) => {
-  var statusCode = 201
-  try{
-    var ref = req.body.ref;
-    var value = req.body.value
-    db.set(ref, value)
-    createTransaction({op: "set", ref, value})
-  } catch (error){
-    if(error instanceof InvalidPerissonsError){
-      statusCode = 401
-    } else {
-      statusCode = 400
+    sendChainSubsection(socket, chainSubsection){
+        socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection, chainSubsection}))
     }
-    console.log(error.stack)
-  }
-  res.status(statusCode).set('Content-Type', 'application/json').send({code: statusCode < 299? 0: 1}).end();
-})
 
-
-app.post('/batch', (req, res, next) => {
-  var batch_list = req.body.batch_list
-  try{
-    var result_list = db.batch(batch_list)
-    createTransaction({op: "batch", batch_list})
-  }catch (err){
-    console.log(err)
-  }
-  res
-    .status(200)
-    .set('Content-Type', 'application/json')
-    .send(result_list)
-    .end();
-})
-
-app.post('/increase', (req, res, next) => {
-  var statusCode = 201
-  try{
-    var diff = req.body.diff;
-    var result = db.increase(diff)
-    createTransaction({op: "increase", diff})
-  } catch (error){
-    if(error instanceof InvalidPerissonsError){
-      statusCode = 401
-    } else {
-      statusCode = 400
+    requestChainSubsection(lastBlock){
+        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection_request, lastBlock})))
     }
-    console.log(error.stack)
-  }
-  res
-  .status(200)
-  .set('Content-Type', 'application/json')
-  .send({code: result ? 0 : -1, result})
-  .end();
-})
 
-// We will want changes in ports and the database to be broadcaste across
-// all instances so lets pass this info into the p2p server
-app.listen(PORT, () => {
-  console.log(`App listening on port ${PORT}`);
-  console.log('Press Ctrl+C to quit.');
-});
-// [END gae_flex_mysql_app]
+    broadcastChainSubsection(chainSubsection){
+        this.sockets.forEach(socket => this.sendChainSubsection(socket, chainSubsection))
+    }
 
+    broadcastTransaction(transaction, previousSocket=null){
+        this.sockets.forEach(socket => {
+            if (socket !== previousSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.transaction, transaction}))
+            }
+        })
+    }
 
-// Lets start this p2p server up so we listen for changes in either DATABASE
-// or NUMBER OF SERVERS
-p2pServer.listen()
+    broadcastPreVote(transaction, height, previousSocket=null){
+        if (transaction === null){
+            return
+        }
+        this.sockets.forEach(socket => {
+            if (socket !== previousSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_vote, transaction, height}))
+            }
+        })
+    }
 
-module.exports = app;
+    broadcastPreCommit(transaction, height, previousSocket=null){
+        if (transaction === null){
+            return
+        }
+        this.sockets.forEach(socket => {
+            if (socket !== previousSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.pre_commit, transaction, height}))
+            }
+        })
+    }
 
+    broadcastNewRound(transaction, previousSocket=null){
+        if (previousSocket){
+            console.log(`Starting new round ${this.db.publicKey}`)
+        }
+        this.sockets.forEach(socket => {socket.send(JSON.stringify({type: MESSAGE_TYPES.new_voting, transaction}))})
+    }
 
-if (process.env.STAKE){
-    setTimeout(() => {
-      p2pServer.registerStakeWithNetwork(process.env.STAKE)
-    }, 5000)
+    broadcastBlock(address, broadcasterSocket=null){
+        console.log(`Broadcasting new block ${this.votingUtil.block.hash}`)
+        this.sockets.forEach(socket => {
+            if (socket !== broadcasterSocket){
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.proposed_block, block: this.votingUtil.block, address}))
+            }
+        })
+    }
+
+    sendRequestedBlock(){
+        this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.requested_block,  block: this.votingUtil.block, address: this.db.publicKey})))
+    }
+
+    registerStakeWithNetwork(stake){
+
+        if (this.votingUtil.checkIfFirstNode()){
+            this.stakeAmount(stake)
+            this.votingUtil.instantiate(this.blockchain.chain[0], this.transactionPool)
+            this.forgeBlock()
+        } else{
+            setTimeout(() => {
+                console.log("Now setting stake")
+                this.stakeAmount(stake)
+            }, WAIT_TIME_FOR_STAKING)
+        }
+    }
+
+    addBlockToChain(){
+        this.blockchain.addNewBlock(this.votingUtil.block)
+        this.transactionPool.removeCommitedTransactions(this.votingUtil.block)
+        this.votingUtil.reset()
+        this.db.reconstruct(this.blockchain, this.transactionPool)
+    }
+
+    cleanupAfterVotingRound(){
+        if (this.votingInterval){
+            console.log("Clearing interval after successful voting round")
+            clearInterval(this.votingInterval)
+            this.votingInterval = null
+        }
+        if (this.db.db._voting.forger === this.db.publicKey){
+            console.log("Setting interval now for future")
+                // this.broadcastNewRound(startNewRound(this.db, this.transactionPool))
+                // this.broadcastTransaction(this.registerForNextRound(this.blockchain.height(), this.db, this.transactionPool))
+            this.votingInterval = setInterval(()=> {
+                this.broadcastNewRound(this.votingUtil.startNewRound(this.transactionPool, this.blockchain))  
+                this.broadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1, this.transactionPool))
+                this.checkIfForger()
+
+                }, 10000)
+        }
+        console.log(`New blockchain height is ${this.blockchain.height() + 1}`)
+
+    }
+
     
+    checkIfForger(){
+        if (this.votingUtil.isForger()){
+            this.forgeBlock()
+        }
+    }
+
+    async stakeAmount(stakeAmount){
+        this.stake = Number(stakeAmount)
+        var transaction = this.votingUtil.stake(this.stake, this.transactionPool)
+        this.broadcastTransaction(transaction)
+      }
 }
 
-function createBatchTransaction(trans){
-  if (transactionBatch.length == 0){
-    setTimeout(() => {
-      broadcastBatchTransaction()
-    }, 100)
-  }
-  CURRENT_NONCE += 1
-  transactionBatch.push(trans)
-}
-
-function broadcastBatchTransaction(){
-  if (transactionBatch.length > 0){
-    var batch_list =  JSON.parse(JSON.stringify(transactionBatch))
-    transactionBatch.length = 0
-    let transaction =  db.createTransaction({type: "BATCH", batch_list}, tp)
-    p2pServer.broadcastTransaction(transaction)
-  }
-}
-
-function createSingularTransaction(trans){
-  CURRENT_NONCE += 1
-  let transaction
-  switch(trans.op){
-    case "batch":
-      transaction = db.createTransaction({type: "BATCH", batch_list: trans.batch_list}, tp)
-      break
-    case "increase":
-      transaction = db.createTransaction({type: "INCREASE", diff: trans.diff}, tp)
-      break
-    case "update":
-      transaction = db.createTransaction({type: "UPDATE", data: trans.data}, tp)
-      break
-    case "set":
-      transaction = db.createTransaction({type: "SET", ref: trans.ref, value: trans.value}, tp)
-      break
-  }
-  p2pServer.broadcastTransaction(transaction)
-}
-
-let createTransaction 
-createTransaction = createSingularTransaction
-
-setInterval(() => {
-  if(CURRENT_NONCE - LAST_NONCE > 200){
-    createTransaction = createBatchTransaction
-  } else {
-    broadcastBatchTransaction()
-    createTransaction = createSingularTransaction
-  }
-
-  LAST_NONCE = CURRENT_NONCE
-}, 1000)
+module.exports = P2pServer;
