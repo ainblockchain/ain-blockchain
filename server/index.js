@@ -9,6 +9,7 @@ const SERVER = HOST + ":" + P2P_PORT
 const {MESSAGE_TYPES, VOTING_STATUS} = require("../config")
 const VotingUtil =  require('./voting-util')
 const WAIT_TIME_FOR_STAKING = 20000
+const BLOCK_CREATION_INTERVAL = 5000
 
 
 
@@ -267,7 +268,7 @@ class P2pServer {
                 this.broadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1, this.transactionPool))
                 this.checkIfForger()
 
-                }, 10000)
+                }, BLOCK_CREATION_INTERVAL)
         }
         console.log(`New blockchain height is ${this.blockchain.height() + 1}`)
 

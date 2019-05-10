@@ -1,4 +1,4 @@
-Tue May  7 18:16:29 KST 2019
+Fri May 10 10:44:51 KST 2019
 This is ApacheBench, Version 2.3 <$Revision: 1706008 $>
 Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
 Licensed to The Apache Software Foundation, http://www.apache.org/
@@ -14,33 +14,33 @@ Document Path:          /set
 Document Length:        10 bytes
 
 Concurrency Level:      50
-Time taken for tests:   5.322 seconds
+Time taken for tests:   5.806 seconds
 Complete requests:      7400
 Failed requests:        0
 Total transferred:      1635400 bytes
 Total body sent:        1295000
 HTML transferred:       74000 bytes
-Requests per second:    1390.38 [#/sec] (mean)
-Time per request:       35.961 [ms] (mean)
-Time per request:       0.719 [ms] (mean, across all concurrent requests)
-Transfer rate:          300.07 [Kbytes/sec] received
-                        237.61 kb/s sent
-                        537.69 kb/s total
+Requests per second:    1274.65 [#/sec] (mean)
+Time per request:       39.227 [ms] (mean)
+Time per request:       0.785 [ms] (mean, across all concurrent requests)
+Transfer rate:          275.09 [Kbytes/sec] received
+                        217.83 kb/s sent
+                        492.93 kb/s total
 
 Connection Times (ms)
               min  mean[+/-sd] median   max
-Connect:        0    0   0.2      0       2
-Processing:     4   36  99.2     11    1254
-Waiting:        2   27  97.3      8    1253
-Total:          5   36  99.2     12    1254
+Connect:        0    0   0.3      0       4
+Processing:     3   39 166.3     11    1611
+Waiting:        2   33 161.7      8    1607
+Total:          4   39 166.3     11    1611
 
 Percentage of the requests served within a certain time (ms)
-  50%     12
-  66%     14
-  75%     19
-  80%     63
-  90%     83
-  95%     93
-  98%    136
-  99%    415
- 100%   1254 (longest request)
+  50%     11
+  66%     13
+  75%     15
+  80%     17
+  90%     36
+  95%     92
+  98%    148
+  99%   1090
+ 100%   1611 (longest request)
