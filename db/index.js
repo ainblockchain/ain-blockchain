@@ -165,8 +165,8 @@ class DB {
     }
 
     setDBToBackUp(backUpDB){
-        if (this.db.publicKey === backUpDB.publicKey){
-            this.db = backUpDB.db
+        if (this.publicKey === backUpDB.publicKey){
+            this.db = JSON.parse(JSON.stringify(backUpDB.db))
         }
     }
 

@@ -1,4 +1,4 @@
-Fri May 10 11:39:00 KST 2019
+Fri May 10 19:32:09 KST 2019
 This is ApacheBench, Version 2.3 <$Revision: 1706008 $>
 Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
 Licensed to The Apache Software Foundation, http://www.apache.org/
@@ -10,37 +10,38 @@ Server Software:
 Server Hostname:        localhost
 Server Port:            8080
 
-Document Path:          /set
-Document Length:        10 bytes
+Document Path:          /increase
+Document Length:        83 bytes
 
 Concurrency Level:      50
-Time taken for tests:   24.222 seconds
+Time taken for tests:   16.421 seconds
 Complete requests:      50000
-Failed requests:        0
-Total transferred:      11050000 bytes
-Total body sent:        8750000
-HTML transferred:       500000 bytes
-Requests per second:    2064.22 [#/sec] (mean)
-Time per request:       24.222 [ms] (mean)
-Time per request:       0.484 [ms] (mean, across all concurrent requests)
-Transfer rate:          445.50 [Kbytes/sec] received
-                        352.77 kb/s sent
-                        798.27 kb/s total
+Failed requests:        49999
+   (Connect: 0, Receive: 0, Length: 49999, Exceptions: 0)
+Total transferred:      15182047 bytes
+Total body sent:        10950000
+HTML transferred:       4582047 bytes
+Requests per second:    3044.87 [#/sec] (mean)
+Time per request:       16.421 [ms] (mean)
+Time per request:       0.328 [ms] (mean, across all concurrent requests)
+Transfer rate:          902.88 [Kbytes/sec] received
+                        651.20 kb/s sent
+                        1554.08 kb/s total
 
 Connection Times (ms)
               min  mean[+/-sd] median   max
-Connect:        0    0   0.4      0       7
-Processing:     1   24  97.0      8    1894
-Waiting:        0   19  91.9      6    1779
-Total:          2   24  97.0      8    1894
+Connect:        0    0   0.3      0       3
+Processing:     1   16  57.5     10    1254
+Waiting:        1   12  50.8      7    1247
+Total:          3   16  57.5     10    1254
 
 Percentage of the requests served within a certain time (ms)
-  50%      8
-  66%     10
-  75%     11
-  80%     12
-  90%     26
-  95%     83
-  98%    160
-  99%    342
- 100%   1894 (longest request)
+  50%     10
+  66%     13
+  75%     15
+  80%     16
+  90%     20
+  95%     24
+  98%     36
+  99%     94
+ 100%   1254 (longest request)

@@ -84,7 +84,7 @@ describe('API Tests', () => {
       return chai.request(server4)
           .post(`/increase`).send({diff: {"test/test": 10}})
           .then((res) => {
-            res.should.have.status(200);
+            res.should.have.status(201);
             res.body.should.be.deep.eql({code:0, result: {"test/test": 11}});
           });
     })

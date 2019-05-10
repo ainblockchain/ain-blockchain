@@ -213,9 +213,10 @@ app.post('/batch', (req, res, next) => {
 
 app.post('/increase', (req, res, next) => {
   var statusCode = 201
+  let result
   try{
     var diff = req.body.diff;
-    var result = db.increase(diff)
+    result = db.increase(diff)
     createTransaction({op: "increase", diff})
   } catch (error){
     if(error instanceof InvalidPerissonsError){
@@ -226,13 +227,13 @@ app.post('/increase', (req, res, next) => {
     console.log(error.stack)
   }
   res
-  .status(200)
+  .status(statusCode)
   .set('Content-Type', 'application/json')
-  .send({code: result ? 0 : -1, result})
+  .send({code: statusCode < 400 ? 0 : 1, result})
   .end();
 })
 
-// We will want changes in ports and the database to be broadcaste across
+// We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
