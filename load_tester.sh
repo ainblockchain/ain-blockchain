@@ -16,10 +16,10 @@ STAKE=250 P2P_PORT=5020 PORT=8081 LOG=true node $BASEDIR/client/index.js > log2.
 PID3=$!
 sleep 20
 date > load1.txt
-ab -p post.txt -T application/json  -c 50 -n 7500 http://localhost:8080/set >> load1.txt &
+ab -p post.txt -T application/json  -c 50 -n 50000 http://localhost:8080/set >> load1.txt &
 sleep 1
 date > load2.txt
-ab -p post.txt -T application/json  -c 50 -n 7400 http://localhost:8081/set >> load2.txt 
+ab -p post.txt -T application/json  -c 50 -n 50000 http://localhost:8081/set >> load2.txt 
 
 
 
@@ -31,3 +31,14 @@ wget -O b2.txt http://localhost:8081/blocks
 diff b1.txt b2.txt
 kill  -9 $PID1 $PID2 $PID3
 rm -rf $BASEDIR/blockchain/.blockchains
+
+ NUM=$(sed 's/no meeee/no meeee\n/g' b1.txt | grep -c "no meee")
+ if test $NUM -eq 100000 
+ then
+    echo "100000 occurances of string found in last 10 blocks !! Pass"
+else
+    echo "$NUM occuraces of string found in last 10 blocks!! Fail"
+fi
+
+ 
+
