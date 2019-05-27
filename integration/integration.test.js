@@ -59,7 +59,7 @@ RANDOM_OPERATION = [
   ["update", {data: {"test/increase": 10000, "test/increase": 10000}}],
   ["update", {data: {"test/b/u": 10000}}],
   ["update", {data: {"test/builed/some/deep/place/next": 100002}}],
-  ["batch", {batch_list: [{op: "set", ref: "test/comeonnnnnnn", value: "testme"}, {op: "update", data: {"test/b/u": 10000}}]}],
+  ["batch", {batch_list: [{op: "set", ref: "test/comeonnnnnnn", value: "testme"}, {op: "increase", data: {"test/b/u": 10000}}]}],
   ["batch", {batch_list: [{op: "set", ref: "test/comeonnnnnnn", value: "no meeeee"}]}],
   ["batch", {batch_list: [{op: "set", ref: "test/comeon/nnnnnn", value: "through"}]}],
   ["batch", {batch_list: [{op: "set", ref: "test/comeonnnnnnn/new", value: {"new": "path"}}]}],

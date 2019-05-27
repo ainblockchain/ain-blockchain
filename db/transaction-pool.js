@@ -2,8 +2,10 @@ const Transaction = require("./transaction")
 
 class TransactionPool {
     constructor() {
+
+        // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN
+        // NETWORK  
         this.transactions = {}
-        this.lastTimestamp = 0
         this.nonceTracker = {}
     }
 
@@ -35,14 +37,12 @@ class TransactionPool {
     }
 
     validTransactions(){
-        // Method now removes invalid transactions before returning valid ones. 
-        //
-       // const tempNonceTracker = JSON.parse(JSON.stringify(this.nonceTracker))
+        // Transactions are first ordered by nonce in their individual lists by publicKey
         const unvalidatedTransactions =  JSON.parse(JSON.stringify(this.transactions))
         for (var address in unvalidatedTransactions){
             unvalidatedTransactions[address].sort((a,b) => (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0))
         }
-
+        // Secondly transaction are combined and ordered by timestamp, while still remaining ordered noncing from the initial sort by nonce
         let orderedUnvalidatedTransactions = Object.values(unvalidatedTransactions)
         while (orderedUnvalidatedTransactions.length > 1){
             var tempNonceTracker = JSON.parse(JSON.stringify(this.nonceTracker))

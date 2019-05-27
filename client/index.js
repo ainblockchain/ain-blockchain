@@ -24,6 +24,7 @@ const PORT = process.env.PORT || 8080;
 const LOG = process.env.LOG || false;
 var LAST_NONCE = 0
 var CURRENT_NONCE = 0
+const TX_PER_SECOND_AUTOBATCHING = 200
 
 if(LOG){
   var fs = require('fs');
@@ -298,8 +299,10 @@ function createSingularTransaction(trans){
 let createTransaction 
 createTransaction = createSingularTransaction
 
+
+// Here we specity
 setInterval(() => {
-  if(CURRENT_NONCE - LAST_NONCE > 200){
+  if(CURRENT_NONCE - LAST_NONCE > TX_PER_SECOND_AUTOBATCHING){
     createTransaction = createBatchTransaction
   } else {
     broadcastBatchTransaction()

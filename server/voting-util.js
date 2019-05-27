@@ -57,6 +57,8 @@ class VotingUtil {
     }
 
     isSyncedWithNetwork(bc){
+        // This does not currently take in to a count the situation where consensus is not reached.
+        // Need to add logic to account for this situation
         const sync =  (VOTING_STATUS.COMMITTED === this.status && bc.height() + 1 === Number(this.db.get(`_voting/height`)))
         if (!sync){
             this.status = VOTING_STATUS.SYNCING

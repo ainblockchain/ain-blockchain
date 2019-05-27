@@ -30,7 +30,7 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "rimraf": "^2.6.3",
-    "secp256k1": "^3.6.1",
+    "secp256k1": "^3.7.0",
     "seedrandom": "^2.4.4",
     "shuffle-seed": "^1.1.6",
     "util": "^0.11.1",
