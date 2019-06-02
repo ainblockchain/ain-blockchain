@@ -8,19 +8,18 @@ const {ForgedBlock} = require("../blockchain/block")
 const SERVER = HOST + ":" + P2P_PORT
 const {MESSAGE_TYPES, VOTING_STATUS} = require("../config")
 const VotingUtil =  require('./voting-util')
-const WAIT_TIME_FOR_STAKING = 20000
 const BLOCK_CREATION_INTERVAL = 5000
 
 
 
 class P2pServer {
 
-    constructor(db, bc, tp){
+    constructor(db, bc, tp, stake){
         this.db = db
         this.blockchain = bc
         this.transactionPool = tp
         this.sockets = []
-        this.stake = null
+        this.stake = stake
         this.votingInterval = null
         this.votingUtil = new VotingUtil(db)
     }
@@ -30,9 +29,14 @@ class P2pServer {
         trackerWebSocket.on('message', message => {
             const peers = JSON.parse(message);
             this.connectToPeers(peers)
+            if (peers.length  === 0){
+                this.initiateChain()
+            }
+            
         });
 
         trackerWebSocket.send(JSON.stringify(SERVER))
+        
     }
      
     listen(){
@@ -40,7 +44,7 @@ class P2pServer {
         server.on('connection', socket => this.connectSocket(socket));
         trackerWebSocket.on('open', () => this.connectTracker());
         console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`)
-        this.requestChainSubsection(this.blockchain.lastBlock())
+        
     }
 
     connectToPeers(peers) {
@@ -54,20 +58,19 @@ class P2pServer {
     connectSocket(socket) {
         this.sockets.push(socket);
         this.messageHandler(socket);
-        const chainSubsection =  this.requestChainSubsection(this.blockchain.lastBlock())
-        if(chainSubsection){
-            this.sendChainSubsection(socket, chainSubsection)
-        }
+        this.requestChainSubsection(this.blockchain.lastBlock())
     }
 
     messageHandler(socket){
         socket.on('message', (message) => {
             try{
                 const data = JSON.parse(message);
-
                 if ("transaction" in data){
-                    if (this.transactionPool.addTransaction(data.transaction)){
+                    if (this.transactionPool.addTransaction(data.transaction) ){
                         this.executeTransaction(data, socket)
+                        if (this.votingUtil.status === VOTING_STATUS.START_UP){
+                            return
+                        }
                     } else {
                         return 
                     }
@@ -109,18 +112,24 @@ class P2pServer {
                         break
                     case MESSAGE_TYPES.chain_subsection:
                         if(this.blockchain.merge(data.chainSubsection)){
+
                             for(var i=0; i<data.chainSubsection.length; i++){
                                 this.transactionPool.removeCommitedTransactions(data.chainSubsection[i])
                             }
                             this.db.reconstruct(this.blockchain, this.transactionPool)
                             this.requestChainSubsection(this.blockchain.lastBlock())
                         }
+
+                        if (data.height === this.blockchain.height() && this.votingUtil.status === VOTING_STATUS.START_UP){
+                            this.votingUtil.status = VOTING_STATUS.SYNCING
+                            this.stakeAmount()
+                        }
                         break
                     case MESSAGE_TYPES.chain_subsection_request:
                         const chainSubsection = this.blockchain.requestBlockchainSection(data.lastBlock)
                         if(chainSubsection){
-                            this.sendChainSubsection(socket, chainSubsection)
-                        }
+                            this.sendChainSubsection(socket, chainSubsection, this.blockchain.height())
+                        } 
                         break
                 }
             } catch (error){
@@ -170,8 +179,8 @@ class P2pServer {
         }
     }
 
-    sendChainSubsection(socket, chainSubsection){
-        socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection, chainSubsection}))
+    sendChainSubsection(socket, chainSubsection, height){
+        socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection, chainSubsection, height}))
     }
 
     requestChainSubsection(lastBlock){
@@ -232,18 +241,13 @@ class P2pServer {
         this.sockets.forEach(socket => socket.send(JSON.stringify({type: MESSAGE_TYPES.requested_block,  block: this.votingUtil.block, address: this.db.publicKey})))
     }
 
-    registerStakeWithNetwork(stake){
-
+    initiateChain(){
         if (this.votingUtil.checkIfFirstNode()){
-            this.stakeAmount(stake)
+            this.votingUtil.status === VOTING_STATUS.WAITING_FOR_BLOCK
+            this.stakeAmount()
             this.votingUtil.instantiate(this.blockchain.chain[0], this.transactionPool)
             this.forgeBlock()
-        } else{
-            setTimeout(() => {
-                console.log("Now setting stake")
-                this.stakeAmount(stake)
-            }, WAIT_TIME_FOR_STAKING)
-        }
+        } 
     }
 
     addBlockToChain(){
@@ -281,11 +285,12 @@ class P2pServer {
         }
     }
 
-    async stakeAmount(stakeAmount){
-        this.stake = Number(stakeAmount)
-        var transaction = this.votingUtil.stake(this.stake, this.transactionPool)
-        this.broadcastTransaction(transaction)
-      }
+    stakeAmount(){
+        if (this.stake !== null){
+            var transaction = this.votingUtil.stake(this.stake, this.transactionPool)
+            this.broadcastTransaction(transaction)
+        }
+    }
 }
 
 module.exports = P2pServer;

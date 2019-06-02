@@ -7,7 +7,7 @@ class VotingUtil {
 
     constructor(db){
         this.db = db
-        this.status = VOTING_STATUS.SYNCING
+        this.status = VOTING_STATUS.START_UP
         this.block = null
         this.validatorTransactions = []
     }
@@ -183,9 +183,7 @@ class VotingUtil {
 
     isValidator(){
         return Boolean(this.db.get(`_voting/validators/${this.db.publicKey}`))
-
     }
-
     
 }
 

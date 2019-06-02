@@ -87,10 +87,10 @@ describe('Integration Tests', () => {
     sleep(100)
     for(var i=0; i<ENV_VARIABLES.length; i++){
       var proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]})
-      sleep(1000)
+      sleep(2000)
       procs.push(proc)
     };
-    sleep(32000)
+    sleep(20000)
 
     // TODO: REWRITE LOADCHAIN FUNCTION TO HANDLE POS !!
     // var chain = Blockchain.loadChain(CHAIN_LOCATION)
@@ -100,7 +100,7 @@ describe('Integration Tests', () => {
     //   }, 0)
     //   console.log(`Initial block chain is ${preTestChainInfo["numBlocks"]} blocks long containing ${preTestChainInfo["numTransactions"]} database transactions` )
     // numBlocks = preTestChainInfo["numBlocks"]
-    numBlocksOnStartup = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).length
+    numBlocksOnStartup = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString("utf-8")).pop().height
     // preTestChainInfo["numTransactions"] = 0
 
   })
@@ -205,7 +205,7 @@ describe('Integration Tests', () => {
       // })
 
       it('all having correct number of blocks', () => {
-        expect(numNewBlocks + numBlocksOnStartup -1).to.equal(blocks.pop().height)
+        expect(numNewBlocks + numBlocksOnStartup + 1).to.equal(blocks.pop().height)
       })
     })
 

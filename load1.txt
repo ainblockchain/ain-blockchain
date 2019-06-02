@@ -1,4 +1,4 @@
-Mon May 27 12:25:29 KST 2019
+Sun Jun  2 18:21:05 KST 2019
 This is ApacheBench, Version 2.3 <$Revision: 1706008 $>
 Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
 Licensed to The Apache Software Foundation, http://www.apache.org/
@@ -14,34 +14,34 @@ Document Path:          /increase
 Document Length:        83 bytes
 
 Concurrency Level:      50
-Time taken for tests:   23.114 seconds
+Time taken for tests:   22.816 seconds
 Complete requests:      50000
 Failed requests:        49999
    (Connect: 0, Receive: 0, Length: 49999, Exceptions: 0)
-Total transferred:      15182008 bytes
+Total transferred:      15180166 bytes
 Total body sent:        10950000
-HTML transferred:       4582008 bytes
-Requests per second:    2163.23 [#/sec] (mean)
-Time per request:       23.114 [ms] (mean)
-Time per request:       0.462 [ms] (mean, across all concurrent requests)
-Transfer rate:          641.45 [Kbytes/sec] received
-                        462.64 kb/s sent
-                        1104.09 kb/s total
+HTML transferred:       4580166 bytes
+Requests per second:    2191.41 [#/sec] (mean)
+Time per request:       22.816 [ms] (mean)
+Time per request:       0.456 [ms] (mean, across all concurrent requests)
+Transfer rate:          649.73 [Kbytes/sec] received
+                        468.67 kb/s sent
+                        1118.40 kb/s total
 
 Connection Times (ms)
               min  mean[+/-sd] median   max
-Connect:        0    0   0.3      0       7
-Processing:     1   23 105.4      9    1872
-Waiting:        1   19 103.0      6    1865
-Total:          3   23 105.4      9    1873
+Connect:        0    0   0.3      0       4
+Processing:     0   22 108.1      8    2122
+Waiting:        0   19 107.0      6    2114
+Total:          2   23 108.1      9    2122
 
 Percentage of the requests served within a certain time (ms)
   50%      9
-  66%     12
+  66%     11
   75%     14
-  80%     16
-  90%     22
-  95%     56
+  80%     15
+  90%     21
+  95%     59
   98%    107
-  99%    187
- 100%   1873 (longest request)
+  99%    201
+ 100%   2122 (longest request)

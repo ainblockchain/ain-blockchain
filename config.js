@@ -20,7 +20,8 @@ const VOTING_STATUS = {
     PRE_VOTE: "pre_vote",
     PRE_COMMIT: "pre_commit",
     COMMITTED: "committed",
-    SYNCING: "syncing"
+    SYNCING: "syncing",
+    START_UP: "start_up"
 }
 
 

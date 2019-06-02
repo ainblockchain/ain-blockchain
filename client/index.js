@@ -69,7 +69,7 @@ app.use(express.json()); // support json encoded bodies
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool()
 const db = Database.getDatabase(bc, tp)
-const p2pServer = new P2pServer(db, bc, tp)
+const p2pServer = new P2pServer(db, bc, tp, process.env.STAKE? Number(process.env.STAKE) : null)
 
 app.get('/', (req, res, next) => {
   try{
@@ -248,14 +248,6 @@ app.listen(PORT, () => {
 p2pServer.listen()
 
 module.exports = app;
-
-
-if (process.env.STAKE){
-    setTimeout(() => {
-      p2pServer.registerStakeWithNetwork(process.env.STAKE)
-    }, 5000)
-    
-}
 
 function createBatchTransaction(trans){
   if (transactionBatch.length == 0){
