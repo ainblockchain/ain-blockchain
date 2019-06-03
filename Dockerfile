@@ -1,6 +1,8 @@
 # apt-get install docker.io
-# RUN: sudo docker run -e LOG=true -e STAKE=250 -e TRACKER_IP="ws://34.97.217.60:3001" --network="host" -d comcom/blockchain-database:v1
-# BUILD: sudo docker build -t comcom/blockchain-database:v1 .
+# LOGIN: sudo docker login docker.io
+# BUILD: sudo docker build -t  ainblockchain/blockchain-database .
+# RUN: sudo docker run -e LOG=true -e STAKE=250 -e TRACKER_IP="ws://34.97.217.60:3001" --network="host" -d ainblockchain/blockchain-database:latest
+# PULL: sudo  docker pull ainblockchain/blockchain-database
 FROM node:10.14
 WORKDIR /app
 COPY package.json /app
