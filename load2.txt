@@ -1,4 +1,4 @@
-Sun Jun  2 18:21:06 KST 2019
+Tue Jun 11 12:14:56 KST 2019
 This is ApacheBench, Version 2.3 <$Revision: 1706008 $>
 Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
 Licensed to The Apache Software Foundation, http://www.apache.org/
@@ -11,37 +11,37 @@ Server Hostname:        localhost
 Server Port:            8081
 
 Document Path:          /increase
-Document Length:        89 bytes
+Document Length:        90 bytes
 
 Concurrency Level:      50
-Time taken for tests:   23.190 seconds
+Time taken for tests:   20.700 seconds
 Complete requests:      50000
-Failed requests:        49733
-   (Connect: 0, Receive: 0, Length: 49733, Exceptions: 0)
-Total transferred:      15186112 bytes
+Failed requests:        47399
+   (Connect: 0, Receive: 0, Length: 47399, Exceptions: 0)
+Total transferred:      15190273 bytes
 Total body sent:        10950000
-HTML transferred:       4586112 bytes
-Requests per second:    2156.09 [#/sec] (mean)
-Time per request:       23.190 [ms] (mean)
-Time per request:       0.464 [ms] (mean, across all concurrent requests)
-Transfer rate:          639.50 [Kbytes/sec] received
-                        461.12 kb/s sent
-                        1100.62 kb/s total
+HTML transferred:       4590273 bytes
+Requests per second:    2415.47 [#/sec] (mean)
+Time per request:       20.700 [ms] (mean)
+Time per request:       0.414 [ms] (mean, across all concurrent requests)
+Transfer rate:          716.63 [Kbytes/sec] received
+                        516.59 kb/s sent
+                        1233.22 kb/s total
 
 Connection Times (ms)
               min  mean[+/-sd] median   max
-Connect:        0    0   0.3      0       6
-Processing:     2   23  85.4     10    1909
-Waiting:        2   18  81.5      8    1905
-Total:          4   23  85.4     11    1910
+Connect:        0    0   0.3      0      10
+Processing:     1   20 108.4      8    2237
+Waiting:        1   17 107.1      6    2228
+Total:          2   21 108.4      8    2237
 
 Percentage of the requests served within a certain time (ms)
-  50%     11
-  66%     14
-  75%     16
-  80%     18
-  90%     26
-  95%     68
-  98%    101
-  99%    236
- 100%   1910 (longest request)
+  50%      8
+  66%     11
+  75%     13
+  80%     15
+  90%     20
+  95%     32
+  98%     87
+  99%    155
+ 100%   2237 (longest request)

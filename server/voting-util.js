@@ -89,22 +89,18 @@ class VotingUtil {
     }
     
     
-    instantiate(genesis, tp){
+    instantiate(bc, tp){
         console.log("Initialising voting !!")
         // This method should only be called by the very first node on the network !!
         // This user should establish themselves as the first node on the network, instantiate the first _voting entry t db
         // and commit this to the blockchain so it will be picked up by new peers on the network
         var time = Date.now()
-        var firstVotingData = {validators: {}, next_round_validators: {}, threshold: 0, forger: this.db.publicKey, preVotes: 1, preCommits: 1, time, blockHash: "", height: 1,  lastHash: genesis.hash}
+        var firstVotingData = {validators: {}, next_round_validators: {}, threshold: 0, forger: this.db.publicKey, preVotes: 1, 
+                                preCommits: 1, time, blockHash: "", height: bc.lastBlock().height + 1,  lastHash: bc.lastBlock().hash}
         this.db.set("_voting", firstVotingData)
         return this.db.createTransaction({type: "SET", ref: "_voting", value: firstVotingData}, tp)
     }
     
-    checkIfFirstNode() {
-        var votingRound = this.db.get("_voting")
-        console.log(`Voting round is ${votingRound}`)
-        return null === votingRound
-    }
     
     startNewRound(tp, bc){
         var lastRound = this.db.get("_voting")

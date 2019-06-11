@@ -12,6 +12,7 @@ const BLOCK_CREATION_INTERVAL = 5000
 
 
 
+
 class P2pServer {
 
     constructor(db, bc, tp, stake){
@@ -112,6 +113,10 @@ class P2pServer {
                         break
                     case MESSAGE_TYPES.chain_subsection:
                         if(this.blockchain.merge(data.chainSubsection)){
+                            if (data.height === this.blockchain.height() && this.votingUtil.status === VOTING_STATUS.START_UP){
+                                this.votingUtil.status = VOTING_STATUS.SYNCING
+                                this.stakeAmount()
+                            }
 
                             for(var i=0; i<data.chainSubsection.length; i++){
                                 this.transactionPool.removeCommitedTransactions(data.chainSubsection[i])
@@ -120,10 +125,7 @@ class P2pServer {
                             this.requestChainSubsection(this.blockchain.lastBlock())
                         }
 
-                        if (data.height === this.blockchain.height() && this.votingUtil.status === VOTING_STATUS.START_UP){
-                            this.votingUtil.status = VOTING_STATUS.SYNCING
-                            this.stakeAmount()
-                        }
+
                         break
                     case MESSAGE_TYPES.chain_subsection_request:
                         const chainSubsection = this.blockchain.requestBlockchainSection(data.lastBlock)
@@ -144,7 +146,9 @@ class P2pServer {
 
     executeTransaction(data, socket){
         const transaction = data.transaction
-        this.db.execute(transaction.output, transaction.address)
+        if(this.votingUtil.status !== VOTING_STATUS.START_UP){
+            this.db.execute(transaction.output, transaction.address)
+        }
         switch(data.type){
             case MESSAGE_TYPES.pre_vote:
                 this.broadcastPreVote(transaction, data.height, socket)
@@ -242,12 +246,10 @@ class P2pServer {
     }
 
     initiateChain(){
-        if (this.votingUtil.checkIfFirstNode()){
-            this.votingUtil.status === VOTING_STATUS.WAITING_FOR_BLOCK
-            this.stakeAmount()
-            this.votingUtil.instantiate(this.blockchain.chain[0], this.transactionPool)
-            this.forgeBlock()
-        } 
+        this.votingUtil.status === VOTING_STATUS.WAITING_FOR_BLOCK
+        this.stakeAmount()
+        this.votingUtil.instantiate(this.blockchain, this.transactionPool)
+        this.forgeBlock()
     }
 
     addBlockToChain(){
@@ -287,6 +289,7 @@ class P2pServer {
 
     stakeAmount(){
         if (this.stake !== null){
+            console.log(`Staking amount ${this.stake}`)
             var transaction = this.votingUtil.stake(this.stake, this.transactionPool)
             this.broadcastTransaction(transaction)
         }
