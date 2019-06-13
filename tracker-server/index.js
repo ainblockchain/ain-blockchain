@@ -20,6 +20,17 @@ webSocketServer.on('connection', (ws) => {
         var peer = PEERS.find(peer => peer.ws === ws)
         var peerIndex = PEERS.indexOf(peer)
         PEERS.splice(peerIndex, 1)
+        var effectedPeers = PEERS.filter((p)=> {
+            if (p.getPeerList().indexOf(peer.url) > -1){
+                return p
+            } 
+        })
+        var lastPeer = effectedPeers.pop()
+        for(i=effectedPeers.length -1; i>=0; i--){
+            lastPeer.connect(effectedPeers[i])
+            lastPeer = effectedPeers.pop()
+        }
+        
         // TODO: Connect all nodes that the removed peer was acting as a bridge for in order
         // to ensure that network remains connected at all times
     })
@@ -76,5 +87,10 @@ class Peer {
     getPeerList(){
         var peerUrls =  this.connectedPeers.map(peer => {return peer.url})
         return peerUrls
+    }
+
+    connect(peer){
+        this.ws.send(JSON.stringify([peer.url]))
+        this.addPeer(peer)
     }
 }
