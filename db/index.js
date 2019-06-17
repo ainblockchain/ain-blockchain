@@ -20,11 +20,11 @@ class DB {
         return db
     }
 
-    get(queryPath, auth){
+    get(queryPath, auth=null, timestamp=null){
         auth = auth || this.publicKey
         var listQueryPath = ChainUtil.queryParser(queryPath)
 
-        if (!this.getPermissions(listQueryPath, auth, [".read"])[".read"]){
+        if (!this.getPermissions(listQueryPath, auth, timestamp, [".read"])[".read"]){
             throw new InvalidPermissionsError(`Invalid get permissions for ${queryPath}`)
         }
 
@@ -50,11 +50,11 @@ class DB {
         return this.set(["stakes", this.publicKey].join("/"), stakeAmount)
     }
 
-    set(queryPath, value, auth=null){
+    set(queryPath, value, auth=null, timestamp=null){
         let valueCopy
         var listQueryPath = ChainUtil.queryParser(queryPath)
         // TODO: Find a better way to manage seeting of rules than this dodgy condition
-        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissions(listQueryPath, auth, [".read", ".write"], value)).includes(false)){
+        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissions(listQueryPath, auth, timestamp, [".read", ".write"], value)).includes(false)){
             throw new InvalidPermissionsError(`Invalid set permissons for ${queryPath}`)
         }
         
@@ -75,26 +75,26 @@ class DB {
         return true
     }
 
-    update(data, auth=null){
+    update(data, auth=null, timestamp=null){
         for (let key in data) {
-            this.set(key, data[key], auth)
+            this.set(key, data[key], auth, timestamp)
           }
           return true
     }
 
-    batch(batch_list, auth=null){
+    batch(batch_list, auth=null, timestamp=null){
         var result_list = []
         batch_list.forEach((item) => {
             if (item.op === 'set') {
-              result_list.push(this.set(item.ref, item.value, auth))
+              result_list.push(this.set(item.ref, item.value, auth, timestamp))
             } else if (item.op === 'increase') {
-              result_list.push(this.increase(item.diff, auth))
+              result_list.push(this.increase(item.diff, auth, timestamp))
             } else if (item.op === 'get') {
-              result_list.push(this.get(item.ref, auth))
+              result_list.push(this.get(item.ref, auth, timestamp))
             } else if (item.op === 'update') {
-              result_list.push(this.update(item.data, auth))
+              result_list.push(this.update(item.data, auth, timestamp))
             } else if (item.op === 'batch') {
-                result_list.push(this.batch(item.batch_list, auth))
+                result_list.push(this.batch(item.batch_list, auth, timestamp))
             }
           })
           return result_list
@@ -112,7 +112,7 @@ class DB {
         return subDb
     }
 
-    increase(diff, auth=null){
+    increase(diff, auth=null, timestamp=null){
         for (var k in diff) {
             if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
                 // TODO: Raise error here
@@ -154,7 +154,7 @@ class DB {
 
     executeBlockTransactions(block){
         block.data.forEach(transaction =>{
-            this.execute(transaction.output, transaction.address)
+            this.execute(transaction.output, transaction.address, transaction.timestamp)
         })
     }
 
@@ -170,27 +170,28 @@ class DB {
         }
     }
 
-    execute(transaction, address) {
+    execute(transaction, address, timestamp) {
         switch(transaction.type){
             case "SET":
-                this.set(transaction.ref, transaction.value, address)
+                this.set(transaction.ref, transaction.value, address, timestamp)
                 break
             case "INCREASE": 
-                this.increase(transaction.diff, address)
+                this.increase(transaction.diff, address, timestamp)
                 break
             case "UPDATE":
-                this.update(transaction.data, address)
+                this.update(transaction.data, address, timestamp)
                 break
             case "BATCH": 
-                this.batch(transaction.batch_list, address)
+                this.batch(transaction.batch_list, address, timestamp)
                 break
         }
     }
 
-    getPermissions(queryPath, auth, permissionQueries, newValue) {
+    getPermissions(queryPath, auth, timestamp,  permissionQueries, newValue) {
         // Checks permissions for the given query path. Specify permissionQueries as a list of the permissions of interest i.e [".read", ".write"]
         let lastRuleSet
         auth = auth || this.publicKey
+        timestamp = timestamp || Date.now()
         var rules = {}
         var wildCards = {}
         var currentRuleSet = this.db["rules"]
@@ -218,7 +219,7 @@ class DB {
         } while(currentRuleSet &&  i <= queryPath.length);
         for(var permission in rules)
             if (typeof rules[permission] === "string"){
-                rules[permission] = this.verifyAuth(rules[permission], wildCards, queryPath, newValue, auth)
+                rules[permission] = this.verifyAuth(rules[permission], wildCards, queryPath, newValue, auth, timestamp)
             }
 
         //console.log(`Access for user ${auth.substring(0, 10)} for path ${queryPath.join("/")} is ${Object.values(rules)}`)
@@ -226,7 +227,7 @@ class DB {
     }
 
 
-    verifyAuth(ruleString, wildCards, queryPath, newValue, auth){
+    verifyAuth(ruleString, wildCards, queryPath, newValue, auth, timestamp){
 
         if (ruleString.includes("auth")){
             ruleString = ruleString.replace(/auth/g, `'${auth}'`)
@@ -241,7 +242,10 @@ class DB {
 
         }  
         if (ruleString.includes("newData")){
-            ruleString = ruleString.replace(/newData/g, newValue)
+            ruleString = ruleString.replace(/newData/g, JSON.stringify(newValue))
+        }  
+        if (ruleString.includes("currentTime")){
+            ruleString = ruleString.replace(/currentTime/g, timestamp)
         }  
         if (ruleString.includes("oldData")){
             ruleString = ruleString.replace(/oldData/g, this.get(queryPath.join("/")))
@@ -249,6 +253,7 @@ class DB {
         if (ruleString.includes("db.get")){
             ruleString = ruleString.replace(/db.get/g, "this.get")
         } 
+
         var permission = eval(ruleString)
         if (!permission){
             console.log(`"${ruleString}" evaluated as false`)

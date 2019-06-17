@@ -16,7 +16,7 @@ chai.use(chaiHttp);
 
 // Before running this test, bring up server at localhost:8080.
 // npm start
-const server1 = 'http://localhost:8085'
+const server1 = 'http://localhost:8090'
 const server2 = 'http://localhost:8089'
 const server3 = 'http://localhost:8087'
 const server4 = 'http://localhost:8088'
@@ -27,14 +27,14 @@ describe('aFan Client Test', () => {
   before(() => {
     tracker_proc = spawn('node', [TRACKER_SERVER])
     sleep(2000)
-    server1_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5001, PORT: 8085}})
-    sleep(500)
+    server1_proc = spawn('node', [APP_SERVER], {env: {STAKE: 250, LOG: true, P2P_PORT:5001, PORT: 8090}})
+    sleep(2000)
     server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5002, PORT: 8089}})
-    sleep(500)
+    sleep(2000)
     server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8087}})
-    sleep(500)
+    sleep(2000)
     server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8088}})
-    sleep(500)
+    sleep(2000)
 
   });
 

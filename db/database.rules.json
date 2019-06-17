@@ -9,8 +9,17 @@
             ".write": "auth === '$uid'"
         }
     },
+    "_recentForgers": {
+        ".write": "((newData.length === 20) || db.get(`_voting/height`) < 20) && (db.get(`_voting/preCommits`) > db.get(`_voting/threshold`)) && (db.get(`_voting/forger`) === auth)"
+    },
     "_voting": {
-        ".write": true,
+        ".write": "db.get(`_voting`) === null || (db.get(`_recentForgers`)[db.get(`_recentForgers`).length - Math.ceil((currentTime - db.get(`_voting/time`)) / 6000)] === auth)" ,
+        "blockHash": {
+            ".write": "db.get(`_voting/forger`) === auth"
+        },
+        "next_round_validators": {
+            ".write": "Object.keys(db.get(`stakes`)).indexOf(auth) > -1"
+        },
         "preVotes":{
             ".write": "db.get(`_voting/blockHash`) !== null"
         },

@@ -23,6 +23,7 @@ class P2pServer {
         this.stake = stake
         this.votingInterval = null
         this.votingUtil = new VotingUtil(db)
+        this.waitInBlocks = 4
     }
 
     connectTracker(){
@@ -81,7 +82,7 @@ class P2pServer {
                         if (!this.votingUtil.isSyncedWithNetwork(this.blockchain)){
                             this.requestChainSubsection(this.blockchain.lastBlock())
                         }
-                        if (this.stake){
+                        if (this.stake && this.waitInBlocks === 0){
                             this.broadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1, this.transactionPool))
                         }
 
@@ -115,7 +116,6 @@ class P2pServer {
                         if(this.blockchain.merge(data.chainSubsection)){
                             if (data.height === this.blockchain.height() && this.votingUtil.status === VOTING_STATUS.START_UP){
                                 this.votingUtil.status = VOTING_STATUS.SYNCING
-                                this.stakeAmount()
                             }
 
                             for(var i=0; i<data.chainSubsection.length; i++){
@@ -147,7 +147,7 @@ class P2pServer {
     executeTransaction(data, socket){
         const transaction = data.transaction
         if(this.votingUtil.status !== VOTING_STATUS.START_UP){
-            this.db.execute(transaction.output, transaction.address)
+            this.db.execute(transaction.output, transaction.address, transaction.timestamp)
         }
         switch(data.type){
             case MESSAGE_TYPES.pre_vote:
@@ -178,7 +178,7 @@ class P2pServer {
         this.broadcastBlock(this.db.publicKey)
         if (!Object.keys(this.db.get("_voting/validators")).length){
             console.log("No validators registered for this round")
-            this.addBlockToChain()                         
+            this.addBlockToChain()  
             this.cleanupAfterVotingRound()
         }
     }
@@ -226,9 +226,7 @@ class P2pServer {
     }
 
     broadcastNewRound(transaction, previousSocket=null){
-        if (previousSocket){
-            console.log(`Starting new round ${this.db.publicKey}`)
-        }
+        console.log(`Starting new round from user ${previousSocket == null ? this.db.publicKey: transaction.address}`)
         this.sockets.forEach(socket => {socket.send(JSON.stringify({type: MESSAGE_TYPES.new_voting, transaction}))})
     }
 
@@ -257,6 +255,12 @@ class P2pServer {
         this.transactionPool.removeCommitedTransactions(this.votingUtil.block)
         this.votingUtil.reset()
         this.db.reconstruct(this.blockchain, this.transactionPool)
+        if (this.waitInBlocks > 0){
+            this.waitInBlocks = this.waitInBlocks - 1
+            if (this.waitInBlocks === 0){
+                this.stakeAmount()
+            }
+        }
     }
 
     cleanupAfterVotingRound(){
@@ -266,10 +270,12 @@ class P2pServer {
             this.votingInterval = null
         }
         if (this.db.db._voting.forger === this.db.publicKey){
-            console.log("Setting interval now for future")
+            console.log(`Peer ${this.db.publicKey} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`)
+            this.broadcastTransaction(this.votingUtil.writeSuccessfulForge(this.transactionPool, this.blockchain.lastBlock().height))
                 // this.broadcastNewRound(startNewRound(this.db, this.transactionPool))
                 // this.broadcastTransaction(this.registerForNextRound(this.blockchain.height(), this.db, this.transactionPool))
-            this.votingInterval = setInterval(()=> {
+            this.votingInterval = setTimeout(()=> {
+                console.log(`User ${this.db.publicKey} is starting round ${this.blockchain.height() + 1}`)
                 this.broadcastNewRound(this.votingUtil.startNewRound(this.transactionPool, this.blockchain))  
                 this.broadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1, this.transactionPool))
                 this.checkIfForger()

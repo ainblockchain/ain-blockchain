@@ -2,6 +2,7 @@
 const shuffleSeed = require('shuffle-seed')
 const seedrandom = require('seedrandom')
 const {VOTING_STATUS} = require('../config')
+const MAX_RECENT_FORGERS = 20
 
 class VotingUtil {
 
@@ -179,6 +180,20 @@ class VotingUtil {
 
     isValidator(){
         return Boolean(this.db.get(`_voting/validators/${this.db.publicKey}`))
+    }
+
+    writeSuccessfulForge(tp){
+        var ref = `_recentForgers`
+        var recentForgers = JSON.parse(JSON.stringify(this.db.get(ref)))
+        if (recentForgers == null){
+            recentForgers = []
+        }
+        else if (recentForgers.length == 20){
+            recentForgers.shift()
+        }
+        recentForgers.push(this.db.publicKey)
+        this.db.set(ref, recentForgers)
+        return this.db.createTransaction({type: "SET", ref , value: recentForgers}, tp)
     }
     
 }
