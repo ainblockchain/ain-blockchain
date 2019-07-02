@@ -8,7 +8,7 @@ const {ForgedBlock} = require("../blockchain/block")
 const SERVER = HOST + ":" + P2P_PORT
 const {MESSAGE_TYPES, VOTING_STATUS} = require("../config")
 const VotingUtil =  require('./voting-util')
-const BLOCK_CREATION_INTERVAL = 5000
+const BLOCK_CREATION_INTERVAL = 6000
 
 
 
@@ -269,18 +269,28 @@ class P2pServer {
             clearInterval(this.votingInterval)
             this.votingInterval = null
         }
-        if (this.db.db._voting.forger === this.db.publicKey){
+        if (this.db.get("_voting/forger") === this.db.publicKey){
             console.log(`Peer ${this.db.publicKey} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`)
             this.broadcastTransaction(this.votingUtil.writeSuccessfulForge(this.transactionPool, this.blockchain.lastBlock().height))
+            
                 // this.broadcastNewRound(startNewRound(this.db, this.transactionPool))
                 // this.broadcastTransaction(this.registerForNextRound(this.blockchain.height(), this.db, this.transactionPool))
-            this.votingInterval = setTimeout(()=> {
+        }
+
+        if (this.db.get("_recentForgers").indexOf(this.db.publicKey) >= 0){
+            this.votingInterval = setInterval(()=> {
+                //if (this.db.get("_recentForgers").indexOf(this.db.publicKey) + 1 !== this.db.get("_recentForgers").length) {return }
+                var newRoundTrans = this.votingUtil.startNewRound(this.transactionPool, this.blockchain)
+                if (newRoundTrans === null){
+                    console.log(`${this.db.publicKey} is not the starter for the current round`)
+                    return
+                }
                 console.log(`User ${this.db.publicKey} is starting round ${this.blockchain.height() + 1}`)
-                this.broadcastNewRound(this.votingUtil.startNewRound(this.transactionPool, this.blockchain))  
+                this.broadcastNewRound(newRoundTrans) 
                 this.broadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1, this.transactionPool))
                 this.checkIfForger()
 
-                }, BLOCK_CREATION_INTERVAL)
+            }, BLOCK_CREATION_INTERVAL)
         }
         console.log(`New blockchain height is ${this.blockchain.height() + 1}`)
 

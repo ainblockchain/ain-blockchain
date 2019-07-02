@@ -38,14 +38,7 @@ diff b1.txt b2.txt
 kill  -9 $PID1 $PID2 $PID3
 rm -rf $BASEDIR/blockchain/.blockchains
 
- NUM=$(sed 's/level/level\n/g' b1.txt | grep -c "level")
- if test $NUM -eq 200000 
- then
-    echo "200000 occurances of string found in last 10 blocks !! Pass"
-else
-    echo "$NUM occuraces of string found in last 10 blocks!! Fail"
-    exit 1
-fi
+NUM=$(sed 's/level/level\n/g' b1.txt | grep -c "level")
 
  if [ "$RESULT1"=="{'code':0,'result':1000000}" ] ;
  then
@@ -60,6 +53,14 @@ fi
     echo "/test/increase/first/leve2 correctly increased to 2000000 !! Pass"
 else
     echo "Error: Increases sum to $RESULT2!! Fail"
+    exit 1
+fi
+
+if test $NUM -eq 200000 
+then
+      echo "200000 occurances of string found in last 10 blocks !! Pass"
+else
+    echo "$NUM occuraces of string found in last 10 blocks!! Fail"
     exit 1
 fi
 

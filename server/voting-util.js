@@ -3,6 +3,8 @@ const shuffleSeed = require('shuffle-seed')
 const seedrandom = require('seedrandom')
 const {VOTING_STATUS} = require('../config')
 const MAX_RECENT_FORGERS = 20
+const InvalidPermissionsError = require("../errors")
+
 
 class VotingUtil {
 
@@ -123,7 +125,13 @@ class VotingUtil {
             nextRound =  Object.assign({}, nextRound, {height: lastRound.height,  lastHash: lastRound.lastHash})
         }
         // Writing permissions can be driven through the rules
-        this.db.set("_voting", nextRound)
+        try{
+            this.db.set("_voting", nextRound)
+        } catch (InvalidPermissionsError){
+            console.log(`${this.db.publicKey} does not have permission to start next round`)
+            return null
+        }
+        
         return this.db.createTransaction({type: "SET", ref: "_voting", value: nextRound}, tp)
     }
     
@@ -190,6 +198,10 @@ class VotingUtil {
         }
         else if (recentForgers.length == 20){
             recentForgers.shift()
+        }
+
+        if (recentForgers.indexOf(this.db.publicKey) >= 0){
+            recentForgers.splice(recentForgers.indexOf(this.db.publicKey), 1)
         }
         recentForgers.push(this.db.publicKey)
         this.db.set(ref, recentForgers)
