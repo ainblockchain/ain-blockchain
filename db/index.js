@@ -20,13 +20,9 @@ class DB {
         return db
     }
 
-    get(queryPath, auth=null, timestamp=null){
+    get(queryPath, auth=null){
         auth = auth || this.publicKey
         var listQueryPath = ChainUtil.queryParser(queryPath)
-
-        if (!this.getPermissions(listQueryPath, auth, timestamp, [".read"])[".read"]){
-            throw new InvalidPermissionsError(`Invalid get permissions for ${queryPath}`)
-        }
 
         if (listQueryPath.length < 1) {
             return this.db
@@ -54,7 +50,8 @@ class DB {
         let valueCopy
         var listQueryPath = ChainUtil.queryParser(queryPath)
         // TODO: Find a better way to manage seeting of rules than this dodgy condition
-        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && Object.values(this.getPermissions(listQueryPath, auth, timestamp, [".read", ".write"], value)).includes(false)){
+        // In future should be able to accomidate other types of rules beyoned wrie
+        if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && this.getPermissions(listQueryPath, auth, timestamp,  ".write", value) == false){
             throw new InvalidPermissionsError(`Invalid set permissons for ${queryPath}`)
         }
         
@@ -122,7 +119,7 @@ class DB {
         var results = {}
         for (var k in diff) {
             var result = (this.get(k, auth) || 0) + diff[k]
-            this.set(k, result, auth)
+            this.set(k, result, auth, timestamp)
             results[k] = result
         }
         return results
@@ -187,22 +184,18 @@ class DB {
         }
     }
 
-    getPermissions(queryPath, auth, timestamp,  permissionQueries, newValue) {
-        // Checks permissions for the given query path. Specify permissionQueries as a list of the permissions of interest i.e [".read", ".write"]
+    getPermissions(queryPath, auth, timestamp,  permissionQuery, newValue=null) {
         let lastRuleSet
         auth = auth || this.publicKey
         timestamp = timestamp || Date.now()
-        var rules = {}
+        var rule = false
         var wildCards = {}
         var currentRuleSet = this.db["rules"]
         var i = 0
         do{
-            for(var j=0; j <permissionQueries.length; j++){
-                if (permissionQueries[j] in currentRuleSet){ 
-                    rules[permissionQueries[j]] = currentRuleSet[permissionQueries[j]]
-                }
+            if (permissionQuery in currentRuleSet){ 
+                rule = currentRuleSet[permissionQuery]
             }
-
             lastRuleSet = currentRuleSet
             currentRuleSet = currentRuleSet[queryPath[i]]
             if (!currentRuleSet && queryPath[i]){
@@ -217,13 +210,13 @@ class DB {
             }
             i++
         } while(currentRuleSet &&  i <= queryPath.length);
-        for(var permission in rules)
-            if (typeof rules[permission] === "string"){
-                rules[permission] = this.verifyAuth(rules[permission], wildCards, queryPath, newValue, auth, timestamp)
-            }
+
+        if (typeof rule === "string"){
+            rule = this.verifyAuth(rule, wildCards, queryPath, newValue, auth, timestamp)
+        }
 
         //console.log(`Access for user ${auth.substring(0, 10)} for path ${queryPath.join("/")} is ${Object.values(rules)}`)
-        return rules
+        return rule
     }
 
 

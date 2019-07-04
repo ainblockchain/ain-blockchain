@@ -1,5 +1,4 @@
 { "rules": {
-    ".read": true,
     ".write": false,
     "afan": {
         ".write": true
@@ -36,21 +35,15 @@
     "test": {
         ".write": true,
         "ai": {
-        ".read": true
         },
         "comcom": {
-        ".read": false
         },
         "billing_keys": {
-            ".read": false,
             "update_billing": {
-                ".read": true
             }
         },
         "users":{
-            ".read": false,
             "$uid": {
-                ".read": "auth === '$uid'",
                 ".write": true,
                 "balance": {
                     ".write": "typeof newData === 'number' && newData >= 0"
