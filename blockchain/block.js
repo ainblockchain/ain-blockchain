@@ -2,15 +2,17 @@ const ChainUtil = require('../chain-util')
 const fs = require("fs")
 const {RULES_FILE_PATH} = require('../config')
 var zipper = require("zip-local")
-
+const Transaction = require('../db/transaction')
+const BLOCKS_INSERT_COMMAND = 'INSERT INTO blocks(height, hash, forger, validators, parent_hash, created_on) VALUES($1, $2, $3, $4, $5, $6) RETURNING *'
 
 class Block {
 
-    constructor(timestamp, lastHash, hash, data){
+    constructor(timestamp, lastHash, hash, data, stringTimestamp){
         this.timestamp = timestamp
         this.lastHash = lastHash
         this.hash = hash
         this.data = data
+        this.stringTimestamp = stringTimestamp
 
     }
 
@@ -19,8 +21,8 @@ class Block {
 class ForgedBlock extends Block {
 
 
-    constructor(timestamp, lastHash, hash, data, height, signature, forger, validators, threshold){  
-        super(timestamp, lastHash, hash, data)
+    constructor(timestamp, lastHash, hash, data, stringTimestamp, height, signature, forger, validators, threshold){  
+        super(timestamp, lastHash, hash, data, stringTimestamp)
         this.validatorTransactions = []
         this.height = height
         this.signature = signature
@@ -33,9 +35,10 @@ class ForgedBlock extends Block {
     static forgeBlock(data, db, height, lastBlock, forger, validators, threshold){
         const lastHash = lastBlock.hash
         const timestamp = Date.now()
+        const stringTimestamp = new Date()
         const signature = db.sign(ChainUtil.hash(data))
         const hash = ForgedBlock.hash(timestamp, lastHash, data, height, signature)       
-        return new ForgedBlock(timestamp, lastHash, hash, data, height, signature, forger, validators, threshold)
+        return new ForgedBlock(timestamp, lastHash, hash, data, stringTimestamp, height, signature, forger, validators, threshold)
     }
 
     header(){
@@ -91,7 +94,7 @@ class ForgedBlock extends Block {
 
     static parse(block_info){
         const block =  new ForgedBlock(block_info["timestamp"], block_info["lastHash"], block_info["hash"],
-                                        block_info["data"], block_info["height"], block_info["signature"],
+                                        block_info["data"], block_info["stringTimestamp"], block_info["height"], block_info["signature"],
                                         block_info["forger"], block_info["validators"], block_info["threshold"])
         block_info["validatorTransactions"].forEach(transaction => {
             block.validatorTransactions.push(transaction)
@@ -121,25 +124,39 @@ class ForgedBlock extends Block {
             }
             nonceTracker[transaction.address] = transaction.nonce
 
-
         }
         console.log(`Valid block at height ${block.height}`)
         return true
     }
 
-    static genesis(){
+    static genesis(pgClient=null){
         // Genesis block will set all the rules for the database if any rules are
         // specified in the proj/database/database.rules.json 
         const data = []
+        const genesisDate = new Date("1970/1/1")
         // Hack here to simulate a transaction for the initial setting of rules
         if (fs.existsSync(RULES_FILE_PATH)) {
-            data.push({output: {type: "SET", ref: "rules", 
-                                value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}, address: null})
+            const rulesOp = {type: "SET", ref: "rules", value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"]}
+            data.push(new Transaction(0, rulesOp, "###########" , "--------", -1, genesisDate))
+            data[0].id = "########-$$$$-****-%%%%-@@@@@@@@@@@@"
         }   
         // Change this to use 
-        const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, 0, "----", "genesis", [], -1);
+        const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, genesisDate, 0, "----", "genesis", [], -1);
         genesis.height = 0
+        if(pgClient !== null){
+            genesis.writeToPostgres(pgClient)
+            Transaction.writeToPostgres(pgClient, data[0], 0, genesis.hash, genesis.height)
+        }
         return genesis
+    }
+
+    writeToPostgres(client){
+        const values = [this.height, this.hash, this.forger, JSON.stringify(this.validators), this.lastHash, this.stringTimestamp]
+        client.query(BLOCKS_INSERT_COMMAND, values, (err, res) => {
+            if (err) {
+              console.log(err.stack)
+            } 
+          })
     }
 
 }

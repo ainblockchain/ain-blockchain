@@ -31,7 +31,7 @@ describe('API Tests', () => {
     server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8087}})
     sleep(500)
     server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8088}})
-    sleep(500)
+    sleep(1500)
 
   });
 

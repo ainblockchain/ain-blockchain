@@ -18,6 +18,7 @@
 
 // Require process, so we can mock environment variables
 const process = require('process');
+const {Client} = require('pg')
 const PORT = process.env.PORT || 8080;
 
 // Initiate logging
@@ -25,6 +26,7 @@ const LOG = process.env.LOG || false;
 var LAST_NONCE = 0
 var CURRENT_NONCE = 0
 const TX_PER_SECOND_AUTOBATCHING = 200
+const writeToPg = process.env.PG || false;
 
 if(LOG){
   var fs = require('fs');
@@ -41,6 +43,18 @@ if(LOG){
     log_stdout.write(util.format(d) + '\n');
   }
 }
+var client = null
+
+if(writeToPg){
+  client = new Client({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'ain',
+    password: 'postgres',
+    port: 5432,
+  })
+client.connect()
+} 
 
 
 // [START gae_flex_mysql_app]
@@ -66,7 +80,7 @@ const transactionBatch = []
 app.use(express.json()); // support json encoded bodies
 // app.use(bodyParser.urlencoded({ extended: false })); // support encoded bodies
 
-const bc = new Blockchain(String(PORT));
+const bc = new Blockchain(String(PORT), client);
 const tp = new TransactionPool()
 const db = Database.getDatabase(bc, tp)
 const p2pServer = new P2pServer(db, bc, tp, process.env.STAKE? Number(process.env.STAKE) : null)
