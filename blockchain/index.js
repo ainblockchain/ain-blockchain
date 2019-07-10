@@ -7,17 +7,14 @@ const fs = require('fs')
 const zipper = require("zip-local")
 const naturalSort = require("node-natural-sort")
 const CHAIN_SUBSECT_LENGTH = 20
-const Transaction = require('../db/transaction')
 
 class Blockchain{
 
-    constructor(blockchain_dir, pgClient=null){
-        this.chain = [ForgedBlock.genesis(pgClient)];
+    constructor(blockchain_dir){
+        this.chain = [ForgedBlock.genesis()];
         this.blockchain_dir = blockchain_dir
         this.backUpDB = null
         let new_chain
-        this.pgClient = pgClient
-        this.transactionCounter = 1
         if(this.createBlockchainDir()){
             new_chain =  Blockchain.loadChain(this._blockchainDir())
             this.chain = new_chain ? new_chain: this.chain
@@ -54,13 +51,6 @@ class Blockchain{
             this.backUpDB.executeBlockTransactions(this.chain.shift())
         }
         this.writeChain()
-        if (this.pgClient !== null){
-            block.writeToPostgres(this.pgClient)
-            block.data.forEach((transaction) => {
-                Transaction.writeToPostgres(this.pgClient, transaction, this.transactionCounter, block.hash, block.height)
-                this.transactionCounter++
-            })
-        }
     }
 
 
