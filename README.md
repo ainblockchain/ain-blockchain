@@ -1,45 +1,103 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+## Tracker Server
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+Tracker server is required by new peers who wish to join the AIN network. Each peer is sent the ipaddress of 2 other nodes in the network. These nodes then gossip information through the network of all transactions and blocks.
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
+NOTE: Tracker Server must be started first before starting any blockchain-database instances
 
----
+### To build docker image locally
+	cd tracker-server/
+	docker build -t ainblockchain/tracker-server .
 
-## Edit a file
+  
+### To pull docker image
+	docker pull ainblockchain/tracker-server
 
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
+  
+### To run docker image
+	docker run --network="host" -d ainblockchain/tracker-server:latest
 
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
-
----
-
-## Create a file
-
-Next, you’ll add a new file to this repository.
-
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
-
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
+  ### Description
+By default this tracker-server service is queriable by blockchain-database instances at ws://localhost:3001
 
 ---
+## Blockchain Database
 
-## Clone a repository
+Operates a single peer node instance of the AIN blockchain. A single blockchain-database instance processes incoming transaction requests and maintains a local copy of the entire blockchain blockchain. The blockchain-database first queries the tracker-server for ipaddresses of other peers, and then syncs it's local blockchain to the network consensus blockchain. If the blockchain specifies a "STAKE" argument on startup, it will then begin to take part in the forging/validating process for new blocks.
 
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
+  
 
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
+### To run test cases
+	npm init && npm run test
 
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+### To build docker image locally
+	docker build -t ainblockchain/blockchain-database .
+
+### To pull docker image 
+
+	docker pull ainblockchain/blockchain-database
+
+### To run docker image 
+
+	docker run -e LOG=true -e STAKE=250 -e TRACKER_IP="ws://<ip_address_of_tracker_server>:3001" --network="host" -d ainblockchain/blockchain-database:latest
+
+  
+### Description 
+
+
+#### Optional arguments:
+  
+
+STAKE: Set if you would like node participate in the block forg/validating process. Likelihood of node being chosen as forger is propotional to amount staked
+
+LOG: Set to true if you want blockchain-database to maintain log files
+
+  
+
+#### To enter docker container and see blockchain files
+
+	docker exec -it <container_id> /bin/bash
+	cd blockchain/.blockchains/8080/
+  
+
+### To enter docker container and see log files
+
+	docker exec -it <container_id> /bin/bash
+	cat client/.logs/8080debug.log
+
+
+#### The blockchain database exposes the following endpoint:
+
+GET https://<ip_address>:8080/blocks -> See last 10 blocks in blockchain
+
+GET https://<ip_address>:8080/blocks?from=1&to=100 -> psql -h localhost -U postgres -d postgresQuery for specific list of blocks from blockchain
+
+GET https://<ip_address>:8080/get?ref=/database/path/to/query -> Query for data at specific database location
+
+POST https://<ip_address>:8080/set with json_body {"ref": "test/comeonnnnnnn", "value": "testme"}
+
+POST https://<ip_address>:8080/update with json_body {"data": {"test/increase/first/level": 10, "test/increase/first/level2": 20}}
+
+POST https://<ip_address>:8080/batch with json_body {"batch_list": [{"op": "set", "ref": "test/comeonnnnnnn", "value": "testme"}, {"op": "update", "data": {"test/b/u": 10000}}]}
+
+POST https://<ip_address>:8080/increase with json_body {"diff": {"test/increase/first/level": 10, "test/increase/first/level2": 20}}
+
+  
+
+## Postgres Database (will move to different repositoy)
+
+Database which will be used by ain_scan to store data regarding blocks and transactions. CUrrently defines schemas for database of blocks and transactions
+
+  
+
+### To build docker image locally
+
+	cd postgres/
+	docker build -t ainblockchain/postgres .
+
+### To run docker image 
+
+	docker run --rm --name pg-docker -e POSTGRES_PASSWORD=postgres -d -p 5432:5432 ainblockchain/postgres
+
+### To enter postgres container and check default schemas
+
+	psql -h localhost -U postgres -d postgres
