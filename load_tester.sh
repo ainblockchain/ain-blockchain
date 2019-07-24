@@ -27,8 +27,8 @@ ab -p post.txt -T application/json  -c 50 -n 50000 http://localhost:8081/increas
 
 sleep 15
 
-wget -O b1.txt http://localhost:8080/blocks
-wget -O b2.txt http://localhost:8081/blocks
+ curl -H "Content-type:application/json" -d '{"jsonrpc":"2.0", "id":"curltest", "method":"getBlocks"}' http://localhost:8080/json-rpc > b1.txt
+ curl -H "Content-type:application/json" -d '{"jsonrpc":"2.0", "id":"curltest", "method":"getBlocks"}' http://localhost:8081/json-rpc > b2.txt
 
 RESULT1=$(wget -qO-  http://localhost:8080/get?ref=/test/increase/first/level)
 RESULT2=$(wget -qO-  http://localhost:8081/get?ref=/test/increase/first/level2)

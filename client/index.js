@@ -61,6 +61,7 @@ const InvalidPerissonsError = require("../errors")
 
 const app = express();
 
+
 const transactionBatch = []
 
 app.use(express.json()); // support json encoded bodies
@@ -70,6 +71,12 @@ const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool()
 const db = Database.getDatabase(bc, tp)
 const p2pServer = new P2pServer(db, bc, tp, process.env.STAKE? Number(process.env.STAKE) : null)
+const jayson = require('jayson')
+
+
+const json_rpc_methods = require('../json_rpc/methods')(bc, tp)
+app.post('/json-rpc', jayson.server(json_rpc_methods).middleware())
+
 
 app.get('/', (req, res, next) => {
   try{
@@ -82,48 +89,6 @@ app.get('/', (req, res, next) => {
       console.log(error)
     }
 })
-
-app.get('/transactions', (req, res) => {
-  try{
-    res.json(tp.transactions)
-  } catch (error){
-    console.log(error)
-  }
-})
-
-app.get('/blocks', (req, res) => {
-  if (req.query.to && typeof req.query.from === "undefined"){
-    res.json({error: "Most specify valid 'from'"})
-  } else{ 
-      try{
-        var chainSection = req.query ? bc.getChainSection(req.query.from, req.query.to): bc.chain
-        var chainList = []
-        for(var i=0; i< chainSection.length; i++){
-          chainList.push(chainSection[i].body())
-        }
-        res.json(chainList)
-      } catch (error){
-        console.log(error)
-      }
-  }
-});
-
-app.get('/headers', (req, res) => {
-  if (req.query.to && typeof req.query.from === "undefined"){
-    res.json({error: "Most specify valid 'from'"})
-  } else{ 
-      try{
-        var chainSection = req.query ? bc.getChainSection(req.query.from, req.query.to): bc.chain
-        var chainList = []
-        for(var i=0; i< chainSection.length; i++){
-          chainList.push(chainSection[i].header())
-        }
-        res.json(chainList)
-      } catch (error){
-        console.log(error)
-      }
-  }
-});
 
 
 app.get('/stake', (req, res, next) => {

@@ -98,8 +98,8 @@ class VotingUtil {
         // This user should establish themselves as the first node on the network, instantiate the first _voting entry t db
         // and commit this to the blockchain so it will be picked up by new peers on the network
         var time = Date.now()
-        var firstVotingData = {validators: {}, next_round_validators: {}, threshold: 0, forger: this.db.publicKey, preVotes: 1, 
-                                preCommits: 1, time, blockHash: "", height: bc.lastBlock().height + 1,  lastHash: bc.lastBlock().hash}
+        var firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.publicKey, preVotes: 0, 
+                                preCommits: 0, time, blockHash: "", height: bc.lastBlock().height + 1,  lastHash: bc.lastBlock().hash}
         this.db.set("_voting", firstVotingData)
         return this.db.createTransaction({type: "SET", ref: "_voting", value: firstVotingData}, tp)
     }

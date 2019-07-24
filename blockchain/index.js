@@ -192,8 +192,8 @@ class Blockchain{
     }
 
     getChainSection(from, to){
-        var from = Number(from)
-        var to = to ? Number(to) : this.height()
+        from = Number(from)
+        to = to ? Number(to) : this.height()
         let chain 
         if (from < this.chain[0].height){
             chain = []
