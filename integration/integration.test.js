@@ -7,6 +7,7 @@ const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 const expect = chai.expect
+const should = chai.should();
 const path = require("path")
 chai.use(chaiHttp);
 const syncRequest = require('sync-request')
@@ -136,6 +137,7 @@ describe('Integration Tests', () => {
     itParam('syncs accross all peers after mine', SERVERS, (server) => {
       base_db = JSON.parse(syncRequest('GET', server1 + '/get?ref=/').body.toString("utf-8"))
       console.log(base_db)
+      console.log(server)
       return chai.request(server).get(`/get?ref=/`).then((res) => {
               res.should.have.status(200);
               res.body.should.be.deep.eql(base_db)

@@ -11,13 +11,10 @@ class Block {
         this.lastHash = lastHash
         this.hash = hash
         this.data = data
-
     }
-
 }
 
 class ForgedBlock extends Block {
-
 
     constructor(timestamp, lastHash, hash, data, height, signature, forger, validators, threshold){  
         super(timestamp, lastHash, hash, data)
@@ -28,7 +25,10 @@ class ForgedBlock extends Block {
         this.validators = validators
         this.threshold = threshold
     }
-
+    
+    setValidatorTransactions(validatorTransactions){
+        this.validatorTransactions = validatorTransactions
+    }
 
     static forgeBlock(data, db, height, lastBlock, forger, validators, threshold){
         const lastHash = lastBlock.hash
@@ -86,7 +86,6 @@ class ForgedBlock extends Block {
         var unzippedfs = zipper.sync.unzip(blockZipFile).memory()
         var block_info = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], "buffer").toString())
         return ForgedBlock.parse(block_info)
-    
     }
 
     static parse(block_info){

@@ -2,19 +2,13 @@ const Transaction = require("./transaction")
 
 class TransactionPool {
     constructor() {
-
-        // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN
-        // NETWORK  
+        // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
         this.transactions = {}
         this.nonceTracker = {}
     }
 
     addTransaction(transaction, verify=true) {
         // Quick verification of transaction on entry
-        if(this.isAlreadyAdded(transaction)){
-            //console.log("Transaction already received")
-            return false
-        }
 
         if ( verify && (!Transaction.verifyTransaction(transaction))){
             console.log("Invalid transaction")
@@ -26,10 +20,6 @@ class TransactionPool {
         this.transactions[transaction.address].push(transaction)
 
         return true
-    }
-
-    clear() {
-        this.transactions = {}
     }
     
     isAlreadyAdded(transaction){

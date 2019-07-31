@@ -17,9 +17,8 @@ class Transaction {
                 ${this.output},
                 ${this.address},
                 ${this.signature}
-                `
+           `
     }
-
 
     static newTransaction(db, data) {
         var transaction =  new this(Date.now(), data, db.publicKey, db.sign(ChainUtil.hash(data)), db.nonce)

@@ -31,8 +31,7 @@ describe('API Tests', () => {
     server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8087}})
     sleep(500)
     server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8088}})
-    sleep(5000)
-
+    sleep(12000)
   });
 
   after(() => {
@@ -73,7 +72,7 @@ describe('API Tests', () => {
           .post(`/set`).send({ref: 'test/value', value: "something"})
           .then((res) => {
             res.should.have.status(201);
-            res.body.should.be.deep.eql({code:0});
+            res.body.should.be.deep.eql({code:0, result: true});
           });
     })
   })
@@ -113,14 +112,16 @@ describe('API Tests', () => {
               {op: 'get', ref: 'test/balance/b'}
           ]})
           .then((res) => {
-            res.should.have.status(200);
-            res.body.should.be.deep.eql([
+            res.should.have.status(201);
+            res.body.should.be.deep.eql({
+              code: 0,
+              result: [
               true,
               {"test/test": 11},
               true,
               1,
               2
-            ]);
+            ]});
       });
     })
   })

@@ -12,7 +12,8 @@ describe('TransactionPool', () => {
     beforeEach(() => {
         tp = new TransactionPool()
         db = new DB("test-db")
-        transaction = db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp)
+        transaction = db.createTransaction({type: "SET", ref: "REF", value:"VALUE"})
+        tp.addTransaction(transaction)
     });
 
     it('adds a transaction to the pool', () => {
@@ -20,20 +21,15 @@ describe('TransactionPool', () => {
     });
 
 
-    it('clears transactions', () => {
-        tp.clear()
-        assert.deepEqual(tp.transactions, {})
-    })
-
-
     describe('sorting transactions by nonces', () => {
-        let db2, db3, db4
+        let db2, db3, db4, t
 
 
         beforeEach(() => {
             
             for(let i=0; i<10; i++){
-                db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp)
+                t = db.createTransaction({type: "SET", ref: "REF", value:"VALUE"})
+                tp.addTransaction(t)
             }
             tp.transactions[db.publicKey] = shuffleSeed.shuffle(tp.transactions[db.publicKey]) 
 
@@ -43,7 +39,8 @@ describe('TransactionPool', () => {
             var dbs = [db2, db3, db4]
             for(var j=0; j < dbs.length; j++){
                 for(let i=0; i<11; i++){
-                    dbs[j].createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp)
+                    t = dbs[j].createTransaction({type: "SET", ref: "REF", value:"VALUE"})
+                    tp.addTransaction(t)
                 }
                 tp.transactions[dbs[j].publicKey] = shuffleSeed.shuffle(tp.transactions[dbs[j].publicKey]) 
             }
@@ -73,7 +70,8 @@ describe('TransactionPool', () => {
             var newTransactions = {}
             newTransactions[db.publicKey] = []
             for(let i=0; i<10; i++){
-                newTransactions[db.publicKey].push(db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}, tp))
+                newTransactions[db.publicKey].push(db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}))
+                tp.addTransaction(newTransactions[db.publicKey][i])
             }
             tp.removeCommitedTransactions(block)
             assert.deepEqual(newTransactions, tp.transactions)

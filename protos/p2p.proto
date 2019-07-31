@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+// Outling methods that will be defined for gRPC
+service P2pServer {
+
+  rpc executeTransaction(Transaction) returns () {}
+
+  rpc executeVotingAction(Transaction) returns () {}
+
+  rpc requestBlockChain(Block) returns (stream Block) {}
+
+  rpc proposeBlock(Block) returns () {}
+
+
+}
+
+
+message Block {
+  string blockInfo = 1
+}
+
+message Transaction {
+  string transactionInfo = 1
+}
+
+

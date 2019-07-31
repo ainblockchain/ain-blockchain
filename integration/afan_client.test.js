@@ -16,10 +16,10 @@ chai.use(chaiHttp);
 
 // Before running this test, bring up server at localhost:8080.
 // npm start
-const server1 = 'http://localhost:8090'
-const server2 = 'http://localhost:8089'
-const server3 = 'http://localhost:8087'
-const server4 = 'http://localhost:8088'
+const server1 = 'http://localhost:8087'
+const server2 = 'http://localhost:8088'
+const server3 = 'http://localhost:8089'
+const server4 = 'http://localhost:8090'
 
 describe('aFan Client Test', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
@@ -27,15 +27,14 @@ describe('aFan Client Test', () => {
   before(() => {
     tracker_proc = spawn('node', [TRACKER_SERVER])
     sleep(2000)
-    server1_proc = spawn('node', [APP_SERVER], {env: {STAKE: 250, LOG: true, P2P_PORT:5001, PORT: 8090}})
+    server1_proc = spawn('node', [APP_SERVER], {env: {STAKE: 250, LOG: true, P2P_PORT:5001, PORT: 8087}})
     sleep(2000)
-    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5002, PORT: 8089}})
+    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5002, PORT: 8088}})
     sleep(2000)
-    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8087}})
+    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8089}})
     sleep(2000)
-    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8088}})
-    sleep(5000)
-
+    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8090}})
+    sleep(12000)
   });
 
   after(() => {
@@ -73,13 +72,14 @@ describe('aFan Client Test', () => {
   describe('tx_invest', () => {
     it('send_one', () => {
       const afanClient = new AfanClient(server1)
-      sleep(100)
+      
       return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
+          .then(() => sleep(500))
           .then(() => afanClient.tx_invest('uid0', 'uid1', 1))
+          .then(() => sleep(500))
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_invest_send_one_result.js')
-            console.log(result)
             res.should.have.status(200);
             res.body.result.should.be.deep.eql(result);
           });
@@ -103,13 +103,14 @@ describe('aFan Client Test', () => {
 
     it('two fans', () => {
       const afanClient = new AfanClient(server2)
-
+      sleep(200)
       return set('/afan/balance/uid0', 30)
           .then(() => set('/afan/balance/uid1', 10))
           .then(() => set('/afan/investors/uid1/uid2', 3))
           .then(() => set('/afan/investors/uid1/uid3', 7))
+          .then(() => sleep(500))
           .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
-          .then(() => {sleep(100)})
+          .then(() => sleep(500))
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_crushOnPost_two_fans_result.js')
@@ -123,8 +124,8 @@ describe('aFan Client Test', () => {
     it('no fan', () => {
       const afanClient = new AfanClient(server3)
       return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
+          .then(() => sleep(1000))
           .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
-          .then(() => sleep(100))
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_crushOnReply_no_fan_result.js')
@@ -141,9 +142,9 @@ describe('aFan Client Test', () => {
           .then(() => set('/afan/investors/uid1/uid2', 3))
           .then(() => set('/afan/investors/uid1/uid3', 2))
           .then(() => set('/afan/investors/uid1/uid4', 1))
-          .then(() => sleep(300))
+          .then(() => sleep(1000))
           .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
-          .then(() => sleep(300))
+          .then(() => sleep(500))
           .then(() => get('/afan'))
           .then((res) => {
             const result = require('./data/tx_crushOnReply_three_fans_result.js')

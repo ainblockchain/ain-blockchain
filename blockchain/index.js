@@ -7,6 +7,7 @@ const fs = require('fs')
 const zipper = require("zip-local")
 const naturalSort = require("node-natural-sort")
 const CHAIN_SUBSECT_LENGTH = 20
+const {START_UP_STATUS} = require("../config")
 
 class Blockchain{
 
@@ -14,6 +15,8 @@ class Blockchain{
         this.chain = [ForgedBlock.genesis()];
         this.blockchain_dir = blockchain_dir
         this.backUpDB = null
+        this._proposedBlock = null
+        this.status = START_UP_STATUS.start_up
         let new_chain
         if(this.createBlockchainDir()){
             new_chain =  Blockchain.loadChain(this._blockchainDir())
@@ -36,14 +39,16 @@ class Blockchain{
     lastBlock(){
         return this.chain[this.chain.length -1]
     }
-    
 
-    addNewBlock(block){
+    addNewBlock(block, validatorTransactions=null){
         if (block.height != this.height() + 1){
             throw Error("Blockchain height is wrong")
         }
         if (!(block instanceof ForgedBlock)){
             block =  ForgedBlock.parse(block)
+        }
+        if (validatorTransactions !== null){
+            block.setValidatorTransactions(validatorTransactions)
         }
 
         this.chain.push(block)
@@ -55,7 +60,6 @@ class Blockchain{
 
 
     static isValidChain(chain){
-
         if(JSON.stringify(chain[0]) !== JSON.stringify(ForgedBlock.genesis())) {
             console.log("first block not genesis")
             return false
@@ -127,7 +131,7 @@ class Blockchain{
     requestBlockchainSection(lastBlock){
         console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash.substring(0, 5)}`)
         var blockFiles = Blockchain.getBlockFiles(this._blockchainDir())
-        if (blockFiles.length > lastBlock.height && blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash.substring(0, 5)}-${lastBlock.hash.substring(0, 5)}`) < 0){
+        if (blockFiles.length < lastBlock.height || blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash.substring(0, 5)}-${lastBlock.hash.substring(0, 5)}`) < 0){
             console.log("Invalid blockchain request")
             return 
         }
@@ -210,6 +214,28 @@ class Blockchain{
             })
         }
         return chain
+    }
+
+    forgeBlock(db, tp){
+        var data = tp.validTransactions()
+        var blockHeight = this.height() + 1
+        return ForgedBlock.forgeBlock(data, db, blockHeight, this.lastBlock(), db.publicKey, Object.keys(db.get("_voting").validators), db.get("_voting").threshold)
+   
+    }
+
+    addProposedBlock(block){
+        this._proposedBlock = block
+    }
+
+    getProposedBlock(hash){
+        if(this._proposedBlock !== null && this._proposedBlock.hash === hash){
+            return this._proposedBlock
+        }
+        return null
+    }
+
+    isValidBlock(block){
+        return ForgedBlock.validateBlock(block, this)
     }
 }
 

@@ -39,7 +39,7 @@ class DB {
             }
             throw error
         }
-        return result ? result : null
+        return result ? JSON.parse(JSON.stringify(result)) : null
     }
 
     stake(stakeAmount){
@@ -125,10 +125,8 @@ class DB {
         return results
     }
 
-    createTransaction(data, transactionPool){
-        let transaction = Transaction.newTransaction(this, data)
-        transactionPool.addTransaction(transaction, false)
-        return transaction
+    createTransaction(data){
+        return Transaction.newTransaction(this, data)
     }
 
     sign(dataHash) {
@@ -140,7 +138,6 @@ class DB {
         this.setDBToBackUp(blockchain.backUpDB)
         this.createDatabase(blockchain)
         this.addTransactionPool(transactionPool.validTransactions())
-        
     }
 
     createDatabase(blockchain){
@@ -157,7 +154,7 @@ class DB {
 
     addTransactionPool(transactions){
         transactions.forEach(trans => {
-            this.execute(trans.output, trans.address)
+            this.execute(trans.output, trans.address, trans.timestamp)
         })
     }
 
@@ -170,17 +167,13 @@ class DB {
     execute(transaction, address, timestamp) {
         switch(transaction.type){
             case "SET":
-                this.set(transaction.ref, transaction.value, address, timestamp)
-                break
+                return this.set(transaction.ref, transaction.value, address, timestamp)
             case "INCREASE": 
-                this.increase(transaction.diff, address, timestamp)
-                break
+                return this.increase(transaction.diff, address, timestamp)
             case "UPDATE":
-                this.update(transaction.data, address, timestamp)
-                break
+                return this.update(transaction.data, address, timestamp)
             case "BATCH": 
-                this.batch(transaction.batch_list, address, timestamp)
-                break
+                return this.batch(transaction.batch_list, address, timestamp)
         }
     }
 
