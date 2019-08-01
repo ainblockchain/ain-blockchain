@@ -69,10 +69,10 @@ class P2pServer {
 
                 switch(data.type){
                     case MESSAGE_TYPES.voting:
-                        this.triggerVotingAction(data.transaction, socket)
+                        this.executeAndBroadcastVotingTransaction(data.transaction) 
                         break                    
                     case MESSAGE_TYPES.transaction:
-                        this.executeTransaction(data.transaction, socket, false)
+                        this.executeAndBroadcastTransaction(data.transaction, false)
                         break
                     case MESSAGE_TYPES.proposed_block:
                         this.proposeBlock(data.block)
@@ -147,21 +147,15 @@ class P2pServer {
         this.sockets.forEach(socket => this.sendChainSubsection(socket, chainSubsection))
     }
 
-    broadcastTransaction(transaction, previousSocket=null, vote=false){
+    broadcastTransaction(transaction,vote){
         const type = vote ? MESSAGE_TYPES.voting: MESSAGE_TYPES.transaction
-        this.sockets.forEach(socket => {
-            if (socket !== previousSocket){
-                socket.send(JSON.stringify({type, transaction}))
-            }
-        })
+        this.sockets.forEach(socket => {socket.send(JSON.stringify({type, transaction}))})
     }
 
-    broadcastBlock(address, broadcasterSocket=null){
+    broadcastBlock(){
         console.log(`Broadcasting new block ${this.blockchain._proposedBlock.hash}`)
         this.sockets.forEach(socket => {
-            if (socket !== broadcasterSocket){
-                socket.send(JSON.stringify({type: MESSAGE_TYPES.proposed_block, block: this.blockchain._proposedBlock, address}))
-            }
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.proposed_block, block: this.blockchain._proposedBlock}))
         })
     }
 
@@ -181,7 +175,7 @@ class P2pServer {
 
         if(this.blockchain.status === START_UP_STATUS.start_up){
             block.data.forEach(transaction =>{
-                this.executeTransaction(transaction)
+                this.executeAndBroadcastTransaction(transaction)
             })
         }
 
@@ -191,7 +185,7 @@ class P2pServer {
     }
 
     // Function for gRPC
-    executeTransaction(transaction, socket, vote){
+    executeTransaction(transaction){
 
         if(this.transactionPool.isAlreadyAdded(transaction)){
             console.log("Transaction already received")
@@ -203,10 +197,6 @@ class P2pServer {
             return []
         }
 
-        return this._executeTransaction(transaction, socket, vote)
-    }
-
-    _executeTransaction(transaction, socket, vote){
         let result
         try{
             result = this.db.execute(transaction.output, transaction.address, transaction.timestamp)
@@ -220,37 +210,48 @@ class P2pServer {
         }
 
         this.transactionPool.addTransaction(transaction)
-        this.broadcastTransaction(transaction, socket, vote)
         return result
-
     }
 
-    triggerVotingAction(transaction, socket=null){
-  
-        if (this.executeTransaction(transaction, socket, true) == null){
+    executeAndBroadcastTransaction(transaction, isVote){
+        console.log(transaction)
+        const response = this.executeTransaction(transaction)
+        if (response !== null){
+            this.broadcastTransaction(transaction, isVote)
+        }
+        return response
+    }
+
+    executeAndBroadcastVotingTransaction(transaction){
+        if ( this.executeAndBroadcastTransaction(transaction, true)== null ){
             return
         }
+        this.triggerVotingAction(transaction)
+    }
+
+    triggerVotingAction(transaction){
+  
         const votingAction = this.votingUtil.execute(transaction)
 
         if (votingAction === null) return
         switch(votingAction.type){
             case VOTING_ACTION_TYPES.transaction:
-                this.triggerVotingAction(votingAction.transaction)
+                this.executeAndBroadcastVotingTransaction(votingAction.transaction)
                 break
             case VOTING_ACTION_TYPES.delayed_transaction:
                 setTimeout(() =>{
-                    this.triggerVotingAction(votingAction.transactionFunction(this.blockchain, this.db))
+                    this.executeAndBroadcastVotingTransaction(votingAction.transactionFunction(this.blockchain, this.db))
                 }, votingAction.delay)
                 break
             case VOTING_ACTION_TYPES.propose_block:
                 const block = this.proposeBlock()
-                this.triggerVotingAction(this.db.createTransaction({type: "SET", ref: "_voting/blockHash", value: block.hash}))
+                this.executeAndBroadcastVotingTransaction(this.db.createTransaction({type: "SET", ref: "_voting/blockHash", value: block.hash}))
                 break
             case VOTING_ACTION_TYPES.add_block:
                 this.blockchain.addNewBlock(this.blockchain._proposedBlock, votingAction.validatingTransactions)
                 this.transactionPool.removeCommitedTransactions(this.blockchain._proposedBlock)
                 if (votingAction.transaction !== null){
-                    this.triggerVotingAction(votingAction.transaction)
+                    this.executeAndBroadcastVotingTransaction(votingAction.transaction)
                 }
                 break
             case VOTING_ACTION_TYPES.request_chain_subsection:

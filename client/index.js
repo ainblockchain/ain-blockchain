@@ -176,7 +176,7 @@ function broadcastBatchTransaction(){
     var batch_list =  JSON.parse(JSON.stringify(transactionBatch))
     transactionBatch.length = 0
     let transaction =  db.createTransaction({type: "BATCH", batch_list})
-    return p2pServer.executeTransaction(transaction, null, false)
+    return p2pServer.executeAndBroadcastTransaction(transaction, false)
   }
 }
 
@@ -197,7 +197,7 @@ function createSingularTransaction(trans){
       transaction = db.createTransaction({type: "SET", ref: trans.ref, value: trans.value})
       break
   }
-  return p2pServer.executeTransaction(transaction, null, false)
+  return p2pServer.executeAndBroadcastTransaction(transaction, false)
 }
 
 let createTransaction 
