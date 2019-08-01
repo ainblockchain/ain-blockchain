@@ -194,20 +194,18 @@ class Blockchain{
     getChainSection(from, to){
         from = Number(from)
         to = to ? Number(to) : this.height()
-        let chain 
+        var chain = []
         if (from < this.chain[0].height){
-            chain = []
             var blockFiles = this.blockFiles()
             var endPoint = to > blockFiles.length ? blockFiles.length: to
             for(var i = from; i < endPoint; i++){
                 chain.push(ForgedBlock.loadBlock(blockFiles[i]))
             }
         } else {
-            chain = this.chain.filter(block => {
-                if (from <= block.height < to){
-                    return block
-                }
-            })
+            var endPoint = to > this.chain.length ? this.chain.length: to
+            for(var i = from; i < endPoint; i++){
+                chain.push(this.chain[i])
+            }
         }
         return chain
     }
