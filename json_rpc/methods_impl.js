@@ -22,7 +22,7 @@ module.exports = function getJsonRpcApi(blockchain, transactionPool){
 function getBlockchainClosure(blockchain) {
 
     return {
-        getBlocks(query) {
+        getBlockList(query) {
             const to = ("to" in query) ? query.to: blockchain.length
             const from = ("from" in query) ? query.from: 0
             return blockchain.getChainSection(from, to)
@@ -48,6 +48,14 @@ function getBlockchainClosure(blockchain) {
                 blockHeaders.push(block.header())
             })
             return blockHeaders
+        },
+
+        getBlockByNumber(height){
+            return blockchain.getBlockByNumber(height)
+        },
+
+        getBlockByHash(hash){
+            return blockchain.getBlockByHash(hash)
         }
     }
 }
