@@ -23,11 +23,11 @@ class Blockchain{
     }
 
     /**
-     * Given a block hash or hash substring, returns a block with a matching hash from the blockchain.
-     *
-     * @param {hash} string - hash or hash substring of block.
-     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block hash.
-     */    
+    * Given a block hash or hash substring, returns a block with a matching hash from the blockchain.
+    *
+    * @param {hash} string - hash or hash substring of block.
+    * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block hash.
+    */    
     getBlockByHash(hash) {
         const blockFiles =  this.blockFiles()
         let blockHash
@@ -40,12 +40,12 @@ class Blockchain{
         return null
     }
 
-     /**
-     * Given a number, returns the block corresponding to that height of the blcokchain.
-     *
-     * @param {number} integer - Height of block.
-     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
-     */
+    /**
+    * Given a number, returns the block corresponding to that height of the blcokchain.
+    *
+    * @param {number} integer - Height of block.
+    * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
+]   */
     getBlockByNumber(number) {
         const blockFiles =  this.blockFiles()
         return number < blockFiles.length && number >= 0 ? ForgedBlock.loadBlock(blockFiles[number]) : null
