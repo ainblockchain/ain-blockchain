@@ -63,11 +63,10 @@ function getBlockchainClosure(blockchain) {
  /**
  * Wraps a TransactionPool instance in a closure with a set of functions.
  * These functions will be invoked through JSON-RPC calls to ./methods.js 
- * that allow clients to query information from the transactionPool
+ * that allow clients to query information from the transactionPool.
  *
- * @param {TransactionPool} transactionPool -Instance of the TransactionPool class
- * @return {dict} A closure allowing read access to information from the wrapped transactionPool 
- *
+ * @param {TransactionPool} transactionPool -Instance of the TransactionPool class.
+ * @return {dict} A closure allowing read access to information from the wrapped transactionPool.
  */
 function getTransactionPoolClosure(transactionPool) {
 
