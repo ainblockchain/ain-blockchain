@@ -5,10 +5,11 @@ const trackerWebSocketAddr =  process.env.TRACKER_IP || "ws://localhost:3001"
 const trackerWebSocket =  new Websocket(trackerWebSocketAddr) 
 const HOST = "ws://" + ip.address()
 const SERVER = HOST + ":" + P2P_PORT
-const {MESSAGE_TYPES, START_UP_STATUS, VOTING_ACTION_TYPES} = require("../config")
+const {MESSAGE_TYPES, START_UP_STATUS, VOTING_STATUS, VOTING_ACTION_TYPES, STAKE, CONSENSUS_DB_KEYS} = require("../constants")
 const InvalidPermissionsError = require("../errors")
 const {ForgedBlock} = require('../blockchain/block')
-const VotingUtil = require("../voting-util")
+const VotingUtil = require("./voting-util")
+const BLOCK_CREATION_INTERVAL = 6000
 
 
 
@@ -19,8 +20,9 @@ class P2pServer {
         this.blockchain = blockchain
         this.transactionPool = transactionPool
         this.sockets = []
-        this.votingUtil = new VotingUtil(db, blockchain)
-
+        this.votingUtil = new VotingUtil(db)
+        this.votingInterval = null
+        this.waitInBlocks = 4
     }
 
     connectTracker(){
@@ -30,12 +32,9 @@ class P2pServer {
             this.connectToPeers(peers)
             if (peers.length === 0){
                 this.blockchain.status = START_UP_STATUS.started
-                this.votingUtil.initiate(this)
-                
-
+                this.initiateChain()
             }
         });
-
         trackerWebSocket.send(JSON.stringify(SERVER))      
     }
      
@@ -44,8 +43,7 @@ class P2pServer {
         server.on('connection', socket => this.connectSocket(socket));
         trackerWebSocket.on('open', () => this.connectTracker());
         console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`)
-        this.requestChainSubsection(this.blockchain.lastBlock())
-        
+        this.requestChainSubsection(this.blockchain.lastBlock())    
     }
 
     connectToPeers(peers) {
@@ -69,51 +67,42 @@ class P2pServer {
 
                 switch(data.type){
                     case MESSAGE_TYPES.voting:
-                        this.executeAndBroadcastVotingTransaction(data.transaction) 
+                        this.executeVotingAction(data.votingAction) 
                         break                    
                     case MESSAGE_TYPES.transaction:
-                        this.executeAndBroadcastTransaction(data.transaction, false)
-                        break
-                    case MESSAGE_TYPES.proposed_block:
-                        this.proposeBlock(data.block)
+                        this.executeAndBroadcastTransaction(data.transaction)
                         break
                     case MESSAGE_TYPES.chain_subsection:
+                        // Check if chain subsection is valid and can be merged ontop of your local blockchain
                         if(this.blockchain.merge(data.chainSubsection)){
                             if (data.height === this.blockchain.height()){
-
-                                data.transactions.forEach((trans) => {
-                                    if(this.transactionPool.isAlreadyAdded(trans)){
-                                        this.transactionPool.addTransaction(trans)
-                                    }
-                                })
-
+                                // If peeer is new to network and has successfully reached the consensus nlockchain height
+                                // wait the duration of one more voting round before processing transactions.
                                 if( this.blockchain.status === START_UP_STATUS.start_up){
                                     setTimeout(() => {
                                         try{
                                             this.db.reconstruct(this.blockchain, this.transactionPool)
                                             this.blockchain.status = START_UP_STATUS.started
                                         }catch(error){
-                                            console.log("Error in starting")
-                                            console.log(error)
+                                            console.log(`Error in starting:${error.stack}`)
                                         }
-                                    }, 10000)
-
+                                    }, BLOCK_CREATION_INTERVAL)
                                 }
                             }
-
                             for(var i=0; i<data.chainSubsection.length; i++){
                                 this.transactionPool.removeCommitedTransactions(data.chainSubsection[i])
                             }
                             this.db.reconstruct(this.blockchain, this.transactionPool)
+                            // Continuously request the blockchain in subsections until your local blockchain matches the height of the consensus blockchain.
                             this.requestChainSubsection(this.blockchain.lastBlock())
-
                         }
-
                         break
                     case MESSAGE_TYPES.chain_subsection_request:
                         if(this.blockchain.chain.length === 0){
                             return
                         }
+                        // Send a chunk of 20 blocks from  your blockchain to the requester. Requester will continue to request blockchain chunks until their blockchain height matches
+                        // the consensus blockchain height
                         const chainSubsection = this.blockchain.requestBlockchainSection(data.lastBlock)
                         if(chainSubsection){
                             this.sendChainSubsection(socket, chainSubsection, this.blockchain.height())
@@ -130,13 +119,8 @@ class P2pServer {
         })
     }
 
-
     sendChainSubsection(socket, chainSubsection, height){
-        var transactions = []
-        if (chainSubsection.length < 10){
-            transactions = this.transactionPool.validTransactions()
-        }
-        socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection, chainSubsection, height, transactions}))
+        socket.send(JSON.stringify({type: MESSAGE_TYPES.chain_subsection, chainSubsection, height}))
     }
 
     requestChainSubsection(lastBlock){
@@ -147,46 +131,24 @@ class P2pServer {
         this.sockets.forEach(socket => this.sendChainSubsection(socket, chainSubsection))
     }
 
-    broadcastTransaction(transaction,vote){
-        const type = vote ? MESSAGE_TYPES.voting: MESSAGE_TYPES.transaction
-        this.sockets.forEach(socket => {socket.send(JSON.stringify({type, transaction}))})
+    broadcastTransaction(transaction){
+        this.sockets.forEach(socket => {socket.send(JSON.stringify({type:  MESSAGE_TYPES.transaction, transaction}))})
     }
 
-    broadcastBlock(){
-        console.log(`Broadcasting new block ${this.blockchain._proposedBlock.hash}`)
+    broadcastBlock(blockHashTransaction){
+        console.log(`Broadcasting new block ${this.votingUtil.block}`)
         this.sockets.forEach(socket => {
-                socket.send(JSON.stringify({type: MESSAGE_TYPES.proposed_block, block: this.blockchain._proposedBlock}))
+                socket.send(JSON.stringify({type: MESSAGE_TYPES.voting, votingAction: {actionType: VOTING_ACTION_TYPES.proposed_block, block: this.votingUtil.block, transaction: blockHashTransaction}}))
         })
     }
 
-
-    // Function for gRPC
-    proposeBlock(block=null){
-        if (block !== null && this.blockchain.getProposedBlock(block.hash) !== null){
-            return
-        }
-      
-        if (block == null){
-            block = this.blockchain.forgeBlock(this.db, this.transactionPool)
-        }
-        else if (!(block instanceof ForgedBlock)){
-            block =  ForgedBlock.parse(block)
-        }
-
-        if(this.blockchain.status === START_UP_STATUS.start_up){
-            block.data.forEach(transaction =>{
-                this.executeAndBroadcastTransaction(transaction)
-            })
-        }
-
-        this.blockchain.addProposedBlock(block)
-        this.broadcastBlock()
-        return block
+    broadcastVotingAction(votingAction){
+        this.sockets.forEach(socket => {
+            socket.send(JSON.stringify({type: MESSAGE_TYPES.voting, votingAction}))
+        })
     }
 
-    // Function for gRPC
     executeTransaction(transaction){
-
         if(this.transactionPool.isAlreadyAdded(transaction)){
             console.log("Transaction already received")
             return null
@@ -199,10 +161,9 @@ class P2pServer {
 
         let result
         try{
-            result = this.db.execute(transaction.output, transaction.address, transaction.timestamp)
+            result = this.db.execute(transaction.output, transaction.address, transaction.timestamp, false)
         } catch (error){
             if(error instanceof InvalidPermissionsError){
-                console.log("Invalid permissions")
                 return null
             }else {
                 throw error
@@ -213,50 +174,153 @@ class P2pServer {
         return result
     }
 
-    executeAndBroadcastTransaction(transaction, isVote){
-        console.log(transaction)
+    executeAndBroadcastTransaction(transaction){
         const response = this.executeTransaction(transaction)
-        if (response !== null){
-            this.broadcastTransaction(transaction, isVote)
+        if (response !== null) {
+            this.broadcastTransaction(transaction)
         }
         return response
     }
 
-    executeAndBroadcastVotingTransaction(transaction){
-        if ( this.executeAndBroadcastTransaction(transaction, true)== null ){
-            return
+    executeAndBroadcastVotingAction(votingAction){
+
+        const response = this.executeTransaction(votingAction.transaction)
+        if (response !== null) {
+            if ([VOTING_ACTION_TYPES.pre_vote, VOTING_ACTION_TYPES.pre_commit].indexOf(votingAction.actionType) > -1){
+                this.votingUtil.registerValidatingTransaction(votingAction.transaction)
+            } 
+            this.broadcastVotingAction(votingAction)
         }
-        this.triggerVotingAction(transaction)
+        return response
     }
 
-    triggerVotingAction(transaction){
-  
-        const votingAction = this.votingUtil.execute(transaction)
 
-        if (votingAction === null) return
-        switch(votingAction.type){
-            case VOTING_ACTION_TYPES.transaction:
-                this.executeAndBroadcastVotingTransaction(votingAction.transaction)
-                break
-            case VOTING_ACTION_TYPES.delayed_transaction:
-                setTimeout(() =>{
-                    this.executeAndBroadcastVotingTransaction(votingAction.transactionFunction(this.blockchain, this.db))
-                }, votingAction.delay)
-                break
-            case VOTING_ACTION_TYPES.propose_block:
-                const block = this.proposeBlock()
-                this.executeAndBroadcastVotingTransaction(this.db.createTransaction({type: "SET", ref: "_voting/blockHash", value: block.hash}))
-                break
-            case VOTING_ACTION_TYPES.add_block:
-                this.blockchain.addNewBlock(this.blockchain._proposedBlock, votingAction.validatingTransactions)
-                this.transactionPool.removeCommitedTransactions(this.blockchain._proposedBlock)
-                if (votingAction.transaction !== null){
-                    this.executeAndBroadcastVotingTransaction(votingAction.transaction)
+    executeVotingAction(votingAction) {
+  
+        const response = this.executeAndBroadcastVotingAction(votingAction)
+        if (response === null){
+            return
+        }
+        switch (votingAction.actionType) {
+            case VOTING_ACTION_TYPES.new_voting:
+                if (!this.votingUtil.isSyncedWithNetwork(this.blockchain)){
+                    this.requestChainSubsection(this.blockchain.lastBlock())
                 }
+                if (this.votingUtil.isStaked()){
+                    this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1))
+                }
+    
+                this.checkIfForger()
                 break
-            case VOTING_ACTION_TYPES.request_chain_subsection:
-                this.requestChainSubsection(this.blockchain.lastBlock())
+            case VOTING_ACTION_TYPES.proposed_block:
+                var invalidTransactions = false
+                for (var i = 0; i < votingAction.block.data.length; i++){
+                    if (this.executeTransaction(votingAction.block.data[i]) && !this.transactionPool.isAlreadyAdded(votingAction.block.data[i])) {
+                        invalidTransactions = true
+                    }
+                }
+                if (invalidTransactions || !ForgedBlock.validateBlock(votingAction.block, this.blockchain) || votingAction.block === this.votingUtil.block || !(this.votingUtil.status === VOTING_STATUS.wait_for_block || this.votingUtil.status === VOTING_STATUS.syncing)){
+                    break
+                }
+                this.votingUtil.setBlock(votingAction.block)
+                if(this.votingUtil.isValidator()){
+                    this.executeAndBroadcastVotingAction({transaction: this.votingUtil.preVote(), actionType: VOTING_ACTION_TYPES.pre_vote})
+                }
+            case VOTING_ACTION_TYPES.pre_vote:
+                if (!this.votingUtil.checkPreVotes()){
+                    break
+                } 
+                var preCommitTransaction =  this.votingUtil.preCommit()
+                if (preCommitTransaction !== null){
+                    this.executeAndBroadcastVotingAction({transaction: preCommitTransaction, actionType: VOTING_ACTION_TYPES.pre_commit})
+                }
+            case VOTING_ACTION_TYPES.pre_commit:
+                if (this.votingUtil.isCommit()){
+                    this.votingUtil.addValidatorTransactionsToBlock()
+                    this.addBlockToChain()
+                    this.cleanupAfterVotingRound()
+                }                       
                 break
+        }
+    }
+
+    forgeBlock(){
+        var data = this.transactionPool.validTransactions()
+        var blockHeight = this.blockchain.height() + 1
+        this.votingUtil.setBlock(ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(), this.db.publicKey, Object.keys(this.db.get(CONSENSUS_DB_KEYS.voting_round_validators_path)), this.db.get(CONSENSUS_DB_KEYS.voting_round_threshold_path)))
+        var ref = CONSENSUS_DB_KEYS.voting_round_block_hash_path
+        var value = this.votingUtil.block.hash
+        console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`)
+        const blockHashTransaction = this.db.createTransaction({type: "SET", ref, value})
+        this.executeTransaction(blockHashTransaction)
+        this.broadcastBlock(blockHashTransaction)
+        if (!Object.keys(this.db.get(CONSENSUS_DB_KEYS.voting_round_validators_path)).length){
+            console.log("No validators registered for this round")
+            this.addBlockToChain()  
+            this.cleanupAfterVotingRound()
+        }
+    }
+
+    initiateChain(){
+        this.votingUtil.status === VOTING_STATUS.wait_for_block
+        this.stakeAmount()
+        this.executeAndBroadcastTransaction(this.votingUtil.instantiate(this.blockchain))
+        this.forgeBlock()
+    }
+
+    addBlockToChain(){
+        this.blockchain.addNewBlock(this.votingUtil.block)
+        this.transactionPool.removeCommitedTransactions(this.votingUtil.block)
+        this.votingUtil.reset()
+        this.db.reconstruct(this.blockchain, this.transactionPool)
+        if (this.waitInBlocks > 0){
+            this.waitInBlocks = this.waitInBlocks - 1
+            if (this.waitInBlocks === 0){
+                this.stakeAmount()
+            }
+        }
+    }
+
+    cleanupAfterVotingRound(){
+        if (this.votingInterval){
+            console.log("Clearing interval after successful voting round")
+            clearInterval(this.votingInterval)
+            this.votingInterval = null
+        }
+        if (this.db.get(CONSENSUS_DB_KEYS.voting_round_forger_path) === this.db.publicKey){
+            console.log(`Peer ${this.db.publicKey} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`)
+            this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulForge())
+            
+        }
+
+        if (this.db.get(CONSENSUS_DB_KEYS.recent_forgers_path).indexOf(this.db.publicKey) >= 0){
+            this.votingInterval = setInterval(()=> {
+                const newRoundTrans = this.votingUtil.startNewRound(this.blockchain)
+                if (newRoundTrans === null){
+                    console.log(`${this.db.publicKey} is not the starter for the current round`)
+                    return
+                }
+                console.log(`User ${this.db.publicKey} is starting round ${this.blockchain.height() + 1}`)
+                this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VOTING_ACTION_TYPES.new_voting}) 
+                this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1))
+                this.checkIfForger()
+
+            }, BLOCK_CREATION_INTERVAL)
+        }
+        console.log(`New blockchain height is ${this.blockchain.height() + 1}`)
+    }
+    
+    checkIfForger(){
+        if (this.votingUtil.isForger()){
+            this.forgeBlock()
+        }
+    }
+
+    stakeAmount(){
+        if (this.stake !== null){
+            console.log(`Staking amount ${STAKE}`)
+            var transaction = this.votingUtil.stake(STAKE)
+            this.executeAndBroadcastTransaction(transaction)
         }
     }
 }

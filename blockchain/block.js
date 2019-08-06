@@ -1,7 +1,8 @@
 const ChainUtil = require('../chain-util')
 const fs = require("fs")
-const {RULES_FILE_PATH} = require('../config')
-var zipper = require("zip-local")
+const {RULES_FILE_PATH} = require('../constants')
+const zipper = require("zip-local")
+const FILE_ENDING = "json.zip"
 
 
 class Block {
@@ -58,6 +59,10 @@ class ForgedBlock extends Block {
             height: this.height,
             signature: this.signature
         }
+    }
+
+    static getFileName(block){
+        return `${block.height}-${block.lastHash}-${block.hash}.${FILE_ENDING}`
     }
 
     static blockHash(block){

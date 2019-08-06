@@ -15,7 +15,7 @@ const itParam = require('mocha-param');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
-const {BLOCKCHAINS_DIR} = require('../config') 
+const {BLOCKCHAINS_DIR} = require('../constants') 
 const rimraf = require("rimraf")
 const jayson = require('jayson');
 

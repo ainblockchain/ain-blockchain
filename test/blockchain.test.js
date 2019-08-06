@@ -1,5 +1,5 @@
 const Blockchain = require('../blockchain/');
-const {METHOD} = require("../config")
+const {METHOD} = require("../constants")
 const {Block, ForgedBlock} = require('../blockchain/block')
 const chai = require('chai');
 const expect = chai.expect;
