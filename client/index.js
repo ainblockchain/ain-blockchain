@@ -24,6 +24,8 @@ const PORT = process.env.PORT || 8080;
 const LOG = process.env.LOG || false;
 var LAST_NONCE = 0
 var CURRENT_NONCE = 0
+// Number of transactions per second that can be made through this blockchain 
+// before transactions begin automatically being added to a batch_list transaction.
 const TX_PER_SECOND_AUTOBATCHING = 120
 
 if(LOG){
@@ -70,6 +72,7 @@ const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool()
 const db = Database.getDatabase(bc, tp)
 const p2pServer = new P2pServer(db, bc, tp)
+const InvalidPermissionsError = require("../errors")
 const jayson = require('jayson')
 
 const json_rpc_methods = require('../json_rpc/methods')(bc, tp)
@@ -175,29 +178,46 @@ function broadcastBatchTransaction(){
   if (transactionBatch.length > 0){
     var batch_list =  JSON.parse(JSON.stringify(transactionBatch))
     transactionBatch.length = 0
-    let transaction =  db.createTransaction({type: "BATCH", batch_list})
-    return p2pServer.executeAndBroadcastTransaction(transaction, false)
+    let transaction
+    try {
+      transaction =  db.createTransaction({type: "BATCH", batch_list})
+    } catch (error){
+      if (error instanceof InvalidPermissionsError){
+        console.log(`Validation failed: ${console.log(error.stack)}`)
+        return null
+      }
+      throw error
+    }
+    return p2pServer.executeAndBroadcastTransaction(transaction)
   }
 }
 
 function createSingularTransaction(trans){
   CURRENT_NONCE += 1
   let transaction
-  switch(trans.op){
-    case "batch":
-      transaction = db.createTransaction({type: "BATCH", batch_list: trans.batch_list})
-      break
-    case "increase":
-      transaction = db.createTransaction({type: "INCREASE", diff: trans.diff})
-      break
-    case "update":
-      transaction = db.createTransaction({type: "UPDATE", data: trans.data})
-      break
-    case "set":
-      transaction = db.createTransaction({type: "SET", ref: trans.ref, value: trans.value})
-      break
+  try {
+    switch(trans.op){
+      case "batch":
+        transaction = db.createTransaction({type: "BATCH", batch_list: trans.batch_list})
+        break
+      case "increase":
+        transaction = db.createTransaction({type: "INCREASE", diff: trans.diff})
+        break
+      case "update":
+        transaction = db.createTransaction({type: "UPDATE", data: trans.data})
+        break
+      case "set":
+        transaction = db.createTransaction({type: "SET", ref: trans.ref, value: trans.value})
+        break
+    }
+  } catch (error){
+    if (error instanceof InvalidPermissionsError){
+      console.log(`Validation failed: ${console.log(error.stack)}`)
+      return null
+    } 
+    throw error
   }
-  return p2pServer.executeAndBroadcastTransaction(transaction, false)
+  return p2pServer.executeAndBroadcastTransaction(transaction)
 }
 
 let createTransaction 

@@ -1,4 +1,5 @@
 const TransactionPool = require('../db/transaction-pool')
+const Transaction = require('../db/transaction')
 const {ForgedBlock} = require('../blockchain/block')
 const DB = require('../db')
 const chai = require('chai')
@@ -12,7 +13,7 @@ describe('TransactionPool', () => {
     beforeEach(() => {
         tp = new TransactionPool()
         db = new DB("test-db")
-        transaction = db.createTransaction({type: "SET", ref: "REF", value:"VALUE"})
+        transaction = Transaction.newTransaction(db, {type: "SET", ref: "REF", value:"VALUE"})
         tp.addTransaction(transaction)
     });
 
@@ -28,7 +29,7 @@ describe('TransactionPool', () => {
         beforeEach(() => {
             
             for(let i=0; i<10; i++){
-                t = db.createTransaction({type: "SET", ref: "REF", value:"VALUE"})
+                t = Transaction.newTransaction(db,{type: "SET", ref: "REF", value:"VALUE"})
                 tp.addTransaction(t)
             }
             tp.transactions[db.publicKey] = shuffleSeed.shuffle(tp.transactions[db.publicKey]) 
@@ -39,7 +40,7 @@ describe('TransactionPool', () => {
             var dbs = [db2, db3, db4]
             for(var j=0; j < dbs.length; j++){
                 for(let i=0; i<11; i++){
-                    t = dbs[j].createTransaction({type: "SET", ref: "REF", value:"VALUE"})
+                    t = Transaction.newTransaction(dbs[j],{type: "SET", ref: "REF", value:"VALUE"})
                     tp.addTransaction(t)
                 }
                 tp.transactions[dbs[j].publicKey] = shuffleSeed.shuffle(tp.transactions[dbs[j].publicKey]) 
@@ -48,7 +49,6 @@ describe('TransactionPool', () => {
             // Shuffle transactions and see if the transaction-pool can re-sort them according to them according to their proper ordering
             
         })
-
 
         it('transactions are correctly numbered', () => {
             var sortedNonces1 = tp.validTransactions().filter(transaction => {if (transaction.address === db.publicKey) return transaction}).map(transaction => {return transaction.nonce})
@@ -62,15 +62,13 @@ describe('TransactionPool', () => {
 
         })
 
-
-
         it('removes transactions included in block', () => {
             var height = 1
             var block = ForgedBlock.forgeBlock(tp.validTransactions(), db, height, ForgedBlock.genesis())
             var newTransactions = {}
             newTransactions[db.publicKey] = []
             for(let i=0; i<10; i++){
-                newTransactions[db.publicKey].push(db.createTransaction({type: "SET", ref: "REF", value:"VALUE"}))
+                newTransactions[db.publicKey].push(Transaction.newTransaction(db, {type: "SET", ref: "REF", value:"VALUE"}))
                 tp.addTransaction(newTransactions[db.publicKey][i])
             }
             tp.removeCommitedTransactions(block)

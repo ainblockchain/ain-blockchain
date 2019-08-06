@@ -9,7 +9,7 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 chai.use(chaiHttp);
 const rimraf = require("rimraf")
-const {BLOCKCHAINS_DIR} = require('../config') 
+const {BLOCKCHAINS_DIR} = require('../constants') 
 
 
 const server1 = 'http://localhost:8085'

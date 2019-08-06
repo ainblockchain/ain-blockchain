@@ -20,8 +20,7 @@ class DB {
         return db
     }
 
-    get(queryPath, auth=null){
-        auth = auth || this.publicKey
+    get(queryPath){
         var listQueryPath = ChainUtil.queryParser(queryPath)
 
         if (listQueryPath.length < 1) {
@@ -46,13 +45,18 @@ class DB {
         return this.set(["stakes", this.publicKey].join("/"), stakeAmount)
     }
 
-    set(queryPath, value, auth=null, timestamp=null){
+    set(queryPath, value, auth, timestamp, validationCheck){
         let valueCopy
         var listQueryPath = ChainUtil.queryParser(queryPath)
         // TODO: Find a better way to manage seeting of rules than this dodgy condition
         // In future should be able to accomidate other types of rules beyoned wrie
         if (!(listQueryPath.length === 1 && listQueryPath[0] === "rules") && this.getPermissions(listQueryPath, auth, timestamp,  ".write", value) == false){
             throw new InvalidPermissionsError(`Invalid set permissons for ${queryPath}`)
+        }
+
+        if (validationCheck) {
+            // Validation check has passed so return
+            return 
         }
         
         if (ChainUtil.isDict(value)){
@@ -72,26 +76,26 @@ class DB {
         return true
     }
 
-    update(data, auth=null, timestamp=null){
+    update(data, auth, timestamp, validationCheck){
         for (let key in data) {
-            this.set(key, data[key], auth, timestamp)
+            this.set(key, data[key], auth, timestamp, validationCheck)
           }
           return true
     }
 
-    batch(batch_list, auth=null, timestamp=null){
+    batch(batch_list, auth, timestamp, validationCheck){
         var result_list = []
         batch_list.forEach((item) => {
             if (item.op === 'set') {
-              result_list.push(this.set(item.ref, item.value, auth, timestamp))
+              result_list.push(this.set(item.ref, item.value, auth, timestamp, validationCheck))
             } else if (item.op === 'increase') {
-              result_list.push(this.increase(item.diff, auth, timestamp))
+              result_list.push(this.increase(item.diff, auth, timestamp, validationCheck))
             } else if (item.op === 'get') {
-              result_list.push(this.get(item.ref, auth, timestamp))
+              result_list.push(this.get(item.ref, auth, timestamp, validationCheck))
             } else if (item.op === 'update') {
-              result_list.push(this.update(item.data, auth, timestamp))
+              result_list.push(this.update(item.data, auth, timestamp, validationCheck))
             } else if (item.op === 'batch') {
-                result_list.push(this.batch(item.batch_list, auth, timestamp))
+                result_list.push(this.batch(item.batch_list, auth, timestamp, validationCheck))
             }
           })
           return result_list
@@ -109,7 +113,7 @@ class DB {
         return subDb
     }
 
-    increase(diff, auth=null, timestamp=null){
+    increase(diff, auth, timestamp, validationCheck){
         for (var k in diff) {
             if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
                 // TODO: Raise error here
@@ -119,13 +123,21 @@ class DB {
         var results = {}
         for (var k in diff) {
             var result = (this.get(k, auth) || 0) + diff[k]
-            this.set(k, result, auth, timestamp)
+            this.set(k, result, auth, timestamp, validationCheck)
             results[k] = result
         }
         return results
     }
 
+    /**
+    * Validates transaction is valid according to AIN database rules and returns a transaction instance
+    *
+    * @param {data} dict - Database write request to be converted to transaction
+    * @return {Transaction} Instance of the transaction class 
+    * @throws {InvalidPermissionsError} InvalidPermissionsError when database rules don't allow the transaction
+    */
     createTransaction(data){
+        this.execute(data, null, null, true)
         return Transaction.newTransaction(this, data)
     }
 
@@ -153,6 +165,7 @@ class DB {
     }
 
     addTransactionPool(transactions){
+        console.log(JSON.stringify(transactions))
         transactions.forEach(trans => {
             this.execute(trans.output, trans.address, trans.timestamp)
         })
@@ -164,16 +177,16 @@ class DB {
         }
     }
 
-    execute(transaction, address, timestamp) {
+    execute(transaction, address, timestamp, validationCheck=false) {
         switch(transaction.type){
             case "SET":
-                return this.set(transaction.ref, transaction.value, address, timestamp)
+                return this.set(transaction.ref, transaction.value, address, timestamp, validationCheck)
             case "INCREASE": 
-                return this.increase(transaction.diff, address, timestamp)
+                return this.increase(transaction.diff, address, timestamp, validationCheck)
             case "UPDATE":
-                return this.update(transaction.data, address, timestamp)
+                return this.update(transaction.data, address, timestamp, validationCheck)
             case "BATCH": 
-                return this.batch(transaction.batch_list, address, timestamp)
+                return this.batch(transaction.batch_list, address, timestamp, validationCheck)
         }
     }
 

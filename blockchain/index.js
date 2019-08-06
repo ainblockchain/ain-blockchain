@@ -1,13 +1,12 @@
 
 const {ForgedBlock} = require('./block')
-const {BLOCKCHAINS_DIR} = require('../config') 
+const {BLOCKCHAINS_DIR, START_UP_STATUS} = require('../constants') 
 const rimraf = require("rimraf")
 const path = require('path')
 const fs = require('fs')
 const zipper = require("zip-local")
 const naturalSort = require("node-natural-sort")
 const CHAIN_SUBSECT_LENGTH = 20
-const {START_UP_STATUS} = require("../config")
 
 class Blockchain{
 
@@ -101,8 +100,8 @@ class Blockchain{
         return path.resolve(BLOCKCHAINS_DIR, this.blockchain_dir)
     }
 
-    _path_to_block(blockNum, block){
-        return path.resolve(this._blockchainDir(),`${blockNum}-${block.lastHash.substring(0, 5)}-${block.hash.substring(0, 5)}.json.zip`)
+    _path_to_block(block){
+        return path.resolve(this._blockchainDir(), ForgedBlock.getFileName(block))
     }
 
     createBlockchainDir(){
@@ -120,7 +119,7 @@ class Blockchain{
     writeChain(){ 
         for(var i=this.chain[0].height; i<this.height() + 1; i++){
             var block = this.chain[i - this.chain[0].height]
-            var file_path = this._path_to_block(i, block)
+            var file_path = this._path_to_block(block)
             if (!(fs.existsSync(file_path))) {
                 // Change to async implementation
                 zipper.sync.zip(Buffer.from(JSON.stringify(block))).compress().save(file_path);
@@ -131,7 +130,7 @@ class Blockchain{
     requestBlockchainSection(lastBlock){
         console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash.substring(0, 5)}`)
         var blockFiles = Blockchain.getBlockFiles(this._blockchainDir())
-        if (blockFiles.length < lastBlock.height || blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash.substring(0, 5)}-${lastBlock.hash.substring(0, 5)}`) < 0){
+        if (blockFiles.length < lastBlock.height || blockFiles[lastBlock.height].indexOf(ForgedBlock.getFileName(lastBlock)) < 0){
             console.log("Invalid blockchain request")
             return 
         }
@@ -216,27 +215,6 @@ class Blockchain{
         return chain
     }
 
-    forgeBlock(db, tp){
-        var data = tp.validTransactions()
-        var blockHeight = this.height() + 1
-        return ForgedBlock.forgeBlock(data, db, blockHeight, this.lastBlock(), db.publicKey, Object.keys(db.get("_voting").validators), db.get("_voting").threshold)
-   
-    }
-
-    addProposedBlock(block){
-        this._proposedBlock = block
-    }
-
-    getProposedBlock(hash){
-        if(this._proposedBlock !== null && this._proposedBlock.hash === hash){
-            return this._proposedBlock
-        }
-        return null
-    }
-
-    isValidBlock(block){
-        return ForgedBlock.validateBlock(block, this)
-    }
 }
 
 module.exports = Blockchain;
