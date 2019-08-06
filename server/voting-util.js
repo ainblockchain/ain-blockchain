@@ -1,7 +1,7 @@
 
 const shuffleSeed = require('shuffle-seed')
 const seedrandom = require('seedrandom')
-const {VOTING_STATUS, CONSENSUS_DB_KEYS} = require('../constants')
+const {VotingStatus, ConsensusDbKeys} = require('../constants')
 const MAX_RECENT_FORGERS = 20
 const InvalidPermissionsError = require("../errors")
 
@@ -9,7 +9,7 @@ class VotingUtil {
 
     constructor(db){
         this.db = db
-        this.status = VOTING_STATUS.start_up
+        this.status = VotingStatus.START_UP
         this.block = null
         this.validatorTransactions = []
     }
@@ -26,22 +26,22 @@ class VotingUtil {
     }
 
     checkPreVotes(){
-        var total  = Object.values(this.db.get(CONSENSUS_DB_KEYS.voting_round_validators_path)).reduce(function(a, b) { return a + b; }, 0)
-        console.log(`Total preVotes from validators : ${total}\nReceived preVotes ${this.db.get(CONSENSUS_DB_KEYS.voting_round_pre_votes_path)}`)
-        return (this.db.get(CONSENSUS_DB_KEYS.voting_round_pre_votes_path) > (total *.6666)) || total === 0
+        var total  = Object.values(this.db.get(ConsensusDbKeys.VOTING_ROUND_VALIDATORS_PATH)).reduce(function(a, b) { return a + b; }, 0)
+        console.log(`Total preVotes from validators : ${total}\nReceived preVotes ${this.db.get(ConsensusDbKeys.VOTING_ROUND_PRE_VOTES_PATH)}`)
+        return (this.db.get(ConsensusDbKeys.VOTING_ROUND_PRE_VOTES_PATH) > (total *.6666)) || total === 0
     }
 
     addValidatorTransactionsToBlock() {
-        for(var i=0; i<this.validatorTransactions.length; i++){
+        for(var i = 0; i<this.validatorTransactions.length; i++){
             this.block.validatorTransactions.push(this.validatorTransactions[i])
         }
         
     }
     
     preVote(){
-        var stake =  this.db.get(this.resolveDbPath([CONSENSUS_DB_KEYS.voting_round_validators_path, this.db.publicKey]))
-        var diff = {[CONSENSUS_DB_KEYS.voting_round_pre_votes_path]: stake}
-        this.status = VOTING_STATUS.pre_vote
+        var stake =  this.db.get(this.resolveDbPath([ConsensusDbKeys.VOTING_ROUND_VALIDATORS_PATH, this.db.publicKey]))
+        var diff = {[ConsensusDbKeys.VOTING_ROUND_PRE_VOTES_PATH]: stake}
+        this.status = VotingStatus.PRE_VOTE
         console.log(`Current prevotes are ${this.db.db._voting.preVotes}`)
         var transaction =  this.db.createTransaction({type: "INCREASE", diff})
         this.registerValidatingTransaction(transaction)
@@ -51,11 +51,11 @@ class VotingUtil {
 
     isCommit(){
         console.log(`Checking status ${this.status}`)
-        return  this.status !== VOTING_STATUS.committed && this.checkPreCommits()
+        return  this.status !== VotingStatus.COMMITTED && this.checkPreCommits()
     }
 
     reset(){
-        this.status = VOTING_STATUS.committed
+        this.status = VotingStatus.COMMITTED
         this.block = null
         this.validatorTransactions.length = []
     }
@@ -63,22 +63,22 @@ class VotingUtil {
     isSyncedWithNetwork(bc){
         // This does not currently take in to a count the situation where consensus is not reached.
         // Need to add logic to account for this situation
-        const sync =  (VOTING_STATUS.committed === this.status && bc.height() + 1 === Number(this.db.get(CONSENSUS_DB_KEYS.voting_round_height_path)))
+        const sync =  (VotingStatus.COMMITTED === this.status && bc.height() + 1 === Number(this.db.get(ConsensusDbKeys.VOTING_ROUND_HEIGHT_PATH)))
         if (!sync){
-            this.status = VOTING_STATUS.syncing
+            this.status = VotingStatus.SYNCING
         }
         return sync
     }
     
     
     preCommit(){
-        if (this.status !== VOTING_STATUS.pre_vote){
+        if (this.status !== VotingStatus.PRE_VOTE){
             return null
         }
-        var stake =  this.db.get(this.resolveDbPath([CONSENSUS_DB_KEYS.voting_round_validators_path, this.db.publicKey]))
-        var diff = {[CONSENSUS_DB_KEYS.voting_round_pre_commits_path]: stake}
+        var stake =  this.db.get(this.resolveDbPath([ConsensusDbKeys.VOTING_ROUND_VALIDATORS_PATH, this.db.publicKey]))
+        var diff = {[ConsensusDbKeys.VOTING_ROUND_PRE_COMMITS_PATH]: stake}
         console.log(`Current precommits are ${this.db.db._voting.preCommits}`)
-        this.status = VOTING_STATUS.pre_commit
+        this.status = VotingStatus.PRE_COMMIT
         var transaction =  this.db.createTransaction({type: "INCREASE", diff})
         this.registerValidatingTransaction(transaction)
         return transaction
@@ -86,9 +86,9 @@ class VotingUtil {
     }
     
     checkPreCommits(){
-        var total  = Object.values(this.db.get(CONSENSUS_DB_KEYS.voting_round_validators_path)).reduce(function(a, b) { return a + b; }, 0)
-        console.log(`Total preCommits from validators : ${total}\nReceived preCommits ${this.db.get(CONSENSUS_DB_KEYS.voting_round_pre_commits_path)}`)
-        return  (this.db.get(CONSENSUS_DB_KEYS.voting_round_pre_commits_path) > (total *.6666)) || total === 0
+        var total  = Object.values(this.db.get(ConsensusDbKeys.VOTING_ROUND_VALIDATORS_PATH)).reduce(function(a, b) { return a + b; }, 0)
+        console.log(`Total preCommits from validators : ${total}\nReceived preCommits ${this.db.get(ConsensusDbKeys.VOTING_ROUND_PRE_COMMITS_PATH)}`)
+        return  (this.db.get(ConsensusDbKeys.VOTING_ROUND_PRE_COMMITS_PATH) > (total *.6666)) || total === 0
     }
     
     
@@ -100,7 +100,7 @@ class VotingUtil {
         var time = Date.now()
         var firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.publicKey, preVotes: 0, 
                                 preCommits: 0, time, blockHash: "", height: bc.lastBlock().height + 1,  lastHash: bc.lastBlock().hash}
-        return this.db.createTransaction({type: "SET", ref: CONSENSUS_DB_KEYS.voting_round_path, value: firstVotingData})
+        return this.db.createTransaction({type: "SET", ref: ConsensusDbKeys.VOTING_ROUND_PATH, value: firstVotingData})
     }
     
     
@@ -126,7 +126,7 @@ class VotingUtil {
 
         let newRoundTransaction
         try {
-            newRoundTransaction = this.db.createTransaction({type: "SET", ref: CONSENSUS_DB_KEYS.voting_round_path, value: nextRound})
+            newRoundTransaction = this.db.createTransaction({type: "SET", ref: ConsensusDbKeys.VOTING_ROUND_PATH, value: nextRound})
         } catch (error) {
             if(error instanceof InvalidPermissionsError){
                 console.log('Not designated forger')
@@ -139,21 +139,20 @@ class VotingUtil {
     }
     
     registerForNextRound(height){
-        var votingRound = this.db.get(CONSENSUS_DB_KEYS.voting_round_path)
+        var votingRound = this.db.get(ConsensusDbKeys.VOTING_ROUND_PATH)
         console.log(`${height + 1} is the expected height and actual info is ${votingRound.height + 1}`)
         if (height !== votingRound.height){
             throw Error("Not valid height")
         }
     
-        var ref = `_voting/next_round_validators/${this.db.publicKey}`
-        var value = this.db.get(this.resolveDbPath([CONSENSUS_DB_KEYS.stakeholder_path, this.db.publicKey]))
-        return this.db.createTransaction({type: "SET", ref, value})
+        var value = this.db.get(this.resolveDbPath([ConsensusDbKeys.STAKEHOLDER_PATH, this.db.publicKey]))
+        return this.db.createTransaction({type: "SET", ref: this.resolveDbPath([ConsensusDbKeys.VOTING_NEXT_ROUND_VALIDATORS_PATH, this.db.publicKey]), value})
     } 
 
     setBlock(block){
         console.log(`Setting block ${block.hash.substring(0, 5)} at height ${block.height}`)
         this.block = block
-        this.status = VOTING_STATUS.block_received
+        this.status = VotingStatus.BLOCK_RECEIVED
         this.validatorTransactions.length = 0 
     }
 
@@ -178,24 +177,24 @@ class VotingUtil {
 
     stake(stakeAmount){
         console.log(`Successfully staked ${stakeAmount}`)
-        return this.db.createTransaction({type: "SET", ref: this.resolveDbPath([CONSENSUS_DB_KEYS.stakeholder_path, this.db.publicKey]), value: stakeAmount})
+        return this.db.createTransaction({type: "SET", ref: this.resolveDbPath([ConsensusDbKeys.STAKEHOLDER_PATH, this.db.publicKey]), value: stakeAmount})
     }
 
     isForger(){
-        this.status = VOTING_STATUS.wait_for_block
-        return this.db.get(CONSENSUS_DB_KEYS.voting_round_forger_path) === this.db.publicKey
+        this.status = VotingStatus.WAIT_FOR_BLOCK
+        return this.db.get(ConsensusDbKeys.VOTING_ROUND_FORGER_PATH) === this.db.publicKey
     }
 
     isValidator(){
-        return Boolean(this.db.get(this.resolveDbPath([CONSENSUS_DB_KEYS.voting_round_validators_path, this.db.publicKey])))
+        return Boolean(this.db.get(this.resolveDbPath([ConsensusDbKeys.VOTING_ROUND_VALIDATORS_PATH, this.db.publicKey])))
     }
 
     isStaked(){
-        return Boolean(this.db.get(this.resolveDbPath([CONSENSUS_DB_KEYS.stakeholder_path, this.db.publicKey])))
+        return Boolean(this.db.get(this.resolveDbPath([ConsensusDbKeys.STAKEHOLDER_PATH, this.db.publicKey])))
     }
 
     writeSuccessfulForge(){
-        var recentForgers = JSON.parse(JSON.stringify(this.db.get(CONSENSUS_DB_KEYS.recent_forgers_path)))
+        var recentForgers = JSON.parse(JSON.stringify(this.db.get(ConsensusDbKeys.RECENT_FORGERS_PATH)))
         if (recentForgers == null){
             recentForgers = []
         }
@@ -207,7 +206,7 @@ class VotingUtil {
             recentForgers.splice(recentForgers.indexOf(this.db.publicKey), 1)
         }
         recentForgers.push(this.db.publicKey)
-        return this.db.createTransaction({type: "SET", ref: CONSENSUS_DB_KEYS.recent_forgers_path, value: recentForgers})
+        return this.db.createTransaction({type: "SET", ref: ConsensusDbKeys.RECENT_FORGERS_PATH, value: recentForgers})
     }
     
 }

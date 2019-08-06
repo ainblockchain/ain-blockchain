@@ -2,55 +2,79 @@ const path = require("path")
 const RULES_FILE_PATH = path.resolve(__dirname, "db", "database.rules.json")
 const BLOCKCHAINS_DIR = path.resolve(__dirname, "blockchain", ".blockchains")
 const STAKE =  process.env.STAKE ? Number(process.env.STAKE) : null
-const MESSAGE_TYPES = {
-    transaction: "TRANSACTION",
-    chain_subsection: "CHAIN_SUBSECTION",
-    chain_subsection_request: "CHAIN_SUBSECTION_REQUEST",
-    voting: "VOTING"
+
+/**
+ * Message types for communication between nodes
+ * @enum {string}
+ */
+const MessageTypes = {
+    TRANSACTION: "transaction",
+    CHAIN_SUBSECTION: "chain_subsection",
+    CHAIN_SUBSECTION_REQUEST: "chain_subsection_request",
+    VOTING: "voting"
 }
 
-const VOTING_ACTION_TYPES = {
-    new_voting: "NEW_VOTING",
-    proposed_block: "PROPOSED_BLOCK",
-    pre_vote: "PRE_VOTE",
-    pre_commit: "PRE_COMMIT",
+/**
+ * Voting types which can trigger 
+ * @enum {string}
+ */
+const VotingActionTypes = {
+    NEW_VOTING: "new_voting",
+    PROPOSED_BLOCK: "proposed_block",
+    PRE_VOTE: "pre_vote",
+    PRE_COMMIT: "pre_commit",
 }
 
-const VOTING_STATUS = {
-    wait_for_block: "WAIT_FOR_BLOCK",
-    block_received: "BLOCK_RECEIVED",
-    pre_vote: "PRE_VOTE",
-    pre_commit: "PRE_COMMIT",
-    committed: "COMMITTED",
-    syncing: "SYNCING",
-    start_up: "START_UP"
+/**
+ * Vote states that nodes can be in when reaching consensus on blocks 
+ * @enum {string}
+ */
+const VotingStatus = {
+    WAIT_FOR_BLOCK: "wait_for_block",
+    BLOCK_RECEIVED: "block_received",
+    PRE_VOTE: "pre_vote",
+    PRE_COMMIT: "pre_commit",
+    COMMITTED: "committed",
+    SYNCING: "syncing",
+    START_UP: "start_up"
 }
 
-const START_UP_STATUS = {
-    start_up: "START_UP",
-    started: "STARTED"
+/**
+ * Paths to db locations where consensus information is stored 
+ * @enum {string}
+ */
+const ConsensusDbKeys = {
+    RECENT_FORGERS_PATH: "_recentForgers",
+    VOTING_ROUND_PATH: "_voting",
+    VOTING_ROUND_VALIDATORS_PATH: "_voting/validators/",
+    VOTING_ROUND_FORGER_PATH: "_voting/forger",
+    VOTING_ROUND_PRE_COMMITS_PATH: "_voting/preCommits",
+    VOTING_ROUND_PRE_VOTES_PATH: "_voting/preVotes",
+    VOTING_ROUND_THRESHOLD_PATH: "_voting/threshold",
+    VOTING_ROUND_HEIGHT_PATH: "_voting/height",
+    STAKEHOLDER_PATH : "stakes",
+    VOTING_ROUND_BLOCK_HASH: "_voting/blockHash",
+    VOTING_NEXT_ROUND_VALIDATORS_PATH: "_voting/next_round_validators"
 }
 
-const CONSENSUS_DB_KEYS = {
-    recent_forgers_path: "_recentForgers",
-    voting_round_path: "_voting",
-    voting_round_validators_path: "_voting/validators/",
-    voting_round_forger_path: "_voting/forger",
-    voting_round_pre_commits_path: "_voting/preCommits",
-    voting_round_pre_votes_path: "_voting/preVotes",
-    voting_round_threshold_path: "_voting/threshold",
-    voting_round_height_path: "_voting/height",
-    stakeholder_path : "stakes",
-    voting_round_block_hash_path: "_voting/blockHash"
-
+/**
+ * Types of write operations supported by Db
+ * @enum {string}
+ */
+const DbOperations = {
+    INCREASE: "INCREASE",
+    SET: "SET",
+    BATCH: "BATCH",
+    UPDATE: "UPDATE",
 }
 
-module.exports = {RULES_FILE_PATH, 
+module.exports = {
+    RULES_FILE_PATH, 
     BLOCKCHAINS_DIR, 
-    MESSAGE_TYPES, 
-    VOTING_STATUS,
-    START_UP_STATUS,
+    MessageTypes, 
+    VotingStatus,
     STAKE,
-    VOTING_ACTION_TYPES,
-    CONSENSUS_DB_KEYS
+    VotingActionTypes,
+    ConsensusDbKeys,
+    DbOperations
 }

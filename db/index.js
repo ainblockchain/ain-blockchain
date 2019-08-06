@@ -1,6 +1,7 @@
 const ChainUtil = require('../chain-util')
 const Transaction = require("./transaction")
 const InvalidPermissionsError = require("../errors")
+const {DbOperations} = require("../constants")
 
 class DB {
 
@@ -179,13 +180,13 @@ class DB {
 
     execute(transaction, address, timestamp, validationCheck=false) {
         switch(transaction.type){
-            case "SET":
+            case DbOperations.SET:
                 return this.set(transaction.ref, transaction.value, address, timestamp, validationCheck)
-            case "INCREASE": 
+            case  DbOperations.INCREASE:
                 return this.increase(transaction.diff, address, timestamp, validationCheck)
-            case "UPDATE":
+            case  DbOperations.UPDATE:
                 return this.update(transaction.data, address, timestamp, validationCheck)
-            case "BATCH": 
+            case  DbOperations.BATCH:
                 return this.batch(transaction.batch_list, address, timestamp, validationCheck)
         }
     }

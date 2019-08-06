@@ -1,6 +1,6 @@
 
 const {ForgedBlock} = require('./block')
-const {BLOCKCHAINS_DIR, START_UP_STATUS} = require('../constants') 
+const {BLOCKCHAINS_DIR} = require('../constants')
 const rimraf = require("rimraf")
 const path = require('path')
 const fs = require('fs')
@@ -15,7 +15,7 @@ class Blockchain{
         this.blockchain_dir = blockchain_dir
         this.backUpDB = null
         this._proposedBlock = null
-        this.status = START_UP_STATUS.start_up
+        this.syncedAfterStartup = false
         let new_chain
         if(this.createBlockchainDir()){
             new_chain =  Blockchain.loadChain(this._blockchainDir())
@@ -39,15 +39,12 @@ class Blockchain{
         return this.chain[this.chain.length -1]
     }
 
-    addNewBlock(block, validatorTransactions=null){
+    addNewBlock(block){
         if (block.height != this.height() + 1){
             throw Error("Blockchain height is wrong")
         }
         if (!(block instanceof ForgedBlock)){
             block =  ForgedBlock.parse(block)
-        }
-        if (validatorTransactions !== null){
-            block.setValidatorTransactions(validatorTransactions)
         }
 
         this.chain.push(block)
