@@ -30,7 +30,7 @@ function getBlockchainClosure(blockchain) {
 
         getBlockBodies(query) {
             const blockBodies = []
-            const blocks = this.getBlocks(query)
+            const blocks = this.getBlockList(query)
             blocks.forEach((block) => {
                 blockBodies.push(block.body())
             })
@@ -43,7 +43,7 @@ function getBlockchainClosure(blockchain) {
 
         getBlockHeaders(query){
             const blockHeaders = []
-            const blocks = this.getBlocks(query)
+            const blocks = this.getBlockList(query)
             blocks.forEach((block) => {
                 blockHeaders.push(block.header())
             })

@@ -32,7 +32,7 @@ class VotingUtil {
     }
 
     addValidatorTransactionsToBlock() {
-        for(var i = 0; i<this.validatorTransactions.length; i++){
+        for(var i = 0; i < this.validatorTransactions.length; i++){
             this.block.validatorTransactions.push(this.validatorTransactions[i])
         }
         

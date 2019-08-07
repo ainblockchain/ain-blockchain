@@ -1,4 +1,3 @@
-
 const {ForgedBlock} = require('./block')
 const {BLOCKCHAINS_DIR} = require('../constants')
 const rimraf = require("rimraf")
