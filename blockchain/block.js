@@ -1,7 +1,8 @@
 const ChainUtil = require('../chain-util')
 const fs = require("fs")
-const {RULES_FILE_PATH} = require('../config')
-var zipper = require("zip-local")
+const {RULES_FILE_PATH} = require('../constants')
+const zipper = require("zip-local")
+const FILE_ENDING = "json.zip"
 
 
 class Block {
@@ -11,13 +12,10 @@ class Block {
         this.lastHash = lastHash
         this.hash = hash
         this.data = data
-
     }
-
 }
 
 class ForgedBlock extends Block {
-
 
     constructor(timestamp, lastHash, hash, data, height, signature, forger, validators, threshold){  
         super(timestamp, lastHash, hash, data)
@@ -28,7 +26,10 @@ class ForgedBlock extends Block {
         this.validators = validators
         this.threshold = threshold
     }
-
+    
+    setValidatorTransactions(validatorTransactions){
+        this.validatorTransactions = validatorTransactions
+    }
 
     static forgeBlock(data, db, height, lastBlock, forger, validators, threshold){
         const lastHash = lastBlock.hash
@@ -60,6 +61,10 @@ class ForgedBlock extends Block {
         }
     }
 
+    static getFileName(block){
+        return `${block.height}-${block.lastHash}-${block.hash}.${FILE_ENDING}`
+    }
+
     static blockHash(block){
         const {timestamp, lastHash, data, height, signature} = block;
         return ForgedBlock.hash(timestamp, lastHash, data, height, signature) 
@@ -86,7 +91,6 @@ class ForgedBlock extends Block {
         var unzippedfs = zipper.sync.unzip(blockZipFile).memory()
         var block_info = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], "buffer").toString())
         return ForgedBlock.parse(block_info)
-    
     }
 
     static parse(block_info){
@@ -110,6 +114,11 @@ class ForgedBlock extends Block {
 
         for(var i=0; i<block.data.length; i++) {
             transaction = block.data[i]
+
+            if (transaction.nonce < 0) {
+                continue
+            }
+
             if (!(transaction.address in nonceTracker)){
                 nonceTracker[transaction.address] = transaction.nonce
                 continue
@@ -119,9 +128,8 @@ class ForgedBlock extends Block {
                 console.log(`Invalid noncing for ${transaction.address}. Expected ${nonceTracker[transaction.address] + 1}. Received ${transaction.nonce}`)
                 return false
             }
+
             nonceTracker[transaction.address] = transaction.nonce
-
-
         }
         console.log(`Valid block at height ${block.height}`)
         return true

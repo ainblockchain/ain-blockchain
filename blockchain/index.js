@@ -1,6 +1,5 @@
-
 const {ForgedBlock} = require('./block')
-const {BLOCKCHAINS_DIR} = require('../config') 
+const {BLOCKCHAINS_DIR} = require('../constants')
 const rimraf = require("rimraf")
 const path = require('path')
 const fs = require('fs')
@@ -14,6 +13,8 @@ class Blockchain{
         this.chain = [ForgedBlock.genesis()];
         this.blockchain_dir = blockchain_dir
         this.backUpDB = null
+        this._proposedBlock = null
+        this.syncedAfterStartup = false
         let new_chain
         if(this.createBlockchainDir()){
             new_chain =  Blockchain.loadChain(this._blockchainDir())
@@ -83,7 +84,6 @@ class Blockchain{
 
 
     static isValidChain(chain){
-
         if(JSON.stringify(chain[0]) !== JSON.stringify(ForgedBlock.genesis())) {
             console.log("first block not genesis")
             return false
@@ -125,8 +125,8 @@ class Blockchain{
         return path.resolve(BLOCKCHAINS_DIR, this.blockchain_dir)
     }
 
-    _path_to_block(blockNum, block){
-        return path.resolve(this._blockchainDir(),`${blockNum}-${block.lastHash}-${block.hash}.json.zip`)
+    _path_to_block(block){
+        return path.resolve(this._blockchainDir(), ForgedBlock.getFileName(block))
     }
 
     createBlockchainDir(){
@@ -144,7 +144,7 @@ class Blockchain{
     writeChain(){ 
         for(var i=this.chain[0].height; i<this.height() + 1; i++){
             var block = this.chain[i - this.chain[0].height]
-            var file_path = this._path_to_block(i, block)
+            var file_path = this._path_to_block(block)
             if (!(fs.existsSync(file_path))) {
                 // Change to async implementation
                 zipper.sync.zip(Buffer.from(JSON.stringify(block))).compress().save(file_path);
@@ -152,6 +152,12 @@ class Blockchain{
         }
     }
 
+    /**
+    * Returns a section of the chain up to a maximuim of length CHAIN_SUBSECT_LENGTH, starting from the index of the queired lastBLock
+    *
+    * @param {ForgedBlock} lastBlock - The current highest block tin the querying nodes blockchain 
+    * @return {list} A list of ForgedBlock instances with lastBlock at index 0, up to a maximuim length CHAIN_SUBSECT_LENGTH
+    */
     requestBlockchainSection(lastBlock){
         console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash}`)
         var blockFiles = Blockchain.getBlockFiles(this._blockchainDir())
@@ -237,6 +243,7 @@ class Blockchain{
         }
         return chain
     }
+
 }
 
 module.exports = Blockchain;

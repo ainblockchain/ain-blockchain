@@ -12,7 +12,7 @@
         ".write": "(newData.length < 20) && (db.get(`_voting/preCommits`) > db.get(`_voting/threshold`)) && (db.get(`_voting/forger`) === auth)"
     },
     "_voting": {
-        ".write": "db.get(`_voting`) === null || (db.get(`_recentForgers`)[db.get(`_recentForgers`).length - Math.floor((currentTime - db.get(`_voting/time`)) / 6000)] === auth)" ,
+        ".write": "db.get(`_voting`) === null || db.get(`_recentForgers`) !== null && (db.get(`_recentForgers`)[db.get(`_recentForgers`).length - Math.floor((currentTime - db.get(`_voting/time`)) / 6000)] === auth)" ,
         "blockHash": {
             ".write": "db.get(`_voting/forger`) === auth"
         },

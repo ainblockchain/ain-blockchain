@@ -7,6 +7,7 @@ const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 const expect = chai.expect
+const should = chai.should();
 const path = require("path")
 chai.use(chaiHttp);
 const syncRequest = require('sync-request')
@@ -14,7 +15,7 @@ const itParam = require('mocha-param');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
-const {BLOCKCHAINS_DIR} = require('../config') 
+const {BLOCKCHAINS_DIR} = require('../constants') 
 const rimraf = require("rimraf")
 const jayson = require('jayson');
 
@@ -26,9 +27,9 @@ const server4 = 'http://localhost:8083'
 const SERVERS = [server1, server2, server3, server4]
 
 const JSON_RPC_ENDPOINT = "/json-rpc"
-const JSON_RPC_GET_LAST_BLOCK = "getLastBlock"
-const JSON_RPC_GET_BLOCKS = "getBlocks"
-const JSON_RPC_GET_BLOCK_HEADERS = "getBlockHeaders"
+const JSON_RPC_GET_LAST_BLOCK = "ain_getLastBlock"
+const JSON_RPC_GET_BLOCKS = "ain_getBlockList"
+const JSON_RPC_GET_BLOCK_HEADERS = "ain_getBlockHeadersList"
 
 const ENV_VARIABLES = [{P2P_PORT:5001, PORT: 8080, LOG: true, STAKE: 250}, {P2P_PORT:5002, PORT: 8081, LOG: true, STAKE: 250},
                        {P2P_PORT:5003, PORT: 8082, LOG: true, STAKE: 250}, {P2P_PORT:5004, PORT: 8083, LOG: true, STAKE: 250}]
@@ -136,6 +137,7 @@ describe('Integration Tests', () => {
     itParam('syncs accross all peers after mine', SERVERS, (server) => {
       base_db = JSON.parse(syncRequest('GET', server1 + '/get?ref=/').body.toString("utf-8"))
       console.log(base_db)
+      console.log(server)
       return chai.request(server).get(`/get?ref=/`).then((res) => {
               res.should.have.status(200);
               res.body.should.be.deep.eql(base_db)
@@ -228,7 +230,7 @@ describe('Integration Tests', () => {
 
     describe('and rules', ()=> {
       it('prevent users from restructed areas', () => {
-        return chai.request(server2).post(`/set`).send( {ref: "restricted/path", value: "anything"}).then((res) => {
+        return chai.request(server2).post(`/set`).send( {ref: "restricted/path", value: "anything", is_nonced_transaction: false}).then((res) => {
           res.should.have.status(401);
         })
       })

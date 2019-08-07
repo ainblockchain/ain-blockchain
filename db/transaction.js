@@ -12,18 +12,23 @@ class Transaction {
     }
 
     toString(){
-        return `${this.id},
-                ${this.timestamp},
-                ${this.output},
-                ${this.address},
-                ${this.signature}
-                `
+        return `id:        ${this.id},
+                timestamp: ${this.timestamp},
+                output:    ${JSON.stringify(this.output)},
+                address:   ${this.address},
+                nonce:     ${this.nonce}
+           `
     }
 
-
-    static newTransaction(db, data) {
-        var transaction =  new this(Date.now(), data, db.publicKey, db.sign(ChainUtil.hash(data)), db.nonce)
-        db.nonce++
+    static newTransaction(db, data, isNoncedTransaction) {
+        let nonce 
+        if (isNoncedTransaction) {
+            nonce = db.nonce
+            db.nonce ++
+        } else {
+            nonce = -1
+        }
+        const transaction =  new this(Date.now(), data, db.publicKey, db.sign(ChainUtil.hash(data)), nonce)
         return transaction
     } 
     

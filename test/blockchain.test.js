@@ -1,5 +1,5 @@
 const Blockchain = require('../blockchain/');
-const {METHOD} = require("../config")
+const {METHOD} = require("../constants")
 const {Block, ForgedBlock} = require('../blockchain/block')
 const chai = require('chai');
 const expect = chai.expect;
@@ -65,7 +65,7 @@ describe('Blockchain', () => {
         
             for(var i = 0; i<1000; i++){
                 //let i represent a fake block here
-                db1.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
+                db1.createTransaction({type: "SET", ref: "test/something", value: "val"})
                 var block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock())
                 if (block.height === 500){
                     blockHash = block.hash

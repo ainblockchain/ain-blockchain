@@ -6,7 +6,7 @@ const chai = require('chai');
 const fs = require("fs")
 const expect = chai.expect;
 const assert = chai.assert;
-const {RULES_FILE_PATH} = require('../config')
+const {RULES_FILE_PATH} = require('../constants')
 
 describe("DB", () => {
     let db, test_db, bc, tp
