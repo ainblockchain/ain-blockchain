@@ -7,10 +7,10 @@ class TransactionPool {
         this.nonceTracker = {}
     }
 
-    addTransaction(transaction, verify=true) {
+    addTransaction(transaction) {
         // Quick verification of transaction on entry
 
-        if ( verify && (!Transaction.verifyTransaction(transaction))){
+        if (!Transaction.verifyTransaction(transaction)){
             console.log("Invalid transaction")
             return false
         }
@@ -23,14 +23,19 @@ class TransactionPool {
     }
     
     isAlreadyAdded(transaction){
-        return Boolean((transaction.address in this.transactions) && this.transactions[transaction.address].find(trans => trans.id === transaction.id)) || Boolean(transaction.nonce <= this.nonceTracker[transaction.address])
+        return Boolean((transaction.address in this.transactions) && 
+            (this.transactions[transaction.address].find(trans => trans.id === transaction.id)) || 
+                (transaction.nonce > 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address])))
     }
 
     validTransactions(){
         // Transactions are first ordered by nonce in their individual lists by publicKey
         const unvalidatedTransactions =  JSON.parse(JSON.stringify(this.transactions))
         for (var address in unvalidatedTransactions){
-            unvalidatedTransactions[address].sort((a,b) => (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0))
+            // Order by noncing if transactions are nonced, else by timestamp
+            unvalidatedTransactions[address].sort((a,b) => (a.nonce < 0 || b.nonce < 0) ? 
+            ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) : 
+                (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0))
         }
         // Secondly transaction are combined and ordered by timestamp, while still remaining ordered noncing from the initial sort by nonce
         let orderedUnvalidatedTransactions = Object.values(unvalidatedTransactions)
@@ -52,6 +57,8 @@ class TransactionPool {
                 } else if (!(listToTakeValue[0].address in tempNonceTracker) && listToTakeValue[0].nonce === 0){
                     tempNonceTracker[listToTakeValue[0].address] = 0
                     newList.push(listToTakeValue.shift())
+                } else if (listToTakeValue[0].nonce < 0) {
+                    newList.push(listToTakeValue.shift())
                 } else {
                     listToTakeValue.length = 0
                 }
@@ -66,9 +73,10 @@ class TransactionPool {
     removeCommitedTransactions(block){
         // Remove transactions of newly added block to blockchain from the current transaction pool 
         var transactionIds = block.data.map(transaction => {
-
-            // Update nonceTracker while extracting transactionIds
-            this.nonceTracker[transaction.address] = transaction.nonce
+            if (transaction.nonce >= 0) {
+                // Update nonceTracker while extracting transactionIds
+                this.nonceTracker[transaction.address] = transaction.nonce
+            }
             return transaction.id
         })
 

@@ -43,7 +43,7 @@ class DB {
     return this.set(['stakes', this.publicKey].join('/'), stakeAmount);
   }
 
-  set(queryPath, value, auth, timestamp, validationCheck) {
+  set(queryPath, value, auth, timestamp) {
     let valueCopy;
     const listQueryPath = ChainUtil.queryParser(queryPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
@@ -53,11 +53,6 @@ class DB {
          == false) {
       throw new
       InvalidPermissionsError(`Invalid set permissons for ${queryPath}`);
-    }
-
-    if (validationCheck) {
-      // Validation check has passed so return
-      return;
     }
 
     if (ChainUtil.isDict(value)) {
@@ -77,31 +72,31 @@ class DB {
     return true;
   }
 
-  update(data, auth, timestamp, validationCheck) {
+  update(data, auth, timestamp) {
     for (const key in data) {
-      this.set(key, data[key], auth, timestamp, validationCheck);
+      this.set(key, data[key], auth, timestamp);
     }
     return true;
   }
 
-  batch(batchList, auth, timestamp, validationCheck) {
+  batch(batchList, auth, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
       if (item.op === 'set') {
         resultList
-            .push(this.set(item.ref, item.value, auth, timestamp, validationCheck));
+            .push(this.set(item.ref, item.value, auth, timestamp));
       } else if (item.op === 'increase') {
         resultList
-            .push(this.increase(item.diff, auth, timestamp, validationCheck));
+            .push(this.increase(item.diff, auth, timestamp));
       } else if (item.op === 'get') {
         resultList
-            .push(this.get(item.ref, auth, timestamp, validationCheck));
+            .push(this.get(item.ref, auth, timestamp));
       } else if (item.op === 'update') {
         resultList
-            .push(this.update(item.data, auth, timestamp, validationCheck));
+            .push(this.update(item.data, auth, timestamp));
       } else if (item.op === 'batch') {
         resultList
-            .push(this.batch(item.batch_list, auth, timestamp, validationCheck));
+            .push(this.batch(item.batch_list, auth, timestamp));
       }
     });
     return resultList;
@@ -119,7 +114,7 @@ class DB {
     return subDb;
   }
 
-  increase(diff, auth, timestamp, validationCheck) {
+  increase(diff, auth, timestamp) {
     for (const k in diff) {
       if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
         // TODO: Raise error here
@@ -129,7 +124,7 @@ class DB {
     const results = {};
     for (const k in diff) {
       const result = (this.get(k, auth) || 0) + diff[k];
-      this.set(k, result, auth, timestamp, validationCheck);
+      this.set(k, result, auth, timestamp);
       results[k] = result;
     }
     return results;
@@ -142,9 +137,8 @@ class DB {
     * @return {Transaction} Instance of the transaction class
     * @throws {InvalidPermissionsError} InvalidPermissionsError when database rules don't allow the transaction
     */
-  createTransaction(data) {
-    this.execute(data, null, null, true);
-    return Transaction.newTransaction(this, data);
+  createTransaction(data, isNoncedTransaction = true) {
+    return Transaction.newTransaction(this, data, isNoncedTransaction);
   }
 
   sign(dataHash) {
@@ -183,16 +177,16 @@ class DB {
     }
   }
 
-  execute(transaction, address, timestamp, validationCheck=false) {
+  execute(transaction, address, timestamp) {
     switch (transaction.type) {
       case DbOperations.SET:
-        return this.set(transaction.ref, transaction.value, address, timestamp, validationCheck);
+        return this.set(transaction.ref, transaction.value, address, timestamp);
       case DbOperations.INCREASE:
-        return this.increase(transaction.diff, address, timestamp, validationCheck);
+        return this.increase(transaction.diff, address, timestamp);
       case DbOperations.UPDATE:
-        return this.update(transaction.data, address, timestamp, validationCheck);
+        return this.update(transaction.data, address, timestamp);
       case DbOperations.BATCH:
-        return this.batch(transaction.batch_list, address, timestamp, validationCheck);
+        return this.batch(transaction.batch_list, address, timestamp);
     }
   }
 

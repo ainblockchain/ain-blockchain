@@ -114,6 +114,11 @@ class ForgedBlock extends Block {
 
         for(var i=0; i<block.data.length; i++) {
             transaction = block.data[i]
+
+            if (transaction.nonce < 0) {
+                continue
+            }
+
             if (!(transaction.address in nonceTracker)){
                 nonceTracker[transaction.address] = transaction.nonce
                 continue
@@ -123,9 +128,8 @@ class ForgedBlock extends Block {
                 console.log(`Invalid noncing for ${transaction.address}. Expected ${nonceTracker[transaction.address] + 1}. Received ${transaction.nonce}`)
                 return false
             }
+
             nonceTracker[transaction.address] = transaction.nonce
-
-
         }
         console.log(`Valid block at height ${block.height}`)
         return true

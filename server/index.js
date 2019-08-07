@@ -165,7 +165,7 @@ class P2pServer {
 
     let result;
     try {
-      result = this.db.execute(transaction.output, transaction.address, transaction.timestamp, false);
+      result = this.db.execute(transaction.output, transaction.address, transaction.timestamp);
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
         return null;
@@ -302,12 +302,13 @@ class P2pServer {
     if (this.db.get(ConsensusDbKeys.RECENT_FORGERS_PATH).indexOf(this.db.publicKey) >= 0) {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
-        if (newRoundTrans === null) {
-          console.log(`${this.db.publicKey} is not the starter for the current round`);
-          return;
+        const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
+        if (response === null) {
+            console.log('Not designated forger')
+            return 
         }
         console.log(`User ${this.db.publicKey} is starting round ${this.blockchain.height() + 1}`);
-        this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
+       
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         this.checkIfForger();
       }, BLOCK_CREATION_INTERVAL);
@@ -321,7 +322,6 @@ class P2pServer {
     }
   }
 
-  // eslint-disable-next-line require-jsdoc
   stakeAmount() {
     if (this.stake !== null) {
       console.log(`Staking amount ${STAKE}`);

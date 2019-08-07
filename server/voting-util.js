@@ -124,18 +124,7 @@ class VotingUtil {
             nextRound =  Object.assign({}, nextRound, {height: lastRound.height,  lastHash: lastRound.lastHash})
         }
 
-        let newRoundTransaction
-        try {
-            newRoundTransaction = this.db.createTransaction({type: "SET", ref: ConsensusDbKeys.VOTING_ROUND_PATH, value: nextRound})
-        } catch (error) {
-            if(error instanceof InvalidPermissionsError){
-                console.log('Not designated forger')
-                return null
-            } else {
-                throw error
-            }
-        }
-        return newRoundTransaction
+        return this.db.createTransaction({type: "SET", ref: ConsensusDbKeys.VOTING_ROUND_PATH, value: nextRound}, false)
     }
     
     registerForNextRound(height){

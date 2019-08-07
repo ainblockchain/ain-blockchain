@@ -49,11 +49,8 @@ if (LOG) {
 
 // [START gae_flex_mysql_app]
 const express = require('express');
-// const crypto = require('crypto');
-// var Promise = require("bluebird");
-// var bodyParser = require('body-parser')
-const P2pServer = require('../server');
 const Database = require('../db');
+const P2pServer = require('../server');
 
 // Define peer2peer server here which will broadcast changes in the database
 // and also track which servers are in the network
@@ -68,8 +65,6 @@ const app = express();
 const transactionBatch = [];
 
 app.use(express.json()); // support json encoded bodies
-// app.use(bodyParser.urlencoded({ extended: false }));
-// support encoded bodies
 
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
@@ -78,7 +73,7 @@ const p2pServer = new P2pServer(db, bc, tp);
 const InvalidPermissionsError = require('../errors');
 const jayson = require('jayson');
 
-let jsonRpcMethods = require('../json_rpc/methods')(bc, tp);
+const jsonRpcMethods = require('../json_rpc/methods')(bc, tp);
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
@@ -95,7 +90,8 @@ app.get('/', (req, res, next) => {
 
 app.post('/update', (req, res, next) => {
   const data = req.body.data;
-  const result = createTransaction({op: 'update', data});
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const result = createTransaction({op: 'update', data}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -122,7 +118,8 @@ app.get('/get', (req, res, next) => {
 app.post('/set', (req, res, next) => {
   const ref = req.body.ref;
   const value = req.body.value;
-  const result = createTransaction({op: 'set', ref, value});
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const result = createTransaction({op: 'set', ref, value}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -132,7 +129,8 @@ app.post('/set', (req, res, next) => {
 
 app.post('/batch', (req, res, next) => {
   const batchList = req.body.batch_list;
-  const result = createTransaction({op: 'batch', batch_list: batchList});
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const result = createTransaction({op: 'batch', batch_list: batchList}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -142,7 +140,8 @@ app.post('/batch', (req, res, next) => {
 
 app.post('/increase', (req, res, next) => {
   const diff = req.body.diff;
-  const result = createTransaction({op: 'increase', diff});
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const result = createTransaction({op: 'increase', diff}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -165,7 +164,6 @@ p2pServer.listen();
 
 module.exports = app;
 
-// eslint-disable-next-line require-jsdoc
 function createBatchTransaction(trans) {
   if (transactionBatch.length == 0) {
     setTimeout(() => {
@@ -194,27 +192,27 @@ function broadcastBatchTransaction() {
   }
 }
 
-function createSingularTransaction(trans) {
+function createSingularTransaction(trans, isNoncedTransaction) {
   CURRENT_NONCE += 1;
   let transaction;
   try {
     switch (trans.op) {
       case 'batch':
         transaction =
-          db.createTransaction({type: 'BATCH', batch_list: trans.batch_list});
+          db.createTransaction({type: 'BATCH', batch_list: trans.batch_list}, isNoncedTransaction);
         break;
       case 'increase':
         transaction =
-          db.createTransaction({type: 'INCREASE', diff: trans.diff});
+          db.createTransaction({type: 'INCREASE', diff: trans.diff}, isNoncedTransaction);
         break;
       case 'update':
         transaction =
-          db.createTransaction({type: 'UPDATE', data: trans.data});
+          db.createTransaction({type: 'UPDATE', data: trans.data}, isNoncedTransaction);
         break;
       case 'set':
         transaction =
           db.createTransaction({type: 'SET', ref: trans.ref,
-            value: trans.value});
+            value: trans.value}, isNoncedTransaction);
         break;
     }
   } catch (error) {
@@ -230,6 +228,10 @@ function createSingularTransaction(trans) {
 let createTransaction;
 createTransaction = createSingularTransaction;
 
+function checkIfTransactionShouldBeNonced(isNoncedTransaction) {
+  // Default to true if noncing information is not specified
+  return typeof isNoncedTransaction === "undefined" ? true : isNoncedTransaction;
+}
 
 // Here we specity
 setInterval(() => {
