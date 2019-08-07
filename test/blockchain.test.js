@@ -58,7 +58,7 @@ describe('Blockchain', () => {
 
 
     describe("with lots of blocks", () => {
-        let blocks
+        let blocks, blockHash
 
         beforeEach(() => {
             blocks = []
@@ -67,6 +67,9 @@ describe('Blockchain', () => {
                 //let i represent a fake block here
                 db1.createTransaction({type: "SET", ref: "test/something", value: "val"}, tp)
                 var block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock())
+                if (block.height === 500){
+                    blockHash = block.hash
+                }
                 blocks.push(block)
                 bc.addNewBlock(block)
                 tp.removeCommitedTransactions(block)
@@ -86,6 +89,14 @@ describe('Blockchain', () => {
         it("can be queried by index", () => {
             assert.deepEqual(JSON.stringify(bc.getChainSection(10, 30)), JSON.stringify(blocks.slice(9, 29)))
             assert.deepEqual(JSON.stringify(bc.getChainSection(980, 1010)), JSON.stringify(blocks.slice(979, 1010)))
+        })
+
+        it("can be queried by block height", () => {
+            expect(bc.getBlockByNumber(600).height).to.equal(600)
+        })
+
+        it("can be queried by block hash", () => {
+            expect(bc.getBlockByHash(blockHash).height).to.equal(500)
         })
     })
 })

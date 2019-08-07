@@ -24,6 +24,35 @@ class Blockchain{
         this.writeChain()
     }
 
+    /**
+    * Given a block hash or hash substring, returns a block with a matching hash from the blockchain.
+    *
+    * @param {hash} string - hash or hash substring of block.
+    * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block hash.
+    */    
+    getBlockByHash(hash) {
+        const blockFiles =  this.blockFiles()
+        let blockHash
+        for(var i = 0; i < blockFiles.length; i++) {
+            blockHash = path.basename(blockFiles[i]).split("-")[2]
+            if (blockHash.includes(hash)){
+                return ForgedBlock.loadBlock(blockFiles[i])
+            }
+        }
+        return null
+    }
+
+    /**
+    * Given a number, returns the block corresponding to that height of the blcokchain.
+    *
+    * @param {number} integer - Height of block.
+    * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
+]   */
+    getBlockByNumber(number) {
+        const blockFiles =  this.blockFiles()
+        return number < blockFiles.length && number >= 0 ? ForgedBlock.loadBlock(blockFiles[number]) : null
+    }
+
     setBackDb(backUpDB){
         if (this.backUpDB !== null){
             throw Error("Already set backupDB")
@@ -130,10 +159,10 @@ class Blockchain{
     * @param {ForgedBlock} lastBlock - The current highest block tin the querying nodes blockchain 
     * @return {list} A list of ForgedBlock instances with lastBlock at index 0, up to a maximuim length CHAIN_SUBSECT_LENGTH
     */
-    requestBlockchainSection(lastBlock) {
-        console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash.substring(0, 5)}`)
+    requestBlockchainSection(lastBlock){
+        console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash}`)
         var blockFiles = Blockchain.getBlockFiles(this._blockchainDir())
-        if (blockFiles.length < lastBlock.height || blockFiles[lastBlock.height].indexOf(ForgedBlock.getFileName(lastBlock)) < 0){
+        if (blockFiles.length > lastBlock.height && blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash}-${lastBlock.hash}`) < 0){
             console.log("Invalid blockchain request")
             return 
         }
