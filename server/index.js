@@ -10,6 +10,7 @@ const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, ConsensusDbKeys}
 const InvalidPermissionsError = require('../errors');
 const {ForgedBlock} = require('../blockchain/block');
 const VotingUtil = require('./voting-util');
+const {DbOperations} = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
 
 class P2pServer {
@@ -258,7 +259,7 @@ class P2pServer {
     const ref = ConsensusDbKeys.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
-    const blockHashTransaction = this.db.createTransaction({type: 'SET', ref, value});
+    const blockHashTransaction = this.db.createTransaction({type: DbOperations.SET, ref, value});
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
     if (!Object.keys(this.db.get(ConsensusDbKeys.VOTING_ROUND_VALIDATORS_PATH)).length) {
@@ -304,11 +305,11 @@ class P2pServer {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
         if (response === null) {
-            console.log('Not designated forger')
-            return 
+          console.log('Not designated forger');
+          return;
         }
         console.log(`User ${this.db.publicKey} is starting round ${this.blockchain.height() + 1}`);
-       
+
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         this.checkIfForger();
       }, BLOCK_CREATION_INTERVAL);
