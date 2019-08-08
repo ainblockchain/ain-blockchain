@@ -66,6 +66,7 @@ const transactionBatch = [];
 
 app.use(express.json()); // support json encoded bodies
 
+const {DbOperations} = require('../constants');
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = Database.getDatabase(bc, tp);
@@ -195,32 +196,26 @@ function broadcastBatchTransaction() {
 function createSingularTransaction(trans, isNoncedTransaction) {
   CURRENT_NONCE += 1;
   let transaction;
-  try {
-    switch (trans.op) {
-      case 'batch':
-        transaction =
-          db.createTransaction({type: 'BATCH', batch_list: trans.batch_list}, isNoncedTransaction);
-        break;
-      case 'increase':
-        transaction =
-          db.createTransaction({type: 'INCREASE', diff: trans.diff}, isNoncedTransaction);
-        break;
-      case 'update':
-        transaction =
-          db.createTransaction({type: 'UPDATE', data: trans.data}, isNoncedTransaction);
-        break;
-      case 'set':
-        transaction =
-          db.createTransaction({type: 'SET', ref: trans.ref,
+  switch (trans.op.toUpperCase()) {
+    case DbOperations.BATCH:
+      transaction =
+          db.createTransaction({type: DbOperations.BATCH, batch_list: trans.batch_list}, isNoncedTransaction);
+      break;
+    case DbOperations.INCREASE:
+      transaction =
+          db.createTransaction({type: DbOperations.INCREASE, diff: trans.diff}, isNoncedTransaction);
+      break;
+    case DbOperations.UPDATE:
+      transaction =
+          db.createTransaction({type: DbOperations.UPDATE, data: trans.data}, isNoncedTransaction);
+      break;
+    case DbOperations.SET:
+      transaction =
+          db.createTransaction({type: DbOperations.SET, ref: trans.ref,
             value: trans.value}, isNoncedTransaction);
-        break;
-    }
-  } catch (error) {
-    if (error instanceof InvalidPermissionsError) {
-      console.log(`Validation failed: ${console.log(error.stack)}`);
-      return null;
-    }
-    throw error;
+      break;
+    default:
+      throw Error(`Invalid operation ${trans.op}`);
   }
   return p2pServer.executeAndBroadcastTransaction(transaction);
 }
@@ -230,7 +225,7 @@ createTransaction = createSingularTransaction;
 
 function checkIfTransactionShouldBeNonced(isNoncedTransaction) {
   // Default to true if noncing information is not specified
-  return typeof isNoncedTransaction === "undefined" ? true : isNoncedTransaction;
+  return typeof isNoncedTransaction === 'undefined' ? true : isNoncedTransaction;
 }
 
 // Here we specity

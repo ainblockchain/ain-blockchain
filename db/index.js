@@ -82,19 +82,19 @@ class DB {
   batch(batchList, auth, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
-      if (item.op === 'set') {
+      if (item.op.toUpperCase() === DbOperations.SET) {
         resultList
             .push(this.set(item.ref, item.value, auth, timestamp));
-      } else if (item.op === 'increase') {
+      } else if (item.op.toUpperCase() === DbOperations.INCREASE) {
         resultList
             .push(this.increase(item.diff, auth, timestamp));
-      } else if (item.op === 'get') {
-        resultList
-            .push(this.get(item.ref, auth, timestamp));
-      } else if (item.op === 'update') {
+      } else if (item.op.toUpperCase() === DbOperations.UPDATE) {
         resultList
             .push(this.update(item.data, auth, timestamp));
-      } else if (item.op === 'batch') {
+      } else if (item.op.toUpperCase() === DbOperations.GET) {
+        resultList
+            .push(this.get(item.ref));
+      } else if (item.op.toUpperCase() === DbOperations.BATCH) {
         resultList
             .push(this.batch(item.batch_list, auth, timestamp));
       }
@@ -134,6 +134,7 @@ class DB {
     * Validates transaction is valid according to AIN database rules and returns a transaction instance
     *
     * @param {dict} data - Database write request to be converted to transaction
+    * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or not
     * @return {Transaction} Instance of the transaction class
     * @throws {InvalidPermissionsError} InvalidPermissionsError when database rules don't allow the transaction
     */
