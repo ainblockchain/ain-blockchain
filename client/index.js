@@ -119,8 +119,12 @@ app.get('/get', (req, res, next) => {
 app.post('/set', (req, res, next) => {
   const ref = req.body.ref;
   const value = req.body.value;
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skipVerif;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
-  const result = createTransaction({op: 'set', ref, value}, isNoncedTransaction);
+  let operation = {op: 'set', ref, value, address, nonce, skipVerif};
+  const result = createTransaction(operation, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -211,8 +215,10 @@ function createSingularTransaction(trans, isNoncedTransaction) {
       break;
     case DbOperations.SET:
       transaction =
-          db.createTransaction({type: DbOperations.SET, ref: trans.ref,
-            value: trans.value}, isNoncedTransaction);
+          db.createTransaction({
+            type: DbOperations.SET, ref: trans.ref, value: trans.value, address: trans.address,
+            nonce: trans.nonce, skipVerif: trans.skipVerif
+          }, isNoncedTransaction);
       break;
     default:
       throw Error(`Invalid operation ${trans.op}`);

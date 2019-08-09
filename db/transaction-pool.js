@@ -10,9 +10,13 @@ class TransactionPool {
   addTransaction(transaction) {
     // Quick verification of transaction on entry
 
-    if (!Transaction.verifyTransaction(transaction)) {
-      console.log('Invalid transaction');
-      return false;
+    if (transaction.output.skipVerif) {
+      console.log('Skip Verification for transaction: ' + JSON.stringify(transaction));
+    } else {
+      if (!Transaction.verifyTransaction(transaction)) {
+        console.log('Invalid transaction');
+        return false;
+      }
     }
     if (!(transaction.address in this.transactions)) {
       this.transactions[transaction.address] = [];
