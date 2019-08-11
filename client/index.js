@@ -116,6 +116,7 @@ app.get('/get', (req, res, next) => {
       .end();
 });
 
+// TODO(seo): Replace skipVerif with real signature.
 app.post('/set', (req, res, next) => {
   const ref = req.body.ref;
   const value = req.body.value;
@@ -123,8 +124,8 @@ app.post('/set', (req, res, next) => {
   const nonce = req.body.nonce;
   const skipVerif = req.body.skipVerif;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
-  let operation = {op: 'set', ref, value, address, nonce, skipVerif};
-  const result = createTransaction(operation, isNoncedTransaction);
+  const result =
+      createTransaction({op: 'set', ref, value, address, nonce, skipVerif}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
