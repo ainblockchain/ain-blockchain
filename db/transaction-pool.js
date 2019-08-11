@@ -64,6 +64,7 @@ class TransactionPool {
         } else if (listToTakeValue[0].nonce < 0) {
           newList.push(listToTakeValue.shift());
         } else {
+          console.log('Dropping transactions!: ' + JSON.stringify(listToTakeValue));
           listToTakeValue.length = 0;
         }
       }
