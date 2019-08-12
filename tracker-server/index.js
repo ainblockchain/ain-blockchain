@@ -51,15 +51,15 @@ class Peer {
     this.url = Peer.getPeerUrl(this.protocol, this.ip, this.port);
     this.ws = ws;
     this.connectedPeers = [];
-    const locationDict = Peer.getPeerLoaction(this.ip);
-    this.country = locationDict == null || locationDict[COUNTRY].length < 1 ? null : locationDict[COUNTRY];
-    this.region = locationDict == null ||locationDict[REGION].length < 1 ? null : locationDict[REGION];
-    this.city = locationDict == null ||locationDict[CITY].length < 1 ? null : locationDict[CITY];
+    const locationDict = Peer.getPeerLocation(this.ip);
+    this.country = locationDict == null || locationDict[COUNTRY].length === 0 ? null : locationDict[COUNTRY];
+    this.region = locationDict == null ||locationDict[REGION].length === 0 ? null : locationDict[REGION];
+    this.city = locationDict == null ||locationDict[CITY].length === 0 ? null : locationDict[CITY];
   }
 
-  static getPeerLoaction(ip) {
+  static getPeerLocation(ip) {
     const geoLocationDict = geoip.lookup(ip);
-    if (geoLocationDict === null || (geoLocationDict[COUNTRY] + geoLocationDict[REGION] + geoLocationDict[CITY]).length < 1) {
+    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 && geoLocationDict[REGION].length === 0 && geoLocationDict[CITY]).length === 0) {
       return null;
     }
     return {[COUNTRY]: geoLocationDict[COUNTRY], [REGION]: geoLocationDict[REGION], [CITY]: geoLocationDict[CITY]};
