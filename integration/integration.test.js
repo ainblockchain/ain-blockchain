@@ -20,6 +20,7 @@ const {BLOCKCHAINS_DIR} = require('../constants');
 const rimraf = require('rimraf');
 const jayson = require('jayson');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 30;
+const {ConsensusDbKeys} = require('../constants');
 
 // Server configurations
 const server1 = 'http://localhost:8080';
@@ -87,7 +88,7 @@ describe('Integration Tests', () => {
     const trackerProc = spawn('node', [TRACKER_SERVER]);
     procs.push(trackerProc);
     sleep(100);
-    for (let i=0; i<ENV_VARIABLES.length; i++) {
+    for (let i = 0; i < ENV_VARIABLES.length; i++) {
       const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
       sleep(2000);
       procs.push(proc);
@@ -103,18 +104,19 @@ describe('Integration Tests', () => {
 
   after(() => {
     // Teardown all servers
-    for (let i=0; i<procs.length; i++) {
+    for (let i = 0; i < procs.length; i++) {
       procs[i].kill();
     }
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   describe(`blockchain database mining/forging`, () => {
-    let randomOperation; let currentHeight;
+    let randomOperation;
+    let currentHeight;
 
     beforeEach(function(done) {
-      for (let i=0; i<NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
-        randomOperation = RANDOM_OPERATION[Math.floor(Math.random()*RANDOM_OPERATION.length)];
+      for (let i = 0; i < NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
+        randomOperation = RANDOM_OPERATION[Math.floor(Math.random() * RANDOM_OPERATION.length)];
         sentOperations.push(randomOperation);
         syncRequest('POST', SERVERS[Math.floor(Math.random() * SERVERS.length)] + '/' + randomOperation[0], {json: randomOperation[1]});
         sleep(100);
@@ -147,14 +149,15 @@ describe('Integration Tests', () => {
     });
 
     it('will sync to new peers on startup', function(done) {
-      let baseChain; let newChain;
+      let baseChain;
+      let newChain;
       const newServer = 'http://localhost:8090';
       const newServerProc = spawn('node', [APP_SERVER], {env: {P2P_PORT: 5006, PORT: 8090, LOG: true}});
       sleep(5000);
       jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, [], function(err, response) {
         if (err) throw err;
         baseChain = response.result;
-        const height = baseChain[baseChain.length -1].height;
+        const height = baseChain[baseChain.length - 1].height;
         jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, [{to: height + 1}], function(err, response) {
           if (err) throw err;
           newChain = response.result;
@@ -198,24 +201,27 @@ describe('Integration Tests', () => {
       });
 
       itParam('having blocks with valid headers', SERVERS, function(done, server) {
-        let transaction; let preVotes; let preCommits; let headers;
+        let transaction;
+        let preVotes;
+        let preCommits;
+        let headers;
         jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCK_HEADERS, [], function(err, response) {
           if (err) throw err;
           headers = response.result;
-          for (let i=0; i< headers.length; i++) {
+          for (let i = 0; i < headers.length; i++) {
             preVotes = 0;
             preCommits = 0;
-            for (let j=0; j<headers[i].validatorTransactions.length; j++) {
+            for (let j = 0; j < headers[i].validatorTransactions.length; j++) {
               transaction = headers[i].validatorTransactions[j];
               if (headers[i].validators.indexOf(transaction.address) < 0) {
                 assert.fail(`Invalid validator is validating block ${transaction.address}`);
               }
-              if ('_voting/preVotes' in transaction.output.diff) {
-                preVotes += transaction.output.diff['_voting/preVotes'];
+              if (ConsensusDbKeys.VOTING_ROUND_PRE_VOTES_PATH in transaction.output.diff) {
+                preVotes += transaction.output.diff[ConsensusDbKeys.VOTING_ROUND_PRE_VOTES_PATH];
               } else if (preVotes <= headers[i].threshold) {
                 assert.fail('PreCommits were made before PreVotes reached threshold');
               } else {
-                preCommits += transaction.output.diff['_voting/preCommits'];
+                preCommits += transaction.output.diff[ConsensusDbKeys.VOTING_ROUND_PRE_COMMITS_PATH];
               }
             }
             expect(preVotes).greaterThan(headers[i].threshold);
@@ -275,12 +281,12 @@ describe('Integration Tests', () => {
           const transactionsOnBlockChain = [];
           body.forEach((block) => {
             block.data.forEach((transaction) => {
-              if (!(JSON.stringify(transaction).includes('_voting') || JSON.stringify(transaction).includes('recentForger') || JSON.stringify(transaction).includes('stake'))) {
+              if (!(JSON.stringify(transaction).includes(ConsensusDbKeys.VOTING_ROUND_PATH) || JSON.stringify(transaction).includes(ConsensusDbKeys.RECENT_FORGERS_PATH) || JSON.stringify(transaction).includes(ConsensusDbKeys.STAKEHOLDER_PATH))) {
                 transactionsOnBlockChain.push(transaction);
               }
             });
           });
-          for (let i = 0; i <transactionsOnBlockChain.length; i ++) {
+          for (let i = 0; i < transactionsOnBlockChain.length; i ++) {
             const transactionOutput = sentOperations[i][1];
             transactionOutput['type'] = sentOperations[i][0].toUpperCase();
             assert.deepEqual(transactionOutput, transactionsOnBlockChain[i].output);

@@ -54,7 +54,6 @@ describe('Blockchain', () => {
     expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
   });
 
-
   describe('with lots of blocks', () => {
     let blocks; let blockHash;
 
