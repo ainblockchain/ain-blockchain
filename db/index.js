@@ -43,13 +43,13 @@ class DB {
     return this.set(['stakes', this.publicKey].join('/'), stakeAmount);
   }
 
-  set(queryPath, value, auth, timestamp) {
+  set(queryPath, value, address, timestamp) {
     let valueCopy;
     const listQueryPath = ChainUtil.queryParser(queryPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
     if (!(listQueryPath.length === 1 && listQueryPath[0] === 'rules')
-        && this.getPermissions(listQueryPath, auth, timestamp, '.write', value)
+        && this.getPermissions(listQueryPath, address, timestamp, '.write', value)
          == false) {
       throw new
       InvalidPermissionsError(`Invalid set permissons for ${queryPath}`);
@@ -72,31 +72,31 @@ class DB {
     return true;
   }
 
-  update(data, auth, timestamp) {
+  update(data, address, timestamp) {
     for (const key in data) {
-      this.set(key, data[key], auth, timestamp);
+      this.set(key, data[key], address, timestamp);
     }
     return true;
   }
 
-  batch(batchList, auth, timestamp) {
+  batch(batchList, address, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
       if (item.op.toUpperCase() === DbOperations.SET) {
         resultList
-            .push(this.set(item.ref, item.value, auth, timestamp));
+            .push(this.set(item.ref, item.value, address, timestamp));
       } else if (item.op.toUpperCase() === DbOperations.INCREASE) {
         resultList
-            .push(this.increase(item.diff, auth, timestamp));
+            .push(this.increase(item.diff, address, timestamp));
       } else if (item.op.toUpperCase() === DbOperations.UPDATE) {
         resultList
-            .push(this.update(item.data, auth, timestamp));
+            .push(this.update(item.data, address, timestamp));
       } else if (item.op.toUpperCase() === DbOperations.GET) {
         resultList
             .push(this.get(item.ref));
       } else if (item.op.toUpperCase() === DbOperations.BATCH) {
         resultList
-            .push(this.batch(item.batch_list, auth, timestamp));
+            .push(this.batch(item.batch_list, address, timestamp));
       }
     });
     return resultList;
@@ -114,17 +114,17 @@ class DB {
     return subDb;
   }
 
-  increase(diff, auth, timestamp) {
+  increase(diff, address, timestamp) {
     for (const k in diff) {
-      if (this.get(k, auth) && typeof this.get(k, auth) != 'number') {
+      if (this.get(k, address) && typeof this.get(k, address) != 'number') {
         // TODO: Raise error here
         return {code: -1, error_message: 'Not a number type: ' + k};
       }
     }
     const results = {};
     for (const k in diff) {
-      const result = (this.get(k, auth) || 0) + diff[k];
-      this.set(k, result, auth, timestamp);
+      const result = (this.get(k, address) || 0) + diff[k];
+      this.set(k, result, address, timestamp);
       results[k] = result;
     }
     return results;
@@ -190,9 +190,9 @@ class DB {
     }
   }
 
-  getPermissions(queryPath, auth, timestamp, permissionQuery, newValue=null) {
+  getPermissions(queryPath, address, timestamp, permissionQuery, newValue=null) {
     let lastRuleSet;
-    auth = auth || this.publicKey;
+    address = address || this.publicKey;
     timestamp = timestamp || Date.now();
     let rule = false;
     const wildCards = {};
@@ -218,16 +218,15 @@ class DB {
     } while (currentRuleSet && i <= queryPath.length);
 
     if (typeof rule === 'string') {
-      rule = this.verifyAuth(rule, wildCards, queryPath, newValue, auth, timestamp);
+      rule = this.verifyAuth(rule, wildCards, queryPath, newValue, address, timestamp);
     }
 
     return rule;
   }
 
-
-  verifyAuth(ruleString, wildCards, queryPath, newValue, auth, timestamp) {
+  verifyAuth(ruleString, wildCards, queryPath, newValue, address, timestamp) {
     if (ruleString.includes('auth')) {
-      ruleString = ruleString.replace(/auth/g, `'${auth}'`);
+      ruleString = ruleString.replace(/auth/g, `'${address}'`);
     }
     if (Object.keys(wildCards).length > 0) {
       for (const wildCard in wildCards) {

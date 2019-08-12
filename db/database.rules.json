@@ -1,5 +1,17 @@
 { "rules": {
     ".write": false,
+    "account": {
+        ".write": true
+    },
+    "transfer": {
+        "$from": {
+            "$to": {
+                "$key": {
+                    ".write": "auth === '$from'"
+                }
+            }
+        }
+    },
     "afan": {
         ".write": true
     },
