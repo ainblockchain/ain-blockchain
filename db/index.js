@@ -166,7 +166,6 @@ class DB {
   }
 
   addTransactionPool(transactions) {
-    console.log(JSON.stringify(transactions));
     transactions.forEach((trans) => {
       this.execute(trans.output, trans.address, trans.timestamp);
     });
