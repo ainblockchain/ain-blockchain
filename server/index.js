@@ -3,8 +3,8 @@ const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
 const trackerWebSocketAddr = process.env.TRACKER_IP || 'ws://localhost:3001';
 const trackerWebSocket = new Websocket(trackerWebSocketAddr);
-const HOST = 'ws://' + ip.address();
-const SERVER = HOST + ':' + P2P_PORT;
+const PROTOCOL = 'ws';
+const HOST = ip.address();
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, ConsensusDbKeys}
     = require('../constants');
 const InvalidPermissionsError = require('../errors');
@@ -33,7 +33,7 @@ class P2pServer {
         this.initiateChain();
       }
     });
-    trackerWebSocket.send(JSON.stringify(SERVER));
+    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST, P2P_PORT}));
   }
 
   listen() {

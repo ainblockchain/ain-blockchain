@@ -1,16 +1,23 @@
 #! /usr/bin/node
 const WebSocketServer = require('ws').Server;
+const geoip = require('geoip-lite');
 const webSocketServer = new WebSocketServer({port: 3001});
+const express = require('express');
+const jayson = require('jayson');
+
 const MAX_PER_SERVER = 2;
 const PEERS = [];
-
+const REGION = 'region';
+const COUNTRY = 'country';
+const CITY = 'city';
+const PORT = 5000;
 
 webSocketServer.on('connection', (ws) => {
   ws.on('message', (message) => {
-    url = JSON.parse(message);
-    const peer = Peer.getPeer(ws, url);
+    peerUrlInfo = JSON.parse(message);
+    const peer = Peer.getPeer(ws, peerUrlInfo);
     ws.send(JSON.stringify(peer.getPeerList()));
-    console.log(`Added peer node ${url}`);
+    console.log(`Added peer node ${peer.url}`);
     console.log(Object.values(PEERS));
     PEERS.push(peer);
   });
@@ -37,14 +44,33 @@ webSocketServer.on('connection', (ws) => {
 
 
 class Peer {
-  constructor(ws, url) {
-    this.url = url;
+  constructor(ws, peerUrlInfo) {
+    this.protocol = peerUrlInfo.PROTOCOL;
+    this.ip = peerUrlInfo.HOST;
+    this.port = peerUrlInfo.P2P_PORT;
+    this.url = Peer.getPeerUrl(this.protocol, this.ip, this.port);
     this.ws = ws;
     this.connectedPeers = [];
+    const locationDict = Peer.getPeerLocation(this.ip);
+    this.country = locationDict == null || locationDict[COUNTRY].length === 0 ? null : locationDict[COUNTRY];
+    this.region = locationDict == null ||locationDict[REGION].length === 0 ? null : locationDict[REGION];
+    this.city = locationDict == null ||locationDict[CITY].length === 0 ? null : locationDict[CITY];
   }
 
-  static getPeer(ws, url) {
-    const peer = new Peer(ws, url);
+  static getPeerLocation(ip) {
+    const geoLocationDict = geoip.lookup(ip);
+    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 && geoLocationDict[REGION].length === 0 && geoLocationDict[CITY]).length === 0) {
+      return null;
+    }
+    return {[COUNTRY]: geoLocationDict[COUNTRY], [REGION]: geoLocationDict[REGION], [CITY]: geoLocationDict[CITY]};
+  }
+
+  static getPeerUrl(protocol, host, port) {
+    return protocol + '://' + host + ':' + port;
+  }
+
+  static getPeer(ws, peerInfo) {
+    const peer = new Peer(ws, peerInfo);
     if (PEERS.length == 1) {
       peer.addPeer(PEERS[0]);
     } else if (PEERS.length > 1) {
@@ -92,3 +118,12 @@ class Peer {
     this.addPeer(peer);
   }
 }
+
+const app = express();
+app.use(express.json()); // support json encoded bodies
+const jsonRpcMethods = require('./json-rpc')(PEERS);
+app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
+app.listen(PORT, () => {
+  console.log(`App listening on port ${PORT}`);
+  console.log('Press Ctrl+C to quit.');
+});
