@@ -28,6 +28,7 @@ class TransactionExecutorCommand extends Command {
 
   static createTransactions(transactionFile, keyPair) {
     const transactions = [];
+    // TODO: Persist and reload keypairs from disk.
     const publicKey = keyPair.getPublic().encode('hex');
     console.log(`Using account credential ${publicKey}`);
     let nonce = -1;
@@ -85,7 +86,7 @@ TransactionExecutorCommand.description = `Reads transactions from file and sends
 Creates a valid privae/public key pair and uses this pair to send transactions
 to the speified server. Transactions must be specified in valid JSON format, with 
 a single transaction written on each line. Nonces can be optionally added to each 
-transaction/ If no nonce is specified for a transaction, a nonce which is one greater
+transaction. If no nonce is specified for a transaction, a nonce which is one greater
 than the last transactions send will be automatically assigned
 `;
 
