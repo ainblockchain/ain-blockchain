@@ -24,7 +24,7 @@ class TransactionExecutorCommand extends Command {
     const keyPair = address === null ? ChainUtil.genKeyPair() : null;
     address = keyPair === null ? address: keyPair.getPublic().encode('hex');
     const transactions = TransactionExecutorCommand.createTransactions(transactionFile, keyPair, address);
-    await Promise.all(TransactionExecutorCommand.sendTransactions(transactions, jsonRpcClient)).then((values) => {
+    await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient)).then((values) => {
       console.log(values);
     });
   }
@@ -77,7 +77,7 @@ class TransactionExecutorCommand extends Command {
   }
 
 
-  static sendTransactions(transactions, jsonRpcClient) {
+  static sendTransactionList(transactions, jsonRpcClient) {
     const transactionResults = [];
     for (let i = 0; i < transactions.length; i++) {
       transactionResults.push(this.sendTransaction(transactions[i], jsonRpcClient));
