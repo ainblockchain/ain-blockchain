@@ -21,7 +21,7 @@ class TransactionExecutorCommand extends Command {
     }
     this.log(`Broadcasting transactions in file ${transactionFile} to server ${server}`);
     const jsonRpcClient = jayson.client.http(server + JSON_RPC_ENDPOINT);
-    // TODO: Persist and reload keypairs from disk.
+    // TODO: (chris) Persist and reload keypairs from disk.
     const keyPair = address === null ? ChainUtil.genKeyPair() : null;
     address = keyPair === null ? address: keyPair.getPublic().encode('hex');
     const transactions = TransactionExecutorCommand.createTransactions(transactionFile, keyPair, address);
