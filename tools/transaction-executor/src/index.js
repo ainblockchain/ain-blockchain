@@ -38,6 +38,7 @@ class TransactionExecutorCommand extends Command {
     }
 
     let nonce = -1;
+    let transactionAddress;
     const lines = fs.readFileSync(transactionFile, 'utf-8').split('\n').filter(Boolean);
     lines.forEach((line) => {
       if (line.length > 0) {
@@ -53,13 +54,20 @@ class TransactionExecutorCommand extends Command {
           nonce = nonce + 1;
         }
 
-        if (keyPair === null) {
+        if (keyPair === null || typeof transactionData.address !== 'undefined') {
           transactionData['skipVerif'] = true;
         }
 
+        if (typeof transactionData.address !== 'undefined') {
+          transactionAddress = transactionData.address;
+          delete transactionAddress['address'];
+        } else {
+          transactionAddress = address;
+        }
+
         // TODO: Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
-        const trans = new Transaction(Date.now(), transactionData, address, keyPair === null ? '' : keyPair.sign(ChainUtil.hash(transactionData)), nonce);
-        if (keyPair !== null && !Transaction.verifyTransaction(trans)) {
+        const trans = new Transaction(Date.now(), transactionData, transactionAddress, keyPair === null || address !== transactionAddress ? '' : keyPair.sign(ChainUtil.hash(transactionData)), nonce);
+        if (trans.signature !== '' && !Transaction.verifyTransaction(trans)) {
           console.log(`Transaction ${JSON.stringify(trans)} is invalid`);
         }
         transactions.push(trans);
@@ -106,7 +114,8 @@ TransactionExecutorCommand.flags = {
   help: flags.help({char: 'h'}),
   server: flags.string({char: 'n', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
   transactionFile: flags.string({char: 'n', description: 'File containg one valid josn transaction per line'}),
-  address: flags.string({char: 'n', description: 'Address to use instead of a valid address. Will result in skip verification being true'}),
+  address: flags.string({char: 'n', description: 'Address to use instead of a valid address. Will result in skip verification being true.' +
+                      'Alternatively address can be set in the transaction file (see sample transactions)'}),
 
 };
 
