@@ -13,30 +13,36 @@ class TransactionExecutorCommand extends Command {
     const {flags} = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server;
+    let address = flags.address || null;
     if (!Boolean(transactionFile) || !Boolean(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
       '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
     }
     this.log(`Broadcasting transactions in file ${transactionFile} to server ${server}`);
     const jsonRpcClient = jayson.client.http(server + JSON_RPC_ENDPOINT);
-    const keyPair = ChainUtil.genKeyPair();
-    const transactions = TransactionExecutorCommand.createTransactions(transactionFile, keyPair);
+    // TODO: Persist and reload keypairs from disk.
+    const keyPair = address === null ? ChainUtil.genKeyPair() : null;
+    address = keyPair === null ? address: keyPair.getPublic().encode('hex');
+    const transactions = TransactionExecutorCommand.createTransactions(transactionFile, keyPair, address);
     await Promise.all(TransactionExecutorCommand.sendTransactions(transactions, jsonRpcClient)).then((values) => {
       console.log(values);
     });
   }
 
-  static createTransactions(transactionFile, keyPair) {
+  static createTransactions(transactionFile, keyPair, address) {
     const transactions = [];
-    // TODO: Persist and reload keypairs from disk.
-    const publicKey = keyPair.getPublic().encode('hex');
-    console.log(`Using account credential ${publicKey}`);
+    if (keyPair === null) {
+      console.log(`Using account credential ${address}`);
+    } else {
+      console.log(`Sending unverified transatcions using ${address}`);
+    }
+
     let nonce = -1;
     const lines = fs.readFileSync(transactionFile, 'utf-8').split('\n').filter(Boolean);
     lines.forEach((line) => {
       if (line.length > 0) {
         if (line.includes(ADDRESS_KEY_WORD)) {
-          line = line.replace(/address/g, `${publicKey}`);
+          line = line.replace(/{address}/g, `${address}`);
         }
         const transactionData = JSON.parse(line);
 
@@ -46,9 +52,14 @@ class TransactionExecutorCommand extends Command {
         } else {
           nonce = nonce + 1;
         }
+
+        if (keyPair === null) {
+          transactionData['skipVerif'] = true;
+        }
+
         // TODO: Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
-        const trans = new Transaction(Date.now(), transactionData, publicKey, keyPair.sign(ChainUtil.hash(transactionData)), nonce);
-        if (!Transaction.verifyTransaction(trans)) {
+        const trans = new Transaction(Date.now(), transactionData, address, keyPair === null ? '' : keyPair.sign(ChainUtil.hash(transactionData)), nonce);
+        if (keyPair !== null && !Transaction.verifyTransaction(trans)) {
           console.log(`Transaction ${JSON.stringify(trans)} is invalid`);
         }
         transactions.push(trans);
@@ -93,8 +104,10 @@ than the last transaction sent will be automatically assigned.
 TransactionExecutorCommand.flags = {
   // add --help flag to show CLI version
   help: flags.help({char: 'h'}),
-  server: flags.string({char: 'n', description: `server to send rpc transasction (e.x http://localhost:8080)`}),
+  server: flags.string({char: 'n', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
   transactionFile: flags.string({char: 'n', description: 'File containg one valid josn transaction per line'}),
+  address: flags.string({char: 'n', description: 'Address to use instead of a valid address. Will result in skip verification being true'}),
+
 };
 
 module.exports = TransactionExecutorCommand;
