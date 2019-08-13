@@ -5,8 +5,9 @@ const fs = require('fs');
 const sleep = require('system-sleep');
 const jayson = require('jayson');
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_SEND_TRANSACTION = 'ain_sendRawTransaction';
+const JSON_RPC_SEND_TRANSACTION = 'ain_sendTransaction';
 const ADDRESS_KEY_WORD = '{address}';
+const ADDRESS_REG_EX = new RegExp(ADDRESS_KEY_WORD, 'g');
 
 class TransactionExecutorCommand extends Command {
   async run() {
@@ -43,7 +44,7 @@ class TransactionExecutorCommand extends Command {
     lines.forEach((line) => {
       if (line.length > 0) {
         if (line.includes(ADDRESS_KEY_WORD)) {
-          line = line.replace(/{address}/g, `${address}`);
+          line = line.replace(ADDRESS_REG_EX, `${address}`);
         }
         const transactionData = JSON.parse(line);
 
@@ -65,7 +66,7 @@ class TransactionExecutorCommand extends Command {
           transactionAddress = address;
         }
 
-        // TODO: Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
+        // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
         const trans = new Transaction(Date.now(), transactionData, transactionAddress, keyPair === null || address !== transactionAddress ? '' : keyPair.sign(ChainUtil.hash(transactionData)), nonce);
         if (trans.signature !== '' && !Transaction.verifyTransaction(trans)) {
           console.log(`Transaction ${JSON.stringify(trans)} is invalid`);

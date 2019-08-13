@@ -97,7 +97,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       done(null, (block === null) ? null: block.body().data.length);
     },
 
-    ain_sendRawTransaction: function(args, done) {
+    ain_sendTransaction: function(args, done) {
       const transaction = getQueryDict(args);
       done(null, methodsImpl.p2pServerClosure.executeTransaction(transaction));
     },
