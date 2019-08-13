@@ -46,7 +46,7 @@ class TransactionExecutorCommand extends Command {
         } else {
           nonce = nonce + 1;
         }
-        // TODO: Use ain_util package from npm to sign transactions
+        // TODO: Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
         const trans = new Transaction(Date.now(), transactionData, publicKey, keyPair.sign(ChainUtil.hash(transactionData)), nonce);
         if (!Transaction.verifyTransaction(trans)) {
           console.log(`Transaction ${JSON.stringify(trans)} is invalid`);
@@ -87,7 +87,7 @@ Creates a valid privae/public key pair and uses this pair to send transactions
 to the speified server. Transactions must be specified in valid JSON format, with 
 a single transaction written on each line. Nonces can be optionally added to each 
 transaction. If no nonce is specified for a transaction, a nonce which is one greater
-than the last transactions send will be automatically assigned.
+than the last transaction sent will be automatically assigned.
 `;
 
 TransactionExecutorCommand.flags = {
