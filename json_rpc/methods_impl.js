@@ -64,8 +64,8 @@ function getBlockchainClosure(blockchain) {
  * These functions will be invoked through JSON-RPC calls to ./methods.js
  * that allow clients to query information from the transactionPool.
  *
- * @param {TransactionPool} transactionPool -Instance of the TransactionPool class.
- * @param {P2pServer} p2pServer -Instance of the P2pServer class.
+ * @param {TransactionPool} transactionPool Instance of the TransactionPool class.
+ * @param {P2pServer} p2pServer Instance of the P2pServer class.
  * @return {dict} A closure allowing read access to information from the wrapped transactionPool.
  */
 function getTransactionPoolClosure(transactionPool) {
@@ -81,7 +81,7 @@ function getTransactionPoolClosure(transactionPool) {
  * These functions will be invoked through JSON-RPC calls to ./methods.js
  * that allow clients to query information and execute transactions through the p2pServer.
  *
- * @param {P2pServer} p2pServer -Instance of the P2pServer class.
+ * @param {P2pServer} p2pServer Instance of the P2pServer class.
  * @return {dict} A closure allowing access to information from the wrapped transactionPool.
  */
 function getP2pServerClosure(p2pServer) {

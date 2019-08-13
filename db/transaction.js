@@ -32,7 +32,7 @@ class Transaction {
     }
     const transaction =
         new this(Date.now(), data, data.address ? data.address : db.publicKey,
-                 db.sign(ChainUtil.hash(data)), nonce);
+            db.sign(ChainUtil.hash(data)), nonce);
     return transaction;
   }
 

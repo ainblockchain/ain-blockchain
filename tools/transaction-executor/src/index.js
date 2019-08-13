@@ -1,6 +1,6 @@
 const {Command, flags} = require('@oclif/command');
-const ChainUtil = require('../../chain-util');
-const Transaction = require('../../db/transaction');
+const ChainUtil = require('../../../chain-util');
+const Transaction = require('../../../db/transaction');
 const fs = require('fs');
 const sleep = require('system-sleep');
 const jayson = require('jayson');
@@ -14,7 +14,8 @@ class TransactionExecutorCommand extends Command {
     const transactionFile = flags.transactionFile;
     const server = flags.server;
     if (!Boolean(transactionFile) || !Boolean(server)) {
-      throw Error('Must specify transactionFile and server');
+      throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
+      '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
     }
     this.log(`Broadcasting transactions in file ${transactionFile} to server ${server}`);
     const jsonRpcClient = jayson.client.http(server + JSON_RPC_ENDPOINT);
