@@ -1,2 +1,3 @@
-  {"type": "SET", "ref": "test/new/final/path", "value": {"neste": [1, 2, 3, 4, 6]}}
-  {"type": "INCREASE", "diff": {"test/increase/first/level": 10, "test/increase/first/level2": 20}, "nonce": 20}
+{"type":"SET", "ref": "/account/address/balance", "value": 10,"nonce": 0}
+{"type":"SET", "ref": "/account/address/balance", "value": 101, "nonce": 1}
+{"type":"SET", "ref": "/account/address/balance", "value": 1000, "nonce": 1}

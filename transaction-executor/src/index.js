@@ -6,6 +6,7 @@ const sleep = require('system-sleep');
 const jayson = require('jayson');
 const JSON_RPC_ENDPOINT = '/json-rpc';
 const JSON_RPC_SEND_TRANSACTION = 'ain_sendRawTransaction';
+const ADDRESS_KEY_WORD = 'address';
 
 class TransactionExecutorCommand extends Command {
   async run() {
@@ -32,7 +33,11 @@ class TransactionExecutorCommand extends Command {
     const lines = fs.readFileSync(transactionFile, 'utf-8').split('\n').filter(Boolean);
     lines.forEach((line) => {
       if (line.length > 0) {
+        if (line.includes(ADDRESS_KEY_WORD)) {
+          line = line.replace(/address/g, `${publicKey}`);
+        }
         const transactionData = JSON.parse(line);
+
         if (typeof transactionData.nonce !== 'undefined') {
           nonce = transactionData.nonce;
           delete transactionData['nonce'];
