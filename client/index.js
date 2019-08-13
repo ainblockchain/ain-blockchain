@@ -74,7 +74,7 @@ const p2pServer = new P2pServer(db, bc, tp);
 const InvalidPermissionsError = require('../errors');
 const jayson = require('jayson');
 
-const jsonRpcMethods = require('../json_rpc/methods')(bc, tp);
+const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
@@ -218,7 +218,7 @@ function createSingularTransaction(trans, isNoncedTransaction) {
       transaction =
           db.createTransaction({
             type: DbOperations.SET, ref: trans.ref, value: trans.value, address: trans.address,
-            nonce: trans.nonce, skipVerif: trans.skipVerif
+            nonce: trans.nonce, skipVerif: trans.skipVerif,
           }, isNoncedTransaction);
       break;
     default:
