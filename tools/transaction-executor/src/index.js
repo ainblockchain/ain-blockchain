@@ -45,6 +45,7 @@ class TransactionExecutorCommand extends Command {
         } else {
           nonce = nonce + 1;
         }
+        // TODO: Use ain_util package from npm to sign transactions
         const trans = new Transaction(Date.now(), transactionData, publicKey, keyPair.sign(ChainUtil.hash(transactionData)), nonce);
         if (!Transaction.verifyTransaction(trans)) {
           console.log(`Transaction ${JSON.stringify(trans)} is invalid`);
