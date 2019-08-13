@@ -6,7 +6,7 @@ const sleep = require('system-sleep');
 const jayson = require('jayson');
 const JSON_RPC_ENDPOINT = '/json-rpc';
 const JSON_RPC_SEND_TRANSACTION = 'ain_sendRawTransaction';
-const ADDRESS_KEY_WORD = 'address';
+const ADDRESS_KEY_WORD = '{address}';
 
 class TransactionExecutorCommand extends Command {
   async run() {
