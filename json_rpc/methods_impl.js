@@ -15,7 +15,7 @@ module.exports = function getJsonRpcApi(blockchain, transactionPool, p2pServer) 
  * These functions will be invoked through JSON-RPC calls to ./methods.js
  * that allow clients to query information from the blockchain
  *
- * @param {Blockchain} blockchain - Instance of the Blockchain class
+ * @param {Blockchain} blockchain Instance of the Blockchain class
  * @return {dict} A closure allowing read access to information from the wrapped blockchain
  *
  */
