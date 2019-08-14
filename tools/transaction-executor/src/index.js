@@ -13,9 +13,9 @@ class TransactionExecutorCommand extends Command {
   async run() {
     const {flags} = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
-    const server = flags.server;
+    const server = flags.server || null;
     let address = flags.address || null;
-    if (!Boolean(transactionFile) || !Boolean(server)) {
+    if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
       '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
     }
@@ -23,7 +23,11 @@ class TransactionExecutorCommand extends Command {
     const jsonRpcClient = jayson.client.http(server + JSON_RPC_ENDPOINT);
     // TODO: (chris) Persist and reload keypairs from disk.
     const keyPair = address === null ? ChainUtil.genKeyPair() : null;
-    address = keyPair === null ? address: keyPair.getPublic().encode('hex');
+    if (keyPair !== null) {
+      address = keyPair.getPublic().encode('hex');
+    } else {
+      address = null;
+    }
     const transactions = TransactionExecutorCommand.createTransactions(transactionFile, keyPair, address);
     await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient)).then((values) => {
       console.log(values);
@@ -38,22 +42,17 @@ class TransactionExecutorCommand extends Command {
       console.log(`Sending unverified transatcions using ${address}`);
     }
 
-    let nonce = -1;
+    const globalNonceTracker = {};
     let transactionAddress;
+    let nonce;
     const lines = fs.readFileSync(transactionFile, 'utf-8').split('\n').filter(Boolean);
     lines.forEach((line) => {
       if (line.length > 0) {
-        if (line.includes(ADDRESS_KEY_WORD)) {
+        if (line.match(ADDRESS_REG_EX)) {
           line = line.replace(ADDRESS_REG_EX, `${address}`);
         }
         const transactionData = JSON.parse(line);
 
-        if (typeof transactionData.nonce !== 'undefined') {
-          nonce = transactionData.nonce;
-          delete transactionData['nonce'];
-        } else {
-          nonce = nonce + 1;
-        }
 
         if (keyPair === null || typeof transactionData.address !== 'undefined') {
           transactionData['skipVerif'] = true;
@@ -64,6 +63,20 @@ class TransactionExecutorCommand extends Command {
           delete transactionAddress['address'];
         } else {
           transactionAddress = address;
+        }
+
+        if (typeof transactionData.nonce !== 'undefined') {
+          // If nonce is specified, used that nonce
+          nonce = transactionData.nonce;
+          if (nonce >= 0) {
+            // If nonce is greater than 0, update the nonce tracker with the new nocne
+            globalNonceTracker[[transactionAddress]] = nonce;
+          }
+          delete transactionData['nonce'];
+        } else {
+          // Otherwise use a nonce one greater than the last nonce for this address
+          globalNonceTracker[[transactionAddress]] = Object.keys(globalNonceTracker).indexOf(transactionAddress) > -1 ? globalNonceTracker[[transactionAddress]] + 1 : 0;
+          nonce = globalNonceTracker[[transactionAddress]];
         }
 
         // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
@@ -116,8 +129,7 @@ TransactionExecutorCommand.flags = {
   server: flags.string({char: 'n', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
   transactionFile: flags.string({char: 'n', description: 'File containg one valid josn transaction per line'}),
   address: flags.string({char: 'n', description: 'Address to use instead of a valid address. Will result in skip verification being true.' +
-                      'Alternatively address can be set in the transaction file (see sample transactions)'}),
-
+    'Alternatively address can be set in the transaction file (see sample transactions)'}),
 };
 
 module.exports = TransactionExecutorCommand;
