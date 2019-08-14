@@ -51,14 +51,13 @@ class TransactionExecutorCommand extends Command {
         }
         const transactionData = JSON.parse(line);
 
-
         if (keyPair === null || typeof transactionData.address !== 'undefined') {
           transactionData['skipVerif'] = true;
         }
 
         if (typeof transactionData.address !== 'undefined') {
           transactionAddress = transactionData.address;
-          delete transactionAddress['address'];
+          delete transactionData['address'];
         } else {
           transactionAddress = address;
         }
@@ -78,11 +77,11 @@ class TransactionExecutorCommand extends Command {
         }
 
         // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
-        const trans = new Transaction(Date.now(), transactionData, transactionAddress, keyPair === null || address !== transactionAddress ? '' : keyPair.sign(ChainUtil.hash(transactionData)), nonce);
+        const trans = new Transaction(Date.now(), transactionData, transactionAddress, keyPair === null ||
+            address !== transactionAddress ? '' : keyPair.sign(ChainUtil.hash(transactionData)), nonce);
         if (trans.signature !== '' && !Transaction.verifyTransaction(trans)) {
           console.log(`Transaction ${JSON.stringify(trans)} is invalid`);
         }
-        console.log(JSON.stringify(trans))
         transactions.push(trans);
       }
     });
