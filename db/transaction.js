@@ -25,14 +25,14 @@ class Transaction {
     if (isNoncedTransaction) {
       nonce = db.nonce;
       db.nonce ++;
-    } else if (data.nonce) {
+    } else if (data.nonce !== undefined) {
       nonce = data.nonce;
     } else {
       nonce = -1;
     }
     const transaction =
         new this(Date.now(), data, data.address ? data.address : db.publicKey,
-                 db.sign(ChainUtil.hash(data)), nonce);
+                 data.address ? "" : db.sign(ChainUtil.hash(data)), nonce);
     return transaction;
   }
 

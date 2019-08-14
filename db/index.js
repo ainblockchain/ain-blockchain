@@ -44,7 +44,6 @@ class DB {
   }
 
   set(queryPath, value, address, timestamp) {
-    let valueCopy;
     const listQueryPath = ChainUtil.queryParser(queryPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
@@ -55,14 +54,10 @@ class DB {
       InvalidPermissionsError(`Invalid set permissons for ${queryPath}`);
     }
 
-    if (ChainUtil.isDict(value)) {
-      valueCopy = JSON.parse(JSON.stringify(value));
-    } else {
-      valueCopy = value;
-    }
-    if (listQueryPath.length < 1) {
+    const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
+    if (listQueryPath.length === 0) {
       this.db = valueCopy;
-    } else if (listQueryPath.length == 1) {
+    } else if (listQueryPath.length === 1) {
       this.db[listQueryPath[0]] = valueCopy;
     } else {
       const pathToKey = listQueryPath.splice(0, listQueryPath.length - 1);
