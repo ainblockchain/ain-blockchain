@@ -23,10 +23,8 @@ class TransactionExecutorCommand extends Command {
     const jsonRpcClient = jayson.client.http(server + JSON_RPC_ENDPOINT);
     // TODO: (chris) Persist and reload keypairs from disk.
     const keyPair = address === null ? ChainUtil.genKeyPair() : null;
-    if (keyPair !== null) {
+    if (address === null) {
       address = keyPair.getPublic().encode('hex');
-    } else {
-      address = null;
     }
     const transactions = TransactionExecutorCommand.createTransactions(transactionFile, keyPair, address);
     await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient)).then((values) => {
@@ -84,6 +82,7 @@ class TransactionExecutorCommand extends Command {
         if (trans.signature !== '' && !Transaction.verifyTransaction(trans)) {
           console.log(`Transaction ${JSON.stringify(trans)} is invalid`);
         }
+        console.log(JSON.stringify(trans))
         transactions.push(trans);
       }
     });
