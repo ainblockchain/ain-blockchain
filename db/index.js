@@ -1,11 +1,13 @@
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
+const BuiltInFunctions = require('./built-in-functions');
 const InvalidPermissionsError = require('../errors');
 const {DbOperations} = require('../constants');
 
 class DB {
   constructor() {
     this.db = {};
+    this.func = new BuiltInFunctions(this);
     this.keyPair = ChainUtil.genKeyPair();
     this.publicKey = this.keyPair.getPublic().encode('hex');
     this.nonce = 0;
@@ -19,15 +21,15 @@ class DB {
     return db;
   }
 
-  get(queryPath) {
-    const listQueryPath = ChainUtil.queryParser(queryPath);
+  get(dbPath) {
+    const parsedPath = ChainUtil.queryParser(dbPath);
 
-    if (listQueryPath.length < 1) {
+    if (parsedPath.length === 0) {
       return this.db;
     }
     let result = this.db;
     try {
-      listQueryPath.forEach(function(key) {
+      parsedPath.forEach(function(key) {
         result = result[key];
       });
     } catch (error) {
@@ -43,28 +45,42 @@ class DB {
     return this.set(['stakes', this.publicKey].join('/'), stakeAmount);
   }
 
-  set(queryPath, value, address, timestamp) {
-    const listQueryPath = ChainUtil.queryParser(queryPath);
+  set(dbPath, value, address, timestamp) {
+    const parsedPath = ChainUtil.queryParser(dbPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
-    if (!(listQueryPath.length === 1 && listQueryPath[0] === 'rules')
-        && this.getPermissions(listQueryPath, address, timestamp, '.write', value)
+    if (!(parsedPath.length === 1 && parsedPath[0] === 'rules')
+        && this.getPermissions(parsedPath, address, timestamp, '.write', value)
          == false) {
       throw new
-      InvalidPermissionsError(`Invalid set permissons for ${queryPath}`);
+      InvalidPermissionsError(`Invalid set permissons for ${dbPath}`);
     }
-
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    if (listQueryPath.length === 0) {
-      this.db = valueCopy;
-    } else if (listQueryPath.length === 1) {
-      this.db[listQueryPath[0]] = valueCopy;
-    } else {
-      const pathToKey = listQueryPath.splice(0, listQueryPath.length - 1);
-      const refKey = listQueryPath[listQueryPath.length - 1];
-      this._forcePath(pathToKey)[refKey] = valueCopy;
+    this.setWithPermission(dbPath, valueCopy);
+    if (parsedPath.length > 0 && parsedPath[0] === 'transfer') {
+      const context = {
+        params: {
+          dbPath,
+          from: 'abcd',
+          to: 'efgh'
+        }
+      };
+      this.func.transfer(valueCopy, context);
     }
     return true;
+  }
+
+  setWithPermission(dbPath, value) {
+    const parsedPath = ChainUtil.queryParser(dbPath);
+    if (parsedPath.length === 0) {
+      this.db = value;
+    } else if (parsedPath.length === 1) {
+      this.db[parsedPath[0]] = value;
+    } else {
+      const pathToKey = parsedPath.slice().splice(0, parsedPath.length - 1);
+      const refKey = parsedPath[parsedPath.length - 1];
+      this._forcePath(pathToKey)[refKey] = value;
+    }
   }
 
   update(data, address, timestamp) {
@@ -97,10 +113,10 @@ class DB {
     return resultList;
   }
 
-  _forcePath(listQueryPath) {
+  _forcePath(parsedPath) {
     // Returns reference to provided path if exists, otherwise creates path
     let subDb = this.db;
-    listQueryPath.forEach((key) => {
+    parsedPath.forEach((key) => {
       if ((!ChainUtil.isDict(subDb[key])) || (!(key in subDb))) {
         subDb[key] = {};
       }
@@ -185,7 +201,7 @@ class DB {
     }
   }
 
-  getPermissions(queryPath, address, timestamp, permissionQuery, newValue=null) {
+  getPermissions(dbPath, address, timestamp, permissionQuery, newValue=null) {
     let lastRuleSet;
     address = address || this.publicKey;
     timestamp = timestamp || Date.now();
@@ -198,28 +214,28 @@ class DB {
         rule = currentRuleSet[permissionQuery];
       }
       lastRuleSet = currentRuleSet;
-      currentRuleSet = currentRuleSet[queryPath[i]];
-      if (!currentRuleSet && queryPath[i]) {
+      currentRuleSet = currentRuleSet[dbPath[i]];
+      if (!currentRuleSet && dbPath[i]) {
         // If no rule set is available for specific key, check for wildcards
         const keys = Object.keys(lastRuleSet);
         for (let j=0; j<keys.length; j++) {
           if (keys[j].startsWith('$')) {
-            wildCards[keys[j]] = queryPath[i];
+            wildCards[keys[j]] = dbPath[i];
             currentRuleSet = lastRuleSet[keys[j]];
           }
         }
       }
       i++;
-    } while (currentRuleSet && i <= queryPath.length);
+    } while (currentRuleSet && i <= dbPath.length);
 
     if (typeof rule === 'string') {
-      rule = this.verifyAuth(rule, wildCards, queryPath, newValue, address, timestamp);
+      rule = this.verifyAuth(rule, wildCards, dbPath, newValue, address, timestamp);
     }
 
     return rule;
   }
 
-  verifyAuth(ruleString, wildCards, queryPath, newValue, address, timestamp) {
+  verifyAuth(ruleString, wildCards, dbPath, newValue, address, timestamp) {
     if (ruleString.includes('auth')) {
       ruleString = ruleString.replace(/auth/g, `'${address}'`);
     }
@@ -239,7 +255,7 @@ class DB {
     }
     if (ruleString.includes('oldData')) {
       ruleString =
-        ruleString.replace(/oldData/g, this.get(queryPath.join('/')));
+        ruleString.replace(/oldData/g, this.get(dbPath.join('/')));
     }
     if (ruleString.includes('db.get')) {
       ruleString = ruleString.replace(/db.get/g, 'this.get');
