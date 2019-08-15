@@ -30,29 +30,26 @@ class TransactionExecutorCommand extends Command {
     } else {
       transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
-
     await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient)).then((values) => {
       console.log(values);
     });
   }
 
-
   static createSignedTransactionList(transactionFile, keyPair, address) {
     // All transactionsa are from one sender so only one nonce needs to be tracked
-    let globalNonce = 0;
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       if (line.match(ADDRESS_REG_EX)) {
         line = line.replace(ADDRESS_REG_EX, `${address}`);
       }
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (typeof transactionData.address !== 'undefined') {
-        throw Error(`Address field can not be specified for signed transactions\n ${line}`);
+      if (typeof transactionData.address !== 'undefined' || typeof transactionData.nonce === 'undefined') {
+        throw Error(`Address field must not be specified and nonce must be specified\n${line}`);
       }
-      const transactionNonce = TransactionExecutorCommand.getNonce(transactionData, globalNonce);
-      if (transactionNonce >= 0) {
-        globalNonce = transactionNonce + 1;
-      }
+
+      const transactionNonce = transactionData.nonce;
+      delete transactionData['nonce'];
+      // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
       const trans = new Transaction(Date.now(), transactionData, address, keyPair.sign(ChainUtil.hash(transactionData)), transactionNonce);
       transactions.push(trans);
     });
@@ -60,33 +57,22 @@ class TransactionExecutorCommand extends Command {
   }
 
   static createUnsignedTransactionList(transactionFile) {
-    const globalNonceTracker = {};
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (typeof transactionData.address === 'undefined') {
-        throw Error(`No address specified for transaction ${line}`);
+      if (typeof transactionData.address === 'undefined' || typeof transactionData.nonce === 'undefined') {
+        throw Error(`Address must be specified and nonce must be specified\n${line}`);
       }
       const transactionAddress = transactionData.address;
+      const transactionNonce = transactionData.nonce;
+      transactionData.skipVerif = true;
+
       delete transactionData['address'];
-      transactionData['skipVerif'] = true;
-      const transactionNonce = TransactionExecutorCommand.getNonce(transactionData, globalNonceTracker[transactionAddress] ? globalNonceTracker[transactionAddress]: 0);
-      if (transactionNonce >= 0) {
-        globalNonceTracker[transactionAddress] = transactionNonce + 1;
-      }
-      // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
+      delete transactionData['nonce'];
       const trans = new Transaction(Date.now(), transactionData, transactionAddress, '', transactionNonce);
       transactions.push(trans);
     });
     return transactions;
-  }
-
-  static getNonce(transactionData, nonce) {
-    if (typeof transactionData.nonce !== 'undefined') {
-      nonce = transactionData.nonce;
-      delete transactionData['nonce'];
-    }
-    return nonce;
   }
 
   static parseLine(line) {
@@ -124,9 +110,9 @@ TransactionExecutorCommand.description = `Reads transactions from file and sends
 ...
 Creates a valid privae/public key pair and uses this pair to send transactions
 to the speified server. Transactions must be specified in valid JSON format, with 
-a single transaction written on each line. Nonces can be optionally added to each 
-transaction. If no nonce is specified for a transaction, a nonce which is one greater
-than the last transaction sent will be automatically assigned.
+a single transaction written on each line. Nonce must be specified for all transactions.
+Address must be speficied for each transaction if --generateKeyPair=false. Otherise address
+must not be specified for any trasnaction.
 `;
 
 TransactionExecutorCommand.flags = {
