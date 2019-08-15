@@ -135,7 +135,7 @@ TransactionExecutorCommand.flags = {
   server: flags.string({char: 's', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
   transactionFile: flags.string({char: 't', description: 'File containg one valid josn transaction per line'}),
   generateKeyPair: flags.string({char: 'g', description: 'Indicates whether to generate a valid public/private key pair for signing and ' +
-    'sending transactions. Please note that if this value is set to false, any transaction without an address will result in an error.'}),
+      'sending transactions. Please note that if this value is set to false, any transaction without an address will result in an error.'}),
 };
 
 module.exports = TransactionExecutorCommand;
