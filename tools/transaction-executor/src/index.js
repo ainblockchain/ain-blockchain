@@ -14,7 +14,7 @@ class TransactionExecutorCommand extends Command {
     const {flags} = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
-    let address = flags.address || null;
+    const generateKeyPair = flags.generateKeyPair ? flags.generateKeyPair.toLowerCase()[0] === 't' : true;
     if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
       '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
@@ -22,72 +22,76 @@ class TransactionExecutorCommand extends Command {
     this.log(`Broadcasting transactions in file ${transactionFile} to server ${server}`);
     const jsonRpcClient = jayson.client.http(server + JSON_RPC_ENDPOINT);
     // TODO: (chris) Persist and reload keypairs from disk.
-    const keyPair = address === null ? ChainUtil.genKeyPair() : null;
-    if (address === null) {
-      address = keyPair.getPublic().encode('hex');
+    let transactions;
+    if (generateKeyPair) {
+      const keyPair = ChainUtil.genKeyPair();
+      const address = keyPair.getPublic().encode('hex');
+      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair, address);
+    } else {
+      transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
-    const transactions = TransactionExecutorCommand.createTransactions(transactionFile, keyPair, address);
+
     await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient)).then((values) => {
       console.log(values);
     });
   }
 
-  static createTransactions(transactionFile, keyPair, address) {
+
+  static createSignedTransactionList(transactionFile, keyPair, address) {
+    // All transactionsa are from one sender so only one nonce needs to be tracked
+    let globalNonce = 0;
     const transactions = [];
-    if (keyPair === null) {
-      console.log(`Using account credential ${address}`);
-    } else {
-      console.log(`Sending unverified transatcions using ${address}`);
-    }
-
-    const globalNonceTracker = {};
-    let transactionAddress;
-    let nonce;
-    const lines = fs.readFileSync(transactionFile, 'utf-8').split('\n').filter(Boolean);
-    lines.forEach((line) => {
-      if (line.length > 0) {
-        if (line.match(ADDRESS_REG_EX)) {
-          line = line.replace(ADDRESS_REG_EX, `${address}`);
-        }
-        const transactionData = JSON.parse(line);
-
-        if (keyPair === null || typeof transactionData.address !== 'undefined') {
-          transactionData['skipVerif'] = true;
-        }
-
-        if (typeof transactionData.address !== 'undefined') {
-          transactionAddress = transactionData.address;
-          delete transactionData['address'];
-        } else {
-          transactionAddress = address;
-        }
-
-        if (typeof transactionData.nonce !== 'undefined') {
-          // If nonce is specified, used that nonce
-          nonce = transactionData.nonce;
-          if (nonce >= 0) {
-            // If nonce is greater than 0, update the nonce tracker with the new nocne
-            globalNonceTracker[[transactionAddress]] = nonce;
-          }
-          delete transactionData['nonce'];
-        } else {
-          // Otherwise use a nonce one greater than the last nonce for this address
-          globalNonceTracker[[transactionAddress]] = Object.keys(globalNonceTracker).indexOf(transactionAddress) > -1 ? globalNonceTracker[[transactionAddress]] + 1 : 0;
-          nonce = globalNonceTracker[[transactionAddress]];
-        }
-
-        // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
-        const trans = new Transaction(Date.now(), transactionData, transactionAddress, keyPair === null ||
-            address !== transactionAddress ? '' : keyPair.sign(ChainUtil.hash(transactionData)), nonce);
-        if (trans.signature !== '' && !Transaction.verifyTransaction(trans)) {
-          console.log(`Transaction ${JSON.stringify(trans)} is invalid`);
-        }
-        transactions.push(trans);
+    TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
+      if (line.match(ADDRESS_REG_EX)) {
+        line = line.replace(ADDRESS_REG_EX, `${address}`);
       }
+      const transactionData = TransactionExecutorCommand.parseLine(line);
+      if (typeof transactionData.address !== 'undefined') {
+        throw Error(`Address field can not be specified for signed transactions\n ${line}`);
+      }
+      const transactionNonce = TransactionExecutorCommand.getNonce(transactionData, globalNonce);
+      if (transactionNonce >= 0) {
+        globalNonce = transactionNonce + 1;
+      }
+      const trans = new Transaction(Date.now(), transactionData, address, keyPair.sign(ChainUtil.hash(transactionData)), transactionNonce);
+      transactions.push(trans);
     });
     return transactions;
   }
 
+  static createUnsignedTransactionList(transactionFile) {
+    const globalNonceTracker = {};
+    const transactions = [];
+    TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
+      const transactionData = TransactionExecutorCommand.parseLine(line);
+      if (typeof transactionData.address === 'undefined') {
+        throw Error(`No address specified for transaction ${line}`);
+      }
+      const transactionAddress = transactionData.address;
+      delete transactionData['address'];
+      transactionData['skipVerif'] = true;
+      const transactionNonce = TransactionExecutorCommand.getNonce(transactionData, globalNonceTracker[transactionAddress] ? globalNonceTracker[transactionAddress]: 0);
+      if (transactionNonce >= 0) {
+        globalNonceTracker[transactionAddress] = transactionNonce + 1;
+      }
+      // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
+      const trans = new Transaction(Date.now(), transactionData, transactionAddress, '', transactionNonce);
+      transactions.push(trans);
+    });
+    return transactions;
+  }
+
+  static getNonce(transactionData, nonce) {
+    if (typeof transactionData.nonce !== 'undefined') {
+      nonce = transactionData.nonce;
+      delete transactionData['nonce'];
+    }
+    return nonce;
+  }
+
+  static parseLine(line) {
+    return JSON.parse(line);
+  }
 
   static sendTransactionList(transactions, jsonRpcClient) {
     const transactionResults = [];
@@ -96,6 +100,10 @@ class TransactionExecutorCommand extends Command {
       sleep(100);
     }
     return transactionResults;
+  }
+
+  static getFileLines(transactionFile) {
+    return fs.readFileSync(transactionFile, 'utf-8').split('\n').filter(Boolean);
   }
 
   static sendTransaction(transaction, jsonRpcClient) {
@@ -124,10 +132,10 @@ than the last transaction sent will be automatically assigned.
 TransactionExecutorCommand.flags = {
   // add --help flag to show CLI version
   help: flags.help({char: 'h'}),
-  server: flags.string({char: 'n', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
-  transactionFile: flags.string({char: 'n', description: 'File containg one valid josn transaction per line'}),
-  address: flags.string({char: 'n', description: 'Address to use instead of a valid address. Will result in skip verification being true.' +
-    'Alternatively address can be set in the transaction file (see sample transactions)'}),
+  server: flags.string({char: 's', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
+  transactionFile: flags.string({char: 't', description: 'File containg one valid josn transaction per line'}),
+  generateKeyPair: flags.string({char: 'g', description: 'Indicates whether to generate a valid public/private key pair for signing and ' +
+    'sending transactions. Please note that if this value is set to false, any transaction without an address will result in an error.'}),
 };
 
 module.exports = TransactionExecutorCommand;

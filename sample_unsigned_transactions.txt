@@ -1,0 +1,3 @@
+{"type":"SET", "ref": "/account/abcd/balance", "address": "abcd", "value": 100, "nonce": 0}
+{"type":"SET", "ref": "/account/efgh/balance", "address": "efgh", "value": 100, "nonce": 0}
+{"type":"SET", "ref": "/transfer/abcd/efgh/1", "address": "abcd", "value": 10}
