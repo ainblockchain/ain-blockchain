@@ -25,8 +25,7 @@ class TransactionExecutorCommand extends Command {
     let transactions;
     if (generateKeyPair) {
       const keyPair = ChainUtil.genKeyPair();
-      const address = keyPair.getPublic().encode('hex');
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair, address);
+      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
     } else {
       transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
@@ -35,8 +34,8 @@ class TransactionExecutorCommand extends Command {
     });
   }
 
-  static createSignedTransactionList(transactionFile, keyPair, address) {
-    // All transactionsa are from one sender so only one nonce needs to be tracked
+  static createSignedTransactionList(transactionFile, keyPair) {
+    const address = keyPair.getPublic().encode('hex');
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       if (line.match(ADDRESS_REG_EX)) {
