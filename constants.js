@@ -59,7 +59,9 @@ const PredefinedDbPaths = {
   // Account & Transfer
   ACCOUNT: 'account',
   BALANCE: 'balance', 
-  TRASNSFER_RESULT: 'result',
+  TRANSFER: 'transfer',
+  TRANSFER_VALUE: 'value',
+  TRANSFER_RESULT: 'result',
 };
 
 /**

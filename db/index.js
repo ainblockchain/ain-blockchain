@@ -57,16 +57,7 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.setWithPermission(dbPath, valueCopy);
-    if (parsedPath.length > 0 && parsedPath[0] === 'transfer') {
-      const context = {
-        params: {
-          dbPath,
-          from: 'abcd',
-          to: 'efgh'
-        }
-      };
-      this.func.transfer(valueCopy, context);
-    }
+    this.func.runFunctions(parsedPath, valueCopy);
     return true;
   }
 
