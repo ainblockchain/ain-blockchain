@@ -14,7 +14,7 @@ class TransactionExecutorCommand extends Command {
     const {flags} = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
-    const generateKeyPair = flags.generateKeyPair ? flags.generateKeyPair.toLowerCase()[0] === 't' : true;
+    const generateKeyPair = flags.generateKeyPair ? flags.generateKeyPair.toLowerCase().startsWith('t') : true;
     if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
       '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
@@ -42,7 +42,7 @@ class TransactionExecutorCommand extends Command {
         line = line.replace(ADDRESS_REG_EX, `${address}`);
       }
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (typeof transactionData.address !== 'undefined' || typeof transactionData.nonce === 'undefined') {
+      if (typeof transactionData.address !== undefined || typeof transactionData.nonce === undefined) {
         throw Error(`Address field must not be specified and nonce must be specified\n${line}`);
       }
 
@@ -59,7 +59,7 @@ class TransactionExecutorCommand extends Command {
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (typeof transactionData.address === 'undefined' || typeof transactionData.nonce === 'undefined') {
+      if (typeof transactionData.address === undefined || typeof transactionData.nonce === undefined) {
         throw Error(`Address must be specified and nonce must be specified\n${line}`);
       }
       const transactionAddress = transactionData.address;
