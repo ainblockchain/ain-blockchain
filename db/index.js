@@ -22,7 +22,7 @@ class DB {
   }
 
   get(dbPath) {
-    const parsedPath = ChainUtil.queryParser(dbPath);
+    const parsedPath = ChainUtil.parsePath(dbPath);
 
     if (parsedPath.length === 0) {
       return this.db;
@@ -46,7 +46,7 @@ class DB {
   }
 
   set(dbPath, value, address, timestamp) {
-    const parsedPath = ChainUtil.queryParser(dbPath);
+    const parsedPath = ChainUtil.parsePath(dbPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
     if (!(parsedPath.length === 1 && parsedPath[0] === 'rules')
@@ -62,7 +62,7 @@ class DB {
   }
 
   setWithPermission(dbPath, value) {
-    const parsedPath = ChainUtil.queryParser(dbPath);
+    const parsedPath = ChainUtil.parsePath(dbPath);
     if (parsedPath.length === 0) {
       this.db = value;
     } else if (parsedPath.length === 1) {
@@ -269,4 +269,3 @@ class BackUpDB extends DB {
 }
 
 module.exports = DB;
-

@@ -1,4 +1,4 @@
-const {PredefinedDbPaths, FunctionResultCode} = require('../constants');
+const { PredefinedDbPaths, FunctionResultCode } = require('../constants');
 const ChainUtil = require('../chain-util');
 
 const FUNC_PARAM_PATTERN = /^{(.*)}$/;
@@ -38,8 +38,8 @@ class BuiltInFunctions {
   _matchFunctionPaths(parsedDbPath) {
     let funcs = [];
     Object.keys(this.funcMap).forEach((path) => {
-      const parsedFuncPath = ChainUtil.queryParser(path);
-      const result = this._matchPaths(parsedDbPath, parsedFuncPath);
+      const parsedFuncPath = ChainUtil.parsePath(path);
+      const result = BuiltInFunctions.matchPaths(parsedDbPath, parsedFuncPath);
       if (result !== null) {
         funcs.push({ func: this.funcMap[path], params: result.params })
       }
@@ -47,7 +47,7 @@ class BuiltInFunctions {
     return funcs;
   }
 
-  _matchPaths(parsedDbPath, parsedFuncPath) {
+  static matchPaths(parsedDbPath, parsedFuncPath) {
     if (parsedFuncPath.length === parsedDbPath.length) {
       let params = {};
       let matched = true;
