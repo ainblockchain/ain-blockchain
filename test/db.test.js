@@ -175,4 +175,9 @@ describe("DB rules", () => {
         expect(db1.getPermissions(ChainUtil.parsePath(`test/second_users/${db1.publicKey}/next_counter`), null, null,  ".write", "some other value")).to.equal(false)        
     })
     
+    describe("substituteWildCards", () => {
+        it("can handle multiple occurrences", () => {
+            assert.deepEqual(DB.substituteWildCards("!$aaa !== 'bbb' && !db.get($aaa)", { '$aaa': 'AAA', '$bbb': 'BBB'}), "!AAA !== 'bbb' && !db.get(AAA)");
+        })
+    })
 })

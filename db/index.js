@@ -228,18 +228,23 @@ class DB {
     return rule;
   }
 
+  static substituteWildCards(ruleString, wildCards) {
+    for (const wildCard in wildCards) {
+      if (ruleString.includes(wildCard)) {
+        // May need to come back here to figure out how to change ALL occurrences of wildCards
+        ruleString = ruleString.replace(
+          new RegExp(escapeStringRegexp(wildCard), 'g'), `${wildCards[wildCard]}`);
+      }
+    }
+    return ruleString;
+  }
+
   verifyAuth(ruleString, wildCards, dbPath, newValue, address, timestamp) {
     if (ruleString.includes('auth')) {
       ruleString = ruleString.replace(/auth/g, `'${address}'`);
     }
     if (Object.keys(wildCards).length > 0) {
-      for (const wildCard in wildCards) {
-        if (ruleString.includes(wildCard)) {
-          // May need to come back here to figure out how to change ALL occurrences of wildCards
-          ruleString = ruleString.replace(
-            new RegExp(escapeStringRegexp(wildCard), 'g'), `${wildCards[wildCard]}`);
-        }
-      }
+      ruleString = DB.substituteWildCards(ruleString, wildCards);
     }
     if (ruleString.includes('newData')) {
       ruleString = ruleString.replace(/newData/g, JSON.stringify(newValue));
