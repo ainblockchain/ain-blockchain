@@ -1,3 +1,4 @@
+const escapeStringRegexp = require('escape-string-regexp');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
@@ -234,7 +235,8 @@ class DB {
       for (const wildCard in wildCards) {
         if (ruleString.includes(wildCard)) {
           // May need to come back here to figure out how to change ALL occurrences of wildCards
-          ruleString = ruleString.replace(wildCard, `${wildCards[wildCard]}`);
+          ruleString = ruleString.replace(
+            new RegExp(escapeStringRegexp(wildCard), 'g'), `${wildCards[wildCard]}`);
         }
       }
     }
@@ -254,7 +256,7 @@ class DB {
 
     const permission = eval(ruleString);
     if (!permission) {
-      console.log(`"${ruleString}" evaluated as false`);
+      console.log(`Failed to get permission with rule "${ruleString}"`);
     }
     return permission;
   }
