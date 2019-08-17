@@ -46,6 +46,7 @@ class DB {
     return this.set(['stakes', this.publicKey].join('/'), stakeAmount);
   }
 
+  // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   set(dbPath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
