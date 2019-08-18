@@ -33,7 +33,7 @@ class P2pServer {
         this.initiateChain();
       }
     });
-    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST, P2P_PORT}));
+    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST, P2P_PORT, PUBLIC_KEY: this.db.publicKey}));
   }
 
   listen() {

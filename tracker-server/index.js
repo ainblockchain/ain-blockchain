@@ -48,6 +48,7 @@ class Peer {
     this.protocol = peerUrlInfo.PROTOCOL;
     this.ip = peerUrlInfo.HOST;
     this.port = peerUrlInfo.P2P_PORT;
+    this.publicKey = peerUrlInfo.PUBLIC_KEY;
     this.url = Peer.getPeerUrl(this.protocol, this.ip, this.port);
     this.ws = ws;
     this.connectedPeers = [];
@@ -55,6 +56,21 @@ class Peer {
     this.country = locationDict == null || locationDict[COUNTRY].length === 0 ? null : locationDict[COUNTRY];
     this.region = locationDict == null ||locationDict[REGION].length === 0 ? null : locationDict[REGION];
     this.city = locationDict == null ||locationDict[CITY].length === 0 ? null : locationDict[CITY];
+  }
+
+  getPeerInfo() {
+    return {
+      ip: this.ip,
+      port: this.port,
+      url: this.url,
+      publicKey: this.publicKey,
+      connectedPeers: this.connectedPeers.map((peer) => {
+        return peer.url;
+      }),
+      country: this.country,
+      region: this.region,
+      city: this.city,
+    };
   }
 
   static getPeerLocation(ip) {
