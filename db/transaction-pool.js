@@ -29,7 +29,7 @@ class TransactionPool {
   isAlreadyAdded(transaction) {
     return Boolean((transaction.address in this.transactions) &&
             (this.transactions[transaction.address].find((trans) => trans.id === transaction.id)) ||
-                (transaction.nonce > 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address])));
+                (transaction.nonce >= 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address])));
   }
 
   validTransactions() {
@@ -64,8 +64,8 @@ class TransactionPool {
         } else if (listToTakeValue[0].nonce < 0) {
           newList.push(listToTakeValue.shift());
         } else {
-          console.log('Dropping transactions!: ' + JSON.stringify(listToTakeValue));
-          listToTakeValue.length = 0;
+          const invalidNoncedTransaction = listToTakeValue.shift();
+          console.log('Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction));
         }
       }
 

@@ -6,13 +6,14 @@ const getJsonRpcApi = require('./methods_impl');
  * Defines the list of funtions which are accessibly to clients through the
  * JSON-RPC calls
  *
- * @param {Blockchain} blockchain - Instance of the Blockchain class.
- * @param {TransactionPool} transactionPool - Instance of the TransactionPool class.
+ * @param {Blockchain} blockchain Instance of the Blockchain class.
+ * @param {TransactionPool} transactionPool Instance of the TransactionPool class.
+ * @param {P2pServer} p2pServer Instance of the the P2pServer class.
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(blockchain, transactionPool) {
-  const methodsImpl = getJsonRpcApi(blockchain, transactionPool);
+module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
+  const methodsImpl = getJsonRpcApi(blockchain, transactionPool, p2pServer);
   return {
     ain_getBlockList: function(args, done) {
       const queryDict = getQueryDict(args);
@@ -94,6 +95,11 @@ module.exports = function getMethods(blockchain, transactionPool) {
       const height = getQueryDict(args);
       const block = methodsImpl.blockchainClosure.getBlockByNumber(height);
       done(null, (block === null) ? null: block.body().data.length);
+    },
+
+    ain_sendTransaction: function(args, done) {
+      const transaction = getQueryDict(args);
+      done(null, methodsImpl.p2pServerClosure.executeTransaction(transaction));
     },
   };
 };
