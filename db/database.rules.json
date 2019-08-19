@@ -8,7 +8,7 @@
             "$to": {
                 "$key": {
                     "value": {
-                        ".write": "auth === '$from' && !db.get(`transfer/$from/$to/$key`)"
+                        ".write": "auth === '$from' && !db.get(`transfer/$from/$to/$key`) && db.get(`account/$from/balance`) >= newData"
                     }
                 }
             }
