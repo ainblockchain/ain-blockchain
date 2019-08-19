@@ -1,0 +1,7 @@
+{"type":"SET", "ref": "/account/{address}/balance", "value": 10,"nonce": 0}
+{"type":"SET", "ref": "/account/{address}/balance", "value": 101, "nonce": 1}
+{"type":"SET", "ref": "/account/{address}/balance", "value": 1000, "nonce": 1}
+{"type":"SET", "ref": "/account/abcde/balance", "value": 99, "nonce": 2}
+{"type":"INCREASE", "diff": {"test/increase": 1}, "nonce": 3}
+{"type":"UPDATE", "data": {"test/increase": 10000, "test/increase": 10000}, "nonce": -1}
+{"type":"BATCH", "batch_list": [{"op": "set", "ref": "test/new/final/path", "value": {"neste": [1, 2, 3, 4, 5]}}], "nonce": 4}
