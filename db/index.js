@@ -47,6 +47,8 @@ class DB {
   }
 
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
+  // TODO(seo): Make set operation and function run tightly bound, i.e., revert the former
+  //            if the latter fails.
   set(dbPath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
