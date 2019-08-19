@@ -22,11 +22,11 @@ class Transaction {
 
   static newTransaction(db, data, isNoncedTransaction = true) {
     let nonce;
-    if (isNoncedTransaction) {
+    if (data.nonce !== undefined) {
+      nonce = data.nonce;
+    } else if (isNoncedTransaction) {
       nonce = db.nonce;
       db.nonce ++;
-    } else if (data.nonce !== undefined) {
-      nonce = data.nonce;
     } else {
       nonce = -1;
     }

@@ -257,7 +257,7 @@ createTransaction = createSingularTransaction;
 
 function checkIfTransactionShouldBeNonced(data) {
   // Default to true if noncing information is not specified
-  return data.is_nonced_transaction ? data.is_nonced_transaction : (data.nonce !== undefined ? false : true);
+  return data.is_nonced_transaction !== undefined ? data.is_nonced_transaction : true;
 }
 
 // Here we specity
