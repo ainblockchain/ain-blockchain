@@ -10,6 +10,7 @@ const PEERS = [];
 const REGION = 'region';
 const COUNTRY = 'country';
 const CITY = 'city';
+const MASK = 'xxx';
 const PORT = 5000;
 
 webSocketServer.on('connection', (ws) => {
@@ -82,8 +83,8 @@ class Peer {
 
   static maskIp(ip) {
     const ipList = ip.split('.');
-    ipList[0] = 'xxx';
-    ipList[1] = 'xxx';
+    ipList[0] = MASK;
+    ipList[1] = MASK;
     return ipList.join('.');
   }
 
