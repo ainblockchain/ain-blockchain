@@ -46,7 +46,6 @@ if (LOG) {
   };
 }
 
-
 // [START gae_flex_mysql_app]
 const express = require('express');
 const Database = require('../db');
@@ -91,7 +90,7 @@ app.get('/', (req, res, next) => {
 
 app.post('/update', (req, res, next) => {
   const data = req.body.data;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({op: 'update', data}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
@@ -123,7 +122,7 @@ app.post('/set', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
   const skipVerif = req.body.skipVerif;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
       createTransaction({op: 'set', ref, value, address, nonce, skipVerif}, isNoncedTransaction);
   res
@@ -135,7 +134,7 @@ app.post('/set', (req, res, next) => {
 
 app.post('/batch', (req, res, next) => {
   const batchList = req.body.batch_list;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({op: 'batch', batch_list: batchList}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
@@ -146,12 +145,32 @@ app.post('/batch', (req, res, next) => {
 
 app.post('/increase', (req, res, next) => {
   const diff = req.body.diff;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body.is_nonced_transaction);
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({op: 'increase', diff}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
       .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+app.get('/blocks', (req, res, next) => {
+  const statusCode = 200;
+  const result = bc.getChainSection(0, bc.length);
+  res
+      .status(statusCode)
+      .set('Content-Type', 'application/json')
+      .send({code: result ? 0 : -1, result})
+      .end();
+});
+
+app.get('/transactions', (req, res, next) => {
+  const statusCode = 200;
+  const result = tp.transactions;
+  res
+      .status(statusCode)
+      .set('Content-Type', 'application/json')
+      .send({code: result ? 0 : -1, result})
       .end();
 });
 
@@ -215,11 +234,17 @@ function createSingularTransaction(trans, isNoncedTransaction) {
           db.createTransaction({type: DbOperations.UPDATE, data: trans.data}, isNoncedTransaction);
       break;
     case DbOperations.SET:
-      transaction =
-          db.createTransaction({
-            type: DbOperations.SET, ref: trans.ref, value: trans.value, address: trans.address,
-            nonce: trans.nonce, skipVerif: trans.skipVerif,
-          }, isNoncedTransaction);
+      let data = { type: DbOperations.SET, ref: trans.ref, value: trans.value };
+      if (trans.address !== undefined) {
+        data.address = trans.address;
+      }
+      if (trans.nonce !== undefined) {
+        data.nonce = trans.nonce;
+      }
+      if (trans.skipVerif !== undefined) {
+        data.skipVerif = trans.skipVerif;
+      }
+      transaction = db.createTransaction(data, isNoncedTransaction);
       break;
     default:
       throw Error(`Invalid operation ${trans.op}`);
@@ -230,9 +255,9 @@ function createSingularTransaction(trans, isNoncedTransaction) {
 let createTransaction;
 createTransaction = createSingularTransaction;
 
-function checkIfTransactionShouldBeNonced(isNoncedTransaction) {
+function checkIfTransactionShouldBeNonced(data) {
   // Default to true if noncing information is not specified
-  return typeof isNoncedTransaction === 'undefined' ? true : isNoncedTransaction;
+  return data.is_nonced_transaction !== undefined ? data.is_nonced_transaction : true;
 }
 
 // Here we specity

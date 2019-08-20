@@ -22,17 +22,22 @@ class Transaction {
 
   static newTransaction(db, data, isNoncedTransaction = true) {
     let nonce;
-    if (isNoncedTransaction) {
+    if (data.nonce !== undefined) {
+      nonce = data.nonce;
+      delete data.nonce;
+    } else if (isNoncedTransaction) {
       nonce = db.nonce;
       db.nonce ++;
-    } else if (data.nonce) {
-      nonce = data.nonce;
     } else {
       nonce = -1;
     }
+    const address = data.address != undefined ? data.address : db.publicKey;
+    const signature = data.address != undefined ? "" : db.sign(ChainUtil.hash(data));
+    if (data.address != undefined) {
+      delete data.address;
+    }
     const transaction =
-        new this(Date.now(), data, data.address ? data.address : db.publicKey,
-            db.sign(ChainUtil.hash(data)), nonce);
+        new this(Date.now(), data, address, signature, nonce);
     return transaction;
   }
 

@@ -20,7 +20,7 @@ const {BLOCKCHAINS_DIR} = require('../constants');
 const rimraf = require('rimraf');
 const jayson = require('jayson');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 30;
-const {ConsensusDbKeys} = require('../constants');
+const {PredefinedDbPaths} = require('../constants');
 
 // Server configurations
 const server1 = 'http://localhost:8080';
@@ -216,12 +216,12 @@ describe('Integration Tests', () => {
               if (headers[i].validators.indexOf(transaction.address) < 0) {
                 assert.fail(`Invalid validator is validating block ${transaction.address}`);
               }
-              if (ConsensusDbKeys.VOTING_ROUND_PRE_VOTES_PATH in transaction.output.diff) {
-                preVotes += transaction.output.diff[ConsensusDbKeys.VOTING_ROUND_PRE_VOTES_PATH];
+              if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES in transaction.output.diff) {
+                preVotes += transaction.output.diff[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES];
               } else if (preVotes <= headers[i].threshold) {
                 assert.fail('PreCommits were made before PreVotes reached threshold');
               } else {
-                preCommits += transaction.output.diff[ConsensusDbKeys.VOTING_ROUND_PRE_COMMITS_PATH];
+                preCommits += transaction.output.diff[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS];
               }
             }
             expect(preVotes).greaterThan(headers[i].threshold);
@@ -281,7 +281,9 @@ describe('Integration Tests', () => {
           const transactionsOnBlockChain = [];
           body.forEach((block) => {
             block.data.forEach((transaction) => {
-              if (!(JSON.stringify(transaction).includes(ConsensusDbKeys.VOTING_ROUND_PATH) || JSON.stringify(transaction).includes(ConsensusDbKeys.RECENT_FORGERS_PATH) || JSON.stringify(transaction).includes(ConsensusDbKeys.STAKEHOLDER_PATH))) {
+              if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
+                  JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_FORGERS) ||
+                  JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER))) {
                 transactionsOnBlockChain.push(transaction);
               }
             });

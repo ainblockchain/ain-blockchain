@@ -25,7 +25,7 @@ class ChainUtil {
     return (typeof data==='object' && data!==null && !(data instanceof Array));
   }
 
-  static queryParser(queryString) {
+  static parsePath(queryString) {
     // Need to remove quotes that come in
     queryString = queryString.replace(/^"(.*)"$/, '$1');
     const queryList = queryString.split('/').filter((endpoint) => {

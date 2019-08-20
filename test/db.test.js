@@ -147,32 +147,37 @@ describe("DB rules", () => {
     })
 
     it("only allows certain users to write certain info if balance is greater than 0", () => {
-        expect(db2.getPermissions(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance`), null, null, ".write", 0)).to.equal(true)  
-        expect(db2.getPermissions(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance`), null, null, ".write", -1)).to.equal(false)       
-        expect(db1.getPermissions(ChainUtil.queryParser(`test/users/${db1.publicKey}/balance`), null, null, ".write", 1)).to.equal(true)
+        expect(db2.getPermissions(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance`), null, null, ".write", 0)).to.equal(true)  
+        expect(db2.getPermissions(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance`), null, null, ".write", -1)).to.equal(false)       
+        expect(db1.getPermissions(ChainUtil.parsePath(`test/users/${db1.publicKey}/balance`), null, null, ".write", 1)).to.equal(true)
         
     })
 
     it("only allows certain users to write certain info if data exists", () => {
-        expect(db1.getPermissions(ChainUtil.queryParser(`test/users/${db1.publicKey}/info`), null, null,  ".write", "something")).to.equal(true)     
-        expect(db2.getPermissions(ChainUtil.queryParser(`test/users/${db2.publicKey}/info`), null, null,  ".write", "something else")).to.equal(false)
-        expect(db2.getPermissions(ChainUtil.queryParser(`test/users/${db2.publicKey}/new_info`), null, null,  ".write", "something")).to.equal(true)
+        expect(db1.getPermissions(ChainUtil.parsePath(`test/users/${db1.publicKey}/info`), null, null,  ".write", "something")).to.equal(true)     
+        expect(db2.getPermissions(ChainUtil.parsePath(`test/users/${db2.publicKey}/info`), null, null,  ".write", "something else")).to.equal(false)
+        expect(db2.getPermissions(ChainUtil.parsePath(`test/users/${db2.publicKey}/new_info`), null, null,  ".write", "something")).to.equal(true)
         
     })
 
     it("only allows certain users to write certain info if data at other locations exists", () => {
-        expect(db2.getPermissions(ChainUtil.queryParser(`test/users/${db2.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(true)     
-        expect(db1.getPermissions(ChainUtil.queryParser(`test/users/${db1.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(false)        
+        expect(db2.getPermissions(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(true)     
+        expect(db1.getPermissions(ChainUtil.parsePath(`test/users/${db1.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(false)        
     })
 
     it("validates old data and new data together", () => {
-        expect(db1.getPermissions(ChainUtil.queryParser(`test/users/${db1.publicKey}/next_counter`), null,  null,  ".write", 11)).to.equal(true)
-        expect(db1.getPermissions(ChainUtil.queryParser(`test/users/${db1.publicKey}/next_counter`), null, null,  ".write", 12)).to.equal(false)        
+        expect(db1.getPermissions(ChainUtil.parsePath(`test/users/${db1.publicKey}/next_counter`), null,  null,  ".write", 11)).to.equal(true)
+        expect(db1.getPermissions(ChainUtil.parsePath(`test/users/${db1.publicKey}/next_counter`), null, null,  ".write", 12)).to.equal(false)        
     })
 
     it("can handle nested wildcards", () => {
-        expect(db2.getPermissions(ChainUtil.queryParser(`test/second_users/${db2.publicKey}/${db2.publicKey}`), null, null, ".write", "some value")).to.equal(true)
-        expect(db1.getPermissions(ChainUtil.queryParser(`test/second_users/${db1.publicKey}/next_counter`), null, null,  ".write", "some other value")).to.equal(false)        
+        expect(db2.getPermissions(ChainUtil.parsePath(`test/second_users/${db2.publicKey}/${db2.publicKey}`), null, null, ".write", "some value")).to.equal(true)
+        expect(db1.getPermissions(ChainUtil.parsePath(`test/second_users/${db1.publicKey}/next_counter`), null, null,  ".write", "some other value")).to.equal(false)        
     })
     
+    describe("substituteWildCards", () => {
+        it("can handle multiple occurrences", () => {
+            assert.deepEqual(DB.substituteWildCards("!$aaa !== 'bbb' && !db.get($aaa)", { '$aaa': 'AAA', '$bbb': 'BBB'}), "!AAA !== 'bbb' && !db.get(AAA)");
+        })
+    })
 })

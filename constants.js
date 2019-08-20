@@ -40,21 +40,28 @@ const VotingStatus = {
 };
 
 /**
- * Paths to db locations where consensus information is stored
+ * Predefined database paths
  * @enum {string}
  */
-const ConsensusDbKeys = {
-  RECENT_FORGERS_PATH: '_recentForgers',
-  VOTING_ROUND_PATH: '_voting',
-  VOTING_ROUND_VALIDATORS_PATH: '_voting/validators/',
-  VOTING_ROUND_FORGER_PATH: '_voting/forger',
-  VOTING_ROUND_PRE_COMMITS_PATH: '_voting/preCommits',
-  VOTING_ROUND_PRE_VOTES_PATH: '_voting/preVotes',
-  VOTING_ROUND_THRESHOLD_PATH: '_voting/threshold',
-  VOTING_ROUND_HEIGHT_PATH: '_voting/height',
-  STAKEHOLDER_PATH: 'stakes',
+const PredefinedDbPaths = {
+  // Consensus
+  RECENT_FORGERS: '_recentForgers',
+  VOTING_ROUND: '_voting',
+  VOTING_ROUND_VALIDATORS: '_voting/validators/',
+  VOTING_ROUND_FORGER: '_voting/forger',
+  VOTING_ROUND_PRE_COMMITS: '_voting/preCommits',
+  VOTING_ROUND_PRE_VOTES: '_voting/preVotes',
+  VOTING_ROUND_THRESHOLD: '_voting/threshold',
+  VOTING_ROUND_HEIGHT: '_voting/height',
+  STAKEHOLDER: 'stakes',
   VOTING_ROUND_BLOCK_HASH: '_voting/blockHash',
-  VOTING_NEXT_ROUND_VALIDATORS_PATH: '_voting/next_round_validators',
+  VOTING_NEXT_ROUND_VALIDATORS: '_voting/next_round_validators',
+  // Account & Transfer
+  ACCOUNT: 'account',
+  BALANCE: 'balance', 
+  TRANSFER: 'transfer',
+  TRANSFER_VALUE: 'value',
+  TRANSFER_RESULT: 'result',
 };
 
 /**
@@ -69,6 +76,15 @@ const DbOperations = {
   GET: 'GET',
 };
 
+/**
+ * Function result code
+ * @enum {string}
+ */
+const FunctionResultCode = {
+  SUCCESS: 'SUCCESS',
+  FAILURE: 'FAILURE',
+};
+
 module.exports = {
   RULES_FILE_PATH,
   BLOCKCHAINS_DIR,
@@ -76,6 +92,7 @@ module.exports = {
   VotingStatus,
   STAKE,
   VotingActionTypes,
-  ConsensusDbKeys,
+  PredefinedDbPaths,
   DbOperations,
+  FunctionResultCode,
 };
