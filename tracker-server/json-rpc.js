@@ -9,19 +9,27 @@
  */
 module.exports = function getMethods(peers) {
   return {
-    getPeerInfo: function(args, done) {
+    getAllPeerInfo: function(args, done) {
       done(null, peers.map((peer) => {
-        return {
-          ip: peer.ip,
-          port: peer.port,
-          connectedPeers: peer.connectedPeers.map((peer) => {
-            return peer.url;
-          }),
-          country: peer.country,
-          region: peer.region,
-          city: peer.city,
-        };
+        return peer.getPeerInfo();
       }));
+    },
+
+    getPeerPublicKeys: function(args, done) {
+      done(null, peers.map((peer) => {
+        return peer.publicKey;
+      }));
+    },
+
+    getPeerInfoByPublicKey: function(args, done) {
+      let result = null;
+      for (let i = 0; i < peers.length; i++) {
+        if (peers[i].publicKey === args[0]) {
+          result = peers[i].getPeerInfo();
+          break;
+        }
+      }
+      done(null, result);
     },
   };
 };
