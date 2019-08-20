@@ -67,17 +67,24 @@ class Peer {
 
   getPeerInfo() {
     return {
-      ip: this.ip,
+      ip: Peer.maskIp(this.ip),
       port: this.port,
-      url: this.url,
+      url: Peer.getPeerUrl(this.protocol, Peer.maskIp(this.ip), this.port),
       publicKey: this.publicKey,
       connectedPeers: this.connectedPeers.map((peer) => {
-        return peer.url;
+        return Peer.getPeerUrl(peer.protocol, Peer.maskIp(peer.ip), peer.port);
       }),
       country: this.country,
       region: this.region,
       city: this.city,
     };
+  }
+
+  static maskIp(ip) {
+    const ipList = ip.split('.');
+    ipList[0] = 'xxx';
+    ipList[1] = 'xxx';
+    return ipList.join('.');
   }
 
   static getPeerLocation(ip) {
