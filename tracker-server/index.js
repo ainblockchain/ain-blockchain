@@ -14,31 +14,38 @@ const PORT = 5000;
 
 webSocketServer.on('connection', (ws) => {
   ws.on('message', (message) => {
-    peerUrlInfo = JSON.parse(message);
-    const peer = Peer.getPeer(ws, peerUrlInfo);
-    ws.send(JSON.stringify(peer.getPeerList()));
-    console.log(`Added peer node ${peer.url}`);
-    console.log(Object.values(PEERS));
-    PEERS.push(peer);
+    try {
+      peerUrlInfo = JSON.parse(message);
+      const peer = Peer.getPeer(ws, peerUrlInfo);
+      ws.send(JSON.stringify(peer.getPeerList()));
+      console.log(`Added peer node ${peer.url}`);
+      console.log(`New peer node is connected to  ${peer.getPeerList()}`);
+      PEERS.push(peer);
+      console.log(`Number of peers is ${PEERS.length}`);
+    } catch (err) {
+      console.log(err.stack);
+    }
   });
 
   ws.on('close', () => {
-    const peer = PEERS.find((peer) => peer.ws === ws);
-    const peerIndex = PEERS.indexOf(peer);
-    PEERS.splice(peerIndex, 1);
-    const effectedPeers = PEERS.filter((p)=> {
-      if (p.getPeerList().indexOf(peer.url) > -1) {
-        return p;
+    try {
+      const peer = PEERS.find((peer) => peer.ws === ws);
+      const peerIndex = PEERS.indexOf(peer);
+      PEERS.splice(peerIndex, 1);
+      const effectedPeers = PEERS.filter((p)=> {
+        if (p.getPeerList().indexOf(peer.url) > -1) {
+          return p;
+        }
+      });
+      let lastPeer = effectedPeers.pop();
+      for (let i = effectedPeers.length -1; i >= 0; i--) {
+        console.log(`Connecting peer ${lastPeer.url} to peer ${effectedPeers[i].url}`);
+        lastPeer.connect(effectedPeers[i]);
+        lastPeer = effectedPeers.pop();
       }
-    });
-    let lastPeer = effectedPeers.pop();
-    for (i=effectedPeers.length -1; i>=0; i--) {
-      lastPeer.connect(effectedPeers[i]);
-      lastPeer = effectedPeers.pop();
+    } catch (err) {
+      console.log(err.stack);
     }
-
-    // TODO: Connect all nodes that the removed peer was acting as a bridge for in order
-    // to ensure that network remains connected at all times
   });
 });
 
@@ -90,7 +97,7 @@ class Peer {
     if (PEERS.length == 1) {
       peer.addPeer(PEERS[0]);
     } else if (PEERS.length > 1) {
-      while (peer.getPeerList() < MAX_PER_SERVER) {
+      while (peer.getPeerList().length < MAX_PER_SERVER) {
         peer.addPeer(PEERS[Math.floor(Math.random() * PEERS.length)]);
       }
     }
