@@ -30,6 +30,7 @@
     "jayson": "^3.0.2",
     "node-cron": "^2.0.3",
     "node-natural-sort": "^0.8.7",
+    "object-sizeof": "^1.5.1",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "rimraf": "^2.6.3",

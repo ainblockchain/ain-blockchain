@@ -3,6 +3,7 @@ const fs = require('fs');
 const {RULES_FILE_PATH} = require('../constants');
 const zipper = require('zip-local');
 const FILE_ENDING = 'json.zip';
+const sizeof = require('object-sizeof');
 
 
 class Block {
@@ -23,6 +24,7 @@ class ForgedBlock extends Block {
     this.forger = forger;
     this.validators = validators;
     this.threshold = threshold;
+    this.blockSize = sizeof(this.data);
   }
 
   setValidatorTransactions(validatorTransactions) {
@@ -78,7 +80,8 @@ class ForgedBlock extends Block {
         Last Hash : ${this.lastHash.substring(0, 10)}
         Hash      : ${this.hash.substring(0, 10)}
         Data      : ${this.data}
-        Height    : ${this.height}`;
+        Height    : ${this.height}
+        Size      : ${this.blockSize}`;
   }
 
   static loadBlock(blockZipFile) {

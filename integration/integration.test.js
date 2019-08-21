@@ -27,12 +27,16 @@ const server1 = 'http://localhost:8080';
 const server2 = 'http://localhost:8081';
 const server3 = 'http://localhost:8082';
 const server4 = 'http://localhost:8083';
+const trackerServer = 'http://localhost:5000';
 const SERVERS = [server1, server2, server3, server4];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
 const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
 const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
+const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
+
+const setEndpoint = '/set';
 
 const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 8080, LOG: true, STAKE: 250}, {P2P_PORT: 5002, PORT: 8081, LOG: true, STAKE: 250},
   {P2P_PORT: 5003, PORT: 8082, LOG: true, STAKE: 250}, {P2P_PORT: 5004, PORT: 8083, LOG: true, STAKE: 250}];
@@ -80,17 +84,27 @@ RANDOM_OPERATION = [
 describe('Integration Tests', () => {
   const procs = [];
   let numNewBlocks = 0;
-  let numBlocks; let numBlocksOnStartup; let jsonRpcClient;
+  let numBlocks;
+  let numBlocksOnStartup;
+  let jsonRpcClient;
+  let trackerRpcClient;
   const sentOperations = [];
+  const publicKeys = [];
 
   before(() => {
     // Start up all servers
     const trackerProc = spawn('node', [TRACKER_SERVER]);
+    trackerRpcClient = jayson.client.http(trackerServer + JSON_RPC_ENDPOINT);
     procs.push(trackerProc);
     sleep(100);
     for (let i = 0; i < ENV_VARIABLES.length; i++) {
       const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
       sleep(2000);
+      trackerRpcClient.request(JSON_RPC_GET_PEER_PUBLIC_KEYS, [], function(err, response) {
+        if (err) throw err;
+        // The newest element in this list will be the publicKey of the server just started
+        publicKeys.push(response.result.pop());
+      });
       procs.push(proc);
     };
     sleep(20000);
@@ -244,6 +258,23 @@ describe('Integration Tests', () => {
       });
     });
 
+    describe('and built in functions', () => {
+      beforeEach(() =>{
+        syncRequest('POST', server1 + setEndpoint, {json: {ref: `/account/${publicKeys[0]}/balance`, value: 100}});
+        syncRequest('POST', server2 + setEndpoint, {json: {ref: `/account/${publicKeys[1]}/balance`, value: 0}});
+        sleep(200);
+      });
+
+      it('facilitate transfer between accounts', () => {
+        return chai.request(server1).post(`/set`).send( {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 50}).then((res) => {
+          sleep(100);
+          balance1 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
+          balance2 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[1]}/balance`).body.toString('utf-8')).result;
+          expect(balance1).to.equal(balance2);
+        });
+      });
+    });
+
     describe('leads to blockchains', () => {
       let db; let body;
 
@@ -283,7 +314,9 @@ describe('Integration Tests', () => {
             block.data.forEach((transaction) => {
               if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
                   JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_FORGERS) ||
-                  JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER))) {
+                  JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
+                  JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNT) ||
+                  JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER))) {
                 transactionsOnBlockChain.push(transaction);
               }
             });
