@@ -10,6 +10,7 @@ const PEERS = [];
 const REGION = 'region';
 const COUNTRY = 'country';
 const CITY = 'city';
+const TIMEZONE = 'timezone';
 const MASK = 'xxx';
 const PORT = 5000;
 
@@ -64,6 +65,7 @@ class Peer {
     this.country = locationDict == null || locationDict[COUNTRY].length === 0 ? null : locationDict[COUNTRY];
     this.region = locationDict == null ||locationDict[REGION].length === 0 ? null : locationDict[REGION];
     this.city = locationDict == null ||locationDict[CITY].length === 0 ? null : locationDict[CITY];
+    this.timezone = locationDict == null ||locationDict[TIMEZONE].length === 0 ? null : locationDict[TIMEZONE];
   }
 
   getPeerInfo() {
@@ -78,6 +80,7 @@ class Peer {
       country: this.country,
       region: this.region,
       city: this.city,
+      timezone: this.timezone,
     };
   }
 
@@ -90,10 +93,10 @@ class Peer {
 
   static getPeerLocation(ip) {
     const geoLocationDict = geoip.lookup(ip);
-    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 && geoLocationDict[REGION].length === 0 && geoLocationDict[CITY]).length === 0) {
+    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 && geoLocationDict[REGION].length === 0 && geoLocationDict[CITY].length === 0 && geoLocationDict[TIMEZONE].length === 0)) {
       return null;
     }
-    return {[COUNTRY]: geoLocationDict[COUNTRY], [REGION]: geoLocationDict[REGION], [CITY]: geoLocationDict[CITY]};
+    return {[COUNTRY]: geoLocationDict[COUNTRY], [REGION]: geoLocationDict[REGION], [CITY]: geoLocationDict[CITY], [TIMEZONE]: geoLocationDict[TIMEZONE]};
   }
 
   static getPeerUrl(protocol, host, port) {

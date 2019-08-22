@@ -38,8 +38,8 @@ const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 
 const setEndpoint = '/set';
 
-const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 8080, LOG: true, STAKE: 250}, {P2P_PORT: 5002, PORT: 8081, LOG: true, STAKE: 250},
-  {P2P_PORT: 5003, PORT: 8082, LOG: true, STAKE: 250}, {P2P_PORT: 5004, PORT: 8083, LOG: true, STAKE: 250}];
+const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 8080, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5002, PORT: 8081, LOG: true, STAKE: 250, LOCAL: true},
+  {P2P_PORT: 5003, PORT: 8082, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5004, PORT: 8083, LOG: true, STAKE: 250, LOCAL: true}];
 
 // Data options
 RANDOM_OPERATION = [
@@ -166,7 +166,7 @@ describe('Integration Tests', () => {
       let baseChain;
       let newChain;
       const newServer = 'http://localhost:8090';
-      const newServerProc = spawn('node', [APP_SERVER], {env: {P2P_PORT: 5006, PORT: 8090, LOG: true}});
+      const newServerProc = spawn('node', [APP_SERVER], {env: {P2P_PORT: 5006, PORT: 8090, LOG: true, LOCAL: true}});
       sleep(5000);
       jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, [], function(err, response) {
         if (err) throw err;
