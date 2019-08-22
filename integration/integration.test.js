@@ -259,6 +259,8 @@ describe('Integration Tests', () => {
     });
 
     describe('and built in functions', () => {
+      const expectedBalance = 50;
+
       beforeEach(() =>{
         syncRequest('POST', server1 + setEndpoint, {json: {ref: `/account/${publicKeys[0]}/balance`, value: 100}});
         syncRequest('POST', server2 + setEndpoint, {json: {ref: `/account/${publicKeys[1]}/balance`, value: 0}});
@@ -270,7 +272,8 @@ describe('Integration Tests', () => {
           sleep(100);
           balance1 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
           balance2 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[1]}/balance`).body.toString('utf-8')).result;
-          expect(balance1).to.equal(balance2);
+          expect(balance1).to.equal(expectedBalance);
+          expect(balance2).to.equal(expectedBalance);
         });
       });
     });
@@ -295,11 +298,11 @@ describe('Integration Tests', () => {
       });
 
       it('can be queried by index ', function(done) {
-        jsonRpcClient.request(JSON_RPC_GET_BLOCKS, [{from: 5, to: 11}], function(err, response) {
+        jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, [{from: 5, to: 11}], function(err, response) {
           if (err) throw err;
           body = response.result;
-          assert.deepEqual([5, 6, 7, 8, 9, 10], body.map((block) =>{
-            return block.height;
+          assert.deepEqual([5, 6, 7, 8, 9, 10], body.map((blockHeader) =>{
+            return blockHeader.height;
           }));
           done();
         });

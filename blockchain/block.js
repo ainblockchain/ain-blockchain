@@ -45,6 +45,7 @@ class ForgedBlock extends Block {
       height: this.height,
       threshold: this.threshold,
       validators: this.validators,
+      forger: this.forger,
       validatorTransactions: this.validatorTransactions,
     };
   }
