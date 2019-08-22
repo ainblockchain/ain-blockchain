@@ -226,17 +226,11 @@ class Blockchain {
     from = Number(from);
     to = to ? Number(to) : this.height();
     const chain = [];
-    if (from < this.chain[0].height) {
-      const blockFiles = this.blockFiles();
-      const endPoint = to > blockFiles.length ? blockFiles.length: to;
-      for (let i = from; i < endPoint; i++) {
-        chain.push(ForgedBlock.loadBlock(blockFiles[i]));
-      }
-    } else {
-      const endPoint = to > this.chain.length ? this.chain.length: to;
-      for (let i = from; i < endPoint; i++) {
-        chain.push(this.chain[i]);
-      }
+    const blockFiles = this.blockFiles();
+    const endPoint = to > blockFiles.length ? blockFiles.length: to;
+    for (let i = from; i < endPoint; i++) {
+      const block = ForgedBlock.loadBlock(blockFiles[i]);
+      chain.push(block);
     }
     return chain;
   }

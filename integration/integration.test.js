@@ -298,10 +298,10 @@ describe('Integration Tests', () => {
       });
 
       it('can be queried by index ', function(done) {
-        jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, [{from: 5, to: 11}], function(err, response) {
+        jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, [{from: 12, to: 14}], function(err, response) {
           if (err) throw err;
           body = response.result;
-          assert.deepEqual([5, 6, 7, 8, 9, 10], body.map((blockHeader) =>{
+          assert.deepEqual([12, 13], body.map((blockHeader) =>{
             return blockHeader.height;
           }));
           done();
