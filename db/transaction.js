@@ -9,6 +9,7 @@ class Transaction {
     this.address = address;
     this.signature = signature;
     this.nonce = nonce;
+    this.hash = ChainUtil.hash(this.output);
   }
 
   toString() {
@@ -32,7 +33,7 @@ class Transaction {
       nonce = -1;
     }
     const address = data.address != undefined ? data.address : db.publicKey;
-    const signature = data.address != undefined ? "" : db.sign(ChainUtil.hash(data));
+    const signature = data.address != undefined ? '' : db.sign(ChainUtil.hash(data));
     if (data.address != undefined) {
       delete data.address;
     }
