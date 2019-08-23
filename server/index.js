@@ -3,6 +3,8 @@ const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
 const publicIp = require('public-ip');
 const trackerWebSocketAddr = process.env.TRACKER_IP || 'ws://localhost:3001';
+// Set LOCAL to true if your are running all blockchains in a local environment where all blcokchain nodes
+// are being run in the same network (e.g. on your laptop) and will not communicate with external servers.
 const LOCAL = process.env.LOCAL || false;
 const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
