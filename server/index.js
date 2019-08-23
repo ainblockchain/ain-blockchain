@@ -1,10 +1,13 @@
 const Websocket = require('ws');
 const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
+const publicIp = require('public-ip');
 const trackerWebSocketAddr = process.env.TRACKER_IP || 'ws://localhost:3001';
+// Set LOCAL to true if your are running all blockchains in a local environment where all blcokchain nodes
+// are being run in the same network (e.g. on your laptop) and will not communicate with external servers.
+const LOCAL = process.env.LOCAL || false;
 const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
-const HOST = ip.address();
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
 const InvalidPermissionsError = require('../errors');
@@ -24,7 +27,7 @@ class P2pServer {
     this.waitInBlocks = 4;
   }
 
-  connectTracker() {
+  async connectTracker() {
     trackerWebSocket.on('message', (message) => {
       const peers = JSON.parse(message);
       this.connectToPeers(peers);
@@ -33,7 +36,7 @@ class P2pServer {
         this.initiateChain();
       }
     });
-    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST, P2P_PORT, PUBLIC_KEY: this.db.publicKey}));
+    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ? ip.address() : (await publicIp.v4()), P2P_PORT, PUBLIC_KEY: this.db.publicKey}));
   }
 
   listen() {
