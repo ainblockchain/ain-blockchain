@@ -112,7 +112,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       } else {
         const index = Number(queryDict.index);
         const block = methodsImpl.blockchainClosure.getBlockByHash(queryDict.blockHash);
-        result = block.data.length > index && index > 0 ? block.data[index] : null;
+        result = block.data.length > index && index >= 0 ? block.data[index] : null;
       }
       done(null, result);
     },
@@ -125,7 +125,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       } else {
         const index = Number(queryDict.index);
         const block = methodsImpl.blockchainClosure.getBlockByNumber(queryDict.blockNumber);
-        result = block.data.length > index && index > 0 ? block.data[index] : null;
+        result = block.data.length > index && index >= 0 ? block.data[index] : null;
       }
       done(null, result);
     },
