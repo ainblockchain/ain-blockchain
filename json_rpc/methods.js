@@ -120,12 +120,12 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     ain_getTransactionByBlockNumberAndIndex: function(args, done) {
       const queryDict = getQueryDict(args);
       let result;
-      if (! queryDict.blockNumber || ! queryDict.index) {
+      if (!queryDict.blockNumber || !queryDict.index) {
         result = null;
       } else {
         const index = Number(queryDict.index);
         const block = methodsImpl.blockchainClosure.getBlockByNumber(queryDict.blockNumber);
-        result = block.data.length > index ? block.data[index] : null;
+        result = block.data.length > index && index > 0 ? block.data[index] : null;
       }
       done(null, result);
     },
