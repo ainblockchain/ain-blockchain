@@ -42,7 +42,7 @@ class TransactionExecutorCommand extends Command {
         line = line.replace(ADDRESS_REG_EX, `${address}`);
       }
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (!typeof transactionData.address === undefined || typeof transactionData.nonce === undefined) {
+      if (!(typeof transactionData.address === undefined) || typeof transactionData.nonce === undefined) {
         throw Error(`Address field must not be specified and nonce must be specified\n${line}`);
       }
 
