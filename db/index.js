@@ -3,7 +3,7 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
 const InvalidPermissionsError = require('../errors');
-const {DbOperations} = require('../constants');
+const {DbOperations, PredefinedDbPaths} = require('../constants');
 
 class DB {
   constructor() {
@@ -43,7 +43,7 @@ class DB {
   }
 
   stake(stakeAmount) {
-    return this.set(['stakes', this.publicKey].join('/'), stakeAmount);
+    return this.set([PredefinedDbPaths.STAKEHOLDER, this.publicKey].join('/'), stakeAmount);
   }
 
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
@@ -235,7 +235,7 @@ class DB {
       if (ruleString.includes(wildCard)) {
         // May need to come back here to figure out how to change ALL occurrences of wildCards
         ruleString = ruleString.replace(
-          new RegExp(escapeStringRegexp(wildCard), 'g'), `${wildCards[wildCard]}`);
+            new RegExp(escapeStringRegexp(wildCard), 'g'), `${wildCards[wildCard]}`);
       }
     }
     return ruleString;

@@ -29,7 +29,7 @@ class VotingUtil {
     const total = Object.values(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
       return a + b;
     }, 0);
-    console.log(`Total preVotes from validators : ${total}\nReceived preVotes ${this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
+    console.log(`Total prevotes from validators : ${total}\nReceived prevotes ${this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     return (this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) > (total *.6666)) || total === 0;
   }
 
@@ -43,7 +43,7 @@ class VotingUtil {
     const stake = this.db.get(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
     const diff = {[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES]: stake};
     this.status = VotingStatus.PRE_VOTE;
-    console.log(`Current prevotes are ${this.db.db._voting.preVotes}`);
+    console.log(`Current prevotes are ${this.db.db.consensus.voting.pre_votes}`);
     const transaction = this.db.createTransaction({type: DbOperations.INCREASE, diff});
     this.registerValidatingTransaction(transaction);
     return transaction;
@@ -77,7 +77,7 @@ class VotingUtil {
     }
     const stake = this.db.get(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
     const diff = {[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS]: stake};
-    console.log(`Current precommits are ${this.db.db._voting.preCommits}`);
+    console.log(`Current precommits are ${this.db.db.consensus.voting.pre_commits}`);
     this.status = VotingStatus.PRE_COMMIT;
     const transaction = this.db.createTransaction({type: DbOperations.INCREASE, diff});
     this.registerValidatingTransaction(transaction);
@@ -88,7 +88,7 @@ class VotingUtil {
     const total = Object.values(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
       return a + b;
     }, 0);
-    console.log(`Total preCommits from validators : ${total}\nReceived preCommits ${this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
+    console.log(`Total pre_commits from validators : ${total}\nReceived pre_commits ${this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
     return (this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS) > (total *.6666)) || total === 0;
   }
 
@@ -96,17 +96,17 @@ class VotingUtil {
   instantiate(bc) {
     console.log('Initialising voting !!');
     // This method should only be called by the very first node on the network !!
-    // This user should establish themselves as the first node on the network, instantiate the first _voting entry t db
+    // This user should establish themselves as the first node on the network, instantiate the first /consensus/voting entry t db
     // and commit this to the blockchain so it will be picked up by new peers on the network
     const time = Date.now();
-    const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.publicKey, preVotes: 0,
-      preCommits: 0, time, blockHash: '', height: bc.lastBlock().height + 1, lastHash: bc.lastBlock().hash};
+    const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.publicKey, pre_votes: 0,
+      pre_commits: 0, time, block_hash: '', height: bc.lastBlock().height + 1, lastHash: bc.lastBlock().hash};
     return this.db.createTransaction({type: DbOperations.SET, ref: PredefinedDbPaths.VOTING_ROUND, value: firstVotingData});
   }
 
 
   startNewRound(bc) {
-    const lastRound = this.db.get('_voting');
+    const lastRound = this.db.get(PredefinedDbPaths.VOTING_ROUND);
     const time = Date.now();
     let forger;
     if (Object.keys(lastRound.next_round_validators).length) {
@@ -118,10 +118,10 @@ class VotingUtil {
     const threshold = Math.round(Object.values(lastRound.next_round_validators).reduce(function(a, b) {
       return a + b;
     }, 0) * .666) - 1;
-    let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, forger: forger, preVotes: 0, preCommits: 0, time, blockHash: null};
+    let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, forger: forger, pre_votes: 0, pre_commits: 0, time, block_hash: null};
     if (this.checkPreCommits()) {
       // Should be1
-      nextRound = Object.assign({}, nextRound, {height: lastRound.height + 1, lastHash: lastRound.blockHash});
+      nextRound = Object.assign({}, nextRound, {height: lastRound.height + 1, lastHash: lastRound.block_hash});
     } else {
       // Start same round
       nextRound = Object.assign({}, nextRound, {height: lastRound.height, lastHash: lastRound.lastHash});
