@@ -17,27 +17,30 @@
     "afan": {
         ".write": true
     },
-    "stakes": {
-        "$uid": {
-            ".write": "auth === '$uid'"
-        }
-    },
-    "_recentForgers": {
-        ".write": "(newData.length < 20) && (db.get(`_voting/preCommits`) > db.get(`_voting/threshold`)) && (db.get(`_voting/forger`) === auth)"
-    },
-    "_voting": {
-        ".write": "db.get(`_voting`) === null || db.get(`_recentForgers`) !== null && (db.get(`_recentForgers`)[db.get(`_recentForgers`).length - Math.floor((currentTime - db.get(`_voting/time`)) / 6000)] === auth)" ,
-        "blockHash": {
-            ".write": "db.get(`_voting/forger`) === auth"
+    "consensus": {
+        "recent_forgers": {
+            ".write": "(newData.length < 20) && (db.get(`/consensus/voting/pre_commits`) > db.get(`/consensus/voting/threshold`)) && (db.get(`/consensus/voting/forger`) === auth)"
         },
-        "next_round_validators": {
-            ".write": "Object.keys(db.get(`stakes`)).indexOf(auth) > -1"
+        "stakes": {
+            "$uid": {
+                ".write": "auth === '$uid'"
+            }
         },
-        "preVotes":{
-            ".write": "db.get(`_voting/blockHash`) !== null"
-        },
-        "preCommits": {
-            ".write":  "db.get(`_voting/preVotes`) > db.get(`_voting/threshold`)"
+        "voting": {
+            ".write": "db.get(`/consensus/voting`) === null || db.get(`/consensus/recent_forgers`) !== null && (db.get(`/consensus/recent_forgers`)[db.get(`/consensus/recent_forgers`).length - Math.floor((currentTime - db.get(`/consensus/voting/time`)) / 6000)] === auth)" ,
+            "block_hash": {
+                ".write": "db.get(`/consensus/voting/forger`) === auth"
+            },
+            "next_round_validators": {
+                ".write": "Object.keys(db.get(`/consensus/stakes`)).indexOf(auth) > -1"
+            },
+            "pre_votes":{
+                ".write": "db.get(`/consensus/voting/block_hash`) !== null"
+            },
+            "pre_commits": {
+                ".write":  "db.get(`/consensus/voting/pre_votes`) > db.get(`/consensus/voting/threshold`)"
+            }
+
         }
     },
     "nested":{
