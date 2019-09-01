@@ -71,9 +71,19 @@ const PredefinedDbPaths = {
 const DbOperations = {
   INCREASE: 'INCREASE',
   SET: 'SET',
+  VALUE_UPDATES: 'VALUE_UPDATES',
   BATCH: 'BATCH',
   UPDATE: 'UPDATE',
   GET: 'GET',
+};
+
+/**
+ * Types of updates
+ * @enum {string}
+ */
+const UpdateTypes = {
+  SET: 'SET',
+  INC: 'INC',
 };
 
 /**
@@ -94,5 +104,6 @@ module.exports = {
   VotingActionTypes,
   PredefinedDbPaths,
   DbOperations,
+  UpdateTypes,
   FunctionResultCode,
 };

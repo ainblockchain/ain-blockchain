@@ -2,8 +2,8 @@ const escapeStringRegexp = require('escape-string-regexp');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const InvalidPermissionsError = require('../errors');
-const {DbOperations, PredefinedDbPaths} = require('../constants');
+const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
+const { DbOperations, UpdateTypes, PredefinedDbPaths } = require('../constants');
 
 class DB {
   constructor() {
@@ -54,10 +54,8 @@ class DB {
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
     if (!(parsedPath.length === 1 && parsedPath[0] === 'rules')
-        && this.getPermissions(parsedPath, address, timestamp, '.write', value)
-         == false) {
-      throw new
-      InvalidPermissionsError(`Invalid set permissons for ${dbPath}`);
+        && this.getPermissions(parsedPath, address, timestamp, '.write', value) == false) {
+      throw new InvalidPermissionsError(`Invalid permissons for ${dbPath}`);
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.setWithPermission(dbPath, valueCopy);
@@ -78,11 +76,40 @@ class DB {
     }
   }
 
+  increment(dbPath, delta, address, timestamp) {
+    const valueBefore = this.get(dbPath);
+    if (typeof valueBefore !== 'number' || typeof delta !== 'number') {
+      throw new InvalidArgumentsError(`Invalid permissons for ${dbPath}`);
+    }
+    const valueAfter = valueBefore + delta;
+    return this.set(dbPath, valueAfter, address, timestamp);
+  }
+
   update(data, address, timestamp) {
     for (const key in data) {
       this.set(key, data[key], address, timestamp);
     }
     return true;
+  }
+
+  // TODO(seo): Make the operation is atomic, i.e., rolled back when it fails.
+  value_updates(updateList, address, timestamp) {
+    let success = true;
+    for (let i = 0; i < updateList.length; i++) {
+      const update = updateList[i];
+      if (update.type === undefined || update.type === UpdateTypes.SET) {
+        if (!this.set(update.ref, update.value, address, timestamp)) {
+          success = false;
+          break;
+        }
+      } else if (update.type === UpdateTypes.INC) {
+        if (!this.increment(update.ref, update.value, address, timestamp)) {
+          success = false;
+          break;
+        }
+      }
+    }
+    return success;
   }
 
   batch(batchList, address, timestamp) {
@@ -187,6 +214,8 @@ class DB {
     switch (transaction.type) {
       case DbOperations.SET:
         return this.set(transaction.ref, transaction.value, address, timestamp);
+      case DbOperations.VALUE_UPDATES:
+        return this.value_updates(transaction.data, address, timestamp);
       case DbOperations.INCREASE:
         return this.increase(transaction.diff, address, timestamp);
       case DbOperations.UPDATE:

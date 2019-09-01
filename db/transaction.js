@@ -37,9 +37,7 @@ class Transaction {
     if (data.address != undefined) {
       delete data.address;
     }
-    const transaction =
-        new this(Date.now(), data, address, signature, nonce);
-    return transaction;
+    return new this(Date.now(), data, address, signature, nonce);
   }
 
   static verifyTransaction(transaction) {

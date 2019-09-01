@@ -70,7 +70,7 @@ const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = Database.getDatabase(bc, tp);
 const p2pServer = new P2pServer(db, bc, tp);
-const InvalidPermissionsError = require('../errors');
+const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
 const jayson = require('jayson');
 
 const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
@@ -116,15 +116,14 @@ app.get('/get', (req, res, next) => {
 });
 
 // TODO(seo): Replace skipVerif with real signature.
-app.post('/set', (req, res, next) => {
-  const ref = req.body.ref;
-  const value = req.body.value;
+app.post('/value_updates', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
   const skipVerif = req.body.skipVerif;
+  const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({op: 'set', ref, value, address, nonce, skipVerif}, isNoncedTransaction);
+      createTransaction({op: DbOperations.VALUE_UPDATES, data, address, nonce, skipVerif}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -208,7 +207,10 @@ function broadcastBatchTransaction() {
       transaction = db.createTransaction({type: 'BATCH', batch_list: batchList});
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
-        console.log(`Validation failed: ${console.log(error.stack)}`);
+        console.log(`Invalid permissions: ${error.stack}`);
+        return null;
+      } else if (error instanceof InvalidArgumentsError) {
+        console.log(`Invalid arguments: ${error.stack}`);
         return null;
       }
       throw error;
@@ -233,18 +235,18 @@ function createSingularTransaction(trans, isNoncedTransaction) {
       transaction =
           db.createTransaction({type: DbOperations.UPDATE, data: trans.data}, isNoncedTransaction);
       break;
-    case DbOperations.SET:
-      let data = { type: DbOperations.SET, ref: trans.ref, value: trans.value };
+    case DbOperations.VALUE_UPDATES:
+      let operation = { type: DbOperations.VALUE_UPDATES, data: trans.data };
       if (trans.address !== undefined) {
-        data.address = trans.address;
+        operation.address = trans.address;
       }
       if (trans.nonce !== undefined) {
-        data.nonce = trans.nonce;
+        operation.nonce = trans.nonce;
       }
       if (trans.skipVerif !== undefined) {
-        data.skipVerif = trans.skipVerif;
+        operation.skipVerif = trans.skipVerif;
       }
-      transaction = db.createTransaction(data, isNoncedTransaction);
+      transaction = db.createTransaction(operation, isNoncedTransaction);
       break;
     default:
       throw Error(`Invalid operation ${trans.op}`);

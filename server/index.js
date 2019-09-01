@@ -10,7 +10,7 @@ const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
-const InvalidPermissionsError = require('../errors');
+const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
 const {ForgedBlock} = require('../blockchain/block');
 const VotingUtil = require('./voting-util');
 const {DbOperations} = require('../constants');
@@ -172,6 +172,8 @@ class P2pServer {
       result = this.db.execute(transaction.output, transaction.address, transaction.timestamp);
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
+        return null;
+      } else if (error instanceof InvalidArgumentsError) {
         return null;
       } else {
         throw error;
