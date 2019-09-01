@@ -169,7 +169,7 @@ class P2pServer {
 
     let result;
     try {
-      result = this.db.execute(transaction.output, transaction.address, transaction.timestamp);
+      result = this.db.execute(transaction.operation, transaction.address, transaction.timestamp);
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
         return null;

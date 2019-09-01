@@ -5,17 +5,17 @@ class Transaction {
   constructor(timestamp, data, address, signature, nonce) {
     this.id = ChainUtil.id();
     this.timestamp = timestamp;
-    this.output = data;
+    this.operation = data;
     this.address = address;
     this.signature = signature;
     this.nonce = nonce;
-    this.hash = ChainUtil.hash(this.output);
+    this.hash = ChainUtil.hash(this.operation);
   }
 
   toString() {
     return `id:        ${this.id},
             timestamp: ${this.timestamp},
-            output:    ${JSON.stringify(this.output)},
+            operation: ${JSON.stringify(this.operation)},
             address:   ${this.address},
             nonce:     ${this.nonce}
         `;
@@ -41,12 +41,12 @@ class Transaction {
   }
 
   static verifyTransaction(transaction) {
-    if ((Object.keys(DbOperations).indexOf(transaction.output.type) < 0)) {
-      console.log(`Invalid transaction type ${transaction.output.type}.`);
+    if ((Object.keys(DbOperations).indexOf(transaction.operation.type) < 0)) {
+      console.log(`Invalid transaction type ${transaction.operation.type}.`);
       return false;
     }
     return ChainUtil.verifySignature(
-        transaction.address, transaction.signature, ChainUtil.hash(transaction.output)
+        transaction.address, transaction.signature, ChainUtil.hash(transaction.operation)
     );
   }
 }

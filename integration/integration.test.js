@@ -230,12 +230,12 @@ describe('Integration Tests', () => {
               if (headers[i].validators.indexOf(transaction.address) < 0) {
                 assert.fail(`Invalid validator is validating block ${transaction.address}`);
               }
-              if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES in transaction.output.diff) {
-                preVotes += transaction.output.diff[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES];
+              if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES in transaction.operation.diff) {
+                preVotes += transaction.operation.diff[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES];
               } else if (preVotes <= headers[i].threshold) {
                 assert.fail('PreCommits were made before PreVotes reached threshold');
               } else {
-                preCommits += transaction.output.diff[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS];
+                preCommits += transaction.operation.diff[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS];
               }
             }
             expect(preVotes).greaterThan(headers[i].threshold);
@@ -325,9 +325,9 @@ describe('Integration Tests', () => {
             });
           });
           for (let i = 0; i < transactionsOnBlockChain.length; i ++) {
-            const transactionOutput = sentOperations[i][1];
-            transactionOutput['type'] = sentOperations[i][0].toUpperCase();
-            assert.deepEqual(transactionOutput, transactionsOnBlockChain[i].output);
+            const operation = sentOperations[i][1];
+            operation['type'] = sentOperations[i][0].toUpperCase();
+            assert.deepEqual(operation, transactionsOnBlockChain[i].operation);
           };
           // Subtract number of transactions that have been sent since the start of the test case as they will not be on the blockchain yet
           expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST).to.equal(transactionsOnBlockChain.length);

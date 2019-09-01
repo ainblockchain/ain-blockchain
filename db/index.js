@@ -194,13 +194,13 @@ class DB {
 
   executeBlockTransactions(block) {
     block.data.forEach((transaction) =>{
-      this.execute(transaction.output, transaction.address, transaction.timestamp);
+      this.execute(transaction.operation, transaction.address, transaction.timestamp);
     });
   }
 
   addTransactionPool(transactions) {
     transactions.forEach((trans) => {
-      this.execute(trans.output, trans.address, trans.timestamp);
+      this.execute(trans.operation, trans.address, trans.timestamp);
     });
   }
 
@@ -210,18 +210,18 @@ class DB {
     }
   }
 
-  execute(transaction, address, timestamp) {
-    switch (transaction.type) {
+  execute(operation, address, timestamp) {
+    switch (operation.type) {
       case DbOperations.SET:
-        return this.set(transaction.ref, transaction.value, address, timestamp);
+        return this.set(operation.ref, operation.value, address, timestamp);
       case DbOperations.VALUE_UPDATES:
-        return this.value_updates(transaction.data, address, timestamp);
+        return this.value_updates(operation.data, address, timestamp);
       case DbOperations.INCREASE:
-        return this.increase(transaction.diff, address, timestamp);
+        return this.increase(operation.diff, address, timestamp);
       case DbOperations.UPDATE:
-        return this.update(transaction.data, address, timestamp);
+        return this.update(operation.data, address, timestamp);
       case DbOperations.BATCH:
-        return this.batch(transaction.batch_list, address, timestamp);
+        return this.batch(operation.batch_list, address, timestamp);
     }
   }
 

@@ -30,7 +30,7 @@ describe('Transaction', () => {
     })
 
     it('invalidate an invalid transaction', () => {
-        transaction.output.ref = "DIFFERENT_KEY"
+        transaction.operation.ref = "DIFFERENT_KEY"
         expect(Transaction.verifyTransaction(transaction)).to.equal(false)
     });
 

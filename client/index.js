@@ -91,7 +91,7 @@ app.get('/', (req, res, next) => {
 app.post('/update', (req, res, next) => {
   const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: 'update', data}, isNoncedTransaction);
+  const result = createTransaction({op: DbOperations.UPDATE, data}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -134,7 +134,7 @@ app.post('/value_updates', (req, res, next) => {
 app.post('/batch', (req, res, next) => {
   const batchList = req.body.batch_list;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: 'batch', batch_list: batchList}, isNoncedTransaction);
+  const result = createTransaction({op: DbOperations.BATCH, batch_list: batchList}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -145,7 +145,7 @@ app.post('/batch', (req, res, next) => {
 app.post('/increase', (req, res, next) => {
   const diff = req.body.diff;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: 'increase', diff}, isNoncedTransaction);
+  const result = createTransaction({op: DbOperations.INCREASE, diff}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')

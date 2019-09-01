@@ -10,7 +10,7 @@ class TransactionPool {
   addTransaction(transaction) {
     // Quick verification of transaction on entry
 
-    if (transaction.output.skipVerif) {
+    if (transaction.operation.skipVerif) {
       console.log('Skip Verification for transaction: ' + JSON.stringify(transaction));
     } else {
       if (!Transaction.verifyTransaction(transaction)) {
