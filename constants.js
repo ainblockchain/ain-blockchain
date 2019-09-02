@@ -84,6 +84,7 @@ const DbOperations = {
 const UpdateTypes = {
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
+  DEC_VALUE: 'DEC_VALUE',
 };
 
 /**

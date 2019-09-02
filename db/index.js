@@ -76,12 +76,21 @@ class DB {
     }
   }
 
-  increment(dbPath, delta, address, timestamp) {
+  incrementValue(dbPath, delta, address, timestamp) {
     const valueBefore = this.get(dbPath);
     if (typeof valueBefore !== 'number' || typeof delta !== 'number') {
       throw new InvalidArgumentsError(`Invalid permissons for ${dbPath}`);
     }
     const valueAfter = valueBefore + delta;
+    return this.setValue(dbPath, valueAfter, address, timestamp);
+  }
+
+  decrementValue(dbPath, delta, address, timestamp) {
+    const valueBefore = this.get(dbPath);
+    if (typeof valueBefore !== 'number' || typeof delta !== 'number') {
+      throw new InvalidArgumentsError(`Invalid permissons for ${dbPath}`);
+    }
+    const valueAfter = valueBefore - delta;
     return this.setValue(dbPath, valueAfter, address, timestamp);
   }
 
@@ -103,7 +112,12 @@ class DB {
           break;
         }
       } else if (update.type === UpdateTypes.INC_VALUE) {
-        if (!this.increment(update.ref, update.value, address, timestamp)) {
+        if (!this.incrementValue(update.ref, update.value, address, timestamp)) {
+          success = false;
+          break;
+        }
+      } else if (update.type === UpdateTypes.DEC_VALUE) {
+        if (!this.decrementValue(update.ref, update.value, address, timestamp)) {
           success = false;
           break;
         }
