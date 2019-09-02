@@ -131,6 +131,51 @@ app.post('/updates', (req, res, next) => {
       .end();
 });
 
+app.post('/set_value', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skipVerif;
+  const data = req.body.data;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({op: DbOperations.SET_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+app.post('/inc_value', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skipVerif;
+  const data = req.body.data;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({op: DbOperations.INC_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+app.post('/dec_value', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skipVerif;
+  const data = req.body.data;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({op: DbOperations.DEC_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
 app.post('/batch', (req, res, next) => {
   const batchList = req.body.batch_list;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
@@ -219,37 +264,40 @@ function broadcastBatchTransaction() {
   }
 }
 
-function createSingularTransaction(trans, isNoncedTransaction) {
+function createSingularTransaction(request, isNoncedTransaction) {
   CURRENT_NONCE += 1;
   let transaction;
-  switch (trans.op.toUpperCase()) {
+  switch (request.op.toUpperCase()) {
     case DbOperations.BATCH:
       transaction =
-          db.createTransaction({type: DbOperations.BATCH, batch_list: trans.batch_list}, isNoncedTransaction);
+          db.createTransaction({type: DbOperations.BATCH, batch_list: request.batch_list}, isNoncedTransaction);
       break;
     case DbOperations.INCREASE:
       transaction =
-          db.createTransaction({type: DbOperations.INCREASE, diff: trans.diff}, isNoncedTransaction);
+          db.createTransaction({type: DbOperations.INCREASE, diff: request.diff}, isNoncedTransaction);
       break;
     case DbOperations.UPDATE:
       transaction =
-          db.createTransaction({type: DbOperations.UPDATE, data: trans.data}, isNoncedTransaction);
+          db.createTransaction({type: DbOperations.UPDATE, data: request.data}, isNoncedTransaction);
       break;
     case DbOperations.UPDATES:
-      let operation = { type: DbOperations.UPDATES, data: trans.data };
-      if (trans.address !== undefined) {
-        operation.address = trans.address;
+    case DbOperations.SET_VALUE:
+    case DbOperations.INC_VALUE:
+    case DbOperations.DEC_VALUE:
+      let operation = { type: request.op, data: request.data };
+      if (request.address !== undefined) {
+        operation.address = request.address;
       }
-      if (trans.nonce !== undefined) {
-        operation.nonce = trans.nonce;
+      if (request.nonce !== undefined) {
+        operation.nonce = request.nonce;
       }
-      if (trans.skipVerif !== undefined) {
-        operation.skipVerif = trans.skipVerif;
+      if (request.skipVerif !== undefined) {
+        operation.skipVerif = request.skipVerif;
       }
       transaction = db.createTransaction(operation, isNoncedTransaction);
       break;
     default:
-      throw Error(`Invalid operation ${trans.op}`);
+      throw Error(`Invalid operation ${request.op}`);
   }
   return p2pServer.executeAndBroadcastTransaction(transaction);
 }

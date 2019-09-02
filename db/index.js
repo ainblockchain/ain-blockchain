@@ -101,7 +101,7 @@ class DB {
     return true;
   }
 
-  // TODO(seo): Make the operation is atomic, i.e., rolled back when it fails.
+  // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   updates(updateList, address, timestamp) {
     let success = true;
     for (let i = 0; i < updateList.length; i++) {
@@ -207,14 +207,14 @@ class DB {
   }
 
   executeBlockTransactions(block) {
-    block.data.forEach((transaction) =>{
-      this.execute(transaction.operation, transaction.address, transaction.timestamp);
+    block.data.forEach((tx) =>{
+      this.execute(tx.operation, tx.address, tx.timestamp);
     });
   }
 
   addTransactionPool(transactions) {
-    transactions.forEach((trans) => {
-      this.execute(trans.operation, trans.address, trans.timestamp);
+    transactions.forEach((tx) => {
+      this.execute(tx.operation, tx.address, tx.timestamp);
     });
   }
 
@@ -230,6 +230,12 @@ class DB {
         return this.setValue(operation.ref, operation.value, address, timestamp);
       case DbOperations.UPDATES:
         return this.updates(operation.data, address, timestamp);
+      case DbOperations.SET_VALUE:
+        return this.setValue(operation.data.ref, operation.data.value, address, timestamp);
+      case DbOperations.INC_VALUE:
+        return this.incrementValue(operation.data.ref, operation.data.value, address, timestamp);
+      case DbOperations.DEC_VALUE:
+        return this.decrementValue(operation.data.ref, operation.data.value, address, timestamp);
       case DbOperations.INCREASE:
         return this.increase(operation.diff, address, timestamp);
       case DbOperations.UPDATE:
