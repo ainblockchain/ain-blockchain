@@ -65,7 +65,7 @@ const transactionBatch = [];
 
 app.use(express.json()); // support json encoded bodies
 
-const {DbOperations} = require('../constants');
+const { OperationTypes } = require('../constants');
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = Database.getDatabase(bc, tp);
@@ -91,7 +91,7 @@ app.get('/', (req, res, next) => {
 app.post('/update', (req, res, next) => {
   const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: DbOperations.UPDATE, data}, isNoncedTransaction);
+  const result = createTransaction({op: OperationTypes.UPDATE, data}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -123,7 +123,7 @@ app.post('/updates', (req, res, next) => {
   const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({op: DbOperations.UPDATES, data, address, nonce, skipVerif}, isNoncedTransaction);
+      createTransaction({op: OperationTypes.UPDATES, data, address, nonce, skipVerif}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -138,7 +138,7 @@ app.post('/set_value', (req, res, next) => {
   const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({op: DbOperations.SET_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
+      createTransaction({op: OperationTypes.SET_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -153,7 +153,7 @@ app.post('/inc_value', (req, res, next) => {
   const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({op: DbOperations.INC_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
+      createTransaction({op: OperationTypes.INC_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -168,7 +168,7 @@ app.post('/dec_value', (req, res, next) => {
   const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({op: DbOperations.DEC_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
+      createTransaction({op: OperationTypes.DEC_VALUE, data, address, nonce, skipVerif}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -179,7 +179,7 @@ app.post('/dec_value', (req, res, next) => {
 app.post('/batch', (req, res, next) => {
   const batchList = req.body.batch_list;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: DbOperations.BATCH, batch_list: batchList}, isNoncedTransaction);
+  const result = createTransaction({op: OperationTypes.BATCH, batch_list: batchList}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -190,7 +190,7 @@ app.post('/batch', (req, res, next) => {
 app.post('/increase', (req, res, next) => {
   const diff = req.body.diff;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: DbOperations.INCREASE, diff}, isNoncedTransaction);
+  const result = createTransaction({op: OperationTypes.INCREASE, diff}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -268,22 +268,22 @@ function createSingularTransaction(request, isNoncedTransaction) {
   CURRENT_NONCE += 1;
   let transaction;
   switch (request.op.toUpperCase()) {
-    case DbOperations.BATCH:
+    case OperationTypes.BATCH:
       transaction =
-          db.createTransaction({type: DbOperations.BATCH, batch_list: request.batch_list}, isNoncedTransaction);
+          db.createTransaction({type: OperationTypes.BATCH, batch_list: request.batch_list}, isNoncedTransaction);
       break;
-    case DbOperations.INCREASE:
+    case OperationTypes.INCREASE:
       transaction =
-          db.createTransaction({type: DbOperations.INCREASE, diff: request.diff}, isNoncedTransaction);
+          db.createTransaction({type: OperationTypes.INCREASE, diff: request.diff}, isNoncedTransaction);
       break;
-    case DbOperations.UPDATE:
+    case OperationTypes.UPDATE:
       transaction =
-          db.createTransaction({type: DbOperations.UPDATE, data: request.data}, isNoncedTransaction);
+          db.createTransaction({type: OperationTypes.UPDATE, data: request.data}, isNoncedTransaction);
       break;
-    case DbOperations.UPDATES:
-    case DbOperations.SET_VALUE:
-    case DbOperations.INC_VALUE:
-    case DbOperations.DEC_VALUE:
+    case OperationTypes.UPDATES:
+    case OperationTypes.SET_VALUE:
+    case OperationTypes.INC_VALUE:
+    case OperationTypes.DEC_VALUE:
       let operation = { type: request.op, data: request.data };
       if (request.address !== undefined) {
         operation.address = request.address;

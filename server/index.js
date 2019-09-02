@@ -13,7 +13,7 @@ const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
 const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
 const {ForgedBlock} = require('../blockchain/block');
 const VotingUtil = require('./voting-util');
-const {DbOperations} = require('../constants');
+const { OperationTypes } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
 
 class P2pServer {
@@ -264,7 +264,7 @@ class P2pServer {
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
-    const blockHashTransaction = this.db.createTransaction({type: DbOperations.SET, ref, value});
+    const blockHashTransaction = this.db.createTransaction({type: OperationTypes.SET, ref, value});
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
     if (!Object.keys(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {

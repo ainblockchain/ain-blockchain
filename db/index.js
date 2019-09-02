@@ -3,7 +3,7 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
 const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
-const { DbOperations, UpdateTypes, PredefinedDbPaths } = require('../constants');
+const { OperationTypes, UpdateTypes, PredefinedDbPaths } = require('../constants');
 
 class DB {
   constructor() {
@@ -129,19 +129,19 @@ class DB {
   batch(batchList, address, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
-      if (item.op.toUpperCase() === DbOperations.SET) {
+      if (item.op.toUpperCase() === OperationTypes.SET) {
         resultList
             .push(this.setValue(item.ref, item.value, address, timestamp));
-      } else if (item.op.toUpperCase() === DbOperations.INCREASE) {
+      } else if (item.op.toUpperCase() === OperationTypes.INCREASE) {
         resultList
             .push(this.increase(item.diff, address, timestamp));
-      } else if (item.op.toUpperCase() === DbOperations.UPDATE) {
+      } else if (item.op.toUpperCase() === OperationTypes.UPDATE) {
         resultList
             .push(this.update(item.data, address, timestamp));
-      } else if (item.op.toUpperCase() === DbOperations.GET) {
+      } else if (item.op.toUpperCase() === OperationTypes.GET) {
         resultList
             .push(this.get(item.ref));
-      } else if (item.op.toUpperCase() === DbOperations.BATCH) {
+      } else if (item.op.toUpperCase() === OperationTypes.BATCH) {
         resultList
             .push(this.batch(item.batch_list, address, timestamp));
       }
@@ -226,21 +226,21 @@ class DB {
 
   execute(operation, address, timestamp) {
     switch (operation.type) {
-      case DbOperations.SET:
+      case OperationTypes.SET:
         return this.setValue(operation.ref, operation.value, address, timestamp);
-      case DbOperations.UPDATES:
+      case OperationTypes.UPDATES:
         return this.updates(operation.data, address, timestamp);
-      case DbOperations.SET_VALUE:
+      case OperationTypes.SET_VALUE:
         return this.setValue(operation.data.ref, operation.data.value, address, timestamp);
-      case DbOperations.INC_VALUE:
+      case OperationTypes.INC_VALUE:
         return this.incrementValue(operation.data.ref, operation.data.value, address, timestamp);
-      case DbOperations.DEC_VALUE:
+      case OperationTypes.DEC_VALUE:
         return this.decrementValue(operation.data.ref, operation.data.value, address, timestamp);
-      case DbOperations.INCREASE:
+      case OperationTypes.INCREASE:
         return this.increase(operation.diff, address, timestamp);
-      case DbOperations.UPDATE:
+      case OperationTypes.UPDATE:
         return this.update(operation.data, address, timestamp);
-      case DbOperations.BATCH:
+      case OperationTypes.BATCH:
         return this.batch(operation.batch_list, address, timestamp);
     }
   }

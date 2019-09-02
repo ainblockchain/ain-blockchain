@@ -68,7 +68,7 @@ const PredefinedDbPaths = {
  * Types of write operations supported by Db
  * @enum {string}
  */
-const DbOperations = {
+const OperationTypes = {
   INCREASE: 'INCREASE',
   SET: 'SET',
   UPDATES: 'UPDATES',
@@ -107,7 +107,7 @@ module.exports = {
   STAKE,
   VotingActionTypes,
   PredefinedDbPaths,
-  DbOperations,
+  OperationTypes,
   UpdateTypes,
   FunctionResultCode,
 };
