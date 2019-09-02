@@ -180,13 +180,13 @@ class DB {
   /**
     * Validates transaction is valid according to AIN database rules and returns a transaction instance
     *
-    * @param {dict} data - Database write request to be converted to transaction
+    * @param {dict} operation - Database write operation to be converted to transaction
     * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or not
     * @return {Transaction} Instance of the transaction class
     * @throws {InvalidPermissionsError} InvalidPermissionsError when database rules don't allow the transaction
     */
-  createTransaction(data, isNoncedTransaction = true) {
-    return Transaction.newTransaction(this, data, isNoncedTransaction);
+  createTransaction(operation, isNoncedTransaction = true) {
+    return Transaction.newTransaction(this, operation, isNoncedTransaction);
   }
 
   sign(dataHash) {

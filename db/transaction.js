@@ -32,9 +32,9 @@ class Transaction {
     } else {
       nonce = -1;
     }
-    const address = operation.address != undefined ? operation.address : db.publicKey;
-    const signature = operation.address != undefined ? '' : db.sign(ChainUtil.hash(operation));
-    if (operation.address != undefined) {
+    const address = operation.address !== undefined ? operation.address : db.publicKey;
+    const signature = operation.address !== undefined ? '' : db.sign(ChainUtil.hash(operation));
+    if (operation.address !== undefined) {
       delete operation.address;
     }
     return new this(Date.now(), operation, address, signature, nonce);
