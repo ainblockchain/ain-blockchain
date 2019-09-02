@@ -18,7 +18,7 @@ describe("DB", () => {
         test_db = {"ai": {"comcom": 123, "foo": "bar"}, "increase": 
                     {"value": 10, "nested": {"value": 20}}, 
                     "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
-        db.set("test", test_db)
+        db.setValue("test", test_db)
     })
 
     describe("get operations work successfully", () => {
@@ -46,19 +46,19 @@ describe("DB", () => {
             var new_db = {"basic": {"new":"db"}}
             // Overwriting the default rules manually for this area
             db.db["rules"][".write"] = true
-            db.set("/", new_db)
+            db.setValue("/", new_db)
             assert.deepEqual(db.db, new_db)
         })
 
         it(" when overwriting nested value", () => {
             var new_val = {"new": 12345}
-            db.set("nested/far/down", new_val)
+            db.setValue("nested/far/down", new_val)
             assert.deepEqual(db.get("nested/far/down"), new_val)
         })
 
         it(" when creating new path in database", () => {
             var new_val = 12345
-            db.set("new/unchartered/nested/path", new_val)
+            db.setValue("new/unchartered/nested/path", new_val)
             expect(db.get("new/unchartered/nested/path")).to.equal(new_val)
         })
     })
@@ -141,8 +141,8 @@ describe("DB rules", () => {
         test_db["second_users"][db2.publicKey][db2.publicKey] = "i can write"
         test_db["second_users"][db1.publicKey]["something_else"] = "i can write"
 
-        db1.set("test", test_db)
-        db2.set("test", test_db)
+        db1.setValue("test", test_db)
+        db2.setValue("test", test_db)
         
     })
 

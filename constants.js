@@ -71,7 +71,7 @@ const PredefinedDbPaths = {
 const DbOperations = {
   INCREASE: 'INCREASE',
   SET: 'SET',
-  VALUE_UPDATES: 'VALUE_UPDATES',
+  UPDATES: 'UPDATES',
   BATCH: 'BATCH',
   UPDATE: 'UPDATE',
   GET: 'GET',
@@ -82,8 +82,8 @@ const DbOperations = {
  * @enum {string}
  */
 const UpdateTypes = {
-  SET: 'SET',
-  INC: 'INC',
+  SET_VALUE: 'SET_VALUE',
+  INC_VALUE: 'INC_VALUE',
 };
 
 /**

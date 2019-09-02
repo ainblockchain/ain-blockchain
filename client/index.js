@@ -116,14 +116,14 @@ app.get('/get', (req, res, next) => {
 });
 
 // TODO(seo): Replace skipVerif with real signature.
-app.post('/value_updates', (req, res, next) => {
+app.post('/updates', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
   const skipVerif = req.body.skipVerif;
   const data = req.body.data;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({op: DbOperations.VALUE_UPDATES, data, address, nonce, skipVerif}, isNoncedTransaction);
+      createTransaction({op: DbOperations.UPDATES, data, address, nonce, skipVerif}, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -235,8 +235,8 @@ function createSingularTransaction(trans, isNoncedTransaction) {
       transaction =
           db.createTransaction({type: DbOperations.UPDATE, data: trans.data}, isNoncedTransaction);
       break;
-    case DbOperations.VALUE_UPDATES:
-      let operation = { type: DbOperations.VALUE_UPDATES, data: trans.data };
+    case DbOperations.UPDATES:
+      let operation = { type: DbOperations.UPDATES, data: trans.data };
       if (trans.address !== undefined) {
         operation.address = trans.address;
       }

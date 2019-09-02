@@ -43,13 +43,13 @@ class DB {
   }
 
   stake(stakeAmount) {
-    return this.set([PredefinedDbPaths.STAKEHOLDER, this.publicKey].join('/'), stakeAmount);
+    return this.setValue([PredefinedDbPaths.STAKEHOLDER, this.publicKey].join('/'), stakeAmount);
   }
 
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Make set operation and function run tightly bound, i.e., revert the former
   //            if the latter fails.
-  set(dbPath, value, address, timestamp) {
+  setValue(dbPath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
@@ -58,12 +58,12 @@ class DB {
       throw new InvalidPermissionsError(`Invalid permissons for ${dbPath}`);
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.setWithPermission(dbPath, valueCopy);
+    this.setValueWithPermission(dbPath, valueCopy);
     this.func.runFunctions(parsedPath, valueCopy);
     return true;
   }
 
-  setWithPermission(dbPath, value) {
+  setValueWithPermission(dbPath, value) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     if (parsedPath.length === 0) {
       this.db = value;
@@ -82,27 +82,27 @@ class DB {
       throw new InvalidArgumentsError(`Invalid permissons for ${dbPath}`);
     }
     const valueAfter = valueBefore + delta;
-    return this.set(dbPath, valueAfter, address, timestamp);
+    return this.setValue(dbPath, valueAfter, address, timestamp);
   }
 
   update(data, address, timestamp) {
     for (const key in data) {
-      this.set(key, data[key], address, timestamp);
+      this.setValue(key, data[key], address, timestamp);
     }
     return true;
   }
 
   // TODO(seo): Make the operation is atomic, i.e., rolled back when it fails.
-  value_updates(updateList, address, timestamp) {
+  updates(updateList, address, timestamp) {
     let success = true;
     for (let i = 0; i < updateList.length; i++) {
       const update = updateList[i];
-      if (update.type === undefined || update.type === UpdateTypes.SET) {
-        if (!this.set(update.ref, update.value, address, timestamp)) {
+      if (update.type === undefined || update.type === UpdateTypes.SET_VALUE) {
+        if (!this.setValue(update.ref, update.value, address, timestamp)) {
           success = false;
           break;
         }
-      } else if (update.type === UpdateTypes.INC) {
+      } else if (update.type === UpdateTypes.INC_VALUE) {
         if (!this.increment(update.ref, update.value, address, timestamp)) {
           success = false;
           break;
@@ -117,7 +117,7 @@ class DB {
     batchList.forEach((item) => {
       if (item.op.toUpperCase() === DbOperations.SET) {
         resultList
-            .push(this.set(item.ref, item.value, address, timestamp));
+            .push(this.setValue(item.ref, item.value, address, timestamp));
       } else if (item.op.toUpperCase() === DbOperations.INCREASE) {
         resultList
             .push(this.increase(item.diff, address, timestamp));
@@ -157,7 +157,7 @@ class DB {
     const results = {};
     for (const k in diff) {
       const result = (this.get(k, address) || 0) + diff[k];
-      this.set(k, result, address, timestamp);
+      this.setValue(k, result, address, timestamp);
       results[k] = result;
     }
     return results;
@@ -213,9 +213,9 @@ class DB {
   execute(operation, address, timestamp) {
     switch (operation.type) {
       case DbOperations.SET:
-        return this.set(operation.ref, operation.value, address, timestamp);
-      case DbOperations.VALUE_UPDATES:
-        return this.value_updates(operation.data, address, timestamp);
+        return this.setValue(operation.ref, operation.value, address, timestamp);
+      case DbOperations.UPDATES:
+        return this.updates(operation.data, address, timestamp);
       case DbOperations.INCREASE:
         return this.increase(operation.diff, address, timestamp);
       case DbOperations.UPDATE:
