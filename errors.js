@@ -5,14 +5,6 @@ class InvalidPermissionsError extends Error {
   }
 }
 
-class InvalidArgumentsError extends Error {
-  constructor(...args) {
-    super(...args)
-    Error.captureStackTrace(this, InvalidArgumentsError)
-  }
-}
-
 module.exports = {
   InvalidPermissionsError,
-  InvalidArgumentsError
 };

@@ -70,7 +70,7 @@ const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = Database.getDatabase(bc, tp);
 const p2pServer = new P2pServer(db, bc, tp);
-const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
+const { InvalidPermissionsError } = require('../errors');
 const jayson = require('jayson');
 
 const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
@@ -192,17 +192,6 @@ app.post('/batch', (req, res, next) => {
       .end();
 });
 
-app.post('/increase', (req, res, next) => {
-  const diff = req.body.diff;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({ type: OperationTypes.INCREASE, diff }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
-});
-
 app.get('/blocks', (req, res, next) => {
   const statusCode = 200;
   const result = bc.getChainSection(0, bc.length);
@@ -258,9 +247,6 @@ function broadcastBatchTransaction() {
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
         console.log(`Invalid permissions: ${error.stack}`);
-        return null;
-      } else if (error instanceof InvalidArgumentsError) {
-        console.log(`Invalid arguments: ${error.stack}`);
         return null;
       }
       throw error;

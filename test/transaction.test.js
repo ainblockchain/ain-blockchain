@@ -11,9 +11,9 @@ describe('Transaction', () => {
     let transaction, data, db
 
     beforeEach(() => {
-        db = new DB("test-db")
-        data = {type: "SET", ref: "KEY", value: "val"}
-        transaction = Transaction.newTransaction(db, data)
+        db = new DB("test-db");
+        data = { type: "SET_VALUE", data: { ref: "KEY", value: "val" }};
+        transaction = Transaction.newTransaction(db, data);
     });
 
     it('assigns nonces correctly', () => { 

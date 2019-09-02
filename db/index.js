@@ -2,7 +2,7 @@ const escapeStringRegexp = require('escape-string-regexp');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
+const { InvalidPermissionsError } = require('../errors');
 const { OperationTypes, UpdateTypes, PredefinedDbPaths } = require('../constants');
 
 class DB {
@@ -76,21 +76,21 @@ class DB {
     }
   }
 
-  incrementValue(dbPath, delta, address, timestamp) {
+  incValue(dbPath, delta, address, timestamp) {
     const valueBefore = this.get(dbPath);
-    if (typeof valueBefore !== 'number' || typeof delta !== 'number') {
-      throw new InvalidArgumentsError(`Invalid permissons for ${dbPath}`);
+    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
+      return {code: -1, error_message: 'Not a number type: ' + dbPath};
     }
-    const valueAfter = valueBefore + delta;
+    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(dbPath, valueAfter, address, timestamp);
   }
 
-  decrementValue(dbPath, delta, address, timestamp) {
+  decValue(dbPath, delta, address, timestamp) {
     const valueBefore = this.get(dbPath);
-    if (typeof valueBefore !== 'number' || typeof delta !== 'number') {
-      throw new InvalidArgumentsError(`Invalid permissons for ${dbPath}`);
+    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
+      return {code: -1, error_message: 'Not a number type: ' + dbPath};
     }
-    const valueAfter = valueBefore - delta;
+    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(dbPath, valueAfter, address, timestamp);
   }
 
@@ -112,12 +112,12 @@ class DB {
           break;
         }
       } else if (update.type === UpdateTypes.INC_VALUE) {
-        if (!this.incrementValue(update.ref, update.value, address, timestamp)) {
+        if (!this.incValue(update.ref, update.value, address, timestamp)) {
           success = false;
           break;
         }
       } else if (update.type === UpdateTypes.DEC_VALUE) {
-        if (!this.decrementValue(update.ref, update.value, address, timestamp)) {
+        if (!this.decValue(update.ref, update.value, address, timestamp)) {
           success = false;
           break;
         }
@@ -129,12 +129,15 @@ class DB {
   batch(batchList, address, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
-      if (item.op.toUpperCase() === OperationTypes.SET) {
+      if (item.op.toUpperCase() === OperationTypes.SET_VALUE) {
         resultList
             .push(this.setValue(item.ref, item.value, address, timestamp));
-      } else if (item.op.toUpperCase() === OperationTypes.INCREASE) {
+      } else if (item.op.toUpperCase() === OperationTypes.INC_VALUE) {
         resultList
-            .push(this.increase(item.diff, address, timestamp));
+            .push(this.incValue(item.ref, item.value, address, timestamp));
+      } else if (item.op.toUpperCase() === OperationTypes.DEC_VALUE) {
+        resultList
+            .push(this.decValue(item.ref, item.value, address, timestamp));
       } else if (item.op.toUpperCase() === OperationTypes.UPDATE) {
         resultList
             .push(this.update(item.data, address, timestamp));
@@ -159,22 +162,6 @@ class DB {
       subDb = subDb[key];
     });
     return subDb;
-  }
-
-  increase(diff, address, timestamp) {
-    for (const k in diff) {
-      if (this.get(k, address) && typeof this.get(k, address) != 'number') {
-        // TODO: Raise error here
-        return {code: -1, error_message: 'Not a number type: ' + k};
-      }
-    }
-    const results = {};
-    for (const k in diff) {
-      const result = (this.get(k, address) || 0) + diff[k];
-      this.setValue(k, result, address, timestamp);
-      results[k] = result;
-    }
-    return results;
   }
 
   /**
@@ -226,18 +213,14 @@ class DB {
 
   execute(operation, address, timestamp) {
     switch (operation.type) {
-      case OperationTypes.SET:
-        return this.setValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.UPDATES:
         return this.updates(operation.data, address, timestamp);
       case OperationTypes.SET_VALUE:
         return this.setValue(operation.data.ref, operation.data.value, address, timestamp);
       case OperationTypes.INC_VALUE:
-        return this.incrementValue(operation.data.ref, operation.data.value, address, timestamp);
+        return this.incValue(operation.data.ref, operation.data.value, address, timestamp);
       case OperationTypes.DEC_VALUE:
-        return this.decrementValue(operation.data.ref, operation.data.value, address, timestamp);
-      case OperationTypes.INCREASE:
-        return this.increase(operation.diff, address, timestamp);
+        return this.decValue(operation.data.ref, operation.data.value, address, timestamp);
       case OperationTypes.UPDATE:
         return this.update(operation.data, address, timestamp);
       case OperationTypes.BATCH:

@@ -10,7 +10,7 @@ const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
-const { InvalidPermissionsError, InvalidArgumentsError } = require('../errors');
+const { InvalidPermissionsError } = require('../errors');
 const {ForgedBlock} = require('../blockchain/block');
 const VotingUtil = require('./voting-util');
 const { OperationTypes } = require('../constants');
@@ -173,8 +173,6 @@ class P2pServer {
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
         return null;
-      } else if (error instanceof InvalidArgumentsError) {
-        return null;
       } else {
         throw error;
       }
@@ -264,7 +262,13 @@ class P2pServer {
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
-    const blockHashTransaction = this.db.createTransaction({type: OperationTypes.SET, ref, value});
+    const blockHashTransaction = this.db.createTransaction({
+      type: OperationTypes.SET_VALUE,
+      data: {
+        ref,
+        value
+      }
+    });
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
     if (!Object.keys(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {

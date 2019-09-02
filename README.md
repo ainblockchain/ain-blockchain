@@ -67,19 +67,23 @@ LOG: Set to true if you want blockchain-database to maintain log files
 
 #### The blockchain database exposes the following endpoint:
 
-GET https://<ip_address>:8080/blocks -> See last 10 blocks in blockchain
+GET https://<ip_address>:8080/blocks -> See all blocks in the blockchain
+
+GET https://<ip_address>:8080/transactions -> See all transactions in the transaction pool
 
 GET https://<ip_address>:8080/blocks?from=1&to=100 -> psql -h localhost -U postgres -d postgresQuery for specific list of blocks from blockchain
 
 GET https://<ip_address>:8080/get?ref=/database/path/to/query -> Query for data at specific database location
 
-POST https://<ip_address>:8080/set with json_body {"ref": "test/comeonnnnnnn", "value": "testme"}
+POST https://<ip_address>:8080/set_value with json_body {"data": {"ref": "test/comeonnnnnnn", "value": "testme"}}
+
+POST https://<ip_address>:8080/inc_value with json_body {"data": {"ref": test/increase/first/level", "value": 10}}
+
+POST https://<ip_address>:8080/dec_value with json_body {"data": {"ref": test/decrease/first/level", "value": 10}}
 
 POST https://<ip_address>:8080/update with json_body {"data": {"test/increase/first/level": 10, "test/increase/first/level2": 20}}
 
-POST https://<ip_address>:8080/batch with json_body {"batch_list": [{"op": "set", "ref": "test/comeonnnnnnn", "value": "testme"}, {"op": "update", "data": {"test/b/u": 10000}}]}
-
-POST https://<ip_address>:8080/increase with json_body {"diff": {"test/increase/first/level": 10, "test/increase/first/level2": 20}}
+POST https://<ip_address>:8080/batch with json_body {"batch_list": [{"op": "set_value", "data": {"ref": "test/comeonnnnnnn", "value": "testme"}}, {"op": "update", "data": {"test/b/u": 10000}}]}
 
   
 

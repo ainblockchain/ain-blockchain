@@ -17,7 +17,7 @@ class RequestManager {
         uri: this.endpoint + '/batch',
         body: {
             batch_list: [
-              {op: 'increase', diff: this.diffs},
+              {op: 'inc_value', data: this.diffs},
               {op: 'update', data: this.updates}
             ]
         },

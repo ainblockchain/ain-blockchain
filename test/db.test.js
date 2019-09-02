@@ -8,21 +8,35 @@ const expect = chai.expect;
 const assert = chai.assert;
 const {RULES_FILE_PATH} = require('../constants')
 
-describe("DB", () => {
-    let db, test_db, bc, tp
+describe("DB values", () => {
+    let db, test_db, bc, tp;
 
     beforeEach(() => {
-        tp = new TransactionPool()
-        bc = new Blockchain("db-test")
-        db = DB.getDatabase(bc, tp)
-        test_db = {"ai": {"comcom": 123, "foo": "bar"}, "increase": 
-                    {"value": 10, "nested": {"value": 20}}, 
-                    "blockchain": [1,2,3,4], "nested": {"far": {"down": 456}}}
-        db.setValue("test", test_db)
+        tp = new TransactionPool();
+        bc = new Blockchain("db-test");
+        db = DB.getDatabase(bc, tp);
+        test_db = {
+            "ai": {
+                "comcom": 123,
+                "foo": "bar"
+            },
+            "increment": {
+                "value": 20,
+            }, 
+            "decrement": {
+                "value": 20,
+            }, 
+            "blockchain": [1,2,3,4],
+            "nested": {
+                "far": {
+                    "down": 456
+                }
+            }
+        };
+        db.setValue("test", test_db);
     })
 
     describe("get operations work successfully", () => {
-
         it("when retrieving high value near top of database", () => {
             assert.deepEqual(db.get("test"), test_db)
         })
@@ -40,60 +54,63 @@ describe("DB", () => {
         })
     })
 
-    describe("set operations work successfully", () => {
-        
-        it(" when setting root database", () => {
-            var new_db = {"basic": {"new":"db"}}
+    describe("setValue operations work successfully", () => {
+        it("when setting root database", () => {
+            var new_db = {
+                "basic": {
+                    "new": "db"
+                }
+            }
             // Overwriting the default rules manually for this area
             db.db["rules"][".write"] = true
             db.setValue("/", new_db)
             assert.deepEqual(db.db, new_db)
         })
 
-        it(" when overwriting nested value", () => {
+        it("when overwriting nested value", () => {
             var new_val = {"new": 12345}
             db.setValue("nested/far/down", new_val)
             assert.deepEqual(db.get("nested/far/down"), new_val)
         })
 
-        it(" when creating new path in database", () => {
+        it("when creating new path in database", () => {
             var new_val = 12345
             db.setValue("new/unchartered/nested/path", new_val)
             expect(db.get("new/unchartered/nested/path")).to.equal(new_val)
         })
     })
 
-    describe("increase operations work succesfully", () => {
-
-        it("increasing one value succesfully", () => {
-            assert.deepEqual(db.increase({"test/increase/value": 10}), 
-                                         {"test/increase/value": 20})
-            expect(db.get("test/increase/value")).to.equal(20)
-        })
-
-        it("decrementing one value succesfully", () => {
-            assert.deepEqual(db.increase({"test/increase/value": -9}), 
-                                         {"test/increase/value": 1})
-            expect(db.get("test/increase/value")).to.equal(1)
+    describe("incValue operations work successfully", () => {
+        it("when increasing value successfully", () => {
+            db.incValue("test/increment/value", 10)
+            expect(db.get("test/increment/value")).to.equal(30)
         })
 
         it("returning error code and leaving value unchanged if path is not numerical", () => {
-            expect(db.increase({"test/ai/foo": 10}).code).to.equal(-1)
+            expect(db.incValue("test/ai/foo", 10).code).to.equal(-1)
             expect(db.get("test/ai/foo")).to.equal("bar")
         })
 
         it("creating and increasing given path from 0 if not currently in database", () => {
-            assert.deepEqual(db.increase({"test/completely/new/path/test": 100}), 
-                                         {"test/completely/new/path/test": 100})
+            db.incValue("test/completely/new/path/test", 100); 
             expect(db.get("test/completely/new/path/test")).to.equal(100)
         })
+    })
 
-        it("incrementing multiple paths if provided in initial diff dict", () => {
-            assert.deepEqual(db.increase({"test/completely/new/path/test": 100, "test/increase/value": 10, "test/increase/nested/value": 10}), 
-                {"test/completely/new/path/test": 100, "test/increase/value": 20, "test/increase/nested/value": 30})
-                expect(db.get("test/completely/new/path/test")).to.equal(100)
-                expect(db.get("test/increase/value")).to.equal(20)
-                expect(db.get("test/increase/nested/value")).to.equal(30)
+    describe("decValue operations work successfully", () => {
+        it("when decreasing value successfully", () => {
+            db.decValue("test/decrement/value", 10)
+            expect(db.get("test/decrement/value")).to.equal(10)
+        })
+
+        it("returning error code and leaving value unchanged if path is not numerical", () => {
+            expect(db.decValue("test/ai/foo", 10).code).to.equal(-1)
+            expect(db.get("test/ai/foo")).to.equal("bar")
+        })
+
+        it("creating and decreasing given path from 0 if not currently in database", () => {
+            db.decValue("test/completely/new/path/test", 100); 
+            expect(db.get("test/completely/new/path/test")).to.equal(-100)
         })
     })
 
@@ -109,40 +126,45 @@ describe("DB", () => {
 })
 
 describe("DB rules", () => {
-    let db1, db2, test_db, bc, tp
+    let db1, db2, test_db, bc, tp;
 
     beforeEach(() => {
-        tp = new TransactionPool()
-        bc = new Blockchain("db-test")
-        bc2 = new Blockchain("db-test")
-        db1 = DB.getDatabase(bc, tp)
-        db2 = DB.getDatabase(bc2, tp)
+        tp = new TransactionPool();
+        bc = new Blockchain("db-test");
+        bc2 = new Blockchain("db-test");
+        db1 = DB.getDatabase(bc, tp);
+        db2 = DB.getDatabase(bc2, tp);
         test_db = {
             "comcom": "unreadable value",
-            "unspecified": {"nested": "readable"},
+            "unspecified": {
+                "nested": "readable"
+            },
             "ai" : "readable",
-            "billing_keys": {"other": "unreadable", "update_billing": {}},
+            "billing_keys": {
+                "other": "unreadable",
+                "update_billing": {}
+            },
             "users": {},
             "second_users": {}
-        }
-        test_db["users"][db1.publicKey] = {}
-        test_db["users"][db2.publicKey] = {}
-        test_db["users"][db1.publicKey]["balance"] = 100
-        test_db["users"][db2.publicKey]["balance"] = 50
-        test_db["users"][db1.publicKey]["info"] = 8474
-        test_db["billing_keys"]["update_billing"][db2.publicKey] = "'not null'"
+        };
+        test_db["users"][db1.publicKey] = {};
+        test_db["users"][db2.publicKey] = {};
+        test_db["users"][db1.publicKey]["balance"] = 100;
+        test_db["users"][db2.publicKey]["balance"] = 50;
+        test_db["users"][db1.publicKey]["info"] = 8474;
+        test_db["billing_keys"]["update_billing"][db2.publicKey] = "'not null'";
 
 
-        test_db["users"][db1.publicKey]["next_counter"] = 10
+        test_db["users"][db1.publicKey]["next_counter"] = 10;
 
 
-        test_db["second_users"][db1.publicKey] = {}
-        test_db["second_users"][db2.publicKey] = {}
-        test_db["second_users"][db2.publicKey][db2.publicKey] = "i can write"
-        test_db["second_users"][db1.publicKey]["something_else"] = "i can write"
+        test_db["second_users"][db1.publicKey] = {};
+        test_db["second_users"][db2.publicKey] = {};
+        test_db["second_users"][db2.publicKey][db2.publicKey] = "i can write";
+        test_db["second_users"][db1.publicKey]["something_else"] = "i can write";
 
-        db1.setValue("test", test_db)
-        db2.setValue("test", test_db)
+        db1.setValue("test", test_db);
+        db2.setValue("test", test_db);
         
     })
 

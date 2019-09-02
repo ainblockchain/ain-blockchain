@@ -105,11 +105,37 @@ describe('API Tests', () => {
       return chai.request(server1)
           .post(`/batch`).send({
             batch_list: [
-              {op: 'set', ref: 'test/a', value: 1},
-              {op: 'increase', diff: {"test/test": 10}},
-              {op: 'update', data: {"test/balance": {a:1, b:2}}},
-              {op: 'get', ref: 'test/a'},
-              {op: 'get', ref: 'test/balance/b'}
+              {
+                op: 'set_value',
+                data: {
+                  ref: 'test/a',
+                  value: 1
+                }
+              },
+              {
+                op: 'inc_value',
+                data: {
+                  ref: "test/test",
+                  value: 10
+                }
+              },
+              {
+                op: 'update',
+                data: {
+                  "test/balance": {
+                    a:1,
+                    b:2
+                  }
+                }
+              },
+              {
+                op: 'get',
+                ref: 'test/a'
+              },
+              {
+                op: 'get',
+                ref: 'test/balance/b'
+              }
           ]})
           .then((res) => {
             res.should.have.status(201);
