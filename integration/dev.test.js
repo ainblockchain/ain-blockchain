@@ -117,7 +117,7 @@ describe('API Tests', () => {
               },
               {
                 op: 'updates',
-                data: [{
+                update_list: [{
                   ref: "test/balance",
                   value: {
                     a:1,
