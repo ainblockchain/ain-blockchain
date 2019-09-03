@@ -64,10 +64,8 @@ describe('Blockchain', () => {
         // let i represent a fake block here
         db1.createTransaction({
           type: 'SET_VALUE',
-          data: {
-            ref: 'test/something',
-            value: 'val'
-          }
+          ref: 'test/something',
+          value: 'val'
         });
         const block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock());
         if (block.height === 500) {

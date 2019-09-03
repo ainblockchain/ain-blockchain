@@ -145,10 +145,8 @@ class ForgedBlock extends Block {
       data.push({
         operation: {
           type: 'SET_VALUE',
-          data: {
-            ref: 'rules',
-            value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules']
-          }
+          ref: 'rules',
+          value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules']
         },
         address: null
       });

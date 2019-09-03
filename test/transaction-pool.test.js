@@ -13,7 +13,7 @@ describe('TransactionPool', () => {
     beforeEach(() => {
         tp = new TransactionPool()
         db = new DB("test-db")
-        transaction = Transaction.newTransaction(db, {type: "SET_VALUE", data: {ref: "REF", value:"VALUE"}})
+        transaction = Transaction.newTransaction(db, {type: "SET_VALUE", ref: "REF", value:"VALUE"})
         tp.addTransaction(transaction)
     });
 
@@ -31,10 +31,8 @@ describe('TransactionPool', () => {
             for(let i=0; i<10; i++){
                 t = Transaction.newTransaction(db, {
                     type: "SET_VALUE",
-                    data: {
-                        ref: "REF",
-                        value:"VALUE"
-                    }
+                    ref: "REF",
+                    value:"VALUE"
                 });
                 tp.addTransaction(t);
             }
@@ -48,10 +46,8 @@ describe('TransactionPool', () => {
                 for(let i=0; i<11; i++){
                     t = Transaction.newTransaction(dbs[j], {
                         type: "SET_VALUE",
-                        data: {
-                            ref: "REF",
-                            value:"VALUE"
-                        }
+                        ref: "REF",
+                        value:"VALUE"
                     }, true);
                     tp.addTransaction(t);
                 }
@@ -82,10 +78,8 @@ describe('TransactionPool', () => {
             for(let i=0; i<10; i++){
                 newTransactions[db.publicKey].push(Transaction.newTransaction(db, {
                     type: "SET_VALUE",
-                    data: {
-                        ref: "REF",
-                        value:"VALUE"
-                    }
+                    ref: "REF",
+                    value:"VALUE"
                 }));
                 tp.addTransaction(newTransactions[db.publicKey][i]);
             }

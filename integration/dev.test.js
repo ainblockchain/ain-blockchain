@@ -107,17 +107,13 @@ describe('API Tests', () => {
             batch_list: [
               {
                 op: 'set_value',
-                data: {
-                  ref: 'test/a',
-                  value: 1
-                }
+                ref: 'test/a',
+                value: 1
               },
               {
                 op: 'inc_value',
-                data: {
-                  ref: "test/test",
-                  value: 10
-                }
+                ref: "test/test",
+                value: 10
               },
               {
                 op: 'update',

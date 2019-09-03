@@ -8,18 +8,18 @@ const assert = chai.assert
 
 
 describe('Transaction', () => {
-    let transaction, data, db
+    let transaction, operation, db
 
     beforeEach(() => {
         db = new DB("test-db");
-        data = { type: "SET_VALUE", data: { ref: "KEY", value: "val" }};
-        transaction = Transaction.newTransaction(db, data);
+        operation = { type: "SET_VALUE", ref: "KEY", value: "val" };
+        transaction = Transaction.newTransaction(db, operation);
     });
 
     it('assigns nonces correctly', () => { 
         let t;
         for(var currentNonce = db.nonce -1; currentNonce < 50; currentNonce++){
-            t = Transaction.newTransaction(db, data)
+            t = Transaction.newTransaction(db, operation)
         }
         expect(t.nonce).to.equal(currentNonce)
     })

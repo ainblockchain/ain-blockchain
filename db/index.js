@@ -129,22 +129,23 @@ class DB {
   batch(batchList, address, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
-      if (item.op.toUpperCase() === OperationTypes.SET_VALUE) {
+      const op = item.op.toUpperCase();
+      if (op === OperationTypes.SET_VALUE) {
         resultList
             .push(this.setValue(item.ref, item.value, address, timestamp));
-      } else if (item.op.toUpperCase() === OperationTypes.INC_VALUE) {
+      } else if (op === OperationTypes.INC_VALUE) {
         resultList
             .push(this.incValue(item.ref, item.value, address, timestamp));
-      } else if (item.op.toUpperCase() === OperationTypes.DEC_VALUE) {
+      } else if (op === OperationTypes.DEC_VALUE) {
         resultList
             .push(this.decValue(item.ref, item.value, address, timestamp));
-      } else if (item.op.toUpperCase() === OperationTypes.UPDATE) {
+      } else if (op === OperationTypes.UPDATE) {
         resultList
             .push(this.update(item.data, address, timestamp));
-      } else if (item.op.toUpperCase() === OperationTypes.GET) {
+      } else if (op === OperationTypes.GET) {
         resultList
             .push(this.get(item.ref));
-      } else if (item.op.toUpperCase() === OperationTypes.BATCH) {
+      } else if (op === OperationTypes.BATCH) {
         resultList
             .push(this.batch(item.batch_list, address, timestamp));
       }
@@ -216,11 +217,11 @@ class DB {
       case OperationTypes.UPDATES:
         return this.updates(operation.data, address, timestamp);
       case OperationTypes.SET_VALUE:
-        return this.setValue(operation.data.ref, operation.data.value, address, timestamp);
+        return this.setValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.INC_VALUE:
-        return this.incValue(operation.data.ref, operation.data.value, address, timestamp);
+        return this.incValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.DEC_VALUE:
-        return this.decValue(operation.data.ref, operation.data.value, address, timestamp);
+        return this.decValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.UPDATE:
         return this.update(operation.data, address, timestamp);
       case OperationTypes.BATCH:

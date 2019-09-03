@@ -136,10 +136,11 @@ app.post('/set_value', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
   const skipVerif = req.body.skipVerif;
-  const data = req.body.data;
+  const ref = req.body.ref;
+  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({ type: OperationTypes.SET_VALUE, data, address, nonce, skipVerif },
+      createTransaction({ type: OperationTypes.SET_VALUE, ref, value, address, nonce, skipVerif },
           isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
@@ -152,10 +153,11 @@ app.post('/inc_value', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
   const skipVerif = req.body.skipVerif;
-  const data = req.body.data;
+  const ref = req.body.ref;
+  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({ type: OperationTypes.INC_VALUE, data, address, nonce, skipVerif },
+      createTransaction({ type: OperationTypes.INC_VALUE, ref, value, address, nonce, skipVerif },
           isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
@@ -168,10 +170,11 @@ app.post('/dec_value', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
   const skipVerif = req.body.skipVerif;
-  const data = req.body.data;
+  const ref = req.body.ref;
+  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({ type: OperationTypes.DEC_VALUE, data, address, nonce, skipVerif },
+      createTransaction({ type: OperationTypes.DEC_VALUE, ref, value, address, nonce, skipVerif },
           isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)

@@ -75,11 +75,11 @@ GET https://<ip_address>:8080/blocks?from=1&to=100 -> psql -h localhost -U postg
 
 GET https://<ip_address>:8080/get?ref=/database/path/to/query -> Query for data at specific database location
 
-POST https://<ip_address>:8080/set_value with json_body {"data": {"ref": "test/comeonnnnnnn", "value": "testme"}}
+POST https://<ip_address>:8080/set_value with json_body {"ref": "test/comeonnnnnnn", "value": "testme"}
 
-POST https://<ip_address>:8080/inc_value with json_body {"data": {"ref": test/increase/first/level", "value": 10}}
+POST https://<ip_address>:8080/inc_value with json_body {"ref": test/increase/first/level", "value": 10}
 
-POST https://<ip_address>:8080/dec_value with json_body {"data": {"ref": test/decrease/first/level", "value": 10}}
+POST https://<ip_address>:8080/dec_value with json_body {"ref": test/decrease/first/level", "value": 10}
 
 POST https://<ip_address>:8080/update with json_body {"data": {"test/increase/first/level": 10, "test/increase/first/level2": 20}}
 
