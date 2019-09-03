@@ -122,20 +122,19 @@ class DB {
   batch(batchList, address, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
-      const op = item.op.toUpperCase();
-      if (op === OperationTypes.GET) {
+      if (item.type === OperationTypes.GET) {
         resultList
             .push(this.get(item.ref));
-      } else if (op === OperationTypes.SET_VALUE) {
+      } else if (item.type === OperationTypes.SET_VALUE) {
         resultList
             .push(this.setValue(item.ref, item.value, address, timestamp));
-      } else if (op === OperationTypes.INC_VALUE) {
+      } else if (item.type === OperationTypes.INC_VALUE) {
         resultList
             .push(this.incValue(item.ref, item.value, address, timestamp));
-      } else if (op === OperationTypes.DEC_VALUE) {
+      } else if (item.type === OperationTypes.DEC_VALUE) {
         resultList
             .push(this.decValue(item.ref, item.value, address, timestamp));
-      } else if (op === OperationTypes.UPDATES) {
+      } else if (item.type === OperationTypes.UPDATES) {
         resultList
             .push(this.updates(item.update_list, address, timestamp));
       }

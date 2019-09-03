@@ -106,17 +106,17 @@ describe('API Tests', () => {
           .post(`/batch`).send({
             batch_list: [
               {
-                op: 'set_value',
+                type: 'SET_VALUE',
                 ref: 'test/a',
                 value: 1
               },
               {
-                op: 'inc_value',
+                type: 'INC_VALUE',
                 ref: "test/test",
                 value: 10
               },
               {
-                op: 'updates',
+                type: 'UPDATES',
                 update_list: [{
                   ref: "test/balance",
                   value: {
@@ -126,11 +126,11 @@ describe('API Tests', () => {
                 }]
               },
               {
-                op: 'get',
+                type: 'GET',
                 ref: 'test/a'
               },
               {
-                op: 'get',
+                type: 'GET',
                 ref: 'test/balance/b'
               }
           ]})

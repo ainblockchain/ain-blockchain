@@ -81,9 +81,9 @@ POST https://<ip_address>:8080/inc_value with json_body {"ref": "test/increase/f
 
 POST https://<ip_address>:8080/dec_value with json_body {"ref": "test/decrease/first/level", "value": 10}
 
-POST https://<ip_address>:8080/updates with json_body {"update_list": [{"ref": "test/increase/first/level", "value": 10}, {"ref": "test/increase/first/level2", "value": 20}]}
+POST https://<ip_address>:8080/updates with json_body {"update_list": [{"type": "INC_VALUE", "ref": "test/increase/first/level", "value": 10}, {"type": "DEC_VALUE", "ref": "test/decrease/first/level2", "value": 20}]}
 
-POST https://<ip_address>:8080/batch with json_body {"batch_list": [{"op": "set_value", "ref": "test/comeonnnnnnn", "value": "testme"}, {"op": "set_value", "ref": "test/b/u", "value": 10000}]}
+POST https://<ip_address>:8080/batch with json_body {"batch_list": [{"type": "SET_VALUE", "ref": "test/comeonnnnnnn", "value": "testme"}, {"type": "INC_VALUE", "ref": "test/b/u", "value": 10000}]}
 
   
 

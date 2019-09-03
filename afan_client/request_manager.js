@@ -16,7 +16,7 @@ class RequestManager {
         uri: this.endpoint + '/batch',
         body: {
             batch_list: [
-              {op: 'updates', update_list: this.updates}
+              {type: 'UPDATES', update_list: this.updates}
             ]
         },
         json: true // Automatically stringifies the body to JSON
@@ -50,7 +50,7 @@ class RequestManager {
   }
 
   update(ref, value) {
-    this.updates.push({ op: 'set_value', ref: `${this.root} + '/' + ${ref}`, value })
+    this.updates.push({ type: 'SET_VALUE', ref: `${this.root} + '/' + ${ref}`, value })
   }
 
   setAdState(from, to) {
@@ -59,7 +59,7 @@ class RequestManager {
   }
 
   increase(ref, value) {
-    this.updates.push({ op: 'inc_value', ref: `${this.root} + '/' + ${ref}`, value })
+    this.updates.push({ type: 'INC_VALUE', ref: `${this.root} + '/' + ${ref}`, value })
   }
 
   increaseBalance(a, value) {
