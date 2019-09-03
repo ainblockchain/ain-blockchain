@@ -36,7 +36,7 @@ describe("DB values", () => {
         db.setValue("test", test_db);
     })
 
-    describe("get operations work successfully", () => {
+    describe("get operations", () => {
         it("when retrieving high value near top of database", () => {
             assert.deepEqual(db.get("test"), test_db)
         })
@@ -54,7 +54,7 @@ describe("DB values", () => {
         })
     })
 
-    describe("setValue operations work successfully", () => {
+    describe("setValue operations", () => {
         it("when setting root database", () => {
             var new_db = {
                 "basic": {
@@ -69,7 +69,7 @@ describe("DB values", () => {
 
         it("when overwriting nested value", () => {
             var new_val = {"new": 12345}
-            db.setValue("nested/far/down", new_val)
+            expect(db.setValue("nested/far/down", new_val)).to.equal(true)
             assert.deepEqual(db.get("nested/far/down"), new_val)
         })
 
@@ -80,9 +80,9 @@ describe("DB values", () => {
         })
     })
 
-    describe("incValue operations work successfully", () => {
+    describe("incValue operations", () => {
         it("when increasing value successfully", () => {
-            db.incValue("test/increment/value", 10)
+            expect(db.incValue("test/increment/value", 10)).to.equal(true)
             expect(db.get("test/increment/value")).to.equal(30)
         })
 
@@ -97,9 +97,9 @@ describe("DB values", () => {
         })
     })
 
-    describe("decValue operations work successfully", () => {
+    describe("decValue operations", () => {
         it("when decreasing value successfully", () => {
-            db.decValue("test/decrement/value", 10)
+            expect(db.decValue("test/decrement/value", 10)).to.equal(true)
             expect(db.get("test/decrement/value")).to.equal(10)
         })
 
@@ -114,7 +114,80 @@ describe("DB values", () => {
         })
     })
 
-    describe("rules work correctly", () => {
+    describe("updates operations", () => {
+        it("when updates applied successfully", () => {
+            expect(db.updates([
+                {
+                    type: "SET_VALUE",
+                    ref: "nested/far/down",
+                    value: {
+                        "new": 12345
+                    }
+                },
+                {
+                    type: "INC_VALUE",
+                    ref: "test/increment/value",
+                    value: 10
+                },
+                {
+                    type: "DEC_VALUE",
+                    ref: "test/decrement/value",
+                    value: 10
+                },
+            ])).to.equal(true)
+            assert.deepEqual(db.get("nested/far/down"), { "new": 12345 })
+            expect(db.get("test/increment/value")).to.equal(30)
+            expect(db.get("test/decrement/value")).to.equal(10)
+        })
+
+        it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
+            expect(db.updates([
+                {
+                    type: "SET_VALUE",
+                    ref: "nested/far/down",
+                    value: {
+                        "new": 12345
+                    }
+                },
+                {
+                    type: "INC_VALUE",
+                    ref: "test/ai/foo",
+                    value: 10
+                },
+                {
+                    type: "DEC_VALUE",
+                    ref: "test/decrement/value",
+                    value: 10
+                },
+            ]).code).to.equal(-1)
+            expect(db.get("test/ai/foo")).to.equal("bar")
+        })
+
+        it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
+            expect(db.updates([
+                {
+                    type: "SET_VALUE",
+                    ref: "nested/far/down",
+                    value: {
+                        "new": 12345
+                    }
+                },
+                {
+                    type: "INC_VALUE",
+                    ref: "test/increment/value",
+                    value: 10
+                },
+                {
+                    type: "DEC_VALUE",
+                    ref: "test/ai/foo",
+                    value: 10
+                },
+            ]).code).to.equal(-1)
+            expect(db.get("test/ai/foo")).to.equal("bar")
+        })
+    })
+
+    describe("rules", () => {
 
         it("loading properly on initatiion", () => {
             assert.deepEqual(db.get("rules"), JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"])

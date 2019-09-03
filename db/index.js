@@ -103,27 +103,27 @@ class DB {
 
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   updates(updateList, address, timestamp) {
-    let success = true;
+    let ret = true;
     for (let i = 0; i < updateList.length; i++) {
       const update = updateList[i];
       if (update.type === undefined || update.type === UpdateTypes.SET_VALUE) {
-        if (!this.setValue(update.ref, update.value, address, timestamp)) {
-          success = false;
+        ret = this.setValue(update.ref, update.value, address, timestamp);
+        if (ret !== true) {
           break;
         }
       } else if (update.type === UpdateTypes.INC_VALUE) {
-        if (!this.incValue(update.ref, update.value, address, timestamp)) {
-          success = false;
+        ret = this.incValue(update.ref, update.value, address, timestamp);
+        if (ret !== true) {
           break;
         }
       } else if (update.type === UpdateTypes.DEC_VALUE) {
-        if (!this.decValue(update.ref, update.value, address, timestamp)) {
-          success = false;
+        ret = this.decValue(update.ref, update.value, address, timestamp);
+        if (ret !== true) {
           break;
         }
       }
     }
-    return success;
+    return ret;
   }
 
   batch(batchList, address, timestamp) {
