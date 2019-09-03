@@ -7,8 +7,7 @@ class RequestManager {
   constructor(endpoint, root) {
     this.endpoint = endpoint
     this.root = root
-    this.diffs = {}
-    this.updates = {}
+    this.updates = []
   }
 
   send() {
@@ -17,8 +16,7 @@ class RequestManager {
         uri: this.endpoint + '/batch',
         body: {
             batch_list: [
-              {op: 'inc_value', data: this.diffs},
-              {op: 'update', data: this.updates}
+              {op: 'updates', data: this.updates}
             ]
         },
         json: true // Automatically stringifies the body to JSON
@@ -52,7 +50,7 @@ class RequestManager {
   }
 
   update(ref, value) {
-    this.updates[this.root + '/' + ref] = value
+    this.updates.push({ op: 'set_value', ref: `${this.root} + '/' + ${ref}`, value })
   }
 
   setAdState(from, to) {
@@ -61,7 +59,7 @@ class RequestManager {
   }
 
   increase(ref, value) {
-    this.diffs[this.root + '/' + ref] = value
+    this.updates.push({ op: 'inc_value', ref: `${this.root} + '/' + ${ref}`, value })
   }
 
   increaseBalance(a, value) {
