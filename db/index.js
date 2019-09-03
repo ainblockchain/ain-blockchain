@@ -137,7 +137,7 @@ class DB {
             .push(this.decValue(item.ref, item.value, address, timestamp));
       } else if (op === OperationTypes.UPDATES) {
         resultList
-            .push(this.updates(item.data, address, timestamp));
+            .push(this.updates(item.update_list, address, timestamp));
       }
     });
     return resultList;
@@ -211,7 +211,7 @@ class DB {
       case OperationTypes.DEC_VALUE:
         return this.decValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.UPDATES:
-        return this.updates(operation.data, address, timestamp);
+        return this.updates(operation.update_list, address, timestamp);
       case OperationTypes.BATCH:
         return this.batch(operation.batch_list, address, timestamp);
     }

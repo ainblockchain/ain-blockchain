@@ -104,32 +104,15 @@ app.get('/get', (req, res, next) => {
       .end();
 });
 
-// TODO(seo): Replace skipVerif with real signature.
-app.post('/updates', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skipVerif;
-  const data = req.body.data;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.UPDATES, data, address, nonce, skipVerif },
-          isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
-});
-
 app.post('/set_value', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
-  const skipVerif = req.body.skipVerif;
+  const skipVerif = req.body.skip_verif;
   const ref = req.body.ref;
   const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({ type: OperationTypes.SET_VALUE, ref, value, address, nonce, skipVerif },
+      createTransaction({ type: OperationTypes.SET_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
           isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
@@ -141,12 +124,12 @@ app.post('/set_value', (req, res, next) => {
 app.post('/inc_value', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
-  const skipVerif = req.body.skipVerif;
+  const skipVerif = req.body.skip_verif;
   const ref = req.body.ref;
   const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({ type: OperationTypes.INC_VALUE, ref, value, address, nonce, skipVerif },
+      createTransaction({ type: OperationTypes.INC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
           isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
@@ -158,12 +141,29 @@ app.post('/inc_value', (req, res, next) => {
 app.post('/dec_value', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
-  const skipVerif = req.body.skipVerif;
+  const skipVerif = req.body.skip_verif;
   const ref = req.body.ref;
   const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({ type: OperationTypes.DEC_VALUE, ref, value, address, nonce, skipVerif },
+      createTransaction({ type: OperationTypes.DEC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
+          isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+// TODO(seo): Replace skip_verif with real signature.
+app.post('/updates', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skip_verif;
+  const updateList = req.body.update_list;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({ type: OperationTypes.UPDATES, update_list: updateList, address, nonce, skip_verif: skipVerif },
           isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
