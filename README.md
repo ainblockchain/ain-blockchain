@@ -77,13 +77,13 @@ GET https://<ip_address>:8080/get?ref=/database/path/to/query -> Query for data 
 
 POST https://<ip_address>:8080/set_value with json_body {"ref": "test/comeonnnnnnn", "value": "testme"}
 
-POST https://<ip_address>:8080/inc_value with json_body {"ref": test/increase/first/level", "value": 10}
+POST https://<ip_address>:8080/inc_value with json_body {"ref": "test/increase/first/level", "value": 10}
 
-POST https://<ip_address>:8080/dec_value with json_body {"ref": test/decrease/first/level", "value": 10}
+POST https://<ip_address>:8080/dec_value with json_body {"ref": "test/decrease/first/level", "value": 10}
 
-POST https://<ip_address>:8080/update with json_body {"data": {"test/increase/first/level": 10, "test/increase/first/level2": 20}}
+POST https://<ip_address>:8080/updates with json_body {"data": [{"ref": "test/increase/first/level", "value": 10}, {"ref": "test/increase/first/level2", "value": 20}]}
 
-POST https://<ip_address>:8080/batch with json_body {"batch_list": [{"op": "set_value", "data": {"ref": "test/comeonnnnnnn", "value": "testme"}}, {"op": "update", "data": {"test/b/u": 10000}}]}
+POST https://<ip_address>:8080/batch with json_body {"batch_list": [{"op": "set_value", "ref": "test/comeonnnnnnn", "value": "testme"}, {"op": "set_value", "ref": "test/b/u", "value": 10000}]}
 
   
 

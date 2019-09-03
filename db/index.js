@@ -94,13 +94,6 @@ class DB {
     return this.setValue(dbPath, valueAfter, address, timestamp);
   }
 
-  update(data, address, timestamp) {
-    for (const key in data) {
-      this.setValue(key, data[key], address, timestamp);
-    }
-    return true;
-  }
-
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   updates(updateList, address, timestamp) {
     let ret = true;
@@ -130,7 +123,10 @@ class DB {
     const resultList = [];
     batchList.forEach((item) => {
       const op = item.op.toUpperCase();
-      if (op === OperationTypes.SET_VALUE) {
+      if (op === OperationTypes.GET) {
+        resultList
+            .push(this.get(item.ref));
+      } else if (op === OperationTypes.SET_VALUE) {
         resultList
             .push(this.setValue(item.ref, item.value, address, timestamp));
       } else if (op === OperationTypes.INC_VALUE) {
@@ -139,15 +135,9 @@ class DB {
       } else if (op === OperationTypes.DEC_VALUE) {
         resultList
             .push(this.decValue(item.ref, item.value, address, timestamp));
-      } else if (op === OperationTypes.UPDATE) {
+      } else if (op === OperationTypes.UPDATES) {
         resultList
-            .push(this.update(item.data, address, timestamp));
-      } else if (op === OperationTypes.GET) {
-        resultList
-            .push(this.get(item.ref));
-      } else if (op === OperationTypes.BATCH) {
-        resultList
-            .push(this.batch(item.batch_list, address, timestamp));
+            .push(this.updates(item.data, address, timestamp));
       }
     });
     return resultList;
@@ -214,16 +204,14 @@ class DB {
 
   execute(operation, address, timestamp) {
     switch (operation.type) {
-      case OperationTypes.UPDATES:
-        return this.updates(operation.data, address, timestamp);
       case OperationTypes.SET_VALUE:
         return this.setValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.INC_VALUE:
         return this.incValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.DEC_VALUE:
         return this.decValue(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.UPDATE:
-        return this.update(operation.data, address, timestamp);
+      case OperationTypes.UPDATES:
+        return this.updates(operation.data, address, timestamp);
       case OperationTypes.BATCH:
         return this.batch(operation.batch_list, address, timestamp);
     }

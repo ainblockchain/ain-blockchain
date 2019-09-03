@@ -88,17 +88,6 @@ app.get('/', (req, res, next) => {
   }
 });
 
-app.post('/update', (req, res, next) => {
-  const data = req.body.data;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({ type: OperationTypes.UPDATE, data }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
-});
-
 app.get('/get', (req, res, next) => {
   let statusCode = 200;
   let result = null;

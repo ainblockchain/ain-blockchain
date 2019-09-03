@@ -116,13 +116,14 @@ describe('API Tests', () => {
                 value: 10
               },
               {
-                op: 'update',
-                data: {
-                  "test/balance": {
+                op: 'updates',
+                data: [{
+                  ref: "test/balance",
+                  value: {
                     a:1,
                     b:2
                   }
-                }
+                }]
               },
               {
                 op: 'get',
