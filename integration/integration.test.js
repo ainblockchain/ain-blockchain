@@ -23,10 +23,10 @@ const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 30;
 const {PredefinedDbPaths} = require('../constants');
 
 // Server configurations
-const server1 = 'http://localhost:8080';
-const server2 = 'http://localhost:8081';
-const server3 = 'http://localhost:8082';
-const server4 = 'http://localhost:8083';
+const server1 = 'http://localhost:9091';
+const server2 = 'http://localhost:9092';
+const server3 = 'http://localhost:9093';
+const server4 = 'http://localhost:9094';
 const trackerServer = 'http://localhost:5000';
 const SERVERS = [server1, server2, server3, server4];
 
@@ -38,8 +38,8 @@ const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 
 const setEndpoint = '/set';
 
-const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 8080, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5002, PORT: 8081, LOG: true, STAKE: 250, LOCAL: true},
-  {P2P_PORT: 5003, PORT: 8082, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5004, PORT: 8083, LOG: true, STAKE: 250, LOCAL: true}];
+const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true},
+  {P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true}];
 
 // Data options
 RANDOM_OPERATION = [
@@ -93,12 +93,30 @@ describe('Integration Tests', () => {
 
   before(() => {
     // Start up all servers
-    const trackerProc = spawn('node', [TRACKER_SERVER]);
+    //const trackerProc = spawn('node', [TRACKER_SERVER]);
+    const trackerProc = spawn('node', [TRACKER_SERVER], {
+      cwd: process.cwd(),
+      env: {
+          PATH: process.env.PATH
+      },
+      stdio: 'inherit'
+    }).on('error', (err) => {
+      console.error('Failed to start tracker server with error: ' + err.message);
+    })
     trackerRpcClient = jayson.client.http(trackerServer + JSON_RPC_ENDPOINT);
     procs.push(trackerProc);
-    sleep(100);
+    sleep(2000);
     for (let i = 0; i < ENV_VARIABLES.length; i++) {
-      const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
+      //const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
+      const proc = spawn('node', [APP_SERVER], {
+        cwd: process.cwd(),
+        env: {
+          PATH: process.env.PATH,
+          ...ENV_VARIABLES[i]
+        },
+      }).on('error', (err) => {
+        console.error(`Failed to start server${i+1} with error: ` + err.message);
+      });
       sleep(2000);
       trackerRpcClient.request(JSON_RPC_GET_PEER_PUBLIC_KEYS, [], function(err, response) {
         if (err) throw err;
