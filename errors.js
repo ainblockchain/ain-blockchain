@@ -1,9 +1,10 @@
 class InvalidPermissionsError extends Error {
-    constructor(...args) {
-        super(...args)
-        Error.captureStackTrace(this, InvalidPermissionsError)
-    }
+  constructor(...args) {
+    super(...args)
+    Error.captureStackTrace(this, InvalidPermissionsError)
+  }
 }
 
-
-module.exports = InvalidPermissionsError
+module.exports = {
+  InvalidPermissionsError,
+};

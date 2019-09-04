@@ -142,8 +142,14 @@ class ForgedBlock extends Block {
     const data = [];
     // Hack here to simulate a transaction for the initial setting of rules
     if (fs.existsSync(RULES_FILE_PATH)) {
-      data.push({output: {type: 'SET', ref: 'rules',
-        value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules']}, address: null});
+      data.push({
+        operation: {
+          type: 'SET_VALUE',
+          ref: 'rules',
+          value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules']
+        },
+        address: null
+      });
     }
     // Change this to use
     const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, 0, '----', 'genesis', [], -1);

@@ -23,10 +23,10 @@ const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 30;
 const {PredefinedDbPaths} = require('../constants');
 
 // Server configurations
-const server1 = 'http://localhost:8080';
-const server2 = 'http://localhost:8081';
-const server3 = 'http://localhost:8082';
-const server4 = 'http://localhost:8083';
+const server1 = 'http://localhost:9091';
+const server2 = 'http://localhost:9092';
+const server3 = 'http://localhost:9093';
+const server4 = 'http://localhost:9094';
 const trackerServer = 'http://localhost:5000';
 const SERVERS = [server1, server2, server3, server4];
 
@@ -38,46 +38,46 @@ const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 
 const setEndpoint = '/set';
 
-const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 8080, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5002, PORT: 8081, LOG: true, STAKE: 250, LOCAL: true},
-  {P2P_PORT: 5003, PORT: 8082, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5004, PORT: 8083, LOG: true, STAKE: 250, LOCAL: true}];
+const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true},
+  {P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true}];
 
 // Data options
 RANDOM_OPERATION = [
-  ['set', {ref: 'test/comeonnnnnnn', value: 'testme'}],
-  ['set', {ref: 'test/comeonnnnnnn', value: 'no meeeee'}],
-  ['set', {ref: 'test/comeon/nnnnnn', value: 'through'}],
-  ['set', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
-  ['set', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
-  ['set', {ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}],
-  ['set', {ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}],
-  ['set', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
-  ['set', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
-  ['set', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
-  ['set', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
-  ['increase', {diff: {'test/increase/first/level': 10, 'test/increase/first/level2': 20}}],
-  ['increase', {diff: {'test/increase/second/level/deeper': 20, 'test/increase/second/level/deeper': 1000}}],
-  ['increase', {diff: {'test/increase': 1}}],
-  ['increase', {diff: {'test/new': 1, 'test/b': 30}}],
-  ['increase', {diff: {'test/increase': -10000, 'test/increase': 10000}}],
-  ['increase', {diff: {'test/b/u': 10000}}],
-  ['increase', {diff: {'test/builed/some/deep/place/next': 100002}}],
-  ['update', {data: {'test/increase/first/level': 10, 'test/increase/first/level2': 20}}],
-  ['update', {data: {'test/increase/second/level/deeper': 20, 'test/increase/second/level/deeper': 1000}}],
-  ['update', {data: {'test/increase': 1}}],
-  ['update', {data: {'test/new': 1, 'test/b': 30}}],
-  ['update', {data: {'test/increase': 10000, 'test/increase': 10000}}],
-  ['update', {data: {'test/b/u': 10000}}],
-  ['update', {data: {'test/builed/some/deep/place/next': 100002}}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/comeonnnnnnn', value: 'testme'}, {op: 'increase', data: {'test/b/u': 10000}}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/comeonnnnnnn', value: 'no meeeee'}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/comeon/nnnnnn', value: 'through'}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}]}],
-  ['batch', {batch_list: [{op: 'set', ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}]}],
+  ['SET_VALUE', {ref: 'test/comeonnnnnnn', value: 'testme'}],
+  ['SET_VALUE', {ref: 'test/comeonnnnnnn', value: 'no meeeee'}],
+  ['SET_VALUE', {ref: 'test/comeon/nnnnnn', value: 'through'}],
+  ['SET_VALUE', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
+  ['SET_VALUE', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
+  ['SET_VALUE', {ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}],
+  ['SET_VALUE', {ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}],
+  ['SET_VALUE', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
+  ['SET_VALUE', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
+  ['SET_VALUE', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
+  ['SET_VALUE', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
+  ['INC_VALUE', {ref: 'test/increase/first/level', value: 10}],
+  ['INC_VALUE', {ref: 'test/increase/second/level/deeper', value: 20}],
+  ['INC_VALUE', {ref: 'test/increase', value: 1}],
+  ['INC_VALUE', {ref: 'test/new', value: 1}],
+  ['INC_VALUE', {ref: 'test/increase', value: -10000}],
+  ['INC_VALUE', {ref: 'test/b/u', value: 10000}],
+  ['INC_VALUE', {ref: 'test/builed/some/deep/place/next', value: 100002}],
+  ['UPDATES', {update_list: [{ref: 'test/increase/first/level', value: 10}, {ref: 'test/increase/first/level2', value: 20}]}],
+  ['UPDATES', {update_list: [{ref: 'test/increase/second/level/deeper', value: 20}, {ref: 'test/increase/second/level/deeper', value: 1000}]}],
+  ['UPDATES', {update_list: [{ref: 'test/increase', value: 1}]}],
+  ['UPDATES', {update_list: [{ref: 'test/new', value: 1, 'test/b': 30}]}],
+  ['UPDATES', {update_list: [{ref: 'test/increase', value: 10000, 'test/increase': 10000}]}],
+  ['UPDATES', {update_list: [{ref: 'test/b/u', value: 10000}]}],
+  ['UPDATES', {update_list: [{ref: 'test/builed/some/deep/place/next', value: 100002}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'testme'}, {type: 'INC_VALUE', ref: 'test/b/u', value: 10000}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'no meeeee'}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeon/nnnnnn', value: 'through'}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}]}],
+  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}]}],
 ];
 
 
@@ -93,12 +93,30 @@ describe('Integration Tests', () => {
 
   before(() => {
     // Start up all servers
-    const trackerProc = spawn('node', [TRACKER_SERVER]);
+    //const trackerProc = spawn('node', [TRACKER_SERVER]);
+    const trackerProc = spawn('node', [TRACKER_SERVER], {
+      cwd: process.cwd(),
+      env: {
+          PATH: process.env.PATH
+      },
+      stdio: 'inherit'
+    }).on('error', (err) => {
+      console.error('Failed to start tracker server with error: ' + err.message);
+    })
     trackerRpcClient = jayson.client.http(trackerServer + JSON_RPC_ENDPOINT);
     procs.push(trackerProc);
-    sleep(100);
+    sleep(2000);
     for (let i = 0; i < ENV_VARIABLES.length; i++) {
-      const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
+      //const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
+      const proc = spawn('node', [APP_SERVER], {
+        cwd: process.cwd(),
+        env: {
+          PATH: process.env.PATH,
+          ...ENV_VARIABLES[i]
+        },
+      }).on('error', (err) => {
+        console.error(`Failed to start server${i+1} with error: ` + err.message);
+      });
       sleep(2000);
       trackerRpcClient.request(JSON_RPC_GET_PEER_PUBLIC_KEYS, [], function(err, response) {
         if (err) throw err;
@@ -230,12 +248,12 @@ describe('Integration Tests', () => {
               if (headers[i].validators.indexOf(transaction.address) < 0) {
                 assert.fail(`Invalid validator is validating block ${transaction.address}`);
               }
-              if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES in transaction.output.diff) {
-                preVotes += transaction.output.diff[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES];
+              if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES in transaction.operation.diff) {
+                preVotes += transaction.operation.diff[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES];
               } else if (preVotes <= headers[i].threshold) {
                 assert.fail('PreCommits were made before PreVotes reached threshold');
               } else {
-                preCommits += transaction.output.diff[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS];
+                preCommits += transaction.operation.diff[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS];
               }
             }
             expect(preVotes).greaterThan(headers[i].threshold);
@@ -325,9 +343,9 @@ describe('Integration Tests', () => {
             });
           });
           for (let i = 0; i < transactionsOnBlockChain.length; i ++) {
-            const transactionOutput = sentOperations[i][1];
-            transactionOutput['type'] = sentOperations[i][0].toUpperCase();
-            assert.deepEqual(transactionOutput, transactionsOnBlockChain[i].output);
+            const operation = sentOperations[i][1];
+            operation['type'] = sentOperations[i][0].toUpperCase();
+            assert.deepEqual(operation, transactionsOnBlockChain[i].operation);
           };
           // Subtract number of transactions that have been sent since the start of the test case as they will not be on the blockchain yet
           expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST).to.equal(transactionsOnBlockChain.length);

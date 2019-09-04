@@ -14,28 +14,79 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 
 chai.use(chaiHttp);
 
-// Before running this test, bring up server at localhost:8080.
-// npm start
-const server1 = 'http://localhost:8087'
-const server2 = 'http://localhost:8088'
-const server3 = 'http://localhost:8089'
-const server4 = 'http://localhost:8090'
+const server1 = 'http://localhost:9091'
+const server2 = 'http://localhost:9092'
+const server3 = 'http://localhost:9093'
+const server4 = 'http://localhost:9094'
 
 describe('aFan Client Test', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
-  before(() => {
-    tracker_proc = spawn('node', [TRACKER_SERVER])
-    sleep(2000)
-    server1_proc = spawn('node', [APP_SERVER], {env: {STAKE: 250, LOG: true, P2P_PORT:5001, PORT: 8087, LOCAL: true}})
-    sleep(2000)
-    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5002, PORT: 8088, LOCAL: true}})
-    sleep(2000)
-    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8089, LOCAL: true}})
-    sleep(2000)
-    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8090, LOCAL: true}})
-    sleep(12000)
+ before(() => {
+  tracker_proc = spawn('node', [TRACKER_SERVER], {
+    cwd: process.cwd(),
+    env: {
+        PATH: process.env.PATH
+    },
+    stdio: 'inherit'
+  }).on('error', (err) => {
+    console.error('Failed to start tracker server with error: ' + err.message);
   });
+  sleep(2000)
+  server1_proc = spawn('node', [APP_SERVER], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH,
+      STAKE: 250,
+      LOG: true,
+      P2P_PORT:5001,
+      PORT: 9091,
+      LOCAL: true
+    },
+  }).on('error', (err) => {
+    console.error('Failed to start server1 with error: ' + err.message);
+  });
+  sleep(2000)
+  server2_proc = spawn('node', [APP_SERVER], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH,
+      LOG: true,
+      P2P_PORT:5002,
+      PORT: 9092,
+      LOCAL: true
+    },
+  }).on('error', (err) => {
+    console.error('Failed to start server2 with error: ' + err.message);
+  });
+  sleep(2000)
+  server3_proc = spawn('node', [APP_SERVER], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH,
+      LOG: true,
+      P2P_PORT:5003,
+      PORT: 9093,
+      LOCAL: true
+    },
+  }).on('error', (err) => {
+    console.error('Failed to start server3 with error: ' + err.message);
+  });
+  sleep(2000)
+  server4_proc = spawn('node', [APP_SERVER], {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH,
+      LOG: true,
+      P2P_PORT:5004,
+      PORT: 9094,
+      LOCAL: true
+    },
+  }).on('error', (err) => {
+    console.error('Failed to start server4 with error: ' + err.message);
+  });
+  sleep(12000)
+});
 
   after(() => {
     tracker_proc.kill()
@@ -171,5 +222,4 @@ describe('aFan Client Test', () => {
           });
     })
   })
-
 })

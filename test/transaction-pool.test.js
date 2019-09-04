@@ -13,7 +13,7 @@ describe('TransactionPool', () => {
     beforeEach(() => {
         tp = new TransactionPool()
         db = new DB("test-db")
-        transaction = Transaction.newTransaction(db, {type: "SET", ref: "REF", value:"VALUE"})
+        transaction = Transaction.newTransaction(db, {type: "SET_VALUE", ref: "REF", value:"VALUE"})
         tp.addTransaction(transaction)
     });
 
@@ -29,8 +29,12 @@ describe('TransactionPool', () => {
         beforeEach(() => {
             
             for(let i=0; i<10; i++){
-                t = Transaction.newTransaction(db,{type: "SET", ref: "REF", value:"VALUE"})
-                tp.addTransaction(t)
+                t = Transaction.newTransaction(db, {
+                    type: "SET_VALUE",
+                    ref: "REF",
+                    value:"VALUE"
+                });
+                tp.addTransaction(t);
             }
             tp.transactions[db.publicKey] = shuffleSeed.shuffle(tp.transactions[db.publicKey]) 
 
@@ -40,8 +44,12 @@ describe('TransactionPool', () => {
             var dbs = [db2, db3, db4]
             for(var j=0; j < dbs.length; j++){
                 for(let i=0; i<11; i++){
-                    t = Transaction.newTransaction(dbs[j],{type: "SET", ref: "REF", value:"VALUE"}, true)
-                    tp.addTransaction(t)
+                    t = Transaction.newTransaction(dbs[j], {
+                        type: "SET_VALUE",
+                        ref: "REF",
+                        value:"VALUE"
+                    }, true);
+                    tp.addTransaction(t);
                 }
                 tp.transactions[dbs[j].publicKey] = shuffleSeed.shuffle(tp.transactions[dbs[j].publicKey]) 
             }
@@ -68,11 +76,15 @@ describe('TransactionPool', () => {
             var newTransactions = {}
             newTransactions[db.publicKey] = []
             for(let i=0; i<10; i++){
-                newTransactions[db.publicKey].push(Transaction.newTransaction(db, {type: "SET", ref: "REF", value:"VALUE"}))
-                tp.addTransaction(newTransactions[db.publicKey][i])
+                newTransactions[db.publicKey].push(Transaction.newTransaction(db, {
+                    type: "SET_VALUE",
+                    ref: "REF",
+                    value:"VALUE"
+                }));
+                tp.addTransaction(newTransactions[db.publicKey][i]);
             }
-            tp.removeCommitedTransactions(block)
-            assert.deepEqual(newTransactions, tp.transactions)
+            tp.removeCommitedTransactions(block);
+            assert.deepEqual(newTransactions, tp.transactions);
         })
     })
 });

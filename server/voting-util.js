@@ -1,7 +1,7 @@
 
 const shuffleSeed = require('shuffle-seed');
 const seedrandom = require('seedrandom');
-const {VotingStatus, PredefinedDbPaths, DbOperations} = require('../constants');
+const { VotingStatus, PredefinedDbPaths, OperationTypes } = require('../constants');
 const MAX_RECENT_FORGERS = 20;
 
 class VotingUtil {
@@ -41,10 +41,13 @@ class VotingUtil {
 
   preVote() {
     const stake = this.db.get(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
-    const diff = {[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES]: stake};
     this.status = VotingStatus.PRE_VOTE;
     console.log(`Current prevotes are ${this.db.db.consensus.voting.pre_votes}`);
-    const transaction = this.db.createTransaction({type: DbOperations.INCREASE, diff});
+    const transaction = this.db.createTransaction({
+      type: OperationTypes.INC_VALUE,
+      ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
+      value: stake
+    });
     this.registerValidatingTransaction(transaction);
     return transaction;
   }
@@ -76,10 +79,13 @@ class VotingUtil {
       return null;
     }
     const stake = this.db.get(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
-    const diff = {[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS]: stake};
     console.log(`Current precommits are ${this.db.db.consensus.voting.pre_commits}`);
     this.status = VotingStatus.PRE_COMMIT;
-    const transaction = this.db.createTransaction({type: DbOperations.INCREASE, diff});
+    const transaction = this.db.createTransaction({
+      type: OperationTypes.INC_VALUE,
+      ref: PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS,
+      value: stake
+    });
     this.registerValidatingTransaction(transaction);
     return transaction;
   }
@@ -101,7 +107,11 @@ class VotingUtil {
     const time = Date.now();
     const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.publicKey, pre_votes: 0,
       pre_commits: 0, time, block_hash: '', height: bc.lastBlock().height + 1, lastHash: bc.lastBlock().hash};
-    return this.db.createTransaction({type: DbOperations.SET, ref: PredefinedDbPaths.VOTING_ROUND, value: firstVotingData});
+    return this.db.createTransaction({
+      type: OperationTypes.SET_VALUE,
+      ref: PredefinedDbPaths.VOTING_ROUND,
+      value: firstVotingData
+    });
   }
 
 
@@ -127,7 +137,11 @@ class VotingUtil {
       nextRound = Object.assign({}, nextRound, {height: lastRound.height, lastHash: lastRound.lastHash});
     }
 
-    return this.db.createTransaction({type: DbOperations.SET, ref: PredefinedDbPaths.VOTING_ROUND, value: nextRound}, false);
+    return this.db.createTransaction({
+      type: OperationTypes.SET_VALUE,
+      ref: PredefinedDbPaths.VOTING_ROUND,
+      value: nextRound
+    }, false);
   }
 
   registerForNextRound(height) {
@@ -138,7 +152,11 @@ class VotingUtil {
     }
 
     const value = this.db.get(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]));
-    return this.db.createTransaction({type: DbOperations.SET, ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.publicKey]), value});
+    return this.db.createTransaction({
+      type: OperationTypes.SET_VALUE,
+      ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.publicKey]),
+      value
+    });
   }
 
   setBlock(block) {
@@ -171,7 +189,11 @@ class VotingUtil {
 
   stake(stakeAmount) {
     console.log(`Successfully staked ${stakeAmount}`);
-    return this.db.createTransaction({type: DbOperations.SET, ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]), value: stakeAmount});
+    return this.db.createTransaction({
+      type: OperationTypes.SET_VALUE,
+      ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]),
+      value: stakeAmount
+    });
   }
 
   isForger() {
@@ -199,7 +221,11 @@ class VotingUtil {
       recentForgers.splice(recentForgers.indexOf(this.db.publicKey), 1);
     }
     recentForgers.push(this.db.publicKey);
-    return this.db.createTransaction({type: DbOperations.SET, ref: PredefinedDbPaths.RECENT_FORGERS, value: recentForgers});
+    return this.db.createTransaction({
+      type: OperationTypes.SET_VALUE,
+      ref: PredefinedDbPaths.RECENT_FORGERS,
+      value: recentForgers
+    });
   }
 }
 

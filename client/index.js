@@ -65,12 +65,12 @@ const transactionBatch = [];
 
 app.use(express.json()); // support json encoded bodies
 
-const {DbOperations} = require('../constants');
+const { OperationTypes } = require('../constants');
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = Database.getDatabase(bc, tp);
 const p2pServer = new P2pServer(db, bc, tp);
-const InvalidPermissionsError = require('../errors');
+const { InvalidPermissionsError } = require('../errors');
 const jayson = require('jayson');
 
 const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
@@ -86,17 +86,6 @@ app.get('/', (req, res, next) => {
   } catch (error) {
     console.log(error);
   }
-});
-
-app.post('/update', (req, res, next) => {
-  const data = req.body.data;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: 'update', data}, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
 });
 
 app.get('/get', (req, res, next) => {
@@ -115,16 +104,67 @@ app.get('/get', (req, res, next) => {
       .end();
 });
 
-// TODO(seo): Replace skipVerif with real signature.
-app.post('/set', (req, res, next) => {
-  const ref = req.body.ref;
-  const value = req.body.value;
+app.post('/set_value', (req, res, next) => {
   const address = req.body.address;
   const nonce = req.body.nonce;
-  const skipVerif = req.body.skipVerif;
+  const skipVerif = req.body.skip_verif;
+  const ref = req.body.ref;
+  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
-      createTransaction({op: 'set', ref, value, address, nonce, skipVerif}, isNoncedTransaction);
+      createTransaction({ type: OperationTypes.SET_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
+          isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+app.post('/inc_value', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skip_verif;
+  const ref = req.body.ref;
+  const value = req.body.value;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({ type: OperationTypes.INC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
+          isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+app.post('/dec_value', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skip_verif;
+  const ref = req.body.ref;
+  const value = req.body.value;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({ type: OperationTypes.DEC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
+          isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+// TODO(seo): Replace skip_verif with real signature.
+app.post('/updates', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skip_verif;
+  const updateList = req.body.update_list;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({ type: OperationTypes.UPDATES, update_list: updateList, address, nonce, skip_verif: skipVerif },
+          isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -135,18 +175,8 @@ app.post('/set', (req, res, next) => {
 app.post('/batch', (req, res, next) => {
   const batchList = req.body.batch_list;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: 'batch', batch_list: batchList}, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
-});
-
-app.post('/increase', (req, res, next) => {
-  const diff = req.body.diff;
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({op: 'increase', diff}, isNoncedTransaction);
+  const result = createTransaction({ type: OperationTypes.BATCH, batch_list: batchList },
+      isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -208,7 +238,7 @@ function broadcastBatchTransaction() {
       transaction = db.createTransaction({type: 'BATCH', batch_list: batchList});
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
-        console.log(`Validation failed: ${console.log(error.stack)}`);
+        console.log(`Invalid permissions: ${error.stack}`);
         return null;
       }
       throw error;
@@ -217,38 +247,9 @@ function broadcastBatchTransaction() {
   }
 }
 
-function createSingularTransaction(trans, isNoncedTransaction) {
+function createSingularTransaction(operation, isNoncedTransaction) {
   CURRENT_NONCE += 1;
-  let transaction;
-  switch (trans.op.toUpperCase()) {
-    case DbOperations.BATCH:
-      transaction =
-          db.createTransaction({type: DbOperations.BATCH, batch_list: trans.batch_list}, isNoncedTransaction);
-      break;
-    case DbOperations.INCREASE:
-      transaction =
-          db.createTransaction({type: DbOperations.INCREASE, diff: trans.diff}, isNoncedTransaction);
-      break;
-    case DbOperations.UPDATE:
-      transaction =
-          db.createTransaction({type: DbOperations.UPDATE, data: trans.data}, isNoncedTransaction);
-      break;
-    case DbOperations.SET:
-      let data = { type: DbOperations.SET, ref: trans.ref, value: trans.value };
-      if (trans.address !== undefined) {
-        data.address = trans.address;
-      }
-      if (trans.nonce !== undefined) {
-        data.nonce = trans.nonce;
-      }
-      if (trans.skipVerif !== undefined) {
-        data.skipVerif = trans.skipVerif;
-      }
-      transaction = db.createTransaction(data, isNoncedTransaction);
-      break;
-    default:
-      throw Error(`Invalid operation ${trans.op}`);
-  }
+  const transaction = db.createTransaction(operation, isNoncedTransaction);
   return p2pServer.executeAndBroadcastTransaction(transaction);
 }
 

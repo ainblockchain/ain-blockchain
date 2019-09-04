@@ -64,7 +64,7 @@ class TransactionExecutorCommand extends Command {
       }
       const transactionAddress = transactionData.address;
       const transactionNonce = transactionData.nonce;
-      transactionData.skipVerif = true;
+      transactionData['skip_verif'] = true;
 
       delete transactionData['address'];
       delete transactionData['nonce'];

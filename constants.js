@@ -68,12 +68,23 @@ const PredefinedDbPaths = {
  * Types of write operations supported by Db
  * @enum {string}
  */
-const DbOperations = {
-  INCREASE: 'INCREASE',
-  SET: 'SET',
-  BATCH: 'BATCH',
-  UPDATE: 'UPDATE',
+const OperationTypes = {
   GET: 'GET',
+  SET_VALUE: 'SET_VALUE',
+  INC_VALUE: 'INC_VALUE',
+  DEC_VALUE: 'DEC_VALUE',
+  UPDATES: 'UPDATES',
+  BATCH: 'BATCH',
+};
+
+/**
+ * Types of updates
+ * @enum {string}
+ */
+const UpdateTypes = {
+  SET_VALUE: 'SET_VALUE',
+  INC_VALUE: 'INC_VALUE',
+  DEC_VALUE: 'DEC_VALUE',
 };
 
 /**
@@ -93,6 +104,7 @@ module.exports = {
   STAKE,
   VotingActionTypes,
   PredefinedDbPaths,
-  DbOperations,
+  OperationTypes,
+  UpdateTypes,
   FunctionResultCode,
 };
