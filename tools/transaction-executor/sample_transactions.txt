@@ -1,4 +1,4 @@
-{"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": 10,"nonce": 0}
+{"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": 10, "nonce": 0}
 {"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": 101, "nonce": 1}
 {"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": 1000, "nonce": 1}
 {"type": "SET_VALUE", "ref": "/account/abcde/balance", "value": 99, "nonce": 2}
