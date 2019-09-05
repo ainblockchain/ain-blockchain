@@ -38,12 +38,16 @@ class TransactionExecutorCommand extends Command {
     const address = keyPair.getPublic().encode('hex');
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
+      const transactionData = TransactionExecutorCommand.parseLine(line);
+      if (typeof transactionData.address !== 'undefined') {
+        throw Error(`Address field should NOT be specified:\n${line}`);
+      }
+      if (typeof transactionData.nonce === 'undefined') {
+        throw Error(`Nonce field should be specified:\n${line}`);
+      }
+
       if (line.match(ADDRESS_REG_EX)) {
         line = line.replace(ADDRESS_REG_EX, `${address}`);
-      }
-      const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (!(typeof transactionData.address === undefined) || typeof transactionData.nonce === undefined) {
-        throw Error(`Address field must not be specified and nonce must be specified\n${line}`);
       }
 
       const transactionNonce = transactionData.nonce;
@@ -59,8 +63,11 @@ class TransactionExecutorCommand extends Command {
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (typeof transactionData.address === undefined || typeof transactionData.nonce === undefined) {
-        throw Error(`Address must be specified and nonce must be specified\n${line}`);
+      if (typeof transactionData.address === 'undefined') {
+        throw Error(`Address field should be specified:\n${line}`);
+      }
+      if (typeof transactionData.nonce === 'undefined') {
+        throw Error(`Nonce field should be specified:\n${line}`);
       }
       const transactionAddress = transactionData.address;
       const transactionNonce = transactionData.nonce;
