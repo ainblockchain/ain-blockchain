@@ -15,6 +15,7 @@ const getJsonRpcApi = require('./methods_impl');
 module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
   const methodsImpl = getJsonRpcApi(blockchain, transactionPool, p2pServer);
   return {
+    // Bloock API
     ain_getBlockList: function(args, done) {
       const queryDict = getQueryDict(args);
       const blocks = methodsImpl.blockchainClosure.getBlockBodies(queryDict);
@@ -24,11 +25,6 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     ain_getLastBlock: function(args, done) {
       const block = methodsImpl.blockchainClosure.getLastBlock();
       done(null, block);
-    },
-
-    ain_getTransactions: function(args, done) {
-      const trans = methodsImpl.transactionPoolClosure.getTransactions();
-      done(null, trans);
     },
 
     ain_getBlockHeadersList: function(args, done) {
@@ -97,9 +93,41 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       done(null, (block === null) ? null: block.body().data.length);
     },
 
+    // Transaction API
+    ain_getPendingTransactions: function(args, done) {
+      const trans = methodsImpl.transactionPoolClosure.getTransactions();
+      done(null, trans);
+    },
+
     ain_sendTransaction: function(args, done) {
       const transaction = getQueryDict(args);
       done(null, methodsImpl.p2pServerClosure.executeTransaction(transaction));
+    },
+
+    ain_getTransactionByBlockHashAndIndex: function(args, done) {
+      const queryDict = getQueryDict(args);
+      let result;
+      if (!queryDict.blockHash || !queryDict.index) {
+        result = null;
+      } else {
+        const index = Number(queryDict.index);
+        const block = methodsImpl.blockchainClosure.getBlockByHash(queryDict.blockHash);
+        result = block.data.length > index && index >= 0 ? block.data[index] : null;
+      }
+      done(null, result);
+    },
+
+    ain_getTransactionByBlockNumberAndIndex: function(args, done) {
+      const queryDict = getQueryDict(args);
+      let result;
+      if (!queryDict.blockNumber || !queryDict.index) {
+        result = null;
+      } else {
+        const index = Number(queryDict.index);
+        const block = methodsImpl.blockchainClosure.getBlockByNumber(queryDict.blockNumber);
+        result = block.data.length > index && index >= 0 ? block.data[index] : null;
+      }
+      done(null, result);
     },
   };
 };

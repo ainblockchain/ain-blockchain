@@ -45,20 +45,20 @@ const VotingStatus = {
  */
 const PredefinedDbPaths = {
   // Consensus
-  RECENT_FORGERS: '_recentForgers',
-  VOTING_ROUND: '_voting',
-  VOTING_ROUND_VALIDATORS: '_voting/validators/',
-  VOTING_ROUND_FORGER: '_voting/forger',
-  VOTING_ROUND_PRE_COMMITS: '_voting/preCommits',
-  VOTING_ROUND_PRE_VOTES: '_voting/preVotes',
-  VOTING_ROUND_THRESHOLD: '_voting/threshold',
-  VOTING_ROUND_HEIGHT: '_voting/height',
-  STAKEHOLDER: 'stakes',
-  VOTING_ROUND_BLOCK_HASH: '_voting/blockHash',
-  VOTING_NEXT_ROUND_VALIDATORS: '_voting/next_round_validators',
+  RECENT_FORGERS: '/consensus/recent_forgers',
+  VOTING_ROUND: '/consensus/voting',
+  VOTING_ROUND_VALIDATORS: '/consensus/voting/validators',
+  VOTING_ROUND_FORGER: '/consensus/voting/forger',
+  VOTING_ROUND_PRE_COMMITS: '/consensus/voting/pre_commits',
+  VOTING_ROUND_PRE_VOTES: '/consensus/voting/pre_votes',
+  VOTING_ROUND_THRESHOLD: '/consensus/voting/threshold',
+  VOTING_ROUND_HEIGHT: '/consensus/voting/height',
+  STAKEHOLDER: '/consensus/stakes',
+  VOTING_ROUND_BLOCK_HASH: '/consensus/voting/block_hash',
+  VOTING_NEXT_ROUND_VALIDATORS: '/consensus/voting/next_round_validators',
   // Account & Transfer
   ACCOUNT: 'account',
-  BALANCE: 'balance', 
+  BALANCE: 'balance',
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
   TRANSFER_RESULT: 'result',
@@ -68,12 +68,23 @@ const PredefinedDbPaths = {
  * Types of write operations supported by Db
  * @enum {string}
  */
-const DbOperations = {
-  INCREASE: 'INCREASE',
-  SET: 'SET',
-  BATCH: 'BATCH',
-  UPDATE: 'UPDATE',
+const OperationTypes = {
   GET: 'GET',
+  SET_VALUE: 'SET_VALUE',
+  INC_VALUE: 'INC_VALUE',
+  DEC_VALUE: 'DEC_VALUE',
+  UPDATES: 'UPDATES',
+  BATCH: 'BATCH',
+};
+
+/**
+ * Types of updates
+ * @enum {string}
+ */
+const UpdateTypes = {
+  SET_VALUE: 'SET_VALUE',
+  INC_VALUE: 'INC_VALUE',
+  DEC_VALUE: 'DEC_VALUE',
 };
 
 /**
@@ -93,6 +104,7 @@ module.exports = {
   STAKE,
   VotingActionTypes,
   PredefinedDbPaths,
-  DbOperations,
+  OperationTypes,
+  UpdateTypes,
   FunctionResultCode,
 };

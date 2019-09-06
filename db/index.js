@@ -2,8 +2,8 @@ const escapeStringRegexp = require('escape-string-regexp');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const InvalidPermissionsError = require('../errors');
-const {DbOperations} = require('../constants');
+const { InvalidPermissionsError } = require('../errors');
+const { OperationTypes, UpdateTypes, PredefinedDbPaths } = require('../constants');
 
 class DB {
   constructor() {
@@ -43,29 +43,27 @@ class DB {
   }
 
   stake(stakeAmount) {
-    return this.set(['stakes', this.publicKey].join('/'), stakeAmount);
+    return this.setValue([PredefinedDbPaths.STAKEHOLDER, this.publicKey].join('/'), stakeAmount);
   }
 
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Make set operation and function run tightly bound, i.e., revert the former
   //            if the latter fails.
-  set(dbPath, value, address, timestamp) {
+  setValue(dbPath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
     if (!(parsedPath.length === 1 && parsedPath[0] === 'rules')
-        && this.getPermissions(parsedPath, address, timestamp, '.write', value)
-         == false) {
-      throw new
-      InvalidPermissionsError(`Invalid set permissons for ${dbPath}`);
+        && this.getPermissions(parsedPath, address, timestamp, '.write', value) == false) {
+      throw new InvalidPermissionsError(`Invalid permissons for ${dbPath}`);
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.setWithPermission(dbPath, valueCopy);
+    this.setValueWithPermission(dbPath, valueCopy);
     this.func.runFunctions(parsedPath, valueCopy);
     return true;
   }
 
-  setWithPermission(dbPath, value) {
+  setValueWithPermission(dbPath, value) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     if (parsedPath.length === 0) {
       this.db = value;
@@ -78,31 +76,67 @@ class DB {
     }
   }
 
-  update(data, address, timestamp) {
-    for (const key in data) {
-      this.set(key, data[key], address, timestamp);
+  incValue(dbPath, delta, address, timestamp) {
+    const valueBefore = this.get(dbPath);
+    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
+      return {code: -1, error_message: 'Not a number type: ' + dbPath};
     }
-    return true;
+    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
+    return this.setValue(dbPath, valueAfter, address, timestamp);
+  }
+
+  decValue(dbPath, delta, address, timestamp) {
+    const valueBefore = this.get(dbPath);
+    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
+      return {code: -1, error_message: 'Not a number type: ' + dbPath};
+    }
+    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
+    return this.setValue(dbPath, valueAfter, address, timestamp);
+  }
+
+  // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
+  updates(updateList, address, timestamp) {
+    let ret = true;
+    for (let i = 0; i < updateList.length; i++) {
+      const update = updateList[i];
+      if (update.type === undefined || update.type === UpdateTypes.SET_VALUE) {
+        ret = this.setValue(update.ref, update.value, address, timestamp);
+        if (ret !== true) {
+          break;
+        }
+      } else if (update.type === UpdateTypes.INC_VALUE) {
+        ret = this.incValue(update.ref, update.value, address, timestamp);
+        if (ret !== true) {
+          break;
+        }
+      } else if (update.type === UpdateTypes.DEC_VALUE) {
+        ret = this.decValue(update.ref, update.value, address, timestamp);
+        if (ret !== true) {
+          break;
+        }
+      }
+    }
+    return ret;
   }
 
   batch(batchList, address, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
-      if (item.op.toUpperCase() === DbOperations.SET) {
-        resultList
-            .push(this.set(item.ref, item.value, address, timestamp));
-      } else if (item.op.toUpperCase() === DbOperations.INCREASE) {
-        resultList
-            .push(this.increase(item.diff, address, timestamp));
-      } else if (item.op.toUpperCase() === DbOperations.UPDATE) {
-        resultList
-            .push(this.update(item.data, address, timestamp));
-      } else if (item.op.toUpperCase() === DbOperations.GET) {
+      if (item.type === OperationTypes.GET) {
         resultList
             .push(this.get(item.ref));
-      } else if (item.op.toUpperCase() === DbOperations.BATCH) {
+      } else if (item.type === OperationTypes.SET_VALUE) {
         resultList
-            .push(this.batch(item.batch_list, address, timestamp));
+            .push(this.setValue(item.ref, item.value, address, timestamp));
+      } else if (item.type === OperationTypes.INC_VALUE) {
+        resultList
+            .push(this.incValue(item.ref, item.value, address, timestamp));
+      } else if (item.type === OperationTypes.DEC_VALUE) {
+        resultList
+            .push(this.decValue(item.ref, item.value, address, timestamp));
+      } else if (item.type === OperationTypes.UPDATES) {
+        resultList
+            .push(this.updates(item.update_list, address, timestamp));
       }
     });
     return resultList;
@@ -120,32 +154,16 @@ class DB {
     return subDb;
   }
 
-  increase(diff, address, timestamp) {
-    for (const k in diff) {
-      if (this.get(k, address) && typeof this.get(k, address) != 'number') {
-        // TODO: Raise error here
-        return {code: -1, error_message: 'Not a number type: ' + k};
-      }
-    }
-    const results = {};
-    for (const k in diff) {
-      const result = (this.get(k, address) || 0) + diff[k];
-      this.set(k, result, address, timestamp);
-      results[k] = result;
-    }
-    return results;
-  }
-
   /**
     * Validates transaction is valid according to AIN database rules and returns a transaction instance
     *
-    * @param {dict} data - Database write request to be converted to transaction
+    * @param {dict} operation - Database write operation to be converted to transaction
     * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or not
     * @return {Transaction} Instance of the transaction class
     * @throws {InvalidPermissionsError} InvalidPermissionsError when database rules don't allow the transaction
     */
-  createTransaction(data, isNoncedTransaction = true) {
-    return Transaction.newTransaction(this, data, isNoncedTransaction);
+  createTransaction(operation, isNoncedTransaction = true) {
+    return Transaction.newTransaction(this, operation, isNoncedTransaction);
   }
 
   sign(dataHash) {
@@ -166,14 +184,14 @@ class DB {
   }
 
   executeBlockTransactions(block) {
-    block.data.forEach((transaction) =>{
-      this.execute(transaction.output, transaction.address, transaction.timestamp);
+    block.data.forEach((tx) =>{
+      this.execute(tx.operation, tx.address, tx.timestamp);
     });
   }
 
   addTransactionPool(transactions) {
-    transactions.forEach((trans) => {
-      this.execute(trans.output, trans.address, trans.timestamp);
+    transactions.forEach((tx) => {
+      this.execute(tx.operation, tx.address, tx.timestamp);
     });
   }
 
@@ -183,16 +201,18 @@ class DB {
     }
   }
 
-  execute(transaction, address, timestamp) {
-    switch (transaction.type) {
-      case DbOperations.SET:
-        return this.set(transaction.ref, transaction.value, address, timestamp);
-      case DbOperations.INCREASE:
-        return this.increase(transaction.diff, address, timestamp);
-      case DbOperations.UPDATE:
-        return this.update(transaction.data, address, timestamp);
-      case DbOperations.BATCH:
-        return this.batch(transaction.batch_list, address, timestamp);
+  execute(operation, address, timestamp) {
+    switch (operation.type) {
+      case OperationTypes.SET_VALUE:
+        return this.setValue(operation.ref, operation.value, address, timestamp);
+      case OperationTypes.INC_VALUE:
+        return this.incValue(operation.ref, operation.value, address, timestamp);
+      case OperationTypes.DEC_VALUE:
+        return this.decValue(operation.ref, operation.value, address, timestamp);
+      case OperationTypes.UPDATES:
+        return this.updates(operation.update_list, address, timestamp);
+      case OperationTypes.BATCH:
+        return this.batch(operation.batch_list, address, timestamp);
     }
   }
 
@@ -235,7 +255,7 @@ class DB {
       if (ruleString.includes(wildCard)) {
         // May need to come back here to figure out how to change ALL occurrences of wildCards
         ruleString = ruleString.replace(
-          new RegExp(escapeStringRegexp(wildCard), 'g'), `${wildCards[wildCard]}`);
+            new RegExp(escapeStringRegexp(wildCard), 'g'), `${wildCards[wildCard]}`);
       }
     }
     return ruleString;

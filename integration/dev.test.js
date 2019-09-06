@@ -11,26 +11,77 @@ chai.use(chaiHttp);
 const rimraf = require("rimraf")
 const {BLOCKCHAINS_DIR} = require('../constants') 
 
-
-const server1 = 'http://localhost:8085'
-const server2 = 'http://localhost:8089'
-const server3 = 'http://localhost:8087'
-const server4 = 'http://localhost:8088'
-
+const server1 = 'http://localhost:9091'
+const server2 = 'http://localhost:9092'
+const server3 = 'http://localhost:9093'
+const server4 = 'http://localhost:9094'
 
 describe('API Tests', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(() => {
-    tracker_proc = spawn('node', [TRACKER_SERVER])
+    tracker_proc = spawn('node', [TRACKER_SERVER], {
+      cwd: process.cwd(),
+      env: {
+          PATH: process.env.PATH
+      },
+      stdio: 'inherit'
+    }).on('error', (err) => {
+      console.error('Failed to start tracker server with error: ' + err.message);
+    });
     sleep(2000)
-    server1_proc = spawn('node', [APP_SERVER], {env: {STAKE: 250, LOG: true, P2P_PORT:5001, PORT: 8085}})
+    server1_proc = spawn('node', [APP_SERVER], {
+      cwd: process.cwd(),
+      env: {
+        PATH: process.env.PATH,
+        STAKE: 250,
+        LOG: true,
+        P2P_PORT:5001,
+        PORT: 9091,
+        LOCAL: true
+      },
+    }).on('error', (err) => {
+      console.error('Failed to start server1 with error: ' + err.message);
+    });
     sleep(500)
-    server2_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5002, PORT: 8089}})
+    server2_proc = spawn('node', [APP_SERVER], {
+      cwd: process.cwd(),
+      env: {
+        PATH: process.env.PATH,
+        LOG: true,
+        P2P_PORT:5002,
+        PORT: 9092,
+        LOCAL: true
+      },
+    }).on('error', (err) => {
+      console.error('Failed to start server2 with error: ' + err.message);
+    });
     sleep(500)
-    server3_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5003, PORT: 8087}})
+    server3_proc = spawn('node', [APP_SERVER], {
+      cwd: process.cwd(),
+      env: {
+        PATH: process.env.PATH,
+        LOG: true,
+        P2P_PORT:5003,
+        PORT: 9093,
+        LOCAL: true
+      },
+    }).on('error', (err) => {
+      console.error('Failed to start server3 with error: ' + err.message);
+    });
     sleep(500)
-    server4_proc = spawn('node', [APP_SERVER], {env: {LOG: true, P2P_PORT:5004, PORT: 8088}})
+    server4_proc = spawn('node', [APP_SERVER], {
+      cwd: process.cwd(),
+      env: {
+        PATH: process.env.PATH,
+        LOG: true,
+        P2P_PORT:5004,
+        PORT: 9094,
+        LOCAL: true
+      },
+    }).on('error', (err) => {
+      console.error('Failed to start server4 with error: ' + err.message);
+    });
     sleep(12000)
   });
 
@@ -45,31 +96,30 @@ describe('API Tests', () => {
 
   beforeEach(() => {
     return chai.request(server2)
-        .post(`/set`).send({ref: 'test/test', value: 1})
-      
+        .post('/set_value').send({ref: 'test/test', value: 100})
   });
 
   afterEach(() => {
     return chai.request(server2)
-        .post(`/set`).send({ref: '/', value: {}})
+        .post('/set_value').send({ref: '/', value: {}})
   });
 
-  describe('/get ref', () => {
+  describe('/get', () => {
     it('get simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get(`/get?ref=test/test`)
+          .get('/get?ref=test/test')
           .then((res) => {
             res.should.have.status(200);
-            res.body.should.be.deep.eql({code:0, result: 1});
+            res.body.should.be.deep.eql({code:0, result: 100});
           });
     })
   })
 
-  describe('/set ref', () => {
+  describe('/set_value', () => {
     it('set simple', () => {
       return chai.request(server3)
-          .post(`/set`).send({ref: 'test/value', value: "something"})
+          .post('/set_value').send({ref: 'test/value', value: "something"})
           .then((res) => {
             res.should.have.status(201);
             res.body.should.be.deep.eql({code:0, result: true});
@@ -77,22 +127,52 @@ describe('API Tests', () => {
     })
   })
 
-  describe('/increase ref', () => {
-    it('increase simple', () => {
+  describe('/inc_value', () => {
+    it('inc_value simple', () => {
       sleep(200)
       return chai.request(server4)
-          .post(`/increase`).send({diff: {"test/test": 10}})
+          .post('/inc_value').send({ref: "test/test", value: 10})
           .then((res) => {
             res.should.have.status(201);
-            res.body.should.be.deep.eql({code:0, result: {"test/test": 11}});
+            res.body.should.be.deep.eql({code:0, result: true});
           });
     })
   })
 
-  describe('/update', () => {
-    it('update simple', () => {
+  describe('/dec_value', () => {
+    it('dec_value simple', () => {
+      sleep(200)
+      return chai.request(server4)
+          .post('/dec_value').send({ref: "test/test", value: 10})
+          .then((res) => {
+            res.should.have.status(201);
+            res.body.should.be.deep.eql({code:0, result: true});
+          });
+    })
+  })
+
+  describe('/updates', () => {
+    it('updates simple', () => {
       return chai.request(server2)
-          .post(`/update`).send({data: {"test/balance": {a:1, b:2}}})
+          .post('/updates').send({
+            update_list: [
+              {
+                type: "SET_VALUE",
+                ref: "test/balance",
+                value: {a:1, b:2}
+              },
+              {
+                type: 'INC_VALUE',
+                ref: "test/test",
+                value: 10
+              },
+              {
+                type: 'DEC_VALUE',
+                ref: "test/test2",
+                value: 10
+              }
+            ]
+          })
           .then((res) => {
             res.should.have.status(201);
             res.body.should.be.deep.eql({code:0, result: true});
@@ -105,23 +185,60 @@ describe('API Tests', () => {
       return chai.request(server1)
           .post(`/batch`).send({
             batch_list: [
-              {op: 'set', ref: 'test/a', value: 1},
-              {op: 'increase', diff: {"test/test": 10}},
-              {op: 'update', data: {"test/balance": {a:1, b:2}}},
-              {op: 'get', ref: 'test/a'},
-              {op: 'get', ref: 'test/balance/b'}
+              {
+                type: 'SET_VALUE',
+                ref: 'test/a',
+                value: 1
+              },
+              {
+                type: 'INC_VALUE',
+                ref: "test/test",
+                value: 10
+              },
+              {
+                type: 'UPDATES',
+                update_list: [
+                  {
+                    type: "SET_VALUE",
+                    ref: "test/balance",
+                    value: {
+                      a:1,
+                      b:2
+                    }
+                  },
+                  {
+                    type: 'INC_VALUE',
+                    ref: "test/test",
+                    value: 10
+                  },
+                  {
+                    type: 'DEC_VALUE',
+                    ref: "test/test2",
+                    value: 10
+                  }
+                ]
+              },
+              {
+                type: 'GET',
+                ref: 'test/a'
+              },
+              {
+                type: 'GET',
+                ref: 'test/balance/b'
+              }
           ]})
           .then((res) => {
             res.should.have.status(201);
             res.body.should.be.deep.eql({
               code: 0,
               result: [
-              true,
-              {"test/test": 11},
-              true,
-              1,
-              2
-            ]});
+                true,
+                true,
+                true,
+                1,
+                2
+              ]
+            });
       });
     })
   })

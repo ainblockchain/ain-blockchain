@@ -10,35 +10,44 @@ const PEERS = [];
 const REGION = 'region';
 const COUNTRY = 'country';
 const CITY = 'city';
+const TIMEZONE = 'timezone';
+const MASK = 'xxx';
 const PORT = 5000;
 
 webSocketServer.on('connection', (ws) => {
   ws.on('message', (message) => {
-    peerUrlInfo = JSON.parse(message);
-    const peer = Peer.getPeer(ws, peerUrlInfo);
-    ws.send(JSON.stringify(peer.getPeerList()));
-    console.log(`Added peer node ${peer.url}`);
-    console.log(Object.values(PEERS));
-    PEERS.push(peer);
+    try {
+      peerUrlInfo = JSON.parse(message);
+      const peer = Peer.getPeer(ws, peerUrlInfo);
+      ws.send(JSON.stringify(peer.getPeerList()));
+      console.log(`Added peer node ${peer.url}`);
+      console.log(`New peer node is connected to  ${peer.getPeerList()}`);
+      PEERS.push(peer);
+      console.log(`Number of peers is ${PEERS.length}`);
+    } catch (err) {
+      console.log(err.stack);
+    }
   });
 
   ws.on('close', () => {
-    const peer = PEERS.find((peer) => peer.ws === ws);
-    const peerIndex = PEERS.indexOf(peer);
-    PEERS.splice(peerIndex, 1);
-    const effectedPeers = PEERS.filter((p)=> {
-      if (p.getPeerList().indexOf(peer.url) > -1) {
-        return p;
+    try {
+      const peer = PEERS.find((peer) => peer.ws === ws);
+      const peerIndex = PEERS.indexOf(peer);
+      PEERS.splice(peerIndex, 1);
+      const effectedPeers = PEERS.filter((p)=> {
+        if (p.getPeerList().indexOf(peer.url) > -1) {
+          return p;
+        }
+      });
+      let lastPeer = effectedPeers.pop();
+      for (let i = effectedPeers.length -1; i >= 0; i--) {
+        console.log(`Connecting peer ${lastPeer.url} to peer ${effectedPeers[i].url}`);
+        lastPeer.connect(effectedPeers[i]);
+        lastPeer = effectedPeers.pop();
       }
-    });
-    let lastPeer = effectedPeers.pop();
-    for (i=effectedPeers.length -1; i>=0; i--) {
-      lastPeer.connect(effectedPeers[i]);
-      lastPeer = effectedPeers.pop();
+    } catch (err) {
+      console.log(err.stack);
     }
-
-    // TODO: Connect all nodes that the removed peer was acting as a bridge for in order
-    // to ensure that network remains connected at all times
   });
 });
 
@@ -48,6 +57,7 @@ class Peer {
     this.protocol = peerUrlInfo.PROTOCOL;
     this.ip = peerUrlInfo.HOST;
     this.port = peerUrlInfo.P2P_PORT;
+    this.publicKey = peerUrlInfo.PUBLIC_KEY;
     this.url = Peer.getPeerUrl(this.protocol, this.ip, this.port);
     this.ws = ws;
     this.connectedPeers = [];
@@ -55,14 +65,38 @@ class Peer {
     this.country = locationDict == null || locationDict[COUNTRY].length === 0 ? null : locationDict[COUNTRY];
     this.region = locationDict == null ||locationDict[REGION].length === 0 ? null : locationDict[REGION];
     this.city = locationDict == null ||locationDict[CITY].length === 0 ? null : locationDict[CITY];
+    this.timezone = locationDict == null ||locationDict[TIMEZONE].length === 0 ? null : locationDict[TIMEZONE];
+  }
+
+  getPeerInfo() {
+    return {
+      ip: Peer.maskIp(this.ip),
+      port: this.port,
+      url: Peer.getPeerUrl(this.protocol, Peer.maskIp(this.ip), this.port),
+      publicKey: this.publicKey,
+      connectedPeers: this.connectedPeers.map((peer) => {
+        return Peer.getPeerUrl(peer.protocol, Peer.maskIp(peer.ip), peer.port);
+      }),
+      country: this.country,
+      region: this.region,
+      city: this.city,
+      timezone: this.timezone,
+    };
+  }
+
+  static maskIp(ip) {
+    const ipList = ip.split('.');
+    ipList[0] = MASK;
+    ipList[1] = MASK;
+    return ipList.join('.');
   }
 
   static getPeerLocation(ip) {
     const geoLocationDict = geoip.lookup(ip);
-    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 && geoLocationDict[REGION].length === 0 && geoLocationDict[CITY]).length === 0) {
+    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 && geoLocationDict[REGION].length === 0 && geoLocationDict[CITY].length === 0 && geoLocationDict[TIMEZONE].length === 0)) {
       return null;
     }
-    return {[COUNTRY]: geoLocationDict[COUNTRY], [REGION]: geoLocationDict[REGION], [CITY]: geoLocationDict[CITY]};
+    return {[COUNTRY]: geoLocationDict[COUNTRY], [REGION]: geoLocationDict[REGION], [CITY]: geoLocationDict[CITY], [TIMEZONE]: geoLocationDict[TIMEZONE]};
   }
 
   static getPeerUrl(protocol, host, port) {
@@ -74,7 +108,7 @@ class Peer {
     if (PEERS.length == 1) {
       peer.addPeer(PEERS[0]);
     } else if (PEERS.length > 1) {
-      while (peer.getPeerList() < MAX_PER_SERVER) {
+      while (peer.getPeerList().length < MAX_PER_SERVER) {
         peer.addPeer(PEERS[Math.floor(Math.random() * PEERS.length)]);
       }
     }

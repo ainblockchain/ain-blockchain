@@ -1,16 +1,19 @@
 const Websocket = require('ws');
 const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
+const publicIp = require('public-ip');
 const trackerWebSocketAddr = process.env.TRACKER_IP || 'ws://localhost:3001';
+// Set LOCAL to true if your are running all blockchains in a local environment where all blcokchain nodes
+// are being run in the same network (e.g. on your laptop) and will not communicate with external servers.
+const LOCAL = process.env.LOCAL || false;
 const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
-const HOST = ip.address();
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
-const InvalidPermissionsError = require('../errors');
+const { InvalidPermissionsError } = require('../errors');
 const {ForgedBlock} = require('../blockchain/block');
 const VotingUtil = require('./voting-util');
-const {DbOperations} = require('../constants');
+const { OperationTypes } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
 
 class P2pServer {
@@ -24,7 +27,7 @@ class P2pServer {
     this.waitInBlocks = 4;
   }
 
-  connectTracker() {
+  async connectTracker() {
     trackerWebSocket.on('message', (message) => {
       const peers = JSON.parse(message);
       this.connectToPeers(peers);
@@ -33,7 +36,7 @@ class P2pServer {
         this.initiateChain();
       }
     });
-    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST, P2P_PORT}));
+    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ? ip.address() : (await publicIp.v4()), P2P_PORT, PUBLIC_KEY: this.db.publicKey}));
   }
 
   listen() {
@@ -166,7 +169,7 @@ class P2pServer {
 
     let result;
     try {
-      result = this.db.execute(transaction.output, transaction.address, transaction.timestamp);
+      result = this.db.execute(transaction.operation, transaction.address, transaction.timestamp);
     } catch (error) {
       if (error instanceof InvalidPermissionsError) {
         return null;
@@ -230,7 +233,10 @@ class P2pServer {
         }
         this.votingUtil.setBlock(votingAction.block);
         if (this.votingUtil.isValidator()) {
-          this.executeAndBroadcastVotingAction({transaction: this.votingUtil.preVote(), actionType: VotingActionTypes.PRE_VOTE});
+          this.executeAndBroadcastVotingAction({
+            transaction: this.votingUtil.preVote(),
+            actionType: VotingActionTypes.PRE_VOTE
+          });
         }
       case VotingActionTypes.PRE_VOTE:
         if (!this.votingUtil.checkPreVotes()) {
@@ -238,7 +244,10 @@ class P2pServer {
         }
         const preCommitTransaction = this.votingUtil.preCommit();
         if (preCommitTransaction !== null) {
-          this.executeAndBroadcastVotingAction({transaction: preCommitTransaction, actionType: VotingActionTypes.PRE_COMMIT});
+          this.executeAndBroadcastVotingAction({
+            transaction: preCommitTransaction,
+            actionType: VotingActionTypes.PRE_COMMIT
+          });
         }
       case VotingActionTypes.PRE_COMMIT:
         if (this.votingUtil.isCommit()) {
@@ -255,11 +264,12 @@ class P2pServer {
     const blockHeight = this.blockchain.height() + 1;
     this.votingUtil.setBlock(
         ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(), this.db.publicKey,
-            Object.keys(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)), this.db.get(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
+            Object.keys(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
+            this.db.get(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
-    const blockHashTransaction = this.db.createTransaction({type: DbOperations.SET, ref, value});
+    const blockHashTransaction = this.db.createTransaction({ type: OperationTypes.SET_VALUE, ref, value });
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
     if (!Object.keys(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {

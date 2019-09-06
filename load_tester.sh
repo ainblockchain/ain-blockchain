@@ -9,10 +9,10 @@ BASEDIR=$(dirname "$0")
 node $BASEDIR/tracker-server/index.js &
 PID1=$!
 sleep 5
-STAKE=250 LOG=true node $BASEDIR/client/index.js > log1.txt &
+STAKE=250 LOG=true LOCAL=true node $BASEDIR/client/index.js > log1.txt &
 PID2=$!
 sleep 10
-STAKE=250 P2P_PORT=5020 PORT=8081 LOG=true node $BASEDIR/client/index.js > log2.txt &
+STAKE=250 P2P_PORT=5020 PORT=8081 LOG=true LOCAL=true node $BASEDIR/client/index.js > log2.txt &
 PID3=$!
 sleep 20
 date > load1.txt
