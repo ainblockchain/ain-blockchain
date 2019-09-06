@@ -144,7 +144,7 @@ class ForgedBlock extends Block {
     if (fs.existsSync(RULES_FILE_PATH)) {
       data.push({
         operation: {
-          type: 'SET_VALUE',
+          type: 'SET_RULE',
           ref: 'rules',
           value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules']
         },

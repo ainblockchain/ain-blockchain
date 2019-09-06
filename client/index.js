@@ -70,7 +70,6 @@ const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = Database.getDatabase(bc, tp);
 const p2pServer = new P2pServer(db, bc, tp);
-const { InvalidPermissionsError } = require('../errors');
 const jayson = require('jayson');
 
 const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
@@ -147,6 +146,23 @@ app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result =
       createTransaction({ type: OperationTypes.DEC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
+          isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+app.post('/set_rule', (req, res, next) => {
+  const address = req.body.address;
+  const nonce = req.body.nonce;
+  const skipVerif = req.body.skip_verif;
+  const ref = req.body.ref;
+  const value = req.body.value;
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result =
+      createTransaction({ type: OperationTypes.SET_RULE, ref, value, address, nonce, skip_verif: skipVerif },
           isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
@@ -233,16 +249,7 @@ function broadcastBatchTransaction() {
   if (transactionBatch.length > 0) {
     const batchList = JSON.parse(JSON.stringify(transactionBatch));
     transactionBatch.length = 0;
-    let transaction;
-    try {
-      transaction = db.createTransaction({type: 'BATCH', batch_list: batchList});
-    } catch (error) {
-      if (error instanceof InvalidPermissionsError) {
-        console.log(`Invalid permissions: ${error.stack}`);
-        return null;
-      }
-      throw error;
-    }
+    const transaction = db.createTransaction({type: 'BATCH', batch_list: batchList});
     return p2pServer.executeAndBroadcastTransaction(transaction);
   }
 }
