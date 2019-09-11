@@ -61,17 +61,18 @@ class DB {
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Make set operation and function run tightly bound, i.e., revert the former
   //            if the latter fails.
-  // TODO(seo): Add array to object transforming (see
+  // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
+  // TODO(seo): Consider explicitly defining error code.
   setValue(dbPath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     // TODO: Find a better way to manage seeting of rules than this dodgy condition
     // In future should be able to accomidate other types of rules beyoned wrie
     if (parsedPath.length < 1 || parsedPath[0] === 'rules') {
-      return {code: -1, error_message: 'Invalid value path: ' + dbPath};
+      return {code: 1, error_message: 'Invalid value path: ' + dbPath};
     }
     if (!this.getPermissionOnValue(parsedPath, address, timestamp, '.write', value)) {
-      return {code: -1, error_message: 'No SET_VALUE permission on: ' + dbPath};
+      return {code: 2, error_message: 'No SET_VALUE permission on: ' + dbPath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.updateDatabase(dbPath, valueCopy);
@@ -82,7 +83,7 @@ class DB {
   incValue(dbPath, delta, address, timestamp) {
     const valueBefore = this.get(dbPath);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: -1, error_message: 'Not a number type: ' + dbPath};
+      return {code: 1, error_message: 'Not a number type: ' + dbPath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(dbPath, valueAfter, address, timestamp);
@@ -91,7 +92,7 @@ class DB {
   decValue(dbPath, delta, address, timestamp) {
     const valueBefore = this.get(dbPath);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: -1, error_message: 'Not a number type: ' + dbPath};
+      return {code: 1, error_message: 'Not a number type: ' + dbPath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(dbPath, valueAfter, address, timestamp);
@@ -100,10 +101,10 @@ class DB {
   setRule(dbPath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(dbPath);
     if (!(parsedPath.length === 1 && parsedPath[0] === 'rules')) {
-      return {code: -1, error_message: 'Invalid rule path: ' + dbPath};
+      return {code: 1, error_message: 'Invalid rule path: ' + dbPath};
     }
     if (!this.getPermissionOnRule(parsedPath, address, timestamp, value)) {
-      return {code: -1, error_message: 'No SET_RULE permission on: ' + dbPath};
+      return {code: 2, error_message: 'No SET_RULE permission on: ' + dbPath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.updateDatabase(dbPath, valueCopy);

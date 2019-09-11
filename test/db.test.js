@@ -63,7 +63,7 @@ describe("DB values", () => {
             }
             // Overwriting the default rules manually for this area
             db.db["rules"][".write"] = true
-            expect(db.setValue("/", new_db).code).to.equal(-1)
+            expect(db.setValue("/", new_db).code).to.equal(1)
         })
 
         it("when overwriting nested value", () => {
@@ -86,7 +86,7 @@ describe("DB values", () => {
         })
 
         it("returning error code and leaving value unchanged if path is not numerical", () => {
-            expect(db.incValue("test/ai/foo", 10).code).to.equal(-1)
+            expect(db.incValue("test/ai/foo", 10).code).to.equal(1)
             expect(db.get("test/ai/foo")).to.equal("bar")
         })
 
@@ -103,7 +103,7 @@ describe("DB values", () => {
         })
 
         it("returning error code and leaving value unchanged if path is not numerical", () => {
-            expect(db.decValue("test/ai/foo", 10).code).to.equal(-1)
+            expect(db.decValue("test/ai/foo", 10).code).to.equal(1)
             expect(db.get("test/ai/foo")).to.equal("bar")
         })
 
@@ -158,7 +158,7 @@ describe("DB values", () => {
                     ref: "test/decrement/value",
                     value: 10
                 },
-            ]).code).to.equal(-1)
+            ]).code).to.equal(1)
             expect(db.get("test/ai/foo")).to.equal("bar")
         })
 
@@ -181,7 +181,7 @@ describe("DB values", () => {
                     ref: "test/ai/foo",
                     value: 10
                 },
-            ]).code).to.equal(-1)
+            ]).code).to.equal(1)
             expect(db.get("test/ai/foo")).to.equal("bar")
         })
     })
