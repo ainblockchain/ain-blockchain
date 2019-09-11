@@ -291,7 +291,7 @@ class P2pServer {
     this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
     this.votingUtil.reset();
     this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0) {
+    if (this.waitInBlocks > 0 && !this.db.get(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
       this.waitInBlocks = this.waitInBlocks - 1;
       if (this.waitInBlocks === 0) {
         this.stakeAmount();
