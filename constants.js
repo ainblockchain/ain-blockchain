@@ -73,6 +73,7 @@ const OperationTypes = {
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
+  SET_RULE: 'SET_RULE',
   UPDATES: 'UPDATES',
   BATCH: 'BATCH',
 };
@@ -85,6 +86,7 @@ const UpdateTypes = {
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
+  SET_RULE: 'SET_RULE',
 };
 
 /**

@@ -77,12 +77,12 @@ class BuiltInFunctions {
     let fromBalance = this.db.get(fromBalancePath);
     let toBalance = this.db.get(toBalancePath);
     if (fromBalance >= value) {
-      this.db.setValueWithPermission(fromBalancePath, fromBalance - value);
-      this.db.setValueWithPermission(toBalancePath, toBalance + value);
-      this.db.setValueWithPermission(
+      this.db.updateDatabase(fromBalancePath, fromBalance - value);
+      this.db.updateDatabase(toBalancePath, toBalance + value);
+      this.db.updateDatabase(
         this._getTransferResultPath(from, to, key), { code: FunctionResultCode.SUCCESS });
     } else {
-      this.db.setValueWithPermission(
+      this.db.updateDatabase(
         this._getTransferResultPath(from, to, key), { code: FunctionResultCode.FAILURE });
     }
   }
