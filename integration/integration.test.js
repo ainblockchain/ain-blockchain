@@ -36,7 +36,7 @@ const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
 const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 
-const setEndpoint = '/set';
+const setEndpoint = '/set_value';
 
 const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true},
   {P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true}];
@@ -54,18 +54,18 @@ RANDOM_OPERATION = [
   ['SET_VALUE', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
   ['SET_VALUE', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
   ['SET_VALUE', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
-  ['INC_VALUE', {ref: 'test/increase/first/level', value: 10}],
-  ['INC_VALUE', {ref: 'test/increase/second/level/deeper', value: 20}],
-  ['INC_VALUE', {ref: 'test/increase', value: 1}],
-  ['INC_VALUE', {ref: 'test/new', value: 1}],
-  ['INC_VALUE', {ref: 'test/increase', value: -10000}],
-  ['INC_VALUE', {ref: 'test/b/u', value: 10000}],
-  ['INC_VALUE', {ref: 'test/builed/some/deep/place/next', value: 100002}],
+  ['INC_VALUE', {ref: 'test/balance/user1', value: 10}],
+  ['INC_VALUE', {ref: 'test/balance/user1', value: 20}],
+  ['INC_VALUE', {ref: 'test/balance/user2', value: 1}],
+  ['INC_VALUE', {ref: 'test/balance/user2', value: 1}],
+  ['DEC_VALUE', {ref: 'test/balance/user1', value: 10000}],
+  ['DEC_VALUE', {ref: 'test/balance/user1', value: 10000}],
+  ['DEC_VALUE', {ref: 'test/balance/user2', value: 100002}],
   ['UPDATES', {update_list: [{ref: 'test/increase/first/level', value: 10}, {ref: 'test/increase/first/level2', value: 20}]}],
   ['UPDATES', {update_list: [{ref: 'test/increase/second/level/deeper', value: 20}, {ref: 'test/increase/second/level/deeper', value: 1000}]}],
   ['UPDATES', {update_list: [{ref: 'test/increase', value: 1}]}],
-  ['UPDATES', {update_list: [{ref: 'test/new', value: 1, 'test/b': 30}]}],
-  ['UPDATES', {update_list: [{ref: 'test/increase', value: 10000, 'test/increase': 10000}]}],
+  ['UPDATES', {update_list: [{ref: 'test/new', value: 1}]}],
+  ['UPDATES', {update_list: [{ref: 'test/increase', value: 10000}]}],
   ['UPDATES', {update_list: [{ref: 'test/b/u', value: 10000}]}],
   ['UPDATES', {update_list: [{ref: 'test/builed/some/deep/place/next', value: 100002}]}],
   ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'testme'}, {type: 'INC_VALUE', ref: 'test/b/u', value: 10000}]}],
@@ -248,12 +248,12 @@ describe('Integration Tests', () => {
               if (headers[i].validators.indexOf(transaction.address) < 0) {
                 assert.fail(`Invalid validator is validating block ${transaction.address}`);
               }
-              if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES in transaction.operation.diff) {
-                preVotes += transaction.operation.diff[PredefinedDbPaths.VOTING_ROUND_PRE_VOTES];
+              if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES === transaction.operation.ref) {
+                preVotes += transaction.operation.value;
               } else if (preVotes <= headers[i].threshold) {
                 assert.fail('PreCommits were made before PreVotes reached threshold');
               } else {
-                preCommits += transaction.operation.diff[PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS];
+                preCommits += transaction.operation.value;
               }
             }
             expect(preVotes).greaterThan(headers[i].threshold);
@@ -271,7 +271,7 @@ describe('Integration Tests', () => {
     describe('and rules', ()=> {
       it('prevent users from restructed areas', () => {
         return chai.request(server2).post(`/set`).send( {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}).then((res) => {
-          res.should.have.status(401);
+          res.should.have.status(404);
         });
       });
     });
@@ -286,7 +286,7 @@ describe('Integration Tests', () => {
       });
 
       it('facilitate transfer between accounts', () => {
-        return chai.request(server1).post(`/set`).send( {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 50}).then((res) => {
+        return chai.request(server1).post(setEndpoint).send( {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 50}).then((res) => {
           sleep(100);
           balance1 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
           balance2 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[1]}/balance`).body.toString('utf-8')).result;

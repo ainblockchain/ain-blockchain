@@ -29,6 +29,15 @@ let CURRENT_NONCE = 0;
 // transaction.
 const TX_PER_SECOND_AUTOBATCHING = 120;
 
+function getDateString() {
+  const dateObject = new Date(Date.now());
+  return dateObject.getFullYear() + '/' + (dateObject.getMonth() + 1) + '/' + dateObject.getDate() + '-' +
+    (dateObject.getHours() > 9 ? dateObject.getHours() : '0' + dateObject.getHours()) + ':' +
+    (dateObject.getMinutes() > 9 ? dateObject.getMinutes() : '0' + dateObject.getMinutes()) + ':' +
+    (dateObject.getSeconds() > 9 ? dateObject.getSeconds() : '0' + dateObject.getSeconds()) + ':' +
+    dateObject.getMilliseconds();
+}
+
 if (LOG) {
   const fs = require('fs');
   const util = require('util');
@@ -41,10 +50,11 @@ if (LOG) {
   const logStdout = process.stdout;
 
   console.log = function(d) {
-    logFile.write(util.format(d) + '\n');
+    logFile.write(getDateString() + '\t' + util.format(d) + '\n');
     logStdout.write(util.format(d) + '\n');
   };
 }
+
 
 // [START gae_flex_mysql_app]
 const express = require('express');

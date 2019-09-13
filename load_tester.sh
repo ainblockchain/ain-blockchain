@@ -18,10 +18,10 @@ sleep 20
 date > load1.txt
 
 
-ab -p post.txt -T application/json  -c 50 -n 50000 http://localhost:8080/increase >> load1.txt &
+ab -p post.txt -T application/json  -c 50 -n 50000 http://localhost:8080/inc_value >> load1.txt &
 sleep 1
 date > load2.txt
-ab -p post.txt -T application/json  -c 50 -n 50000 http://localhost:8081/increase >> load2.txt 
+ab -p post.txt -T application/json  -c 50 -n 50000 http://localhost:8081/inc_value >> load2.txt 
 
 
 
@@ -31,7 +31,6 @@ sleep 15
  curl -H "Content-type:application/json" -d '{"jsonrpc":"2.0", "id":"curltest", "method":"ain_getBlockList"}' http://localhost:8081/json-rpc > b2.txt
 
 RESULT1=$(wget -qO-  http://localhost:8080/get?ref=/test/increase/first/level)
-RESULT2=$(wget -qO-  http://localhost:8081/get?ref=/test/increase/first/level2)
 
 
 diff b1.txt b2.txt
@@ -39,7 +38,7 @@ kill  -9 $PID1 $PID2 $PID3
 rm -rf $BASEDIR/blockchain/.blockchains
 
 NUM=$(sed 's/level/level\n/g' b1.txt | grep -c "level")
-
+echo $RESULT1
  if [ "$RESULT1"=="{'code':0,'result':1000000}" ] ;
  then
     echo "/test/increase/first/level correctly increased to 1000000 !! Pass"
@@ -48,15 +47,7 @@ else
     exit 1
 fi
 
- if [ "$RESULT2"=="{'code':0,'result':2000000}" ] ;
- then
-    echo "/test/increase/first/leve2 correctly increased to 2000000 !! Pass"
-else
-    echo "Error: Increases sum to $RESULT2!! Fail"
-    exit 1
-fi
-
-if test $NUM -eq 200000 
+if test $NUM -eq 100000 
 then
       echo "200000 occurances of string found in last 10 blocks !! Pass"
 else

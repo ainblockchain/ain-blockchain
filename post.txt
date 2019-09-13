@@ -1,1 +1,1 @@
-{"diff": {"test/increase/first/level": 10, "test/increase/first/level2": 5}}
+{"ref": "test/increase/first/level", "value": 10}
