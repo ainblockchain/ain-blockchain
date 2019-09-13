@@ -200,7 +200,7 @@ class P2pServer {
 
   executeAndBroadcastTransaction(transaction) {
     const response = this.executeTransaction(transaction);
-    if (! this.checkForTransactionResultErrorCode(response)) {
+    if (!this.checkForTransactionResultErrorCode(response)) {
       this.broadcastTransaction(transaction);
     }
     return response;
@@ -208,7 +208,7 @@ class P2pServer {
 
   executeAndBroadcastVotingAction(votingAction) {
     const response = this.executeTransaction(votingAction.transaction);
-    if (! this.checkForTransactionResultErrorCode(response)) {
+    if (!this.checkForTransactionResultErrorCode(response)) {
       if ([VotingActionTypes.PRE_VOTE, VotingActionTypes.PRE_COMMIT].indexOf(votingAction.actionType) > -1) {
         this.votingUtil.registerValidatingTransaction(votingAction.transaction);
       }
