@@ -2,14 +2,14 @@ const ChainUtil = require('../chain-util');
 const { OperationTypes, DEBUG } = require('../constants');
 
 class Transaction {
-  constructor(timestamp, operation, address, signature, nonce) {
-    this.id = ChainUtil.id();
+  constructor(id, timestamp, operation, address, signature, nonce) {
+    this.id = id;
     this.timestamp = timestamp;
     this.operation = operation;
     this.address = address;
     this.signature = signature;
     this.nonce = nonce;
-    this.hash = ChainUtil.hash(this.operation);
+    this.hash = Transaction.hashTransaction(this);
     if (DEBUG) {
       console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
     }
@@ -24,6 +24,10 @@ class Transaction {
         `;
   }
 
+  static hashTransaction(transaction) {
+    return ChainUtil.hash(`${transaction.timestamp}${transaction.nonce}${transaction.address}${JSON.stringify(transaction.operation)}${transaction.id}`);
+  }
+
   static newTransaction(db, operation, isNoncedTransaction = true) {
     let nonce;
     if (operation.nonce !== undefined) {
@@ -35,12 +39,14 @@ class Transaction {
     } else {
       nonce = -1;
     }
+    const id = ChainUtil.id();
+    const timestamp = Date.now();
     const address = operation.address !== undefined ? operation.address : db.publicKey;
-    const signature = operation.address !== undefined ? '' : db.sign(ChainUtil.hash(operation));
+    const signature = operation.address !== undefined ? '' : db.sign(Transaction.hashTransaction({timestamp, operation, address, nonce, id}));
     if (operation.address !== undefined) {
       delete operation.address;
     }
-    return new this(Date.now(), operation, address, signature, nonce);
+    return new this(id, timestamp, operation, address, signature, nonce);
   }
 
   static verifyTransaction(transaction) {
@@ -49,7 +55,7 @@ class Transaction {
       return false;
     }
     return ChainUtil.verifySignature(
-        transaction.address, transaction.signature, ChainUtil.hash(transaction.operation)
+        transaction.address, transaction.signature, Transaction.hashTransaction(transaction)
     );
   }
 }
