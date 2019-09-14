@@ -1,5 +1,5 @@
 const ChainUtil = require('../chain-util');
-const { OperationTypes } = require('../constants');
+const { OperationTypes, DEBUG } = require('../constants');
 
 class Transaction {
   constructor(timestamp, operation, address, signature, nonce) {
@@ -10,6 +10,9 @@ class Transaction {
     this.signature = signature;
     this.nonce = nonce;
     this.hash = ChainUtil.hash(this.operation);
+    if (DEBUG) {
+      console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
+    }
   }
 
   toString() {

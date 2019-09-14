@@ -2,7 +2,7 @@ const escapeStringRegexp = require('escape-string-regexp');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const { OperationTypes, UpdateTypes, PredefinedDbPaths } = require('../constants');
+const { OperationTypes, UpdateTypes, PredefinedDbPaths, DEBUG } = require('../constants');
 
 class DB {
   constructor() {
@@ -82,6 +82,9 @@ class DB {
 
   incValue(dbPath, delta, address, timestamp) {
     const valueBefore = this.get(dbPath);
+    if (DEBUG) {
+      console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
+    }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return {code: 1, error_message: 'Not a number type: ' + dbPath};
     }
@@ -91,6 +94,9 @@ class DB {
 
   decValue(dbPath, delta, address, timestamp) {
     const valueBefore = this.get(dbPath);
+    if (DEBUG) {
+      console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
+    }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return {code: 1, error_message: 'Not a number type: ' + dbPath};
     }

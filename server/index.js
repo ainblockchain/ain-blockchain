@@ -12,7 +12,7 @@ const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
 const {ForgedBlock} = require('../blockchain/block');
 const VotingUtil = require('./voting-util');
-const { OperationTypes } = require('../constants');
+const { OperationTypes, DEBUG } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
 
 class P2pServer {
@@ -67,9 +67,15 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.VOTING:
+            if (DEBUG) {
+              console.log(`RECEIVING: ${JSON.stringify(data.votingAction.transaction)}`);
+            }
             this.executeVotingAction(data.votingAction);
             break;
           case MessageTypes.TRANSACTION:
+            if (DEBUG) {
+              console.log(`RECEIVING: ${JSON.stringify(data.transaction)}`);
+            }
             this.executeAndBroadcastTransaction(data.transaction);
             break;
           case MessageTypes.CHAIN_SUBSECTION:
@@ -136,12 +142,18 @@ class P2pServer {
   }
 
   broadcastTransaction(transaction) {
+    if (DEBUG) {
+      console.log(`SENDING: ${JSON.stringify(transaction)}`);
+    }
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({type: MessageTypes.TRANSACTION, transaction}));
     });
   }
 
   broadcastBlock(blockHashTransaction) {
+    if (DEBUG) {
+      console.log(`SENDING: ${JSON.stringify(blockHashTransaction)}`);
+    }
     console.log(`Broadcasting new block ${this.votingUtil.block}`);
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({type: MessageTypes.VOTING, votingAction:
@@ -150,12 +162,18 @@ class P2pServer {
   }
 
   broadcastVotingAction(votingAction) {
+    if (DEBUG) {
+      console.log(`SENDING: ${JSON.stringify(votingAction.transaction)}`);
+    }
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({type: MessageTypes.VOTING, votingAction}));
     });
   }
 
   executeTransaction(transaction) {
+    if (DEBUG) {
+      console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
+    }
     if (this.transactionPool.isAlreadyAdded(transaction)) {
       console.log('Transaction already received');
       return null;
@@ -167,13 +185,22 @@ class P2pServer {
     }
 
     const result = this.db.execute(transaction.operation, transaction.address, transaction.timestamp);
-    this.transactionPool.addTransaction(transaction);
+    if (!this.checkForTransactionResultErrorCode(result)) {
+      // Add transaction to pool
+      this.transactionPool.addTransaction(transaction);
+    } else if (DEBUG) {
+      console.log(`FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
+    }
     return result;
+  }
+
+  checkForTransactionResultErrorCode(response) {
+    return response == null || (response.code !== undefined && response.code !== 0);
   }
 
   executeAndBroadcastTransaction(transaction) {
     const response = this.executeTransaction(transaction);
-    if (response !== null) {
+    if (!this.checkForTransactionResultErrorCode(response)) {
       this.broadcastTransaction(transaction);
     }
     return response;
@@ -181,7 +208,7 @@ class P2pServer {
 
   executeAndBroadcastVotingAction(votingAction) {
     const response = this.executeTransaction(votingAction.transaction);
-    if (response !== null) {
+    if (!this.checkForTransactionResultErrorCode(response)) {
       if ([VotingActionTypes.PRE_VOTE, VotingActionTypes.PRE_COMMIT].indexOf(votingAction.actionType) > -1) {
         this.votingUtil.registerValidatingTransaction(votingAction.transaction);
       }
@@ -192,7 +219,7 @@ class P2pServer {
 
   executeVotingAction(votingAction) {
     const response = this.executeAndBroadcastVotingAction(votingAction);
-    if (response === null) {
+    if (this.checkForTransactionResultErrorCode(response)) {
       return;
     }
     switch (votingAction.actionType) {
@@ -303,7 +330,7 @@ class P2pServer {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
-        if (response === null) {
+        if (this.checkForTransactionResultErrorCode(response)) {
           console.log('Not designated forger');
           return;
         }

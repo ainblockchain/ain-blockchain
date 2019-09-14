@@ -1,4 +1,5 @@
 const Transaction = require('./transaction');
+const { DEBUG } = require('../constants');
 
 class TransactionPool {
   constructor() {
@@ -15,6 +16,9 @@ class TransactionPool {
     } else {
       if (!Transaction.verifyTransaction(transaction)) {
         console.log('Invalid transaction');
+        if (DEBUG) {
+          console.log(`NOT ADDING: ${JSON.stringify(transaction)}`);
+        }
         return false;
       }
     }
@@ -22,7 +26,9 @@ class TransactionPool {
       this.transactions[transaction.address] = [];
     }
     this.transactions[transaction.address].push(transaction);
-
+    if (DEBUG) {
+      console.log(`ADDING: ${JSON.stringify(transaction)}`);
+    }
     return true;
   }
 

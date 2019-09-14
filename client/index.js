@@ -18,6 +18,7 @@
 
 // Require process, so we can mock environment variables
 const process = require('process');
+const moment = require('moment');
 const PORT = process.env.PORT || 8080;
 
 // Initiate logging
@@ -41,10 +42,11 @@ if (LOG) {
   const logStdout = process.stdout;
 
   console.log = function(d) {
-    logFile.write(util.format(d) + '\n');
+    logFile.write(moment(new Date()).format(moment.HTML5_FMT.DATETIME_LOCAL_MS) + '\t' + util.format(d) + '\n');
     logStdout.write(util.format(d) + '\n');
   };
 }
+
 
 // [START gae_flex_mysql_app]
 const express = require('express');
