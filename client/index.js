@@ -18,6 +18,7 @@
 
 // Require process, so we can mock environment variables
 const process = require('process');
+const moment = require('moment');
 const PORT = process.env.PORT || 8080;
 
 // Initiate logging
@@ -28,15 +29,6 @@ let CURRENT_NONCE = 0;
 // before transactions begin automatically being added to a batch_list
 // transaction.
 const TX_PER_SECOND_AUTOBATCHING = 120;
-
-function getDateString() {
-  const dateObject = new Date(Date.now());
-  return dateObject.getFullYear() + '/' + (dateObject.getMonth() + 1) + '/' + dateObject.getDate() + '-' +
-    (dateObject.getHours() > 9 ? dateObject.getHours() : '0' + dateObject.getHours()) + ':' +
-    (dateObject.getMinutes() > 9 ? dateObject.getMinutes() : '0' + dateObject.getMinutes()) + ':' +
-    (dateObject.getSeconds() > 9 ? dateObject.getSeconds() : '0' + dateObject.getSeconds()) + ':' +
-    dateObject.getMilliseconds();
-}
 
 if (LOG) {
   const fs = require('fs');
@@ -50,7 +42,7 @@ if (LOG) {
   const logStdout = process.stdout;
 
   console.log = function(d) {
-    logFile.write(getDateString() + '\t' + util.format(d) + '\n');
+    logFile.write(moment(new Date()).format(moment.HTML5_FMT.DATETIME_LOCAL_MS) + '\t' + util.format(d) + '\n');
     logStdout.write(util.format(d) + '\n');
   };
 }

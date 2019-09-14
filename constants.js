@@ -2,7 +2,7 @@ const path = require('path');
 const RULES_FILE_PATH = path.resolve(__dirname, 'db', 'database.rules.json');
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain', '.blockchains');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
-const DEBUG = false;
+const DEBUG = process.env.DEBUG ? Number(process.env.DEBUG) : false;
 
 /**
  * Message types for communication between nodes
