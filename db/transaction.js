@@ -25,7 +25,7 @@ class Transaction {
   }
 
   static hashTransaction(transaction) {
-    return ChainUtil.hash(`${transaction.timestamp}${transaction.nonce}${transaction.address}${JSON.stringify(transaction.operation)}${transaction.id}`);
+    return ChainUtil.hash(JSON.stringify({timestamp: transaction.timestamp, nonce: transaction.nonce, address: transaction.addresss, operation: transaction.operation, id: transaction.id}));
   }
 
   static newTransaction(db, operation, isNoncedTransaction = true) {
