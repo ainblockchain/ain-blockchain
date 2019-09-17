@@ -34,7 +34,7 @@ class TransactionPool {
 
   isAlreadyAdded(transaction) {
     return Boolean((transaction.address in this.transactions) &&
-            (this.transactions[transaction.address].find((trans) => trans.id === transaction.id)) ||
+            (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash)) ||
                 (transaction.nonce >= 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address])));
   }
 
@@ -87,12 +87,12 @@ class TransactionPool {
         // Update nonceTracker while extracting transactionIds
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
-      return transaction.id;
+      return transaction.hash;
     });
 
     for (const address in this.transactions) {
       this.transactions[address] = this.transactions[address].filter((transaction) => {
-        if (transactionIds.indexOf(transaction.id) < 0) {
+        if (transactionIds.indexOf(transaction.hash) < 0) {
           return transaction;
         }
       });

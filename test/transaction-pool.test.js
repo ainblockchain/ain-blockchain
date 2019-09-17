@@ -18,7 +18,7 @@ describe('TransactionPool', () => {
     });
 
     it('adds a transaction to the pool', () => {
-        expect(tp.transactions[db.publicKey].find(t => t.id === transaction.id)).to.equal(transaction)
+        expect(tp.transactions[db.publicKey].find(t => t.hash === transaction.hash)).to.equal(transaction)
     });
 
 

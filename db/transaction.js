@@ -2,8 +2,7 @@ const ChainUtil = require('../chain-util');
 const { OperationTypes, DEBUG } = require('../constants');
 
 class Transaction {
-  constructor(id, timestamp, operation, address, signature, nonce) {
-    this.id = id;
+  constructor(timestamp, operation, address, signature, nonce) {
     this.timestamp = timestamp;
     this.operation = operation;
     this.address = address;
@@ -16,7 +15,7 @@ class Transaction {
   }
 
   toString() {
-    return `id:        ${this.id},
+    return `hash:      ${this.hash},
             timestamp: ${this.timestamp},
             operation: ${JSON.stringify(this.operation)},
             address:   ${this.address},
@@ -25,7 +24,7 @@ class Transaction {
   }
 
   static hashTransaction(transaction) {
-    return ChainUtil.hash(JSON.stringify({timestamp: transaction.timestamp, nonce: transaction.nonce, address: transaction.addresss, operation: transaction.operation, id: transaction.id}));
+    return ChainUtil.hash(JSON.stringify({timestamp: transaction.timestamp, nonce: transaction.nonce, address: transaction.addresss, operation: transaction.operation}));
   }
 
   static newTransaction(db, operation, isNoncedTransaction = true) {
@@ -39,14 +38,13 @@ class Transaction {
     } else {
       nonce = -1;
     }
-    const id = ChainUtil.id();
     const timestamp = Date.now();
     const address = operation.address !== undefined ? operation.address : db.publicKey;
-    const signature = operation.address !== undefined ? '' : db.sign(Transaction.hashTransaction({timestamp, operation, address, nonce, id}));
+    const signature = operation.address !== undefined ? '' : db.sign(Transaction.hashTransaction({timestamp, operation, address, nonce}));
     if (operation.address !== undefined) {
       delete operation.address;
     }
-    return new this(id, timestamp, operation, address, signature, nonce);
+    return new this(timestamp, operation, address, signature, nonce);
   }
 
   static verifyTransaction(transaction) {

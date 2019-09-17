@@ -19,7 +19,7 @@ class VotingUtil {
   registerValidatingTransaction(transaction) {
     // Transactions can be null (when cascading from proposed_block) and duplicate (when cascading from pre_cote)
     if (transaction && !this.validatorTransactions.find((trans) => {
-      return trans.id === transaction.id;
+      return trans.hash === transaction.hash;
     })) {
       this.validatorTransactions.push(transaction);
     }
