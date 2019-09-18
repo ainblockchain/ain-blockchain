@@ -59,7 +59,7 @@ class Transaction {
     let transaction = { operation };
     if (operation.nonce !== undefined) {
       transaction.nonce = operation.nonce;
-      delete operation.nonce;
+      delete transaction.operation.nonce;
     } else if (isNoncedTransaction) {
       transaction.nonce = db.nonce;
       db.nonce ++;
