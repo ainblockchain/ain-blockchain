@@ -11,11 +11,16 @@ class Transaction {
       throw new Error("Transaction must contain timestamp, operation and nonce fields")
     }
 
-    let transactionData = JSON.parse(JSON.stringify(transactionWithSig.transaction ?
+    const unsanitizedData = JSON.parse(JSON.stringify(transactionWithSig.transaction ?
           transactionWithSig.transaction : transactionWithSig));
-    if (transactionData.hash !== undefined) delete transactionData.hash;
-    if (transactionData.address !== undefined) delete transactionData.address;
-    if (transactionData.signature !== undefined) delete transactionData.signature;
+    let transactionData = {
+      nonce: unsanitizedData.nonce,
+      timestamp: unsanitizedData.timestamp,
+      operation: unsanitizedData.operation
+    }
+    if (unsanitizedData.parent_tx_hash !== undefined) {
+      transactionData.parent_tx_hash = unsanitizedData.parent_tx_hash
+    }
     Object.assign(this, transactionData);
     this.hash = ainUtil.hashTransaction(transactionData).toString('hex');
 
