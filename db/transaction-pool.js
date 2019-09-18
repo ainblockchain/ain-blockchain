@@ -10,18 +10,18 @@ class TransactionPool {
 
   addTransaction(transaction) {
     // Quick verification of transaction on entry
-
+    // TODO (lia): pull verification out to the very front
+    // (closer to the communication layers where nodes first receives transactions)
     if (transaction.operation.skip_verif) {
       console.log('Skip Verification for transaction: ' + JSON.stringify(transaction));
-    } else {
-      if (!Transaction.verifyTransaction(transaction)) {
-        console.log('Invalid transaction');
-        if (DEBUG) {
-          console.log(`NOT ADDING: ${JSON.stringify(transaction)}`);
-        }
-        return false;
+    } else if (!Transaction.verifyTransaction(transaction)) {
+      console.log('Invalid transaction');
+      if (DEBUG) {
+        console.log(`NOT ADDING: ${JSON.stringify(transaction)}`);
       }
+      return false;
     }
+
     if (!(transaction.address in this.transactions)) {
       this.transactions[transaction.address] = [];
     }
@@ -34,8 +34,7 @@ class TransactionPool {
 
   isAlreadyAdded(transaction) {
     return Boolean((transaction.address in this.transactions) &&
-            (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash)) ||
-                (transaction.nonce >= 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address])));
+            (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash) !== undefined));
   }
 
   validTransactions() {
@@ -82,9 +81,9 @@ class TransactionPool {
 
   removeCommitedTransactions(block) {
     // Remove transactions of newly added block to blockchain from the current transaction pool
-    const transactionIds = block.data.map((transaction) => {
+    const transactionHashes = block.data.map((transaction) => {
       if (transaction.nonce >= 0) {
-        // Update nonceTracker while extracting transactionIds
+        // Update nonceTracker while extracting transaction hashes
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
       return transaction.hash;
@@ -92,7 +91,7 @@ class TransactionPool {
 
     for (const address in this.transactions) {
       this.transactions[address] = this.transactions[address].filter((transaction) => {
-        if (transactionIds.indexOf(transaction.hash) < 0) {
+        if (transactionHashes.indexOf(transaction.hash) < 0) {
           return transaction;
         }
       });

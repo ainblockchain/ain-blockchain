@@ -1,4 +1,5 @@
 const escapeStringRegexp = require('escape-string-regexp');
+const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
@@ -8,8 +9,15 @@ class DB {
   constructor() {
     this.db = {};
     this.func = new BuiltInFunctions(this);
+    // TODO (lia): Add account importing functionality
+    // TODO (lia): Add "address" property and change publicKey to "full public key" value.
     this.keyPair = ChainUtil.genKeyPair();
-    this.publicKey = this.keyPair.getPublic().encode('hex');
+    this.publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+        ainUtil.pubToAddress(
+            Buffer.from(this.keyPair.getPublic().encode('hex'),'hex'),
+            true
+        )
+    ));
     this.nonce = 0;
     console.log(`creating new db with id ${this.publicKey}`);
   }
@@ -331,7 +339,12 @@ class BackUpDB extends DB {
   constructor(keyPair) {
     super();
     this.keyPair = keyPair;
-    this.publicKey = this.keyPair.getPublic().encode('hex');
+    this.publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+        ainUtil.pubToAddress(
+            Buffer.from(this.keyPair.getPublic().encode('hex'),'hex'),
+            true
+        )
+    ));
   }
 }
 

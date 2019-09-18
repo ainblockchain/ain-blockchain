@@ -11,6 +11,7 @@ const PROTOCOL = 'ws';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
 const {ForgedBlock} = require('../blockchain/block');
+const Transaction = require('../db/transaction');
 const VotingUtil = require('./voting-util');
 const { OperationTypes, DEBUG } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
@@ -170,26 +171,31 @@ class P2pServer {
     });
   }
 
-  executeTransaction(transaction) {
+  /**
+   * Adds transaction to the transactionPool and executes the operations specified
+   * in the transaction.
+   * @param {Object} transactionWithSig An object with a signature and a transaction.
+   */
+  executeTransaction(transactionWithSig) {
+    const transactionObj = transactionWithSig instanceof Transaction ?
+        transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
-      console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
+      console.log(`EXECUTING: ${JSON.stringify(transactionObj)}`);
     }
-    if (this.transactionPool.isAlreadyAdded(transaction)) {
+    if (this.transactionPool.isAlreadyAdded(transactionObj)) {
       console.log('Transaction already received');
       return null;
     }
-
     if (this.blockchain.status === false) {
-      this.transactionPool.addTransaction(transaction);
+      this.transactionPool.addTransaction(transactionObj);
       return [];
     }
-
-    const result = this.db.execute(transaction.operation, transaction.address, transaction.timestamp);
+    const result = this.db.execute(transactionObj.operation, transactionObj.address, transactionObj.timestamp);
     if (!this.checkForTransactionResultErrorCode(result)) {
       // Add transaction to pool
-      this.transactionPool.addTransaction(transaction);
+      this.transactionPool.addTransaction(transactionObj);
     } else if (DEBUG) {
-      console.log(`FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
+      console.log(`FAILED TRANSACTION: ${JSON.stringify(transactionObj)}\t RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
@@ -198,10 +204,12 @@ class P2pServer {
     return response == null || (response.code !== undefined && response.code !== 0);
   }
 
-  executeAndBroadcastTransaction(transaction) {
-    const response = this.executeTransaction(transaction);
+  executeAndBroadcastTransaction(transactionWithSig) {
+    const transactionObj = transactionWithSig instanceof Transaction ?
+        transactionWithSig : new Transaction(transactionWithSig);
+    const response = this.executeTransaction(transactionObj);
     if (!this.checkForTransactionResultErrorCode(response)) {
-      this.broadcastTransaction(transaction);
+      this.broadcastTransaction(transactionObj);
     }
     return response;
   }
