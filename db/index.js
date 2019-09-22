@@ -3,10 +3,10 @@ const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const { OperationTypes, UpdateTypes, PredefinedDbPaths, DEBUG } = require('../constants');
+const {OperationTypes, UpdateTypes, PredefinedDbPaths, DEBUG} = require('../constants');
 
 class DB {
-  constructor() {
+  constructor(blockchain) {
     this.db = {};
     this.func = new BuiltInFunctions(this);
     // TODO (lia): Add account importing functionality
@@ -14,16 +14,33 @@ class DB {
     this.keyPair = ChainUtil.genKeyPair();
     this.publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
         ainUtil.pubToAddress(
-            Buffer.from(this.keyPair.getPublic().encode('hex'),'hex'),
+            Buffer.from(this.keyPair.getPublic().encode('hex'), 'hex'),
             true
         )
     ));
+    if (!blockchain) {
+      return;
+    }
     this.nonce = 0;
+    // TODO (Chris): Make this look for nonces past just teh most recent 10 blocks
+    for (let i = blockchain.chain.length - 1; i > -1; i--) {
+      console.log(JSON.stringify(blockchain.chain[i].data))
+      for (let j = blockchain.chain[i].data.length -1; j > -1; j--) {
+        if (blockchain.chain[i].data[j].address == this.publicKey) {
+          this.nonce = blockchain.chain[i].data[j].nonce + 1;
+          break;
+        }
+      }
+      if (this.nonce > 0) {
+        console.log(`Setting nonce to ${this.nonce}`);
+        break;
+      }
+    }
     console.log(`creating new db with id ${this.publicKey}`);
   }
 
   static getDatabase(blockchain, tp) {
-    const db = new DB();
+    const db = new DB(blockchain);
     blockchain.setBackDb(new BackUpDB(db.keyPair));
     db.reconstruct(blockchain, tp);
     return db;
@@ -341,7 +358,7 @@ class BackUpDB extends DB {
     this.keyPair = keyPair;
     this.publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
         ainUtil.pubToAddress(
-            Buffer.from(this.keyPair.getPublic().encode('hex'),'hex'),
+            Buffer.from(this.keyPair.getPublic().encode('hex'), 'hex'),
             true
         )
     ));

@@ -34,7 +34,7 @@ class Transaction {
         ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
 
     if (DEBUG) {
-      console.log("CREATING TRANSACTION: ", this);
+      console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
     }
   }
 

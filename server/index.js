@@ -183,10 +183,13 @@ class P2pServer {
       console.log(`EXECUTING: ${JSON.stringify(transactionObj)}`);
     }
     if (this.transactionPool.isAlreadyAdded(transactionObj)) {
+      if (DEBUG) {
+        console.log(`ALREADY RECEIVED: ${JSON.stringify(transactionObj)}`);
+      }
       console.log('Transaction already received');
       return null;
     }
-    if (this.blockchain.status === false) {
+    if (this.blockchain.syncedAfterStartup === false) {
       this.transactionPool.addTransaction(transactionObj);
       return [];
     }
@@ -235,7 +238,7 @@ class P2pServer {
         if (!this.votingUtil.isSyncedWithNetwork(this.blockchain)) {
           this.requestChainSubsection(this.blockchain.lastBlock());
         }
-        if (this.votingUtil.isStaked()) {
+        if (this.votingUtil.isStaked() && this.blockchain.syncedAfterStartup) {
           this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         }
 
@@ -247,6 +250,11 @@ class P2pServer {
           if (this.executeTransaction(votingAction.block.data[i]) &&
            !this.transactionPool.isAlreadyAdded(votingAction.block.data[i])) {
             invalidTransactions = true;
+          }
+          if (this.transactionPool.isAlreadyAdded(votingAction.block.data[i])) {
+            if (DEBUG) {
+              console.log(`ALREADY RECEIVED BLOCK: ${JSON.stringify(votingAction.block.data[i])}`);
+            }
           }
         }
         if (invalidTransactions ||
