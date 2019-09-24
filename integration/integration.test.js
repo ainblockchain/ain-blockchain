@@ -38,8 +38,13 @@ const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 
 const setEndpoint = '/set_value';
 
-const ENV_VARIABLES = [{P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true},
-  {P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true}, {P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true}];
+const ENV_VARIABLES = [
+  {PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f', P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d', P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6', P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764', P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+];
+
 
 // Data options
 RANDOM_OPERATION = [
@@ -81,8 +86,41 @@ RANDOM_OPERATION = [
 ];
 
 
+class Process {
+  constructor(application, envVariables) {
+    this.application = application;
+    this.envVariables = envVariables;
+    this.proc = null;
+  }
+
+  start() {
+    if (this.proc) {
+      throw Error('Process already started');
+    }
+    this.proc = spawn('node', [this.application], {
+      cwd: process.cwd(),
+      env: {
+        PATH: process.env.PATH,
+        ...this.envVariables,
+      },
+    }).on('error', (err) => {
+      console.error(`Failed to start server${this.application} with variavles ${this.envVariables} with error: ` + err.message);
+    });
+  }
+
+  kill() {
+    this.proc.kill();
+    this.proc = null;
+  }
+}
+
+const SERVER_PROCS = [];
+for (let i = 0; i < ENV_VARIABLES.length; i++) {
+  SERVER_PROCS.push(new Process(APP_SERVER, ENV_VARIABLES[i]));
+}
+
 describe('Integration Tests', () => {
-  const procs = [];
+  let trackerProc;
   let numNewBlocks = 0;
   let numBlocks;
   let numBlocksOnStartup;
@@ -93,37 +131,21 @@ describe('Integration Tests', () => {
 
   before(() => {
     // Start up all servers
-    //const trackerProc = spawn('node', [TRACKER_SERVER]);
-    const trackerProc = spawn('node', [TRACKER_SERVER], {
-      cwd: process.cwd(),
-      env: {
-          PATH: process.env.PATH
-      },
-      stdio: 'inherit'
-    }).on('error', (err) => {
-      console.error('Failed to start tracker server with error: ' + err.message);
-    })
+    // const trackerProc = spawn('node', [TRACKER_SERVER]);
+    trackerProc = new Process(TRACKER_SERVER, {});
+    trackerProc.start();
     trackerRpcClient = jayson.client.http(trackerServer + JSON_RPC_ENDPOINT);
-    procs.push(trackerProc);
     sleep(2000);
-    for (let i = 0; i < ENV_VARIABLES.length; i++) {
-      //const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
-      const proc = spawn('node', [APP_SERVER], {
-        cwd: process.cwd(),
-        env: {
-          PATH: process.env.PATH,
-          ...ENV_VARIABLES[i]
-        },
-      }).on('error', (err) => {
-        console.error(`Failed to start server${i+1} with error: ` + err.message);
-      });
+    for (let i = 0; i < SERVER_PROCS.length; i++) {
+      // const proc = spawn('node', [APP_SERVER], {env: ENV_VARIABLES[i]});
+      proc = SERVER_PROCS[i];
+      proc.start();
       sleep(2000);
       trackerRpcClient.request(JSON_RPC_GET_PEER_PUBLIC_KEYS, [], function(err, response) {
         if (err) throw err;
         // The newest element in this list will be the publicKey of the server just started
         publicKeys.push(response.result.pop());
       });
-      procs.push(proc);
     };
     sleep(20000);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
@@ -136,9 +158,10 @@ describe('Integration Tests', () => {
 
   after(() => {
     // Teardown all servers
-    for (let i = 0; i < procs.length; i++) {
-      procs[i].kill();
+    for (let i = 0; i < SERVER_PROCS.length; i++) {
+      SERVER_PROCS[i].kill();
     }
+    trackerProc.kill();
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
@@ -309,12 +332,6 @@ describe('Integration Tests', () => {
         });
       });
 
-      itParam('maintaining correct order', SERVERS, (server) => {
-        body = JSON.parse(syncRequest('GET', server + '/get?ref=test').body.toString('utf-8'));
-        console.log(body.result);
-        assert.deepEqual(db.db['test'], body.result);
-      });
-
       it('can be queried by index ', function(done) {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, [{from: 12, to: 14}], function(err, response) {
           if (err) throw err;
@@ -351,6 +368,29 @@ describe('Integration Tests', () => {
           expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST).to.equal(transactionsOnBlockChain.length);
           done();
         });
+      });
+
+      itParam('maintaining correct order', SERVERS, (server) => {
+        body = JSON.parse(syncRequest('GET', server + '/get?ref=test').body.toString('utf-8'));
+        console.log(body.result);
+        assert.deepEqual(db.db['test'], body.result);
+      });
+
+      itParam('and can be stopped and restarted', SERVER_PROCS, (proc) => {
+        proc.kill();
+        sleep(20000);
+        proc.start();
+        sleep(20000);
+        if (proc.envVariables.PORT % 2 === 0) {
+          compareServer = server1;
+        } else {
+          compareServer = server2;
+        }
+        const lastBlockFromRunningBlockchain = JSON.parse(syncRequest('GET', compareServer + '/blocks').body.toString('utf-8')).result.pop();
+        const lastBlockFromStoppedBlockchain = JSON.parse(syncRequest('GET', 'http://localhost:' + String(proc.envVariables.PORT) + '/blocks').body.toString('utf-8')).result.pop();
+        assert.deepEqual(lastBlockFromRunningBlockchain.data, lastBlockFromStoppedBlockchain.data);
+        assert.deepEqual(lastBlockFromRunningBlockchain.hash, lastBlockFromStoppedBlockchain.hash);
+        assert.deepEqual(lastBlockFromRunningBlockchain.height, lastBlockFromStoppedBlockchain.height);
       });
     });
   });

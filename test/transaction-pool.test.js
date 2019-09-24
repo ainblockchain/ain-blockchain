@@ -1,5 +1,6 @@
 const TransactionPool = require('../db/transaction-pool')
 const Transaction = require('../db/transaction')
+const Blockchain = require('../blockchain/');
 const {ForgedBlock} = require('../blockchain/block')
 const DB = require('../db')
 const chai = require('chai')
@@ -8,11 +9,12 @@ const assert = chai.assert
 const shuffleSeed = require('shuffle-seed')
 
 describe('TransactionPool', () => {
-    let tp, db, transaction;
+    let tp, db, bc, transaction;
 
     beforeEach(() => {
-        tp = new TransactionPool()
-        db = new DB("test-db")
+        tp = new TransactionPool();
+        bc = new Blockchain('test-blockchain');
+        db = new DB(bc);
         transaction = Transaction.newTransaction(db, {type: "SET_VALUE", ref: "REF", value:"VALUE"})
         tp.addTransaction(transaction)
     });
@@ -23,7 +25,7 @@ describe('TransactionPool', () => {
 
 
     describe('sorting transactions by nonces', () => {
-        let db2, db3, db4, t
+        let db2, db3, db4;
 
 
         beforeEach(() => {
@@ -38,9 +40,9 @@ describe('TransactionPool', () => {
             }
             tp.transactions[db.publicKey] = shuffleSeed.shuffle(tp.transactions[db.publicKey]) 
 
-            db2 = new DB("test-db2")
-            db3 = new DB("test-db3")
-            db4 = new DB("test-db4")
+            db2 = new DB(bc);
+            db3 = new DB(bc);
+            db4 = new DB(bc);
             var dbs = [db2, db3, db4]
             for(var j=0; j < dbs.length; j++){
                 for(let i=0; i<11; i++){

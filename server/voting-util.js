@@ -167,13 +167,12 @@ class VotingUtil {
   }
 
   getForger(stakeHolders, bc) {
-    let alphabeticallyOrderedStakeHolders = Object.keys(stakeHolders).sort();
+    const alphabeticallyOrderedStakeHolders = Object.keys(stakeHolders).sort();
     const totalStakedAmount = Object.values(stakeHolders).reduce(function(a, b) {
       return a + b;
     }, 0);
     const seed = bc.chain.length > 5 ? bc.chain[bc.chain.length - 4].hash : bc.chain[0].hash;
 
-    alphabeticallyOrderedStakeHolders = shuffleSeed.shuffle(alphabeticallyOrderedStakeHolders, seed);
     let cumulativeStakeFromPotentialValidators = 0;
     const randomNumGenerator = seedrandom(seed);
     const targetValue = randomNumGenerator() * totalStakedAmount;

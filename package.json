@@ -13,13 +13,15 @@
     "node": ">=8"
   },
   "scripts": {
-    "clean": "rm -rf ./blockchain/.blockchains/",
+    "clean": "sh stop_servers.sh & echo 'cleaned'",
     "tracker": "npm run clean & node ./tracker-server/index.js",
     "client": "STAKE=250 LOCAL=true P2P_PORT=5020 PORT=8081 node ./client/index.js",
-    "test": "find ./test -name '*.test.js' | sort | grep -v 'node_modules' |  xargs mocha --timeout 40000 -R  spec"
+    "test": "find ./test -name '*.test.js' | sort | grep -v 'node_modules' |  xargs mocha --timeout 40000 -R  spec",
+    "integration": "find ./integration -name '*integration.test.js' | sort | grep -v 'node_modules' |  xargs mocha --timeout 160000 -R  spec"
   },
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.1",
+    "ajv": "^6.10.2",
     "async": "^2.6.0",
     "bluebird": "^3.5.3",
     "body-parser": "^1.18.3",

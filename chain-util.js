@@ -1,10 +1,18 @@
 const EC = require('elliptic').ec;
 const SHA256 = require('crypto-js/sha256');
 const ec = new EC('secp256k1');
+const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
   static genKeyPair() {
-    return ec.genKeyPair();
+    let keyPair;
+    if (PRIVATE_KEY) {
+      keyPair = ec.keyFromPrivate(PRIVATE_KEY, 'hex');
+      keyPair.getPublic();
+    } else {
+      keyPair = ec.genKeyPair();
+    }
+    return keyPair;
   }
 
   static hash(data) {
