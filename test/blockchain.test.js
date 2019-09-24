@@ -11,7 +11,6 @@ describe('Blockchain', () => {
   let bc; let bc2; let tp;
 
   beforeEach(() => {
-    db = new DB();
     bc = new Blockchain('first-blockchain');
     bc2 = new Blockchain('second-blockchain');
     // Manage use of these transaction pools beer
@@ -32,13 +31,13 @@ describe('Blockchain', () => {
 
   it('adds new block', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
     expect(bc.chain[bc.chain.length -1].data).to.equal(data);
   });
 
   it('validates a valid chain', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
     expect(Blockchain.isValidChain(bc.chain)).to.equal(true);
   });
 
@@ -49,7 +48,7 @@ describe('Blockchain', () => {
 
   it('invalidates corrupt chain', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
     bc.chain[bc.height()].data = ':(';
     expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
   });

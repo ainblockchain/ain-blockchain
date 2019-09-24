@@ -3,15 +3,13 @@ const DB = require('../db/')
 const chai = require('chai')
 const expect = chai.expect
 const assert = chai.assert
-
-
-
+const Blockchain = require('../blockchain/');
 
 describe('Transaction', () => {
     let transaction, operation, db
 
     beforeEach(() => {
-        db = new DB("test-db");
+        db = new DB(new Blockchain('test-blockchain'));
         operation = { type: "SET_VALUE", ref: "KEY", value: "val" };
         transaction = Transaction.newTransaction(db, operation);
     });
