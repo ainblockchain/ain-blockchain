@@ -18,25 +18,28 @@ class DB {
             true
         )
     ));
-    if (!blockchain) {
-      return;
-    }
-    this.nonce = 0;
+    if (this instanceof BackUpDB) return;
+    this.nonce = this.getNonce(blockchain);
+    console.log(`creating new db with id ${this.publicKey}`);
+  }
+
+  getNonce(blockchain) {
     // TODO (Chris): Make this look for nonces past just teh most recent 10 blocks
+    let nonce = 0;
     for (let i = blockchain.chain.length - 1; i > -1; i--) {
-      console.log(JSON.stringify(blockchain.chain[i].data))
       for (let j = blockchain.chain[i].data.length -1; j > -1; j--) {
         if (blockchain.chain[i].data[j].address == this.publicKey) {
-          this.nonce = blockchain.chain[i].data[j].nonce + 1;
+          // If blockchain is being restarted, retreive nocne from blockchain
+          nonce = blockchain.chain[i].data[j].nonce + 1;
           break;
         }
       }
-      if (this.nonce > 0) {
-        console.log(`Setting nonce to ${this.nonce}`);
+      if (nonce > 0) {
         break;
       }
     }
-    console.log(`creating new db with id ${this.publicKey}`);
+    console.log(`Setting nonce to ${nonce}`);
+    return nonce;
   }
 
   static getDatabase(blockchain, tp) {

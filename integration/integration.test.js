@@ -39,10 +39,10 @@ const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 const setEndpoint = '/set_value';
 
 const ENV_VARIABLES = [
-  {PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f', P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true},
-  {PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d', P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true},
-  {PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6', P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true},
-  {PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764', P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true},
+  {PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f', P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d', P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6', P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764', P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
 ];
 
 
@@ -332,12 +332,6 @@ describe('Integration Tests', () => {
         });
       });
 
-      itParam('maintaining correct order', SERVERS, (server) => {
-        body = JSON.parse(syncRequest('GET', server + '/get?ref=test').body.toString('utf-8'));
-        console.log(body.result);
-        assert.deepEqual(db.db['test'], body.result);
-      });
-
       it('can be queried by index ', function(done) {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, [{from: 12, to: 14}], function(err, response) {
           if (err) throw err;
@@ -376,19 +370,27 @@ describe('Integration Tests', () => {
         });
       });
 
+      itParam('maintaining correct order', SERVERS, (server) => {
+        body = JSON.parse(syncRequest('GET', server + '/get?ref=test').body.toString('utf-8'));
+        console.log(body.result);
+        assert.deepEqual(db.db['test'], body.result);
+      });
+
       itParam('and can be stopped and restarted', SERVER_PROCS, (proc) => {
         proc.kill();
-        sleep(12000);
+        sleep(20000);
         proc.start();
-        sleep(6000);
-        let compareServer;
+        sleep(20000);
         if (proc.envVariables.PORT % 2 === 0) {
           compareServer = server1;
         } else {
           compareServer = server2;
         }
-        assert.deepEqual(JSON.parse(syncRequest('GET', compareServer + '/blocks').body.toString('utf-8')),
-            JSON.parse(syncRequest('GET', 'http://localhost:' + String(proc.envVariables.PORT) + '/blocks').body.toString('utf-8')));
+        const lastBlockFromRunningBlockchain = JSON.parse(syncRequest('GET', compareServer + '/blocks').body.toString('utf-8')).result.pop();
+        const lastBlockFromStoppedBlockchain = JSON.parse(syncRequest('GET', 'http://localhost:' + String(proc.envVariables.PORT) + '/blocks').body.toString('utf-8')).result.pop();
+        assert.deepEqual(lastBlockFromRunningBlockchain.data, lastBlockFromStoppedBlockchain.data);
+        assert.deepEqual(lastBlockFromRunningBlockchain.hash, lastBlockFromStoppedBlockchain.hash);
+        assert.deepEqual(lastBlockFromRunningBlockchain.height, lastBlockFromStoppedBlockchain.height);
       });
     });
   });
