@@ -24,11 +24,11 @@ class DB {
   }
 
   getNonce(blockchain) {
-    // TODO (Chris): Make this look for nonces past just teh most recent 10 blocks
+    // TODO (Chris): Search through all blocks for any previous nonced transaction with current publicKey 
     let nonce = 0;
     for (let i = blockchain.chain.length - 1; i > -1; i--) {
       for (let j = blockchain.chain[i].data.length -1; j > -1; j--) {
-        if (blockchain.chain[i].data[j].address == this.publicKey) {
+        if (blockchain.chain[i].data[j].address == this.publicKey && blockchain.chain[i].data[j].nonce > -1) {
           // If blockchain is being restarted, retreive nocne from blockchain
           nonce = blockchain.chain[i].data[j].nonce + 1;
           break;
