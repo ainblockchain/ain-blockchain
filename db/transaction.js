@@ -23,15 +23,9 @@ class Transaction {
     }
     Object.assign(this, transactionData);
     this.hash = ainUtil.hashTransaction(transactionData).toString('hex');
-
-    const sigBuffer = ainUtil.toBuffer(this.signature);
-    const len = sigBuffer.length;
-    const lenHash = len - 65;
-    const hashedData = sigBuffer.slice(0, lenHash);
-    const { r, s, v } = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
-    const publicKey = ainUtil.ecRecoverPub(Buffer.from(this.hash,'hex'), r, s, v);
-    this.address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-        ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+    // Workaround for skip_verif with custom address
+    this.address = unsanitizedData.address !== undefined ? unsanitizedData.address :
+        Transaction.getAddress(this.hash, this.signature);
 
     if (DEBUG) {
       console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
@@ -50,6 +44,19 @@ class Transaction {
         `;
   }
 
+  /**
+   * Gets address from hash and signature.
+   */
+  static getAddress(hash, signature) {
+    const sigBuffer = ainUtil.toBuffer(signature);
+    const len = sigBuffer.length;
+    const lenHash = len - 65;
+    const { r, s, v } = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
+    const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
+    return ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+        ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+  }
+
  /**
   * Returns the data object used for signing the transaction.
   */
@@ -62,6 +69,11 @@ class Transaction {
 
   static newTransaction(db, operation, isNoncedTransaction = true) {
     let transaction = { operation };
+    // Workaround for skip_verif with custom address
+    if (operation.address !== undefined) {
+      transaction.address = operation.address;
+      delete transaction.operation.address;
+    }
     if (operation.nonce !== undefined) {
       transaction.nonce = operation.nonce;
       delete transaction.operation.nonce;
@@ -72,10 +84,9 @@ class Transaction {
       transaction.nonce = -1;
     }
     transaction.timestamp = Date.now();
-    const signature = ainUtil.ecSignTransaction(transaction, ainUtil.toBuffer(db.keyPair.priv));
-    if (operation.address !== undefined) {
-      delete operation.address;
-    }
+    // Workaround for skip_verif with custom address
+    const signature = transaction.address !== undefined ? '' :
+        ainUtil.ecSignTransaction(transaction, ainUtil.toBuffer(db.keyPair.priv));
     return new this({ signature, transaction });
   }
 
