@@ -12,9 +12,7 @@ class TransactionPool {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
     // (closer to the communication layers where nodes first receives transactions)
-    if (transaction.operation.skip_verif) {
-      console.log('Skip Verification for transaction: ' + JSON.stringify(transaction));
-    } else if (!Transaction.verifyTransaction(transaction)) {
+    if (!Transaction.verifyTransaction(transaction)) {
       console.log('Invalid transaction');
       if (DEBUG) {
         console.log(`NOT ADDING: ${JSON.stringify(transaction)}`);
