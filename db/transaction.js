@@ -21,6 +21,10 @@ class Transaction {
     if (unsanitizedData.parent_tx_hash !== undefined) {
       transactionData.parent_tx_hash = unsanitizedData.parent_tx_hash
     }
+    // Workaround for skip_verif with custom address
+    if (unsanitizedData.skip_verif !== undefined) {
+      this.skip_verif = unsanitizedData.skip_verif;
+    }
     Object.assign(this, transactionData);
     this.hash = ainUtil.hashTransaction(transactionData).toString('hex');
     // Workaround for skip_verif with custom address
@@ -70,6 +74,10 @@ class Transaction {
   static newTransaction(db, operation, isNoncedTransaction = true) {
     let transaction = { operation };
     // Workaround for skip_verif with custom address
+    if (operation.skip_verif !== undefined) {
+      transaction.skip_verif = operation.skip_verif;
+      delete transaction.operation.skip_verif;
+    }
     if (operation.address !== undefined) {
       transaction.address = operation.address;
       delete transaction.operation.address;
@@ -94,6 +102,11 @@ class Transaction {
     if ((Object.keys(OperationTypes).indexOf(transaction.operation.type) < 0)) {
       console.log(`Invalid transaction type ${transaction.operation.type}.`);
       return false;
+    }
+    // Workaround for skip_verif with custom address
+    if (transaction.skip_verif) {
+      console.log('Skip verifying signature for transaction: ' + JSON.stringify(transaction, null, 2));
+      return true;
     }
     return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);
   }
