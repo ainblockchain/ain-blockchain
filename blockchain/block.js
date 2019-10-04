@@ -59,6 +59,7 @@ class ForgedBlock extends Block {
       forger: this.forger,
       height: this.height,
       signature: this.signature,
+      blockSize: this.blockSize,
     };
   }
 
