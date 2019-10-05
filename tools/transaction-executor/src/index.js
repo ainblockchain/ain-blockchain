@@ -2,30 +2,41 @@ const {Command, flags} = require('@oclif/command');
 const ChainUtil = require('../../../chain-util');
 const Transaction = require('../../../db/transaction');
 const fs = require('fs');
+const BN = require('bn.js');
 const sleep = require('system-sleep');
 const jayson = require('jayson');
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_SEND_TRANSACTION = 'ain_sendTransaction';
+const JSON_RPC_SEND_TRANSACTION = 'ain_sendSignedTransaction';
 const ADDRESS_KEY_WORD = '{address}';
 const ADDRESS_REG_EX = new RegExp(ADDRESS_KEY_WORD, 'g');
+const EC = require('elliptic').ec;
+const ec = new EC('secp256k1');
 
 class TransactionExecutorCommand extends Command {
   async run() {
     const {flags} = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
-    const generateKeyPair = flags.generateKeyPair ? flags.generateKeyPair.toLowerCase().startsWith('t') : true;
+    const generateKeyPair = flags.generateKeyPair ? flags.generateKeyPair.toLowerCase().startsWith('t') : false;
+    const privateKeyString = flags.privateKey || null;
     if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
       '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
+    }
+
+    if (generateKeyPair && privateKeyString) {
+      throw Error('Both generateKeyPair and privateKey can not be specified.');
     }
     this.log(`Broadcasting transactions in file ${transactionFile} to server ${server}`);
     const jsonRpcClient = jayson.client.http(server + JSON_RPC_ENDPOINT);
     // TODO: (chris) Persist and reload keypairs from disk.
     let transactions;
     if (generateKeyPair) {
-      const keyPair = ChainUtil.genKeyPair();
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
+      const privateKey = ChainUtil.genKeyPair().priv;
+      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, privateKey);
+    } else if (privateKeyString){
+      const privateKey = new BN(privateKeyString, 16);
+      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, privateKey);
     } else {
       transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
@@ -34,10 +45,14 @@ class TransactionExecutorCommand extends Command {
     });
   }
 
-  static createSignedTransactionList(transactionFile, keyPair) {
-    const address = keyPair.getPublic().encode('hex');
+  static createSignedTransactionList(transactionFile, privateKey) {
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
+      if (line.match(ADDRESS_REG_EX)) {
+        const publicKey = ec.keyFromPrivate(privateKey.toString(), 'hex').getPublic().encode('hex')
+        line = line.replace(ADDRESS_REG_EX, `${publicKey}`);
+      }
+      
       const transactionData = TransactionExecutorCommand.parseLine(line);
       if (typeof transactionData.address !== 'undefined') {
         throw Error(`Address field should NOT be specified:\n${line}`);
@@ -46,20 +61,17 @@ class TransactionExecutorCommand extends Command {
         throw Error(`Nonce field should be specified:\n${line}`);
       }
 
-      if (line.match(ADDRESS_REG_EX)) {
-        line = line.replace(ADDRESS_REG_EX, `${address}`);
-      }
-
       const transactionNonce = transactionData.nonce;
       delete transactionData['nonce'];
-      // TODO: (chris) Use https://www.npmjs.com/package/@ainblockchain/ain-util package to sign transactions
-      const trans = new Transaction(Date.now(), transactionData, address, keyPair.sign(ChainUtil.hash(transactionData)), transactionNonce);
+      const trans = Transaction.newTransaction(transactionNonce, privateKey, transactionData);
       transactions.push(trans);
     });
     return transactions;
   }
 
   static createUnsignedTransactionList(transactionFile) {
+    // TODO (chris): Add support for unsigned transactions
+    throw Error('Unsigned transactions are currently not supported');
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       const transactionData = TransactionExecutorCommand.parseLine(line);
@@ -126,6 +138,7 @@ TransactionExecutorCommand.flags = {
   help: flags.help({char: 'h'}),
   server: flags.string({char: 's', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
   transactionFile: flags.string({char: 't', description: 'File containg one valid josn transaction per line'}),
+  privateKey: flags.string({char: 'p', description: 'Specific private key to use when sending transactions'}),
   generateKeyPair: flags.string({char: 'g', description: 'Indicates whether to generate a valid public/private key pair for signing and ' +
       'sending transactions. Please note that if this value is set to false, any transaction without an address will result in an error.'}),
 };
