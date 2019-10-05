@@ -82,7 +82,7 @@ app.get('/', (req, res, next) => {
     res
         .status(200)
         .set('Content-Type', 'text/plain')
-        .send('Welcome to afan-tx-server')
+        .send('Welcome to AIN Blockchain Database')
         .end();
   } catch (error) {
     console.log(error);
@@ -137,16 +137,32 @@ app.get('/get_owner', (req, res, next) => {
       .end();
 });
 
+app.post('/get', (req, res, next) => {
+  let statusCode = 200;
+  let result = null;
+  try {
+    result = db.get(req.body.get_list);
+  } catch (error) {
+    statusCode = 400;
+    console.log(error.stack);
+  }
+  res
+      .status(statusCode)
+      .set('Content-Type', 'application/json')
+      .send({code: result ? 0 : -1, result})
+      .end();
+});
+
 app.post('/set_value', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.SET_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
+  const result = createTransaction({
+    type: OperationTypes.SET_VALUE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -155,15 +171,15 @@ app.post('/set_value', (req, res, next) => {
 });
 
 app.post('/inc_value', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.INC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
+  const result = createTransaction({
+    type: OperationTypes.INC_VALUE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -172,15 +188,15 @@ app.post('/inc_value', (req, res, next) => {
 });
 
 app.post('/dec_value', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.DEC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
+  const result = createTransaction({
+    type: OperationTypes.DEC_VALUE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -189,15 +205,32 @@ app.post('/dec_value', (req, res, next) => {
 });
 
 app.post('/set_rule', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.SET_RULE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
+  const result = createTransaction({
+    type: OperationTypes.SET_RULE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
+  res
+      .status(result !== null ? 201: 401)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0: 1, result})
+      .end();
+});
+
+app.post('/set_owner', (req, res, next) => {
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result = createTransaction({
+    type: OperationTypes.SET_OWNER,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -207,14 +240,15 @@ app.post('/set_rule', (req, res, next) => {
 
 // TODO(seo): Replace skip_verif with real signature.
 app.post('/updates', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const updateList = req.body.update_list;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.UPDATES, update_list: updateList, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
+  const result = createTransaction({
+    type: OperationTypes.UPDATES,
+    update_list: req.body.update_list,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
       .set('Content-Type', 'application/json')
@@ -223,9 +257,11 @@ app.post('/updates', (req, res, next) => {
 });
 
 app.post('/batch', (req, res, next) => {
-  const batchList = req.body.batch_list;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({ type: OperationTypes.BATCH, batch_list: batchList },
+  const result = createTransaction({
+    type: OperationTypes.BATCH,
+    batch_list: req.body.batch_list,
+  },
       isNoncedTransaction);
   res
       .status(result !== null ? 201: 401)
