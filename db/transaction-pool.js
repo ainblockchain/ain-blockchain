@@ -30,7 +30,7 @@ class TransactionPool {
     return true;
   }
 
-  isAlreadyAdded(transaction) {
+  isEligibleTransaction(transaction) {
     return Boolean((transaction.address in this.transactions) &&
             (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash) !== undefined)) ||
             (transaction.nonce > 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address]));
