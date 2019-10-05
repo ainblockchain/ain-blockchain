@@ -70,6 +70,14 @@ const PredefinedDbPaths = {
 };
 
 /**
+ * Properties of rules
+ * @enum {string}
+ */
+const RuleProperties = {
+  WRITE_VALUE: '.write_value',
+};
+
+/**
  * Types of write operations supported by Db
  * @enum {string}
  */
@@ -111,13 +119,14 @@ const FunctionResultCode = {
 module.exports = {
   RULES_FILE_PATH,
   BLOCKCHAINS_DIR,
+  STAKE,
+  DEBUG,
   MessageTypes,
   VotingStatus,
-  STAKE,
   VotingActionTypes,
   PredefinedDbPaths,
+  RuleProperties,
   OperationTypes,
   UpdateTypes,
   FunctionResultCode,
-  DEBUG,
 };

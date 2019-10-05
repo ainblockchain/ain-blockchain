@@ -3,7 +3,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const {OperationTypes, UpdateTypes, PredefinedDbPaths, DEBUG} = require('../constants');
+const {OperationTypes, UpdateTypes, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 
 class DB {
   constructor(blockchain) {
@@ -85,20 +85,23 @@ class DB {
     return this.readDatabase(parsedPath);
   }
 
-  getValue(dbPath) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
+  getValue(valuePath) {
+    const parsedPath = ChainUtil.parsePath(valuePath);
+    /*
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     return this.readDatabase(fullPath);
+    */
+    return this.readDatabase(parsedPath);
   }
 
-  getRule(dbPath) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
+  getRule(rulePath) {
+    const parsedPath = ChainUtil.parsePath(rulePath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  getOwner(dbPath) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
+  getOwner(ownerPath) {
+    const parsedPath = ChainUtil.parsePath(ownerPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
     return this.readDatabase(fullPath);
   }
@@ -114,10 +117,10 @@ class DB {
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
   // TODO(seo): Consider explicitly defining error code.
   // TODO(seo): Apply full path with VALUES_ROOT.
-  setValue(dbPath, value, address, timestamp) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
-    if (!this.getPermissionForValue(parsedPath, address, timestamp, '.write', value)) {
-      return {code: 2, error_message: 'No write_value permission on: ' + dbPath};
+  setValue(valuePath, value, address, timestamp) {
+    const parsedPath = ChainUtil.parsePath(valuePath);
+    if (!this.getPermissionForValue(parsedPath, address, timestamp, value)) {
+      return {code: 2, error_message: 'No write_value permission on: ' + valuePath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(parsedPath, valueCopy);
@@ -125,28 +128,28 @@ class DB {
     return true;
   }
 
-  incValue(dbPath, delta, address, timestamp) {
-    const valueBefore = this.get(dbPath);
+  incValue(valuePath, delta, address, timestamp) {
+    const valueBefore = this.get(valuePath);
     if (DEBUG) {
       console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: 'Not a number type: ' + dbPath};
+      return {code: 1, error_message: 'Not a number type: ' + valuePath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(dbPath, valueAfter, address, timestamp);
+    return this.setValue(valuePath, valueAfter, address, timestamp);
   }
 
-  decValue(dbPath, delta, address, timestamp) {
-    const valueBefore = this.get(dbPath);
+  decValue(valuePath, delta, address, timestamp) {
+    const valueBefore = this.get(valuePath);
     if (DEBUG) {
       console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: 'Not a number type: ' + dbPath};
+      return {code: 1, error_message: 'Not a number type: ' + valuePath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(dbPath, valueAfter, address, timestamp);
+    return this.setValue(valuePath, valueAfter, address, timestamp);
   }
 
   setRule(rulePath, rule, address, timestamp) {
@@ -321,7 +324,7 @@ class DB {
     }
   }
 
-  getPermissionForValue(dbPath, address, timestamp, permissionQuery, newValue) {
+  getPermissionForValue(valuePath, address, timestamp, newValue) {
     let lastRuleSet;
     address = address || this.publicKey;
     timestamp = timestamp || Date.now();
@@ -330,37 +333,37 @@ class DB {
     let currentRuleSet = this.db['rules'];
     let i = 0;
     do {
-      if (permissionQuery in currentRuleSet) {
-        rule = currentRuleSet[permissionQuery];
+      if (RuleProperties.WRITE_VALUE in currentRuleSet) {
+        rule = currentRuleSet[RuleProperties.WRITE_VALUE];
       }
       lastRuleSet = currentRuleSet;
-      currentRuleSet = currentRuleSet[dbPath[i]];
-      if (!currentRuleSet && dbPath[i]) {
+      currentRuleSet = currentRuleSet[valuePath[i]];
+      if (!currentRuleSet && valuePath[i]) {
         // If no rule set is available for specific key, check for wildcards
         const keys = Object.keys(lastRuleSet);
         for (let j=0; j<keys.length; j++) {
           if (keys[j].startsWith('$')) {
-            wildCards[keys[j]] = dbPath[i];
+            wildCards[keys[j]] = valuePath[i];
             currentRuleSet = lastRuleSet[keys[j]];
           }
         }
       }
       i++;
-    } while (currentRuleSet && i <= dbPath.length);
+    } while (currentRuleSet && i <= valuePath.length);
 
     if (typeof rule === 'string') {
-      rule = this.verifyAuth(rule, wildCards, dbPath, newValue, address, timestamp);
+      rule = this.evalWriteValue(rule, wildCards, valuePath, newValue, address, timestamp);
     }
 
     return rule;
   }
 
-  getPermissionForRule(dbPath, address, timestamp, permissionQuery, newValue) {
+  getPermissionForRule(rulePath, address, timestamp, permissionQuery, newValue) {
     // TODO(seo): Implement this.
     return true;
   }
 
-  getPermissionForOwner(dbPath, address, timestamp, permissionQuery, newValue) {
+  getPermissionForOwner(ownerPath, address, timestamp, permissionQuery, newValue) {
     // TODO(seo): Implement this.
     return true;
   }
@@ -376,7 +379,7 @@ class DB {
     return ruleString;
   }
 
-  verifyAuth(ruleString, wildCards, dbPath, newValue, address, timestamp) {
+  evalWriteValue(ruleString, wildCards, valuePath, newValue, address, timestamp) {
     if (ruleString.includes('auth')) {
       ruleString = ruleString.replace(/auth/g, `'${address}'`);
     }
@@ -391,7 +394,7 @@ class DB {
     }
     if (ruleString.includes('oldData')) {
       ruleString =
-        ruleString.replace(/oldData/g, this.get(dbPath.join('/')));
+        ruleString.replace(/oldData/g, this.get(valuePath.join('/')));
     }
     if (ruleString.includes('db.get')) {
       ruleString = ruleString.replace(/db.get/g, 'this.get');
