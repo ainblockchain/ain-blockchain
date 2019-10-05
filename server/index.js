@@ -182,7 +182,7 @@ class P2pServer {
     if (DEBUG) {
       console.log(`EXECUTING: ${JSON.stringify(transactionObj)}`);
     }
-    if (this.transactionPool.isAlreadyAdded(transactionObj)) {
+    if (this.transactionPool.isEligibleTransaction(transactionObj)) {
       if (DEBUG) {
         console.log(`ALREADY RECEIVED: ${JSON.stringify(transactionObj)}`);
       }
@@ -248,10 +248,10 @@ class P2pServer {
         let invalidTransactions = false;
         for (let i = 0; i < votingAction.block.data.length; i++) {
           if (this.executeTransaction(votingAction.block.data[i]) &&
-           !this.transactionPool.isAlreadyAdded(votingAction.block.data[i])) {
+           !this.transactionPool.isEligibleTransaction(votingAction.block.data[i])) {
             invalidTransactions = true;
           }
-          if (this.transactionPool.isAlreadyAdded(votingAction.block.data[i])) {
+          if (this.transactionPool.isEligibleTransaction(votingAction.block.data[i])) {
             if (DEBUG) {
               console.log(`ALREADY RECEIVED BLOCK: ${JSON.stringify(votingAction.block.data[i])}`);
             }

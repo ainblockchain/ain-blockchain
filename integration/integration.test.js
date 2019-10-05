@@ -206,8 +206,9 @@ describe('Integration Tests', () => {
     it('will sync to new peers on startup', function(done) {
       let baseChain;
       let newChain;
-      const newServer = 'http://localhost:8090';
-      const newServerProc = spawn('node', [APP_SERVER], {env: {P2P_PORT: 5006, PORT: 8090, LOG: true, LOCAL: true}});
+      const newServer = 'http://localhost:9095';
+      const newServerProc = new Process(APP_SERVER, {P2P_PORT: 5006, PORT: 9095, LOG: true, LOCAL: true});
+      newServerProc.start();
       sleep(5000);
       jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, [], function(err, response) {
         if (err) throw err;
