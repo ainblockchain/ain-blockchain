@@ -3,7 +3,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const {OperationTypes, UpdateTypes, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
+const {OperationTypes, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 
 class DB {
   constructor(blockchain) {
@@ -97,6 +97,20 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
+  get(getList) {
+    const resultList = [];
+    getList.forEach((item) => {
+      if (item.type === undefined || item.type === OperationTypes.GET_VALUE) {
+        resultList.push(this.getValue(item.ref));
+      } else if (item.type === OperationTypes.GET_RULE) {
+        resultList.push(this.getRule(item.ref));
+      } else if (item.type === OperationTypes.GET_OWNER) {
+        resultList.push(this.getOwner(item.ref));
+      }
+    });
+    return resultList;
+  }
+
   stake(stakeAmount) {
     return this.setValue([PredefinedDbPaths.STAKEHOLDER, this.publicKey].join('/'), stakeAmount);
   }
@@ -170,27 +184,27 @@ class DB {
     let ret = true;
     for (let i = 0; i < updateList.length; i++) {
       const update = updateList[i];
-      if (update.type === undefined || update.type === UpdateTypes.SET_VALUE) {
+      if (update.type === undefined || update.type === OperationTypes.SET_VALUE) {
         ret = this.setValue(update.ref, update.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === UpdateTypes.INC_VALUE) {
+      } else if (update.type === OperationTypes.INC_VALUE) {
         ret = this.incValue(update.ref, update.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === UpdateTypes.DEC_VALUE) {
+      } else if (update.type === OperationTypes.DEC_VALUE) {
         ret = this.decValue(update.ref, update.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === UpdateTypes.SET_RULE) {
+      } else if (update.type === OperationTypes.SET_RULE) {
         ret = this.setRule(update.ref, update.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === UpdateTypes.SET_OWNER) {
+      } else if (update.type === OperationTypes.SET_OWNER) {
         ret = this.setOwner(update.ref, update.value, address, timestamp);
         if (ret !== true) {
           break;
@@ -204,32 +218,25 @@ class DB {
     const resultList = [];
     batchList.forEach((item) => {
       if (item.type === OperationTypes.GET_VALUE) {
-        resultList
-            .push(this.getValue(item.ref));
+        resultList.push(this.getValue(item.ref));
       } else if (item.type === OperationTypes.GET_RULE) {
-        resultList
-            .push(this.getRule(item.ref));
+        resultList.push(this.getRule(item.ref));
       } else if (item.type === OperationTypes.GET_OWNER) {
-        resultList
-            .push(this.getOwner(item.ref));
+        resultList.push(this.getOwner(item.ref));
+      } else if (item.type === OperationTypes.GET) {
+        resultList.push(this.get(item.get_list));
       } else if (item.type === OperationTypes.SET_VALUE) {
-        resultList
-            .push(this.setValue(item.ref, item.value, address, timestamp));
+        resultList.push(this.setValue(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.INC_VALUE) {
-        resultList
-            .push(this.incValue(item.ref, item.value, address, timestamp));
+        resultList.push(this.incValue(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.DEC_VALUE) {
-        resultList
-            .push(this.decValue(item.ref, item.value, address, timestamp));
+        resultList.push(this.decValue(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.SET_RULE) {
-        resultList
-            .push(this.setRule(item.ref, item.value, address, timestamp));
+        resultList.push(this.setRule(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.SET_OWNER) {
-        resultList
-            .push(this.setOwner(item.ref, item.value, address, timestamp));
+        resultList.push(this.setOwner(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.UPDATES) {
-        resultList
-            .push(this.updates(item.update_list, address, timestamp));
+        resultList.push(this.updates(item.update_list, address, timestamp));
       }
     });
     return resultList;

@@ -82,10 +82,10 @@ const RuleProperties = {
  * @enum {string}
  */
 const OperationTypes = {
-  GET: 'GET',
   GET_VALUE: 'GET_VALUE',
   GET_RULE: 'GET_RULE',
   GET_OWNER: 'GET_OWNER',
+  GET: 'GET',
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
@@ -93,18 +93,6 @@ const OperationTypes = {
   SET_OWNER: 'SET_OWNER',
   UPDATES: 'UPDATES',
   BATCH: 'BATCH',
-};
-
-/**
- * Types of updates
- * @enum {string}
- */
-const UpdateTypes = {
-  SET_VALUE: 'SET_VALUE',
-  INC_VALUE: 'INC_VALUE',
-  DEC_VALUE: 'DEC_VALUE',
-  SET_RULE: 'SET_RULE',
-  SET_OWNER: 'SET_OWNER',
 };
 
 /**
@@ -127,6 +115,5 @@ module.exports = {
   PredefinedDbPaths,
   RuleProperties,
   OperationTypes,
-  UpdateTypes,
   FunctionResultCode,
 };
