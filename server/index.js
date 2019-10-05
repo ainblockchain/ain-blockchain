@@ -296,15 +296,15 @@ class P2pServer {
     const blockHeight = this.blockchain.height() + 1;
     this.votingUtil.setBlock(
         ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(), this.db.publicKey,
-            Object.keys(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
-            this.db.get(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
+            Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
+            this.db.getValue(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
     const blockHashTransaction = this.db.createTransaction({ type: OperationTypes.SET_VALUE, ref, value });
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
-    if (!Object.keys(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {
+    if (!Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {
       console.log('No validators registered for this round');
       this.addBlockToChain();
       this.cleanupAfterVotingRound();
@@ -323,7 +323,7 @@ class P2pServer {
     this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
     this.votingUtil.reset();
     this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0 && !this.db.get(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
+    if (this.waitInBlocks > 0 && !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
       this.waitInBlocks = this.waitInBlocks - 1;
       if (this.waitInBlocks === 0) {
         this.stakeAmount();
@@ -337,12 +337,12 @@ class P2pServer {
       clearInterval(this.votingInterval);
       this.votingInterval = null;
     }
-    if (this.db.get(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.publicKey) {
+    if (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.publicKey) {
       console.log(`Peer ${this.db.publicKey} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulForge());
     }
 
-    if (this.db.get(PredefinedDbPaths.RECENT_FORGERS).indexOf(this.db.publicKey) >= 0) {
+    if (this.db.getValue(PredefinedDbPaths.RECENT_FORGERS).indexOf(this.db.publicKey) >= 0) {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});

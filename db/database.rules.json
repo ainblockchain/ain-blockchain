@@ -8,7 +8,7 @@
             "$to": {
                 "$key": {
                     "value": {
-                        ".write_value": "auth === '$from' && !db.get(`transfer/$from/$to/$key`) && db.get(`account/$from/balance`) >= newData"
+                        ".write_value": "auth === '$from' && !db.getValue(`transfer/$from/$to/$key`) && db.getValue(`account/$from/balance`) >= newData"
                     }
                 }
             }
@@ -19,7 +19,7 @@
     },
     "consensus": {
         "recent_forgers": {
-            ".write_value": "(newData.length < 20) && (db.get(`/consensus/voting/pre_commits`) > db.get(`/consensus/voting/threshold`)) && (db.get(`/consensus/voting/forger`) === auth)"
+            ".write_value": "(newData.length < 20) && (db.getValue(`/consensus/voting/pre_commits`) > db.getValue(`/consensus/voting/threshold`)) && (db.getValue(`/consensus/voting/forger`) === auth)"
         },
         "stakes": {
             "$uid": {
@@ -27,18 +27,18 @@
             }
         },
         "voting": {
-            ".write_value": "db.get(`/consensus/voting`) === null || db.get(`/consensus/recent_forgers`) !== null && (db.get(`/consensus/recent_forgers`)[db.get(`/consensus/recent_forgers`).length - Math.floor((currentTime - db.get(`/consensus/voting/time`)) / 6000)] === auth)" ,
+            ".write_value": "db.getValue(`/consensus/voting`) === null || db.getValue(`/consensus/recent_forgers`) !== null && (db.getValue(`/consensus/recent_forgers`)[db.getValue(`/consensus/recent_forgers`).length - Math.floor((currentTime - db.getValue(`/consensus/voting/time`)) / 6000)] === auth)" ,
             "block_hash": {
-                ".write_value": "db.get(`/consensus/voting/forger`) === auth"
+                ".write_value": "db.getValue(`/consensus/voting/forger`) === auth"
             },
             "next_round_validators": {
-                ".write_value": "Object.keys(db.get(`/consensus/stakes`)).indexOf(auth) > -1"
+                ".write_value": "Object.keys(db.getValue(`/consensus/stakes`)).indexOf(auth) > -1"
             },
             "pre_votes":{
-                ".write_value": "db.get(`/consensus/voting/block_hash`) !== null"
+                ".write_value": "db.getValue(`/consensus/voting/block_hash`) !== null"
             },
             "pre_commits": {
-                ".write_value":  "db.get(`/consensus/voting/pre_votes`) > db.get(`/consensus/voting/threshold`)"
+                ".write_value":  "db.getValue(`/consensus/voting/pre_votes`) > db.getValue(`/consensus/voting/threshold`)"
             }
 
         }
@@ -69,7 +69,7 @@
                     ".write_value": "oldData !== null"
                 },
                 "balance_info": {
-                    ".write_value": "db.get(`test/billing_keys/update_billing/$uid`) !== null"
+                    ".write_value": "db.getValue(`test/billing_keys/update_billing/$uid`) !== null"
                 },
                 "next_counter": {
                     ".write_value": "typeof newData === 'number' && newData === oldData + 1"

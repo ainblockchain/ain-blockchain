@@ -194,10 +194,10 @@ describe('Integration Tests', () => {
     });
 
     itParam('syncs accross all peers after mine', SERVERS, (server) => {
-      const baseDb = JSON.parse(syncRequest('GET', server1 + '/get?ref=/').body.toString('utf-8'));
+      const baseDb = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=/').body.toString('utf-8'));
       console.log(baseDb);
       console.log(server);
-      return chai.request(server).get(`/get?ref=/`).then((res) => {
+      return chai.request(server).get(`/get_value?ref=/`).then((res) => {
         res.should.have.status(200);
         res.body.should.be.deep.eql(baseDb);
       });

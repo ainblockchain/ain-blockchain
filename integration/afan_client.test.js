@@ -109,7 +109,7 @@ describe('aFan Client Test', () => {
 
   get = (ref) => {
     return chai.request(server3)
-        .get(`/get?ref=${ref}`);
+        .get(`/get_value?ref=${ref}`);
   };
 
   beforeEach(() => {

@@ -79,19 +79,10 @@ class DB {
     return result ? JSON.parse(JSON.stringify(result)) : null;
   }
 
-  // TODO(seo): Migrate to getValue(), getRule(), or getOwner().
-  get(dbPath) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
-    return this.readDatabase(parsedPath);
-  }
-
   getValue(valuePath) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    /*
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     return this.readDatabase(fullPath);
-    */
-    return this.readDatabase(parsedPath);
   }
 
   getRule(rulePath) {
@@ -116,20 +107,20 @@ class DB {
   // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
   // TODO(seo): Consider explicitly defining error code.
-  // TODO(seo): Apply full path with VALUES_ROOT.
   setValue(valuePath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, address, timestamp, value)) {
       return {code: 2, error_message: 'No write_value permission on: ' + valuePath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.writeDatabase(parsedPath, valueCopy);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    this.writeDatabase(fullPath, valueCopy);
     this.func.runFunctions(parsedPath, valueCopy);
     return true;
   }
 
   incValue(valuePath, delta, address, timestamp) {
-    const valueBefore = this.get(valuePath);
+    const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
@@ -141,7 +132,7 @@ class DB {
   }
 
   decValue(valuePath, delta, address, timestamp) {
-    const valueBefore = this.get(valuePath);
+    const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
@@ -212,9 +203,15 @@ class DB {
   batch(batchList, address, timestamp) {
     const resultList = [];
     batchList.forEach((item) => {
-      if (item.type === OperationTypes.GET) {
+      if (item.type === OperationTypes.GET_VALUE) {
         resultList
-            .push(this.get(item.ref));
+            .push(this.getValue(item.ref));
+      } else if (item.type === OperationTypes.GET_RULE) {
+        resultList
+            .push(this.getRule(item.ref));
+      } else if (item.type === OperationTypes.GET_OWNER) {
+        resultList
+            .push(this.getOwner(item.ref));
       } else if (item.type === OperationTypes.SET_VALUE) {
         resultList
             .push(this.setValue(item.ref, item.value, address, timestamp));
@@ -317,6 +314,8 @@ class DB {
         return this.decValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.SET_RULE:
         return this.setRule(operation.ref, operation.value, address, timestamp);
+      case OperationTypes.SET_OWNER:
+        return this.setOwner(operation.ref, operation.value, address, timestamp);
       case OperationTypes.UPDATES:
         return this.updates(operation.update_list, address, timestamp);
       case OperationTypes.BATCH:
@@ -394,10 +393,10 @@ class DB {
     }
     if (ruleString.includes('oldData')) {
       ruleString =
-        ruleString.replace(/oldData/g, this.get(valuePath.join('/')));
+        ruleString.replace(/oldData/g, this.getValue(valuePath.join('/')));
     }
-    if (ruleString.includes('db.get')) {
-      ruleString = ruleString.replace(/db.get/g, 'this.get');
+    if (ruleString.includes('db.getValue')) {
+      ruleString = ruleString.replace(/db.getValue/g, 'this.getValue');
     }
 
     const permission = eval(ruleString);

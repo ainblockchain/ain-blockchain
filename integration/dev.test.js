@@ -104,11 +104,11 @@ describe('API Tests', () => {
         .post('/set_value').send({ref: '/', value: {}})
   });
 
-  describe('/get', () => {
+  describe('/get_value', () => {
     it('get simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get('/get?ref=test/test')
+          .get('/get_value?ref=test/test')
           .then((res) => {
             res.should.have.status(200);
             res.body.should.be.deep.eql({code:0, result: 100});
@@ -219,11 +219,11 @@ describe('API Tests', () => {
                 ]
               },
               {
-                type: 'GET',
+                type: 'GET_VALUE',
                 ref: 'test/a'
               },
               {
-                type: 'GET',
+                type: 'GET_VALUE',
                 ref: 'test/balance/b'
               }
           ]})

@@ -89,11 +89,43 @@ app.get('/', (req, res, next) => {
   }
 });
 
-app.get('/get', (req, res, next) => {
+app.get('/get_value', (req, res, next) => {
   let statusCode = 200;
   let result = null;
   try {
-    result = db.get(req.query.ref);
+    result = db.getValue(req.query.ref);
+  } catch (error) {
+    statusCode = 400;
+    console.log(error.stack);
+  }
+  res
+      .status(statusCode)
+      .set('Content-Type', 'application/json')
+      .send({code: result ? 0 : -1, result})
+      .end();
+});
+
+app.get('/get_rule', (req, res, next) => {
+  let statusCode = 200;
+  let result = null;
+  try {
+    result = db.getRule(req.query.ref);
+  } catch (error) {
+    statusCode = 400;
+    console.log(error.stack);
+  }
+  res
+      .status(statusCode)
+      .set('Content-Type', 'application/json')
+      .send({code: result ? 0 : -1, result})
+      .end();
+});
+
+app.get('/get_owner', (req, res, next) => {
+  let statusCode = 200;
+  let result = null;
+  try {
+    result = db.getOwner(req.query.ref);
   } catch (error) {
     statusCode = 400;
     console.log(error.stack);

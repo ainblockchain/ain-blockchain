@@ -38,19 +38,19 @@ describe("DB values", () => {
 
     describe("get operations", () => {
         it("when retrieving high value near top of database", () => {
-            assert.deepEqual(db.get("test"), test_db)
+            assert.deepEqual(db.getValue("test"), test_db)
         })
 
         it("when retrieving shallow nested value", () => {
-            assert.deepEqual(db.get("test/ai/comcom"), test_db["ai"]["comcom"])
+            assert.deepEqual(db.getValue("test/ai/comcom"), test_db["ai"]["comcom"])
         })
 
         it("when retrieving deeply nested value", () => {
-            assert.deepEqual(db.get("test/nested/far/down"), test_db["nested"]["far"]["down"])
+            assert.deepEqual(db.getValue("test/nested/far/down"), test_db["nested"]["far"]["down"])
         })
 
         it("by failing when value is not present", () => {
-            expect(db.get("test/nested/far/down/to/nowhere")).to.equal(null)
+            expect(db.getValue("test/nested/far/down/to/nowhere")).to.equal(null)
         })
     })
 
@@ -58,47 +58,47 @@ describe("DB values", () => {
         it("when overwriting nested value", () => {
             var new_val = {"new": 12345}
             expect(db.setValue("nested/far/down", new_val)).to.equal(true)
-            assert.deepEqual(db.get("nested/far/down"), new_val)
+            assert.deepEqual(db.getValue("nested/far/down"), new_val)
         })
 
         it("when creating new path in database", () => {
             var new_val = 12345
             db.setValue("new/unchartered/nested/path", new_val)
-            expect(db.get("new/unchartered/nested/path")).to.equal(new_val)
+            expect(db.getValue("new/unchartered/nested/path")).to.equal(new_val)
         })
     })
 
     describe("incValue operations", () => {
         it("when increasing value successfully", () => {
             expect(db.incValue("test/increment/value", 10)).to.equal(true)
-            expect(db.get("test/increment/value")).to.equal(30)
+            expect(db.getValue("test/increment/value")).to.equal(30)
         })
 
         it("returning error code and leaving value unchanged if path is not numerical", () => {
             expect(db.incValue("test/ai/foo", 10).code).to.equal(1)
-            expect(db.get("test/ai/foo")).to.equal("bar")
+            expect(db.getValue("test/ai/foo")).to.equal("bar")
         })
 
         it("creating and increasing given path from 0 if not currently in database", () => {
             db.incValue("test/completely/new/path/test", 100); 
-            expect(db.get("test/completely/new/path/test")).to.equal(100)
+            expect(db.getValue("test/completely/new/path/test")).to.equal(100)
         })
     })
 
     describe("decValue operations", () => {
         it("when decreasing value successfully", () => {
             expect(db.decValue("test/decrement/value", 10)).to.equal(true)
-            expect(db.get("test/decrement/value")).to.equal(10)
+            expect(db.getValue("test/decrement/value")).to.equal(10)
         })
 
         it("returning error code and leaving value unchanged if path is not numerical", () => {
             expect(db.decValue("test/ai/foo", 10).code).to.equal(1)
-            expect(db.get("test/ai/foo")).to.equal("bar")
+            expect(db.getValue("test/ai/foo")).to.equal("bar")
         })
 
         it("creating and decreasing given path from 0 if not currently in database", () => {
             db.decValue("test/completely/new/path/test", 100); 
-            expect(db.get("test/completely/new/path/test")).to.equal(-100)
+            expect(db.getValue("test/completely/new/path/test")).to.equal(-100)
         })
     })
 
@@ -123,9 +123,9 @@ describe("DB values", () => {
                     value: 10
                 },
             ])).to.equal(true)
-            assert.deepEqual(db.get("nested/far/down"), { "new": 12345 })
-            expect(db.get("test/increment/value")).to.equal(30)
-            expect(db.get("test/decrement/value")).to.equal(10)
+            assert.deepEqual(db.getValue("nested/far/down"), { "new": 12345 })
+            expect(db.getValue("test/increment/value")).to.equal(30)
+            expect(db.getValue("test/decrement/value")).to.equal(10)
         })
 
         it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
@@ -148,7 +148,7 @@ describe("DB values", () => {
                     value: 10
                 },
             ]).code).to.equal(1)
-            expect(db.get("test/ai/foo")).to.equal("bar")
+            expect(db.getValue("test/ai/foo")).to.equal("bar")
         })
 
         it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
@@ -171,14 +171,14 @@ describe("DB values", () => {
                     value: 10
                 },
             ]).code).to.equal(1)
-            expect(db.get("test/ai/foo")).to.equal("bar")
+            expect(db.getValue("test/ai/foo")).to.equal("bar")
         })
     })
 
     describe("rules", () => {
 
         it("loading properly on initatiion", () => {
-            assert.deepEqual(db.get("rules"), JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"])
+            assert.deepEqual(db.getRule("/"), JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"])
 
         })
 
@@ -260,7 +260,7 @@ describe("DB rules", () => {
     
     describe("substituteWildCards", () => {
         it("can handle multiple occurrences", () => {
-            assert.deepEqual(DB.substituteWildCards("!$aaa !== 'bbb' && !db.get($aaa)", { '$aaa': 'AAA', '$bbb': 'BBB'}), "!AAA !== 'bbb' && !db.get(AAA)");
+            assert.deepEqual(DB.substituteWildCards("!$aaa !== 'bbb' && !db.getValue($aaa)", { '$aaa': 'AAA', '$bbb': 'BBB'}), "!AAA !== 'bbb' && !db.getValue(AAA)");
         })
     })
 })
