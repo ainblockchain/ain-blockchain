@@ -45,6 +45,10 @@ const VotingStatus = {
  * @enum {string}
  */
 const PredefinedDbPaths = {
+  // Roots
+  OWNERS_ROOT: 'owners',
+  RULES_ROOT: 'rules',
+  VALUES_ROOT: 'values',
   // Consensus
   RECENT_FORGERS: '/consensus/recent_forgers',
   VOTING_ROUND: '/consensus/voting',
@@ -71,10 +75,14 @@ const PredefinedDbPaths = {
  */
 const OperationTypes = {
   GET: 'GET',
+  GET_VALUE: 'GET_VALUE',
+  GET_RULE: 'GET_RULE',
+  GET_OWNER: 'GET_OWNER',
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
+  SET_OWNER: 'SET_OWNER',
   UPDATES: 'UPDATES',
   BATCH: 'BATCH',
 };
@@ -88,6 +96,7 @@ const UpdateTypes = {
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
+  SET_OWNER: 'SET_OWNER',
 };
 
 /**

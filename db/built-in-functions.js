@@ -77,13 +77,12 @@ class BuiltInFunctions {
     let fromBalance = this.db.get(fromBalancePath);
     let toBalance = this.db.get(toBalancePath);
     if (fromBalance >= value) {
-      this.db.updateDatabase(fromBalancePath, fromBalance - value);
-      this.db.updateDatabase(toBalancePath, toBalance + value);
-      this.db.updateDatabase(
-        this._getTransferResultPath(from, to, key), { code: FunctionResultCode.SUCCESS });
+      const resultPath = this._getTransferResultPath(from, to, key);
+      this.db.writeDatabase(ChainUtil.parsePath(fromBalancePath), fromBalance - value);
+      this.db.writeDatabase(ChainUtil.parsePath(toBalancePath), toBalance + value);
+      this.db.writeDatabase(ChainUtil.parsePath(resultPath), { code: FunctionResultCode.SUCCESS });
     } else {
-      this.db.updateDatabase(
-        this._getTransferResultPath(from, to, key), { code: FunctionResultCode.FAILURE });
+      this.db.writeDatabase(ChainUtil.parsePath(resultPath), { code: FunctionResultCode.FAILURE });
     }
   }
 

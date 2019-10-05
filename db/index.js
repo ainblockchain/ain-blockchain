@@ -49,28 +49,25 @@ class DB {
     return db;
   }
 
-  updateDatabase(dbPath, value) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
-    if (parsedPath.length === 0) {
+  writeDatabase(fullPath, value) {
+    if (fullPath.length === 0) {
       this.db = value;
-    } else if (parsedPath.length === 1) {
-      this.db[parsedPath[0]] = value;
+    } else if (fullPath.length === 1) {
+      this.db[fullPath[0]] = value;
     } else {
-      const pathToKey = parsedPath.slice().splice(0, parsedPath.length - 1);
-      const refKey = parsedPath[parsedPath.length - 1];
-      this._forcePath(pathToKey)[refKey] = value;
+      const pathToKey = fullPath.slice().splice(0, fullPath.length - 1);
+      const refKey = fullPath[fullPath.length - 1];
+      this.getRefForWriting(pathToKey)[refKey] = value;
     }
   }
 
-  get(dbPath) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
-
-    if (parsedPath.length === 0) {
+  readDatabase(fullPath) {
+    if (fullPath.length === 0) {
       return this.db;
     }
     let result = this.db;
     try {
-      parsedPath.forEach(function(key) {
+      fullPath.forEach(function(key) {
         result = result[key];
       });
     } catch (error) {
@@ -80,6 +77,30 @@ class DB {
       throw error;
     }
     return result ? JSON.parse(JSON.stringify(result)) : null;
+  }
+
+  // TODO(seo): Migrate to getValue(), getRule(), or getOwner().
+  get(dbPath) {
+    const parsedPath = ChainUtil.parsePath(dbPath);
+    return this.readDatabase(parsedPath);
+  }
+
+  getValue(dbPath) {
+    const parsedPath = ChainUtil.parsePath(dbPath);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    return this.readDatabase(fullPath);
+  }
+
+  getRule(dbPath) {
+    const parsedPath = ChainUtil.parsePath(dbPath);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
+    return this.readDatabase(fullPath);
+  }
+
+  getOwner(dbPath) {
+    const parsedPath = ChainUtil.parsePath(dbPath);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
+    return this.readDatabase(fullPath);
   }
 
   stake(stakeAmount) {
@@ -92,18 +113,14 @@ class DB {
   // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
   // TODO(seo): Consider explicitly defining error code.
+  // TODO(seo): Apply full path with VALUES_ROOT.
   setValue(dbPath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(dbPath);
-    // TODO: Find a better way to manage seeting of rules than this dodgy condition
-    // In future should be able to accomidate other types of rules beyoned wrie
-    if (parsedPath.length < 1 || parsedPath[0] === 'rules') {
-      return {code: 1, error_message: 'Invalid value path: ' + dbPath};
-    }
-    if (!this.getPermissionOnValue(parsedPath, address, timestamp, '.write', value)) {
-      return {code: 2, error_message: 'No SET_VALUE permission on: ' + dbPath};
+    if (!this.getPermissionForValue(parsedPath, address, timestamp, '.write', value)) {
+      return {code: 2, error_message: 'No write_value permission on: ' + dbPath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.updateDatabase(dbPath, valueCopy);
+    this.writeDatabase(parsedPath, valueCopy);
     this.func.runFunctions(parsedPath, valueCopy);
     return true;
   }
@@ -132,16 +149,25 @@ class DB {
     return this.setValue(dbPath, valueAfter, address, timestamp);
   }
 
-  setRule(dbPath, value, address, timestamp) {
-    const parsedPath = ChainUtil.parsePath(dbPath);
-    if (!(parsedPath.length === 1 && parsedPath[0] === 'rules')) {
-      return {code: 1, error_message: 'Invalid rule path: ' + dbPath};
+  setRule(rulePath, rule, address, timestamp) {
+    const parsedPath = ChainUtil.parsePath(rulePath);
+    if (!this.getPermissionForRule(parsedPath, address, timestamp, rule)) {
+      return {code: 2, error_message: 'No write_rule permission on: ' + rulePath};
     }
-    if (!this.getPermissionOnRule(parsedPath, address, timestamp, value)) {
-      return {code: 2, error_message: 'No SET_RULE permission on: ' + dbPath};
+    const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
+    this.writeDatabase(fullPath, ruleCopy);
+    return true;
+  }
+
+  setOwner(ownerPath, owner, address, timestamp) {
+    const parsedPath = ChainUtil.parsePath(ownerPath);
+    if (!this.getPermissionForOwner(parsedPath, address, timestamp, owner)) {
+      return {code: 2, error_message: 'No write_owner permission on: ' + ownerPath};
     }
-    const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.updateDatabase(dbPath, valueCopy);
+    const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
+    this.writeDatabase(fullPath, ownerCopy);
     return true;
   }
 
@@ -170,6 +196,11 @@ class DB {
         if (ret !== true) {
           break;
         }
+      } else if (update.type === UpdateTypes.SET_OWNER) {
+        ret = this.setOwner(update.ref, update.value, address, timestamp);
+        if (ret !== true) {
+          break;
+        }
       }
     }
     return ret;
@@ -193,6 +224,9 @@ class DB {
       } else if (item.type === OperationTypes.SET_RULE) {
         resultList
             .push(this.setRule(item.ref, item.value, address, timestamp));
+      } else if (item.type === OperationTypes.SET_OWNER) {
+        resultList
+            .push(this.setOwner(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.UPDATES) {
         resultList
             .push(this.updates(item.update_list, address, timestamp));
@@ -201,8 +235,19 @@ class DB {
     return resultList;
   }
 
-  _forcePath(parsedPath) {
-    // Returns reference to provided path if exists, otherwise creates path
+  /**
+   *  Returns full path with given root node.
+   */
+  getFullPath(parsedPath, root) {
+    const fullPath = parsedPath.slice();
+    fullPath.unshift(root);
+    return fullPath;
+  }
+
+  /**
+   * Returns reference to provided path for writing if exists, otherwise creates path.
+   */
+  getRefForWriting(parsedPath) {
     let subDb = this.db;
     parsedPath.forEach((key) => {
       if ((!ChainUtil.isDict(subDb[key])) || (!(key in subDb))) {
@@ -276,7 +321,7 @@ class DB {
     }
   }
 
-  getPermissionOnValue(dbPath, address, timestamp, permissionQuery, newValue) {
+  getPermissionForValue(dbPath, address, timestamp, permissionQuery, newValue) {
     let lastRuleSet;
     address = address || this.publicKey;
     timestamp = timestamp || Date.now();
@@ -310,7 +355,12 @@ class DB {
     return rule;
   }
 
-  getPermissionOnRule(dbPath, address, timestamp, permissionQuery, newValue) {
+  getPermissionForRule(dbPath, address, timestamp, permissionQuery, newValue) {
+    // TODO(seo): Implement this.
+    return true;
+  }
+
+  getPermissionForOwner(dbPath, address, timestamp, permissionQuery, newValue) {
     // TODO(seo): Implement this.
     return true;
   }

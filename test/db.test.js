@@ -55,17 +55,6 @@ describe("DB values", () => {
     })
 
     describe("setValue operations", () => {
-        it("when setting root database", () => {
-            var new_db = {
-                "basic": {
-                    "new": "db"
-                }
-            }
-            // Overwriting the default rules manually for this area
-            db.db["rules"][".write"] = true
-            expect(db.setValue("/", new_db).code).to.equal(1)
-        })
-
         it("when overwriting nested value", () => {
             var new_val = {"new": 12345}
             expect(db.setValue("nested/far/down", new_val)).to.equal(true)
@@ -241,32 +230,32 @@ describe("DB rules", () => {
     })
 
     it("only allows certain users to write certain info if balance is greater than 0", () => {
-        expect(db2.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance`), null, null, ".write", 0)).to.equal(true)  
-        expect(db2.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance`), null, null, ".write", -1)).to.equal(false)       
-        expect(db1.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/balance`), null, null, ".write", 1)).to.equal(true)
+        expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance`), null, null, ".write", 0)).to.equal(true)  
+        expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance`), null, null, ".write", -1)).to.equal(false)       
+        expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/balance`), null, null, ".write", 1)).to.equal(true)
         
     })
 
     it("only allows certain users to write certain info if data exists", () => {
-        expect(db1.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/info`), null, null,  ".write", "something")).to.equal(true)     
-        expect(db2.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/info`), null, null,  ".write", "something else")).to.equal(false)
-        expect(db2.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/new_info`), null, null,  ".write", "something")).to.equal(true)
+        expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/info`), null, null,  ".write", "something")).to.equal(true)     
+        expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/info`), null, null,  ".write", "something else")).to.equal(false)
+        expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/new_info`), null, null,  ".write", "something")).to.equal(true)
         
     })
 
     it("only allows certain users to write certain info if data at other locations exists", () => {
-        expect(db2.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(true)     
-        expect(db1.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(false)        
+        expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(true)     
+        expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/balance_info`), null, null,  ".write", "something")).to.equal(false)        
     })
 
     it("validates old data and new data together", () => {
-        expect(db1.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/next_counter`), null,  null,  ".write", 11)).to.equal(true)
-        expect(db1.getPermissionOnValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/next_counter`), null, null,  ".write", 12)).to.equal(false)        
+        expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/next_counter`), null,  null,  ".write", 11)).to.equal(true)
+        expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.publicKey}/next_counter`), null, null,  ".write", 12)).to.equal(false)        
     })
 
     it("can handle nested wildcards", () => {
-        expect(db2.getPermissionOnValue(ChainUtil.parsePath(`test/second_users/${db2.publicKey}/${db2.publicKey}`), null, null, ".write", "some value")).to.equal(true)
-        expect(db1.getPermissionOnValue(ChainUtil.parsePath(`test/second_users/${db1.publicKey}/next_counter`), null, null,  ".write", "some other value")).to.equal(false)        
+        expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/second_users/${db2.publicKey}/${db2.publicKey}`), null, null, ".write", "some value")).to.equal(true)
+        expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/second_users/${db1.publicKey}/next_counter`), null, null,  ".write", "some other value")).to.equal(false)        
     })
     
     describe("substituteWildCards", () => {
