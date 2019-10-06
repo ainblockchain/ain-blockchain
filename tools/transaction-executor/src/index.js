@@ -33,11 +33,12 @@ class TransactionExecutorCommand extends Command {
     // TODO: (chris) Persist and reload keypairs from disk.
     let transactions;
     if (generateKeyPair) {
-      const privateKey = ChainUtil.genKeyPair().priv;
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, privateKey);
+      const keyPair = ChainUtil.genKeyPair();
+      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
     } else if (privateKeyString){
-      const privateKey = new BN(privateKeyString, 16);
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, privateKey);
+      const keyPair = ec.keyFromPrivate(privateKeyString, 'hex')
+      keyPair.getPublic()
+      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
     } else {
       transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
@@ -46,17 +47,17 @@ class TransactionExecutorCommand extends Command {
     });
   }
 
-  static createSignedTransactionList(transactionFile, privateKey) {
+  static createSignedTransactionList(transactionFile, keyPair) {
     const transactions = [];
+    const privateKey =  keyPair.priv
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       if (line.match(ADDRESS_REG_EX)) {
-        const rawPublicKey = ec.keyFromPrivate(privateKey.toString(), 'hex').getPublic().encode('hex')
         const publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
           ainUtil.pubToAddress(
-              Buffer.from(rawPublicKey, 'hex'),
+              Buffer.from(keyPair.getPublic().encode('hex'), 'hex'),
               true
           )
-        ));
+      ));
         line = line.replace(ADDRESS_REG_EX, `${publicKey}`);
       }
       
