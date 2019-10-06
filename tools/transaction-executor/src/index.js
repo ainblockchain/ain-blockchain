@@ -10,6 +10,7 @@ const JSON_RPC_SEND_TRANSACTION = 'ain_sendSignedTransaction';
 const ADDRESS_KEY_WORD = '{address}';
 const ADDRESS_REG_EX = new RegExp(ADDRESS_KEY_WORD, 'g');
 const EC = require('elliptic').ec;
+const ainUtil = require('@ainblockchain/ain-util');
 const ec = new EC('secp256k1');
 
 class TransactionExecutorCommand extends Command {
@@ -49,7 +50,13 @@ class TransactionExecutorCommand extends Command {
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       if (line.match(ADDRESS_REG_EX)) {
-        const publicKey = ec.keyFromPrivate(privateKey.toString(), 'hex').getPublic().encode('hex')
+        const rawPublicKey = ec.keyFromPrivate(privateKey.toString(), 'hex').getPublic().encode('hex')
+        const publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+          ainUtil.pubToAddress(
+              Buffer.from(rawPublicKey, 'hex'),
+              true
+          )
+        ));
         line = line.replace(ADDRESS_REG_EX, `${publicKey}`);
       }
       
