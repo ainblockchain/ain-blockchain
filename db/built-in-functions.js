@@ -78,11 +78,15 @@ class BuiltInFunctions {
     let toBalance = this.db.getValue(toBalancePath);
     if (fromBalance >= value) {
       const resultPath = this._getTransferResultPath(from, to, key);
-      this.db.writeDatabase(ChainUtil.parsePath(fromBalancePath), fromBalance - value);
-      this.db.writeDatabase(ChainUtil.parsePath(toBalancePath), toBalance + value);
-      this.db.writeDatabase(ChainUtil.parsePath(resultPath), { code: FunctionResultCode.SUCCESS });
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(fromBalancePath)),
+          fromBalance - value);
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toBalancePath)),
+          toBalance + value);
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+          { code: FunctionResultCode.SUCCESS });
     } else {
-      this.db.writeDatabase(ChainUtil.parsePath(resultPath), { code: FunctionResultCode.FAILURE });
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+          { code: FunctionResultCode.FAILURE });
     }
   }
 
@@ -93,6 +97,10 @@ class BuiltInFunctions {
   _getTransferResultPath(from, to, key) {
     return (
       `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_RESULT}`);
+  }
+
+  _getFullValuePath(parsedPath) {
+    return this.db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
   }
 }
 
