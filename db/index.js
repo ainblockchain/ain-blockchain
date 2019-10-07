@@ -24,7 +24,7 @@ class DB {
   }
 
   getNonce(blockchain) {
-    // TODO (Chris): Search through all blocks for any previous nonced transaction with current publicKey 
+    // TODO (Chris): Search through all blocks for any previous nonced transaction with current publicKey
     let nonce = 0;
     for (let i = blockchain.chain.length - 1; i > -1; i--) {
       for (let j = blockchain.chain[i].data.length -1; j > -1; j--) {
@@ -273,7 +273,15 @@ class DB {
     * @return {Transaction} Instance of the transaction class
     */
   createTransaction(operation, isNoncedTransaction = true) {
-    return Transaction.newTransaction(this, operation, isNoncedTransaction);
+    // TODO: (Chris) Depricate this function
+    let nonce;
+    if (isNoncedTransaction) {
+      nonce = this.nonce;
+      this.nonce++;
+    } else {
+      nonce = -1;
+    }
+    return Transaction.newTransaction(nonce, this.keyPair.priv, operation);
   }
 
   sign(dataHash) {
