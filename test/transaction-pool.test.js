@@ -8,6 +8,12 @@ const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
 
+function getTransaction(db, operation) {
+  const nonce = db.nonce;
+  db.nonce++;
+  return Transaction.newTransaction(nonce, db.keyPair.priv, operation);
+}
+
 describe('TransactionPool', () => {
   let tp; let db; let bc; let transaction;
 
@@ -16,7 +22,7 @@ describe('TransactionPool', () => {
     bc = new Blockchain('test-blockchain');
     db = new DB(bc);
 
-    transaction = db.createTransaction({type: 'SET_VALUE', ref: 'REF', value: 'VALUE'});
+    transaction = getTransaction(db, {type: 'SET_VALUE', ref: 'REF', value: 'VALUE'});
     tp.addTransaction(transaction);
   });
 
@@ -28,10 +34,9 @@ describe('TransactionPool', () => {
   describe('sorting transactions by nonces', () => {
     let db2; let db3; let db4;
 
-
     beforeEach(() => {
       for (let i=0; i<10; i++) {
-        t = db.createTransaction({
+        t = getTransaction(db, {
           type: 'SET_VALUE',
           ref: 'REF',
           value: 'VALUE',
@@ -46,7 +51,7 @@ describe('TransactionPool', () => {
       const dbs = [db2, db3, db4];
       for (let j=0; j < dbs.length; j++) {
         for (let i=0; i<11; i++) {
-          t = dbs[j].createTransaction({
+          t = getTransaction(dbs[j], {
             type: 'SET_VALUE',
             ref: 'REF',
             value: 'VALUE',
@@ -63,28 +68,22 @@ describe('TransactionPool', () => {
       const sortedNonces1 = tp.validTransactions().filter((transaction) => {
         if (transaction.address === db.publicKey) return transaction;
       }).map((transaction) => {
-        return transaction.nonce
-        ;
+        return transaction.nonce;
       });
       const sortedNonces2 = tp.validTransactions().filter((transaction) => {
-        if (transaction.address === db2.publicKey) return transaction
-        ;
+        if (transaction.address === db2.publicKey) return transaction;
       }).map((transaction) => {
-        return transaction.nonce
-        ;
+        return transaction.nonce;
       });
       const sortedNonces3 = tp.validTransactions().filter((transaction) => {
-        if (transaction.address === db3.publicKey) return transaction
-        ;
+        if (transaction.address === db3.publicKey) return transaction;
       }).map((transaction) => {
         return transaction.nonce;
       });
       const sortedNonces4 = tp.validTransactions().filter((transaction) => {
-        if (transaction.address === db4.publicKey) return transaction
-        ;
+        if (transaction.address === db4.publicKey) return transaction;
       }).map((transaction) => {
-        return transaction.nonce
-        ;
+        return transaction.nonce;
       });
       assert.deepEqual(sortedNonces1, [...Array(11).keys()]);
       assert.deepEqual(sortedNonces2, [...Array(11).keys()]);
@@ -98,7 +97,7 @@ describe('TransactionPool', () => {
       const newTransactions = {};
       newTransactions[db.publicKey] = [];
       for (let i=0; i<10; i++) {
-        newTransactions[db.publicKey].push(db.createTransaction({
+        newTransactions[db.publicKey].push(getTransaction(db, {
           type: 'SET_VALUE',
           ref: 'REF',
           value: 'VALUE',

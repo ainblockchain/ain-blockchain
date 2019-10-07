@@ -5,6 +5,12 @@ const expect = chai.expect;
 const assert = chai.assert;
 const Blockchain = require('../blockchain/');
 
+function getTransaction(db, operation) {
+  const nonce = db.nonce;
+  db.nonce++;
+  return Transaction.newTransaction(nonce, db.keyPair.priv, operation);
+}
+
 describe('Transaction', () => {
   let transaction; let operation; let db;
   let txSkipVerif; let opSkipVerif;
@@ -12,15 +18,16 @@ describe('Transaction', () => {
   beforeEach(() => {
     db = new DB(new Blockchain('test-blockchain'));
     operation = {type: 'SET_VALUE', ref: 'path', value: 'val'};
-    transaction = db.createTransaction(operation);
+    transaction = getTransaction(db, operation);
     opSkipVerif = {type: 'SET_VALUE', ref: 'path', value: 'val', skip_verif: true, address: 'abcd'};
-    txSkipVerif = db.createTransaction(opSkipVerif);
+    txSkipVerif = getTransaction(db, opSkipVerif);
   });
 
   it('assigns nonces correctly', () => {
     let t;
-    for (var currentNonce = db.nonce -1; currentNonce < 50; currentNonce++) {
-      t = db.createTransaction(operation);
+    let currentNonce;
+    for (currentNonce = db.nonce -1; currentNonce < 50; currentNonce++) {
+      t = getTransaction(db, operation);
     }
     expect(t.nonce).to.equal(currentNonce);
   });

@@ -221,6 +221,7 @@ class DB {
     * @return {Transaction} Instance of the transaction class
     */
   createTransaction(operation, isNoncedTransaction = true) {
+    // TODO: (Chris) Depricate this function
     let nonce;
     if (isNoncedTransaction) {
       nonce = this.nonce;
