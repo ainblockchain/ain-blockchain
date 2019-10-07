@@ -35,7 +35,7 @@ describe('TransactionPool', () => {
     let db2; let db3; let db4;
 
     beforeEach(() => {
-      for (let i=0; i<10; i++) {
+      for (let i = 0; i < 10; i++) {
         t = getTransaction(db, {
           type: 'SET_VALUE',
           ref: 'REF',
@@ -49,8 +49,8 @@ describe('TransactionPool', () => {
       db3 = new DB(bc);
       db4 = new DB(bc);
       const dbs = [db2, db3, db4];
-      for (let j=0; j < dbs.length; j++) {
-        for (let i=0; i<11; i++) {
+      for (let j = 0; j < dbs.length; j++) {
+        for (let i = 0; i < 11; i++) {
           t = getTransaction(dbs[j], {
             type: 'SET_VALUE',
             ref: 'REF',
@@ -96,7 +96,7 @@ describe('TransactionPool', () => {
       const block = ForgedBlock.forgeBlock(tp.validTransactions(), db, height, ForgedBlock.genesis());
       const newTransactions = {};
       newTransactions[db.publicKey] = [];
-      for (let i=0; i<10; i++) {
+      for (let i = 0; i < 10; i++) {
         newTransactions[db.publicKey].push(getTransaction(db, {
           type: 'SET_VALUE',
           ref: 'REF',
