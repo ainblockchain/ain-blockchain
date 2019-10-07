@@ -91,7 +91,7 @@ const OperationTypes = {
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
   SET_OWNER: 'SET_OWNER',
-  UPDATES: 'UPDATES',
+  SET: 'SET',
   BATCH: 'BATCH',
 };
 

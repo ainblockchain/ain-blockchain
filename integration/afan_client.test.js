@@ -102,9 +102,9 @@ describe('aFan Client Test', () => {
         .post(`/set_value`).send({ref: ref, value: value});
   };
 
-  update = (update_list) => {
+  update = (op_list) => {
     return chai.request(server2)
-        .post(`/updates`).send({update_list});
+        .post(`/set`).send({op_list});
   };
 
   get = (ref) => {
@@ -208,7 +208,7 @@ describe('aFan Client Test', () => {
   describe('ad', () => {
     it('ad propose', () => {
       const afanClient = new AfanClient(server2);
-      const update_list = [
+      const op_list = [
         {
           type: 'SET_VALUE',
           ref: '/afan/balance/uid0',
@@ -220,7 +220,7 @@ describe('aFan Client Test', () => {
           value: 10,
         },
       ];
-      return update(update_list)
+      return update(op_list)
           .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
           .then(() => sleep(100))
           .then(() => get('/afan'))

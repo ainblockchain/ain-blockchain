@@ -97,9 +97,9 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
-  get(getList) {
+  get(opList) {
     const resultList = [];
-    getList.forEach((item) => {
+    opList.forEach((item) => {
       if (item.type === undefined || item.type === OperationTypes.GET_VALUE) {
         resultList.push(this.getValue(item.ref));
       } else if (item.type === OperationTypes.GET_RULE) {
@@ -180,32 +180,32 @@ class DB {
   }
 
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
-  updates(updateList, address, timestamp) {
+  set(opList, address, timestamp) {
     let ret = true;
-    for (let i = 0; i < updateList.length; i++) {
-      const update = updateList[i];
-      if (update.type === undefined || update.type === OperationTypes.SET_VALUE) {
-        ret = this.setValue(update.ref, update.value, address, timestamp);
+    for (let i = 0; i < opList.length; i++) {
+      const op = opList[i];
+      if (op.type === undefined || op.type === OperationTypes.SET_VALUE) {
+        ret = this.setValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === OperationTypes.INC_VALUE) {
-        ret = this.incValue(update.ref, update.value, address, timestamp);
+      } else if (op.type === OperationTypes.INC_VALUE) {
+        ret = this.incValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === OperationTypes.DEC_VALUE) {
-        ret = this.decValue(update.ref, update.value, address, timestamp);
+      } else if (op.type === OperationTypes.DEC_VALUE) {
+        ret = this.decValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === OperationTypes.SET_RULE) {
-        ret = this.setRule(update.ref, update.value, address, timestamp);
+      } else if (op.type === OperationTypes.SET_RULE) {
+        ret = this.setRule(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (update.type === OperationTypes.SET_OWNER) {
-        ret = this.setOwner(update.ref, update.value, address, timestamp);
+      } else if (op.type === OperationTypes.SET_OWNER) {
+        ret = this.setOwner(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
@@ -224,7 +224,7 @@ class DB {
       } else if (item.type === OperationTypes.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
       } else if (item.type === OperationTypes.GET) {
-        resultList.push(this.get(item.get_list));
+        resultList.push(this.get(item.op_list));
       } else if (item.type === OperationTypes.SET_VALUE) {
         resultList.push(this.setValue(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.INC_VALUE) {
@@ -235,8 +235,8 @@ class DB {
         resultList.push(this.setRule(item.ref, item.value, address, timestamp));
       } else if (item.type === OperationTypes.SET_OWNER) {
         resultList.push(this.setOwner(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.UPDATES) {
-        resultList.push(this.updates(item.update_list, address, timestamp));
+      } else if (item.type === OperationTypes.SET) {
+        resultList.push(this.set(item.op_list, address, timestamp));
       }
     });
     return resultList;
@@ -331,8 +331,8 @@ class DB {
         return this.setRule(operation.ref, operation.value, address, timestamp);
       case OperationTypes.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.UPDATES:
-        return this.updates(operation.update_list, address, timestamp);
+      case OperationTypes.SET:
+        return this.set(operation.op_list, address, timestamp);
       case OperationTypes.BATCH:
         return this.batch(operation.batch_list, address, timestamp);
     }

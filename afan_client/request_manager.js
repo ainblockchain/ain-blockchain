@@ -15,7 +15,7 @@ class RequestManager {
       uri: this.endpoint + '/batch',
       body: {
         batch_list: [
-          {type: 'UPDATES', update_list: this.updates},
+          {type: 'SET', op_list: this.updates},
         ],
       },
       json: true, // Automatically stringifies the body to JSON

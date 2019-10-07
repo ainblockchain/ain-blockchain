@@ -151,11 +151,11 @@ describe('API Tests', () => {
     })
   })
 
-  describe('/updates', () => {
-    it('updates simple', () => {
+  describe('/set', () => {
+    it('set simple', () => {
       return chai.request(server2)
-          .post('/updates').send({
-            update_list: [
+          .post('/set').send({
+            op_list: [
               {
                 type: "SET_VALUE",
                 ref: "test/balance",
@@ -196,8 +196,8 @@ describe('API Tests', () => {
                 value: 10
               },
               {
-                type: 'UPDATES',
-                update_list: [
+                type: 'SET',
+                op_list: [
                   {
                     type: "SET_VALUE",
                     ref: "test/balance",

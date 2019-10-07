@@ -102,9 +102,9 @@ describe("DB values", () => {
         })
     })
 
-    describe("updates operations", () => {
-        it("when updates applied successfully", () => {
-            expect(db.updates([
+    describe("set operations", () => {
+        it("when set applied successfully", () => {
+            expect(db.set([
                 {
                     type: "SET_VALUE",
                     ref: "nested/far/down",
@@ -129,7 +129,7 @@ describe("DB values", () => {
         })
 
         it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
-            expect(db.updates([
+            expect(db.set([
                 {
                     type: "SET_VALUE",
                     ref: "nested/far/down",
@@ -152,7 +152,7 @@ describe("DB values", () => {
         })
 
         it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
-            expect(db.updates([
+            expect(db.set([
                 {
                     type: "SET_VALUE",
                     ref: "nested/far/down",

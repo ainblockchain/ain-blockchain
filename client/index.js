@@ -141,7 +141,7 @@ app.post('/get', (req, res, next) => {
   let statusCode = 200;
   let result = null;
   try {
-    result = db.get(req.body.get_list);
+    result = db.get(req.body.op_list);
   } catch (error) {
     statusCode = 400;
     console.log(error.stack);
@@ -239,11 +239,11 @@ app.post('/set_owner', (req, res, next) => {
 });
 
 // TODO(seo): Replace skip_verif with real signature.
-app.post('/updates', (req, res, next) => {
+app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.UPDATES,
-    update_list: req.body.update_list,
+    type: OperationTypes.SET,
+    op_list: req.body.op_list,
     value: req.body.value,
     address: req.body.address,
     nonce: req.body.nonce,
@@ -256,6 +256,7 @@ app.post('/updates', (req, res, next) => {
       .end();
 });
 
+// TODO(seo): Make a batch request consist of transactions.
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
