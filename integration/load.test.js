@@ -7,8 +7,7 @@ const sleep = require('system-sleep');
 
 describe('Load Test', () => {
 
-    it('gives return code of 0', () => {
-        expect(shell.exec(`sh ${LOAD_SCRIPT}`).code).to.equal(0)
-    }).timeout(100000)
+  it('gives return code of 0', () => {
+    expect(shell.exec(`sh ${LOAD_SCRIPT}`).code).to.equal(0)
+  }).timeout(100000)
 })
-
