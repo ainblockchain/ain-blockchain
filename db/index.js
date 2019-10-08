@@ -63,7 +63,7 @@ class DB {
 
   readDatabase(fullPath) {
     let result = this.getRefForReading(fullPath);
-    return typeof result === 'undefined' ? JSON.parse(JSON.stringify(result)) : null;
+    return typeof result !== 'undefined' ? JSON.parse(JSON.stringify(result)) : null;
   }
 
   getValue(valuePath) {
