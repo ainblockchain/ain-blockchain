@@ -62,20 +62,7 @@ class DB {
   }
 
   readDatabase(fullPath) {
-    if (fullPath.length === 0) {
-      return this.db;
-    }
-    let result = this.db;
-    try {
-      fullPath.forEach(function(key) {
-        result = result[key];
-      });
-    } catch (error) {
-      if (error instanceof TypeError) {
-        return null;
-      }
-      throw error;
-    }
+    let result = this.getRefForReading(fullPath);
     return result ? JSON.parse(JSON.stringify(result)) : null;
   }
 
@@ -252,12 +239,27 @@ class DB {
   }
 
   /**
-   * Returns reference to provided path for writing if exists, otherwise creates path.
+   * Returns reference to the input path for reading if exists, otherwise null.
    */
-  getRefForWriting(parsedPath) {
+  getRefForReading(fullPath) {
     let subDb = this.db;
-    parsedPath.forEach((key) => {
-      if ((!ChainUtil.isDict(subDb[key])) || (!(key in subDb))) {
+    for (let i = 0; i < fullPath.length; i++) {
+      const key = fullPath[i];
+      if (!ChainUtil.isDict(subDb) || !(key in subDb)) {
+        return null;
+      }
+      subDb = subDb[key];
+    }
+    return subDb;
+  }
+
+  /**
+   * Returns reference to the input path for writing if exists, otherwise creates path.
+   */
+  getRefForWriting(fullPath) {
+    let subDb = this.db;
+    fullPath.forEach((key) => {
+      if (!ChainUtil.isDict(subDb) || !(key in subDb)) {
         subDb[key] = {};
       }
       subDb = subDb[key];
