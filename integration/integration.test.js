@@ -37,6 +37,7 @@ const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
 const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 
 const setEndpoint = '/set_value';
+const getEndpoint = '/get_value'
 
 const ENV_VARIABLES = [
   {PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f', P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
@@ -197,7 +198,7 @@ describe('Integration Tests', () => {
       const baseDb = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=/').body.toString('utf-8'));
       console.log(baseDb);
       console.log(server);
-      return chai.request(server).get(`/get_value?ref=/`).then((res) => {
+      return chai.request(server).get(getEndpoint + `?ref=/`).then((res) => {
         res.should.have.status(200);
         res.body.should.be.deep.eql(baseDb);
       });
@@ -294,7 +295,7 @@ describe('Integration Tests', () => {
 
     describe('and rules', ()=> {
       it('prevent users from restructed areas', () => {
-        return chai.request(server2).post(`/set`).send( {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}).then((res) => {
+        return chai.request(server2).post(setEndpoint).send( {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}).then((res) => {
           res.should.have.status(404);
         });
       });
@@ -312,8 +313,8 @@ describe('Integration Tests', () => {
       it('facilitate transfer between accounts', () => {
         return chai.request(server1).post(setEndpoint).send( {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 50}).then((res) => {
           sleep(100);
-          balance1 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
-          balance2 = JSON.parse(syncRequest('GET', server3 + `/get?ref=/account/${publicKeys[1]}/balance`).body.toString('utf-8')).result;
+          balance1 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/account/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
+          balance2 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/account/${publicKeys[1]}/balance`).body.toString('utf-8')).result;
           expect(balance1).to.equal(expectedBalance);
           expect(balance2).to.equal(expectedBalance);
         });
@@ -372,9 +373,9 @@ describe('Integration Tests', () => {
       });
 
       itParam('maintaining correct order', SERVERS, (server) => {
-        body = JSON.parse(syncRequest('GET', server + '/get?ref=test').body.toString('utf-8'));
+        body = JSON.parse(syncRequest('GET', server + getEndpoint + '?ref=test').body.toString('utf-8'));
         console.log(body.result);
-        assert.deepEqual(db.db['test'], body.result);
+        assert.deepEqual(db.getValue('test'), body.result);
       });
 
       itParam('and can be stopped and restarted', SERVER_PROCS, (proc) => {
