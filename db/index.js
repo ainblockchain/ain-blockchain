@@ -269,6 +269,14 @@ class DB {
 
   execute(operation, address, timestamp) {
     switch (operation.type) {
+      case OperationTypes.GET_VALUE:
+        return this.getValue(operation.ref);
+      case OperationTypes.GET_RULE:
+        return this.getRule(operation.ref);
+      case OperationTypes.GET_OWNER:
+        return this.getOwner(operation.ref);
+      case OperationTypes.GET:
+        return this.get(operation.op_list);
       case OperationTypes.SET_VALUE:
         return this.setValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.INC_VALUE:
