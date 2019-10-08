@@ -296,7 +296,7 @@ describe('Integration Tests', () => {
     describe('and rules', ()=> {
       it('prevent users from restructed areas', () => {
         return chai.request(server2).post(setEndpoint).send( {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}).then((res) => {
-          res.should.have.status(404);
+          res.should.have.status(401);
         });
       });
     });
