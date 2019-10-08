@@ -42,7 +42,7 @@ class VotingUtil {
   preVote() {
     const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
     this.status = VotingStatus.PRE_VOTE;
-    console.log(`Current prevotes are ${this.db.db.consensus.voting.pre_votes}`);
+    console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     const transaction = this.db.createTransaction({
       type: OperationTypes.INC_VALUE,
       ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
@@ -79,7 +79,7 @@ class VotingUtil {
       return null;
     }
     const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
-    console.log(`Current precommits are ${this.db.db.consensus.voting.pre_commits}`);
+    console.log(`Current precommits are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
     this.status = VotingStatus.PRE_COMMIT;
     const transaction = this.db.createTransaction({
       type: OperationTypes.INC_VALUE,
