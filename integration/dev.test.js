@@ -8,6 +8,7 @@ const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 chai.use(chaiHttp);
+const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const {BLOCKCHAINS_DIR} = require('../constants') 
 
@@ -95,23 +96,131 @@ describe('API Tests', () => {
   });
 
   beforeEach(() => {
-    return chai.request(server2)
-        .post('/set_value').send({ref: 'test/test', value: 100})
+    syncRequest('POST', server2 + '/set_value', {
+      json: {
+        ref: 'test/test',
+        value: 100
+      }
+    });
+    syncRequest('POST', server2 + '/set_rule', {
+      json: {
+        ref: '/rule/some/path',
+        value: {
+          ".write_value": "some rule config"
+        }
+      }
+    });
+    syncRequest('POST', server2 + '/set_owner', {
+      json: {
+        ref: '/owner/some/path', 
+        value: {
+          ".owner": "some owner config"
+        }
+      }
+    });
   });
 
   afterEach(() => {
-    return chai.request(server2)
-        .post('/set_value').send({ref: '/', value: {}})
+    syncRequest('POST', server2 + '/set_value', {
+      json: {
+        ref: '/',
+        value: {}
+      }
+    });
+    syncRequest('POST', server2 + '/set_rule', {
+      json: {
+        ref: '/rule/some/path',
+        value: {}
+      }
+    });
+    syncRequest('POST', server2 + '/set_owner', {
+      json: {
+        ref: '/owner/some/path', 
+        value: {}
+      }
+    });
   });
+
+  describe('/get_value', () => {
+    it('get_value simple', () => {
+      sleep(200)
+      return chai.request(server1)
+          .get('/get_value?ref=test/test')
+          .then((res) => {
+            res.should.have.status(200);
+            res.body.should.be.deep.eql({code: 0, result: 100});
+          });
+    })
+  })
+
+  describe('/get_rule', () => {
+    it('get_rule simple', () => {
+      sleep(200)
+      return chai.request(server1)
+          .get('/get_rule?ref=/rule/some/path')
+          .then((res) => {
+            res.should.have.status(200);
+            res.body.should.be.deep.eql({
+              code: 0,
+              result: {
+                ".write_value": "some rule config"
+              }
+            });
+          });
+    })
+  })
+
+  describe('/get_owner', () => {
+    it('get_owner simple', () => {
+      sleep(200)
+      return chai.request(server1)
+          .get('/get_owner?ref=/owner/some/path')
+          .then((res) => {
+            res.should.have.status(200);
+            res.body.should.be.deep.eql({
+              code: 0,
+              result: {
+                ".owner": "some owner config"
+              }
+            });
+          });
+    })
+  })
 
   describe('/get', () => {
     it('get simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get('/get?ref=test/test')
+          .post('/get').send({
+            op_list: [
+              {
+                type: "GET_VALUE",
+                ref: "/test/test",
+              },
+              {
+                type: 'GET_RULE',
+                ref: "/rule/some/path",
+              },
+              {
+                type: 'GET_OWNER',
+                ref: "/owner/some/path",
+              }
+            ]
+          })
           .then((res) => {
             res.should.have.status(200);
-            res.body.should.be.deep.eql({code:0, result: 100});
+            res.body.should.be.deep.eql({
+              code: 0,
+              result: [
+                100,
+                {
+                  ".write_value": "some rule config"
+                },
+                {
+                  ".owner": "some owner config"
+                }
+              ]
+            });
           });
     })
   })
@@ -122,7 +231,7 @@ describe('API Tests', () => {
           .post('/set_value').send({ref: 'test/value', value: "something"})
           .then((res) => {
             res.should.have.status(201);
-            res.body.should.be.deep.eql({code:0, result: true});
+            res.body.should.be.deep.eql({code: 0, result: true});
           });
     })
   })
@@ -134,7 +243,7 @@ describe('API Tests', () => {
           .post('/inc_value').send({ref: "test/test", value: 10})
           .then((res) => {
             res.should.have.status(201);
-            res.body.should.be.deep.eql({code:0, result: true});
+            res.body.should.be.deep.eql({code: 0, result: true});
           });
     })
   })
@@ -146,20 +255,54 @@ describe('API Tests', () => {
           .post('/dec_value').send({ref: "test/test", value: 10})
           .then((res) => {
             res.should.have.status(201);
-            res.body.should.be.deep.eql({code:0, result: true});
+            res.body.should.be.deep.eql({code: 0, result: true});
           });
     })
   })
 
-  describe('/updates', () => {
-    it('updates simple', () => {
+  describe('/set_rule', () => {
+    it('set_rule simple', () => {
+      sleep(200)
+      return chai.request(server4)
+          .post('/set_rule').send({
+            ref: "/rule/other/path",
+            value: {
+              ".write_value": "some rule config"
+            }
+          })
+          .then((res) => {
+            res.should.have.status(201);
+            res.body.should.be.deep.eql({code: 0, result: true});
+          });
+    })
+  })
+
+  describe('/set_owner', () => {
+    it('set_owner simple', () => {
+      sleep(200)
+      return chai.request(server4)
+          .post('/set_owner').send({
+            ref: "/owner/other/path",
+            value: {
+              ".owner": "some owner config"
+            }
+          })
+          .then((res) => {
+            res.should.have.status(201);
+            res.body.should.be.deep.eql({code: 0, result: true});
+          });
+    })
+  })
+
+  describe('/set', () => {
+    it('set simple', () => {
       return chai.request(server2)
-          .post('/updates').send({
-            update_list: [
+          .post('/set').send({
+            op_list: [
               {
                 type: "SET_VALUE",
                 ref: "test/balance",
-                value: {a:1, b:2}
+                value: {a: 1, b: 2}
               },
               {
                 type: 'INC_VALUE',
@@ -170,17 +313,31 @@ describe('API Tests', () => {
                 type: 'DEC_VALUE',
                 ref: "test/test2",
                 value: 10
+              },
+              {
+                type: 'SET_RULE',
+                ref: "/rule/other/path",
+                value: {
+                  ".write_value": "some rule config"
+                }
+              },
+              {
+                type: 'SET_OWNER',
+                ref: "/owner/other/path",
+                value: {
+                  ".owner": "some owner config"
+                }
               }
             ]
           })
           .then((res) => {
             res.should.have.status(201);
-            res.body.should.be.deep.eql({code:0, result: true});
+            res.body.should.be.deep.eql({code: 0, result: true});
           });
-     })
-   })
+    })
+  })
 
-   describe('/batch', () => {
+  describe('/batch', () => {
     it('batch simple', () => {
       return chai.request(server1)
           .post(`/batch`).send({
@@ -196,8 +353,27 @@ describe('API Tests', () => {
                 value: 10
               },
               {
-                type: 'UPDATES',
-                update_list: [
+                type: 'DEC_VALUE',
+                ref: "test/test2",
+                value: 10
+              },
+              {
+                type: 'SET_RULE',
+                ref: "/rule/other/path",
+                value: {
+                  ".write_value": "some rule config"
+                }
+              },
+              {
+                type: 'SET_OWNER',
+                ref: "/owner/other/path",
+                value: {
+                  ".owner": "some owner config"
+                }
+              },
+              {
+                type: 'SET',
+                op_list: [
                   {
                     type: "SET_VALUE",
                     ref: "test/balance",
@@ -209,21 +385,35 @@ describe('API Tests', () => {
                   {
                     type: 'INC_VALUE',
                     ref: "test/test",
-                    value: 10
+                    value: 5
                   },
                   {
                     type: 'DEC_VALUE',
                     ref: "test/test2",
-                    value: 10
+                    value: 5
+                  },
+                  {
+                    type: 'SET_RULE',
+                    ref: "/rule/other/path",
+                    value: {
+                      ".write_value": "some rule config"
+                    }
+                  },
+                  {
+                    type: 'SET_OWNER',
+                    ref: "/owner/other/path",
+                    value: {
+                      ".owner": "some owner config"
+                    }
                   }
                 ]
               },
               {
-                type: 'GET',
+                type: 'GET_VALUE',
                 ref: 'test/a'
               },
               {
-                type: 'GET',
+                type: 'GET_VALUE',
                 ref: 'test/balance/b'
               }
           ]})
@@ -235,6 +425,9 @@ describe('API Tests', () => {
                 true,
                 true,
                 true,
+                true,
+                true,
+                true,
                 1,
                 2
               ]
@@ -243,4 +436,3 @@ describe('API Tests', () => {
     })
   })
 })
-

@@ -26,11 +26,11 @@ class VotingUtil {
   }
 
   checkPreVotes() {
-    const total = Object.values(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
+    const total = Object.values(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
       return a + b;
     }, 0);
-    console.log(`Total prevotes from validators : ${total}\nReceived prevotes ${this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
-    return (this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) > (total *.6666)) || total === 0;
+    console.log(`Total prevotes from validators : ${total}\nReceived prevotes ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
+    return (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) > (total *.6666)) || total === 0;
   }
 
   addValidatorTransactionsToBlock() {
@@ -40,9 +40,9 @@ class VotingUtil {
   }
 
   preVote() {
-    const stake = this.db.get(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
+    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
     this.status = VotingStatus.PRE_VOTE;
-    console.log(`Current prevotes are ${this.db.db.consensus.voting.pre_votes}`);
+    console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     const transaction = this.db.createTransaction({
       type: OperationTypes.INC_VALUE,
       ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
@@ -66,7 +66,7 @@ class VotingUtil {
   isSyncedWithNetwork(bc) {
     // This does not currently take in to a count the situation where consensus is not reached.
     // Need to add logic to account for this situation
-    const sync = (VotingStatus.COMMITTED === this.status && bc.height() + 1 === Number(this.db.get(PredefinedDbPaths.VOTING_ROUND_HEIGHT)));
+    const sync = (VotingStatus.COMMITTED === this.status && bc.height() + 1 === Number(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_HEIGHT)));
     if (!sync) {
       this.status = VotingStatus.SYNCING;
     }
@@ -78,8 +78,8 @@ class VotingUtil {
     if (this.status !== VotingStatus.PRE_VOTE) {
       return null;
     }
-    const stake = this.db.get(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
-    console.log(`Current precommits are ${this.db.db.consensus.voting.pre_commits}`);
+    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
+    console.log(`Current precommits are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
     this.status = VotingStatus.PRE_COMMIT;
     const transaction = this.db.createTransaction({
       type: OperationTypes.INC_VALUE,
@@ -91,11 +91,11 @@ class VotingUtil {
   }
 
   checkPreCommits() {
-    const total = Object.values(this.db.get(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
+    const total = Object.values(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
       return a + b;
     }, 0);
-    console.log(`Total pre_commits from validators : ${total}\nReceived pre_commits ${this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
-    return (this.db.get(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS) > (total *.6666)) || total === 0;
+    console.log(`Total pre_commits from validators : ${total}\nReceived pre_commits ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
+    return (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS) > (total *.6666)) || total === 0;
   }
 
 
@@ -116,7 +116,7 @@ class VotingUtil {
 
 
   startNewRound(bc) {
-    const lastRound = this.db.get(PredefinedDbPaths.VOTING_ROUND);
+    const lastRound = this.db.getValue(PredefinedDbPaths.VOTING_ROUND);
     const time = Date.now();
     let forger;
     if (Object.keys(lastRound.next_round_validators).length) {
@@ -145,13 +145,13 @@ class VotingUtil {
   }
 
   registerForNextRound(height) {
-    const votingRound = this.db.get(PredefinedDbPaths.VOTING_ROUND);
+    const votingRound = this.db.getValue(PredefinedDbPaths.VOTING_ROUND);
     console.log(`${height + 1} is the expected height and actual info is ${votingRound.height + 1}`);
     if (height !== votingRound.height) {
       throw Error('Not valid height');
     }
 
-    const value = this.db.get(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]));
+    const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]));
     return this.db.createTransaction({
       type: OperationTypes.SET_VALUE,
       ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.publicKey]),
@@ -197,19 +197,19 @@ class VotingUtil {
 
   isForger() {
     this.status = VotingStatus.WAIT_FOR_BLOCK;
-    return this.db.get(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.publicKey;
+    return this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.publicKey;
   }
 
   isValidator() {
-    return Boolean(this.db.get(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey])));
+    return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey])));
   }
 
   isStaked() {
-    return Boolean(this.db.get(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey])));
+    return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey])));
   }
 
   writeSuccessfulForge() {
-    let recentForgers = JSON.parse(JSON.stringify(this.db.get(PredefinedDbPaths.RECENT_FORGERS)));
+    let recentForgers = JSON.parse(JSON.stringify(this.db.getValue(PredefinedDbPaths.RECENT_FORGERS)));
     if (recentForgers == null) {
       recentForgers = [];
     } else if (recentForgers.length == MAX_RECENT_FORGERS) {

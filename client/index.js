@@ -78,148 +78,171 @@ const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
-  try {
-    res
-        .status(200)
-        .set('Content-Type', 'text/plain')
-        .send('Welcome to afan-tx-server')
-        .end();
-  } catch (error) {
-    console.log(error);
-  }
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send('Welcome to AIN Blockchain Database')
+    .end();
 });
 
-app.get('/get', (req, res, next) => {
-  let statusCode = 200;
-  let result = null;
-  try {
-    result = db.get(req.query.ref);
-  } catch (error) {
-    statusCode = 400;
-    console.log(error.stack);
-  }
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+app.get('/get_value', (req, res, next) => {
+  const result = db.getValue(req.query.ref);
+  res.status(result ? 200 : 400)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
+});
+
+app.get('/get_rule', (req, res, next) => {
+  const result = db.getRule(req.query.ref);
+  res.status(result ? 200 : 400)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
+});
+
+app.get('/get_owner', (req, res, next) => {
+  const result = db.getOwner(req.query.ref);
+  res.status(result ? 200 : 400)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
+});
+
+app.post('/get', (req, res, next) => {
+  const result = db.get(req.body.op_list);
+  res.status(result ? 200 : 400)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
 });
 
 app.post('/set_value', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.SET_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  const result = createTransaction({
+    type: OperationTypes.SET_VALUE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
+  res.status(result === true ? 201 : 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result === true ? 0 : 1, result})
+    .end();
 });
 
 app.post('/inc_value', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.INC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  const result = createTransaction({
+    type: OperationTypes.INC_VALUE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
+  res.status(result === true ? 201 : 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result === true ? 0 : 1, result})
+    .end();
 });
 
 app.post('/dec_value', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.DEC_VALUE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  const result = createTransaction({
+    type: OperationTypes.DEC_VALUE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
+  res.status(result === true ? 201 : 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result === true ? 0 : 1, result})
+    .end();
 });
 
 app.post('/set_rule', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const ref = req.body.ref;
-  const value = req.body.value;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.SET_RULE, ref, value, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  const result = createTransaction({
+    type: OperationTypes.SET_RULE,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
+  res.status(result === true ? 201 : 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result === true ? 0 : 1, result})
+    .end();
+});
+
+app.post('/set_owner', (req, res, next) => {
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result = createTransaction({
+    type: OperationTypes.SET_OWNER,
+    ref: req.body.ref,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
+  res.status(result === true ? 201 : 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result === true ? 0 : 1, result})
+    .end();
 });
 
 // TODO(seo): Replace skip_verif with real signature.
-app.post('/updates', (req, res, next) => {
-  const address = req.body.address;
-  const nonce = req.body.nonce;
-  const skipVerif = req.body.skip_verif;
-  const updateList = req.body.update_list;
+app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction({ type: OperationTypes.UPDATES, update_list: updateList, address, nonce, skip_verif: skipVerif },
-          isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  const result = createTransaction({
+    type: OperationTypes.SET,
+    op_list: req.body.op_list,
+    value: req.body.value,
+    address: req.body.address,
+    nonce: req.body.nonce,
+    skip_verif: req.body.skip_verif
+  }, isNoncedTransaction);
+  res.status(result === true ? 201 : 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result === true ? 0 : 1, result})
+    .end();
 });
 
+// TODO(seo): Make a batch request consist of transactions.
 app.post('/batch', (req, res, next) => {
-  const batchList = req.body.batch_list;
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({ type: OperationTypes.BATCH, batch_list: batchList },
+  const result = createTransaction({
+    type: OperationTypes.BATCH,
+    batch_list: req.body.batch_list,
+  },
       isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(201)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
 });
 
 app.get('/blocks', (req, res, next) => {
   const statusCode = 200;
   const result = bc.getChainSection(0, bc.length);
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
 });
 
 app.get('/transactions', (req, res, next) => {
   const statusCode = 200;
   const result = tp.transactions;
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
 });
 
 // We will want changes in ports and the database to be broadcast across

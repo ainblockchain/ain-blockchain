@@ -3,5 +3,5 @@
 {"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": 1000, "nonce": 1}
 {"type": "SET_VALUE", "ref": "/account/abcde/balance", "value": 99, "nonce": 2}
 {"type": "INC_VALUE", "ref": "test/increase", "value": 1, "nonce": 3}
-{"type": "UPDATES", "update_list": [{"type": "INC_VALUE", "ref": "test/increase", "value": 10000}, {"type": "DEC_VALUE", "ref": "test/decrease", "value": 10000}], "nonce": -1}
+{"type": "SET", "op_list": [{"type": "INC_VALUE", "ref": "test/increase", "value": 10000}, {"type": "DEC_VALUE", "ref": "test/decrease", "value": 10000}], "nonce": -1}
 {"type": "BATCH", "batch_list": [{"type": "SET_VALUE", "ref": "test/new/final/path", "value": {"neste": [1, 2, 3, 4, 5]}}], "nonce": 4}

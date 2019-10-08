@@ -45,6 +45,10 @@ const VotingStatus = {
  * @enum {string}
  */
 const PredefinedDbPaths = {
+  // Roots
+  OWNERS_ROOT: 'owners',
+  RULES_ROOT: 'rules',
+  VALUES_ROOT: 'values',
   // Consensus
   RECENT_FORGERS: '/consensus/recent_forgers',
   VOTING_ROUND: '/consensus/voting',
@@ -66,28 +70,29 @@ const PredefinedDbPaths = {
 };
 
 /**
+ * Properties of rules
+ * @enum {string}
+ */
+const RuleProperties = {
+  WRITE_VALUE: '.write_value',
+};
+
+/**
  * Types of write operations supported by Db
  * @enum {string}
  */
 const OperationTypes = {
+  GET_VALUE: 'GET_VALUE',
+  GET_RULE: 'GET_RULE',
+  GET_OWNER: 'GET_OWNER',
   GET: 'GET',
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
-  UPDATES: 'UPDATES',
+  SET_OWNER: 'SET_OWNER',
+  SET: 'SET',
   BATCH: 'BATCH',
-};
-
-/**
- * Types of updates
- * @enum {string}
- */
-const UpdateTypes = {
-  SET_VALUE: 'SET_VALUE',
-  INC_VALUE: 'INC_VALUE',
-  DEC_VALUE: 'DEC_VALUE',
-  SET_RULE: 'SET_RULE',
 };
 
 /**
@@ -102,13 +107,13 @@ const FunctionResultCode = {
 module.exports = {
   RULES_FILE_PATH,
   BLOCKCHAINS_DIR,
+  STAKE,
+  DEBUG,
   MessageTypes,
   VotingStatus,
-  STAKE,
   VotingActionTypes,
   PredefinedDbPaths,
+  RuleProperties,
   OperationTypes,
-  UpdateTypes,
   FunctionResultCode,
-  DEBUG,
 };

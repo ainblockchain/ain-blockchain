@@ -21,11 +21,11 @@ class BuiltInFunctions {
   /**
    * Runs functions of function paths matched with given database path.
    * 
-   * @param {Array} parsedDbPath parsed database path
+   * @param {Array} parsedValuePath parsed value path
    * @param {*} value value set on the database path
    */
-  runFunctions(parsedDbPath, value) {
-    const matches = this._matchFunctionPaths(parsedDbPath);
+  runFunctions(parsedValuePath, value) {
+    const matches = this._matchFunctionPaths(parsedValuePath);
     matches.forEach((elem) => {
       console.log(
         `  ==> Running built-in function '${elem.func.name}' with value '${value}' and params: ` +
@@ -35,11 +35,11 @@ class BuiltInFunctions {
   }
 
   // TODO(seo): Optimize function path matching (e.g. using Aho-Corasick-like algorithm).
-  _matchFunctionPaths(parsedDbPath) {
+  _matchFunctionPaths(parsedValuePath) {
     let funcs = [];
     Object.keys(this.funcMap).forEach((path) => {
       const parsedFuncPath = ChainUtil.parsePath(path);
-      const result = BuiltInFunctions.matchPaths(parsedDbPath, parsedFuncPath);
+      const result = BuiltInFunctions.matchPaths(parsedValuePath, parsedFuncPath);
       if (result !== null) {
         funcs.push({ func: this.funcMap[path], params: result.params })
       }
@@ -47,15 +47,15 @@ class BuiltInFunctions {
     return funcs;
   }
 
-  static matchPaths(parsedDbPath, parsedFuncPath) {
-    if (parsedFuncPath.length === parsedDbPath.length) {
+  static matchPaths(parsedValuePath, parsedFuncPath) {
+    if (parsedFuncPath.length === parsedValuePath.length) {
       let params = {};
       let matched = true;
       for (let i = 0; i < parsedFuncPath.length; i++) {
         if (parsedFuncPath[i].match(FUNC_PARAM_PATTERN)) {
           const paramName = parsedFuncPath[i].replace(FUNC_PARAM_PATTERN, '$1');
-          params[paramName] = parsedDbPath[i];
-        } else if (parsedFuncPath[i] !== parsedDbPath[i]) {
+          params[paramName] = parsedValuePath[i];
+        } else if (parsedFuncPath[i] !== parsedValuePath[i]) {
           matched = false;
           break;
         }
@@ -74,16 +74,19 @@ class BuiltInFunctions {
     const key = context.params.key;
     const fromBalancePath = this._getBalancePath(from);
     const toBalancePath = this._getBalancePath(to);
-    let fromBalance = this.db.get(fromBalancePath);
-    let toBalance = this.db.get(toBalancePath);
+    let fromBalance = this.db.getValue(fromBalancePath);
+    let toBalance = this.db.getValue(toBalancePath);
     if (fromBalance >= value) {
-      this.db.updateDatabase(fromBalancePath, fromBalance - value);
-      this.db.updateDatabase(toBalancePath, toBalance + value);
-      this.db.updateDatabase(
-        this._getTransferResultPath(from, to, key), { code: FunctionResultCode.SUCCESS });
+      const resultPath = this._getTransferResultPath(from, to, key);
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(fromBalancePath)),
+          fromBalance - value);
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toBalancePath)),
+          toBalance + value);
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+          { code: FunctionResultCode.SUCCESS });
     } else {
-      this.db.updateDatabase(
-        this._getTransferResultPath(from, to, key), { code: FunctionResultCode.FAILURE });
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+          { code: FunctionResultCode.FAILURE });
     }
   }
 
@@ -94,6 +97,10 @@ class BuiltInFunctions {
   _getTransferResultPath(from, to, key) {
     return (
       `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_RESULT}`);
+  }
+
+  _getFullValuePath(parsedPath) {
+    return this.db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
   }
 }
 
