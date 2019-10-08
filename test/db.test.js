@@ -336,9 +336,7 @@ describe("DB rule config", () => {
     dbValues["users"][db2.publicKey]["balance"] = 50;
     dbValues["users"][db1.publicKey]["info"] = 8474;
     dbValues["billing_keys"]["update_billing"][db2.publicKey] = "'not null'";
-
     dbValues["users"][db1.publicKey]["next_counter"] = 10;
-
     dbValues["second_users"][db1.publicKey] = {};
     dbValues["second_users"][db2.publicKey] = {};
     dbValues["second_users"][db2.publicKey][db2.publicKey] = "i can write";
