@@ -62,8 +62,8 @@ class DB {
   }
 
   readDatabase(fullPath) {
-    let result = this.getRefForReading(fullPath);
-    return typeof result !== 'undefined' ? JSON.parse(JSON.stringify(result)) : null;
+    const result = this.getRefForReading(fullPath);
+    return result !== undefined ? JSON.parse(JSON.stringify(result)) : null;
   }
 
   getValue(valuePath) {
@@ -259,7 +259,7 @@ class DB {
   getRefForWriting(fullPath) {
     let subDb = this.db;
     fullPath.forEach((key) => {
-      if ((!ChainUtil.isDict(subDb[key])) || (!(key in subDb))) {
+      if (!(key in subDb) || !ChainUtil.isDict(subDb[key])) {
         subDb[key] = {};
       }
       subDb = subDb[key];
