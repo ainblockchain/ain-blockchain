@@ -337,9 +337,7 @@ describe("DB rule config", () => {
     dbValues["users"][db1.publicKey]["info"] = 8474;
     dbValues["billing_keys"]["update_billing"][db2.publicKey] = "'not null'";
 
-
     dbValues["users"][db1.publicKey]["next_counter"] = 10;
-
 
     dbValues["second_users"][db1.publicKey] = {};
     dbValues["second_users"][db2.publicKey] = {};
@@ -348,7 +346,6 @@ describe("DB rule config", () => {
 
     db1.setValue("test", dbValues);
     db2.setValue("test", dbValues);
-    
   })
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {

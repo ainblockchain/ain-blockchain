@@ -79,11 +79,10 @@ app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
   try {
-    res
-        .status(200)
-        .set('Content-Type', 'text/plain')
-        .send('Welcome to AIN Blockchain Database')
-        .end();
+    res.status(200)
+      .set('Content-Type', 'text/plain')
+      .send('Welcome to AIN Blockchain Database')
+      .end();
   } catch (error) {
     console.log(error);
   }
@@ -98,11 +97,10 @@ app.get('/get_value', (req, res, next) => {
     statusCode = 400;
     console.log(error.stack);
   }
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : -1, result})
+    .end();
 });
 
 app.get('/get_rule', (req, res, next) => {
@@ -114,11 +112,10 @@ app.get('/get_rule', (req, res, next) => {
     statusCode = 400;
     console.log(error.stack);
   }
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : -1, result})
+    .end();
 });
 
 app.get('/get_owner', (req, res, next) => {
@@ -130,11 +127,10 @@ app.get('/get_owner', (req, res, next) => {
     statusCode = 400;
     console.log(error.stack);
   }
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : -1, result})
+    .end();
 });
 
 app.post('/get', (req, res, next) => {
@@ -146,11 +142,10 @@ app.post('/get', (req, res, next) => {
     statusCode = 400;
     console.log(error.stack);
   }
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : -1, result})
+    .end();
 });
 
 app.post('/set_value', (req, res, next) => {
@@ -163,11 +158,10 @@ app.post('/set_value', (req, res, next) => {
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
   }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(result !== null ? 201: 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0: 1, result})
+    .end();
 });
 
 app.post('/inc_value', (req, res, next) => {
@@ -180,11 +174,10 @@ app.post('/inc_value', (req, res, next) => {
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
   }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(result !== null ? 201: 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0: 1, result})
+    .end();
 });
 
 app.post('/dec_value', (req, res, next) => {
@@ -197,11 +190,10 @@ app.post('/dec_value', (req, res, next) => {
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
   }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(result !== null ? 201: 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0: 1, result})
+    .end();
 });
 
 app.post('/set_rule', (req, res, next) => {
@@ -214,11 +206,10 @@ app.post('/set_rule', (req, res, next) => {
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
   }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(result !== null ? 201: 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0: 1, result})
+    .end();
 });
 
 app.post('/set_owner', (req, res, next) => {
@@ -231,11 +222,10 @@ app.post('/set_owner', (req, res, next) => {
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
   }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(result !== null ? 201: 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0: 1, result})
+    .end();
 });
 
 // TODO(seo): Replace skip_verif with real signature.
@@ -249,11 +239,10 @@ app.post('/set', (req, res, next) => {
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
   }, isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(result !== null ? 201: 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0: 1, result})
+    .end();
 });
 
 // TODO(seo): Make a batch request consist of transactions.
@@ -264,31 +253,28 @@ app.post('/batch', (req, res, next) => {
     batch_list: req.body.batch_list,
   },
       isNoncedTransaction);
-  res
-      .status(result !== null ? 201: 401)
-      .set('Content-Type', 'application/json')
-      .send({code: result !== null ? 0: 1, result})
-      .end();
+  res.status(result !== null ? 201: 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0: 1, result})
+    .end();
 });
 
 app.get('/blocks', (req, res, next) => {
   const statusCode = 200;
   const result = bc.getChainSection(0, bc.length);
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : -1, result})
+    .end();
 });
 
 app.get('/transactions', (req, res, next) => {
   const statusCode = 200;
   const result = tp.transactions;
-  res
-      .status(statusCode)
-      .set('Content-Type', 'application/json')
-      .send({code: result ? 0 : -1, result})
-      .end();
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : -1, result})
+    .end();
 });
 
 // We will want changes in ports and the database to be broadcast across
