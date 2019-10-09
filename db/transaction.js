@@ -2,32 +2,25 @@ const { OperationTypes, DEBUG } = require('../constants');
 const ainUtil = require('@ainblockchain/ain-util');
 
 class Transaction {
-  constructor(transactionWithSig) {
-    this.signature = transactionWithSig.signature;
+  constructor(txWithSig) {
+    this.signature = txWithSig.signature;
 
-    if (!Transaction.checkRequiredFields(transactionWithSig.transaction ?
-          transactionWithSig.transaction : transactionWithSig)) {
+    if (!Transaction.checkRequiredFields(txWithSig.transaction ? txWithSig.transaction :
+        txWithSig)) {
       throw new Error('Transaction must contain timestamp, operation and nonce fields');
     }
 
-    const unsanitizedData = JSON.parse(JSON.stringify(transactionWithSig.transaction ?
-          transactionWithSig.transaction : transactionWithSig));
-    const transactionData = {
-      nonce: unsanitizedData.nonce,
-      timestamp: unsanitizedData.timestamp,
-      operation: unsanitizedData.operation,
-    };
-    if (unsanitizedData.parent_tx_hash !== undefined) {
-      transactionData.parent_tx_hash = unsanitizedData.parent_tx_hash;
-    }
+    const txData = JSON.parse(JSON.stringify(txWithSig.transaction ?
+        txWithSig.transaction : txWithSig));
+    const sanitizedTxData = Transaction.sanitizeTxData(txData);
     // Workaround for skip_verif with custom address
-    if (unsanitizedData.skip_verif !== undefined) {
-      this.skip_verif = unsanitizedData.skip_verif;
+    if (txData.skip_verif !== undefined) {
+      this.skip_verif = txData.skip_verif;
     }
-    Object.assign(this, transactionData);
-    this.hash = ainUtil.hashTransaction(transactionData).toString('hex');
+    Object.assign(this, sanitizedTxData);
+    this.hash = ainUtil.hashTransaction(sanitizedTxData).toString('hex');
     // Workaround for skip_verif with custom address
-    this.address = unsanitizedData.address !== undefined ? unsanitizedData.address :
+    this.address = txData.address !== undefined ? txData.address :
         Transaction.getAddress(this.hash, this.signature);
 
     if (DEBUG) {
@@ -61,8 +54,8 @@ class Transaction {
   }
 
   /**
-  * Returns the data object used for signing the transaction.
-  */
+   * Returns the data object used for signing the transaction.
+   */
   get signingData() {
     return Object.assign(
         {operation: this.operation, nonce: this.nonce, timestamp: this.timestamp},
@@ -70,23 +63,114 @@ class Transaction {
     );
   }
 
+  /**
+   * Sanitize op_list of GET operation.
+   */
+  static sanitizeGetOpList(opList) {
+    const sanitized = [];
+    if (Array.isArray(opList)) {
+      opList.forEach((item) => {
+        const type = item.type ? item.type : OperationTypes.GET_VALUE;
+        if (type === OperationTypes.GET_VALUE || type === OperationTypes.GET_RULE ||
+            type === OperationTypes.GET_OWNER) {
+          sanitized.push({ type, ref: item.ref });
+        }
+      });
+    }
+    return sanitized;
+  }
+
+  /**
+   * Sanitize op_list of SET operation.
+   */
+  static sanitizeSetOpList(opList) {
+    const sanitized = [];
+    if (Array.isArray(opList)) {
+      opList.forEach((item) => {
+        const type = item.type ? item.type : OperationTypes.SET_VALUE;
+        if (type === OperationTypes.SET_VALUE || type === OperationTypes.INC_VALUE ||
+            type === OperationTypes.DEC_VALUE || type === OperationTypes.SET_RULE ||
+            type === OperationTypes.SET_OWNER) {
+          sanitized.push({ type, ref: item.ref, value: item.value });
+        }
+      });
+    }
+    return sanitized;
+  }
+
+  /**
+   * Sanitize op_list of BATCH operation.
+   */
+  static sanitizeBatchList(batchList) {
+    // TODO(seo): Fill this out after BATCH operation is refactored.
+    return batchList;
+  }
+
+  /**
+   * Sanitize operation.
+   */
+  static sanitizeOperation(op) {
+    const sanitized = {}
+    switch(op.type) {
+      case OperationTypes.GET_VALUE:
+      case OperationTypes.GET_RULE:
+      case OperationTypes.GET_OWNER:
+        sanitized.ref = op.ref;
+        break;
+      case OperationTypes.GET:
+        sanitized.op_list = this.sanitizeGetOpList(op.op_list);
+        break;
+      case OperationTypes.SET_VALUE:
+      case OperationTypes.INC_VALUE:
+      case OperationTypes.DEC_VALUE:
+      case OperationTypes.SET_RULE:
+      case OperationTypes.SET_OWNER:
+        sanitized.ref = op.ref;
+        sanitized.value = op.value;
+        break;
+      case OperationTypes.SET:
+        sanitized.op_list = this.sanitizeSetOpList(op.op_list);
+        break;
+      case OperationTypes.BATCH:
+        sanitized.batch_list = this.sanitizeBatchList(op.batch_list);
+        break;
+      default:
+        return sanitized;
+    }
+    sanitized.type = op.type;
+    return sanitized;
+  }
+
+  /**
+   * Sanitize transaction data.
+   */
+  static sanitizeTxData(txData) {
+    const sanitized = {
+      nonce: txData.nonce,
+      timestamp: txData.timestamp,
+      operation: txData.operation,
+    };
+    if (txData.parent_tx_hash !== undefined) {
+      sanitized.parent_tx_hash = txData.parent_tx_hash;
+    }
+    return sanitized;
+  }
+
   static newTransaction(nonce, privateKey, operation) {
-    const transaction = { operation };
+    const transaction = {};
     // Workaround for skip_verif with custom address
     if (operation.skip_verif !== undefined) {
       transaction.skip_verif = operation.skip_verif;
-      delete transaction.operation.skip_verif;
     }
     if (operation.address !== undefined) {
       transaction.address = operation.address;
-      delete transaction.operation.address;
     }
     if (operation.nonce !== undefined) {
       transaction.nonce = operation.nonce;
-      delete transaction.operation.nonce;
     } else {
       transaction.nonce = nonce;
     }
+    transaction.operation = Transaction.sanitizeOperation(operation);
 
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address

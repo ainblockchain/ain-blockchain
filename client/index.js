@@ -219,8 +219,7 @@ app.post('/batch', (req, res, next) => {
   const result = createTransaction({
     type: OperationTypes.BATCH,
     batch_list: req.body.batch_list,
-  },
-      isNoncedTransaction);
+  }, isNoncedTransaction);
   res.status(201)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
