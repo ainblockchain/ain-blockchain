@@ -1,7 +1,7 @@
 'use strict';
 
 const getJsonRpcApi = require('./methods_impl');
-const {OperationTypes} = require('../constants');
+const {OperationTypes, PredefinedDbPaths} = require('../constants');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -134,20 +134,29 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
 
     // Database API
     ain_get: function(args, done) {
-      if (!args.type || (args.type !== OperationTypes.GET_VALUE &&
-          args.type !== OperationTypes.GET_RULE &&
-          args.type !== OperationTypes.GET_OWNER &&
-          args.type !== OperationTypes.GET)) {
-        done(null, {error: "Invalid get request"});
-      } else {
-        done(null, p2pServer.db.execute(args));
+      switch (args.type) {
+        case OperationTypes.GET_VALUE:
+          done(null, p2pServer.db.getValue(args.ref));
+          return;
+        case OperationTypes.GET_RULE:
+          done(null, p2pServer.db.getRule(args.ref));
+          return;
+        case OperationTypes.GET_OWNER:
+          done(null, p2pServer.db.getOwner(args.ref));
+          return;
+        case OperationTypes.GET:
+          done(null, p2pServer.db.get(args.op_list));
+          return;
+        default:
+          done(null, {error: "Invalid get request"});
       }
     },
 
     // Account API
     ain_getBalance: function(args, done) {
       const address = args.address;
-      const balance = p2pServer.db.getValue(`/accounts/${address}/balance`) || 0;
+      const balance = p2pServer.db
+          .getValue(`/${PredefinedDbPaths.ACCOUNT}/${address}/balance`) || 0;
       done(null, balance);
     },
 
