@@ -1,11 +1,12 @@
 const Transaction = require('./transaction');
-const { DEBUG } = require('../constants');
+const {DEBUG, TransactionTrackerConstants} = require('../constants');
 
 class TransactionPool {
   constructor() {
     // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
     this.transactions = {};
     this.nonceTracker = {};
+    this.transactionTracker = {};
   }
 
   addTransaction(transaction) {
@@ -24,16 +25,20 @@ class TransactionPool {
       this.transactions[transaction.address] = [];
     }
     this.transactions[transaction.address].push(transaction);
+    this.transactionTracker[transaction.hash] = {[TransactionTrackerConstants.STATUS_KEY]: TransactionTrackerConstants.POOL_STATUS,
+      [TransactionTrackerConstants.LOCATION_KEY]: transaction.address,
+      [TransactionTrackerConstants.INDEX_KEY]: this.transactions[transaction.address].length -1};
     if (DEBUG) {
       console.log(`ADDING: ${JSON.stringify(transaction)}`);
     }
     return true;
   }
 
-  isEligibleTransaction(transaction) {
+  isNotEligibleTransaction(transaction) {
     return Boolean((transaction.address in this.transactions) &&
             (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash) !== undefined)) ||
-            (transaction.nonce > 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address]));
+            (transaction.nonce > 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address])) ||
+            (transaction.nonce < 0 && Boolean(transaction.hash in this.transactionTracker));
   }
 
   validTransactions() {
@@ -80,13 +85,19 @@ class TransactionPool {
 
   removeCommitedTransactions(block) {
     // Remove transactions of newly added block to blockchain from the current transaction pool
-    const transactionHashes = block.data.map((transaction) => {
+    const transactionHashes = [];
+    let transaction;
+    for (let i = 0; i < block.data.length; i++) {
+      transaction = block.data[i];
       if (transaction.nonce >= 0) {
         // Update nonceTracker while extracting transaction hashes
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
-      return transaction.hash;
-    });
+      this.transactionTracker[transaction.hash] = {[TransactionTrackerConstants.STATUS_KEY]: TransactionTrackerConstants.BLOCK_STATUS,
+        [TransactionTrackerConstants.LOCATION_KEY]: block.height,
+        [TransactionTrackerConstants.INDEX_KEY]: i};
+      transactionHashes.push(transaction.hash);
+    }
 
     for (const address in this.transactions) {
       this.transactions[address] = this.transactions[address].filter((transaction) => {
