@@ -34,7 +34,7 @@ class RequestManager {
 
   getRef(ref) {
     const options = {
-      uri: this.endpoint + `/get?ref="${this.root}/${ref}"`,
+      uri: this.endpoint + `/get_value?ref="${this.root}/${ref}"`,
       json: true,
     };
     return rp(options);
