@@ -104,6 +104,19 @@ const FunctionResultCode = {
   FAILURE: 'FAILURE',
 };
 
+/**
+ * Constant values for transactionTracker
+ * @enum {string}
+ */
+const TransactionTrackerConstants = {
+  STATUS_KEY: 'STATUS',
+  BLOCK_STATUS: 'BLOCK',
+  POOL_STATUS: 'POOL',
+  INDEX_KEY: 'INDEX',
+  LOCATION_KEY: 'LOCATION'
+};
+
+
 module.exports = {
   RULES_FILE_PATH,
   BLOCKCHAINS_DIR,
@@ -116,4 +129,5 @@ module.exports = {
   RuleProperties,
   OperationTypes,
   FunctionResultCode,
+  TransactionTrackerConstants,
 };

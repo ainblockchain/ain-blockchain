@@ -182,7 +182,7 @@ class P2pServer {
     if (DEBUG) {
       console.log(`EXECUTING: ${JSON.stringify(transactionObj)}`);
     }
-    if (this.transactionPool.isEligibleTransaction(transactionObj)) {
+    if (this.transactionPool.isNotEligibleTransaction(transactionObj)) {
       if (DEBUG) {
         console.log(`ALREADY RECEIVED: ${JSON.stringify(transactionObj)}`);
       }
@@ -218,12 +218,22 @@ class P2pServer {
   }
 
   executeAndBroadcastVotingAction(votingAction) {
+    if (DEBUG) {
+      console.log(`RECEIVED VOTING ACTION ${votingAction.actionType} FROM USER ${votingAction.transaction.address}`)
+    }
     const response = this.executeTransaction(votingAction.transaction);
     if (!this.checkForTransactionResultErrorCode(response)) {
       if ([VotingActionTypes.PRE_VOTE, VotingActionTypes.PRE_COMMIT].indexOf(votingAction.actionType) > -1) {
         this.votingUtil.registerValidatingTransaction(votingAction.transaction);
       }
       this.broadcastVotingAction(votingAction);
+    }
+    if (DEBUG) {
+      if(this.checkForTransactionResultErrorCode(response)) {
+          console.log(`PREVIOUSLY EXECUTED VOTING ACTION ${votingAction.actionType} FROM USER ${votingAction.transaction.address}`)
+      } else {
+          console.log(`NEW VOTING ACTION ${votingAction.actionType} FROM USER ${votingAction.transaction.address} WITH TRANSACTION INFO ${JSON.stringify(votingAction.transaction)}`)
+      } 
     }
     return response;
   }
@@ -248,22 +258,23 @@ class P2pServer {
         let invalidTransactions = false;
         for (let i = 0; i < votingAction.block.data.length; i++) {
           if (this.executeTransaction(votingAction.block.data[i]) &&
-           !this.transactionPool.isEligibleTransaction(votingAction.block.data[i])) {
+           !this.transactionPool.isNotEligibleTransaction(votingAction.block.data[i])) {
             invalidTransactions = true;
-          }
-          if (this.transactionPool.isEligibleTransaction(votingAction.block.data[i])) {
-            if (DEBUG) {
-              console.log(`ALREADY RECEIVED BLOCK: ${JSON.stringify(votingAction.block.data[i])}`);
-            }
           }
         }
         if (invalidTransactions ||
             !ForgedBlock.validateBlock(votingAction.block, this.blockchain) ||
             votingAction.block === this.votingUtil.block ||
             [VotingStatus.WAIT_FOR_BLOCK, VotingStatus.SYNCING].indexOf(this.votingUtil.status) < 0) {
+              if(DEBUG) {
+                console.log(`REJECTING BLOCK ${JSON.stringify(votingAction.block)}`)
+              }
           break;
         }
         this.votingUtil.setBlock(votingAction.block);
+        if(DEBUG) {
+          console.log(`ACCEPTING BLOCK ${JSON.stringify(votingAction.block)}`)
+        }
         if (this.votingUtil.isValidator()) {
           this.executeAndBroadcastVotingAction({
             transaction: this.votingUtil.preVote(),
