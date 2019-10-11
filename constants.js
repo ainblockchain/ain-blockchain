@@ -111,9 +111,6 @@ const FunctionResultCode = {
 const TransactionTrackerConstants = {
   STATUS_KEY: 'STATUS',
   BLOCK_STATUS: 'BLOCK',
-  POOL_STATUS: 'POOL',
-  INDEX_KEY: 'INDEX',
-  LOCATION_KEY: 'LOCATION'
 };
 
 
