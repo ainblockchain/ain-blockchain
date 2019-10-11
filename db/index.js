@@ -274,7 +274,7 @@ class DB {
     * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(operation, isNoncedTransaction = true) {
+  createTransaction(txData, isNoncedTransaction = true) {
     // TODO: (Chris) Depricate this function
     let nonce;
     if (isNoncedTransaction) {
@@ -283,7 +283,7 @@ class DB {
     } else {
       nonce = -1;
     }
-    return Transaction.newTransaction(nonce, this.keyPair.priv, operation);
+    return Transaction.newTransaction(nonce, this.keyPair.priv, txData);
   }
 
   sign(dataHash) {

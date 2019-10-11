@@ -148,7 +148,7 @@ class Transaction {
     const sanitized = {
       nonce: txData.nonce,
       timestamp: txData.timestamp,
-      operation: txData.operation,
+      operation: Transaction.sanitizeOperation(txData.operation),
     };
     if (txData.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = txData.parent_tx_hash;
@@ -156,22 +156,11 @@ class Transaction {
     return sanitized;
   }
 
-  static newTransaction(nonce, privateKey, operation) {
-    const transaction = {};
-    // Workaround for skip_verif with custom address
-    if (operation.skip_verif !== undefined) {
-      transaction.skip_verif = operation.skip_verif;
-    }
-    if (operation.address !== undefined) {
-      transaction.address = operation.address;
-    }
-    if (operation.nonce !== undefined) {
-      transaction.nonce = operation.nonce;
-    } else {
+  static newTransaction(nonce, privateKey, txData) {
+    const transaction = JSON.parse(JSON.stringify(txData));
+    if (transaction.nonce === undefined) {
       transaction.nonce = nonce;
     }
-    transaction.operation = Transaction.sanitizeOperation(operation);
-
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address
     const signature = transaction.address !== undefined ? '' :

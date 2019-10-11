@@ -295,13 +295,19 @@ class P2pServer {
     const data = this.transactionPool.validTransactions();
     const blockHeight = this.blockchain.height() + 1;
     this.votingUtil.setBlock(
-        ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(), this.db.publicKey,
+        ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(),
+            this.db.publicKey,
             Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
             this.db.getValue(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
-    const blockHashTransaction = this.db.createTransaction({ type: OperationTypes.SET_VALUE, ref, value });
+    const blockHashTransaction = this.db.createTransaction({
+      operation: {
+        type: OperationTypes.SET_VALUE,
+        ref, value
+      }
+    });
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
     if (!Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {
@@ -323,7 +329,8 @@ class P2pServer {
     this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
     this.votingUtil.reset();
     this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0 && !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
+    if (this.waitInBlocks > 0 &&
+        !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
       this.waitInBlocks = this.waitInBlocks - 1;
       if (this.waitInBlocks === 0) {
         this.stakeAmount();

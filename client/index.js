@@ -119,9 +119,11 @@ app.post('/get', (req, res, next) => {
 app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.SET_VALUE,
-    ref: req.body.ref,
-    value: req.body.value,
+    operation: {
+      type: OperationTypes.SET_VALUE,
+      ref: req.body.ref,
+      value: req.body.value,
+    },
     address: req.body.address,
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
@@ -135,9 +137,11 @@ app.post('/set_value', (req, res, next) => {
 app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.INC_VALUE,
-    ref: req.body.ref,
-    value: req.body.value,
+    operation: {
+      type: OperationTypes.INC_VALUE,
+      ref: req.body.ref,
+      value: req.body.value,
+    },
     address: req.body.address,
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
@@ -151,9 +155,11 @@ app.post('/inc_value', (req, res, next) => {
 app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.DEC_VALUE,
-    ref: req.body.ref,
-    value: req.body.value,
+    operation: {
+      type: OperationTypes.DEC_VALUE,
+      ref: req.body.ref,
+      value: req.body.value,
+    },
     address: req.body.address,
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
@@ -167,9 +173,11 @@ app.post('/dec_value', (req, res, next) => {
 app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.SET_RULE,
-    ref: req.body.ref,
-    value: req.body.value,
+    operation: {
+      type: OperationTypes.SET_RULE,
+      ref: req.body.ref,
+      value: req.body.value,
+    },
     address: req.body.address,
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
@@ -183,9 +191,11 @@ app.post('/set_rule', (req, res, next) => {
 app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.SET_OWNER,
-    ref: req.body.ref,
-    value: req.body.value,
+    operation: {
+      type: OperationTypes.SET_OWNER,
+      ref: req.body.ref,
+      value: req.body.value,
+    },
     address: req.body.address,
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
@@ -200,9 +210,11 @@ app.post('/set_owner', (req, res, next) => {
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.SET,
-    op_list: req.body.op_list,
-    value: req.body.value,
+    operation: {
+      type: OperationTypes.SET,
+      op_list: req.body.op_list,
+      value: req.body.value,
+    },
     address: req.body.address,
     nonce: req.body.nonce,
     skip_verif: req.body.skip_verif
@@ -217,8 +229,10 @@ app.post('/set', (req, res, next) => {
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction({
-    type: OperationTypes.BATCH,
-    batch_list: req.body.batch_list,
+    operation: {
+      type: OperationTypes.BATCH,
+      batch_list: req.body.batch_list,
+    }
   }, isNoncedTransaction);
   res.status(201)
     .set('Content-Type', 'application/json')
@@ -273,14 +287,19 @@ function broadcastBatchTransaction() {
   if (transactionBatch.length > 0) {
     const batchList = JSON.parse(JSON.stringify(transactionBatch));
     transactionBatch.length = 0;
-    const transaction = db.createTransaction({type: 'BATCH', batch_list: batchList});
+    const transaction = db.createTransaction({
+      operation: {
+        type: 'BATCH',
+        batch_list: batchList
+      }
+    });
     return p2pServer.executeAndBroadcastTransaction(transaction);
   }
 }
 
-function createSingularTransaction(operation, isNoncedTransaction) {
+function createSingularTransaction(txData, isNoncedTransaction) {
   CURRENT_NONCE += 1;
-  const transaction = db.createTransaction(operation, isNoncedTransaction);
+  const transaction = db.createTransaction(txData, isNoncedTransaction);
   return p2pServer.executeAndBroadcastTransaction(transaction);
 }
 

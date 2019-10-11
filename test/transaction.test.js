@@ -2,32 +2,45 @@ const Transaction = require('../db/transaction');
 const DB = require('../db/');
 const chai = require('chai');
 const expect = chai.expect;
-const assert = chai.assert;
 const Blockchain = require('../blockchain/');
 
-function getTransaction(db, operation) {
+function getTransaction(db, txData) {
   const nonce = db.nonce;
   db.nonce++;
-  return Transaction.newTransaction(nonce, db.keyPair.priv, operation);
+  return Transaction.newTransaction(nonce, db.keyPair.priv, txData);
 }
 
 describe('Transaction', () => {
-  let transaction; let operation; let db;
-  let txSkipVerif; let opSkipVerif;
+  let txData, transaction, db;
+  let txDataSkipVerif; let txSkipVerif;
 
   beforeEach(() => {
     db = new DB(new Blockchain('test-blockchain'));
-    operation = {type: 'SET_VALUE', ref: 'path', value: 'val'};
-    transaction = getTransaction(db, operation);
-    opSkipVerif = {type: 'SET_VALUE', ref: 'path', value: 'val', skip_verif: true, address: 'abcd'};
-    txSkipVerif = getTransaction(db, opSkipVerif);
+    txData = {
+      operation: {
+        type: 'SET_VALUE',
+        ref: 'path',
+        value: 'val'
+      }
+    };
+    transaction = getTransaction(db, txData);
+    txDataSkipVerif = {
+      operation: {
+        type: 'SET_VALUE',
+        ref: 'path',
+        value: 'val',
+      },
+      skip_verif: true,
+      address: 'abcd'
+    };
+    txSkipVerif = getTransaction(db, txDataSkipVerif);
   });
 
   it('assigns nonces correctly', () => {
     let t;
     let currentNonce;
-    for (currentNonce = db.nonce -1; currentNonce < 50; currentNonce++) {
-      t = getTransaction(db, operation);
+    for (currentNonce = db.nonce - 1; currentNonce < 50; currentNonce++) {
+      t = getTransaction(db, txData);
     }
     expect(t.nonce).to.equal(currentNonce);
   });
