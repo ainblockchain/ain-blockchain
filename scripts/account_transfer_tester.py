@@ -6,14 +6,14 @@ import subprocess
 import random
 from time import sleep
 ####### PLEASE SET THESE VALUES BEFORE RUNNING TOOL ###########
-TOOL_LOCATION = '/home/chris/VisualStudio/blockchain-database/tools/transaction-executor/bin/run'
-SERVER = 'http://34.84.4.176:8080'
+TOOL_LOCATION = '/home/chris/workspace/blockchain-database/tools/transaction-executor/bin/run'
+SERVER = 'http://localhost:8080'
 TRANSFER_AMOUNT = 5
 ###############################################################
 TOOL_COMMAND = 'node '+ TOOL_LOCATION + ' --transactionFile={transaction_fle} --privateKey={private_key} --server=' + SERVER
 BALANCE_SET_TRANSACTION = {"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": None, "nonce": None}
 BALANCE_TRANSFER_TRANSACTION = {"type": "SET_VALUE", "ref": "/transfer/{{address}}/{receiver}/{nonce}/value", "value": None, "nonce": None}
-ALL_ACCOUNTS = SERVER + '/get?ref=/account'
+ALL_ACCOUNTS = SERVER + '/get_value?ref=/account'
 SPECIFIC_ACCOUNT_BALANCE = ALL_ACCOUNTS + '/{address}/balance'
 NONCE_DICT = {}
 PRIVATE_PUBLIC_KEY_DICT = {}
@@ -111,18 +111,23 @@ def get_balance(address):
 def check_balance(sender, receiver, accounts):
     sender_public_key = PRIVATE_PUBLIC_KEY_DICT[sender]
     receiver_public_key = PRIVATE_PUBLIC_KEY_DICT[receiver]
-    sender_balance = get_balance(sender_public_key)
-    receiver_balance = get_balance(receiver_public_key)
-    assert_balance(sender_balance, sender, accounts)
-    assert_balance(receiver_balance, receiver, accounts)
+    assert_balance(sender_public_key, sender, accounts)
+    assert_balance(receiver_public_key, receiver, accounts)
 
 
-def assert_balance(actual_balance, private_key, accounts):
-    try:
-        assert actual_balance == accounts[private_key]
-    except AssertionError:
-        print('Failed assertion for user {user}\nExpected Balance: {expected}\nActual Balance: {actual}'
-              ''.format(user=PRIVATE_PUBLIC_KEY_DICT[private_key], expected=accounts[private_key], actual=actual_balance))
+def assert_balance(public_key, private_key, accounts):
+    fails = 0
+    while fails < 3:
+        actual_balance = get_balance(public_key)
+        try:
+            assert actual_balance == accounts[private_key]
+        except AssertionError:
+            print('Failed assertion for user {user}\nExpected Balance: {expected}\nActual Balance: {actual}'
+                ''.format(user=PRIVATE_PUBLIC_KEY_DICT[private_key], expected=accounts[private_key], actual=actual_balance))
+            fails += 1
+            continue
+        return
+    sys.exit(1)
 
 
 if __name__ == '__main__':
