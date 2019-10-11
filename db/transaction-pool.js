@@ -1,5 +1,5 @@
 const Transaction = require('./transaction');
-const {DEBUG, TransactionTrackerConstants} = require('../constants');
+const {DEBUG, TransactionStatus} = require('../constants');
 
 class TransactionPool {
   constructor() {
@@ -25,10 +25,10 @@ class TransactionPool {
       this.transactions[transaction.address] = [];
     }
     this.transactions[transaction.address].push(transaction);
-    const status = TransactionTrackerConstants.POOL_STATUS;
+    const status = TransactionStatus.POOL_STATUS;
     const location = transaction.address;
     const index = this.transactions[transaction.address].length -1;
-    this.transactionTracker[transaction.hash] = { status, location, index }
+    this.transactionTracker[transaction.hash] = { status, location, index };
 
     if (DEBUG) {
       console.log(`ADDING: ${JSON.stringify(transaction)}`);
@@ -95,10 +95,10 @@ class TransactionPool {
         // Update nonceTracker while extracting transaction hashes
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
-      const status = TransactionTrackerConstants.BLOCK_STATUS;
+      const status = TransactionStatus.BLOCK_STATUS;
       const location = block.height;
       const index = i;
-      this.transactionTracker[transaction.hash] = { status, location, index }
+      this.transactionTracker[transaction.hash] = { status, location, index };
       transactionHashes.push(transaction.hash);
     }
 

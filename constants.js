@@ -108,7 +108,7 @@ const FunctionResultCode = {
  * Constant values for transactionTracker
  * @enum {string}
  */
-const TransactionTrackerConstants = {
+const TransactionStatus = {
   BLOCK_STATUS: 'BLOCK',
   POOL_STATUS: 'POOL',
 };
@@ -125,5 +125,5 @@ module.exports = {
   RuleProperties,
   OperationTypes,
   FunctionResultCode,
-  TransactionTrackerConstants,
+  TransactionStatus,
 };
