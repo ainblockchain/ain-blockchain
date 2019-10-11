@@ -86,9 +86,9 @@ app.get('/', (req, res, next) => {
 
 app.get('/get_value', (req, res, next) => {
   const result = db.getValue(req.query.ref);
-  res.status(result ? 200 : 400)
+  res.status(result !== null ? 200 : 400)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
