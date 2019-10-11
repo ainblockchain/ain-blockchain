@@ -25,9 +25,10 @@ class TransactionPool {
       this.transactions[transaction.address] = [];
     }
     this.transactions[transaction.address].push(transaction);
-    this.transactionTracker[transaction.hash] = { status: TransactionTrackerConstants.POOL_STATUS,
-      location: transaction.address,
-      index: this.transactions[transaction.address].length -1 };
+    const status = TransactionTrackerConstants.POOL_STATUS;
+    const location = transaction.address;
+    const index = this.transactions[transaction.address].length -1;
+    this.transactionTracker[transaction.hash] = { status, location, index }
 
     if (DEBUG) {
       console.log(`ADDING: ${JSON.stringify(transaction)}`);
@@ -94,9 +95,10 @@ class TransactionPool {
         // Update nonceTracker while extracting transaction hashes
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
-      this.transactionTracker[transaction.hash] = {status: TransactionTrackerConstants.BLOCK_STATUS,
-        location: block.height,
-        index: i};
+      const status = TransactionTrackerConstants.BLOCK_STATUS;
+      const location = block.height;
+      const index = i;
+      this.transactionTracker[transaction.hash] = { status, location, index }
       transactionHashes.push(transaction.hash);
     }
 

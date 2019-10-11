@@ -109,10 +109,9 @@ const FunctionResultCode = {
  * @enum {string}
  */
 const TransactionTrackerConstants = {
-  STATUS_KEY: 'STATUS',
   BLOCK_STATUS: 'BLOCK',
+  POOL_STATUS: 'POOL',
 };
-
 
 module.exports = {
   RULES_FILE_PATH,
