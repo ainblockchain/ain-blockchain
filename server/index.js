@@ -204,7 +204,7 @@ class P2pServer {
   }
 
   checkForTransactionResultErrorCode(response) {
-    return response == null || (response.code !== undefined && response.code !== 0);
+    return response === null || (response.code !== undefined && response.code !== 0);
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {

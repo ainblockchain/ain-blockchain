@@ -26,9 +26,9 @@ class TransactionPool {
     }
     this.transactions[transaction.address].push(transaction);
     const status = TransactionStatus.POOL_STATUS;
-    const location = transaction.address;
-    const index = this.transactions[transaction.address].length -1;
-    this.transactionTracker[transaction.hash] = { status, location, index };
+    const address = transaction.address;
+    const index = this.transactions[transaction.address].length - 1;
+    this.transactionTracker[transaction.hash] = { status, address, index };
 
     if (DEBUG) {
       console.log(`ADDING: ${JSON.stringify(transaction)}`);
@@ -39,8 +39,8 @@ class TransactionPool {
   isNotEligibleTransaction(transaction) {
     return Boolean((transaction.address in this.transactions) &&
             (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash) !== undefined)) ||
-            (transaction.nonce > 0 && Boolean(transaction.nonce <= this.nonceTracker[transaction.address])) ||
-            (transaction.nonce < 0 && Boolean(transaction.hash in this.transactionTracker));
+            (transaction.nonce >= 0 && transaction.nonce <= this.nonceTracker[transaction.address]) ||
+            (transaction.nonce < 0 && transaction.hash in this.transactionTracker);
   }
 
   validTransactions() {
@@ -96,9 +96,9 @@ class TransactionPool {
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
       const status = TransactionStatus.BLOCK_STATUS;
-      const location = block.height;
+      const height = block.height;
       const index = i;
-      this.transactionTracker[transaction.hash] = { status, location, index };
+      this.transactionTracker[transaction.hash] = { status, height, index };
       transactionHashes.push(transaction.hash);
     }
 
