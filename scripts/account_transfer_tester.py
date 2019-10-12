@@ -1,4 +1,5 @@
 # Requires 'requests' module to be installed to be installed
+# TODO: (chris) Rewrite in nodejs
 import sys
 import json
 import requests
