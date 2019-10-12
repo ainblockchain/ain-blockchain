@@ -37,7 +37,7 @@ class TransactionPool {
   }
 
   isNotEligibleTransaction(transaction) {
-    return Boolean((transaction.address in this.transactions) &&
+    return ((transaction.address in this.transactions) &&
             (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash) !== undefined)) ||
             (transaction.nonce >= 0 && transaction.nonce <= this.nonceTracker[transaction.address]) ||
             (transaction.nonce < 0 && transaction.hash in this.transactionTracker);
