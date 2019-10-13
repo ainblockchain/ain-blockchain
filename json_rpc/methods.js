@@ -1,7 +1,7 @@
 'use strict';
 
 const getJsonRpcApi = require('./methods_impl');
-const {OperationTypes, PredefinedDbPaths} = require('../constants');
+const {OperationTypes, PredefinedDbPaths, TransactionStatus} = require('../constants');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -104,6 +104,24 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       const transaction = getQueryDict(args);
       // TODO (lia): return the transaction hash or an error message
       done(null, methodsImpl.p2pServerClosure.executeTransaction(transaction));
+    },
+
+    ain_getTransactionByHash: function(args, done) {
+      const transactionHash = getQueryDict(args);
+      const transactionInfo = methodsImpl.transactionPoolClosure.getTransactionLocationInfo(transactionHash);
+      let transaction;
+      if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+        const block = methodsImpl.blockchainClosure.getBlockByNumber(transactionInfo.height);
+        const index = transactionInfo.index;
+        transaction = block.data[index];
+      } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+        const address = transactionInfo.address;
+        const index = transactionInfo.index;
+        transaction = transactionPool.transactions[address][index];
+      } else {
+        transaction = null;
+      }
+      done(null, transaction);
     },
 
     ain_getTransactionByBlockHashAndIndex: function(args, done) {

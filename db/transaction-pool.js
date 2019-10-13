@@ -111,6 +111,10 @@ class TransactionPool {
 
       if (this.transactions[address].length === 0) {
         delete this.transactions[address];
+      } else {
+        this.transactions[address].forEach((transaction) => {
+          this.transactionTracker[transaction.hash].index = this.transactions[address].indexOf(transaction);
+        });
       }
     }
   }
