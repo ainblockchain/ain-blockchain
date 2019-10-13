@@ -104,9 +104,7 @@ class TransactionPool {
 
     for (const address in this.transactions) {
       this.transactions[address] = this.transactions[address].filter((transaction) => {
-        if (transactionHashes.indexOf(transaction.hash) < 0) {
-          return transaction;
-        }
+        return transactionHashes.indexOf(transaction.hash) < 0
       });
 
       if (this.transactions[address].length === 0) {
