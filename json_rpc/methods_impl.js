@@ -73,6 +73,11 @@ function getTransactionPoolClosure(transactionPool) {
     getTransactions() {
       return transactionPool.transactions;
     },
+
+    getTransactionLocationInfo(transactionHash) {
+      return transactionPool.transactionTracker[transactionHash] !== undefined
+      ? transactionPool.transactionTracker[transactionHash] : {};
+    },
   };
 }
 
