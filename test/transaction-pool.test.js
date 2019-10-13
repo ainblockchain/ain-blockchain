@@ -8,10 +8,10 @@ const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
 
-function getTransaction(db, operation) {
-  const nonce = db.nonce;
+function getTransaction(db, txData) {
+  txData.nonce = db.nonce;
   db.nonce++;
-  return Transaction.newTransaction(nonce, db.keyPair.priv, operation);
+  return Transaction.newTransaction(db.keyPair.priv, txData);
 }
 
 describe('TransactionPool', () => {

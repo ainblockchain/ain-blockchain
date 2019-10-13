@@ -156,11 +156,8 @@ class Transaction {
     return sanitized;
   }
 
-  static newTransaction(nonce, privateKey, txData) {
+  static newTransaction(privateKey, txData) {
     const transaction = JSON.parse(JSON.stringify(txData));
-    if (transaction.nonce === undefined) {
-      transaction.nonce = nonce;
-    }
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address
     const signature = transaction.address !== undefined ? '' :

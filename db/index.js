@@ -276,14 +276,17 @@ class DB {
     */
   createTransaction(txData, isNoncedTransaction = true) {
     // TODO: (Chris) Depricate this function
-    let nonce;
-    if (isNoncedTransaction) {
-      nonce = this.nonce;
-      this.nonce++;
-    } else {
-      nonce = -1;
+    if (txData.nonce === undefined) {
+      let nonce;
+      if (isNoncedTransaction) {
+        nonce = this.nonce;
+        this.nonce++;
+      } else {
+        nonce = -1;
+      }
+      txData.nonce = nonce;
     }
-    return Transaction.newTransaction(nonce, this.keyPair.priv, txData);
+    return Transaction.newTransaction(this.keyPair.priv, txData);
   }
 
   sign(dataHash) {

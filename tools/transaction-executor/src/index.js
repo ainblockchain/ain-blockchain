@@ -69,17 +69,13 @@ class TransactionExecutorCommand extends Command {
         throw Error(`Nonce field should be specified:\n${line}`);
       }
 
-      const transactionNonce = transactionData.nonce;
-      delete transactionData['nonce'];
-      const trans = Transaction.newTransaction(transactionNonce, privateKey, transactionData);
+      const trans = Transaction.newTransaction(privateKey, transactionData);
       transactions.push(trans);
     });
     return transactions;
   }
 
   static createUnsignedTransactionList(transactionFile) {
-    // TODO (chris): Add support for unsigned transactions
-    throw Error('Unsigned transactions are currently not supported');
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       const transactionData = TransactionExecutorCommand.parseLine(line);
@@ -89,13 +85,8 @@ class TransactionExecutorCommand extends Command {
       if (typeof transactionData.nonce === 'undefined') {
         throw Error(`Nonce field should be specified:\n${line}`);
       }
-      const transactionAddress = transactionData.address;
-      const transactionNonce = transactionData.nonce;
       transactionData['skip_verif'] = true;
-
-      delete transactionData['address'];
-      delete transactionData['nonce'];
-      const trans = new Transaction(Date.now(), transactionData, transactionAddress, '', transactionNonce);
+      const trans = Transaction.newTransaction('', transactionData);
       transactions.push(trans);
     });
     return transactions;

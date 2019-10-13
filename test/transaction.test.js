@@ -5,9 +5,9 @@ const expect = chai.expect;
 const Blockchain = require('../blockchain/');
 
 function getTransaction(db, txData) {
-  const nonce = db.nonce;
+  txData.nonce = db.nonce;
   db.nonce++;
-  return Transaction.newTransaction(nonce, db.keyPair.priv, txData);
+  return Transaction.newTransaction(db.keyPair.priv, txData);
 }
 
 describe('Transaction', () => {
