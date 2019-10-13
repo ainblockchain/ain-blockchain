@@ -1,6 +1,7 @@
 
 const RequestManager = require('./request_manager');
 const ProfitManager = require('./profit_manager');
+const errors = require('request-promise/errors');
 
 const INVEST_FEE = 0.1;
 const APP_NAME = 'afan';
@@ -24,8 +25,18 @@ class AfanClient {
   }
 
   async shareProfit(requestManager, from, to, value) {
-    const investorsResponse = await requestManager.getInvestors(to);
-    const investors = investorsResponse.result;
+    let investors;
+    try {
+      const investorsResponse = await requestManager.getInvestors(to);
+      investors = investorsResponse.result;
+    } catch (err) {
+      if (err instanceof errors.StatusCodeError){
+        investors = null;
+      } else {
+        throw err
+      }
+    }
+
     requestManager.increaseBalance(from, -value);
     const profitManager = new ProfitManager(to, from, investors, requestManager,
         false);
@@ -51,10 +62,16 @@ class AfanClient {
   async tx_adpropose(from, to, value, intermed) {
     console.log('adpropose');
     const requestManager = new RequestManager(this.endpoint, APP_NAME);
-    const state = await requestManager.getAdState(from, to);
-    console.log('state: ' + state.result);
-    if (state.result && state.result !==3) {
-      return {code: -4, message: 'Already proposed'};
+    try {
+      const state = await requestManager.getAdState(from, to);
+      console.log('state: ' + state.result);
+      if (state.result && state.result !==3) {
+        return {code: -4, message: 'Already proposed'};
+      }
+    } catch (err) {
+      if (!(err instanceof errors.StatusCodeError)){
+        throw err
+      } 
     }
     requestManager.increaseBalance(from, -value);
     requestManager.increaseBalance(intermed, value);
