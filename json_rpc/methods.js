@@ -1,6 +1,7 @@
 'use strict';
 
 const getJsonRpcApi = require('./methods_impl');
+const {OperationTypes, PredefinedDbPaths, TransactionStatus} = require('../constants');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -101,7 +102,26 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
 
     ain_sendSignedTransaction: function(args, done) {
       const transaction = getQueryDict(args);
+      // TODO (lia): return the transaction hash or an error message
       done(null, methodsImpl.p2pServerClosure.executeTransaction(transaction));
+    },
+
+    ain_getTransactionByHash: function(args, done) {
+      const transactionHash = getQueryDict(args);
+      const transactionInfo = methodsImpl.transactionPoolClosure.getTransactionLocationInfo(transactionHash);
+      let transaction;
+      if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+        const block = methodsImpl.blockchainClosure.getBlockByNumber(transactionInfo.height);
+        const index = transactionInfo.index;
+        transaction = block.data[index];
+      } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+        const address = transactionInfo.address;
+        const index = transactionInfo.index;
+        transaction = transactionPool.transactions[address][index];
+      } else {
+        transaction = null;
+      }
+      done(null, transaction);
     },
 
     ain_getTransactionByBlockHashAndIndex: function(args, done) {
@@ -128,6 +148,63 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
         result = block.data.length > index && index >= 0 ? block.data[index] : null;
       }
       done(null, result);
+    },
+
+    // Database API
+    ain_get: function(args, done) {
+      switch (args.type) {
+        case OperationTypes.GET_VALUE:
+          done(null, p2pServer.db.getValue(args.ref));
+          return;
+        case OperationTypes.GET_RULE:
+          done(null, p2pServer.db.getRule(args.ref));
+          return;
+        case OperationTypes.GET_OWNER:
+          done(null, p2pServer.db.getOwner(args.ref));
+          return;
+        case OperationTypes.GET:
+          done(null, p2pServer.db.get(args.op_list));
+          return;
+        default:
+          done(null, {error: "Invalid get request"});
+      }
+    },
+
+    // Account API
+    ain_getBalance: function(args, done) {
+      const address = args.address;
+      const balance = p2pServer.db
+          .getValue(`/${PredefinedDbPaths.ACCOUNT}/${address}/balance`) || 0;
+      done(null, balance);
+    },
+
+    ain_getNonce: function(args, done) {
+      const address = args.address;
+      const nonce = (p2pServer.db.publicKey === address ?
+          p2pServer.db.nonce : transactionPool.nonceTracker[address]) || 0;
+      done(null, nonce);
+    },
+
+    ain_isValidator: function(args, done) {
+      // TODO (lia): fill this function out after revamping consensus staking
+    },
+
+    // Network API
+    net_listening: function(args, done) {
+      // TODO (lia): Check if this number is lower than max peer number
+      const peerCount = p2pServer.sockets.length;
+      done(null, !!peerCount);
+    },
+
+    net_peerCount: function(args, done) {
+      const peerCount = p2pServer.sockets.length;
+      done(null, peerCount);
+    },
+
+    net_syncing: function(args, done) {
+      // TODO (lia): return { starting, latest } with block numbers if the node
+      // is currently syncing.
+      done(null, blockchain.syncedAfterStartup);
     },
   };
 };
