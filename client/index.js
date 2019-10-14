@@ -23,12 +23,6 @@ const PORT = process.env.PORT || 8080;
 
 // Initiate logging
 const LOG = process.env.LOG || false;
-let LAST_NONCE = 0;
-let CURRENT_NONCE = 0;
-// Number of transactions per second that can be made through this blockchain
-// before transactions begin automatically being added to a batch_list
-// transaction.
-const TX_PER_SECOND_AUTOBATCHING = 120;
 
 if (LOG) {
   const fs = require('fs');
@@ -270,51 +264,13 @@ function createBatchTxData(input) {
   return txData;
 }
 
-function createBatchTransaction(trans) {
-  if (transactionBatch.length == 0) {
-    setTimeout(() => {
-      broadcastBatchTransaction();
-    }, 100);
-  }
-  CURRENT_NONCE += 1;
-  transactionBatch.push(trans);
-}
-
-function broadcastBatchTransaction() {
-  if (transactionBatch.length > 0) {
-    const batchList = JSON.parse(JSON.stringify(transactionBatch));
-    transactionBatch.length = 0;
-    const transaction = db.createTransaction({
-      operation: {
-        type: 'BATCH',
-        batch_list: batchList
-      }
-    });
-    return p2pServer.executeAndBroadcastTransaction(transaction);
-  }
-}
-
-function createSingularTransaction(txData, isNoncedTransaction) {
-  CURRENT_NONCE += 1;
+function createTransaction(txData, isNoncedTransaction) {
   const transaction = db.createTransaction(txData, isNoncedTransaction);
   return p2pServer.executeAndBroadcastTransaction(transaction);
 }
-
-let createTransaction;
-createTransaction = createSingularTransaction;
 
 function checkIfTransactionShouldBeNonced(input) {
   // Default to true if noncing information is not specified
   return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
 }
 
-// Here we specity
-setInterval(() => {
-  if (CURRENT_NONCE - LAST_NONCE > TX_PER_SECOND_AUTOBATCHING) {
-    createTransaction = createBatchTransaction;
-  } else {
-    broadcastBatchTransaction();
-    createTransaction = createSingularTransaction;
-  }
-  LAST_NONCE = CURRENT_NONCE;
-}, 1000);
