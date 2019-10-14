@@ -1,6 +1,7 @@
 // Execute this node script to return a new valid private key.
 // This private key can be used as an argument for the blockchain-database 
 // by specifing PRIVATE_KEY=<private_key> as a command line argument.
+// TODO: (Chris) update to use ain-util.js
 
 const EC = require('elliptic').ec;
 const SHA256 = require('crypto-js/sha256');
