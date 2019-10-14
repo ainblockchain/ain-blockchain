@@ -225,9 +225,6 @@ function createSingleSetTxData(req, opType) {
       ref: req.body.ref,
       value: req.body.value,
     },
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
   };
   if (req.body.address !== undefined) {
     txData.address = req.body.address;
@@ -244,11 +241,7 @@ function createMultiSetTxData(req) {
     operation: {
       type: OperationTypes.SET,
       op_list: req.body.op_list,
-      value: req.body.value,
     },
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
   };
   if (req.body.address !== undefined) {
     txData.address = req.body.address;
@@ -265,11 +258,7 @@ function createBatchTxData(req) {
     operation: {
       type: OperationTypes.BATCH,
       batch_list: req.body.batch_list,
-      value: req.body.value,
     },
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
   };
   if (req.body.address !== undefined) {
     txData.address = req.body.address;
