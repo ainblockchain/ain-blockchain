@@ -341,80 +341,96 @@ describe('API Tests', () => {
     it('batch simple', () => {
       return chai.request(server1)
           .post(`/batch`).send({
-            batch_list: [
+            tx_list: [
               {
-                type: 'SET_VALUE',
-                ref: 'test/a',
-                value: 1
-              },
-              {
-                type: 'INC_VALUE',
-                ref: "test/test",
-                value: 10
-              },
-              {
-                type: 'DEC_VALUE',
-                ref: "test/test2",
-                value: 10
-              },
-              {
-                type: 'SET_RULE',
-                ref: "/rule/other/path",
-                value: {
-                  ".write_value": "some rule config"
+                operation: {
+                  type: 'SET_VALUE',
+                  ref: 'test/a',
+                  value: 1
                 }
               },
               {
-                type: 'SET_OWNER',
-                ref: "/owner/other/path",
-                value: {
-                  ".owner": "some owner config"
+                operation: {
+                  type: 'INC_VALUE',
+                  ref: "test/test",
+                  value: 10
                 }
               },
               {
-                type: 'SET',
-                op_list: [
-                  {
-                    type: "SET_VALUE",
-                    ref: "test/balance",
-                    value: {
-                      a:1,
-                      b:2
-                    }
-                  },
-                  {
-                    type: 'INC_VALUE',
-                    ref: "test/test",
-                    value: 5
-                  },
-                  {
-                    type: 'DEC_VALUE',
-                    ref: "test/test2",
-                    value: 5
-                  },
-                  {
-                    type: 'SET_RULE',
-                    ref: "/rule/other/path",
-                    value: {
-                      ".write_value": "some rule config"
-                    }
-                  },
-                  {
-                    type: 'SET_OWNER',
-                    ref: "/owner/other/path",
-                    value: {
-                      ".owner": "some owner config"
-                    }
+                operation: {
+                  type: 'DEC_VALUE',
+                  ref: "test/test2",
+                  value: 10
+                }
+              },
+              {
+                operation: {
+                  type: 'SET_RULE',
+                  ref: "/rule/other/path",
+                  value: {
+                    ".write_value": "some rule config"
                   }
-                ]
+                }
               },
               {
-                type: 'GET_VALUE',
-                ref: 'test/a'
+                operation: {
+                  type: 'SET_OWNER',
+                  ref: "/owner/other/path",
+                  value: {
+                    ".owner": "some owner config"
+                  }
+                }
               },
               {
-                type: 'GET_VALUE',
-                ref: 'test/balance/b'
+                operation: {
+                  type: 'SET',
+                  op_list: [
+                    {
+                      type: "SET_VALUE",
+                      ref: "test/balance",
+                      value: {
+                        a:1,
+                        b:2
+                      }
+                    },
+                    {
+                      type: 'INC_VALUE',
+                      ref: "test/test",
+                      value: 5
+                    },
+                    {
+                      type: 'DEC_VALUE',
+                      ref: "test/test2",
+                      value: 5
+                    },
+                    {
+                      type: 'SET_RULE',
+                      ref: "/rule/other/path",
+                      value: {
+                        ".write_value": "some rule config"
+                      }
+                    },
+                    {
+                      type: 'SET_OWNER',
+                      ref: "/owner/other/path",
+                      value: {
+                        ".owner": "some owner config"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                operation: {
+                  type: 'GET_VALUE',
+                  ref: 'test/a'
+                }
+              },
+              {
+                operation: {
+                  type: 'GET_VALUE',
+                  ref: 'test/balance/b'
+                }
               }
           ]})
           .then((res) => {

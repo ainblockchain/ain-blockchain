@@ -201,29 +201,38 @@ class DB {
     return ret;
   }
 
-  batch(batchList, address, timestamp) {
+  batch(txList, address, timestamp) {
     const resultList = [];
-    batchList.forEach((item) => {
-      if (item.type === OperationTypes.GET_VALUE) {
-        resultList.push(this.getValue(item.ref));
-      } else if (item.type === OperationTypes.GET_RULE) {
-        resultList.push(this.getRule(item.ref));
-      } else if (item.type === OperationTypes.GET_OWNER) {
-        resultList.push(this.getOwner(item.ref));
-      } else if (item.type === OperationTypes.GET) {
-        resultList.push(this.get(item.op_list));
-      } else if (item.type === OperationTypes.SET_VALUE) {
-        resultList.push(this.setValue(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.INC_VALUE) {
-        resultList.push(this.incValue(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.DEC_VALUE) {
-        resultList.push(this.decValue(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.SET_RULE) {
-        resultList.push(this.setRule(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.SET_OWNER) {
-        resultList.push(this.setOwner(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.SET) {
-        resultList.push(this.set(item.op_list, address, timestamp));
+    txList.forEach((tx) => {
+      const operation = tx.operation;
+      if (!operation) {
+        resultList.push(null);
+      } else {
+        switch(operation.type) {
+          case OperationTypes.GET_VALUE:
+            resultList.push(this.getValue(operation.ref));
+            break;
+          case OperationTypes.GET_RULE:
+            resultList.push(this.getRule(operation.ref));
+            break;
+          case OperationTypes.GET_OWNER:
+            resultList.push(this.getOwner(operation.ref));
+            break;
+          case OperationTypes.GET:
+            resultList.push(this.get(operation.op_list));
+            break;
+          case OperationTypes.SET_VALUE:
+          case OperationTypes.INC_VALUE:
+          case OperationTypes.DEC_VALUE:
+          case OperationTypes.SET_RULE:
+          case OperationTypes.SET_OWNER:
+          case OperationTypes.SET:
+            resultList.push(this.execute(operation, address, timestamp));
+            break;
+          default:
+            console.log('Invalid batch operation type: ' + operation.type);
+            resultList.push(null);
+        }
       }
     });
     return resultList;
@@ -339,7 +348,9 @@ class DB {
       case OperationTypes.SET:
         return this.set(operation.op_list, address, timestamp);
       case OperationTypes.BATCH:
-        return this.batch(operation.batch_list, address, timestamp);
+        return this.batch(operation.tx_list, address, timestamp);
+      default:
+        console.log('Invalid operation type: ' + operation.type);
     }
   }
 

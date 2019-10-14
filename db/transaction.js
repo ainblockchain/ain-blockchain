@@ -99,11 +99,11 @@ class Transaction {
   }
 
   /**
-   * Sanitize op_list of BATCH operation.
+   * Sanitize tx_list of BATCH operation.
    */
-  static sanitizeBatchList(batchList) {
+  static sanitizeTxList(txList) {
     // TODO(seo): Fill this out after BATCH operation is refactored.
-    return batchList;
+    return txList;
   }
 
   /**
@@ -132,7 +132,7 @@ class Transaction {
         sanitized.op_list = this.sanitizeSetOpList(op.op_list);
         break;
       case OperationTypes.BATCH:
-        sanitized.batch_list = this.sanitizeBatchList(op.batch_list);
+        sanitized.tx_list = this.sanitizeTxList(op.tx_list);
         break;
       default:
         return sanitized;

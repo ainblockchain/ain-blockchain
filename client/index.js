@@ -251,7 +251,7 @@ function createBatchTxData(input) {
   const txData = {
     operation: {
       type: OperationTypes.BATCH,
-      batch_list: input.batch_list,
+      tx_list: input.tx_list,
     },
   };
   if (input.address !== undefined) {
