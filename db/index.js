@@ -201,7 +201,7 @@ class DB {
     return ret;
   }
 
-  batch(txList, address, timestamp) {
+  batch(txList) {
     const resultList = [];
     txList.forEach((tx) => {
       const operation = tx.operation;
@@ -227,7 +227,7 @@ class DB {
           case OperationTypes.SET_RULE:
           case OperationTypes.SET_OWNER:
           case OperationTypes.SET:
-            resultList.push(this.execute(operation, address, timestamp));
+            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp));
             break;
           default:
             console.log('Invalid batch operation type: ' + operation.type);
@@ -317,13 +317,13 @@ class DB {
 
   executeBlockTransactions(block) {
     block.data.forEach((tx) =>{
-      this.execute(tx.operation, tx.address, tx.timestamp);
+      this.executeTransaction(tx);
     });
   }
 
   addTransactionPool(transactions) {
     transactions.forEach((tx) => {
-      this.execute(tx.operation, tx.address, tx.timestamp);
+      this.executeTransaction(tx);
     });
   }
 
@@ -333,7 +333,10 @@ class DB {
     }
   }
 
-  execute(operation, address, timestamp) {
+  executeOperation(operation, address, timestamp) {
+    if (!operation) {
+      return null;
+    }
     switch (operation.type) {
       case OperationTypes.SET_VALUE:
         return this.setValue(operation.ref, operation.value, address, timestamp);
@@ -347,11 +350,21 @@ class DB {
         return this.setOwner(operation.ref, operation.value, address, timestamp);
       case OperationTypes.SET:
         return this.set(operation.op_list, address, timestamp);
-      case OperationTypes.BATCH:
-        return this.batch(operation.tx_list, address, timestamp);
       default:
         console.log('Invalid operation type: ' + operation.type);
+        return null;
     }
+  }
+
+  executeTransaction(tx) {
+    const operation = tx.operation;
+    if (!operation) {
+      return null;
+    }
+    if (operation.tx_list !== undefined) {
+      return this.batch(operation.tx_list);
+    }
+    return this.executeOperation(operation, tx.address, tx.timestamp);
   }
 
   getPermissionForValue(valuePath, address, timestamp, newValue) {

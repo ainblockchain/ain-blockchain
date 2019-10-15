@@ -177,28 +177,28 @@ class P2pServer {
    * @param {Object} transactionWithSig An object with a signature and a transaction.
    */
   executeTransaction(transactionWithSig) {
-    const transactionObj = transactionWithSig instanceof Transaction ?
+    const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
-      console.log(`EXECUTING: ${JSON.stringify(transactionObj)}`);
+      console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
     }
-    if (this.transactionPool.isNotEligibleTransaction(transactionObj)) {
+    if (this.transactionPool.isNotEligibleTransaction(transaction)) {
       if (DEBUG) {
-        console.log(`ALREADY RECEIVED: ${JSON.stringify(transactionObj)}`);
+        console.log(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
       }
       console.log('Transaction already received');
       return null;
     }
     if (this.blockchain.syncedAfterStartup === false) {
-      this.transactionPool.addTransaction(transactionObj);
+      this.transactionPool.addTransaction(transaction);
       return [];
     }
-    const result = this.db.execute(transactionObj.operation, transactionObj.address, transactionObj.timestamp);
+    const result = this.db.executeTransaction(transaction);
     if (!this.checkForTransactionResultErrorCode(result)) {
       // Add transaction to pool
-      this.transactionPool.addTransaction(transactionObj);
+      this.transactionPool.addTransaction(transaction);
     } else if (DEBUG) {
-      console.log(`FAILED TRANSACTION: ${JSON.stringify(transactionObj)}\t RESULT:${JSON.stringify(result)}`);
+      console.log(`FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
@@ -208,11 +208,11 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
-    const transactionObj = transactionWithSig instanceof Transaction ?
+    const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
-    const response = this.executeTransaction(transactionObj);
+    const response = this.executeTransaction(transaction);
     if (!this.checkForTransactionResultErrorCode(response)) {
-      this.broadcastTransaction(transactionObj);
+      this.broadcastTransaction(transaction);
     }
     return response;
   }
