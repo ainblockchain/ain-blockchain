@@ -92,7 +92,6 @@ const OperationTypes = {
   SET_RULE: 'SET_RULE',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
-  BATCH: 'BATCH',
 };
 
 /**

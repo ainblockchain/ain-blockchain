@@ -86,12 +86,12 @@ class Transaction {
   static sanitizeSetOpList(opList) {
     const sanitized = [];
     if (Array.isArray(opList)) {
-      opList.forEach((item) => {
-        const type = item.type ? item.type : OperationTypes.SET_VALUE;
+      opList.forEach((op) => {
+        const type = op.type ? op.type : OperationTypes.SET_VALUE;
         if (type === OperationTypes.SET_VALUE || type === OperationTypes.INC_VALUE ||
             type === OperationTypes.DEC_VALUE || type === OperationTypes.SET_RULE ||
             type === OperationTypes.SET_OWNER) {
-          sanitized.push({ type, ref: item.ref, value: item.value });
+          sanitized.push({ type, ref: op.ref, value: op.value });
         }
       });
     }
@@ -131,9 +131,6 @@ class Transaction {
       case OperationTypes.SET:
         sanitized.op_list = this.sanitizeSetOpList(op.op_list);
         break;
-      case OperationTypes.BATCH:
-        sanitized.tx_list = this.sanitizeTxList(op.tx_list);
-        break;
       default:
         return sanitized;
     }
@@ -148,10 +145,14 @@ class Transaction {
     const sanitized = {
       nonce: txData.nonce,
       timestamp: txData.timestamp,
-      operation: Transaction.sanitizeOperation(txData.operation),
     };
     if (txData.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = txData.parent_tx_hash;
+    }
+    if (txData.tx_list !== undefined) {
+      sanitized.tx_list = Transaction.sanitizeTxList(txData.tx_list);
+    } else {
+      sanitized.operation = Transaction.sanitizeOperation(txData.operation);
     }
     return sanitized;
   }
@@ -166,6 +167,10 @@ class Transaction {
   }
 
   static verifyTransaction(transaction) {
+    if (transaction.tx_list !== undefined) {
+      // TODO(seo): Add verification logic.
+      return true;
+    }
     if ((Object.keys(OperationTypes).indexOf(transaction.operation.type) < 0)) {
       console.log(`Invalid transaction type ${transaction.operation.type}.`);
       return false;
@@ -179,8 +184,8 @@ class Transaction {
   }
 
   static checkRequiredFields(transaction) {
-    return transaction.timestamp !== undefined &&
-        transaction.operation !== undefined && transaction.nonce !== undefined;
+    return transaction.timestamp !== undefined && transaction.nonce !== undefined &&
+        (transaction.tx_list !== undefined || transaction.operation !== undefined);
   }
 }
 

@@ -39,7 +39,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5001,
         PORT: 9091,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server1 with error: ' + err.message);
@@ -52,7 +53,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5002,
         PORT: 9092,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server2 with error: ' + err.message);
@@ -65,7 +67,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5003,
         PORT: 9093,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server3 with error: ' + err.message);
@@ -78,7 +81,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5004,
         PORT: 9094,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server4 with error: ' + err.message);

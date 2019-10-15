@@ -357,14 +357,10 @@ class DB {
   }
 
   executeTransaction(tx) {
-    const operation = tx.operation;
-    if (!operation) {
-      return null;
+    if (tx.tx_list !== undefined) {
+      return this.batch(tx.tx_list);
     }
-    if (operation.tx_list !== undefined) {
-      return this.batch(operation.tx_list);
-    }
-    return this.executeOperation(operation, tx.address, tx.timestamp);
+    return this.executeOperation(tx.operation, tx.address, tx.timestamp);
   }
 
   getPermissionForValue(valuePath, address, timestamp, newValue) {

@@ -170,7 +170,6 @@ app.post('/set', (req, res, next) => {
     .end();
 });
 
-// TODO(seo): Make a batch request consist of transactions.
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(createBatchTxData(req.body), isNoncedTransaction);
@@ -249,10 +248,7 @@ function createMultiSetTxData(input) {
 
 function createBatchTxData(input) {
   const txData = {
-    operation: {
-      type: OperationTypes.BATCH,
-      tx_list: input.tx_list,
-    },
+    tx_list: input.tx_list,
   };
   if (input.address !== undefined) {
     txData.address = input.address;
