@@ -74,7 +74,7 @@ const PredefinedDbPaths = {
  * @enum {string}
  */
 const RuleProperties = {
-  WRITE_VALUE: '.write_value',
+  WRITE: '.write',
 };
 
 /**

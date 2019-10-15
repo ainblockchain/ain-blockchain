@@ -57,7 +57,7 @@ describe("DB operations", () => {
     dbRules = {
       "some": {
         "path": {
-          ".write_value": "some rule config"
+          ".write": "some rule config"
         }
       }
     };
@@ -96,7 +96,7 @@ describe("DB operations", () => {
     })
 
     it("when retrieving existing rule config", () => {
-      assert.deepEqual(db.getRule("/rule/some/path"), {".write_value": "some rule config"});
+      assert.deepEqual(db.getRule("/rule/some/path"), {".write": "some rule config"});
     })
   })
 
@@ -145,7 +145,7 @@ describe("DB operations", () => {
       ]), [
         456,
         {
-          ".write_value": "some rule config"
+          ".write": "some rule config"
         },
         {
           ".owner": "some owner config"
@@ -204,7 +204,7 @@ describe("DB operations", () => {
 
   describe("setRule operations", () => {
     it("when retrieving existing rule config", () => {
-      const ownerConfig = {".write_value": "other rule config"};
+      const ownerConfig = {".write": "other rule config"};
       expect(db.setOwner("/rule/some/path", ownerConfig)).to.equal(true)
       assert.deepEqual(db.getOwner("/rule/some/path"), ownerConfig)
     })
@@ -242,7 +242,7 @@ describe("DB operations", () => {
           type: "SET_RULE",
           ref: "/rule/some/path",
           value: {
-            ".write_value": "other rule config"
+            ".write": "other rule config"
           }
         },
         {
@@ -256,7 +256,7 @@ describe("DB operations", () => {
       assert.deepEqual(db.getValue("nested/far/down"), { "new": 12345 })
       expect(db.getValue("test/increment/value")).to.equal(30)
       expect(db.getValue("test/decrement/value")).to.equal(10)
-      assert.deepEqual(db.getRule("/rule/some/path"), {".write_value": "other rule config"});
+      assert.deepEqual(db.getRule("/rule/some/path"), {".write": "other rule config"});
       assert.deepEqual(db.getOwner("/owner/some/path"), {".owner": "other owner config"});
     })
 

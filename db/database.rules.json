@@ -1,56 +1,56 @@
 { "rules": {
-    ".write_value": false,
+    ".write": false,
     "account": {
-        ".write_value": true
+        ".write": true
     },
     "transfer": {
         "$from": {
             "$to": {
                 "$key": {
                     "value": {
-                        ".write_value": "auth === '$from' && !db.getValue(`transfer/$from/$to/$key`) && db.getValue(`account/$from/balance`) >= newData"
+                        ".write": "auth === '$from' && !db.getValue(`transfer/$from/$to/$key`) && db.getValue(`account/$from/balance`) >= newData"
                     }
                 }
             }
         }
     },
     "afan": {
-        ".write_value": true
+        ".write": true
     },
     "consensus": {
         "recent_forgers": {
-            ".write_value": "(newData.length < 20) && (db.getValue(`/consensus/voting/pre_commits`) > db.getValue(`/consensus/voting/threshold`)) && (db.getValue(`/consensus/voting/forger`) === auth)"
+            ".write": "(newData.length < 20) && (db.getValue(`/consensus/voting/pre_commits`) > db.getValue(`/consensus/voting/threshold`)) && (db.getValue(`/consensus/voting/forger`) === auth)"
         },
         "stakes": {
             "$uid": {
-                ".write_value": "auth === '$uid'"
+                ".write": "auth === '$uid'"
             }
         },
         "voting": {
-            ".write_value": "db.getValue(`/consensus/voting`) === null || db.getValue(`/consensus/recent_forgers`) !== null && (db.getValue(`/consensus/recent_forgers`)[db.getValue(`/consensus/recent_forgers`).length - Math.floor((currentTime - db.getValue(`/consensus/voting/time`)) / 6000)] === auth)" ,
+            ".write": "db.getValue(`/consensus/voting`) === null || db.getValue(`/consensus/recent_forgers`) !== null && (db.getValue(`/consensus/recent_forgers`)[db.getValue(`/consensus/recent_forgers`).length - Math.floor((currentTime - db.getValue(`/consensus/voting/time`)) / 6000)] === auth)" ,
             "block_hash": {
-                ".write_value": "db.getValue(`/consensus/voting/forger`) === auth"
+                ".write": "db.getValue(`/consensus/voting/forger`) === auth"
             },
             "next_round_validators": {
-                ".write_value": "Object.keys(db.getValue(`/consensus/stakes`)).indexOf(auth) > -1"
+                ".write": "Object.keys(db.getValue(`/consensus/stakes`)).indexOf(auth) > -1"
             },
             "pre_votes":{
-                ".write_value": "db.getValue(`/consensus/voting/block_hash`) !== null"
+                ".write": "db.getValue(`/consensus/voting/block_hash`) !== null"
             },
             "pre_commits": {
-                ".write_value":  "db.getValue(`/consensus/voting/pre_votes`) > db.getValue(`/consensus/voting/threshold`)"
+                ".write":  "db.getValue(`/consensus/voting/pre_votes`) > db.getValue(`/consensus/voting/threshold`)"
             }
 
         }
     },
     "nested":{
-        ".write_value": true
+        ".write": true
     },
     "new":{
-        ".write_value": true
+        ".write": true
     },
     "test": {
-        ".write_value": true,
+        ".write": true,
         "ai": {
         },
         "comcom": {
@@ -61,25 +61,25 @@
         },
         "users":{
             "$uid": {
-                ".write_value": true,
+                ".write": true,
                 "balance": {
-                    ".write_value": "typeof newData === 'number' && newData >= 0"
+                    ".write": "typeof newData === 'number' && newData >= 0"
                     },
                 "info": {
-                    ".write_value": "oldData !== null"
+                    ".write": "oldData !== null"
                 },
                 "balance_info": {
-                    ".write_value": "db.getValue(`test/billing_keys/update_billing/$uid`) !== null"
+                    ".write": "db.getValue(`test/billing_keys/update_billing/$uid`) !== null"
                 },
                 "next_counter": {
-                    ".write_value": "typeof newData === 'number' && newData === oldData + 1"
+                    ".write": "typeof newData === 'number' && newData === oldData + 1"
                 }
             }
           },
           "second_users": {
               "$wcard1":{
                   "$wcard2": {
-                      ".write_value": "'$wcard1' == '$wcard2'"
+                      ".write": "'$wcard1' == '$wcard2'"
                   }
               }
           }

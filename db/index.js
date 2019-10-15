@@ -111,7 +111,7 @@ class DB {
   setValue(valuePath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, address, timestamp, value)) {
-      return {code: 2, error_message: 'No write_value permission on: ' + valuePath};
+      return {code: 2, error_message: 'No value write permission on: ' + valuePath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
@@ -363,8 +363,8 @@ class DB {
     let currentRuleSet = this.db['rules'];
     let i = 0;
     do {
-      if (RuleProperties.WRITE_VALUE in currentRuleSet) {
-        rule = currentRuleSet[RuleProperties.WRITE_VALUE];
+      if (RuleProperties.WRITE in currentRuleSet) {
+        rule = currentRuleSet[RuleProperties.WRITE];
       }
       lastRuleSet = currentRuleSet;
       currentRuleSet = currentRuleSet[valuePath[i]];

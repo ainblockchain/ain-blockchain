@@ -106,7 +106,7 @@ describe('API Tests', () => {
       json: {
         ref: '/rule/some/path',
         value: {
-          ".write_value": "some rule config"
+          ".write": "some rule config"
         }
       }
     });
@@ -163,7 +163,7 @@ describe('API Tests', () => {
             res.body.should.be.deep.eql({
               code: 0,
               result: {
-                ".write_value": "some rule config"
+                ".write": "some rule config"
               }
             });
           });
@@ -214,7 +214,7 @@ describe('API Tests', () => {
               result: [
                 100,
                 {
-                  ".write_value": "some rule config"
+                  ".write": "some rule config"
                 },
                 {
                   ".owner": "some owner config"
@@ -267,7 +267,7 @@ describe('API Tests', () => {
           .post('/set_rule').send({
             ref: "/rule/other/path",
             value: {
-              ".write_value": "some rule config"
+              ".write": "some rule config"
             }
           })
           .then((res) => {
@@ -318,7 +318,7 @@ describe('API Tests', () => {
                 type: 'SET_RULE',
                 ref: "/rule/other/path",
                 value: {
-                  ".write_value": "some rule config"
+                  ".write": "some rule config"
                 }
               },
               {
@@ -368,7 +368,7 @@ describe('API Tests', () => {
                   type: 'SET_RULE',
                   ref: "/rule/other/path",
                   value: {
-                    ".write_value": "some rule config"
+                    ".write": "some rule config"
                   }
                 }
               },
@@ -407,7 +407,7 @@ describe('API Tests', () => {
                       type: 'SET_RULE',
                       ref: "/rule/other/path",
                       value: {
-                        ".write_value": "some rule config"
+                        ".write": "some rule config"
                       }
                     },
                     {
