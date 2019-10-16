@@ -423,20 +423,9 @@ describe('API Tests', () => {
                     }
                   ]
                 }
-              },
-              {
-                operation: {
-                  type: 'GET_VALUE',
-                  ref: 'test/a'
-                }
-              },
-              {
-                operation: {
-                  type: 'GET_VALUE',
-                  ref: 'test/balance/b'
-                }
               }
-          ]})
+            ]
+          })
           .then((res) => {
             res.should.have.status(201);
             res.body.should.be.deep.eql({
@@ -448,8 +437,6 @@ describe('API Tests', () => {
                 true,
                 true,
                 true,
-                1,
-                2
               ]
             });
       });

@@ -209,18 +209,6 @@ class DB {
         resultList.push(null);
       } else {
         switch(operation.type) {
-          case OperationTypes.GET_VALUE:
-            resultList.push(this.getValue(operation.ref));
-            break;
-          case OperationTypes.GET_RULE:
-            resultList.push(this.getRule(operation.ref));
-            break;
-          case OperationTypes.GET_OWNER:
-            resultList.push(this.getOwner(operation.ref));
-            break;
-          case OperationTypes.GET:
-            resultList.push(this.get(operation.op_list));
-            break;
           case OperationTypes.SET_VALUE:
           case OperationTypes.INC_VALUE:
           case OperationTypes.DEC_VALUE:

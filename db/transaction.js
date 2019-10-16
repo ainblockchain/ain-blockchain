@@ -99,7 +99,7 @@ class Transaction {
   }
 
   /**
-   * Sanitize tx_list of BATCH operation.
+   * Sanitize tx_list of batch transaction.
    */
   static sanitizeTxList(txList) {
     // TODO(seo): Fill this out after BATCH operation is refactored.
