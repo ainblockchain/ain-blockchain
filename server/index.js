@@ -176,6 +176,7 @@ class P2pServer {
    * in the transaction.
    * @param {Object} transactionWithSig An object with a signature and a transaction.
    */
+  // TODO(seo): Remove new Transaction() use cases.
   executeTransaction(transactionWithSig) {
     const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
@@ -208,13 +209,28 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
-    const transaction = transactionWithSig instanceof Transaction ?
-        transactionWithSig : new Transaction(transactionWithSig);
-    const response = this.executeTransaction(transaction);
-    if (!this.checkForTransactionResultErrorCode(response)) {
-      this.broadcastTransaction(transaction);
+    if (Transaction.isBatchTransaction(transactionWithSig)) {
+      const resultList = [];
+      const txListSucceeded = [];
+      transactionWithSig.tx_list.forEach((tx) => {
+        const transaction = tx instanceof Transaction ? tx : new Transaction(tx);
+        const response = this.executeTransaction(transaction);
+        resultList.push(response);
+        if (!this.checkForTransactionResultErrorCode(response)) {
+          txListSucceeded.push(tx);
+        }
+      })
+      this.broadcastTransaction({ tx_list: txListSucceeded });
+      return resultList;
+    } else {
+      const transaction = transactionWithSig instanceof Transaction ?
+          transactionWithSig : new Transaction(transactionWithSig);
+      const response = this.executeTransaction(transaction);
+      if (!this.checkForTransactionResultErrorCode(response)) {
+        this.broadcastTransaction(transaction);
+      }
+      return response;
     }
-    return response;
   }
 
   executeAndBroadcastVotingAction(votingAction) {

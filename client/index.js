@@ -247,17 +247,7 @@ function createMultiSetTxData(input) {
 }
 
 function createBatchTxData(input) {
-  const txData = {
-    tx_list: input.tx_list,
-  };
-  if (input.address !== undefined) {
-    txData.address = input.address;
-    txData.skip_verif = true;
-  }
-  if (input.nonce !== undefined) {
-    txData.nonce = input.nonce;
-  }
-  return txData;
+  return { tx_list: input.tx_list };
 }
 
 function createTransaction(txData, isNoncedTransaction) {

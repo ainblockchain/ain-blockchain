@@ -1,17 +1,18 @@
 const { OperationTypes, DEBUG } = require('../constants');
 const ainUtil = require('@ainblockchain/ain-util');
 
+// TODO(seo): Renove txWithSig.transaction ? use cases.
 class Transaction {
   constructor(txWithSig) {
     this.signature = txWithSig.signature;
 
-    if (!Transaction.checkRequiredFields(txWithSig.transaction ? txWithSig.transaction :
-        txWithSig)) {
-      throw new Error('Transaction must contain timestamp, operation and nonce fields');
+    const transaction = txWithSig.transaction ? txWithSig.transaction : txWithSig;
+    if (!Transaction.hasRequiredFields(transaction)) {
+      console.log('Transaction must contain timestamp, operation and nonce fields: ' + JSON.stringify(transaction));
+      return null;
     }
 
-    const txData = JSON.parse(JSON.stringify(txWithSig.transaction ?
-        txWithSig.transaction : txWithSig));
+    const txData = JSON.parse(JSON.stringify(transaction));
     const sanitizedTxData = Transaction.sanitizeTxData(txData);
     // Workaround for skip_verif with custom address
     if (txData.skip_verif !== undefined) {
@@ -26,6 +27,15 @@ class Transaction {
     if (DEBUG) {
       console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
     }
+  }
+
+  static newTransaction(privateKey, txData) {
+    const transaction = JSON.parse(JSON.stringify(txData));
+    transaction.timestamp = Date.now();
+    // Workaround for skip_verif with custom address
+    const signature = transaction.address !== undefined ? '' :
+        ainUtil.ecSignTransaction(transaction, ainUtil.toBuffer(privateKey));
+    return new this({ signature, transaction });
   }
 
   toString() {
@@ -64,23 +74,6 @@ class Transaction {
   }
 
   /**
-   * Sanitize op_list of GET operation.
-   */
-  static sanitizeGetOpList(opList) {
-    const sanitized = [];
-    if (Array.isArray(opList)) {
-      opList.forEach((item) => {
-        const type = item.type ? item.type : OperationTypes.GET_VALUE;
-        if (type === OperationTypes.GET_VALUE || type === OperationTypes.GET_RULE ||
-            type === OperationTypes.GET_OWNER) {
-          sanitized.push({ type, ref: item.ref });
-        }
-      });
-    }
-    return sanitized;
-  }
-
-  /**
    * Sanitize op_list of SET operation.
    */
   static sanitizeSetOpList(opList) {
@@ -99,27 +92,12 @@ class Transaction {
   }
 
   /**
-   * Sanitize tx_list of batch transaction.
-   */
-  static sanitizeTxList(txList) {
-    // TODO(seo): Fill this out after BATCH operation is refactored.
-    return txList;
-  }
-
-  /**
    * Sanitize operation.
    */
   static sanitizeOperation(op) {
     const sanitized = {}
     switch(op.type) {
-      case OperationTypes.GET_VALUE:
-      case OperationTypes.GET_RULE:
-      case OperationTypes.GET_OWNER:
-        sanitized.ref = op.ref;
-        break;
-      case OperationTypes.GET:
-        sanitized.op_list = this.sanitizeGetOpList(op.op_list);
-        break;
+      case undefined:
       case OperationTypes.SET_VALUE:
       case OperationTypes.INC_VALUE:
       case OperationTypes.DEC_VALUE:
@@ -145,32 +123,15 @@ class Transaction {
     const sanitized = {
       nonce: txData.nonce,
       timestamp: txData.timestamp,
+      operation: Transaction.sanitizeOperation(txData.operation),
     };
     if (txData.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = txData.parent_tx_hash;
     }
-    if (txData.tx_list !== undefined) {
-      sanitized.tx_list = Transaction.sanitizeTxList(txData.tx_list);
-    } else {
-      sanitized.operation = Transaction.sanitizeOperation(txData.operation);
-    }
     return sanitized;
   }
 
-  static newTransaction(privateKey, txData) {
-    const transaction = JSON.parse(JSON.stringify(txData));
-    transaction.timestamp = Date.now();
-    // Workaround for skip_verif with custom address
-    const signature = transaction.address !== undefined ? '' :
-        ainUtil.ecSignTransaction(transaction, ainUtil.toBuffer(privateKey));
-    return new this({ signature, transaction });
-  }
-
   static verifyTransaction(transaction) {
-    if (transaction.tx_list !== undefined) {
-      // TODO(seo): Add verification logic.
-      return true;
-    }
     if ((Object.keys(OperationTypes).indexOf(transaction.operation.type) < 0)) {
       console.log(`Invalid transaction type ${transaction.operation.type}.`);
       return false;
@@ -183,9 +144,13 @@ class Transaction {
     return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);
   }
 
-  static checkRequiredFields(transaction) {
+  static hasRequiredFields(transaction) {
     return transaction.timestamp !== undefined && transaction.nonce !== undefined &&
-        (transaction.tx_list !== undefined || transaction.operation !== undefined);
+        transaction.operation !== undefined;
+  }
+
+  static isBatchTransaction(transaction) {
+    return Array.isArray(transaction.tx_list);
   }
 }
 

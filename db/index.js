@@ -271,8 +271,19 @@ class DB {
     * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or not
     * @return {Transaction} Instance of the transaction class
     */
+  // TODO(Chris): Depricate this function
   createTransaction(txData, isNoncedTransaction = true) {
-    // TODO: (Chris) Depricate this function
+    if (Transaction.isBatchTransaction(txData)) {
+      const txList = [];
+      txData.tx_list.forEach((subData) => {
+        txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
+      })
+      return { tx_list: txList };
+    }
+    return this.createSingleTransaction(txData, isNoncedTransaction);
+  }
+
+  createSingleTransaction(txData, isNoncedTransaction) {
     if (txData.nonce === undefined) {
       let nonce;
       if (isNoncedTransaction) {
@@ -326,6 +337,7 @@ class DB {
       return null;
     }
     switch (operation.type) {
+      case undefined:
       case OperationTypes.SET_VALUE:
         return this.setValue(operation.ref, operation.value, address, timestamp);
       case OperationTypes.INC_VALUE:
@@ -338,14 +350,11 @@ class DB {
         return this.setOwner(operation.ref, operation.value, address, timestamp);
       case OperationTypes.SET:
         return this.set(operation.op_list, address, timestamp);
-      default:
-        console.log('Invalid operation type: ' + operation.type);
-        return null;
     }
   }
 
   executeTransaction(tx) {
-    if (tx.tx_list !== undefined) {
+    if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
     return this.executeOperation(tx.operation, tx.address, tx.timestamp);

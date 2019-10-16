@@ -60,17 +60,29 @@ class TransactionExecutorCommand extends Command {
       ));
         line = line.replace(ADDRESS_REG_EX, `${publicKey}`);
       }
-      
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (typeof transactionData.address !== 'undefined') {
-        throw Error(`Address field should NOT be specified:\n${line}`);
+      if (Transaction.isBatchTransaction(transactionData)) {
+        const txList = [];
+        transactionData.tx_list.forEach((subData) => {
+          if (typeof subData.address !== 'undefined') {
+            throw Error(`Address field should NOT be specified:\n${line}`);
+          }
+          if (typeof subData.nonce === 'undefined') {
+            throw Error(`Nonce field should be specified:\n${line}`);
+          }
+          txList.push(Transaction.newTransaction(privateKey, subData));
+        })
+        transactions.push({ tx_list: txList });
+      } else {
+        if (typeof transactionData.address !== 'undefined') {
+          throw Error(`Address field should NOT be specified:\n${line}`);
+        }
+        if (typeof transactionData.nonce === 'undefined') {
+          throw Error(`Nonce field should be specified:\n${line}`);
+        }
+        const trans = Transaction.newTransaction(privateKey, transactionData);
+        transactions.push(trans);
       }
-      if (typeof transactionData.nonce === 'undefined') {
-        throw Error(`Nonce field should be specified:\n${line}`);
-      }
-
-      const trans = Transaction.newTransaction(privateKey, transactionData);
-      transactions.push(trans);
     });
     return transactions;
   }
@@ -79,15 +91,30 @@ class TransactionExecutorCommand extends Command {
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       const transactionData = TransactionExecutorCommand.parseLine(line);
-      if (typeof transactionData.address === 'undefined') {
-        throw Error(`Address field should be specified:\n${line}`);
+      if (Transaction.isBatchTransaction(transactionData)) {
+        const txList = [];
+        transactionData.tx_list.forEach((subData) => {
+          if (typeof subData.address === 'undefined') {
+            throw Error(`Address field should be specified:\n${line}`);
+          }
+          if (typeof subData.nonce === 'undefined') {
+            throw Error(`Nonce field should be specified:\n${line}`);
+          }
+          subData['skip_verif'] = true;
+          txList.push(Transaction.newTransaction('', subData));
+        })
+        transactions.push({ tx_list: txList });
+      } else {
+        if (typeof transactionData.address === 'undefined') {
+          throw Error(`Address field should be specified:\n${line}`);
+        }
+        if (typeof transactionData.nonce === 'undefined') {
+          throw Error(`Nonce field should be specified:\n${line}`);
+        }
+        transactionData['skip_verif'] = true;
+        const trans = Transaction.newTransaction('', transactionData);
+        transactions.push(trans);
       }
-      if (typeof transactionData.nonce === 'undefined') {
-        throw Error(`Nonce field should be specified:\n${line}`);
-      }
-      transactionData['skip_verif'] = true;
-      const trans = Transaction.newTransaction('', transactionData);
-      transactions.push(trans);
     });
     return transactions;
   }

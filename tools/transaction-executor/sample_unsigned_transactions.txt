@@ -1,3 +1,4 @@
 {"operation": {"type": "SET_VALUE", "ref": "/account/abcd/balance", "value": 100}, "address": "abcd", "nonce": 0}
 {"operation": {"type": "SET_VALUE", "ref": "/account/efgh/balance", "value": 100}, "address": "efgh", "nonce": 0}
 {"operation": {"type": "SET_VALUE", "ref": "/transfer/abcd/efgh/1/value", "value": 10}, "address": "abcd", "nonce": 1}
+{"tx_list": [{"operation": {"type": "INC_VALUE", "ref": "/account/abcd/balance", "value": 5}, "address": "abcd", "nonce": 2}, {"operation": {"type": "DEC_VALUE", "ref": "/account/efgh/balance", "value": 5}, "address": "efgh", "nonce": 1}]}
