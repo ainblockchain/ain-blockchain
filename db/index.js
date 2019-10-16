@@ -209,6 +209,7 @@ class DB {
         resultList.push(null);
       } else {
         switch(operation.type) {
+          case undefined:
           case OperationTypes.SET_VALUE:
           case OperationTypes.INC_VALUE:
           case OperationTypes.DEC_VALUE:

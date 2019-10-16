@@ -348,7 +348,7 @@ describe('API Tests', () => {
             tx_list: [
               {
                 operation: {
-                  type: 'SET_VALUE',
+                  // Default type: SET_VALUE
                   ref: 'test/a',
                   value: 1
                 }
