@@ -75,7 +75,7 @@ class ForgedBlock extends Block {
   }
 
   static hash(timestamp, lastHash, data, height, signature) {
-    return ChainUtil.hash(`${timestamp}${lastHash}${data}${height}${signature}`).toString();
+    return '0x' + ChainUtil.hash(`${timestamp}${lastHash}${data}${height}${signature}`).toString();
   }
 
   toString() {
