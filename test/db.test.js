@@ -358,6 +358,70 @@ describe("DB operations", () => {
       assert.deepEqual(db.getOwner("/owner/some/path"), {".owner": "other owner config"});
     })
 
+    it("returning error code and leaving value unchanged if no operation is given", () => {
+      assert.deepEqual(db.batch([
+        {
+          operation: {
+            type: "SET_VALUE",
+            ref: "nested/far/down",
+            value: {
+              "new": 12345
+            }
+          }
+        },
+        {},
+        {
+          operation: {
+            type: "DEC_VALUE",
+            ref: "test/decrement/value",
+            value: 10
+          }
+        }
+      ]), [
+        true,
+        {
+          "code": 1,
+          "error_message": "No operation"
+        },
+        true])
+      expect(db.getValue("test/ai/foo")).to.equal("bar")
+    })
+
+    it("returning error code and leaving value unchanged if invalid operation type is given", () => {
+      assert.deepEqual(db.batch([
+        {
+          operation: {
+            type: "SET_VALUE",
+            ref: "nested/far/down",
+            value: {
+              "new": 12345
+            }
+          }
+        },
+        {
+          operation: {
+            type: "GET_VALUE",
+            ref: "test/ai/foo",
+            value: 10
+          }
+        },
+        {
+          operation: {
+            type: "DEC_VALUE",
+            ref: "test/decrement/value",
+            value: 10
+          }
+        }
+      ]), [
+        true,
+        {
+          "code": 2,
+          "error_message": "Invalid operation type: GET_VALUE"
+        },
+        true])
+      expect(db.getValue("test/ai/foo")).to.equal("bar")
+    })
+
     it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
       assert.deepEqual(db.batch([
         {

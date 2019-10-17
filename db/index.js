@@ -206,7 +206,9 @@ class DB {
     txList.forEach((tx) => {
       const operation = tx.operation;
       if (!operation) {
-        resultList.push(null);
+        const message = 'No operation';
+        resultList.push({ code: 1, error_message: message });
+        console.log(message);
       } else {
         switch(operation.type) {
           case undefined:
@@ -219,8 +221,9 @@ class DB {
             resultList.push(this.executeOperation(operation, tx.address, tx.timestamp));
             break;
           default:
-            console.log('Invalid batch operation type: ' + operation.type);
-            resultList.push(null);
+            const message = `Invalid operation type: ${operation.type}`;
+            resultList.push({ code: 2, error_message: message });
+            console.log(message);
         }
       }
     });

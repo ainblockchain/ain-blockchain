@@ -81,10 +81,9 @@ class Transaction {
     if (Array.isArray(opList)) {
       opList.forEach((op) => {
         const sanitizedOp = { ref: op.ref, value: op.value };
-        const type = op.type ? op.type : OperationTypes.SET_VALUE;
-        if (type === OperationTypes.SET_VALUE || type === OperationTypes.INC_VALUE ||
-            type === OperationTypes.DEC_VALUE || type === OperationTypes.SET_RULE ||
-            type === OperationTypes.SET_OWNER) {
+        if (op.type === OperationTypes.SET_VALUE || op.type === OperationTypes.INC_VALUE ||
+            op.type === OperationTypes.DEC_VALUE || op.type === OperationTypes.SET_RULE ||
+            op.type === OperationTypes.SET_OWNER) {
           sanitizedOp.type = op.type;
         }
         sanitized.push(sanitizedOp);
