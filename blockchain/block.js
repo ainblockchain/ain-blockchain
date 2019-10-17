@@ -1,3 +1,4 @@
+const Transaction = require('../db/transaction');
 const ChainUtil = require('../chain-util');
 const fs = require('fs');
 const {RULES_FILE_PATH} = require('../constants');
@@ -138,24 +139,20 @@ class ForgedBlock extends Block {
   }
 
   static genesis() {
+    let genesisTx;
+
     // Genesis block will set all the rules for the database if any rules are
     // specified in the proj/database/database.rules.json
-    const data = [];
-    // Hack here to simulate a transaction for the initial setting of rules
     if (fs.existsSync(RULES_FILE_PATH)) {
-      data.push({
-        operation: {
-          type: 'SET_RULE',
-          ref: '/',
-          value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules']
-        },
-        address: null
-      });
+      const keyPair = ChainUtil.genKeyPair();   // TODO(everyone); think of how to generate and keep it.
+      const operation = { type: 'SET_RULE', ref: '/',
+                          value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules'] };
+
+      genesisTx = Transaction.newTransaction(-1, keyPair.priv, operation);
     }
-    // Change this to use
-    const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, 0, '----', 'genesis', [], -1);
-    genesis.height = 0;
-    return genesis;
+
+    // timestamp, lastHash, hash, data, height, signature, forger, validators, threshold
+    return new this('Genesis time', '#####', 'f1r57-h45h', [genesisTx], 0, '----', 'genesis', [], -1);
   }
 }
 
