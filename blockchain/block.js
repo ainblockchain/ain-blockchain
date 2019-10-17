@@ -1,3 +1,4 @@
+const Transaction = require('../db/transaction');
 const ChainUtil = require('../chain-util');
 const fs = require('fs');
 const {RULES_FILE_PATH} = require('../constants');
@@ -36,7 +37,8 @@ class ForgedBlock extends Block {
     const timestamp = Date.now();
     const signature = db.sign(ChainUtil.hash(data));
     const hash = ForgedBlock.hash(timestamp, lastHash, data, height, signature);
-    return new ForgedBlock(timestamp, lastHash, hash, data, height, signature, forger, validators, threshold);
+    return new ForgedBlock(timestamp, lastHash, hash, data, height,
+                           signature, forger, validators, threshold);
   }
 
   header() {
@@ -73,7 +75,7 @@ class ForgedBlock extends Block {
   }
 
   static hash(timestamp, lastHash, data, height, signature) {
-    return ChainUtil.hash(`${timestamp}${lastHash}${data}${height}${signature}`).toString();
+    return '0x' + ChainUtil.hash(`${timestamp}${lastHash}${data}${height}${signature}`).toString();
   }
 
   toString() {
@@ -87,7 +89,8 @@ class ForgedBlock extends Block {
   }
 
   static loadBlock(blockZipFile) {
-    // Hack to return global genesis. Need to return separate genesis blocks for mined and forged implementations
+    // Hack to return global genesis. Need to return separate genesis blocks
+    // for mined and forged implementations
     if (blockZipFile.indexOf('0-#####-f1r57') >= 0) {
       return ForgedBlock.genesis();
     }
@@ -108,7 +111,9 @@ class ForgedBlock extends Block {
 
   static validateBlock(block, blockchain) {
     if (block.height !== (blockchain.height() + 1)) {
-      console.log(`Height is not correct for block ${block.hash}. Expected: ${(blockchain.height() + 1)} Actual: ${block.height}`);
+      console.log(`Height is not correct for block ${block.hash}.
+                   Expected: ${(blockchain.height() + 1)}
+                   Actual: ${block.height}`);
       return false;
     }
     const nonceTracker = {};
@@ -127,7 +132,9 @@ class ForgedBlock extends Block {
       }
 
       if (transaction.nonce != nonceTracker[transaction.address] + 1) {
-        console.log(`Invalid noncing for ${transaction.address}. Expected ${nonceTracker[transaction.address] + 1}. Received ${transaction.nonce}`);
+        console.log(`Invalid noncing for ${transaction.address}.
+                     Expected ${nonceTracker[transaction.address] + 1}.
+                     Received ${transaction.nonce}`);
         return false;
       }
 
@@ -138,24 +145,21 @@ class ForgedBlock extends Block {
   }
 
   static genesis() {
+    let genesisTx;
+
     // Genesis block will set all the rules for the database if any rules are
     // specified in the proj/database/database.rules.json
-    const data = [];
-    // Hack here to simulate a transaction for the initial setting of rules
     if (fs.existsSync(RULES_FILE_PATH)) {
-      data.push({
-        operation: {
-          type: 'SET_RULE',
-          ref: '/',
-          value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules']
-        },
-        address: null
-      });
+      const keyPair = ChainUtil.genKeyPair();   // TODO(everyone); think of how to generate/keep it.
+      const operation = { type: 'SET_RULE', ref: '/',
+                          value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules'] };
+
+      genesisTx = Transaction.newTransaction(keyPair.priv, { operation, nonce: -1 });
     }
-    // Change this to use
-    const genesis = new this('Genesis time', '#####', 'f1r57-h45h', data, 0, '----', 'genesis', [], -1);
-    genesis.height = 0;
-    return genesis;
+
+    // timestamp, lastHash, hash, data, height, signature, forger, validators, threshold
+    return new this('Genesis time', '#####', 'f1r57-h45h', [genesisTx], 0,
+                    '----', 'genesis', [], -1);
   }
 }
 
