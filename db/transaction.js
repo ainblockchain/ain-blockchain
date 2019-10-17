@@ -25,10 +25,10 @@ class Transaction {
       this.skip_verif = unsanitizedData.skip_verif;
     }
     Object.assign(this, transactionData);
-    this.hash = ainUtil.hashTransaction(transactionData).toString('hex');
+    this.hash = '0x' + ainUtil.hashTransaction(transactionData).toString('hex');
     // Workaround for skip_verif with custom address
     this.address = unsanitizedData.address !== undefined ? unsanitizedData.address :
-        Transaction.getAddress(this.hash, this.signature);
+        Transaction.getAddress(this.hash.slice(2), this.signature);
 
     if (DEBUG) {
       console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
