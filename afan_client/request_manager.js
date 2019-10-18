@@ -12,12 +12,8 @@ class RequestManager {
   send() {
     const options = {
       method: 'POST',
-      uri: this.endpoint + '/batch',
-      body: {
-        batch_list: [
-          {type: 'SET', op_list: this.updates},
-        ],
-      },
+      uri: this.endpoint + '/set',
+      body: {op_list: this.updates},
       json: true, // Automatically stringifies the body to JSON
     };
 

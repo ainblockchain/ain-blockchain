@@ -1,7 +1,7 @@
 'use strict';
 
 const getJsonRpcApi = require('./methods_impl');
-const {OperationTypes, PredefinedDbPaths, TransactionStatus} = require('../constants');
+const {ReadDbOperations, PredefinedDbPaths, TransactionStatus} = require('../constants');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -153,16 +153,16 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     // Database API
     ain_get: function(args, done) {
       switch (args.type) {
-        case OperationTypes.GET_VALUE:
+        case ReadDbOperations.GET_VALUE:
           done(null, p2pServer.db.getValue(args.ref));
           return;
-        case OperationTypes.GET_RULE:
+        case ReadDbOperations.GET_RULE:
           done(null, p2pServer.db.getRule(args.ref));
           return;
-        case OperationTypes.GET_OWNER:
+        case ReadDbOperations.GET_OWNER:
           done(null, p2pServer.db.getOwner(args.ref));
           return;
-        case OperationTypes.GET:
+        case ReadDbOperations.GET:
           done(null, p2pServer.db.get(args.op_list));
           return;
         default:

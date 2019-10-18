@@ -3,7 +3,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const {OperationTypes, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
+const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 
 class DB {
   constructor(blockchain) {
@@ -87,11 +87,11 @@ class DB {
   get(opList) {
     const resultList = [];
     opList.forEach((item) => {
-      if (item.type === undefined || item.type === OperationTypes.GET_VALUE) {
+      if (item.type === undefined || item.type === ReadDbOperations.GET_VALUE) {
         resultList.push(this.getValue(item.ref));
-      } else if (item.type === OperationTypes.GET_RULE) {
+      } else if (item.type === ReadDbOperations.GET_RULE) {
         resultList.push(this.getRule(item.ref));
-      } else if (item.type === OperationTypes.GET_OWNER) {
+      } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
       }
     });
@@ -111,7 +111,7 @@ class DB {
   setValue(valuePath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, address, timestamp, value)) {
-      return {code: 2, error_message: 'No write_value permission on: ' + valuePath};
+      return {code: 2, error_message: 'No value write permission on: ' + valuePath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
@@ -171,27 +171,27 @@ class DB {
     let ret = true;
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
-      if (op.type === undefined || op.type === OperationTypes.SET_VALUE) {
+      if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
         ret = this.setValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.INC_VALUE) {
+      } else if (op.type === WriteDbOperations.INC_VALUE) {
         ret = this.incValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.DEC_VALUE) {
+      } else if (op.type === WriteDbOperations.DEC_VALUE) {
         ret = this.decValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.SET_RULE) {
+      } else if (op.type === WriteDbOperations.SET_RULE) {
         ret = this.setRule(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.SET_OWNER) {
+      } else if (op.type === WriteDbOperations.SET_OWNER) {
         ret = this.setOwner(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
@@ -201,29 +201,30 @@ class DB {
     return ret;
   }
 
-  batch(batchList, address, timestamp) {
+  batch(txList) {
     const resultList = [];
-    batchList.forEach((item) => {
-      if (item.type === OperationTypes.GET_VALUE) {
-        resultList.push(this.getValue(item.ref));
-      } else if (item.type === OperationTypes.GET_RULE) {
-        resultList.push(this.getRule(item.ref));
-      } else if (item.type === OperationTypes.GET_OWNER) {
-        resultList.push(this.getOwner(item.ref));
-      } else if (item.type === OperationTypes.GET) {
-        resultList.push(this.get(item.op_list));
-      } else if (item.type === OperationTypes.SET_VALUE) {
-        resultList.push(this.setValue(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.INC_VALUE) {
-        resultList.push(this.incValue(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.DEC_VALUE) {
-        resultList.push(this.decValue(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.SET_RULE) {
-        resultList.push(this.setRule(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.SET_OWNER) {
-        resultList.push(this.setOwner(item.ref, item.value, address, timestamp));
-      } else if (item.type === OperationTypes.SET) {
-        resultList.push(this.set(item.op_list, address, timestamp));
+    txList.forEach((tx) => {
+      const operation = tx.operation;
+      if (!operation) {
+        const message = 'No operation';
+        resultList.push({ code: 1, error_message: message });
+        console.log(message);
+      } else {
+        switch(operation.type) {
+          case undefined:
+          case WriteDbOperations.SET_VALUE:
+          case WriteDbOperations.INC_VALUE:
+          case WriteDbOperations.DEC_VALUE:
+          case WriteDbOperations.SET_RULE:
+          case WriteDbOperations.SET_OWNER:
+          case WriteDbOperations.SET:
+            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp));
+            break;
+          default:
+            const message = `Invalid operation type: ${operation.type}`;
+            resultList.push({ code: 2, error_message: message });
+            console.log(message);
+        }
       }
     });
     return resultList;
@@ -274,16 +275,30 @@ class DB {
     * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(operation, isNoncedTransaction = true) {
-    // TODO: (Chris) Depricate this function
-    let nonce;
-    if (isNoncedTransaction) {
-      nonce = this.nonce;
-      this.nonce++;
-    } else {
-      nonce = -1;
+  // TODO(Chris): Depricate this function
+  createTransaction(txData, isNoncedTransaction = true) {
+    if (Transaction.isBatchTransaction(txData)) {
+      const txList = [];
+      txData.tx_list.forEach((subData) => {
+        txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
+      })
+      return { tx_list: txList };
     }
-    return Transaction.newTransaction(nonce, this.keyPair.priv, operation);
+    return this.createSingleTransaction(txData, isNoncedTransaction);
+  }
+
+  createSingleTransaction(txData, isNoncedTransaction) {
+    if (txData.nonce === undefined) {
+      let nonce;
+      if (isNoncedTransaction) {
+        nonce = this.nonce;
+        this.nonce++;
+      } else {
+        nonce = -1;
+      }
+      txData.nonce = nonce;
+    }
+    return Transaction.newTransaction(this.keyPair.priv, txData);
   }
 
   sign(dataHash) {
@@ -305,13 +320,13 @@ class DB {
 
   executeBlockTransactions(block) {
     block.data.forEach((tx) =>{
-      this.execute(tx.operation, tx.address, tx.timestamp);
+      this.executeTransaction(tx);
     });
   }
 
   addTransactionPool(transactions) {
     transactions.forEach((tx) => {
-      this.execute(tx.operation, tx.address, tx.timestamp);
+      this.executeTransaction(tx);
     });
   }
 
@@ -321,23 +336,32 @@ class DB {
     }
   }
 
-  execute(operation, address, timestamp) {
-    switch (operation.type) {
-      case OperationTypes.SET_VALUE:
-        return this.setValue(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.INC_VALUE:
-        return this.incValue(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.DEC_VALUE:
-        return this.decValue(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.SET_RULE:
-        return this.setRule(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.SET_OWNER:
-        return this.setOwner(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.SET:
-        return this.set(operation.op_list, address, timestamp);
-      case OperationTypes.BATCH:
-        return this.batch(operation.batch_list, address, timestamp);
+  executeOperation(operation, address, timestamp) {
+    if (!operation) {
+      return null;
     }
+    switch (operation.type) {
+      case undefined:
+      case WriteDbOperations.SET_VALUE:
+        return this.setValue(operation.ref, operation.value, address, timestamp);
+      case WriteDbOperations.INC_VALUE:
+        return this.incValue(operation.ref, operation.value, address, timestamp);
+      case WriteDbOperations.DEC_VALUE:
+        return this.decValue(operation.ref, operation.value, address, timestamp);
+      case WriteDbOperations.SET_RULE:
+        return this.setRule(operation.ref, operation.value, address, timestamp);
+      case WriteDbOperations.SET_OWNER:
+        return this.setOwner(operation.ref, operation.value, address, timestamp);
+      case WriteDbOperations.SET:
+        return this.set(operation.op_list, address, timestamp);
+    }
+  }
+
+  executeTransaction(tx) {
+    if (Transaction.isBatchTransaction(tx)) {
+      return this.batch(tx.tx_list);
+    }
+    return this.executeOperation(tx.operation, tx.address, tx.timestamp);
   }
 
   getPermissionForValue(valuePath, address, timestamp, newValue) {
@@ -349,8 +373,8 @@ class DB {
     let currentRuleSet = this.db['rules'];
     let i = 0;
     do {
-      if (RuleProperties.WRITE_VALUE in currentRuleSet) {
-        rule = currentRuleSet[RuleProperties.WRITE_VALUE];
+      if (RuleProperties.WRITE in currentRuleSet) {
+        rule = currentRuleSet[RuleProperties.WRITE];
       }
       lastRuleSet = currentRuleSet;
       currentRuleSet = currentRuleSet[valuePath[i]];

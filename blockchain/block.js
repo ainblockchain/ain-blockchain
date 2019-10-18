@@ -154,7 +154,7 @@ class ForgedBlock extends Block {
       const operation = { type: 'SET_RULE', ref: '/',
                           value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules'] };
 
-      genesisTx = Transaction.newTransaction(-1, keyPair.priv, operation);
+      genesisTx = Transaction.newTransaction(keyPair.priv, { operation, nonce: -1 });
     }
 
     // timestamp, lastHash, hash, data, height, signature, forger, validators, threshold

@@ -39,7 +39,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5001,
         PORT: 9091,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server1 with error: ' + err.message);
@@ -52,7 +53,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5002,
         PORT: 9092,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server2 with error: ' + err.message);
@@ -65,7 +67,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5003,
         PORT: 9093,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server3 with error: ' + err.message);
@@ -78,7 +81,8 @@ describe('API Tests', () => {
         LOG: true,
         P2P_PORT:5004,
         PORT: 9094,
-        LOCAL: true
+        LOCAL: true,
+        DEBUG: true
       },
     }).on('error', (err) => {
       console.error('Failed to start server4 with error: ' + err.message);
@@ -106,7 +110,7 @@ describe('API Tests', () => {
       json: {
         ref: '/rule/some/path',
         value: {
-          ".write_value": "some rule config"
+          ".write": "some rule config"
         }
       }
     });
@@ -163,7 +167,7 @@ describe('API Tests', () => {
             res.body.should.be.deep.eql({
               code: 0,
               result: {
-                ".write_value": "some rule config"
+                ".write": "some rule config"
               }
             });
           });
@@ -214,7 +218,7 @@ describe('API Tests', () => {
               result: [
                 100,
                 {
-                  ".write_value": "some rule config"
+                  ".write": "some rule config"
                 },
                 {
                   ".owner": "some owner config"
@@ -267,7 +271,7 @@ describe('API Tests', () => {
           .post('/set_rule').send({
             ref: "/rule/other/path",
             value: {
-              ".write_value": "some rule config"
+              ".write": "some rule config"
             }
           })
           .then((res) => {
@@ -318,7 +322,7 @@ describe('API Tests', () => {
                 type: 'SET_RULE',
                 ref: "/rule/other/path",
                 value: {
-                  ".write_value": "some rule config"
+                  ".write": "some rule config"
                 }
               },
               {
@@ -341,82 +345,87 @@ describe('API Tests', () => {
     it('batch simple', () => {
       return chai.request(server1)
           .post(`/batch`).send({
-            batch_list: [
+            tx_list: [
               {
-                type: 'SET_VALUE',
-                ref: 'test/a',
-                value: 1
-              },
-              {
-                type: 'INC_VALUE',
-                ref: "test/test",
-                value: 10
-              },
-              {
-                type: 'DEC_VALUE',
-                ref: "test/test2",
-                value: 10
-              },
-              {
-                type: 'SET_RULE',
-                ref: "/rule/other/path",
-                value: {
-                  ".write_value": "some rule config"
+                operation: {
+                  // Default type: SET_VALUE
+                  ref: 'test/a',
+                  value: 1
                 }
               },
               {
-                type: 'SET_OWNER',
-                ref: "/owner/other/path",
-                value: {
-                  ".owner": "some owner config"
+                operation: {
+                  type: 'INC_VALUE',
+                  ref: "test/test",
+                  value: 10
                 }
               },
               {
-                type: 'SET',
-                op_list: [
-                  {
-                    type: "SET_VALUE",
-                    ref: "test/balance",
-                    value: {
-                      a:1,
-                      b:2
-                    }
-                  },
-                  {
-                    type: 'INC_VALUE',
-                    ref: "test/test",
-                    value: 5
-                  },
-                  {
-                    type: 'DEC_VALUE',
-                    ref: "test/test2",
-                    value: 5
-                  },
-                  {
-                    type: 'SET_RULE',
-                    ref: "/rule/other/path",
-                    value: {
-                      ".write_value": "some rule config"
-                    }
-                  },
-                  {
-                    type: 'SET_OWNER',
-                    ref: "/owner/other/path",
-                    value: {
-                      ".owner": "some owner config"
-                    }
+                operation: {
+                  type: 'DEC_VALUE',
+                  ref: "test/test2",
+                  value: 10
+                }
+              },
+              {
+                operation: {
+                  type: 'SET_RULE',
+                  ref: "/rule/other/path",
+                  value: {
+                    ".write": "some rule config"
                   }
-                ]
+                }
               },
               {
-                type: 'GET_VALUE',
-                ref: 'test/a'
+                operation: {
+                  type: 'SET_OWNER',
+                  ref: "/owner/other/path",
+                  value: {
+                    ".owner": "some owner config"
+                  }
+                }
               },
               {
-                type: 'GET_VALUE',
-                ref: 'test/balance/b'
+                operation: {
+                  type: 'SET',
+                  op_list: [
+                    {
+                      type: "SET_VALUE",
+                      ref: "test/balance",
+                      value: {
+                        a:1,
+                        b:2
+                      }
+                    },
+                    {
+                      type: 'INC_VALUE',
+                      ref: "test/test",
+                      value: 5
+                    },
+                    {
+                      type: 'DEC_VALUE',
+                      ref: "test/test2",
+                      value: 5
+                    },
+                    {
+                      type: 'SET_RULE',
+                      ref: "/rule/other/path",
+                      value: {
+                        ".write": "some rule config"
+                      }
+                    },
+                    {
+                      type: 'SET_OWNER',
+                      ref: "/owner/other/path",
+                      value: {
+                        ".owner": "some owner config"
+                      }
+                    }
+                  ]
+                }
               }
-          ]})
+            ]
+          })
           .then((res) => {
             res.should.have.status(201);
             res.body.should.be.deep.eql({
@@ -428,8 +437,6 @@ describe('API Tests', () => {
                 true,
                 true,
                 true,
-                1,
-                2
               ]
             });
       });

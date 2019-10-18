@@ -1,7 +1,7 @@
 
 const shuffleSeed = require('shuffle-seed');
 const seedrandom = require('seedrandom');
-const { VotingStatus, PredefinedDbPaths, OperationTypes } = require('../constants');
+const { VotingStatus, PredefinedDbPaths, WriteDbOperations } = require('../constants');
 const MAX_RECENT_FORGERS = 20;
 
 class VotingUtil {
@@ -44,9 +44,11 @@ class VotingUtil {
     this.status = VotingStatus.PRE_VOTE;
     console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     const transaction = this.db.createTransaction({
-      type: OperationTypes.INC_VALUE,
-      ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
-      value: stake
+      operation: {
+        type: WriteDbOperations.INC_VALUE,
+        ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
+        value: stake
+      }
     });
     this.registerValidatingTransaction(transaction);
     return transaction;
@@ -82,9 +84,11 @@ class VotingUtil {
     console.log(`Current precommits are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
     this.status = VotingStatus.PRE_COMMIT;
     const transaction = this.db.createTransaction({
-      type: OperationTypes.INC_VALUE,
-      ref: PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS,
-      value: stake
+      operation: {
+        type: WriteDbOperations.INC_VALUE,
+        ref: PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS,
+        value: stake
+      }
     });
     this.registerValidatingTransaction(transaction);
     return transaction;
@@ -108,9 +112,11 @@ class VotingUtil {
     const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.publicKey, pre_votes: 0,
       pre_commits: 0, time, block_hash: '', height: bc.lastBlock().height + 1, lastHash: bc.lastBlock().hash};
     return this.db.createTransaction({
-      type: OperationTypes.SET_VALUE,
-      ref: PredefinedDbPaths.VOTING_ROUND,
-      value: firstVotingData
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: PredefinedDbPaths.VOTING_ROUND,
+        value: firstVotingData
+      }
     });
   }
 
@@ -138,9 +144,11 @@ class VotingUtil {
     }
 
     return this.db.createTransaction({
-      type: OperationTypes.SET_VALUE,
-      ref: PredefinedDbPaths.VOTING_ROUND,
-      value: nextRound
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: PredefinedDbPaths.VOTING_ROUND,
+        value: nextRound
+      }
     }, false);
   }
 
@@ -153,9 +161,11 @@ class VotingUtil {
 
     const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]));
     return this.db.createTransaction({
-      type: OperationTypes.SET_VALUE,
-      ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.publicKey]),
-      value
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.publicKey]),
+        value
+      }
     });
   }
 
@@ -189,9 +199,11 @@ class VotingUtil {
   stake(stakeAmount) {
     console.log(`Successfully staked ${stakeAmount}`);
     return this.db.createTransaction({
-      type: OperationTypes.SET_VALUE,
-      ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]),
-      value: stakeAmount
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]),
+        value: stakeAmount
+      }
     });
   }
 
@@ -221,9 +233,11 @@ class VotingUtil {
     }
     recentForgers.push(this.db.publicKey);
     return this.db.createTransaction({
-      type: OperationTypes.SET_VALUE,
-      ref: PredefinedDbPaths.RECENT_FORGERS,
-      value: recentForgers
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: PredefinedDbPaths.RECENT_FORGERS,
+        value: recentForgers
+      }
     });
   }
 }

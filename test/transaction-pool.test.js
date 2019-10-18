@@ -8,10 +8,10 @@ const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
 
-function getTransaction(db, operation) {
-  const nonce = db.nonce;
+function getTransaction(db, txData) {
+  txData.nonce = db.nonce;
   db.nonce++;
-  return Transaction.newTransaction(nonce, db.keyPair.priv, operation);
+  return Transaction.newTransaction(db.keyPair.priv, txData);
 }
 
 describe('TransactionPool', () => {
@@ -22,7 +22,14 @@ describe('TransactionPool', () => {
     bc = new Blockchain('test-blockchain');
     db = new DB(bc);
 
-    transaction = getTransaction(db, {type: 'SET_VALUE', ref: 'REF', value: 'VALUE'});
+    transaction = getTransaction(db, {
+      operation: {
+        type: 'SET_VALUE',
+        ref: 'REF',
+        value:
+        'VALUE'
+      }
+    });
     tp.addTransaction(transaction);
   });
 
@@ -37,9 +44,11 @@ describe('TransactionPool', () => {
     beforeEach(() => {
       for (let i = 0; i < 10; i++) {
         t = getTransaction(db, {
-          type: 'SET_VALUE',
-          ref: 'REF',
-          value: 'VALUE',
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          }
         });
         tp.addTransaction(t);
       }
@@ -52,9 +61,11 @@ describe('TransactionPool', () => {
       for (let j = 0; j < dbs.length; j++) {
         for (let i = 0; i < 11; i++) {
           t = getTransaction(dbs[j], {
-            type: 'SET_VALUE',
-            ref: 'REF',
-            value: 'VALUE',
+            operation: {
+              type: 'SET_VALUE',
+              ref: 'REF',
+              value: 'VALUE',
+            }
           }, true);
           tp.addTransaction(t);
         }
@@ -98,9 +109,11 @@ describe('TransactionPool', () => {
       newTransactions[db.publicKey] = [];
       for (let i = 0; i < 10; i++) {
         newTransactions[db.publicKey].push(getTransaction(db, {
-          type: 'SET_VALUE',
-          ref: 'REF',
-          value: 'VALUE',
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          }
         }));
         tp.addTransaction(newTransactions[db.publicKey][i]);
       }

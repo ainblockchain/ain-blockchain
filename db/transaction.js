@@ -1,38 +1,41 @@
-const { OperationTypes, DEBUG } = require('../constants');
+const { WriteDbOperations, DEBUG } = require('../constants');
 const ainUtil = require('@ainblockchain/ain-util');
 
+// TODO(seo): Remove 'txWithSig.transaction ?' use cases.
 class Transaction {
-  constructor(transactionWithSig) {
-    this.signature = transactionWithSig.signature;
+  constructor(txWithSig) {
+    this.signature = txWithSig.signature;
 
-    if (!Transaction.checkRequiredFields(transactionWithSig.transaction ?
-          transactionWithSig.transaction : transactionWithSig)) {
-      throw new Error('Transaction must contain timestamp, operation and nonce fields');
+    const transaction = txWithSig.transaction ? txWithSig.transaction : txWithSig;
+    if (!Transaction.hasRequiredFields(transaction)) {
+      console.log('Transaction must contain timestamp, operation and nonce fields: ' + JSON.stringify(transaction));
+      return null;
     }
 
-    const unsanitizedData = JSON.parse(JSON.stringify(transactionWithSig.transaction ?
-          transactionWithSig.transaction : transactionWithSig));
-    const transactionData = {
-      nonce: unsanitizedData.nonce,
-      timestamp: unsanitizedData.timestamp,
-      operation: unsanitizedData.operation,
-    };
-    if (unsanitizedData.parent_tx_hash !== undefined) {
-      transactionData.parent_tx_hash = unsanitizedData.parent_tx_hash;
-    }
+    const txData = JSON.parse(JSON.stringify(transaction));
+    const sanitizedTxData = Transaction.sanitizeTxData(txData);
     // Workaround for skip_verif with custom address
-    if (unsanitizedData.skip_verif !== undefined) {
-      this.skip_verif = unsanitizedData.skip_verif;
+    if (txData.skip_verif !== undefined) {
+      this.skip_verif = txData.skip_verif;
     }
-    Object.assign(this, transactionData);
-    this.hash = '0x' + ainUtil.hashTransaction(transactionData).toString('hex');
+    Object.assign(this, sanitizedTxData);
+    this.hash = '0x' + ainUtil.hashTransaction(sanitizedTxData).toString('hex');
     // Workaround for skip_verif with custom address
-    this.address = unsanitizedData.address !== undefined ? unsanitizedData.address :
+    this.address = txData.address !== undefined ? txData.address :
         Transaction.getAddress(this.hash.slice(2), this.signature);
 
     if (DEBUG) {
       console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
     }
+  }
+
+  static newTransaction(privateKey, txData) {
+    const transaction = JSON.parse(JSON.stringify(txData));
+    transaction.timestamp = Date.now();
+    // Workaround for skip_verif with custom address
+    const signature = transaction.address !== undefined ? '' :
+        ainUtil.ecSignTransaction(transaction, ainUtil.toBuffer(privateKey));
+    return new this({ signature, transaction });
   }
 
   toString() {
@@ -61,8 +64,8 @@ class Transaction {
   }
 
   /**
-  * Returns the data object used for signing the transaction.
-  */
+   * Returns the data object used for signing the transaction.
+   */
   get signingData() {
     return Object.assign(
         {operation: this.operation, nonce: this.nonce, timestamp: this.timestamp},
@@ -70,33 +73,67 @@ class Transaction {
     );
   }
 
-  static newTransaction(nonce, privateKey, operation) {
-    const transaction = { operation };
-    // Workaround for skip_verif with custom address
-    if (operation.skip_verif !== undefined) {
-      transaction.skip_verif = operation.skip_verif;
-      delete transaction.operation.skip_verif;
+  /**
+   * Sanitize op_list of SET operation.
+   */
+  static sanitizeSetOpList(opList) {
+    const sanitized = [];
+    if (Array.isArray(opList)) {
+      opList.forEach((op) => {
+        const sanitizedOp = { ref: op.ref, value: op.value };
+        if (op.type === WriteDbOperations.SET_VALUE || op.type === WriteDbOperations.INC_VALUE ||
+            op.type === WriteDbOperations.DEC_VALUE || op.type === WriteDbOperations.SET_RULE ||
+            op.type === WriteDbOperations.SET_OWNER) {
+          sanitizedOp.type = op.type;
+        }
+        sanitized.push(sanitizedOp);
+      });
     }
-    if (operation.address !== undefined) {
-      transaction.address = operation.address;
-      delete transaction.operation.address;
-    }
-    if (operation.nonce !== undefined) {
-      transaction.nonce = operation.nonce;
-      delete transaction.operation.nonce;
-    } else {
-      transaction.nonce = nonce;
-    }
+    return sanitized;
+  }
 
-    transaction.timestamp = Date.now();
-    // Workaround for skip_verif with custom address
-    const signature = transaction.address !== undefined ? '' :
-        ainUtil.ecSignTransaction(transaction, ainUtil.toBuffer(privateKey));
-    return new this({ signature, transaction });
+  /**
+   * Sanitize operation.
+   */
+  static sanitizeOperation(op) {
+    const sanitized = {}
+    switch(op.type) {
+      case undefined:
+      case WriteDbOperations.SET_VALUE:
+      case WriteDbOperations.INC_VALUE:
+      case WriteDbOperations.DEC_VALUE:
+      case WriteDbOperations.SET_RULE:
+      case WriteDbOperations.SET_OWNER:
+        sanitized.ref = op.ref;
+        sanitized.value = op.value;
+        break;
+      case WriteDbOperations.SET:
+        sanitized.op_list = this.sanitizeSetOpList(op.op_list);
+        break;
+      default:
+        return sanitized;
+    }
+    sanitized.type = op.type;
+    return sanitized;
+  }
+
+  /**
+   * Sanitize transaction data.
+   */
+  static sanitizeTxData(txData) {
+    const sanitized = {
+      nonce: txData.nonce,
+      timestamp: txData.timestamp,
+      operation: Transaction.sanitizeOperation(txData.operation),
+    };
+    if (txData.parent_tx_hash !== undefined) {
+      sanitized.parent_tx_hash = txData.parent_tx_hash;
+    }
+    return sanitized;
   }
 
   static verifyTransaction(transaction) {
-    if ((Object.keys(OperationTypes).indexOf(transaction.operation.type) < 0)) {
+    if ((Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1)) {
       console.log(`Invalid transaction type ${transaction.operation.type}.`);
       return false;
     }
@@ -108,9 +145,13 @@ class Transaction {
     return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);
   }
 
-  static checkRequiredFields(transaction) {
-    return transaction.timestamp !== undefined &&
-        transaction.operation !== undefined && transaction.nonce !== undefined;
+  static hasRequiredFields(transaction) {
+    return transaction.timestamp !== undefined && transaction.nonce !== undefined &&
+        transaction.operation !== undefined;
+  }
+
+  static isBatchTransaction(transaction) {
+    return Array.isArray(transaction.tx_list);
   }
 }
 

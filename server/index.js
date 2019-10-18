@@ -13,7 +13,7 @@ const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
 const {ForgedBlock} = require('../blockchain/block');
 const Transaction = require('../db/transaction');
 const VotingUtil = require('./voting-util');
-const { OperationTypes, DEBUG } = require('../constants');
+const { WriteDbOperations, DEBUG } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
 
 class P2pServer {
@@ -176,29 +176,30 @@ class P2pServer {
    * in the transaction.
    * @param {Object} transactionWithSig An object with a signature and a transaction.
    */
+  // TODO(seo): Remove new Transaction() use cases.
   executeTransaction(transactionWithSig) {
-    const transactionObj = transactionWithSig instanceof Transaction ?
+    const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
-      console.log(`EXECUTING: ${JSON.stringify(transactionObj)}`);
+      console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
     }
-    if (this.transactionPool.isNotEligibleTransaction(transactionObj)) {
+    if (this.transactionPool.isNotEligibleTransaction(transaction)) {
       if (DEBUG) {
-        console.log(`ALREADY RECEIVED: ${JSON.stringify(transactionObj)}`);
+        console.log(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
       }
       console.log('Transaction already received');
       return null;
     }
     if (this.blockchain.syncedAfterStartup === false) {
-      this.transactionPool.addTransaction(transactionObj);
+      this.transactionPool.addTransaction(transaction);
       return [];
     }
-    const result = this.db.execute(transactionObj.operation, transactionObj.address, transactionObj.timestamp);
+    const result = this.db.executeTransaction(transaction);
     if (!this.checkForTransactionResultErrorCode(result)) {
       // Add transaction to pool
-      this.transactionPool.addTransaction(transactionObj);
+      this.transactionPool.addTransaction(transaction);
     } else if (DEBUG) {
-      console.log(`FAILED TRANSACTION: ${JSON.stringify(transactionObj)}\t RESULT:${JSON.stringify(result)}`);
+      console.log(`FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
@@ -208,13 +209,28 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
-    const transactionObj = transactionWithSig instanceof Transaction ?
-        transactionWithSig : new Transaction(transactionWithSig);
-    const response = this.executeTransaction(transactionObj);
-    if (!this.checkForTransactionResultErrorCode(response)) {
-      this.broadcastTransaction(transactionObj);
+    if (Transaction.isBatchTransaction(transactionWithSig)) {
+      const resultList = [];
+      const txListSucceeded = [];
+      transactionWithSig.tx_list.forEach((tx) => {
+        const transaction = tx instanceof Transaction ? tx : new Transaction(tx);
+        const response = this.executeTransaction(transaction);
+        resultList.push(response);
+        if (!this.checkForTransactionResultErrorCode(response)) {
+          txListSucceeded.push(tx);
+        }
+      })
+      this.broadcastTransaction({ tx_list: txListSucceeded });
+      return resultList;
+    } else {
+      const transaction = transactionWithSig instanceof Transaction ?
+          transactionWithSig : new Transaction(transactionWithSig);
+      const response = this.executeTransaction(transaction);
+      if (!this.checkForTransactionResultErrorCode(response)) {
+        this.broadcastTransaction(transaction);
+      }
+      return response;
     }
-    return response;
   }
 
   executeAndBroadcastVotingAction(votingAction) {
@@ -312,13 +328,19 @@ class P2pServer {
     const data = this.transactionPool.validTransactions();
     const blockHeight = this.blockchain.height() + 1;
     this.votingUtil.setBlock(
-        ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(), this.db.publicKey,
+        ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(),
+            this.db.publicKey,
             Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
             this.db.getValue(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
-    const blockHashTransaction = this.db.createTransaction({ type: OperationTypes.SET_VALUE, ref, value });
+    const blockHashTransaction = this.db.createTransaction({
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref, value
+      }
+    });
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
     if (!Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {
@@ -340,7 +362,8 @@ class P2pServer {
     this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
     this.votingUtil.reset();
     this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0 && !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
+    if (this.waitInBlocks > 0 &&
+        !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
       this.waitInBlocks = this.waitInBlocks - 1;
       if (this.waitInBlocks === 0) {
         this.stakeAmount();

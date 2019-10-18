@@ -74,25 +74,31 @@ const PredefinedDbPaths = {
  * @enum {string}
  */
 const RuleProperties = {
-  WRITE_VALUE: '.write_value',
+  WRITE: '.write',
 };
 
 /**
- * Types of write operations supported by Db
+ * Types of read database operations
  * @enum {string}
  */
-const OperationTypes = {
+const ReadDbOperations = {
   GET_VALUE: 'GET_VALUE',
   GET_RULE: 'GET_RULE',
   GET_OWNER: 'GET_OWNER',
   GET: 'GET',
+};
+
+/**
+ * Types of write database operations
+ * @enum {string}
+ */
+const WriteDbOperations = {
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
-  BATCH: 'BATCH',
 };
 
 /**
@@ -123,7 +129,8 @@ module.exports = {
   VotingActionTypes,
   PredefinedDbPaths,
   RuleProperties,
-  OperationTypes,
+  ReadDbOperations,
+  WriteDbOperations,
   FunctionResultCode,
   TransactionStatus,
 };

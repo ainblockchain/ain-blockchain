@@ -23,12 +23,6 @@ const PORT = process.env.PORT || 8080;
 
 // Initiate logging
 const LOG = process.env.LOG || false;
-let LAST_NONCE = 0;
-let CURRENT_NONCE = 0;
-// Number of transactions per second that can be made through this blockchain
-// before transactions begin automatically being added to a batch_list
-// transaction.
-const TX_PER_SECOND_AUTOBATCHING = 120;
 
 if (LOG) {
   const fs = require('fs');
@@ -67,7 +61,7 @@ const transactionBatch = [];
 
 app.use(express.json()); // support json encoded bodies
 
-const { OperationTypes } = require('../constants');
+const { WriteDbOperations } = require('../constants');
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = Database.getDatabase(bc, tp);
@@ -118,14 +112,8 @@ app.post('/get', (req, res, next) => {
 
 app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({
-    type: OperationTypes.SET_VALUE,
-    ref: req.body.ref,
-    value: req.body.value,
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
-  }, isNoncedTransaction);
+  const result =
+      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -134,14 +122,8 @@ app.post('/set_value', (req, res, next) => {
 
 app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({
-    type: OperationTypes.INC_VALUE,
-    ref: req.body.ref,
-    value: req.body.value,
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
-  }, isNoncedTransaction);
+  const result =
+      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -150,14 +132,8 @@ app.post('/inc_value', (req, res, next) => {
 
 app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({
-    type: OperationTypes.DEC_VALUE,
-    ref: req.body.ref,
-    value: req.body.value,
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
-  }, isNoncedTransaction);
+  const result =
+      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -166,14 +142,8 @@ app.post('/dec_value', (req, res, next) => {
 
 app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({
-    type: OperationTypes.SET_RULE,
-    ref: req.body.ref,
-    value: req.body.value,
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
-  }, isNoncedTransaction);
+  const result =
+      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -182,14 +152,8 @@ app.post('/set_rule', (req, res, next) => {
 
 app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({
-    type: OperationTypes.SET_OWNER,
-    ref: req.body.ref,
-    value: req.body.value,
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
-  }, isNoncedTransaction);
+  const result =
+      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -199,28 +163,16 @@ app.post('/set_owner', (req, res, next) => {
 // TODO(seo): Replace skip_verif with real signature.
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({
-    type: OperationTypes.SET,
-    op_list: req.body.op_list,
-    value: req.body.value,
-    address: req.body.address,
-    nonce: req.body.nonce,
-    skip_verif: req.body.skip_verif
-  }, isNoncedTransaction);
+  const result = createTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
 });
 
-// TODO(seo): Make a batch request consist of transactions.
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction({
-    type: OperationTypes.BATCH,
-    batch_list: req.body.batch_list,
-  },
-      isNoncedTransaction);
+  const result = createTransaction(createBatchTxData(req.body), isNoncedTransaction);
   res.status(201)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -253,53 +205,58 @@ app.listen(PORT, () => {
 });
 // [END gae_flex_mysql_app]
 
-
 // Lets start this p2p server up so we listen for changes in either DATABASE
 // or NUMBER OF SERVERS
 p2pServer.listen();
 
 module.exports = app;
 
-function createBatchTransaction(trans) {
-  if (transactionBatch.length == 0) {
-    setTimeout(() => {
-      broadcastBatchTransaction();
-    }, 100);
+function createSingleSetTxData(input, opType) {
+  const txData = {
+    operation: {
+      type: opType,
+      ref: input.ref,
+      value: input.value,
+    },
+  };
+  if (input.address !== undefined) {
+    txData.address = input.address;
+    txData.skip_verif = true;
   }
-  CURRENT_NONCE += 1;
-  transactionBatch.push(trans);
+  if (input.nonce !== undefined) {
+    txData.nonce = input.nonce;
+  }
+  return txData;
 }
 
-function broadcastBatchTransaction() {
-  if (transactionBatch.length > 0) {
-    const batchList = JSON.parse(JSON.stringify(transactionBatch));
-    transactionBatch.length = 0;
-    const transaction = db.createTransaction({type: 'BATCH', batch_list: batchList});
-    return p2pServer.executeAndBroadcastTransaction(transaction);
+function createMultiSetTxData(input) {
+  const txData = {
+    operation: {
+      type: WriteDbOperations.SET,
+      op_list: input.op_list,
+    },
+  };
+  if (input.address !== undefined) {
+    txData.address = input.address;
+    txData.skip_verif = true;
   }
+  if (input.nonce !== undefined) {
+    txData.nonce = input.nonce;
+  }
+  return txData;
 }
 
-function createSingularTransaction(operation, isNoncedTransaction) {
-  CURRENT_NONCE += 1;
-  const transaction = db.createTransaction(operation, isNoncedTransaction);
+function createBatchTxData(input) {
+  return { tx_list: input.tx_list };
+}
+
+function createTransaction(txData, isNoncedTransaction) {
+  const transaction = db.createTransaction(txData, isNoncedTransaction);
   return p2pServer.executeAndBroadcastTransaction(transaction);
 }
 
-let createTransaction;
-createTransaction = createSingularTransaction;
-
-function checkIfTransactionShouldBeNonced(data) {
+function checkIfTransactionShouldBeNonced(input) {
   // Default to true if noncing information is not specified
-  return data.is_nonced_transaction !== undefined ? data.is_nonced_transaction : true;
+  return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
 }
 
-// Here we specity
-setInterval(() => {
-  if (CURRENT_NONCE - LAST_NONCE > TX_PER_SECOND_AUTOBATCHING) {
-    createTransaction = createBatchTransaction;
-  } else {
-    broadcastBatchTransaction();
-    createTransaction = createSingularTransaction;
-  }
-  LAST_NONCE = CURRENT_NONCE;
-}, 1000);

@@ -49,41 +49,41 @@ const ENV_VARIABLES = [
 
 // Data options
 RANDOM_OPERATION = [
-  ['SET_VALUE', {ref: 'test/comeonnnnnnn', value: 'testme'}],
-  ['SET_VALUE', {ref: 'test/comeonnnnnnn', value: 'no meeeee'}],
-  ['SET_VALUE', {ref: 'test/comeon/nnnnnn', value: 'through'}],
-  ['SET_VALUE', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
-  ['SET_VALUE', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
-  ['SET_VALUE', {ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}],
-  ['SET_VALUE', {ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}],
-  ['SET_VALUE', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
-  ['SET_VALUE', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
-  ['SET_VALUE', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
-  ['SET_VALUE', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
-  ['INC_VALUE', {ref: 'test/balance/user1', value: 10}],
-  ['INC_VALUE', {ref: 'test/balance/user1', value: 20}],
-  ['INC_VALUE', {ref: 'test/balance/user2', value: 1}],
-  ['INC_VALUE', {ref: 'test/balance/user2', value: 1}],
-  ['DEC_VALUE', {ref: 'test/balance/user1', value: 10000}],
-  ['DEC_VALUE', {ref: 'test/balance/user1', value: 10000}],
-  ['DEC_VALUE', {ref: 'test/balance/user2', value: 100002}],
-  ['SET', {op_list: [{ref: 'test/increase/first/level', value: 10}, {ref: 'test/increase/first/level2', value: 20}]}],
-  ['SET', {op_list: [{ref: 'test/increase/second/level/deeper', value: 20}, {ref: 'test/increase/second/level/deeper', value: 1000}]}],
-  ['SET', {op_list: [{ref: 'test/increase', value: 1}]}],
-  ['SET', {op_list: [{ref: 'test/new', value: 1}]}],
-  ['SET', {op_list: [{ref: 'test/increase', value: 10000}]}],
-  ['SET', {op_list: [{ref: 'test/b/u', value: 10000}]}],
-  ['SET', {op_list: [{ref: 'test/builed/some/deep/place/next', value: 100002}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'testme'}, {type: 'INC_VALUE', ref: 'test/b/u', value: 10000}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'no meeeee'}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeon/nnnnnn', value: 'through'}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}]}],
-  ['BATCH', {batch_list: [{type: 'SET_VALUE', ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}]}],
+  ['set_value', {ref: 'test/comeonnnnnnn', value: 'testme'}],
+  ['set_value', {ref: 'test/comeonnnnnnn', value: 'no meeeee'}],
+  ['set_value', {ref: 'test/comeon/nnnnnn', value: 'through'}],
+  ['set_value', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
+  ['set_value', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
+  ['set_value', {ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}],
+  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}],
+  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
+  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
+  ['set_value', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
+  ['set_value', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
+  ['inc_value', {ref: 'test/balance/user1', value: 10}],
+  ['inc_value', {ref: 'test/balance/user1', value: 20}],
+  ['inc_value', {ref: 'test/balance/user2', value: 1}],
+  ['inc_value', {ref: 'test/balance/user2', value: 1}],
+  ['dec_value', {ref: 'test/balance/user1', value: 10000}],
+  ['dec_value', {ref: 'test/balance/user1', value: 10000}],
+  ['dec_value', {ref: 'test/balance/user2', value: 100002}],
+  ['set', {op_list: [{ref: 'test/increase/first/level', value: 10}, {ref: 'test/increase/first/level2', value: 20}]}],
+  ['set', {op_list: [{ref: 'test/increase/second/level/deeper', value: 20}, {ref: 'test/increase/second/level/deeper', value: 1000}]}],
+  ['set', {op_list: [{ref: 'test/increase', value: 1}]}],
+  ['set', {op_list: [{ref: 'test/new', value: 1}]}],
+  ['set', {op_list: [{ref: 'test/increase', value: 10000}]}],
+  ['set', {op_list: [{ref: 'test/b/u', value: 10000}]}],
+  ['set', {op_list: [{ref: 'test/builed/some/deep/place/next', value: 100002}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'testme'}}, {operation: {type: 'INC_VALUE', ref: 'test/b/u', value: 10000}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'no meeeee'}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeon/nnnnnn', value: 'through'}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}}]}],
 ];
 
 
@@ -327,10 +327,9 @@ describe('Integration Tests', () => {
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
         db = DB.getDatabase(new Blockchain('test-integration'), new TransactionPool());
-        let op;
-        sentOperations.forEach((operation) => {
-          op = Object.assign({}, {type: operation[0].toUpperCase()}, operation[1]);
-          db.execute(op);
+        sentOperations.forEach((op) => {
+          const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
+          db.executeTransaction({ operation });
         });
       });
 
