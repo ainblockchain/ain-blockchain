@@ -86,12 +86,6 @@ const ReadDbOperations = {
   GET_RULE: 'GET_RULE',
   GET_OWNER: 'GET_OWNER',
   GET: 'GET',
-  SET_VALUE: 'SET_VALUE',
-  INC_VALUE: 'INC_VALUE',
-  DEC_VALUE: 'DEC_VALUE',
-  SET_RULE: 'SET_RULE',
-  SET_OWNER: 'SET_OWNER',
-  SET: 'SET',
 };
 
 /**
@@ -99,10 +93,6 @@ const ReadDbOperations = {
  * @enum {string}
  */
 const WriteDbOperations = {
-  GET_VALUE: 'GET_VALUE',
-  GET_RULE: 'GET_RULE',
-  GET_OWNER: 'GET_OWNER',
-  GET: 'GET',
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
