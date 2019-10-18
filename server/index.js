@@ -13,7 +13,7 @@ const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
 const {ForgedBlock} = require('../blockchain/block');
 const Transaction = require('../db/transaction');
 const VotingUtil = require('./voting-util');
-const { OperationTypes, DEBUG } = require('../constants');
+const { WriteDbOperations, DEBUG } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
 
 class P2pServer {
@@ -337,7 +337,7 @@ class P2pServer {
     console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
     const blockHashTransaction = this.db.createTransaction({
       operation: {
-        type: OperationTypes.SET_VALUE,
+        type: WriteDbOperations.SET_VALUE,
         ref, value
       }
     });

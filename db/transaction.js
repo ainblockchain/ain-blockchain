@@ -1,7 +1,7 @@
-const { OperationTypes, DEBUG } = require('../constants');
+const { WriteDbOperations, DEBUG } = require('../constants');
 const ainUtil = require('@ainblockchain/ain-util');
 
-// TODO(seo): Renove txWithSig.transaction ? use cases.
+// TODO(seo): Remove 'txWithSig.transaction ?' use cases.
 class Transaction {
   constructor(txWithSig) {
     this.signature = txWithSig.signature;
@@ -81,9 +81,9 @@ class Transaction {
     if (Array.isArray(opList)) {
       opList.forEach((op) => {
         const sanitizedOp = { ref: op.ref, value: op.value };
-        if (op.type === OperationTypes.SET_VALUE || op.type === OperationTypes.INC_VALUE ||
-            op.type === OperationTypes.DEC_VALUE || op.type === OperationTypes.SET_RULE ||
-            op.type === OperationTypes.SET_OWNER) {
+        if (op.type === WriteDbOperations.SET_VALUE || op.type === WriteDbOperations.INC_VALUE ||
+            op.type === WriteDbOperations.DEC_VALUE || op.type === WriteDbOperations.SET_RULE ||
+            op.type === WriteDbOperations.SET_OWNER) {
           sanitizedOp.type = op.type;
         }
         sanitized.push(sanitizedOp);
@@ -99,15 +99,15 @@ class Transaction {
     const sanitized = {}
     switch(op.type) {
       case undefined:
-      case OperationTypes.SET_VALUE:
-      case OperationTypes.INC_VALUE:
-      case OperationTypes.DEC_VALUE:
-      case OperationTypes.SET_RULE:
-      case OperationTypes.SET_OWNER:
+      case WriteDbOperations.SET_VALUE:
+      case WriteDbOperations.INC_VALUE:
+      case WriteDbOperations.DEC_VALUE:
+      case WriteDbOperations.SET_RULE:
+      case WriteDbOperations.SET_OWNER:
         sanitized.ref = op.ref;
         sanitized.value = op.value;
         break;
-      case OperationTypes.SET:
+      case WriteDbOperations.SET:
         sanitized.op_list = this.sanitizeSetOpList(op.op_list);
         break;
       default:
@@ -133,7 +133,7 @@ class Transaction {
   }
 
   static verifyTransaction(transaction) {
-    if ((Object.keys(OperationTypes).indexOf(transaction.operation.type) < 0)) {
+    if ((Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1)) {
       console.log(`Invalid transaction type ${transaction.operation.type}.`);
       return false;
     }

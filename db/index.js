@@ -3,7 +3,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const {OperationTypes, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
+const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 
 class DB {
   constructor(blockchain) {
@@ -87,11 +87,11 @@ class DB {
   get(opList) {
     const resultList = [];
     opList.forEach((item) => {
-      if (item.type === undefined || item.type === OperationTypes.GET_VALUE) {
+      if (item.type === undefined || item.type === ReadDbOperations.GET_VALUE) {
         resultList.push(this.getValue(item.ref));
-      } else if (item.type === OperationTypes.GET_RULE) {
+      } else if (item.type === ReadDbOperations.GET_RULE) {
         resultList.push(this.getRule(item.ref));
-      } else if (item.type === OperationTypes.GET_OWNER) {
+      } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
       }
     });
@@ -171,27 +171,27 @@ class DB {
     let ret = true;
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
-      if (op.type === undefined || op.type === OperationTypes.SET_VALUE) {
+      if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
         ret = this.setValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.INC_VALUE) {
+      } else if (op.type === WriteDbOperations.INC_VALUE) {
         ret = this.incValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.DEC_VALUE) {
+      } else if (op.type === WriteDbOperations.DEC_VALUE) {
         ret = this.decValue(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.SET_RULE) {
+      } else if (op.type === WriteDbOperations.SET_RULE) {
         ret = this.setRule(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === OperationTypes.SET_OWNER) {
+      } else if (op.type === WriteDbOperations.SET_OWNER) {
         ret = this.setOwner(op.ref, op.value, address, timestamp);
         if (ret !== true) {
           break;
@@ -212,12 +212,12 @@ class DB {
       } else {
         switch(operation.type) {
           case undefined:
-          case OperationTypes.SET_VALUE:
-          case OperationTypes.INC_VALUE:
-          case OperationTypes.DEC_VALUE:
-          case OperationTypes.SET_RULE:
-          case OperationTypes.SET_OWNER:
-          case OperationTypes.SET:
+          case WriteDbOperations.SET_VALUE:
+          case WriteDbOperations.INC_VALUE:
+          case WriteDbOperations.DEC_VALUE:
+          case WriteDbOperations.SET_RULE:
+          case WriteDbOperations.SET_OWNER:
+          case WriteDbOperations.SET:
             resultList.push(this.executeOperation(operation, tx.address, tx.timestamp));
             break;
           default:
@@ -342,17 +342,17 @@ class DB {
     }
     switch (operation.type) {
       case undefined:
-      case OperationTypes.SET_VALUE:
+      case WriteDbOperations.SET_VALUE:
         return this.setValue(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.INC_VALUE:
+      case WriteDbOperations.INC_VALUE:
         return this.incValue(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.DEC_VALUE:
+      case WriteDbOperations.DEC_VALUE:
         return this.decValue(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.SET_RULE:
+      case WriteDbOperations.SET_RULE:
         return this.setRule(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.SET_OWNER:
+      case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address, timestamp);
-      case OperationTypes.SET:
+      case WriteDbOperations.SET:
         return this.set(operation.op_list, address, timestamp);
     }
   }

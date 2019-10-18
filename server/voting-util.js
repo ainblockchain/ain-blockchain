@@ -1,7 +1,7 @@
 
 const shuffleSeed = require('shuffle-seed');
 const seedrandom = require('seedrandom');
-const { VotingStatus, PredefinedDbPaths, OperationTypes } = require('../constants');
+const { VotingStatus, PredefinedDbPaths, WriteDbOperations } = require('../constants');
 const MAX_RECENT_FORGERS = 20;
 
 class VotingUtil {
@@ -45,7 +45,7 @@ class VotingUtil {
     console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     const transaction = this.db.createTransaction({
       operation: {
-        type: OperationTypes.INC_VALUE,
+        type: WriteDbOperations.INC_VALUE,
         ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
         value: stake
       }
@@ -85,7 +85,7 @@ class VotingUtil {
     this.status = VotingStatus.PRE_COMMIT;
     const transaction = this.db.createTransaction({
       operation: {
-        type: OperationTypes.INC_VALUE,
+        type: WriteDbOperations.INC_VALUE,
         ref: PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS,
         value: stake
       }
@@ -113,7 +113,7 @@ class VotingUtil {
       pre_commits: 0, time, block_hash: '', height: bc.lastBlock().height + 1, lastHash: bc.lastBlock().hash};
     return this.db.createTransaction({
       operation: {
-        type: OperationTypes.SET_VALUE,
+        type: WriteDbOperations.SET_VALUE,
         ref: PredefinedDbPaths.VOTING_ROUND,
         value: firstVotingData
       }
@@ -145,7 +145,7 @@ class VotingUtil {
 
     return this.db.createTransaction({
       operation: {
-        type: OperationTypes.SET_VALUE,
+        type: WriteDbOperations.SET_VALUE,
         ref: PredefinedDbPaths.VOTING_ROUND,
         value: nextRound
       }
@@ -162,7 +162,7 @@ class VotingUtil {
     const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]));
     return this.db.createTransaction({
       operation: {
-        type: OperationTypes.SET_VALUE,
+        type: WriteDbOperations.SET_VALUE,
         ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.publicKey]),
         value
       }
@@ -200,7 +200,7 @@ class VotingUtil {
     console.log(`Successfully staked ${stakeAmount}`);
     return this.db.createTransaction({
       operation: {
-        type: OperationTypes.SET_VALUE,
+        type: WriteDbOperations.SET_VALUE,
         ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]),
         value: stakeAmount
       }
@@ -234,7 +234,7 @@ class VotingUtil {
     recentForgers.push(this.db.publicKey);
     return this.db.createTransaction({
       operation: {
-        type: OperationTypes.SET_VALUE,
+        type: WriteDbOperations.SET_VALUE,
         ref: PredefinedDbPaths.RECENT_FORGERS,
         value: recentForgers
       }
