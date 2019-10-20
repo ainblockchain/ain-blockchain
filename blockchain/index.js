@@ -1,5 +1,6 @@
 const {ForgedBlock} = require('./block');
-const {BLOCKCHAINS_DIR, FILE_ENDING} = require('../constants');
+const BlockFilePatterns = require('./block-file-patterns');
+const {BLOCKCHAINS_DIR} = require('../constants');
 const rimraf = require('rimraf');
 const path = require('path');
 const fs = require('fs');
@@ -30,7 +31,7 @@ class Blockchain {
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block hash.
     */
   getBlockByHash(hash) {
-    const blockFileName = glob.sync(`${this._blockchainDir()}/*-*-*${hash}*.${FILE_ENDING}`).pop();
+    const blockFileName = glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
     return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
 
@@ -41,7 +42,7 @@ class Blockchain {
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
 ]   */
   getBlockByNumber(number) {
-    const blockFileName = this.getBlockFiles({from: number, to: number + 1}).pop();
+    const blockFileName = this.getBlockFiles(number, number + 1).pop();
     return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
 
@@ -152,9 +153,9 @@ class Blockchain {
     */
   requestBlockchainSection(lastBlock) {
     console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash}`);
-    const blockFiles = this.getBlockFiles( {from: lastBlock.height, to: lastBlock.height + CHAIN_SUBSECT_LENGTH} );
+    const blockFiles = this.getBlockFiles(lastBlock.height, lastBlock.height + CHAIN_SUBSECT_LENGTH);
     if (blockFiles.length > 0 && ForgedBlock.loadBlock(blockFiles[blockFiles.length -1]).height > lastBlock.height &&
-      blockFiles[0].indexOf(`${lastBlock.height}-${lastBlock.lastHash}-${lastBlock.hash}`) < 0) {
+      blockFiles[0].indexOf(ForgedBlock.getFileName(lastBlock)) < 0) {
       console.log('Invalid blockchain request. Requesters last block does not belong to this blockchain');
       return;
     }
@@ -209,22 +210,20 @@ class Blockchain {
   }
 
   static getAllBlockFiles(chainPath) {
-    // const blockFiles =  glob.sync(`${chainPath}/{${from}..${to}}-*.${FILE_ENDING}`);
-    return glob.sync(`${chainPath}/[0-9]*-*.${FILE_ENDING}`).sort(naturalSort());
+    return glob.sync(BlockFilePatterns.getAllBlockFiles(chainPath)).sort(naturalSort());
   }
 
 
-  getBlockFiles(paramDict) {
-    const from = 'from' in paramDict ? paramDict['from'] : 0;
-    const to = 'to' in paramDict ? paramDict['to'] -1 : this.height();
-    return glob.sync(`${this._blockchainDir()}/{${from}..${to}}-*.${FILE_ENDING}`).sort(naturalSort());
+  getBlockFiles(from, to) {
+    // Here we use (to - 1) so files can be queried like normal array index querying.
+    return glob.sync(BlockFilePatterns.getBlockFilesInRange(this._blockchainDir(), from, to)).sort(naturalSort());
   }
 
   getChainSection(from, to) {
     from = Number(from);
     to = to ? Number(to) : this.height();
     const chain = [];
-    const blockFiles = this.getBlockFiles({from, to});
+    const blockFiles = this.getBlockFiles(from, to);
     blockFiles.forEach((blockFile) => {
       const block = ForgedBlock.loadBlock(blockFile);
       chain.push(block);

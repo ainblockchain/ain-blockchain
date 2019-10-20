@@ -1,6 +1,7 @@
 const ChainUtil = require('../chain-util');
 const fs = require('fs');
-const {RULES_FILE_PATH, FILE_ENDING} = require('../constants');
+const {RULES_FILE_PATH} = require('../constants');
+const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 
@@ -63,7 +64,7 @@ class ForgedBlock extends Block {
   }
 
   static getFileName(block) {
-    return `${block.height}-${block.lastHash}-${block.hash}.${FILE_ENDING}`;
+    return BlockFilePatterns.getBlockFileName(block);
   }
 
   static blockHash(block) {
