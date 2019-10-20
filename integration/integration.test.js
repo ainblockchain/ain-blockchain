@@ -35,6 +35,10 @@ const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
 const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
 const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
+const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
+const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
+
+
 
 const setEndpoint = '/set_value';
 const getEndpoint = '/get_value'
@@ -342,6 +346,19 @@ describe('Integration Tests', () => {
             return blockHeader.height;
           }));
           done();
+        });
+      });
+
+      it('can be queried by hash ', function(done) {
+        jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER, [12], function(err, response) {
+          if (err) throw err;
+          blockQueriedByNumber = response.result;
+          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH, [blockQueriedByNumber.hash], function(err, response) {
+            if (err) throw err;
+            blockQueriedByHash = response.result;
+            assert.deepEqual(blockQueriedByHash, blockQueriedByNumber);
+            done();
+          });
         });
       });
 

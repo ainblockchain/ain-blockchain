@@ -154,7 +154,7 @@ class Blockchain {
   requestBlockchainSection(lastBlock) {
     console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash}`);
     const blockFiles = this.getBlockFiles(lastBlock.height, lastBlock.height + CHAIN_SUBSECT_LENGTH);
-    if (blockFiles.length > 0 && ForgedBlock.loadBlock(blockFiles[blockFiles.length -1]).height > lastBlock.height &&
+    if (blockFiles.length > 0 && ForgedBlock.loadBlock(blockFiles[blockFiles.length - 1]).height > lastBlock.height &&
       blockFiles[0].indexOf(ForgedBlock.getFileName(lastBlock)) < 0) {
       console.log('Invalid blockchain request. Requesters last block does not belong to this blockchain');
       return;
