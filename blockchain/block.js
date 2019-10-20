@@ -1,8 +1,7 @@
 const ChainUtil = require('../chain-util');
 const fs = require('fs');
-const {RULES_FILE_PATH} = require('../constants');
+const {RULES_FILE_PATH, FILE_ENDING} = require('../constants');
 const zipper = require('zip-local');
-const FILE_ENDING = 'json.zip';
 const sizeof = require('object-sizeof');
 
 

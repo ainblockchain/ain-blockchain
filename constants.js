@@ -3,6 +3,7 @@ const RULES_FILE_PATH = path.resolve(__dirname, 'db', 'database.rules.json');
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain', '.blockchains');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
+const FILE_ENDING = 'json.zip';
 
 /**
  * Message types for communication between nodes
@@ -118,6 +119,7 @@ module.exports = {
   BLOCKCHAINS_DIR,
   STAKE,
   DEBUG,
+  FILE_ENDING,
   MessageTypes,
   VotingStatus,
   VotingActionTypes,
