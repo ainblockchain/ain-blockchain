@@ -2,8 +2,8 @@ const Transaction = require('../db/transaction');
 const ChainUtil = require('../chain-util');
 const fs = require('fs');
 const {RULES_FILE_PATH} = require('../constants');
+const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
-const FILE_ENDING = 'json.zip';
 const sizeof = require('object-sizeof');
 
 
@@ -66,7 +66,7 @@ class ForgedBlock extends Block {
   }
 
   static getFileName(block) {
-    return `${block.height}-${block.lastHash}-${block.hash}.${FILE_ENDING}`;
+    return BlockFilePatterns.getBlockFileName(block);
   }
 
   static blockHash(block) {

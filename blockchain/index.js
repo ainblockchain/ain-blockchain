@@ -1,8 +1,10 @@
 const {ForgedBlock} = require('./block');
+const BlockFilePatterns = require('./block-file-patterns');
 const {BLOCKCHAINS_DIR} = require('../constants');
 const rimraf = require('rimraf');
 const path = require('path');
 const fs = require('fs');
+const glob = require('glob');
 const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const CHAIN_SUBSECT_LENGTH = 20;
@@ -29,26 +31,19 @@ class Blockchain {
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block hash.
     */
   getBlockByHash(hash) {
-    const blockFiles = this.blockFiles();
-    let blockHash;
-    for (let i = 0; i < blockFiles.length; i++) {
-      blockHash = path.basename(blockFiles[i]).split('-')[2];
-      if (blockHash.includes(hash)) {
-        return ForgedBlock.loadBlock(blockFiles[i]);
-      }
-    }
-    return null;
+    const blockFileName = glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
+    return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
 
   /**
-    * Given a number, returns the block corresponding to that height of the blcokchain.
+    * Given a number, returns the block corresponding to that height of the blockchain.
     *
     * @param {integer} number - Height of block.
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
 ]   */
   getBlockByNumber(number) {
-    const blockFiles = this.blockFiles();
-    return number < blockFiles.length && number >= 0 ? ForgedBlock.loadBlock(blockFiles[number]) : null;
+    const blockFileName = this.getBlockFiles(number, number + 1).pop();
+    return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
 
   setBackDb(backUpDB) {
@@ -158,9 +153,10 @@ class Blockchain {
     */
   requestBlockchainSection(lastBlock) {
     console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash}`);
-    const blockFiles = Blockchain.getBlockFiles(this._blockchainDir());
-    if (blockFiles.length > lastBlock.height && blockFiles[lastBlock.height].indexOf(`${lastBlock.height}-${lastBlock.lastHash}-${lastBlock.hash}`) < 0) {
-      console.log('Invalid blockchain request');
+    const blockFiles = this.getBlockFiles(lastBlock.height, lastBlock.height + CHAIN_SUBSECT_LENGTH);
+    if (blockFiles.length > 0 && ForgedBlock.loadBlock(blockFiles[blockFiles.length - 1]).height > lastBlock.height &&
+      blockFiles[0].indexOf(ForgedBlock.getFileName(lastBlock)) < 0) {
+      console.log('Invalid blockchain request. Requesters last block does not belong to this blockchain');
       return;
     }
     if (lastBlock.hash === this.lastBlock().hash) {
@@ -168,9 +164,8 @@ class Blockchain {
       return;
     }
 
-    const chainSectionFiles = blockFiles.slice(lastBlock.height, lastBlock.height + CHAIN_SUBSECT_LENGTH);
     const chainSubSection = [];
-    chainSectionFiles.forEach((blockFile) => {
+    blockFiles.forEach((blockFile) => {
       chainSubSection.push(ForgedBlock.loadBlock(blockFile));
     });
     return chainSubSection.length > 0 ? chainSubSection: null;
@@ -199,7 +194,7 @@ class Blockchain {
 
   static loadChain(chainPath) {
     const newChain = [];
-    const blockFiles = Blockchain.getBlockFiles(chainPath);
+    const blockFiles = Blockchain.getAllBlockFiles(chainPath);
 
     blockFiles.forEach((block) => {
       newChain.push(ForgedBlock.loadBlock(block));
@@ -214,24 +209,25 @@ class Blockchain {
     return null;
   }
 
-  static getBlockFiles(chainPath) {
-    return fs.readdirSync(chainPath).sort(naturalSort()).map((fileName) => path.resolve(chainPath, fileName));
+  static getAllBlockFiles(chainPath) {
+    return glob.sync(BlockFilePatterns.getAllBlockFiles(chainPath)).sort(naturalSort());
   }
 
-  blockFiles() {
-    return Blockchain.getBlockFiles(this._blockchainDir());
+
+  getBlockFiles(from, to) {
+    // Here we use (to - 1) so files can be queried like normal array index querying.
+    return glob.sync(BlockFilePatterns.getBlockFilesInRange(this._blockchainDir(), from, to)).sort(naturalSort());
   }
 
   getChainSection(from, to) {
     from = Number(from);
     to = to ? Number(to) : this.height();
     const chain = [];
-    const blockFiles = this.blockFiles();
-    const endPoint = to > blockFiles.length ? blockFiles.length: to;
-    for (let i = from; i < endPoint; i++) {
-      const block = ForgedBlock.loadBlock(blockFiles[i]);
+    const blockFiles = this.getBlockFiles(from, to);
+    blockFiles.forEach((blockFile) => {
+      const block = ForgedBlock.loadBlock(blockFile);
       chain.push(block);
-    }
+    });
     return chain;
   }
 }
