@@ -220,7 +220,9 @@ class P2pServer {
           txListSucceeded.push(tx);
         }
       })
-      this.broadcastTransaction({ tx_list: txListSucceeded });
+      if (txListSucceeded.length > 0) {
+        this.broadcastTransaction({ tx_list: txListSucceeded });
+      }
       return resultList;
     } else {
       const transaction = transactionWithSig instanceof Transaction ?

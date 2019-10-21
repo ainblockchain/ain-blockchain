@@ -288,6 +288,10 @@ class DB {
   }
 
   createSingleTransaction(txData, isNoncedTransaction) {
+    // Workaround for skip_verif with custom address
+    if (txData.address !== undefined) {
+      txData.skip_verif = true;
+    }
     if (txData.nonce === undefined) {
       let nonce;
       if (isNoncedTransaction) {
