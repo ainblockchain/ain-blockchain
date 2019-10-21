@@ -133,8 +133,8 @@ class Transaction {
   }
 
   static verifyTransaction(transaction) {
-    if ((Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1)) {
-      console.log(`Invalid transaction type ${transaction.operation.type}.`);
+    if (transaction.operation.type !== undefined && Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
+      console.log(`Invalid transaction type: ${transaction.operation.type}`);
       return false;
     }
     // Workaround for skip_verif with custom address

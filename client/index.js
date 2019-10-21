@@ -221,7 +221,6 @@ function createSingleSetTxData(input, opType) {
   };
   if (input.address !== undefined) {
     txData.address = input.address;
-    txData.skip_verif = true;
   }
   if (input.nonce !== undefined) {
     txData.nonce = input.nonce;
@@ -238,7 +237,6 @@ function createMultiSetTxData(input) {
   };
   if (input.address !== undefined) {
     txData.address = input.address;
-    txData.skip_verif = true;
   }
   if (input.nonce !== undefined) {
     txData.nonce = input.nonce;
