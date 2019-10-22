@@ -1,6 +1,5 @@
 'use strict';
 
-const getJsonRpcApi = require('./methods_impl');
 const {ReadDbOperations, PredefinedDbPaths, TransactionStatus} = require('../constants');
 
 /**
@@ -14,137 +13,127 @@ const {ReadDbOperations, PredefinedDbPaths, TransactionStatus} = require('../con
  *                  servicing JSON-RPC requests.
  */
 module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
-  const methodsImpl = getJsonRpcApi(blockchain, transactionPool, p2pServer);
   return {
     // Bloock API
     ain_getBlockList: function(args, done) {
-      const queryDict = getQueryDict(args);
-      const blocks = methodsImpl.blockchainClosure.getBlockBodies(queryDict);
+      const blocks = blockchain.getChainSection(args.from, args.to);
       done(null, blocks);
     },
 
     ain_getLastBlock: function(args, done) {
-      const block = methodsImpl.blockchainClosure.getLastBlock();
+      const block = blockchain.lastBlock();
       done(null, block);
     },
 
     ain_getBlockHeadersList: function(args, done) {
-      const queryDict = getQueryDict(args);
-      const blockHeaders = methodsImpl.blockchainClosure.getBlockHeaders(queryDict);
+      const blocks = blockchain.getChainSection(args.from, args.to);
+      const blockHeaders = [];
+      blocks.forEach((block) => {
+        blockHeaders.push(block.header());
+      });
       done(null, blockHeaders);
     },
 
     ain_getBlockByHash: function(args, done) {
-      const hashSubstring = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByHash(hashSubstring);
-      done(null, (block === null) ? null: block.body());
-    },
-
-    ain_getBlockHeaderByHash: function(args, done) {
-      const hashSubstring = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByHash(hashSubstring);
-      done(null, (block === null) ? null: block.header());
+      const block = blockchain.getBlockByHash(args.hash);
+      if (block) block = block.body();
+      if (args.getFullTransactions || !block) {
+        done(null, block);
+      } else {
+        block.data = extractTransactionHashes(block);
+        done(null, block);
+      }
     },
 
     ain_getBlockByNumber: function(args, done) {
-      const height = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByNumber(height);
-      done(null, (block === null) ? null: block.body());
-    },
-
-    ain_getBlockHeaderByNumber: function(args, done) {
-      const height = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByNumber(height);
-      done(null, (block === null) ? null: block.header());
+      const block = blockchain.getBlockByNumber(args.number);
+      if (block) block = block.body();
+      if (args.getFullTransactions || !block) {
+        done(null, block);
+      } else {
+        block.data = extractTransactionHashes(block);
+        done(null, block);
+      }
     },
 
     ain_getForgerByHash: function(args, done) {
-      const hashSubstring = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByHash(hashSubstring);
-      done(null, (block === null) ? null: block.body().forger);
+      const block = blockchain.getBlockByHash(args.hash);
+      done(null, block ? block.forger : null);
     },
 
     ain_getForgerByNumber: function(args, done) {
-      const height = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByNumber(height);
-      done(null, (block === null) ? null: block.body().forger);
+      const block = blockchain.getBlockByNumber(args.number);
+      done(null, block ? block.forger : null);
     },
 
     ain_getValidatorsByNumber: function(args, done) {
-      const height = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByNumber(height);
-      done(null, (block === null) ? null: block.header().validators);
+      const block = blockchain.getBlockByNumber(args.number);
+      done(null, block ? block.validators : null);
     },
 
     ain_getValidatorsByHash: function(args, done) {
-      const hashSubstring = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByHash(hashSubstring);
-      done(null, (block === null) ? null: block.header().validators);
+      const block = blockchain.getBlockByHash(args.hash);
+      done(null, block ? block.validators : null);
     },
 
     ain_getBlockTransactionCountByHash: function(args, done) {
-      const hashSubstring = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByHash(hashSubstring);
-      done(null, (block === null) ? null: block.body().data.length);
+      const block = blockchain.getBlockByHash(args.hash);
+      done(null, block ? block.data.length : null);
     },
 
     ain_getBlockTransactionCountByNumber: function(args, done) {
-      const height = getQueryDict(args);
-      const block = methodsImpl.blockchainClosure.getBlockByNumber(height);
-      done(null, (block === null) ? null: block.body().data.length);
+      const block = blockchain.getBlockByNumber(args.number);
+      done(null, block ? block.data.length : null);
     },
 
     // Transaction API
     ain_getPendingTransactions: function(args, done) {
-      const trans = methodsImpl.transactionPoolClosure.getTransactions();
-      done(null, trans);
+      done(null, transactionPool.transactions);
     },
 
     ain_sendSignedTransaction: function(args, done) {
-      const transaction = getQueryDict(args);
       // TODO (lia): return the transaction hash or an error message
-      done(null, methodsImpl.p2pServerClosure.executeTransaction(transaction));
+      done(null, p2pServer.executeAndBroadcastTransaction(args));
     },
 
     ain_getTransactionByHash: function(args, done) {
-      const transactionHash = getQueryDict(args);
-      const transactionInfo = methodsImpl.transactionPoolClosure.getTransactionLocationInfo(transactionHash);
-      let transaction;
-      if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
-        const block = methodsImpl.blockchainClosure.getBlockByNumber(transactionInfo.height);
-        const index = transactionInfo.index;
-        transaction = block.data[index];
-      } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
-        const address = transactionInfo.address;
-        const index = transactionInfo.index;
-        transaction = transactionPool.transactions[address][index];
+      const transactionInfo = transactionPool.transactionTracker[args.hash];
+      if (!transactionInfo) {
+        done(null, null);
       } else {
-        transaction = null;
+        let transaction = null;
+        if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+          const block = blockchain.getBlockByNumber(transactionInfo.height);
+          const index = transactionInfo.index;
+          transaction = block.data[index];
+        } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+          const address = transactionInfo.address;
+          const index = transactionInfo.index;
+          transaction = transactionPool.transactions[address][index];
+        }
+        done(null, transaction);
       }
-      done(null, transaction);
     },
 
     ain_getTransactionByBlockHashAndIndex: function(args, done) {
-      const queryDict = getQueryDict(args);
       let result;
-      if (!queryDict.blockHash || !queryDict.index) {
+      if (!args.block_hash || !args.index) {
         result = null;
       } else {
-        const index = Number(queryDict.index);
-        const block = methodsImpl.blockchainClosure.getBlockByHash(queryDict.blockHash);
+        const index = Number(args.index);
+        const block = blockchain.getBlockByHash(args.block_hash);
         result = block.data.length > index && index >= 0 ? block.data[index] : null;
       }
       done(null, result);
     },
 
     ain_getTransactionByBlockNumberAndIndex: function(args, done) {
-      const queryDict = getQueryDict(args);
       let result;
-      if (!queryDict.blockNumber || !queryDict.index) {
+      if (!args.block_number || !args.index) {
         result = null;
       } else {
-        const index = Number(queryDict.index);
-        const block = methodsImpl.blockchainClosure.getBlockByNumber(queryDict.blockNumber);
+        const index = Number(args.index);
+        const block = blockchain.getBlockByNumber(args.block_number);
         result = block.data.length > index && index >= 0 ? block.data[index] : null;
       }
       done(null, result);
@@ -166,13 +155,14 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
           done(null, p2pServer.db.get(args.op_list));
           return;
         default:
-          done(null, {error: "Invalid get request"});
+          done(null, {error: "Invalid get request type"});
       }
     },
 
     // Account API
     ain_getBalance: function(args, done) {
       const address = args.address;
+      // TODO (lia): Check validity of the address with ain-util
       const balance = p2pServer.db
           .getValue(`/${PredefinedDbPaths.ACCOUNT}/${address}/balance`) || 0;
       done(null, balance);
@@ -186,7 +176,10 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     },
 
     ain_isValidator: function(args, done) {
-      // TODO (lia): fill this function out after revamping consensus staking
+      // TODO (lia): update this function after revamping consensus staking
+      const staked = p2pServer.db.getValue(
+          `${PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS}/${args.address}`);
+      done(null, staked ? staked > 0 : false);
     },
 
     // Network API
@@ -204,11 +197,16 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     net_syncing: function(args, done) {
       // TODO (lia): return { starting, latest } with block numbers if the node
       // is currently syncing.
-      done(null, blockchain.syncedAfterStartup);
+      done(null, !blockchain.syncedAfterStartup);
     },
   };
 };
 
-function getQueryDict(args) {
-  return (typeof args === 'undefined' || args.length < 1) ? {} : args[0];
+function extractTransactionHashes(block) {
+  if (!block) return [];
+  const hashes = [];
+  block.data.forEach(tx => {
+    hashes.push(tx.hash);
+  });
+  return hashes;
 }

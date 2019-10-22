@@ -31,6 +31,7 @@ class Blockchain {
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block hash.
     */
   getBlockByHash(hash) {
+    if (!hash) return null;
     const blockFileName = glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
     return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
@@ -42,6 +43,7 @@ class Blockchain {
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
 ]   */
   getBlockByNumber(number) {
+    if (!number) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
     return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
@@ -220,7 +222,7 @@ class Blockchain {
   }
 
   getChainSection(from, to) {
-    from = Number(from);
+    from = from ? Number(from) : 0;
     to = to ? Number(to) : this.height();
     const chain = [];
     const blockFiles = this.getBlockFiles(from, to);
