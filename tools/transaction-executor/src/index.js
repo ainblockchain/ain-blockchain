@@ -138,7 +138,7 @@ class TransactionExecutorCommand extends Command {
 
   static sendTransaction(transaction, jsonRpcClient) {
     return new Promise(function(resolve, reject) {
-      jsonRpcClient.request(JSON_RPC_SEND_TRANSACTION, [JSON.parse(JSON.stringify(transaction))],
+      jsonRpcClient.request(JSON_RPC_SEND_TRANSACTION, JSON.parse(JSON.stringify(transaction)),
           function(err, response) {
             if (err) {
               reject(err);
@@ -153,7 +153,7 @@ class TransactionExecutorCommand extends Command {
 TransactionExecutorCommand.description = `Reads transactions from file and sends them to the specified server
 ...
 Creates a valid privae/public key pair and uses this pair to send transactions
-to the speified server. Transactions must be specified in valid JSON format, with 
+to the speified server. Transactions must be specified in valid JSON format, with
 a single transaction written on each line. Nonce must be specified for all transactions.
 Address must be speficied for each transaction if --generateKeyPair=false. Otherise address
 must not be specified for any trasnaction.
