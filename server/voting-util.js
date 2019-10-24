@@ -40,7 +40,7 @@ class VotingUtil {
   }
 
   preVote() {
-    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
+    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address]));
     this.status = VotingStatus.PRE_VOTE;
     console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     const transaction = this.db.createTransaction({
@@ -80,7 +80,7 @@ class VotingUtil {
     if (this.status !== VotingStatus.PRE_VOTE) {
       return null;
     }
-    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey]));
+    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address]));
     console.log(`Current precommits are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
     this.status = VotingStatus.PRE_COMMIT;
     const transaction = this.db.createTransaction({
@@ -109,7 +109,7 @@ class VotingUtil {
     // This user should establish themselves as the first node on the network, instantiate the first /consensus/voting entry t db
     // and commit this to the blockchain so it will be picked up by new peers on the network
     const time = Date.now();
-    const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.publicKey, pre_votes: 0,
+    const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.account.address, pre_votes: 0,
       pre_commits: 0, time, block_hash: '', height: bc.lastBlock().height + 1, lastHash: bc.lastBlock().hash};
     return this.db.createTransaction({
       operation: {
@@ -129,7 +129,7 @@ class VotingUtil {
       forger = this.getForger(lastRound.next_round_validators, bc);
       delete lastRound.next_round_validators[forger];
     } else {
-      forger = this.db.publicKey;
+      forger = this.db.account.address;
     }
     const threshold = Math.round(Object.values(lastRound.next_round_validators).reduce(function(a, b) {
       return a + b;
@@ -159,11 +159,11 @@ class VotingUtil {
       throw Error('Not valid height');
     }
 
-    const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]));
+    const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]));
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
-        ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.publicKey]),
+        ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS, this.db.account.address]),
         value
       }
     });
@@ -201,7 +201,7 @@ class VotingUtil {
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
-        ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]),
+        ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]),
         value: stakeAmount
       }
     });
@@ -209,15 +209,15 @@ class VotingUtil {
 
   isForger() {
     this.status = VotingStatus.WAIT_FOR_BLOCK;
-    return this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.publicKey;
+    return this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.account.address;
   }
 
   isValidator() {
-    return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.publicKey])));
+    return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address])));
   }
 
   isStaked() {
-    return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey])));
+    return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address])));
   }
 
   writeSuccessfulForge() {
@@ -228,10 +228,10 @@ class VotingUtil {
       recentForgers.shift();
     }
 
-    if (recentForgers.indexOf(this.db.publicKey) >= 0) {
-      recentForgers.splice(recentForgers.indexOf(this.db.publicKey), 1);
+    if (recentForgers.indexOf(this.db.account.address) >= 0) {
+      recentForgers.splice(recentForgers.indexOf(this.db.account.address), 1);
     }
-    recentForgers.push(this.db.publicKey);
+    recentForgers.push(this.db.account.address);
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,

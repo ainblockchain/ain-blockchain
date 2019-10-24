@@ -21,7 +21,7 @@
     "test_smoke": "find ./integration -name '*.test.js' | grep -v integration.test | sort | grep -v 'node_modules' |  xargs mocha --timeout 160000 -R  spec"
   },
   "dependencies": {
-    "@ainblockchain/ain-util": "^1.1.1",
+    "@ainblockchain/ain-util": "^1.1.3",
     "ajv": "^5.5.2",
     "async": "^2.6.0",
     "bluebird": "^3.5.3",
@@ -32,6 +32,7 @@
     "elliptic": "^6.4.1",
     "escape-string-regexp": "^2.0.0",
     "express": "4.16.3",
+    "fast-json-stable-stringify": "^2.0.0",
     "geoip-lite": "^1.3.8",
     "glob": "^7.1.4",
     "ip": "^1.1.5",

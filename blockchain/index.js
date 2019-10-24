@@ -80,7 +80,7 @@ class Blockchain {
 
 
   static isValidChain(chain) {
-    if (JSON.stringify(chain[0]) !== JSON.stringify(ForgedBlock.genesis())) {
+    if (chain[0].hash !== ForgedBlock.hash) {
       console.log('first block not genesis');
       return false;
     }
@@ -91,7 +91,7 @@ class Blockchain {
     for (let i=1; i < chainSubSection.length; i++) {
       const block = chainSubSection[i];
       const lastBlock = chainSubSection[i - 1];
-      if (block.lastHash !== lastBlock.hash || block.hash !== ForgedBlock.blockHash(block)) {
+      if (block.lastHash !== lastBlock.hash || block.hash !== ForgedBlock.hash(block)) {
         console.log(`Invalid hashing for block ${block.height}`);
         return false;
       }
@@ -181,8 +181,8 @@ class Blockchain {
       return false;
     }
     const firstBlock = chainSubSection.shift();
-    if (this.lastBlock().hash !== ForgedBlock.blockHash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== ForgedBlock.genesis().hash) {
-      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.blockHash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`);
+    if (this.lastBlock().hash !== ForgedBlock.hash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== ForgedBlock.genesis().hash) {
+      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.hash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`);
       return false;
     }
     if (!Blockchain.isValidChainSubsection(chainSubSection)) {

@@ -1,6 +1,9 @@
 const path = require('path');
 const RULES_FILE_PATH = path.resolve(__dirname, 'db', 'database.rules.json');
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain', '.blockchains');
+// TODO (lia): remove this after changing the way genesis block is produced
+// (first node creates it and broadcasts to others)
+const GENESIS_INFO = path.resolve(__dirname, 'blockchain', 'genesis_info.json');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 
@@ -122,6 +125,7 @@ const TransactionStatus = {
 module.exports = {
   RULES_FILE_PATH,
   BLOCKCHAINS_DIR,
+  GENESIS_INFO,
   STAKE,
   DEBUG,
   MessageTypes,

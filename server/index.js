@@ -12,6 +12,7 @@ const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
 const {ForgedBlock} = require('../blockchain/block');
 const Transaction = require('../db/transaction');
+const ainUtil = require('@ainblockchain/ain-util');
 const VotingUtil = require('./voting-util');
 const { WriteDbOperations, DEBUG } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
@@ -36,7 +37,7 @@ class P2pServer {
         this.initiateChain();
       }
     });
-    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ? ip.address() : (await publicIp.v4()), P2P_PORT, PUBLIC_KEY: this.db.publicKey}));
+    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ? ip.address() : (await publicIp.v4()), P2P_PORT, PUBLIC_KEY: this.db.account.address}));
   }
 
   listen() {
@@ -251,7 +252,7 @@ class P2pServer {
           console.log(`PREVIOUSLY EXECUTED VOTING ACTION ${votingAction.actionType} FROM USER ${votingAction.transaction.address}`)
       } else {
           console.log(`NEW VOTING ACTION ${votingAction.actionType} FROM USER ${votingAction.transaction.address} WITH TRANSACTION INFO ${JSON.stringify(votingAction.transaction)}`)
-      } 
+      }
     }
     return response;
   }
@@ -277,7 +278,7 @@ class P2pServer {
         for (let i = 0; i < votingAction.block.data.length; i++) {
           // First check if the transation has already been received.
           // Next check that the received transaction is valid.
-          if (!this.transactionPool.isNotEligibleTransaction(votingAction.block.data[i]) 
+          if (!this.transactionPool.isNotEligibleTransaction(votingAction.block.data[i])
             && this.checkForTransactionResultErrorCode(this.executeTransaction(votingAction.block.data[i]))) {
             if (DEBUG) {
               console.log(`BLOCK ${votingAction.block} has invalid transaction ${votingAction.block.data[i]}`)
@@ -331,7 +332,7 @@ class P2pServer {
     const blockHeight = this.blockchain.height() + 1;
     this.votingUtil.setBlock(
         ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(),
-            this.db.publicKey,
+            this.db.account.address,
             Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
             this.db.getValue(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
@@ -365,7 +366,7 @@ class P2pServer {
     this.votingUtil.reset();
     this.db.reconstruct(this.blockchain, this.transactionPool);
     if (this.waitInBlocks > 0 &&
-        !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.publicKey]))) {
+        !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]))) {
       this.waitInBlocks = this.waitInBlocks - 1;
       if (this.waitInBlocks === 0) {
         this.stakeAmount();
@@ -379,12 +380,13 @@ class P2pServer {
       clearInterval(this.votingInterval);
       this.votingInterval = null;
     }
-    if (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.publicKey) {
-      console.log(`Peer ${this.db.publicKey} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
+    if (ainUtil.areSameAddresses(this.db.account.address,
+        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER))) {
+      console.log(`Peer ${this.db.account.address} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulForge());
     }
 
-    if (this.db.getValue(PredefinedDbPaths.RECENT_FORGERS).indexOf(this.db.publicKey) >= 0) {
+    if (this.db.getValue(PredefinedDbPaths.RECENT_FORGERS).indexOf(this.db.account.address) >= 0) {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
@@ -392,7 +394,7 @@ class P2pServer {
           console.log('Not designated forger');
           return;
         }
-        console.log(`User ${this.db.publicKey} is starting round ${this.blockchain.height() + 1}`);
+        console.log(`User ${this.db.account.address} is starting round ${this.blockchain.height() + 1}`);
 
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         this.checkIfForger();

@@ -10,17 +10,10 @@ class DB {
     this.db = {};
     this.func = new BuiltInFunctions(this);
     // TODO (lia): Add account importing functionality
-    // TODO (lia): Add "address" property and change publicKey to "full public key" value.
-    this.keyPair = ChainUtil.genKeyPair();
-    this.publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-        ainUtil.pubToAddress(
-            Buffer.from(this.keyPair.getPublic().encode('hex'), 'hex'),
-            true
-        )
-    ));
+    this.account = ainUtil.createAccount(); // { private_key, public_key, address }
     if (this instanceof BackUpDB) return;
     this.nonce = this.getNonce(blockchain);
-    console.log(`creating new db with id ${this.publicKey}`);
+    console.log(`creating new db with id ${this.account.address}`);
   }
 
   getNonce(blockchain) {
@@ -28,7 +21,8 @@ class DB {
     let nonce = 0;
     for (let i = blockchain.chain.length - 1; i > -1; i--) {
       for (let j = blockchain.chain[i].data.length -1; j > -1; j--) {
-        if (blockchain.chain[i].data[j].address == this.publicKey && blockchain.chain[i].data[j].nonce > -1) {
+        if (ainUtil.areSameAddresses(blockchain.chain[i].data[j].address, this.account.address)
+            && blockchain.chain[i].data[j].nonce > -1) {
           // If blockchain is being restarted, retreive nocne from blockchain
           nonce = blockchain.chain[i].data[j].nonce + 1;
           break;
@@ -44,7 +38,7 @@ class DB {
 
   static getDatabase(blockchain, tp) {
     const db = new DB(blockchain);
-    blockchain.setBackDb(new BackUpDB(db.keyPair));
+    blockchain.setBackDb(new BackUpDB(db.account));
     db.reconstruct(blockchain, tp);
     return db;
   }
@@ -99,7 +93,7 @@ class DB {
   }
 
   stake(stakeAmount) {
-    return this.setValue([PredefinedDbPaths.STAKEHOLDER, this.publicKey].join('/'), stakeAmount);
+    return this.setValue([PredefinedDbPaths.STAKEHOLDER, this.account.address].join('/'), stakeAmount);
   }
 
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
@@ -302,11 +296,11 @@ class DB {
       }
       txData.nonce = nonce;
     }
-    return Transaction.newTransaction(this.keyPair.priv, txData);
+    return Transaction.newTransaction(this.account.private_key, txData);
   }
 
-  sign(dataHash) {
-    return this.keyPair.sign(dataHash);
+  sign(dataString) {
+    return ainUtil.ecSignMessage(dataString, Buffer.from(this.account.private_key, 'hex'));
   }
 
   reconstruct(blockchain, transactionPool) {
@@ -335,7 +329,7 @@ class DB {
   }
 
   setDBToBackUp(backUpDB) {
-    if (this.publicKey === backUpDB.publicKey) {
+    if (ainUtil.areSameAddresses(this.account.address, backUpDB.account.address)) {
       this.db = JSON.parse(JSON.stringify(backUpDB.db));
     }
   }
@@ -370,7 +364,7 @@ class DB {
 
   getPermissionForValue(valuePath, address, timestamp, newValue) {
     let lastRuleSet;
-    address = address || this.publicKey;
+    address = address || this.account.address;
     timestamp = timestamp || Date.now();
     let rule = false;
     const wildCards = {};
@@ -453,15 +447,9 @@ class DB {
 }
 
 class BackUpDB extends DB {
-  constructor(keyPair) {
+  constructor(account) {
     super();
-    this.keyPair = keyPair;
-    this.publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-        ainUtil.pubToAddress(
-            Buffer.from(this.keyPair.getPublic().encode('hex'), 'hex'),
-            true
-        )
-    ));
+    this.account = account;
   }
 }
 

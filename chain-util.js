@@ -1,9 +1,11 @@
 const EC = require('elliptic').ec;
 const SHA256 = require('crypto-js/sha256');
 const ec = new EC('secp256k1');
+const ainUtil = require('@ainblockchain/ain-util');
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
+  // TODO (lia): remove this function
   static genKeyPair() {
     let keyPair;
     if (PRIVATE_KEY) {
@@ -13,15 +15,6 @@ class ChainUtil {
       keyPair = ec.genKeyPair();
     }
     return keyPair;
-  }
-
-  static hash(data) {
-    // eslint-disable-next-line new-cap
-    return SHA256(JSON.stringify(data)).toString();
-  }
-
-  static verifySignature(publicKey, signature, dataHash) {
-    return ec.keyFromPublic(publicKey, 'hex').verify(dataHash, signature);
   }
 
   static isDict(data) {
