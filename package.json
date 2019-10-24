@@ -23,19 +23,17 @@
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.1",
     "ajv": "^5.5.2",
-    "async": "^2.6.0",
     "bluebird": "^3.5.3",
     "body-parser": "^1.18.3",
-    "chai-http": "^4.2.0",
     "crypto": "^1.0.1",
     "crypto-js": "^3.1.9-1",
     "elliptic": "^6.4.1",
     "escape-string-regexp": "^2.0.0",
-    "express": "4.16.3",
+    "express": "^4.17.1",
     "geoip-lite": "^1.3.8",
     "glob": "^7.1.4",
     "ip": "^1.1.5",
-    "jayson": "^3.0.2",
+    "jayson": "^3.1.1",
     "moment": "^2.24.0",
     "node-cron": "^2.0.3",
     "node-natural-sort": "^0.8.7",
@@ -54,6 +52,7 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "chai-http": "^4.3.0",
     "eslint": "^6.5.1",
     "eslint-config-google": "^0.13.0",
     "eslint-config-standard": "^14.1.0",
@@ -61,11 +60,11 @@
     "eslint-plugin-node": "^10.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "mocha": "^5.2.0",
+    "mocha": "^6.2.2",
     "mocha-param": "^2.0.0",
     "semistandard": "^12.0.1",
     "shelljs": "^0.8.3",
-    "sync-request": "^6.0.0",
+    "sync-request": "^6.1.0",
     "system-sleep": "^1.3.6"
   }
 }
