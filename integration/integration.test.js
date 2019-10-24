@@ -246,7 +246,7 @@ describe('Integration Tests', () => {
       newServerProc.start();
       sleep(5000);
       return new Promise((resolve) => {
-        jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, [], function(err, response) {
+        jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
           if (err) throw err;
           baseChain = response.result;
           height = baseChain[baseChain.length - 1].height;
@@ -254,7 +254,7 @@ describe('Integration Tests', () => {
         });
       }).then(() => {
         return new Promise((resolve) => {
-          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, [{to: height + 1}], function(err, response) {
+          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: height + 1}, function(err, response) {
             if (err) throw err;
             const newChain = response.result;
             assert.deepEqual(baseChain.length, newChain.length);
@@ -286,7 +286,7 @@ describe('Integration Tests', () => {
         let newChain;
         const height = baseChain[baseChain.length - 1].height;
         return new Promise((resolve) => {
-          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, [{to: height + 1}], function(err, response) {
+          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: height + 1}, function(err, response) {
             if (err) throw err;
             newChain = response.result;
             assert.deepEqual(baseChain, newChain);
