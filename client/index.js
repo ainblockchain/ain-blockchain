@@ -41,7 +41,6 @@ if (LOG) {
   };
 }
 
-
 // [START gae_flex_mysql_app]
 const express = require('express');
 const Database = require('../db');
@@ -55,7 +54,6 @@ const Blockchain = require('../blockchain');
 const TransactionPool = require('../db/transaction-pool');
 
 const app = express();
-
 
 const transactionBatch = [];
 

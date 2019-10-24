@@ -49,7 +49,7 @@ class P2pServer {
 
   connectToPeers(peers) {
     peers.forEach((peer) => {
-      console.log(`Connecting to peer ${peer}`);
+      console.log(`[${P2P_PORT}] Connecting to peer ${peer}`);
       const socket = new Websocket(peer);
       socket.on('open', () => this.connectSocket(socket));
     });
@@ -134,8 +134,9 @@ class P2pServer {
   }
 
   requestChainSubsection(lastBlock) {
-    this.sockets.forEach((socket) =>
-      socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION_REQUEST, lastBlock})));
+    this.sockets.forEach((socket) => {
+      socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION_REQUEST, lastBlock}));
+    });
   }
 
   broadcastChainSubsection(chainSubsection) {
