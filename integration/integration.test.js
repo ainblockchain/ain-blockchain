@@ -123,7 +123,7 @@ for (let i = 0; i < ENV_VARIABLES.length; i++) {
 
 function waitUntilNewBlock(jsonRpcClient, numBlocks, stackDepth) {
   return new Promise((resolve) => {
-    jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, [], function(err, response) {
+    jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, {}, function(err, response) {
       if (err) throw err;
       currentHeight = response.result.height;
       resolve(currentHeight - numBlocks);
@@ -180,7 +180,7 @@ describe('Integration Tests', () => {
     sleep(20000);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, [], function(err, response) {
+      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, {}, function(err, response) {
         if (err) throw err;
         numBlocksOnStartup = response.result.height;
         resolve();
@@ -211,7 +211,7 @@ describe('Integration Tests', () => {
         sleep(200);
       }
       return new Promise((resolve) => {
-        jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, [], function(err, response) {
+        jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, {}, function(err, response) {
           if (err) throw err;
           numBlocks = response.result.height;
           currentHeight = numBlocks;
@@ -272,7 +272,7 @@ describe('Integration Tests', () => {
 
       beforeEach(() => {
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCKS, [], function(err, response) {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
             if (err) throw err;
             baseChain = response.result;
             resolve();
@@ -373,7 +373,7 @@ describe('Integration Tests', () => {
 
       it('can be queried by index ', () => {
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, [{from: 2, to: 4}], function(err, response) {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, {from: 2, to: 4}, function(err, response) {
             if (err) throw err;
             body = response.result;
             assert.deepEqual([2, 3], body.map((blockHeader) => {
@@ -386,13 +386,13 @@ describe('Integration Tests', () => {
 
       it('can be queried by hash ', () => {
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER, [2], function(err, response) {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER, {number: 2}, function(err, response) {
             if (err) throw err;
             resolve(response.result);
           });
         }).then((resultByNumber) => {
           return new Promise((resolve) => {
-            jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH, [resultByNumber.hash], function(err, response) {
+            jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH, {hash: resultByNumber.hash}, function(err, response) {
               if (err) throw err;
               const resultByHash = response.result;
               assert.deepEqual(resultByHash, resultByNumber);
@@ -404,7 +404,7 @@ describe('Integration Tests', () => {
 
       it('not dropping any transations ', function() {
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCKS, [{}], function(err, response) {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
             if (err) throw err;
             body = response.result;
             const transactionsOnBlockChain = [];
@@ -467,4 +467,3 @@ describe('Integration Tests', () => {
     });
   });
 });
-
