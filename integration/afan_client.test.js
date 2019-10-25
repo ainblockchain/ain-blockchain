@@ -2,12 +2,12 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const assert = chai.assert;
-const should = chai.should();
-const AfanClient = require('../afan_client');
 const rimraf = require('rimraf');
-const {BLOCKCHAINS_DIR} = require('../constants');
 const sleep = require('system-sleep');
 const spawn = require('child_process').spawn;
+const syncRequest = require('sync-request');
+const AfanClient = require('../afan_client');
+const {BLOCKCHAINS_DIR} = require('../constants');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -97,43 +97,40 @@ describe('aFan Client Test', () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  set = (ref, value) => {
-    return chai.request(server1)
-        .post(`/set_value`).send({ref: ref, value: value});
+  set_value = (ref, value) => {
+    return Promise.resolve(JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {ref, value}}).body.toString('utf-8')));
   };
 
-  update = (op_list) => {
-    return chai.request(server2)
-        .post(`/set`).send({op_list});
+  set = (op_list) => {
+    return Promise.resolve(JSON.parse(syncRequest('POST', server2 + '/set', {json: {op_list}}).body.toString('utf-8')));
   };
 
-  get = (ref) => {
-    return chai.request(server3)
-        .get(`/get_value?ref=${ref}`);
+  get_value = (ref) => {
+    return Promise.resolve(JSON.parse(syncRequest('GET', server3 + `/get_value?ref=${ref}`).body.toString('utf-8')));
   };
 
   beforeEach(() => {
-    return set('afan', {});
+    return set_value('afan', {});
   });
 
   afterEach(() => {
-    return set('afan', {});
+    return set_value('afan', {});
   });
 
   describe('tx_invest', () => {
     it('send_one', () => {
       const afanClient = new AfanClient(server1);
 
-      return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
-          .then(() => sleep(500))
-          .then(() => afanClient.tx_invest('uid0', 'uid1', 1))
-          .then(() => sleep(500))
-          .then(() => get('/afan'))
-          .then((res) => {
-            const result = require('./data/tx_invest_send_one_result.js');
-            res.should.have.status(200);
-            res.body.result.should.be.deep.eql(result);
-          });
+      return set_value('/afan/balance/uid0', 10)
+        .then(() => set_value('/afan/balance/uid1', 10))
+        .then(() => sleep(500))
+        .then(() => afanClient.tx_invest('uid0', 'uid1', 1))
+        .then(() => sleep(500))
+        .then(() => get_value('/afan'))
+        .then((res) => {
+          const expected = require('./data/tx_invest_send_one_result.js');
+          assert.deepEqual(res.result, expected);
+        });
     });
   });
 
@@ -141,67 +138,63 @@ describe('aFan Client Test', () => {
     it('no fan', () => {
       const afanClient = new AfanClient(server1);
 
-      return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
-          .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 1))
-          .then(() => sleep(100))
-          .then(() => get('/afan'))
-          .then((res) => {
-            const result = require('./data/tx_crushOnPost_no_fan_result.js');
-            res.should.have.status(200);
-            res.body.result.should.be.deep.eql(result);
-          });
+      return set_value('/afan/balance/uid0', 10).then(() => set_value('/afan/balance/uid1', 10))
+        .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 1))
+        .then(() => sleep(100))
+        .then(() => get_value('/afan'))
+        .then((res) => {
+          const expected = require('./data/tx_crushOnPost_no_fan_result.js');
+          assert.deepEqual(res.result, expected);
+        });
     });
 
     it('two fans', () => {
       const afanClient = new AfanClient(server2);
       sleep(200);
-      return set('/afan/balance/uid0', 30)
-          .then(() => set('/afan/balance/uid1', 10))
-          .then(() => set('/afan/investors/uid1/uid2', 3))
-          .then(() => set('/afan/investors/uid1/uid3', 7))
-          .then(() => sleep(500))
-          .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
-          .then(() => sleep(500))
-          .then(() => get('/afan'))
-          .then((res) => {
-            const result = require('./data/tx_crushOnPost_two_fans_result.js');
-            res.should.have.status(200);
-            res.body.result.should.be.deep.eql(result);
-          });
+      return set_value('/afan/balance/uid0', 30)
+        .then(() => set_value('/afan/balance/uid1', 10))
+        .then(() => set_value('/afan/investors/uid1/uid2', 3))
+        .then(() => set_value('/afan/investors/uid1/uid3', 7))
+        .then(() => sleep(500))
+        .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
+        .then(() => sleep(500))
+        .then(() => get_value('/afan'))
+        .then((res) => {
+          const expected = require('./data/tx_crushOnPost_two_fans_result.js');
+          assert.deepEqual(res.result, expected);
+        });
     });
   });
 
   describe('crushOnReply', () => {
     it('no fan', () => {
       const afanClient = new AfanClient(server3);
-      return set('/afan/balance/uid0', 10).then(() => set('/afan/balance/uid1', 10))
-          .then(() => sleep(1000))
-          .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
-          .then(() => get('/afan'))
-          .then((res) => {
-            const result = require('./data/tx_crushOnReply_no_fan_result.js');
-            res.should.have.status(200);
-            res.body.result.should.be.deep.eql(result);
-          });
+      return set_value('/afan/balance/uid0', 10).then(() => set_value('/afan/balance/uid1', 10))
+        .then(() => sleep(1000))
+        .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
+        .then(() => get_value('/afan'))
+        .then((res) => {
+          const expected = require('./data/tx_crushOnReply_no_fan_result.js');
+          assert.deepEqual(res.result, expected);
+        });
     });
 
     it('three fans', () => {
       const afanClient = new AfanClient(server4);
 
-      return set('/afan/balance/uid0', 20)
-          .then(() => set('/afan/balance/uid1', 10))
-          .then(() => set('/afan/investors/uid1/uid2', 3))
-          .then(() => set('/afan/investors/uid1/uid3', 2))
-          .then(() => set('/afan/investors/uid1/uid4', 1))
-          .then(() => sleep(1000))
-          .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
-          .then(() => sleep(500))
-          .then(() => get('/afan'))
-          .then((res) => {
-            const result = require('./data/tx_crushOnReply_three_fans_result.js');
-            res.should.have.status(200);
-            res.body.result.should.be.deep.eql(result);
-          });
+      return set_value('/afan/balance/uid0', 20)
+        .then(() => set_value('/afan/balance/uid1', 10))
+        .then(() => set_value('/afan/investors/uid1/uid2', 3))
+        .then(() => set_value('/afan/investors/uid1/uid3', 2))
+        .then(() => set_value('/afan/investors/uid1/uid4', 1))
+        .then(() => sleep(1000))
+        .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
+        .then(() => sleep(500))
+        .then(() => get_value('/afan'))
+        .then((res) => {
+          const expected = require('./data/tx_crushOnReply_three_fans_result.js');
+          assert.deepEqual(res.result, expected);
+        });
     });
   });
 
@@ -220,15 +213,14 @@ describe('aFan Client Test', () => {
           value: 10,
         },
       ];
-      return update(op_list)
-          .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
-          .then(() => sleep(100))
-          .then(() => get('/afan'))
-          .then((res) => {
-            const result = require('./data/tx_adpropose_result.js');
-            res.should.have.status(200);
-            res.body.result.should.be.deep.eql(result);
-          });
+      return set(op_list)
+        .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
+        .then(() => sleep(100))
+        .then(() => get_value('/afan'))
+        .then((res) => {
+          const expected = require('./data/tx_adpropose_result.js');
+          assert.deepEqual(res.result, expected);
+        });
     });
   });
 });
