@@ -8,5 +8,5 @@ describe('Load Test', () => {
 
   it('gives return code of 0', () => {
     expect(shell.exec(`sh ${LOAD_SCRIPT}`).code).to.equal(0)
-  }).timeout(200000)
+  })
 })
