@@ -5,6 +5,7 @@ import json
 import requests
 import subprocess
 import random
+import copy
 from time import sleep
 ####### PLEASE SET THESE VALUES BEFORE RUNNING TOOL ###########
 TOOL_LOCATION = '/home/chris/workspace/blockchain-database/tools/transaction-executor/bin/run'
@@ -12,8 +13,8 @@ SERVER = 'http://localhost:8080'
 TRANSFER_AMOUNT = 5
 ###############################################################
 TOOL_COMMAND = 'node '+ TOOL_LOCATION + ' --transactionFile={transaction_fle} --privateKey={private_key} --server=' + SERVER
-BALANCE_SET_TRANSACTION = {"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": None, "nonce": None}
-BALANCE_TRANSFER_TRANSACTION = {"type": "SET_VALUE", "ref": "/transfer/{{address}}/{receiver}/{nonce}/value", "value": None, "nonce": None}
+BALANCE_SET_TRANSACTION = {'operation': {"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": None}, "nonce": None}
+BALANCE_TRANSFER_TRANSACTION = {'operation': {"type": "SET_VALUE", "ref": "/transfer/{{address}}/{receiver}/{nonce}/value", "value": None}, "nonce": None}
 ALL_ACCOUNTS = SERVER + '/get_value?ref=/account'
 SPECIFIC_ACCOUNT_BALANCE = ALL_ACCOUNTS + '/{address}/balance'
 NONCE_DICT = {}
@@ -35,17 +36,17 @@ def get_nonce(private_key):
 def get_balance_set_transaction(private_key, balance):
     nonce = get_nonce(private_key)
     balance_transaction = BALANCE_SET_TRANSACTION.copy()
-    balance_transaction['value'] = balance
+    balance_transaction['operation']['value'] = balance
     balance_transaction['nonce'] = nonce
     return balance_transaction
 
 
 def get_amount_transfer_transaction(sender, receiver):
     nonce = get_nonce(sender)
-    balance_transfer = BALANCE_TRANSFER_TRANSACTION.copy()
-    balance_transfer['ref'] = balance_transfer['ref'].format(nonce=nonce, receiver=PRIVATE_PUBLIC_KEY_DICT[receiver])
+    balance_transfer = copy.deepcopy(BALANCE_TRANSFER_TRANSACTION)
+    balance_transfer['operation']['ref'] = balance_transfer['operation']['ref'].format(nonce=nonce, receiver=PRIVATE_PUBLIC_KEY_DICT[receiver])
     balance_transfer['nonce'] = nonce
-    balance_transfer['value'] = TRANSFER_AMOUNT
+    balance_transfer['operation']['value'] = TRANSFER_AMOUNT
     return balance_transfer
 
 
