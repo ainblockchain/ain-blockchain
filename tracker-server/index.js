@@ -29,18 +29,20 @@ webSocketServer.on('connection', (ws) => {
     }
   });
 
-  ws.on('close', () => {
+  ws.on('close', (code) => {
+    console.log(`Connection closed with code: ` + code);
     try {
-      const peer = PEERS.find((peer) => peer.ws === ws);
+      const peer = PEERS.find((p) => p.ws === ws);
       const peerIndex = PEERS.indexOf(peer);
       PEERS.splice(peerIndex, 1);
       const effectedPeers = PEERS.filter((p)=> {
-        if (p.getPeerList().indexOf(peer.url) > -1) {
-          return p;
+        if (p.getPeerList().indexOf(peer.url) !== -1) {
+          return true;
         }
+        return false;
       });
       let lastPeer = effectedPeers.pop();
-      for (let i = effectedPeers.length -1; i >= 0; i--) {
+      for (let i = effectedPeers.length - 1; i >= 0; i--) {
         console.log(`Connecting peer ${lastPeer.url} to peer ${effectedPeers[i].url}`);
         lastPeer.connect(effectedPeers[i]);
         lastPeer = effectedPeers.pop();
@@ -50,7 +52,6 @@ webSocketServer.on('connection', (ws) => {
     }
   });
 });
-
 
 class Peer {
   constructor(ws, peerUrlInfo) {

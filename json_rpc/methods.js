@@ -36,7 +36,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     },
 
     ain_getBlockByHash: function(args, done) {
-      const block = blockchain.getBlockByHash(args.hash);
+      let block = blockchain.getBlockByHash(args.hash);
       if (block) block = block.body();
       if (args.getFullTransactions || !block) {
         done(null, block);
@@ -47,7 +47,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     },
 
     ain_getBlockByNumber: function(args, done) {
-      const block = blockchain.getBlockByNumber(args.number);
+      let block = blockchain.getBlockByNumber(args.number);
       if (block) block = block.body();
       if (args.getFullTransactions || !block) {
         done(null, block);
