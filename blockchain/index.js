@@ -43,7 +43,7 @@ class Blockchain {
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
 ]   */
   getBlockByNumber(number) {
-    if (!number) return null;
+    if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
     return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
@@ -80,7 +80,8 @@ class Blockchain {
 
 
   static isValidChain(chain) {
-    if (chain[0].hash !== ForgedBlock.hash) {
+    // TODO (lia): fix validation logic
+    if (ForgedBlock.hash(chain[0]) !== ForgedBlock.genesis().hash) {
       console.log('first block not genesis');
       return false;
     }
@@ -105,7 +106,7 @@ class Blockchain {
     if (newChain.length <= this.chain.length) {
       console.log('Received chain is not longer than current chain');
       return false;
-    } else if (! Blockchain.isValidChain(newChain)) {
+    } else if (!Blockchain.isValidChain(newChain)) {
       console.log('Received chain is not valid');
       return false;
     }
