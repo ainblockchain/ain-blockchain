@@ -97,11 +97,6 @@ class ForgedBlock extends Block {
   }
 
   static loadBlock(blockZipFile) {
-    // Hack to return global genesis. Need to return separate genesis blocks
-    // for mined and forged implementations
-    if (blockZipFile.indexOf('0-#####-f1r57') >= 0) {
-      return ForgedBlock.genesis();
-    }
     const unzippedfs = zipper.sync.unzip(blockZipFile).memory();
     const blockInfo = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], 'buffer').toString());
     return ForgedBlock.parse(blockInfo);
