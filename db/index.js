@@ -23,7 +23,7 @@ class DB {
       for (let j = blockchain.chain[i].data.length -1; j > -1; j--) {
         if (ainUtil.areSameAddresses(blockchain.chain[i].data[j].address, this.account.address)
             && blockchain.chain[i].data[j].nonce > -1) {
-          // If blockchain is being restarted, retreive nocne from blockchain
+          // If blockchain is being restarted, retreive nonce from blockchain
           nonce = blockchain.chain[i].data[j].nonce + 1;
           break;
         }
