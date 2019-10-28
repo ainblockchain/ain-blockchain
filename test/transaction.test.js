@@ -7,7 +7,7 @@ const Blockchain = require('../blockchain/');
 function getTransaction(db, txData) {
   txData.nonce = db.nonce;
   db.nonce++;
-  return Transaction.newTransaction(db.keyPair.priv, txData);
+  return Transaction.newTransaction(db.account.private_key, txData);
 }
 
 describe('Transaction', () => {

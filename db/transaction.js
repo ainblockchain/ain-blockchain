@@ -34,7 +34,7 @@ class Transaction {
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address
     const signature = transaction.address !== undefined ? '' :
-        ainUtil.ecSignTransaction(transaction, ainUtil.toBuffer(privateKey));
+        ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
     return new this({ signature, transaction });
   }
 

@@ -1,6 +1,7 @@
 'use strict';
 
 const {ReadDbOperations, PredefinedDbPaths, TransactionStatus} = require('../constants');
+const ainUtil = require('@ainblockchain/ain-util');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -160,6 +161,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     },
 
     // Account API
+    // TODO (lia): verify and convert to checksum addresses
     ain_getBalance: function(args, done) {
       const address = args.address;
       // TODO (lia): Check validity of the address with ain-util
@@ -170,7 +172,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
 
     ain_getNonce: function(args, done) {
       const address = args.address;
-      const nonce = (p2pServer.db.publicKey === address ?
+      const nonce = (ainUtil.areSameAddresses(p2pServer.db.account.address, address) ?
           p2pServer.db.nonce : transactionPool.nonceTracker[address]) || 0;
       done(null, nonce);
     },

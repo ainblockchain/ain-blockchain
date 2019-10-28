@@ -43,7 +43,7 @@ class Blockchain {
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
 ]   */
   getBlockByNumber(number) {
-    if (!number) return null;
+    if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
     return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
   }
@@ -80,7 +80,8 @@ class Blockchain {
 
 
   static isValidChain(chain) {
-    if (JSON.stringify(chain[0]) !== JSON.stringify(ForgedBlock.genesis())) {
+    // TODO (lia): fix validation logic
+    if (ForgedBlock.hash(chain[0]) !== ForgedBlock.genesis().hash) {
       console.log('first block not genesis');
       return false;
     }
@@ -91,7 +92,7 @@ class Blockchain {
     for (let i=1; i < chainSubSection.length; i++) {
       const block = chainSubSection[i];
       const lastBlock = chainSubSection[i - 1];
-      if (block.lastHash !== lastBlock.hash || block.hash !== ForgedBlock.blockHash(block)) {
+      if (block.lastHash !== lastBlock.hash || block.hash !== ForgedBlock.hash(block)) {
         console.log(`Invalid hashing for block ${block.height}`);
         return false;
       }
@@ -105,7 +106,7 @@ class Blockchain {
     if (newChain.length <= this.chain.length) {
       console.log('Received chain is not longer than current chain');
       return false;
-    } else if (! Blockchain.isValidChain(newChain)) {
+    } else if (!Blockchain.isValidChain(newChain)) {
       console.log('Received chain is not valid');
       return false;
     }
@@ -181,8 +182,8 @@ class Blockchain {
       return false;
     }
     const firstBlock = chainSubSection.shift();
-    if (this.lastBlock().hash !== ForgedBlock.blockHash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== ForgedBlock.genesis().hash) {
-      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.blockHash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`);
+    if (this.lastBlock().hash !== ForgedBlock.hash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== ForgedBlock.genesis().hash) {
+      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.hash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`);
       return false;
     }
     if (!Blockchain.isValidChainSubsection(chainSubSection)) {
