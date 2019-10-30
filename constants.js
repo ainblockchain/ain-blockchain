@@ -133,7 +133,6 @@ const WriteDbOperations = {
 const FunctionResultCode = {
   SUCCESS: 'SUCCESS',
   FAILURE: 'FAILURE',
-  REQUESTED: 'REQUESTED'
 };
 
 /**
