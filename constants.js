@@ -139,7 +139,7 @@ const TransactionStatus = {
  * Default values
  */
 const DefaultValues = {
-  DEPOSIT_LOCKUP_DURATION: 2592000000
+  DEPOSIT_LOCKUP_DURATION_MS: 2592000000 // 30 days
 }
 
 module.exports = {

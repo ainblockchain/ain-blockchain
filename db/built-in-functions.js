@@ -118,7 +118,7 @@ class BuiltInFunctions {
       const configs = this.db.getValue(configsPath) || {};
       const expirationPath = this._getDepositExpirationPath(service, user);
       const lockup = configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] !== null ?
-          configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] : DefaultValues.DEPOSIT_LOCKUP_DURATION;
+          configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] : DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
           Number(timestamp) + Number(lockup));
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(userBalancePath)),
@@ -165,7 +165,7 @@ class BuiltInFunctions {
           }
         });
         const lockup = configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] !== null ?
-            configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] : DefaultValues.DEPOSIT_LOCKUP_DURATION;
+            configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] : DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
         expireAt = newest + lockup;
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
             expireAt);
