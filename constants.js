@@ -44,6 +44,15 @@ const VotingStatus = {
 };
 
 /**
+ * Types of deposit lockup behavior
+ * @enum {string}
+ */
+const DepositLockupTypes = {
+  ON_WITHDRAW: 'ON_WITHDRAW',
+  ON_DEPOSIT: 'ON_DEPOSIT'
+}
+
+/**
  * Predefined database paths
  * @enum {string}
  */
@@ -70,6 +79,19 @@ const PredefinedDbPaths = {
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
   TRANSFER_RESULT: 'result',
+  // Deposit & Withdraw
+  DEPOSIT: '/deposit',
+  DEPOSIT_ACCOUNTS: '/deposit_accounts',
+  DEPOSIT_CONFIG: 'config',
+  DEPOSIT_CREATED_AT: 'created_at',
+  DEPOSIT_EXPIRE_AT: 'expire_at',
+  DEPOSIT_LOCKUP_DURATION: 'lockup_duration',
+  DEPOSIT_RESULT: 'result',
+  DEPOSIT_VALUE: 'value',
+  WITHDRAW: '/withdraw',
+  WITHDRAW_CREATED_AT: 'created_at',
+  WITHDRAW_RESULT: 'result',
+  WITHDRAW_VALUE: 'value',
 };
 
 /**
@@ -111,6 +133,7 @@ const WriteDbOperations = {
 const FunctionResultCode = {
   SUCCESS: 'SUCCESS',
   FAILURE: 'FAILURE',
+  REQUESTED: 'REQUESTED'
 };
 
 /**
@@ -121,6 +144,13 @@ const TransactionStatus = {
   BLOCK_STATUS: 'BLOCK',
   POOL_STATUS: 'POOL',
 };
+
+/**
+ * Default values
+ */
+const DefaultValues = {
+  DEPOSIT_LOCKUP_DURATION: 2592000000
+}
 
 module.exports = {
   RULES_FILE_PATH,
@@ -137,4 +167,6 @@ module.exports = {
   WriteDbOperations,
   FunctionResultCode,
   TransactionStatus,
+  DepositLockupTypes,
+  DefaultValues,
 };

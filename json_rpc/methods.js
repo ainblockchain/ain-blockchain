@@ -141,7 +141,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     },
 
     // Database API
-    ain_get: function(args, done) {
+    ain_get: function(args, done) { // TODO (lia): split this method
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           done(null, p2pServer.db.getValue(args.ref));
