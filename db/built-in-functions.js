@@ -1,4 +1,4 @@
-const { PredefinedDbPaths, FunctionResultCode, DepositLockupTypes, DefaultValues } = require('../constants');
+const { PredefinedDbPaths, FunctionResultCode, DefaultValues } = require('../constants');
 const ChainUtil = require('../chain-util');
 
 const FUNC_PARAM_PATTERN = /^{(.*)}$/;

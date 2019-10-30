@@ -11,7 +11,7 @@ const sleep = require('system-sleep');
 chai.use(chaiHttp);
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
-const {BLOCKCHAINS_DIR, PredefinedDbPaths, DepositLockupTypes} = require('../constants')
+const {BLOCKCHAINS_DIR, PredefinedDbPaths} = require('../constants')
 
 const server1 = 'http://localhost:9091'
 const server2 = 'http://localhost:9092'

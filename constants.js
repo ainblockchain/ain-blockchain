@@ -44,15 +44,6 @@ const VotingStatus = {
 };
 
 /**
- * Types of deposit lockup behavior
- * @enum {string}
- */
-const DepositLockupTypes = {
-  ON_WITHDRAW: 'ON_WITHDRAW',
-  ON_DEPOSIT: 'ON_DEPOSIT'
-}
-
-/**
  * Predefined database paths
  * @enum {string}
  */
@@ -166,6 +157,5 @@ module.exports = {
   WriteDbOperations,
   FunctionResultCode,
   TransactionStatus,
-  DepositLockupTypes,
   DefaultValues,
 };
