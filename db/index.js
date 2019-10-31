@@ -111,7 +111,7 @@ class DB {
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
     try {
-      this.func.runFunctions(parsedPath, valueCopy, timestamp);
+      this.func.runFunctions(parsedPath, valueCopy, timestamp, Date.now());
     } catch(e) {
       return false;
     }

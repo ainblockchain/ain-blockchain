@@ -29,13 +29,13 @@ class BuiltInFunctions {
    * @param {*} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
    */
-  runFunctions(parsedValuePath, value, timestamp) {
+  runFunctions(parsedValuePath, value, timestamp, currentTime) {
     const matches = this._matchFunctionPaths(parsedValuePath);
     matches.forEach((elem) => {
       console.log(
-        `  ==> Running built-in function '${elem.func.name}' with value '${value}', timestamp '${timestamp}', and params: ` +
+        `  ==> Running built-in function '${elem.func.name}' with value '${value}', timestamp '${timestamp}', currentTime '${currentTime}' and params: ` +
         JSON.stringify(elem.params));
-      elem.func(value, { params: elem.params, timestamp });
+      elem.func(value, { params: elem.params, timestamp, currentTime });
     })
   }
 
@@ -100,11 +100,12 @@ class BuiltInFunctions {
     const user = context.params.user;
     const depositId = context.params.deposit_id;
     const timestamp = context.timestamp;
+    const currentTime = context.currentTime;
     const resultPath = this._getDepositResultPath(service, user, depositId);
-    if (timestamp > Date.now()) {
+    if (timestamp > currentTime) { // TODO (lia): move this check to when we first receive the transaction
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
-      throw Error(`[_deposit] Invalid timestamp (now: ${Date.now()}, timestamp: ${timestamp})`)
+      throw Error(`[_deposit] Invalid timestamp (now: ${currentTime}, timestamp: ${timestamp})`)
     }
     const userBalancePath = this._getBalancePath(user);
     const userBalance = this.db.getValue(userBalancePath);
@@ -139,6 +140,7 @@ class BuiltInFunctions {
     const user = context.params.user;
     const withdrawId = context.params.withdraw_id;
     const timestamp = context.timestamp;
+    const currentTime = context.currentTime;
     const depositAmountPath = this._getDepositAmountPath(service, user);
     const depositAmount = this.db.getValue(depositAmountPath) || 0;
     const expirationPath = this._getDepositExpirationPath(service, user);
@@ -170,7 +172,7 @@ class BuiltInFunctions {
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
             expireAt);
       }
-      if (expireAt <= Date.now()) {
+      if (expireAt <= currentTime) {
         const userBalancePath = this._getBalancePath(user);
         const userBalance = this.db.getValue(userBalancePath);
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositAmountPath)),
@@ -183,7 +185,7 @@ class BuiltInFunctions {
         // Still in lock-up period.
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
             { code: FunctionResultCode.FAILURE });
-        throw Error(`[_withdraw] Deposit still locked up. Will expire in ${expireAt - Date.now()} ms.`);
+        throw Error(`[_withdraw] Deposit still locked up. Will expire in ${expireAt - currentTime} ms.`);
       }
     } else {
       // Not enough deposit.
