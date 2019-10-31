@@ -110,11 +110,7 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
-    try {
-      this.func.runFunctions(parsedPath, valueCopy, timestamp, Date.now());
-    } catch(e) {
-      return false;
-    }
+    this.func.runFunctions(parsedPath, valueCopy, timestamp, Date.now());
     return true;
   }
 
