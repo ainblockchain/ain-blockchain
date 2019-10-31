@@ -124,6 +124,8 @@ const WriteDbOperations = {
 const FunctionResultCode = {
   SUCCESS: 'SUCCESS',
   FAILURE: 'FAILURE',
+  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+  IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
 };
 
 /**

@@ -85,7 +85,7 @@ class BuiltInFunctions {
           { code: FunctionResultCode.SUCCESS });
     } else {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.FAILURE });
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 
@@ -115,7 +115,7 @@ class BuiltInFunctions {
           { code: FunctionResultCode.SUCCESS });
     } else {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.FAILURE });
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 
@@ -138,12 +138,12 @@ class BuiltInFunctions {
       } else {
         // Still in lock-up period.
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            { code: FunctionResultCode.FAILURE });
+            { code: FunctionResultCode.IN_LOCKUP_PERIOD });
       }
     } else {
       // Not enough deposit.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.FAILURE });
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 

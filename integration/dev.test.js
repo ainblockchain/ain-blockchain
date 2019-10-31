@@ -11,7 +11,7 @@ const sleep = require('system-sleep');
 chai.use(chaiHttp);
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
-const {BLOCKCHAINS_DIR, PredefinedDbPaths} = require('../constants')
+const {BLOCKCHAINS_DIR, PredefinedDbPaths, FunctionResultCode} = require('../constants')
 
 const server1 = 'http://localhost:9091'
 const server2 = 'http://localhost:9092'
@@ -519,9 +519,13 @@ describe('API Tests', () => {
       const balance = JSON.parse(syncRequest('GET',
           server2 + `/get_value?ref=${balancePath}`)
               .body.toString('utf-8')).result
+      const statusCode = JSON.parse(syncRequest('GET',
+          server2 + `/get_value?ref=${depositPath}/1/result/code`)
+              .body.toString('utf-8')).result
       expect(depositValue).to.equal(val);
       expect(depositAccountValue).to.equal(val);
       expect(balance).to.equal(beforeBalance - val);
+      expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
     });
 
     it('deposit more than account balance', () => {
@@ -630,8 +634,12 @@ describe('API Tests', () => {
       const balance = JSON.parse(syncRequest('GET',
           server2 + `/get_value?ref=${balancePath}`)
               .body.toString('utf-8')).result
+      const statusCode = JSON.parse(syncRequest('GET',
+          server2 + `/get_value?ref=${withdrawPath}/2/result/code`)
+              .body.toString('utf-8')).result
       expect(depositAccountValue).to.equal(0);
       expect(balance).to.equal(beforeBalance + val);
+      expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
     });
 
     it('deposit with the same deposit_id', () => {
@@ -661,9 +669,13 @@ describe('API Tests', () => {
       const balance = JSON.parse(syncRequest('GET',
           server2 + `/get_value?ref=${balancePath}`)
               .body.toString('utf-8')).result
+      const statusCode = JSON.parse(syncRequest('GET',
+          server2 + `/get_value?ref=${depositPath}/3/result/code`)
+              .body.toString('utf-8')).result
       expect(depositValue).to.equal(newVal);
       expect(depositAccountValue).to.equal(newVal);
       expect(balance).to.equal(beforeBalance - newVal);
+      expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
     });
   });
 })
