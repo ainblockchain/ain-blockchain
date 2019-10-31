@@ -105,7 +105,6 @@ class BuiltInFunctions {
     if (timestamp > currentTime) { // TODO (lia): move this check to when we first receive the transaction
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
-      throw Error(`[_deposit] Invalid timestamp (now: ${currentTime}, timestamp: ${timestamp})`)
     }
     const userBalancePath = this._getBalancePath(user);
     const userBalance = this.db.getValue(userBalancePath);
@@ -131,7 +130,6 @@ class BuiltInFunctions {
     } else {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
-      throw Error(`[_deposit] Invalid deposit amount (balance: ${userBalance}, value: ${value})`);
     }
   }
 
@@ -158,7 +156,6 @@ class BuiltInFunctions {
         if (Object.keys(depositRequests).length === 0) {
           this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
               { code: FunctionResultCode.FAILURE });
-          throw Error(`[_withdraw] No deposit available`);
         }
         let newest = 0;
         Object.values(depositRequests).forEach(deposit => {
@@ -185,13 +182,11 @@ class BuiltInFunctions {
         // Still in lock-up period.
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
             { code: FunctionResultCode.FAILURE });
-        throw Error(`[_withdraw] Deposit still locked up. Will expire in ${expireAt - currentTime} ms.`);
       }
     } else {
       // Not enough deposit.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
-      throw Error(`[_withdraw] Not enough deposit. Requested amount: ${value}, deposit: ${depositAmount}`);
     }
   }
 
