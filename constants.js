@@ -70,6 +70,19 @@ const PredefinedDbPaths = {
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
   TRANSFER_RESULT: 'result',
+  // Deposit & Withdraw
+  DEPOSIT: '/deposit',
+  DEPOSIT_ACCOUNTS: '/deposit_accounts',
+  DEPOSIT_CONFIG: 'config',
+  DEPOSIT_CREATED_AT: 'created_at',
+  DEPOSIT_EXPIRE_AT: 'expire_at',
+  DEPOSIT_LOCKUP_DURATION: 'lockup_duration',
+  DEPOSIT_RESULT: 'result',
+  DEPOSIT_VALUE: 'value',
+  WITHDRAW: '/withdraw',
+  WITHDRAW_CREATED_AT: 'created_at',
+  WITHDRAW_RESULT: 'result',
+  WITHDRAW_VALUE: 'value',
 };
 
 /**
@@ -111,6 +124,8 @@ const WriteDbOperations = {
 const FunctionResultCode = {
   SUCCESS: 'SUCCESS',
   FAILURE: 'FAILURE',
+  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+  IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
 };
 
 /**
@@ -121,6 +136,13 @@ const TransactionStatus = {
   BLOCK_STATUS: 'BLOCK',
   POOL_STATUS: 'POOL',
 };
+
+/**
+ * Default values
+ */
+const DefaultValues = {
+  DEPOSIT_LOCKUP_DURATION_MS: 2592000000 // 30 days
+}
 
 module.exports = {
   RULES_FILE_PATH,
@@ -137,4 +159,5 @@ module.exports = {
   WriteDbOperations,
   FunctionResultCode,
   TransactionStatus,
+  DefaultValues,
 };

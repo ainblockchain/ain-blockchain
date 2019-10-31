@@ -1,16 +1,19 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const assert = chai.assert;
+const expect = chai.expect;
 const should = chai.should();
 const spawn = require("child_process").spawn;
-const PROJECT_ROOT = require('path').dirname(__filename) + "/../" 
+const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 chai.use(chaiHttp);
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
-const {BLOCKCHAINS_DIR} = require('../constants') 
+const jayson = require('jayson/promise');
+const ainUtil = require('@ainblockchain/ain-util');
+const {BLOCKCHAINS_DIR, PredefinedDbPaths, FunctionResultCode} = require('../constants')
 
 const server1 = 'http://localhost:9091'
 const server2 = 'http://localhost:9092'
@@ -116,7 +119,7 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
-        ref: '/owner/some/path', 
+        ref: '/owner/some/path',
         value: {
           ".owner": "some owner config"
         }
@@ -139,7 +142,7 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
-        ref: '/owner/some/path', 
+        ref: '/owner/some/path',
         value: {}
       }
     });
@@ -442,4 +445,267 @@ describe('API Tests', () => {
       });
     })
   })
+
+  describe('built-in functions', () => {
+    let serviceAdmin; // = server1
+    let depositActor; // = server2
+    let badActor;     // = server3
+    const val = 50;
+    let depositAccountPath;
+    let depositPath;
+    let withdrawPath;
+    let balancePath;
+
+    before(() => {
+      serviceAdmin = JSON.parse(syncRequest('GET', server1 + '/node_address').body.toString('utf-8')).result;
+      depositActor = JSON.parse(syncRequest('GET', server2 + '/node_address').body.toString('utf-8')).result;
+      badActor = JSON.parse(syncRequest('GET', server3 + '/node_address').body.toString('utf-8')).result;
+      depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
+      depositPath = `/deposit/test_service/${depositActor}`;
+      withdrawPath = `/withdraw/test_service/${depositActor}`;
+      balancePath = `/account/${depositActor}/balance`;
+      syncRequest('POST', server1+'/set_value', {json: {ref: `/account/${serviceAdmin}/balance`, value: 1000}});
+      syncRequest('POST', server1+'/set_value', {json: {ref: balancePath, value: 1000}});
+      syncRequest('POST', server1+'/set_value', {json: {ref: `/account/${badActor}/balance`, value: 1000}});
+    })
+
+    describe('_deposit', () => {
+      it('setup deposit', () => {
+        const configPath = '/deposit_accounts/test_service/config'
+        const result = syncRequest('POST', server1 + '/set', {json: {
+          op_list: [
+            {
+              type: 'SET_OWNER',
+              ref: configPath,
+              value: {
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "write_owner": false,
+                      "write_rule": false,
+                      "branch_owner": false
+                    },
+                    [serviceAdmin]: {
+                      "write_owner": true,
+                      "write_rule": true,
+                      "branch_owner": true
+                    }
+                  }
+                }
+              }
+            },
+            {
+              type: 'SET_VALUE',
+              ref: configPath,
+              value: { lockup_duration: 1000 }
+            }
+          ]
+        }})
+        expect(result.statusCode).to.equal(201);
+      })
+
+      it('deposit', () => {
+        let beforeBalance = JSON.parse(syncRequest('GET', server2 +
+            `/get_value?ref=/account/${depositActor}/balance`).body.toString('utf-8'))
+                .result;
+        const result = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: depositPath + '/1/value',
+              value: val
+            }});
+        expect(result.statusCode).to.equal(201);
+        const depositValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositPath}/1/value`)
+                .body.toString('utf-8')).result
+        const depositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result
+        const balance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${balancePath}`)
+                .body.toString('utf-8')).result
+        const statusCode = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositPath}/1/result/code`)
+                .body.toString('utf-8')).result
+        expect(depositValue).to.equal(val);
+        expect(depositAccountValue).to.equal(val);
+        expect(balance).to.equal(beforeBalance - val);
+        expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
+      });
+
+      it('deposit more than account balance', () => {
+        const beforeBalance = JSON.parse(syncRequest('GET', server2 +
+            `/get_value?ref=/account/${depositActor}/balance`).body.toString('utf-8'))
+                .result;
+        const beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result
+        const result = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: depositPath + '/2/value',
+              value: beforeBalance + 1
+            }});
+        expect(result.statusCode).to.equal(401);
+        const depositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result
+        const balance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${balancePath}`)
+                .body.toString('utf-8')).result
+        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+        expect(balance).to.equal(beforeBalance);
+      });
+
+      it('deposit by another address', () => {
+        const beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result
+        const result = syncRequest('POST', server3 + '/set_value', {json: {
+              ref: `${depositPath}/3/value`,
+              value: val
+            }});
+        expect(result.statusCode).to.equal(401);
+        const depositRequest = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositPath}/3`)
+                .body.toString('utf-8')).result;
+        const depositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result;
+        expect(depositRequest).to.equal(null);
+        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+      });
+
+      // TODO (lia): update test code after fixing timestamp verification logic.
+      it('deposit with invalid timestamp', () => {
+        const account = ainUtil.createAccount();
+        syncRequest('POST', server2+'/set_value', {json: {ref: `/account/${account.address}/balance`, value: 1000}});
+        const transaction = {
+          operation: {
+            type: 'SET_VALUE',
+            value: val,
+            ref: `deposit/test_service/${account.address}/1/value`
+          },
+          timestamp: Date.now() + 100000,
+          nonce: 0
+        }
+        const signature = ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature })
+        .then(res => {
+          const depositResult = JSON.parse(syncRequest('GET',
+              server2 + `/get_value?ref=/deposit/test_service/${account.address}/1/result/code`)
+                  .body.toString('utf-8')).result;
+          expect(depositResult).to.equal(FunctionResultCode.FAILURE);
+        });
+      });
+
+      it('deposit with the same deposit_id', () => {
+        const result = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: depositPath + '/1/value',
+              value: val
+            }});
+        expect(result.statusCode).to.equal(401);
+      });
+    });
+
+    describe('_withdraw', () => {
+      it('withdraw by another address', () => {
+        sleep(1000);
+        let beforeBalance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=/account/${badActor}/balance`)
+                .body.toString('utf-8')).result;
+        let beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result;
+        const result = syncRequest('POST', server3 + '/set_value', {json: {
+              ref: `${withdrawPath}/1/value`,
+              value: val
+            }});
+        expect(result.statusCode).to.equal(401);
+        const withdrawRequest = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${withdrawPath}/1`)
+                .body.toString('utf-8')).result;
+        const depositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result;
+        const balance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=/account/${badActor}/balance`)
+                .body.toString('utf-8')).result;
+        expect(withdrawRequest).to.equal(null);
+        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+        expect(balance).to.equal(beforeBalance);
+      });
+
+      it('withdraw more than deposited amount', () => {
+        let beforeBalance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${balancePath}`).body.toString('utf-8')).result;
+        let beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result;
+        const result = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: `${withdrawPath}/1/value`,
+              value: beforeDepositAccountValue + 1
+            }});
+        expect(result.statusCode).to.equal(401);
+        const depositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result;
+        const balance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${balancePath}`)
+                .body.toString('utf-8')).result;
+        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+        expect(balance).to.equal(beforeBalance);
+      });
+
+      it('withdraw', () => {
+        let beforeBalance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${balancePath}`).body.toString('utf-8')).result;
+        const depositAccountBefore = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=/deposit_accounts`)
+                .body.toString('utf-8')).result
+        const result = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: `${withdrawPath}/2/value`,
+              value: val
+            }});
+        expect(result.statusCode).to.equal(201);
+        const depositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result
+        const balance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${balancePath}`)
+                .body.toString('utf-8')).result
+        const statusCode = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${withdrawPath}/2/result/code`)
+                .body.toString('utf-8')).result
+        expect(depositAccountValue).to.equal(0);
+        expect(balance).to.equal(beforeBalance + val);
+        expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
+      });
+
+      it('deposit after withdraw', () => {
+        const newVal = 100;
+        let beforeBalance = JSON.parse(syncRequest('GET', server2 +
+            `/get_value?ref=/account/${depositActor}/balance`).body.toString('utf-8'))
+                .result;
+        const result = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: depositPath + '/3/value',
+              value: newVal
+            }});
+        expect(result.statusCode).to.equal(201);
+        const depositValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositPath}/3/value`)
+                .body.toString('utf-8')).result
+        const depositAccountValue = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`)
+                .body.toString('utf-8')).result
+        const balance = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${balancePath}`)
+                .body.toString('utf-8')).result
+        const statusCode = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=${depositPath}/3/result/code`)
+                .body.toString('utf-8')).result
+        expect(depositValue).to.equal(newVal);
+        expect(depositAccountValue).to.equal(newVal);
+        expect(balance).to.equal(beforeBalance - newVal);
+        expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
+      });
+    });
+  });
 })

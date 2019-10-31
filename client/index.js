@@ -195,6 +195,16 @@ app.get('/transactions', (req, res, next) => {
     .end();
 });
 
+// For testing purposes
+app.get('/node_address', (req, res, next) => {
+  const statusCode = 200;
+  const result = db.account.address;
+  res.status(statusCode)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
+})
+
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 app.listen(PORT, () => {
@@ -255,4 +265,3 @@ function checkIfTransactionShouldBeNonced(input) {
   // Default to true if noncing information is not specified
   return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
 }
-
