@@ -535,7 +535,7 @@ describe('API Tests', () => {
             ref: depositPath + '/2/value',
             value: beforeBalance + 1
           }});
-      expect(result.statusCode).to.equal(201);
+      expect(result.statusCode).to.equal(401);
       const depositAccountValue = JSON.parse(syncRequest('GET',
           server2 + `/get_value?ref=${depositAccountPath}/value`)
               .body.toString('utf-8')).result
@@ -602,7 +602,7 @@ describe('API Tests', () => {
             ref: `${withdrawPath}/1/value`,
             value: beforeDepositAccountValue + 1
           }});
-      expect(result.statusCode).to.equal(201);
+      expect(result.statusCode).to.equal(401);
       const depositAccountValue = JSON.parse(syncRequest('GET',
           server2 + `/get_value?ref=${depositAccountPath}/value`)
               .body.toString('utf-8')).result;

@@ -48,7 +48,7 @@
         "$uid": {
           "$deposit_id": {
             "value": {
-              ".write": "auth === '$uid' && !db.getValue(`/deposit/$service_id/$uid/$deposit_id`)"
+              ".write": "auth === '$uid' && !db.getValue(`/deposit/$service_id/$uid/$deposit_id`) && db.getValue(`/account/$uid/balance`) >= newData"
             },
             "createdAt": {
               ".write": false
@@ -119,7 +119,7 @@
         "$uid": {
           "$withdraw_id": {
             "value": {
-              ".write": "auth === '$uid' && !db.getValue(`/withdraw/$service_id/$uid/$withdraw_id`)"
+              ".write": "auth === '$uid' && !db.getValue(`/withdraw/$service_id/$uid/$withdraw_id`) && db.getValue(`/deposit_accounts/$service_id/$uid/value`) >= newData"
             },
             "createdAt": {
               ".write": false
