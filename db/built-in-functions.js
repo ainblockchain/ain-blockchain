@@ -96,12 +96,13 @@ class BuiltInFunctions {
     const timestamp = context.timestamp;
     const currentTime = context.currentTime;
     const resultPath = this._getDepositResultPath(service, user, depositId);
+    const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
+    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
     if (timestamp > currentTime) { // TODO (lia): move this check to when we first receive the transaction
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
+      return;
     }
-    const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
-    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
     const userBalancePath = this._getBalancePath(user);
     const depositAmountPath = this._getDepositAmountPath(service, user);
     if (this._transferInternal(userBalancePath, depositAmountPath, value)) {

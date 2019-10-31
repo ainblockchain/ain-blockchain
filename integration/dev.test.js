@@ -11,6 +11,8 @@ const sleep = require('system-sleep');
 chai.use(chaiHttp);
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
+const jayson = require('jayson/promise');
+const ainUtil = require('@ainblockchain/ain-util');
 const {BLOCKCHAINS_DIR, PredefinedDbPaths, FunctionResultCode} = require('../constants')
 
 const server1 = 'http://localhost:9091'
@@ -567,6 +569,30 @@ describe('API Tests', () => {
               .body.toString('utf-8')).result;
       expect(depositRequest).to.equal(null);
       expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+    });
+
+    // TODO (lia): update test code after fixing timestamp verification logic.
+    it('deposit with invalid timestamp', () => {
+      const account = ainUtil.createAccount();
+      syncRequest('POST', server2+'/set_value', {json: {ref: `/account/${account.address}/balance`, value: 1000}});
+      const transaction = {
+        operation: {
+          type: 'SET_VALUE',
+          value: val,
+          ref: `deposit/test_service/${account.address}/1/value`
+        },
+        timestamp: Date.now() + 100000,
+        nonce: 0
+      }
+      const signature = ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+      const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+      return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature })
+      .then(res => {
+        const depositResult = JSON.parse(syncRequest('GET',
+            server2 + `/get_value?ref=/deposit/test_service/${account.address}/1/result/code`)
+                .body.toString('utf-8')).result;
+        expect(depositResult).to.equal(FunctionResultCode.FAILURE);
+      });
     });
 
     it('withdraw by another address', () => {
