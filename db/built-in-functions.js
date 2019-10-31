@@ -79,14 +79,8 @@ class BuiltInFunctions {
     const key = context.params.key;
     const fromBalancePath = this._getBalancePath(from);
     const toBalancePath = this._getBalancePath(to);
-    let fromBalance = this.db.getValue(fromBalancePath);
-    let toBalance = this.db.getValue(toBalancePath);
     const resultPath = this._getTransferResultPath(from, to, key);
-    if (fromBalance >= value) {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(fromBalancePath)),
-          fromBalance - value);
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toBalancePath)),
-          toBalance + value);
+    if (this._transferInternal(fromBalancePath, toBalancePath, value)) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.SUCCESS });
     } else {
@@ -106,25 +100,17 @@ class BuiltInFunctions {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
     }
+    const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
+    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
     const userBalancePath = this._getBalancePath(user);
-    const userBalance = this.db.getValue(userBalancePath);
-    if (value > 0 && userBalance >= value) {
-      const depositAmountPath = this._getDepositAmountPath(service, user);
-      const currentDeposit = this.db.getValue(depositAmountPath);
-      const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)),
-          timestamp);
-      const configsPath = this._getDepositConfigPath(service);
-      const configs = this.db.getValue(configsPath) || {};
+    const depositAmountPath = this._getDepositAmountPath(service, user);
+    if (this._transferInternal(userBalancePath, depositAmountPath, value)) {
+      const configs = this.db.getValue(this._getDepositConfigPath(service)) || {};
       const expirationPath = this._getDepositExpirationPath(service, user);
       const lockup = configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] !== null ?
           configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] : DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
           Number(timestamp) + Number(lockup));
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(userBalancePath)),
-          userBalance - value);
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositAmountPath)),
-          currentDeposit + value);
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.SUCCESS });
     } else {
@@ -140,42 +126,13 @@ class BuiltInFunctions {
     const timestamp = context.timestamp;
     const currentTime = context.currentTime;
     const depositAmountPath = this._getDepositAmountPath(service, user);
-    const depositAmount = this.db.getValue(depositAmountPath) || 0;
-    const expirationPath = this._getDepositExpirationPath(service, user);
-    let expireAt = this.db.getValue(expirationPath);
+    const userBalancePath = this._getBalancePath(user);
     const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
     this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
-    if (value > 0 && depositAmount >= value) {
-      if (!expireAt) {
-        const configsPath = this._getDepositConfigPath(service);
-        const configs = this.db.getValue(configsPath) || {};
-        // Get the latest deposit request and set the expiration time accordingly.
-        const allDepositsPath = this._getAllDepositsPath(service, user);
-        const depositRequests = this.db.getValue(allDepositsPath) || {};
-        if (Object.keys(depositRequests).length === 0) {
-          this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-              { code: FunctionResultCode.FAILURE });
-        }
-        let newest = 0;
-        Object.values(depositRequests).forEach(deposit => {
-          if (newest < deposit[PredefinedDbPaths.DEPOSIT_CREATED_AT]) {
-            newest = deposit[PredefinedDbPaths.DEPOSIT_CREATED_AT];
-          }
-        });
-        const lockup = configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] !== null ?
-            configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] : DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
-        expireAt = newest + lockup;
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
-            expireAt);
-      }
+    if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
+      const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
       if (expireAt <= currentTime) {
-        const userBalancePath = this._getBalancePath(user);
-        const userBalance = this.db.getValue(userBalancePath);
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositAmountPath)),
-            depositAmount - value);
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(userBalancePath)),
-            userBalance + value);
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
             { code: FunctionResultCode.SUCCESS });
       } else {
@@ -188,6 +145,15 @@ class BuiltInFunctions {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
     }
+  }
+
+  _transferInternal(fromPath, toPath, value) {
+    const fromBalance = this.db.getValue(fromPath);
+    if (fromBalance < value) return false;
+    const toBalance = this.db.getValue(toPath);
+    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(fromPath)), fromBalance - value);
+    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toPath)), toBalance + value);
+    return true;
   }
 
   _getBalancePath(address) {
