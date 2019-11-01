@@ -34,7 +34,7 @@ class BlockFilePatterns {
   /**
   * Returns the name of the block file corresponding to the given block e.g. <lastHash>-<currentHash>.json.zip
   *
-  * @param {ForgedBlock} block - An instance of a ForgedBlock
+  * @param {Block} block - An instance of a Block
   * @return {String} The name of the corresponding block file.
   */
   static getBlockFileName(block) {

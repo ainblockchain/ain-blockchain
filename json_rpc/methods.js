@@ -57,14 +57,14 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       }
     },
 
-    ain_getForgerByHash: function(args, done) {
+    ain_getProposerByHash: function(args, done) {
       const block = blockchain.getBlockByHash(args.hash);
-      done(null, block ? block.forger : null);
+      done(null, block ? block.proposer : null);
     },
 
-    ain_getForgerByNumber: function(args, done) {
+    ain_getProposerByNumber: function(args, done) {
       const block = blockchain.getBlockByNumber(args.number);
-      done(null, block ? block.forger : null);
+      done(null, block ? block.proposer : null);
     },
 
     ain_getValidatorsByNumber: function(args, done) {

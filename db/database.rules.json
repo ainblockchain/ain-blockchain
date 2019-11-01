@@ -19,8 +19,8 @@
       ".write": true
     },
     "consensus": {
-      "recent_forgers": {
-        ".write": "(newData.length < 20) && (db.getValue(`/consensus/voting/pre_commits`) > db.getValue(`/consensus/voting/threshold`)) && (db.getValue(`/consensus/voting/forger`) === auth)"
+      "recent_proposers": {
+        ".write": "(newData.length < 20) && (db.getValue(`/consensus/voting/pre_commits`) > db.getValue(`/consensus/voting/threshold`)) && (db.getValue(`/consensus/voting/proposer`) === auth)"
       },
       "stakes": {
         "$uid": {
@@ -28,9 +28,9 @@
         }
       },
       "voting": {
-        ".write": "db.getValue(`/consensus/voting`) === null || db.getValue(`/consensus/recent_forgers`) !== null && (db.getValue(`/consensus/recent_forgers`)[db.getValue(`/consensus/recent_forgers`).length - Math.floor((currentTime - db.getValue(`/consensus/voting/time`)) / 6000)] === auth)" ,
+        ".write": "db.getValue(`/consensus/voting`) === null || db.getValue(`/consensus/recent_proposers`) !== null && (db.getValue(`/consensus/recent_proposers`)[db.getValue(`/consensus/recent_proposers`).length - Math.floor((currentTime - db.getValue(`/consensus/voting/time`)) / 6000)] === auth)" ,
         "block_hash": {
-          ".write": "db.getValue(`/consensus/voting/forger`) === auth"
+          ".write": "db.getValue(`/consensus/voting/proposer`) === auth"
         },
         "next_round_validators": {
           ".write": "Object.keys(db.getValue(`/consensus/stakes`)).indexOf(auth) > -1"

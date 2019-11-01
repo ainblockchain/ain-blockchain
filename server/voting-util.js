@@ -2,7 +2,7 @@
 const shuffleSeed = require('shuffle-seed');
 const seedrandom = require('seedrandom');
 const { VotingStatus, PredefinedDbPaths, WriteDbOperations } = require('../constants');
-const MAX_RECENT_FORGERS = 20;
+const MAX_RECENT_PROPOSERS = 20;
 
 class VotingUtil {
   constructor(db) {
@@ -109,7 +109,7 @@ class VotingUtil {
     // This user should establish themselves as the first node on the network, instantiate the first /consensus/voting entry t db
     // and commit this to the blockchain so it will be picked up by new peers on the network
     const time = Date.now();
-    const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.account.address, pre_votes: 0,
+    const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, proposer: this.db.account.address, pre_votes: 0,
       pre_commits: 0, time, block_hash: '', number: bc.lastBlock().number + 1, lastHash: bc.lastBlock().hash};
     return this.db.createTransaction({
       operation: {
@@ -124,17 +124,17 @@ class VotingUtil {
   startNewRound(bc) {
     const lastRound = this.db.getValue(PredefinedDbPaths.VOTING_ROUND);
     const time = Date.now();
-    let forger;
+    let proposer;
     if (Object.keys(lastRound.next_round_validators).length) {
-      forger = this.getForger(lastRound.next_round_validators, bc);
-      delete lastRound.next_round_validators[forger];
+      proposer = this.getProposer(lastRound.next_round_validators, bc);
+      delete lastRound.next_round_validators[proposer];
     } else {
-      forger = this.db.account.address;
+      proposer = this.db.account.address;
     }
     const threshold = Math.round(Object.values(lastRound.next_round_validators).reduce(function(a, b) {
       return a + b;
     }, 0) * .666) - 1;
-    let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, forger: forger, pre_votes: 0, pre_commits: 0, time, block_hash: null};
+    let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, proposer: proposer, pre_votes: 0, pre_commits: 0, time, block_hash: null};
     if (this.checkPreCommits()) {
       // Should be1
       nextRound = Object.assign({}, nextRound, {number: lastRound.number + 1, lastHash: lastRound.block_hash});
@@ -176,7 +176,7 @@ class VotingUtil {
     this.validatorTransactions.length = 0;
   }
 
-  getForger(stakeHolders, bc) {
+  getProposer(stakeHolders, bc) {
     const alphabeticallyOrderedStakeHolders = Object.keys(stakeHolders).sort();
     const totalStakedAmount = Object.values(stakeHolders).reduce(function(a, b) {
       return a + b;
@@ -189,11 +189,11 @@ class VotingUtil {
     for (let i=0; i < alphabeticallyOrderedStakeHolders.length; i++) {
       cumulativeStakeFromPotentialValidators += stakeHolders[alphabeticallyOrderedStakeHolders[i]];
       if (targetValue < cumulativeStakeFromPotentialValidators) {
-        console.log(`Forger is ${alphabeticallyOrderedStakeHolders[i]}`);
+        console.log(`Proposer is ${alphabeticallyOrderedStakeHolders[i]}`);
         return alphabeticallyOrderedStakeHolders[i];
       }
     }
-    throw Error(`No forger was selected from stakeholder dict ${stakeHolders} `);
+    throw Error(`No proposer was selected from stakeholder dict ${stakeHolders} `);
   }
 
   stake(stakeAmount) {
@@ -207,9 +207,9 @@ class VotingUtil {
     });
   }
 
-  isForger() {
+  isProposer() {
     this.status = VotingStatus.WAIT_FOR_BLOCK;
-    return this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER) === this.db.account.address;
+    return this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER) === this.db.account.address;
   }
 
   isValidator() {
@@ -220,23 +220,23 @@ class VotingUtil {
     return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address])));
   }
 
-  writeSuccessfulForge() {
-    let recentForgers = JSON.parse(JSON.stringify(this.db.getValue(PredefinedDbPaths.RECENT_FORGERS)));
-    if (recentForgers == null) {
-      recentForgers = [];
-    } else if (recentForgers.length == MAX_RECENT_FORGERS) {
-      recentForgers.shift();
+  writeSuccessfulBlockCreation() {
+    let recentProposers = JSON.parse(JSON.stringify(this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS)));
+    if (recentProposers == null) {
+      recentProposers = [];
+    } else if (recentProposers.length == MAX_RECENT_PROPOSERS) {
+      recentProposers.shift();
     }
 
-    if (recentForgers.indexOf(this.db.account.address) >= 0) {
-      recentForgers.splice(recentForgers.indexOf(this.db.account.address), 1);
+    if (recentProposers.indexOf(this.db.account.address) >= 0) {
+      recentProposers.splice(recentProposers.indexOf(this.db.account.address), 1);
     }
-    recentForgers.push(this.db.account.address);
+    recentProposers.push(this.db.account.address);
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
-        ref: PredefinedDbPaths.RECENT_FORGERS,
-        value: recentForgers
+        ref: PredefinedDbPaths.RECENT_PROPOSERS,
+        value: recentProposers
       }
     });
   }

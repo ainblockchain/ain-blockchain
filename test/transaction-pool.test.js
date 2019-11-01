@@ -2,7 +2,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const TransactionPool = require('../db/transaction-pool');
 const Transaction = require('../db/transaction');
 const Blockchain = require('../blockchain/');
-const {ForgedBlock} = require('../blockchain/block');
+const {Block} = require('../blockchain/block');
 const DB = require('../db');
 const chai = require('chai');
 const expect = chai.expect;
@@ -105,7 +105,7 @@ describe('TransactionPool', () => {
 
     it('removes transactions included in block', () => {
       const number = 1;
-      const block = ForgedBlock.forgeBlock(tp.validTransactions(), db, number, ForgedBlock.genesis());
+      const block = Block.createBlock(tp.validTransactions(), db, number, Block.genesis());
       const newTransactions = {};
       newTransactions[db.account.address] = [];
       for (let i = 0; i < 10; i++) {

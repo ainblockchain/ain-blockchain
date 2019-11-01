@@ -53,10 +53,10 @@ const PredefinedDbPaths = {
   RULES_ROOT: 'rules',
   VALUES_ROOT: 'values',
   // Consensus
-  RECENT_FORGERS: '/consensus/recent_forgers',
+  RECENT_PROPOSERS: '/consensus/recent_proposers',
   VOTING_ROUND: '/consensus/voting',
   VOTING_ROUND_VALIDATORS: '/consensus/voting/validators',
-  VOTING_ROUND_FORGER: '/consensus/voting/forger',
+  VOTING_ROUND_PROPOSER: '/consensus/voting/proposer',
   VOTING_ROUND_PRE_COMMITS: '/consensus/voting/pre_commits',
   VOTING_ROUND_PRE_VOTES: '/consensus/voting/pre_votes',
   VOTING_ROUND_THRESHOLD: '/consensus/voting/threshold',
