@@ -39,7 +39,7 @@ class Blockchain {
   /**
     * Given a number, returns the block corresponding to that height of the blockchain.
     *
-    * @param {integer} number - Height of block.
+    * @param {integer} number - The number of block.
     * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
 ]   */
   getBlockByNumber(number) {
@@ -56,7 +56,7 @@ class Blockchain {
   }
 
   height() {
-    return this.lastBlock().height;
+    return this.lastBlock().number;
   }
 
   lastBlock() {
@@ -64,7 +64,7 @@ class Blockchain {
   }
 
   addNewBlock(block) {
-    if (block.height != this.height() + 1) {
+    if (block.number != this.height() + 1) {
       throw Error('Blockchain height is wrong');
     }
     if (!(block instanceof ForgedBlock)) {
@@ -93,7 +93,7 @@ class Blockchain {
       const block = chainSubSection[i];
       const lastBlock = chainSubSection[i - 1];
       if (block.lastHash !== lastBlock.hash || block.hash !== ForgedBlock.hash(block)) {
-        console.log(`Invalid hashing for block ${block.height}`);
+        console.log(`Invalid hashing for block ${block.number}`);
         return false;
       }
     }
@@ -138,8 +138,8 @@ class Blockchain {
   }
 
   writeChain() {
-    for (let i=this.chain[0].height; i<this.height() + 1; i++) {
-      const block = this.chain[i - this.chain[0].height];
+    for (let i = this.chain[0].number; i < this.height() + 1; i++) {
+      const block = this.chain[i - this.chain[0].number];
       const filePath = this.pathToBlock(block);
       if (!(fs.existsSync(filePath))) {
         // Change to async implementation
@@ -155,9 +155,9 @@ class Blockchain {
     * @return {list} A list of ForgedBlock instances with lastBlock at index 0, up to a maximuim length CHAIN_SUBSECT_LENGTH
     */
   requestBlockchainSection(lastBlock) {
-    console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.height}\t hash ${lastBlock.lastHash}`);
-    const blockFiles = this.getBlockFiles(lastBlock.height, lastBlock.height + CHAIN_SUBSECT_LENGTH);
-    if (blockFiles.length > 0 && ForgedBlock.loadBlock(blockFiles[blockFiles.length - 1]).height > lastBlock.height &&
+    console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.number}\t hash ${lastBlock.lastHash}`);
+    const blockFiles = this.getBlockFiles(lastBlock.number, lastBlock.number + CHAIN_SUBSECT_LENGTH);
+    if (blockFiles.length > 0 && ForgedBlock.loadBlock(blockFiles[blockFiles.length - 1]).number > lastBlock.number &&
       blockFiles[0].indexOf(ForgedBlock.getFileName(lastBlock)) < 0) {
       console.log('Invalid blockchain request. Requesters last block does not belong to this blockchain');
       return;
@@ -177,7 +177,7 @@ class Blockchain {
   merge(chainSubSection) {
     // Call to shift here is important as it removes the first element from the list !!
     console.log(`Current height before merge: ${this.height()}`);
-    if (chainSubSection[chainSubSection.length - 1].height <= this.height()) {
+    if (chainSubSection[chainSubSection.length - 1].number <= this.height()) {
       console.log('Received chain is of lower height than current height');
       return false;
     }

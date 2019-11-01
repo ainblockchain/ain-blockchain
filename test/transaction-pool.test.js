@@ -104,8 +104,8 @@ describe('TransactionPool', () => {
     });
 
     it('removes transactions included in block', () => {
-      const height = 1;
-      const block = ForgedBlock.forgeBlock(tp.validTransactions(), db, height, ForgedBlock.genesis());
+      const number = 1;
+      const block = ForgedBlock.forgeBlock(tp.validTransactions(), db, number, ForgedBlock.genesis());
       const newTransactions = {};
       newTransactions[db.account.address] = [];
       for (let i = 0; i < 10; i++) {

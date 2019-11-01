@@ -75,7 +75,7 @@ describe('Blockchain', () => {
           }
         });
         const block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock());
-        if (block.height === 500) {
+        if (block.number === 500) {
           blockHash = block.hash;
         }
         blocks.push(block);
@@ -99,12 +99,12 @@ describe('Blockchain', () => {
       assert.deepEqual(JSON.stringify(bc.getChainSection(980, 1010)), JSON.stringify(blocks.slice(979, 1010)));
     });
 
-    it('can be queried by block height', () => {
-      expect(bc.getBlockByNumber(600).height).to.equal(600);
+    it('can be queried by block number', () => {
+      expect(bc.getBlockByNumber(600).number).to.equal(600);
     });
 
     it('can be queried by block hash', () => {
-      expect(bc.getBlockByHash(blockHash).height).to.equal(500);
+      expect(bc.getBlockByHash(blockHash).number).to.equal(500);
     });
   });
 });

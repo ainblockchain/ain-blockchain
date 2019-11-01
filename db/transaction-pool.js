@@ -96,9 +96,9 @@ class TransactionPool {
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
       const status = TransactionStatus.BLOCK_STATUS;
-      const height = block.height;
+      const number = block.number;
       const index = i;
-      this.transactionTracker[transaction.hash] = { status, height, index };
+      this.transactionTracker[transaction.hash] = { status, number, index };
       transactionHashes.push(transaction.hash);
     }
 

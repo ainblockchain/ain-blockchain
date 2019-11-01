@@ -109,7 +109,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       } else {
         let transaction = null;
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
-          const block = blockchain.getBlockByNumber(transactionInfo.height);
+          const block = blockchain.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
           transaction = block.data[index];
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {

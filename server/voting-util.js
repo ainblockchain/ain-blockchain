@@ -68,7 +68,7 @@ class VotingUtil {
   isSyncedWithNetwork(bc) {
     // This does not currently take in to a count the situation where consensus is not reached.
     // Need to add logic to account for this situation
-    const sync = (VotingStatus.COMMITTED === this.status && bc.height() + 1 === Number(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_HEIGHT)));
+    const sync = (VotingStatus.COMMITTED === this.status && bc.height() + 1 === Number(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_NUMBER)));
     if (!sync) {
       this.status = VotingStatus.SYNCING;
     }
@@ -110,7 +110,7 @@ class VotingUtil {
     // and commit this to the blockchain so it will be picked up by new peers on the network
     const time = Date.now();
     const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, forger: this.db.account.address, pre_votes: 0,
-      pre_commits: 0, time, block_hash: '', height: bc.lastBlock().height + 1, lastHash: bc.lastBlock().hash};
+      pre_commits: 0, time, block_hash: '', number: bc.lastBlock().number + 1, lastHash: bc.lastBlock().hash};
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
@@ -137,10 +137,10 @@ class VotingUtil {
     let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, forger: forger, pre_votes: 0, pre_commits: 0, time, block_hash: null};
     if (this.checkPreCommits()) {
       // Should be1
-      nextRound = Object.assign({}, nextRound, {height: lastRound.height + 1, lastHash: lastRound.block_hash});
+      nextRound = Object.assign({}, nextRound, {number: lastRound.number + 1, lastHash: lastRound.block_hash});
     } else {
       // Start same round
-      nextRound = Object.assign({}, nextRound, {height: lastRound.height, lastHash: lastRound.lastHash});
+      nextRound = Object.assign({}, nextRound, {number: lastRound.number, lastHash: lastRound.lastHash});
     }
 
     return this.db.createTransaction({
@@ -152,11 +152,11 @@ class VotingUtil {
     }, false);
   }
 
-  registerForNextRound(height) {
+  registerForNextRound(number) {
     const votingRound = this.db.getValue(PredefinedDbPaths.VOTING_ROUND);
-    console.log(`${height + 1} is the expected height and actual info is ${votingRound.height + 1}`);
-    if (height !== votingRound.height) {
-      throw Error('Not valid height');
+    console.log(`${number + 1} is the expected number and actual info is ${votingRound.number + 1}`);
+    if (number !== votingRound.number) {
+      throw Error('Not valid block number');
     }
 
     const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]));
@@ -170,7 +170,7 @@ class VotingUtil {
   }
 
   setBlock(block) {
-    console.log(`Setting block ${block.hash.substring(0, 5)} at height ${block.height}`);
+    console.log(`Setting block ${block.hash.substring(0, 5)} with number ${block.number}`);
     this.block = block;
     this.status = VotingStatus.BLOCK_RECEIVED;
     this.validatorTransactions.length = 0;
@@ -193,7 +193,7 @@ class VotingUtil {
         return alphabeticallyOrderedStakeHolders[i];
       }
     }
-    throw Error(`No forger was selected frok stakeholder dict ${stakeHolders} `);
+    throw Error(`No forger was selected from stakeholder dict ${stakeHolders} `);
   }
 
   stake(stakeAmount) {

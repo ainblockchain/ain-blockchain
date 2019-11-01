@@ -125,8 +125,8 @@ function waitUntilNewBlock(jsonRpcClient, numBlocks, stackDepth) {
   return new Promise((resolve) => {
     jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
       if (err) throw err;
-      currentHeight = response.result.height;
-      resolve(currentHeight - numBlocks);
+      currentNumber = response.result.number;
+      resolve(currentNumber - numBlocks);
     });
   }).then((numCreatedBlocks) => {
     if (numCreatedBlocks > 0) {
@@ -182,7 +182,7 @@ describe('Integration Tests', () => {
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
         if (err) throw err;
-        numBlocksOnStartup = response.result.height;
+        numBlocksOnStartup = response.result.number;
         resolve();
       });
     }));
@@ -213,8 +213,8 @@ describe('Integration Tests', () => {
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
           if (err) throw err;
-          numBlocks = response.result.height;
-          currentHeight = numBlocks;
+          numBlocks = response.result.number;
+          currentNumber = numBlocks;
           resolve();
         });
       // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
@@ -240,7 +240,7 @@ describe('Integration Tests', () => {
     /*
     it('will sync to new peers on startup', () => {
       let baseChain;
-      let height;
+      let number;
       const newServer = 'http://localhost:9095';
       const newServerProc = new Process(APP_SERVER, {P2P_PORT: 5005, PORT: 9095, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true});
       newServerProc.start();
@@ -249,12 +249,12 @@ describe('Integration Tests', () => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
           if (err) throw err;
           baseChain = response.result;
-          height = baseChain[baseChain.length - 1].height;
+          number = baseChain[baseChain.length - 1].number;
           resolve();
         });
       }).then(() => {
         return new Promise((resolve) => {
-          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: height + 1}, function(err, response) {
+          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: number + 1}, function(err, response) {
             if (err) throw err;
             const newChain = response.result;
             assert.deepEqual(baseChain.length, newChain.length);
@@ -284,9 +284,9 @@ describe('Integration Tests', () => {
       /*
       itParam('syncing across all chains', SERVERS, function(server) {
         let newChain;
-        const height = baseChain[baseChain.length - 1].height;
+        const number = baseChain[baseChain.length - 1].number;
         return new Promise((resolve) => {
-          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: height + 1}, function(err, response) {
+          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: number + 1}, function(err, response) {
             if (err) throw err;
             newChain = response.result;
             assert.deepEqual(baseChain, newChain);
@@ -331,7 +331,7 @@ describe('Integration Tests', () => {
 
       // TODO(seo): Uncomment this. It's flacky.
       it('all having correct number of blocks', () => {
-        expect(numNewBlocks + numBlocksOnStartup).to.equal(baseChain.pop().height);
+        expect(numNewBlocks + numBlocksOnStartup).to.equal(baseChain.pop().number);
       });
     });
 
@@ -377,7 +377,7 @@ describe('Integration Tests', () => {
             if (err) throw err;
             body = response.result;
             assert.deepEqual([2, 3], body.map((blockHeader) => {
-              return blockHeader.height;
+              return blockHeader.number;
             }));
             resolve();
           });
@@ -461,7 +461,7 @@ describe('Integration Tests', () => {
         const lastBlockFromStoppedBlockchain = JSON.parse(syncRequest('GET', server2 + '/blocks').body.toString('utf-8')).result.pop();
         assert.deepEqual(lastBlockFromRunningBlockchain.data, lastBlockFromStoppedBlockchain.data);
         expect(lastBlockFromRunningBlockchain.hash).to.equal(lastBlockFromStoppedBlockchain.hash);
-        expect(lastBlockFromRunningBlockchain.height).to.equal(lastBlockFromStoppedBlockchain.height);
+        expect(lastBlockFromRunningBlockchain.number).to.equal(lastBlockFromStoppedBlockchain.number);
       });
       */
     });
