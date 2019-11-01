@@ -6,10 +6,10 @@ const chai = require('chai');
 const fs = require("fs")
 const expect = chai.expect;
 const assert = chai.assert;
-const {RULES_FILE_PATH} = require('../constants')
+const {INITIAL_DB_RULES} = require('../constants')
 
 describe("DB initialization", () => {
-  let db, dbValues, dbRules, dbOwners, bc, tp;
+  let db, bc, tp;
 
   beforeEach(() => {
     tp = new TransactionPool();
@@ -19,8 +19,8 @@ describe("DB initialization", () => {
 
   describe("rules", () => {
     it("loading properly on initatiion", () => {
-      const rules = JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"];
-      assert.deepEqual(db.getRule("/"), JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"])
+      const rules = JSON.parse(fs.readFileSync(INITIAL_DB_RULES));
+      assert.deepEqual(db.getRule("/"), rules);
 
     })
   })

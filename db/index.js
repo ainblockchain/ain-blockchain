@@ -1,19 +1,48 @@
 const escapeStringRegexp = require('escape-string-regexp');
 const ainUtil = require('@ainblockchain/ain-util');
+const fs = require('fs');
+const {INITIAL_TOTAL_SUPPLY, INITIAL_DB_RULES, INITIAL_DB_OWNERS, GenesisInfo, ReadDbOperations,
+    WriteDbOperations, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 
 class DB {
   constructor(blockchain) {
     this.db = {};
+    this.initDb();
     this.func = new BuiltInFunctions(this);
     // TODO (lia): Add account importing functionality
     this.account = ainUtil.createAccount(); // { private_key, public_key, address }
     if (this instanceof BackUpDB) return;
     this.nonce = this.getNonce(blockchain);
     console.log(`creating new db with id ${this.account.address}`);
+  }
+
+  initDb() {
+    // Initialize DB rules.
+    if (!fs.existsSync(INITIAL_DB_RULES)) {
+      throw Error('Missing rules file for database initialization.');
+    }
+    const initialRules = JSON.parse(fs.readFileSync(INITIAL_DB_RULES));
+    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], initialRules);
+    // Initialize DB owners.
+    if (!fs.existsSync(INITIAL_DB_OWNERS)) {
+      throw Error('Missing owners file for database initialization.');
+    }
+    const initialOwners = JSON.parse(fs.readFileSync(INITIAL_DB_OWNERS));
+    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], initialOwners);
+    // Initialize account balances.
+    const accountPath = [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.ACCOUNT,
+                         GenesisInfo.address, PredefinedDbPaths.BALANCE];
+    this.writeDatabase(accountPath, INITIAL_TOTAL_SUPPLY);
+  }
+
+  static getDatabase(blockchain, tp) {
+    const db = new DB(blockchain);
+    blockchain.setBackDb(new BackUpDB(db.account));
+    db.reconstruct(blockchain, tp);
+    return db;
   }
 
   getNonce(blockchain) {
@@ -34,13 +63,6 @@ class DB {
     }
     console.log(`Setting nonce to ${nonce}`);
     return nonce;
-  }
-
-  static getDatabase(blockchain, tp) {
-    const db = new DB(blockchain);
-    blockchain.setBackDb(new BackUpDB(db.account));
-    db.reconstruct(blockchain, tp);
-    return db;
   }
 
   writeDatabase(fullPath, value) {
@@ -141,7 +163,7 @@ class DB {
   setRule(rulePath, rule, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address, timestamp, rule)) {
-      return {code: 2, error_message: 'No write_rule permission on: ' + rulePath};
+      return {code: 2, error_message: 'No rule_write permission on: ' + rulePath};
     }
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
@@ -152,7 +174,7 @@ class DB {
   setOwner(ownerPath, owner, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address, timestamp, owner)) {
-      return {code: 2, error_message: 'No write_owner permission on: ' + ownerPath};
+      return {code: 2, error_message: 'No owner_write permission on: ' + ownerPath};
     }
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);

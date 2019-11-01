@@ -1,9 +1,12 @@
+const fs = require('fs');
 const path = require('path');
-const RULES_FILE_PATH = path.resolve(__dirname, 'db', 'database.rules.json');
+const INITIAL_TOTAL_SUPPLY = 700000000;
+const GENESIS_INFO = path.resolve(__dirname, 'blockchain', 'genesis_info.json');
+const INITIAL_DB_RULES = path.resolve(__dirname, 'db', 'initial_db_rules.json');
+const INITIAL_DB_OWNERS = path.resolve(__dirname, 'db', 'initial_db_owners.json');
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain', '.blockchains');
 // TODO (lia): remove this after changing the way genesis block is produced
 // (first node creates it and broadcasts to others)
-const GENESIS_INFO = path.resolve(__dirname, 'blockchain', 'genesis_info.json');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 
@@ -67,6 +70,7 @@ const PredefinedDbPaths = {
   // Account & Transfer
   ACCOUNT: 'account',
   BALANCE: 'balance',
+  NICKNAME: 'nickname',
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
   TRANSFER_RESULT: 'result',
@@ -144,10 +148,13 @@ const DefaultValues = {
   DEPOSIT_LOCKUP_DURATION_MS: 2592000000 // 30 days
 }
 
+const GenesisInfo = fs.existsSync(GENESIS_INFO) ? JSON.parse(fs.readFileSync(GENESIS_INFO)) : null;
+
 module.exports = {
-  RULES_FILE_PATH,
+  INITIAL_TOTAL_SUPPLY,
+  INITIAL_DB_RULES,
+  INITIAL_DB_OWNERS,
   BLOCKCHAINS_DIR,
-  GENESIS_INFO,
   STAKE,
   DEBUG,
   MessageTypes,
@@ -160,4 +167,5 @@ module.exports = {
   FunctionResultCode,
   TransactionStatus,
   DefaultValues,
+  GenesisInfo
 };

@@ -2,7 +2,7 @@ const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
-const {RULES_FILE_PATH, GENESIS_INFO} = require('../constants');
+const {GenesisInfo, PredefinedDbPaths} = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -147,30 +147,28 @@ class ForgedBlock extends Block {
     return true;
   }
 
+  // TODO(seo): Choose more meaningful transactions as the first transactions.
   static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
-    if (!fs.existsSync(RULES_FILE_PATH)) {
-      throw Error('Missing rules file for the genesis block.');
-    }
-    if (!fs.existsSync(GENESIS_INFO)) {
-      throw Error('Missing key and timestamp information for the genesis block.');
-    }
-    const genesisInfo = JSON.parse(fs.readFileSync(GENESIS_INFO));
-    const operation = { type: 'SET_RULE', ref: '/',
-                        value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules'] };
-    const genesisTxData = {
+    const keyBuffer = Buffer.from(GenesisInfo.private_key, 'hex');
+    const ref = [PredefinedDbPaths.ACCOUNT, GenesisInfo.address, PredefinedDbPaths.NICKNAME].join('/');
+    const operation = {
+      type: 'SET_VALUE',
+      ref,
+      value: 'ainetwork.ai'
+    };
+    const firstTxData = {
       nonce: -1,
-      timestamp: genesisInfo.timestamp,
+      timestamp: GenesisInfo.timestamp,
       operation
     };
-    const keyBuffer = Buffer.from(genesisInfo.private_key, 'hex');
-    const signature = ainUtil.ecSignTransaction(genesisTxData, keyBuffer);
-    const genesisTx = new Transaction({ signature, transaction: genesisTxData });
-    const timestamp = genesisInfo.timestamp;
+    const signature = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
+    const firstTx = new Transaction({ signature, transaction: firstTxData });
+    const timestamp = GenesisInfo.timestamp;
     const height = 0;
-    const data = [genesisTx];
-    const forger = genesisInfo.address;
+    const data = [firstTx];
+    const forger = GenesisInfo.address;
     const blockSignature = ainUtil.ecSignMessage(stringify(data), keyBuffer);
     const lastHash = '';
     return new this(timestamp, lastHash, data, height, blockSignature, forger, [], -1);

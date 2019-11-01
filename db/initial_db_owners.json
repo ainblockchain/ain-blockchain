@@ -1,0 +1,13 @@
+{
+  "apps": {
+    ".owner": {
+      "owners": {
+        "*": {
+          "owner_write": false,
+          "owner_branch": true,
+          "rule_write": false
+        }
+      }
+    }
+  }
+}
