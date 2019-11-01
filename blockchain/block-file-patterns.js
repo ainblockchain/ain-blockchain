@@ -38,7 +38,7 @@ class BlockFilePatterns {
   * @return {String} The name of the corresponding block file.
   */
   static getBlockFileName(block) {
-    return `${block.height}-${block.lastHash}-${block.hash}.${FILE_NAME_SUFFIX}`;
+    return `${block.number}-${block.lastHash}-${block.hash}.${FILE_NAME_SUFFIX}`;
   }
 }
 

@@ -60,7 +60,7 @@ const PredefinedDbPaths = {
   VOTING_ROUND_PRE_COMMITS: '/consensus/voting/pre_commits',
   VOTING_ROUND_PRE_VOTES: '/consensus/voting/pre_votes',
   VOTING_ROUND_THRESHOLD: '/consensus/voting/threshold',
-  VOTING_ROUND_HEIGHT: '/consensus/voting/height',
+  VOTING_ROUND_NUMBER: '/consensus/voting/number',
   STAKEHOLDER: '/consensus/stakes',
   VOTING_ROUND_BLOCK_HASH: '/consensus/voting/block_hash',
   VOTING_NEXT_ROUND_VALIDATORS: '/consensus/voting/next_round_validators',

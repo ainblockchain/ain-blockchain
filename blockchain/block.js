@@ -7,26 +7,19 @@ const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 
-
-class Block {
-  constructor(timestamp, lastHash, data) {
+class ForgedBlock {
+  constructor(timestamp, lastHash, data, number, signature, forger, validators, threshold) {
     this.timestamp = timestamp;
     this.lastHash = lastHash;
     this.data = data;
-  }
-}
-
-class ForgedBlock extends Block {
-  constructor(timestamp, lastHash, data, height, signature, forger, validators, threshold) {
-    super(timestamp, lastHash, data);
     this.validatorTransactions = [];
-    this.height = height;
+    this.number = number;
     this.signature = signature;
     this.forger = forger;
     this.validators = validators;
     this.threshold = threshold;
     this.blockSize = sizeof(this.data);
-    this.hash = ForgedBlock.hash({timestamp, lastHash, data, height, signature});
+    this.hash = ForgedBlock.hash({timestamp, lastHash, data, number, signature});
   }
 
   setValidatorTransactions(validatorTransactions) {
@@ -34,18 +27,18 @@ class ForgedBlock extends Block {
   }
 
   // TODO (lia): remove "forger"?
-  static forgeBlock(data, db, height, lastBlock, forger, validators, threshold) {
+  static forgeBlock(data, db, number, lastBlock, forger, validators, threshold) {
     const lastHash = lastBlock.hash;
     const timestamp = Date.now();
     const signature = db.sign(stringify(data)); // TODO (lia): include other information to sign?
-    return new ForgedBlock(timestamp, lastHash, data, height, signature, forger,
+    return new ForgedBlock(timestamp, lastHash, data, number, signature, forger,
         validators, threshold);
   }
 
   header() {
     return {
       hash: this.hash,
-      height: this.height,
+      number: this.number,
       threshold: this.threshold,
       validators: this.validators,
       forger: this.forger,
@@ -60,7 +53,7 @@ class ForgedBlock extends Block {
       hash: this.hash,
       data: this.data,
       forger: this.forger,
-      height: this.height,
+      number: this.number,
       signature: this.signature,
       blockSize: this.blockSize,
     };
@@ -72,15 +65,15 @@ class ForgedBlock extends Block {
 
   static hash(block) {
     if (block.timestamp === undefined || block.lastHash === undefined ||
-        block.data === undefined || block.height === undefined ||
+        block.data === undefined || block.number === undefined ||
         block.signature === undefined) {
-      throw Error('A block should contain timestamp, lastHash, data, height, and signature fields.');
+      throw Error('A block should contain timestamp, lastHash, data, number, and signature fields.');
     }
     let sanitizedBlockData = {
       timestamp: block.timestamp,
       lastHash: block.lastHash,
       data: block.data,
-      height: block.height,
+      number: block.number,
       signature: block.signature
     };
     return '0x' + ainUtil.hashMessage(stringify(sanitizedBlockData)).toString('hex');
@@ -92,7 +85,7 @@ class ForgedBlock extends Block {
         Last Hash : ${this.lastHash.substring(0, 10)}
         Hash      : ${this.hash.substring(0, 10)}
         Data      : ${this.data}
-        Height    : ${this.height}
+        Number    : ${this.number}
         Size      : ${this.blockSize}`;
   }
 
@@ -104,7 +97,7 @@ class ForgedBlock extends Block {
 
   static parse(blockInfo) {
     const block = new ForgedBlock(blockInfo['timestamp'], blockInfo['lastHash'],
-        blockInfo['data'], blockInfo['height'], blockInfo['signature'],
+        blockInfo['data'], blockInfo['number'], blockInfo['signature'],
         blockInfo['forger'], blockInfo['validators'], blockInfo['threshold']);
     blockInfo['validatorTransactions'].forEach((transaction) => {
       block.validatorTransactions.push(transaction);
@@ -113,10 +106,10 @@ class ForgedBlock extends Block {
   }
 
   static validateBlock(block, blockchain) {
-    if (block.height !== (blockchain.height() + 1)) {
-      console.log(`Height is not correct for block ${block.hash}.
+    if (block.number !== (blockchain.height() + 1)) {
+      console.log(`Number is not correct for block ${block.hash}.
                    Expected: ${(blockchain.height() + 1)}
-                   Actual: ${block.height}`);
+                   Actual: ${block.number}`);
       return false;
     }
     const nonceTracker = {};
@@ -143,7 +136,7 @@ class ForgedBlock extends Block {
 
       nonceTracker[transaction.address] = transaction.nonce;
     }
-    console.log(`Valid block at height ${block.height}`);
+    console.log(`Valid block of number ${block.number}`);
     return true;
   }
 
@@ -168,12 +161,12 @@ class ForgedBlock extends Block {
     const signature = ainUtil.ecSignTransaction(genesisTxData, keyBuffer);
     const genesisTx = new Transaction({ signature, transaction: genesisTxData });
     const timestamp = genesisInfo.timestamp;
-    const height = 0;
+    const number = 0;
     const data = [genesisTx];
     const forger = genesisInfo.address;
     const blockSignature = ainUtil.ecSignMessage(stringify(data), keyBuffer);
     const lastHash = '';
-    return new this(timestamp, lastHash, data, height, blockSignature, forger, [], -1);
+    return new this(timestamp, lastHash, data, number, blockSignature, forger, [], -1);
   }
 }
 

@@ -84,7 +84,7 @@ class P2pServer {
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
             if (this.blockchain.merge(data.chainSubsection)) {
-              if (data.height === this.blockchain.height()) {
+              if (data.number === this.blockchain.height()) {
                 // If peeer is new to network and has successfully reached the consensus blockchain height
                 // wait the duration of one more voting round before processing transactions.
                 if (!this.blockchain.syncedAfterStartup) {
@@ -130,8 +130,8 @@ class P2pServer {
     });
   }
 
-  sendChainSubsection(socket, chainSubsection, height) {
-    socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION, chainSubsection, height}));
+  sendChainSubsection(socket, chainSubsection, number) {
+    socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION, chainSubsection, number}));
   }
 
   requestChainSubsection(lastBlock) {
@@ -330,15 +330,15 @@ class P2pServer {
 
   forgeBlock() {
     const data = this.transactionPool.validTransactions();
-    const blockHeight = this.blockchain.height() + 1;
+    const blockNumber = this.blockchain.height() + 1;
     this.votingUtil.setBlock(
-        ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(),
+        ForgedBlock.forgeBlock(data, this.db, blockNumber, this.blockchain.lastBlock(),
             this.db.account.address,
             Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
             this.db.getValue(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
-    console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
+    console.log(`Forged block with hash ${this.votingUtil.block.hash} and number ${blockNumber}`);
     const blockHashTransaction = this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
