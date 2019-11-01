@@ -481,14 +481,14 @@ describe('API Tests', () => {
                 ".owner": {
                   "owners": {
                     "*": {
-                      "owner_write": false,
-                      "owner_branch": false,
-                      "rule_write": false
+                      "branch_owner": false,
+                      "write_owner": false,
+                      "write_rule": false
                     },
                     [serviceAdmin]: {
-                      "owner_write": true,
-                      "owner_branch": true,
-                      "rule_write": true
+                      "branch_owner": true,
+                      "write_owner": true,
+                      "write_rule": true
                     }
                   }
                 }

@@ -3,9 +3,9 @@
     ".owner": {
       "owners": {
         "*": {
-          "owner_write": false,
-          "owner_branch": true,
-          "rule_write": false
+          "branch_owner": true,
+          "write_owner": false,
+          "write_rule": false
         }
       }
     }

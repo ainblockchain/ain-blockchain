@@ -163,7 +163,7 @@ class DB {
   setRule(rulePath, rule, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address, timestamp, rule)) {
-      return {code: 2, error_message: 'No rule_write permission on: ' + rulePath};
+      return {code: 2, error_message: 'No write_rule permission on: ' + rulePath};
     }
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
@@ -174,7 +174,7 @@ class DB {
   setOwner(ownerPath, owner, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address, timestamp, owner)) {
-      return {code: 2, error_message: 'No owner_write permission on: ' + ownerPath};
+      return {code: 2, error_message: 'No write_owner permission on: ' + ownerPath};
     }
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
