@@ -46,7 +46,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       if (args.getFullTransactions || !block) {
         done(null, block);
       } else {
-        block.data = extractTransactionHashes(block);
+        block.transactions = extractTransactionHashes(block);
         done(null, block);
       }
     },
@@ -57,7 +57,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       if (args.getFullTransactions || !block) {
         done(null, block);
       } else {
-        block.data = extractTransactionHashes(block);
+        block.transactions = extractTransactionHashes(block);
         done(null, block);
       }
     },
@@ -84,12 +84,12 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
 
     ain_getBlockTransactionCountByHash: function(args, done) {
       const block = blockchain.getBlockByHash(args.hash);
-      done(null, block ? block.data.length : null);
+      done(null, block ? block.transactions.length : null);
     },
 
     ain_getBlockTransactionCountByNumber: function(args, done) {
       const block = blockchain.getBlockByNumber(args.number);
-      done(null, block ? block.data.length : null);
+      done(null, block ? block.transactions.length : null);
     },
 
     // Transaction API
@@ -111,7 +111,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = blockchain.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          transaction = block.data[index];
+          transaction = block.transactions[index];
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
           const address = transactionInfo.address;
           const index = transactionInfo.index;
@@ -128,7 +128,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       } else {
         const index = Number(args.index);
         const block = blockchain.getBlockByHash(args.block_hash);
-        result = block.data.length > index && index >= 0 ? block.data[index] : null;
+        result = block.transactions.length > index && index >= 0 ? block.transactions[index] : null;
       }
       done(null, result);
     },
@@ -140,7 +140,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       } else {
         const index = Number(args.index);
         const block = blockchain.getBlockByNumber(args.block_number);
-        result = block.data.length > index && index >= 0 ? block.data[index] : null;
+        result = block.transactions.length > index && index >= 0 ? block.transactions[index] : null;
       }
       done(null, result);
     },
@@ -212,7 +212,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
 function extractTransactionHashes(block) {
   if (!block) return [];
   const hashes = [];
-  block.data.forEach(tx => {
+  block.transactions.forEach(tx => {
     hashes.push(tx.hash);
   });
   return hashes;

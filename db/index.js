@@ -48,11 +48,11 @@ class DB {
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current publicKey
     let nonce = 0;
     for (let i = blockchain.chain.length - 1; i > -1; i--) {
-      for (let j = blockchain.chain[i].data.length -1; j > -1; j--) {
-        if (ainUtil.areSameAddresses(blockchain.chain[i].data[j].address, this.account.address)
-            && blockchain.chain[i].data[j].nonce > -1) {
+      for (let j = blockchain.chain[i].transactions.length -1; j > -1; j--) {
+        if (ainUtil.areSameAddresses(blockchain.chain[i].transactions[j].address, this.account.address)
+            && blockchain.chain[i].transactions[j].nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
-          nonce = blockchain.chain[i].data[j].nonce + 1;
+          nonce = blockchain.chain[i].transactions[j].nonce + 1;
           break;
         }
       }
@@ -338,7 +338,7 @@ class DB {
   }
 
   executeBlockTransactions(block) {
-    block.data.forEach((tx) =>{
+    block.transactions.forEach((tx) =>{
       this.executeTransaction(tx);
     });
   }
