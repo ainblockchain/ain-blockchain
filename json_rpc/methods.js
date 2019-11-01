@@ -20,9 +20,14 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       done(null, blocks);
     },
 
-    ain_getLastBlock: function(args, done) {
+    ain_getRecentBlock: function(args, done) {
       const block = blockchain.lastBlock();
       done(null, block);
+    },
+
+    ain_getRecentBlockNumber: function(args, done) {
+      const block = blockchain.lastBlock();
+      done(null, block ? block.height : null);
     },
 
     ain_getBlockHeadersList: function(args, done) {
