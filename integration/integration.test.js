@@ -412,7 +412,7 @@ describe('Integration Tests', () => {
               block.data.forEach((transaction) => {
                 // TODO(seo): Find a better way.
                 if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
-                    JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_FORGERS) ||
+                    JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_PROPOSERS) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNTS) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER))) {

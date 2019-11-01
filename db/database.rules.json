@@ -1,0 +1,132 @@
+{
+  "rules": {
+    ".write": false,
+    "account": {
+      ".write": true
+    },
+    "transfer": {
+      "$from": {
+        "$to": {
+          "$key": {
+            "value": {
+              ".write": "auth === '$from' && !db.getValue(`transfer/$from/$to/$key`) && db.getValue(`account/$from/balance`) >= newData"
+            }
+          }
+        }
+      }
+    },
+    "afan": {
+      ".write": true
+    },
+    "consensus": {
+      "recent_proposers": {
+        ".write": "(newData.length < 20) && (db.getValue(`/consensus/voting/pre_commits`) > db.getValue(`/consensus/voting/threshold`)) && (db.getValue(`/consensus/voting/proposer`) === auth)"
+      },
+      "stakes": {
+        "$uid": {
+          ".write": "auth === '$uid'"
+        }
+      },
+      "voting": {
+        ".write": "db.getValue(`/consensus/voting`) === null || db.getValue(`/consensus/recent_proposers`) !== null && (db.getValue(`/consensus/recent_proposers`)[db.getValue(`/consensus/recent_proposers`).length - Math.floor((currentTime - db.getValue(`/consensus/voting/time`)) / 6000)] === auth)" ,
+        "block_hash": {
+          ".write": "db.getValue(`/consensus/voting/proposer`) === auth"
+        },
+        "next_round_validators": {
+          ".write": "Object.keys(db.getValue(`/consensus/stakes`)).indexOf(auth) > -1"
+        },
+        "pre_votes":{
+          ".write": "db.getValue(`/consensus/voting/block_hash`) !== null"
+        },
+        "pre_commits": {
+          ".write":  "db.getValue(`/consensus/voting/pre_votes`) > db.getValue(`/consensus/voting/threshold`)"
+        }
+      }
+    },
+    "deposit": {
+      "$service_id": {
+        "$uid": {
+          "$deposit_id": {
+            "value": {
+              ".write": "auth === '$uid' && !db.getValue(`/deposit/$service_id/$uid/$deposit_id`) && db.getValue(`/account/$uid/balance`) >= newData"
+            },
+            "createdAt": {
+              ".write": false
+            }
+          }
+        }
+      }
+    },
+    "deposit_accounts": {
+      ".write": false,
+      "$service_id": {
+        "config": {
+          ".write": "!db.getValue(`/deposit_accounts/$service_id`) || (db.getOwner(`/deposit_accounts/$service_id`) && db.getOwner(`/deposit_accounts/$service_id`).owners && db.getOwner(`/deposit_accounts/$service_id`).owners[auth])"
+        },
+        "$uid": {
+          ".write": false
+        }
+      },
+      "consensus": {
+        "config": {
+          ".write": false
+        }
+      }
+    },
+    "nested":{
+      ".write": true
+    },
+    "new":{
+      ".write": true
+    },
+    "test": {
+      ".write": true,
+      "ai": {
+      },
+      "comcom": {
+      },
+      "billing_keys": {
+        "update_billing": {
+        }
+      },
+      "users":{
+        "$uid": {
+          ".write": true,
+          "balance": {
+            ".write": "typeof newData === 'number' && newData >= 0"
+          },
+          "info": {
+            ".write": "oldData !== null"
+          },
+          "balance_info": {
+            ".write": "db.getValue(`test/billing_keys/update_billing/$uid`) !== null"
+          },
+          "next_counter": {
+            ".write": "typeof newData === 'number' && newData === oldData + 1"
+          }
+        }
+      },
+      "second_users": {
+        "$wcard1":{
+          "$wcard2": {
+            ".write": "'$wcard1' == '$wcard2'"
+          }
+        }
+      }
+    },
+    "withdraw":{
+      "$service_id": {
+        "$uid": {
+          "$withdraw_id": {
+            "value": {
+              ".write": "auth === '$uid' && !db.getValue(`/withdraw/$service_id/$uid/$withdraw_id`) && db.getValue(`/deposit_accounts/$service_id/$uid/value`) >= newData"
+            },
+            "createdAt": {
+              ".write": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

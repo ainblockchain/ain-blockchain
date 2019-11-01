@@ -10,7 +10,7 @@ const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
-const {ForgedBlock} = require('../blockchain/block');
+const {Block} = require('../blockchain/block');
 const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
 const VotingUtil = require('./voting-util');
@@ -272,7 +272,7 @@ class P2pServer {
           this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         }
 
-        this.checkIfForger();
+        this.checkIfProposer();
         break;
       case VotingActionTypes.PROPOSED_BLOCK:
         let invalidTransactions = false;
@@ -289,7 +289,7 @@ class P2pServer {
           }
         }
         if (invalidTransactions ||
-            !ForgedBlock.validateBlock(votingAction.block, this.blockchain) ||
+            !Block.validateBlock(votingAction.block, this.blockchain) ||
             votingAction.block === this.votingUtil.block ||
             [VotingStatus.WAIT_FOR_BLOCK, VotingStatus.SYNCING].indexOf(this.votingUtil.status) < 0) {
               if(DEBUG) {
@@ -328,17 +328,17 @@ class P2pServer {
     }
   }
 
-  forgeBlock() {
+  createBlock() {
     const data = this.transactionPool.validTransactions();
     const blockNumber = this.blockchain.height() + 1;
     this.votingUtil.setBlock(
-        ForgedBlock.forgeBlock(data, this.db, blockNumber, this.blockchain.lastBlock(),
+        Block.createBlock(data, this.db, blockNumber, this.blockchain.lastBlock(),
             this.db.account.address,
             Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
             this.db.getValue(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = this.votingUtil.block.hash;
-    console.log(`Forged block with hash ${this.votingUtil.block.hash} and number ${blockNumber}`);
+    console.log(`Created a block with hash ${this.votingUtil.block.hash} and number ${blockNumber}`);
     const blockHashTransaction = this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
@@ -372,7 +372,7 @@ class P2pServer {
     this.increaseBalanceForDev();
     this.stakeAmount();
     this.executeAndBroadcastTransaction(this.votingUtil.instantiate(this.blockchain));
-    this.forgeBlock();
+    this.createBlock();
   }
 
   addBlockToChain() {
@@ -380,7 +380,7 @@ class P2pServer {
     this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
     this.votingUtil.reset();
     this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0 &&
+    if (this.waitInBlocks > 0 && /*!this.votingUtil.isStaked()) {*/
         !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]))) {
       this.waitInBlocks = this.waitInBlocks - 1;
       if (this.waitInBlocks === 0) {
@@ -396,31 +396,31 @@ class P2pServer {
       this.votingInterval = null;
     }
     if (ainUtil.areSameAddresses(this.db.account.address,
-        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER))) {
+        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.db.account.address} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
-      this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulForge());
+      this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulBlockCreation());
     }
 
-    if (this.db.getValue(PredefinedDbPaths.RECENT_FORGERS).indexOf(this.db.account.address) >= 0) {
+    if (this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS).indexOf(this.db.account.address) >= 0) {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
         if (this.checkForTransactionResultErrorCode(response)) {
-          console.log('Not designated forger');
+          console.log('Not designated proposer');
           return;
         }
         console.log(`User ${this.db.account.address} is starting round ${this.blockchain.height() + 1}`);
 
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
-        this.checkIfForger();
+        this.checkIfProposer();
       }, BLOCK_CREATION_INTERVAL);
     }
     console.log(`New blockchain height is ${this.blockchain.height() + 1}`);
   }
 
-  checkIfForger() {
-    if (this.votingUtil.isForger()) {
-      this.forgeBlock();
+  checkIfProposer() {
+    if (this.votingUtil.isProposer()) {
+      this.createBlock();
     }
   }
 

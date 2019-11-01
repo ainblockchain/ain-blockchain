@@ -1,4 +1,4 @@
-const {ForgedBlock} = require('./block');
+const {Block} = require('./block');
 const BlockFilePatterns = require('./block-file-patterns');
 const {BLOCKCHAINS_DIR} = require('../constants');
 const rimraf = require('rimraf');
@@ -11,7 +11,7 @@ const CHAIN_SUBSECT_LENGTH = 20;
 
 class Blockchain {
   constructor(blockchainDir) {
-    this.chain = [ForgedBlock.genesis()];
+    this.chain = [Block.genesis()];
     this.blockchain_dir = blockchainDir;
     this.backUpDB = null;
     this._proposedBlock = null;
@@ -28,24 +28,24 @@ class Blockchain {
     * Given a block hash or hash substring, returns a block with a matching hash from the blockchain.
     *
     * @param {string} hash - hash or hash substring of block.
-    * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block hash.
+    * @return {Block} Block instance corresponding to the queried block hash.
     */
   getBlockByHash(hash) {
     if (!hash) return null;
     const blockFileName = glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
-    return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
+    return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
   }
 
   /**
     * Given a number, returns the block corresponding to that height of the blockchain.
     *
     * @param {integer} number - The number of block.
-    * @return {blockchain.ForgedBlock} ForgedBlock instance corresponding to the queried block number.
+    * @return {Block} Block instance corresponding to the queried block number.
 ]   */
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
-    return blockFileName === undefined ? null : ForgedBlock.loadBlock(blockFileName);
+    return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
   }
 
   setBackDb(backUpDB) {
@@ -67,8 +67,8 @@ class Blockchain {
     if (block.number != this.height() + 1) {
       throw Error('Blockchain height is wrong');
     }
-    if (!(block instanceof ForgedBlock)) {
-      block = ForgedBlock.parse(block);
+    if (!(block instanceof Block)) {
+      block = Block.parse(block);
     }
 
     this.chain.push(block);
@@ -81,7 +81,7 @@ class Blockchain {
 
   static isValidChain(chain) {
     // TODO (lia): fix validation logic
-    if (ForgedBlock.hash(chain[0]) !== ForgedBlock.genesis().hash) {
+    if (Block.hash(chain[0]) !== Block.genesis().hash) {
       console.log('first block not genesis');
       return false;
     }
@@ -92,7 +92,7 @@ class Blockchain {
     for (let i=1; i < chainSubSection.length; i++) {
       const block = chainSubSection[i];
       const lastBlock = chainSubSection[i - 1];
-      if (block.lastHash !== lastBlock.hash || block.hash !== ForgedBlock.hash(block)) {
+      if (block.lastHash !== lastBlock.hash || block.hash !== Block.hash(block)) {
         console.log(`Invalid hashing for block ${block.number}`);
         return false;
       }
@@ -122,7 +122,7 @@ class Blockchain {
   }
 
   pathToBlock(block) {
-    return path.resolve(this._blockchainDir(), ForgedBlock.getFileName(block));
+    return path.resolve(this._blockchainDir(), Block.getFileName(block));
   }
 
   createBlockchainDir() {
@@ -151,14 +151,14 @@ class Blockchain {
   /**
     * Returns a section of the chain up to a maximuim of length CHAIN_SUBSECT_LENGTH, starting from the index of the queired lastBLock
     *
-    * @param {ForgedBlock} lastBlock - The current highest block tin the querying nodes blockchain
-    * @return {list} A list of ForgedBlock instances with lastBlock at index 0, up to a maximuim length CHAIN_SUBSECT_LENGTH
+    * @param {Block} lastBlock - The current highest block tin the querying nodes blockchain
+    * @return {list} A list of Block instances with lastBlock at index 0, up to a maximuim length CHAIN_SUBSECT_LENGTH
     */
   requestBlockchainSection(lastBlock) {
     console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.number}\t hash ${lastBlock.lastHash}`);
     const blockFiles = this.getBlockFiles(lastBlock.number, lastBlock.number + CHAIN_SUBSECT_LENGTH);
-    if (blockFiles.length > 0 && ForgedBlock.loadBlock(blockFiles[blockFiles.length - 1]).number > lastBlock.number &&
-      blockFiles[0].indexOf(ForgedBlock.getFileName(lastBlock)) < 0) {
+    if (blockFiles.length > 0 && Block.loadBlock(blockFiles[blockFiles.length - 1]).number > lastBlock.number &&
+      blockFiles[0].indexOf(Block.getFileName(lastBlock)) < 0) {
       console.log('Invalid blockchain request. Requesters last block does not belong to this blockchain');
       return;
     }
@@ -169,7 +169,7 @@ class Blockchain {
 
     const chainSubSection = [];
     blockFiles.forEach((blockFile) => {
-      chainSubSection.push(ForgedBlock.loadBlock(blockFile));
+      chainSubSection.push(Block.loadBlock(blockFile));
     });
     return chainSubSection.length > 0 ? chainSubSection: null;
   }
@@ -182,8 +182,8 @@ class Blockchain {
       return false;
     }
     const firstBlock = chainSubSection.shift();
-    if (this.lastBlock().hash !== ForgedBlock.hash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== ForgedBlock.genesis().hash) {
-      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${ForgedBlock.hash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`);
+    if (this.lastBlock().hash !== Block.hash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== Block.genesis().hash) {
+      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${Block.hash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`);
       return false;
     }
     if (!Blockchain.isValidChainSubsection(chainSubSection)) {
@@ -200,7 +200,7 @@ class Blockchain {
     const blockFiles = Blockchain.getAllBlockFiles(chainPath);
 
     blockFiles.forEach((block) => {
-      newChain.push(ForgedBlock.loadBlock(block));
+      newChain.push(Block.loadBlock(block));
     });
 
     if (Blockchain.isValidChain(newChain)) {
@@ -228,7 +228,7 @@ class Blockchain {
     const chain = [];
     const blockFiles = this.getBlockFiles(from, to);
     blockFiles.forEach((blockFile) => {
-      const block = ForgedBlock.loadBlock(blockFile);
+      const block = Block.loadBlock(blockFile);
       chain.push(block);
     });
     return chain;

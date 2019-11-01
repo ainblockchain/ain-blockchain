@@ -1,5 +1,5 @@
 const Blockchain = require('../blockchain/');
-const {ForgedBlock} = require('../blockchain/block');
+const {Block} = require('../blockchain/block');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
@@ -28,13 +28,13 @@ describe('Blockchain', () => {
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
   /*
   it('starts with genesis block', () => {
-    assert.deepEqual(bc.chain[0], ForgedBlock.genesis());
+    assert.deepEqual(bc.chain[0], Block.genesis());
   });
   */
 
   it('adds new block', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
     expect(bc.chain[bc.chain.length -1].data).to.equal(data);
   });
 
@@ -42,7 +42,7 @@ describe('Blockchain', () => {
   /*
   it('validates a valid chain', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
     expect(Blockchain.isValidChain(bc.chain)).to.equal(true);
   });
   */
@@ -54,7 +54,7 @@ describe('Blockchain', () => {
 
   it('invalidates corrupt chain', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
     bc.chain[bc.height()].data = ':(';
     expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
   });
@@ -74,7 +74,7 @@ describe('Blockchain', () => {
             value: 'val'
           }
         });
-        const block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock());
+        const block = Block.createBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock());
         if (block.number === 500) {
           blockHash = block.hash;
         }

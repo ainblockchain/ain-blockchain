@@ -8,11 +8,11 @@ NOTE: Tracker Server must be started first before starting any blockchain-databa
 	cd tracker-server/
 	docker build -t ainblockchain/tracker-server .
 
-  
+
 ### To pull docker image
 	docker pull ainblockchain/tracker-server
 
-  
+
 ### To run docker image
 	docker run --network="host" -d ainblockchain/tracker-server:latest
 
@@ -24,7 +24,7 @@ By default this tracker-server service is queriable by blockchain-database insta
 
 Operates a single peer node instance of the AIN blockchain. A single blockchain-database instance processes incoming transaction requests and maintains a local copy of the entire blockchain blockchain. The blockchain-database first queries the tracker-server for ipaddresses of other peers, and then syncs it's local blockchain to the network consensus blockchain. If the blockchain specifies a "STAKE" argument on startup, it will then begin to take part in the forging/validating process for new blocks.
 
-  
+
 
 ### To run test cases
 	npm init && npm run test
@@ -32,32 +32,31 @@ Operates a single peer node instance of the AIN blockchain. A single blockchain-
 ### To build docker image locally
 	docker build -t ainblockchain/blockchain-database .
 
-### To pull docker image 
+### To pull docker image
 
 	docker pull ainblockchain/blockchain-database
 
-### To run docker image 
+### To run docker image
 
 	docker run -e LOG=true -e STAKE=250 -e TRACKER_IP="ws://<ip_address_of_tracker_server>:3001" --network="host" -d ainblockchain/blockchain-database:latest
 
-  
-### Description 
+
+### Description
 
 
 #### Optional arguments:
   
+	STAKE: Set if you would like node participate in the block forg/validating process. Likelihood of node being chosen as proposer is propotional to amount staked
 
-STAKE: Set if you would like node participate in the block forg/validating process. Likelihood of node being chosen as forger is propotional to amount staked
+	LOG: Set to true if you want blockchain-database to maintain log files
 
-LOG: Set to true if you want blockchain-database to maintain log files
 
-  
 
 #### To enter docker container and see blockchain files
 
 	docker exec -it <container_id> /bin/bash
 	cd blockchain/.blockchains/8080/
-  
+
 
 ### To enter docker container and see log files
 
@@ -87,20 +86,20 @@ POST https://<ip_address>:8080/set with json_body {"op_list": [{"type": "INC_VAL
 
 POST https://<ip_address>:8080/batch with json_body {"tx_list": [{"operation": {"type": "SET_VALUE", "ref": "test/comeonnnnnnn", "value": "testme"}}, {"operation": {"type": "INC_VALUE", "ref": "test/b/u", "value": 10000}}]}
 
-  
+
 
 ## Postgres Database (will move to different repositoy)
 
 Database which will be used by ain_scan to store data regarding blocks and transactions. CUrrently defines schemas for database of blocks and transactions
 
-  
+
 
 ### To build docker image locally
 
 	cd postgres/
 	docker build -t ainblockchain/postgres .
 
-### To run docker image 
+### To run docker image
 
 	docker run --rm --name pg-docker -e POSTGRES_PASSWORD=postgres -d -p 5432:5432 ainblockchain/postgres
 
