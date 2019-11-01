@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const INITIAL_TOTAL_SUPPLY = 700000000;
+const AIN_INITIAL_TOTAL_SUPPLY = 700000000;  // Initial total supply of AIN Coin.
 const GENESIS_INFO = path.resolve(__dirname, 'blockchain', 'genesis_info.json');
 const INITIAL_DB_RULES = path.resolve(__dirname, 'db', 'initial_db_rules.json');
 const INITIAL_DB_OWNERS = path.resolve(__dirname, 'db', 'initial_db_owners.json');
@@ -151,7 +151,7 @@ const DefaultValues = {
 const GenesisInfo = fs.existsSync(GENESIS_INFO) ? JSON.parse(fs.readFileSync(GENESIS_INFO)) : null;
 
 module.exports = {
-  INITIAL_TOTAL_SUPPLY,
+  AIN_INITIAL_TOTAL_SUPPLY,
   INITIAL_DB_RULES,
   INITIAL_DB_OWNERS,
   BLOCKCHAINS_DIR,

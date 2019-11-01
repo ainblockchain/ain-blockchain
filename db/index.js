@@ -1,7 +1,7 @@
 const escapeStringRegexp = require('escape-string-regexp');
 const ainUtil = require('@ainblockchain/ain-util');
 const fs = require('fs');
-const {INITIAL_TOTAL_SUPPLY, INITIAL_DB_RULES, INITIAL_DB_OWNERS, GenesisInfo, ReadDbOperations,
+const {AIN_INITIAL_TOTAL_SUPPLY, INITIAL_DB_RULES, INITIAL_DB_OWNERS, GenesisInfo, ReadDbOperations,
     WriteDbOperations, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
@@ -35,7 +35,7 @@ class DB {
     // Initialize account balances.
     const accountPath = [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.ACCOUNT,
                          GenesisInfo.address, PredefinedDbPaths.BALANCE];
-    this.writeDatabase(accountPath, INITIAL_TOTAL_SUPPLY);
+    this.writeDatabase(accountPath, AIN_INITIAL_TOTAL_SUPPLY);
   }
 
   static getDatabase(blockchain, tp) {
