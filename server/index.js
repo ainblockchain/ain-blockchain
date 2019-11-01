@@ -276,13 +276,13 @@ class P2pServer {
         break;
       case VotingActionTypes.PROPOSED_BLOCK:
         let invalidTransactions = false;
-        for (let i = 0; i < votingAction.block.data.length; i++) {
+        for (let i = 0; i < votingAction.block.transactions.length; i++) {
           // First check if the transation has already been received.
           // Next check that the received transaction is valid.
-          if (!this.transactionPool.isNotEligibleTransaction(votingAction.block.data[i])
-            && this.checkForTransactionResultErrorCode(this.executeTransaction(votingAction.block.data[i]))) {
+          if (!this.transactionPool.isNotEligibleTransaction(votingAction.block.transactions[i])
+            && this.checkForTransactionResultErrorCode(this.executeTransaction(votingAction.block.transactions[i]))) {
             if (DEBUG) {
-              console.log(`BLOCK ${votingAction.block} has invalid transaction ${votingAction.block.data[i]}`)
+              console.log(`BLOCK ${votingAction.block} has invalid transaction ${votingAction.block.transactions[i]}`)
             }
             invalidTransactions = true;
             break

@@ -35,7 +35,7 @@ describe('Blockchain', () => {
   it('adds new block', () => {
     const data = 'foo';
     bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
-    expect(bc.chain[bc.chain.length -1].data).to.equal(data);
+    expect(bc.chain[bc.chain.length -1].transactions).to.equal(data);
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
@@ -48,14 +48,14 @@ describe('Blockchain', () => {
   */
 
   it('invalidates chain with corrupt genesis block', () => {
-    bc2.chain[0].data = ':(';
+    bc2.chain[0].transactions = ':(';
     expect(Blockchain.isValidChain(bc2.chain)).to.equal(false);
   });
 
   it('invalidates corrupt chain', () => {
     const data = 'foo';
     bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
-    bc.chain[bc.height()].data = ':(';
+    bc.chain[bc.height()].transactions = ':(';
     expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
   });
 

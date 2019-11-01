@@ -8,18 +8,16 @@ const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 
 class Block {
-  constructor(timestamp, lastHash, data, number, signature, proposer, validators, threshold) {
+  constructor(timestamp, lastHash, transactions, number, proposer, validators) {
     this.timestamp = timestamp;
     this.lastHash = lastHash;
-    this.data = data;
+    this.transactions = transactions;
     this.validatorTransactions = [];
     this.number = number;
-    this.signature = signature;
     this.proposer = proposer;
     this.validators = validators;
-    this.threshold = threshold;
-    this.blockSize = sizeof(this.data);
-    this.hash = Block.hash({timestamp, lastHash, data, number, signature});
+    this.blockSize = sizeof(this.transactions);
+    this.hash = Block.hash({timestamp, lastHash, transactions, number});
   }
 
   setValidatorTransactions(validatorTransactions) {
@@ -27,19 +25,17 @@ class Block {
   }
 
   // TODO (lia): remove "proposer"?
-  static createBlock(data, db, number, lastBlock, proposer, validators, threshold) {
+  static createBlock(transactions, db, number, lastBlock, proposer, validators) {
     const lastHash = lastBlock.hash;
     const timestamp = Date.now();
-    const signature = db.sign(stringify(data)); // TODO (lia): include other information to sign?
-    return new Block(timestamp, lastHash, data, number, signature, proposer,
-        validators, threshold);
+    return new Block(timestamp, lastHash, transactions, number, proposer,
+        validators);
   }
 
   header() {
     return {
       hash: this.hash,
       number: this.number,
-      threshold: this.threshold,
       validators: this.validators,
       proposer: this.proposer,
       validatorTransactions: this.validatorTransactions,
@@ -51,10 +47,9 @@ class Block {
       timestamp: this.timestamp,
       lastHash: this.lastHash,
       hash: this.hash,
-      data: this.data,
+      transactions: this.transactions,
       proposer: this.proposer,
       number: this.number,
-      signature: this.signature,
       blockSize: this.blockSize,
     };
   }
@@ -65,16 +60,14 @@ class Block {
 
   static hash(block) {
     if (block.timestamp === undefined || block.lastHash === undefined ||
-        block.data === undefined || block.number === undefined ||
-        block.signature === undefined) {
-      throw Error('A block should contain timestamp, lastHash, data, number, and signature fields.');
+        block.transactions === undefined || block.number === undefined) {
+      throw Error('A block should contain timestamp, lastHash, transactions and number fields.');
     }
     let sanitizedBlockData = {
       timestamp: block.timestamp,
       lastHash: block.lastHash,
-      data: block.data,
-      number: block.number,
-      signature: block.signature
+      transactions: block.transactions,
+      number: block.number
     };
     return '0x' + ainUtil.hashMessage(stringify(sanitizedBlockData)).toString('hex');
   }
@@ -84,7 +77,7 @@ class Block {
         Timestamp : ${this.timestamp}
         Last Hash : ${this.lastHash.substring(0, 10)}
         Hash      : ${this.hash.substring(0, 10)}
-        Data      : ${this.data}
+        Transactions      : ${this.transactions}
         Number    : ${this.number}
         Size      : ${this.blockSize}`;
   }
@@ -97,8 +90,8 @@ class Block {
 
   static parse(blockInfo) {
     const block = new Block(blockInfo['timestamp'], blockInfo['lastHash'],
-        blockInfo['data'], blockInfo['number'], blockInfo['signature'],
-        blockInfo['proposer'], blockInfo['validators'], blockInfo['threshold']);
+        blockInfo['transactions'], blockInfo['number'], blockInfo['proposer'],
+        blockInfo['validators']);
     blockInfo['validatorTransactions'].forEach((transaction) => {
       block.validatorTransactions.push(transaction);
     });
@@ -115,8 +108,8 @@ class Block {
     const nonceTracker = {};
     let transaction;
 
-    for (let i=0; i<block.data.length; i++) {
-      transaction = block.data[i];
+    for (let i=0; i<block.transactions.length; i++) {
+      transaction = block.transactions[i];
 
       if (transaction.nonce < 0) {
         continue;
@@ -162,11 +155,10 @@ class Block {
     const genesisTx = new Transaction({ signature, transaction: genesisTxData });
     const timestamp = genesisInfo.timestamp;
     const number = 0;
-    const data = [genesisTx];
+    const transactions = [genesisTx];
     const proposer = genesisInfo.address;
-    const blockSignature = ainUtil.ecSignMessage(stringify(data), keyBuffer);
     const lastHash = '';
-    return new this(timestamp, lastHash, data, number, blockSignature, proposer, [], -1);
+    return new this(timestamp, lastHash, transactions, number, proposer, [], -1);
   }
 }
 
