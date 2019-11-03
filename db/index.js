@@ -1,8 +1,8 @@
 const escapeStringRegexp = require('escape-string-regexp');
 const ainUtil = require('@ainblockchain/ain-util');
 const fs = require('fs');
-const {AIN_INITIAL_TOTAL_SUPPLY, INITIAL_DB_RULES, INITIAL_DB_OWNERS, GenesisInfo, ReadDbOperations,
-    WriteDbOperations, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
+const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
+       DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
@@ -20,22 +20,22 @@ class DB {
   }
 
   initDb() {
-    // Initialize DB rules.
-    if (!fs.existsSync(INITIAL_DB_RULES)) {
-      throw Error('Missing rules file for database initialization.');
-    }
-    const initialRules = JSON.parse(fs.readFileSync(INITIAL_DB_RULES));
-    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], initialRules);
     // Initialize DB owners.
-    if (!fs.existsSync(INITIAL_DB_OWNERS)) {
-      throw Error('Missing owners file for database initialization.');
-    }
-    const initialOwners = JSON.parse(fs.readFileSync(INITIAL_DB_OWNERS));
-    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], initialOwners);
-    // Initialize account balances.
-    const accountPath = [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.ACCOUNT,
-                         GenesisInfo.address, PredefinedDbPaths.BALANCE];
-    this.writeDatabase(accountPath, AIN_INITIAL_TOTAL_SUPPLY);
+    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
+      [OwnerProperties.OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          "*": {
+            write_owner: true,
+            write_rule: true,
+            branch_owner: true
+          }
+        }
+      }
+    });
+    // Initialize DB rules.
+    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
+      [RuleProperties.WRITE]: true
+    });
   }
 
   static getDatabase(blockchain, tp) {
@@ -390,7 +390,7 @@ class DB {
     timestamp = timestamp || Date.now();
     let rule = false;
     const wildCards = {};
-    let currentRuleSet = this.db['rules'];
+    let currentRuleSet = this.db[PredefinedDbPaths.RULES_ROOT];
     let i = 0;
     do {
       if (RuleProperties.WRITE in currentRuleSet) {

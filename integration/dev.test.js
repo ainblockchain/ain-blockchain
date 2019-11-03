@@ -463,10 +463,10 @@ describe('API Tests', () => {
       depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;
-      balancePath = `/account/${depositActor}/balance`;
-      syncRequest('POST', server1+'/set_value', {json: {ref: `/account/${serviceAdmin}/balance`, value: 1000}});
+      balancePath = `/accounts/${depositActor}/balance`;
+      syncRequest('POST', server1+'/set_value', {json: {ref: `/accounts/${serviceAdmin}/balance`, value: 1000}});
       syncRequest('POST', server1+'/set_value', {json: {ref: balancePath, value: 1000}});
-      syncRequest('POST', server1+'/set_value', {json: {ref: `/account/${badActor}/balance`, value: 1000}});
+      syncRequest('POST', server1+'/set_value', {json: {ref: `/accounts/${badActor}/balance`, value: 1000}});
     })
 
     describe('_deposit', () => {
@@ -506,7 +506,7 @@ describe('API Tests', () => {
 
       it('deposit', () => {
         let beforeBalance = JSON.parse(syncRequest('GET', server2 +
-            `/get_value?ref=/account/${depositActor}/balance`).body.toString('utf-8'))
+            `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8'))
                 .result;
         const result = syncRequest('POST', server2 + '/set_value', {json: {
               ref: depositPath + '/1/value',
@@ -533,7 +533,7 @@ describe('API Tests', () => {
 
       it('deposit more than account balance', () => {
         const beforeBalance = JSON.parse(syncRequest('GET', server2 +
-            `/get_value?ref=/account/${depositActor}/balance`).body.toString('utf-8'))
+            `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8'))
                 .result;
         const beforeDepositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`)
@@ -575,7 +575,7 @@ describe('API Tests', () => {
       // TODO (lia): update test code after fixing timestamp verification logic.
       it('deposit with invalid timestamp', () => {
         const account = ainUtil.createAccount();
-        syncRequest('POST', server2+'/set_value', {json: {ref: `/account/${account.address}/balance`, value: 1000}});
+        syncRequest('POST', server2+'/set_value', {json: {ref: `/accounts/${account.address}/balance`, value: 1000}});
         const transaction = {
           operation: {
             type: 'SET_VALUE',
@@ -609,7 +609,7 @@ describe('API Tests', () => {
       it('withdraw by another address', () => {
         sleep(1000);
         let beforeBalance = JSON.parse(syncRequest('GET',
-            server2 + `/get_value?ref=/account/${badActor}/balance`)
+            server2 + `/get_value?ref=/accounts/${badActor}/balance`)
                 .body.toString('utf-8')).result;
         let beforeDepositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`)
@@ -626,7 +626,7 @@ describe('API Tests', () => {
             server2 + `/get_value?ref=${depositAccountPath}/value`)
                 .body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
-            server2 + `/get_value?ref=/account/${badActor}/balance`)
+            server2 + `/get_value?ref=/accounts/${badActor}/balance`)
                 .body.toString('utf-8')).result;
         expect(withdrawRequest).to.equal(null);
         expect(depositAccountValue).to.equal(beforeDepositAccountValue);
@@ -682,7 +682,7 @@ describe('API Tests', () => {
       it('deposit after withdraw', () => {
         const newVal = 100;
         let beforeBalance = JSON.parse(syncRequest('GET', server2 +
-            `/get_value?ref=/account/${depositActor}/balance`).body.toString('utf-8'))
+            `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8'))
                 .result;
         const result = syncRequest('POST', server2 + '/set_value', {json: {
               ref: depositPath + '/3/value',

@@ -2,7 +2,8 @@ const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
-const {GenesisInfo, PredefinedDbPaths} = require('../constants');
+const {GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths, GenesisToken, GenesisAccount}
+    = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -147,29 +148,56 @@ class ForgedBlock extends Block {
     return true;
   }
 
-  // TODO(seo): Choose more meaningful transactions as the first transactions.
-  static genesis() {
-    // This is a temporary fix for the genesis block. Code should be modified after
-    // genesis block broadcasting feature is implemented.
-    const keyBuffer = Buffer.from(GenesisInfo.private_key, 'hex');
-    const ref = [PredefinedDbPaths.ACCOUNT, GenesisInfo.address, PredefinedDbPaths.NICKNAME].join('/');
-    const operation = {
+  static getGenesisBlockData() {
+    const keyBuffer = Buffer.from(GenesisAccount.private_key, 'hex');
+    const tokenOp = {
       type: 'SET_VALUE',
-      ref,
-      value: 'ainetwork.ai'
+      ref: `/${PredefinedDbPaths.TOKEN}`,
+      value: GenesisToken
+    };
+    const balancesOp = {
+      type: 'SET_VALUE',
+      ref: `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`,
+      value: GenesisToken.total_supply
+    };
+    if (!fs.existsSync(GENESIS_OWNERS)) {
+      throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
+    }
+    const ownersOp = {
+      type: 'SET_OWNER',
+      ref: '/',
+      value: JSON.parse(fs.readFileSync(GENESIS_OWNERS))
+    };
+    if (!fs.existsSync(GENESIS_RULES)) {
+      throw Error('Missing genesis owners file: ' + GENESIS_RULES);
+    }
+    const rulesOp = {
+      type: 'SET_RULE',
+      ref: '/',
+      value: JSON.parse(fs.readFileSync(GENESIS_RULES))
     };
     const firstTxData = {
       nonce: -1,
-      timestamp: GenesisInfo.timestamp,
-      operation
+      timestamp: GenesisAccount.timestamp,
+      operation: {
+        type: 'SET',
+        op_list: [ tokenOp, balancesOp, ownersOp, rulesOp ]
+      }
     };
     const signature = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
     const firstTx = new Transaction({ signature, transaction: firstTxData });
-    const timestamp = GenesisInfo.timestamp;
+    return [firstTx];
+  }
+
+  static genesis() {
+    // This is a temporary fix for the genesis block. Code should be modified after
+    // genesis block broadcasting feature is implemented.
+    const timestamp = GenesisAccount.timestamp;
     const height = 0;
-    const data = [firstTx];
-    const forger = GenesisInfo.address;
-    const blockSignature = ainUtil.ecSignMessage(stringify(data), keyBuffer);
+    const data = ForgedBlock.getGenesisBlockData();
+    const forger = GenesisAccount.address;
+    const blockSignature = ainUtil.ecSignMessage(stringify(data),
+                                                 Buffer.from(GenesisAccount.private_key, 'hex'));
     const lastHash = '';
     return new this(timestamp, lastHash, data, height, blockSignature, forger, [], -1);
   }

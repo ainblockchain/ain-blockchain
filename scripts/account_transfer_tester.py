@@ -13,9 +13,9 @@ SERVER = 'http://localhost:8080'
 TRANSFER_AMOUNT = 5
 ###############################################################
 TOOL_COMMAND = 'node '+ TOOL_LOCATION + ' --transactionFile={transaction_fle} --privateKey={private_key} --server=' + SERVER
-BALANCE_SET_TRANSACTION = {'operation': {"type": "SET_VALUE", "ref": "/account/{address}/balance", "value": None}, "nonce": None}
+BALANCE_SET_TRANSACTION = {'operation': {"type": "SET_VALUE", "ref": "/accounts/{address}/balance", "value": None}, "nonce": None}
 BALANCE_TRANSFER_TRANSACTION = {'operation': {"type": "SET_VALUE", "ref": "/transfer/{{address}}/{receiver}/{nonce}/value", "value": None}, "nonce": None}
-ALL_ACCOUNTS = SERVER + '/get_value?ref=/account'
+ALL_ACCOUNTS = SERVER + '/get_value?ref=/accounts'
 SPECIFIC_ACCOUNT_BALANCE = ALL_ACCOUNTS + '/{address}/balance'
 NONCE_DICT = {}
 PRIVATE_PUBLIC_KEY_DICT = {}

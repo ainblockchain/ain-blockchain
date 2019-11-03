@@ -1,6 +1,6 @@
 {
   ".write": false,
-  "account": {
+  "accounts": {
     ".write": true
   },
   "transfer": {
@@ -8,7 +8,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "auth === '$from' && !db.getValue(`transfer/$from/$to/$key`) && db.getValue(`account/$from/balance`) >= newData"
+            ".write": "auth === '$from' && !db.getValue(`transfer/$from/$to/$key`) && db.getValue(`accounts/$from/balance`) >= newData"
           }
         }
       }
@@ -47,7 +47,7 @@
       "$uid": {
         "$deposit_id": {
           "value": {
-            ".write": "auth === '$uid' && !db.getValue(`/deposit/$service_id/$uid/$deposit_id`) && db.getValue(`/account/$uid/balance`) >= newData"
+            ".write": "auth === '$uid' && !db.getValue(`/deposit/$service_id/$uid/$deposit_id`) && db.getValue(`/accounts/$uid/balance`) >= newData"
           },
           "createdAt": {
             ".write": false
