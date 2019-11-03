@@ -95,13 +95,13 @@
           ".write": "typeof newData === 'number' && newData >= 0"
         },
         "info": {
-          ".write": "oldData !== null"
+          ".write": "data !== null"
         },
         "balance_info": {
           ".write": "db.getValue(`test/billing_keys/update_billing/$uid`) !== null"
         },
         "next_counter": {
-          ".write": "typeof newData === 'number' && newData === oldData + 1"
+          ".write": "typeof newData === 'number' && newData === data + 1"
         }
       }
     },

@@ -452,9 +452,9 @@ class DB {
     if (ruleString.includes('currentTime')) {
       ruleString = ruleString.replace(/currentTime/g, timestamp);
     }
-    if (ruleString.includes('oldData')) {
+    if (ruleString.includes('data')) {
       ruleString =
-        ruleString.replace(/oldData/g, this.getValue(valuePath.join('/')));
+        ruleString.replace(/data/g, this.getValue(valuePath.join('/')));
     }
     if (ruleString.includes('db.getValue')) {
       ruleString = ruleString.replace(/db.getValue/g, 'this.getValue');
