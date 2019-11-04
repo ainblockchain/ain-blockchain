@@ -227,9 +227,9 @@ describe("DB operations", () => {
 
   describe("setRule operations", () => {
     it("when retrieving existing rule config", () => {
-      const ownerConfig = {".write": "other rule config"};
-      expect(db.setOwner("/rule/some/path", ownerConfig)).to.equal(true)
-      assert.deepEqual(db.getOwner("/rule/some/path"), ownerConfig)
+      const ruleConfig = {".write": "other rule config"};
+      expect(db.setRule("/rule/some/path", ruleConfig)).to.equal(true)
+      assert.deepEqual(db.getRule("/rule/some/path"), ruleConfig)
     })
   })
 
@@ -545,6 +545,8 @@ describe("DB rule config", () => {
     dbValues["users"][db1.account.address]["balance"] = 100;
     dbValues["users"][db2.account.address]["balance"] = 50;
     dbValues["users"][db1.account.address]["info"] = 8474;
+    dbValues["users"][db1.account.address]["string_only"] = "some string";
+    dbValues["users"][db2.account.address]["string_only"] = 101;
     dbValues["billing_keys"]["update_billing"][db2.account.address] = "'not null'";
     dbValues["users"][db1.account.address]["next_counter"] = 10;
     dbValues["second_users"][db1.account.address] = {};
@@ -557,32 +559,36 @@ describe("DB rule config", () => {
   })
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
-    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/balance`), null, null, 0)).to.equal(true)
-    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/balance`), null, null, -1)).to.equal(false)
-    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/balance`), null, null, 1)).to.equal(true)
+    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/balance`), 0, null, null)).to.equal(true)
+    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/balance`), -1, null, null)).to.equal(false)
+    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/balance`), 1, null, null)).to.equal(true)
 
   })
 
   it("only allows certain users to write certain info if data exists", () => {
-    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/info`), null, null, "something")).to.equal(true)
-    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/info`), null, null, "something else")).to.equal(false)
-    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/new_info`), null, null, "something")).to.equal(true)
+    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/info`), "something", null, null)).to.equal(true)
+    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/info`), "something else", null, null)).to.equal(false)
+    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/new_info`), "something", db2.account.address, null)).to.equal(true)
+  })
 
+  it("apply the closest ancestor's rule config if not exists", () => {
+    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/child/grandson`), "something", db1.account.address, null)).to.equal(true)
+    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/child/grandson`), "something", db1.account.address, null)).to.equal(false)
   })
 
   it("only allows certain users to write certain info if data at other locations exists", () => {
-    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/balance_info`), null, null, "something")).to.equal(true)
-    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/balance_info`), null, null, "something")).to.equal(false)
+    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/users/${db2.account.address}/balance_info`), "something", null, null)).to.equal(true)
+    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/balance_info`), "something", null, null)).to.equal(false)
   })
 
   it("validates old data and new data together", () => {
-    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/next_counter`), null,  null, 11)).to.equal(true)
-    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/next_counter`), null, null, 12)).to.equal(false)
+    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/next_counter`), 11, null,  null)).to.equal(true)
+    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/users/${db1.account.address}/next_counter`), 12, null, null)).to.equal(false)
   })
 
   it("can handle nested wildcards", () => {
-    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/second_users/${db2.account.address}/${db2.account.address}`), null, null, "some value")).to.equal(true)
-    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/second_users/${db1.account.address}/next_counter`), null, null, "some other value")).to.equal(false)
+    expect(db2.getPermissionForValue(ChainUtil.parsePath(`test/second_users/${db2.account.address}/${db2.account.address}`), "some value", null, null)).to.equal(true)
+    expect(db1.getPermissionForValue(ChainUtil.parsePath(`test/second_users/${db1.account.address}/next_counter`), "some other value", null, null)).to.equal(false)
   })
 
   describe("substituteWildCards", () => {

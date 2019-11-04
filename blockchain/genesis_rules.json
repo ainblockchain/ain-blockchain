@@ -90,7 +90,7 @@
     },
     "users":{
       "$uid": {
-        ".write": true,
+        ".write": "auth === '$uid'",
         "balance": {
           ".write": "typeof newData === 'number' && newData >= 0"
         },
