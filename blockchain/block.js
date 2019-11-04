@@ -8,41 +8,37 @@ const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 
-class ForgedBlock {
-  constructor(timestamp, lastHash, data, number, signature, forger, validators, threshold) {
+class Block {
+  constructor(timestamp, lastHash, transactions, number, proposer, validators) {
     this.timestamp = timestamp;
     this.lastHash = lastHash;
-    this.data = data;
+    this.transactions = transactions;
     this.validatorTransactions = [];
     this.number = number;
-    this.signature = signature;
-    this.forger = forger;
+    this.proposer = proposer;
     this.validators = validators;
-    this.threshold = threshold;
-    this.blockSize = sizeof(this.data);
-    this.hash = ForgedBlock.hash({timestamp, lastHash, data, number, signature});
+    this.blockSize = sizeof(this.transactions);
+    this.hash = Block.hash({timestamp, lastHash, transactions, number});
   }
 
   setValidatorTransactions(validatorTransactions) {
     this.validatorTransactions = validatorTransactions;
   }
 
-  // TODO (lia): remove "forger"?
-  static forgeBlock(data, db, number, lastBlock, forger, validators, threshold) {
+  // TODO (lia): remove "proposer"?
+  static createBlock(transactions, db, number, lastBlock, proposer, validators) {
     const lastHash = lastBlock.hash;
     const timestamp = Date.now();
-    const signature = db.sign(stringify(data)); // TODO (lia): include other information to sign?
-    return new ForgedBlock(timestamp, lastHash, data, number, signature, forger,
-        validators, threshold);
+    return new Block(timestamp, lastHash, transactions, number, proposer,
+        validators);
   }
 
   header() {
     return {
       hash: this.hash,
       number: this.number,
-      threshold: this.threshold,
       validators: this.validators,
-      forger: this.forger,
+      proposer: this.proposer,
       validatorTransactions: this.validatorTransactions,
     };
   }
@@ -52,10 +48,9 @@ class ForgedBlock {
       timestamp: this.timestamp,
       lastHash: this.lastHash,
       hash: this.hash,
-      data: this.data,
-      forger: this.forger,
+      transactions: this.transactions,
+      proposer: this.proposer,
       number: this.number,
-      signature: this.signature,
       blockSize: this.blockSize,
     };
   }
@@ -66,16 +61,14 @@ class ForgedBlock {
 
   static hash(block) {
     if (block.timestamp === undefined || block.lastHash === undefined ||
-        block.data === undefined || block.number === undefined ||
-        block.signature === undefined) {
-      throw Error('A block should contain timestamp, lastHash, data, number, and signature fields.');
+        block.transactions === undefined || block.number === undefined) {
+      throw Error('A block should contain timestamp, lastHash, transactions and number fields.');
     }
     let sanitizedBlockData = {
       timestamp: block.timestamp,
       lastHash: block.lastHash,
-      data: block.data,
-      number: block.number,
-      signature: block.signature
+      transactions: block.transactions,
+      number: block.number
     };
     return '0x' + ainUtil.hashMessage(stringify(sanitizedBlockData)).toString('hex');
   }
@@ -85,7 +78,7 @@ class ForgedBlock {
         Timestamp : ${this.timestamp}
         Last Hash : ${this.lastHash.substring(0, 10)}
         Hash      : ${this.hash.substring(0, 10)}
-        Data      : ${this.data}
+        Transactions      : ${this.transactions}
         Number    : ${this.number}
         Size      : ${this.blockSize}`;
   }
@@ -93,13 +86,13 @@ class ForgedBlock {
   static loadBlock(blockZipFile) {
     const unzippedfs = zipper.sync.unzip(blockZipFile).memory();
     const blockInfo = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], 'buffer').toString());
-    return ForgedBlock.parse(blockInfo);
+    return Block.parse(blockInfo);
   }
 
   static parse(blockInfo) {
-    const block = new ForgedBlock(blockInfo['timestamp'], blockInfo['lastHash'],
-        blockInfo['data'], blockInfo['number'], blockInfo['signature'],
-        blockInfo['forger'], blockInfo['validators'], blockInfo['threshold']);
+    const block = new Block(blockInfo['timestamp'], blockInfo['lastHash'],
+        blockInfo['transactions'], blockInfo['number'], blockInfo['proposer'],
+        blockInfo['validators']);
     blockInfo['validatorTransactions'].forEach((transaction) => {
       block.validatorTransactions.push(transaction);
     });
@@ -116,8 +109,8 @@ class ForgedBlock {
     const nonceTracker = {};
     let transaction;
 
-    for (let i=0; i<block.data.length; i++) {
-      transaction = block.data[i];
+    for (let i=0; i<block.transactions.length; i++) {
+      transaction = block.transactions[i];
 
       if (transaction.nonce < 0) {
         continue;
@@ -196,4 +189,4 @@ class ForgedBlock {
   }
 }
 
-module.exports = {ForgedBlock};
+module.exports = {Block};
