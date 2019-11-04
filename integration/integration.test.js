@@ -28,7 +28,7 @@ const trackerServer = 'http://localhost:5000';
 const SERVERS = [server1, server2, server3, server4];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
+const JSON_RPC_GET_RECENT_BLOCK = 'ain_getRecentBlock';
 const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
 const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
@@ -123,7 +123,7 @@ for (let i = 0; i < ENV_VARIABLES.length; i++) {
 
 function waitUntilNewBlock(jsonRpcClient, numBlocks, stackDepth) {
   return new Promise((resolve) => {
-    jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, {}, function(err, response) {
+    jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
       if (err) throw err;
       currentHeight = response.result.height;
       resolve(currentHeight - numBlocks);
@@ -180,7 +180,7 @@ describe('Integration Tests', () => {
     sleep(20000);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, {}, function(err, response) {
+      jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
         if (err) throw err;
         numBlocksOnStartup = response.result.height;
         resolve();
@@ -211,7 +211,7 @@ describe('Integration Tests', () => {
         sleep(200);
       }
       return new Promise((resolve) => {
-        jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK, {}, function(err, response) {
+        jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
           if (err) throw err;
           numBlocks = response.result.height;
           currentHeight = numBlocks;
