@@ -1,6 +1,5 @@
 const escapeStringRegexp = require('escape-string-regexp');
 const ainUtil = require('@ainblockchain/ain-util');
-const fs = require('fs');
 const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
        DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
