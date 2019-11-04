@@ -171,7 +171,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       const address = args.address;
       // TODO (lia): Check validity of the address with ain-util
       const balance = p2pServer.db
-          .getValue(`/${PredefinedDbPaths.ACCOUNT}/${address}/balance`) || 0;
+          .getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
       done(null, balance);
     },
 

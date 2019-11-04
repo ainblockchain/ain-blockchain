@@ -344,16 +344,16 @@ describe('Integration Tests', () => {
 
     describe('and built in functions', () => {
       beforeEach(() => {
-        syncRequest('POST', server1 + setEndpoint, {json: {ref: `/account/${publicKeys[0]}/balance`, value: 100}});
-        syncRequest('POST', server2 + setEndpoint, {json: {ref: `/account/${publicKeys[1]}/balance`, value: 0}});
+        syncRequest('POST', server1 + setEndpoint, {json: {ref: `/accounts/${publicKeys[0]}/balance`, value: 100}});
+        syncRequest('POST', server2 + setEndpoint, {json: {ref: `/accounts/${publicKeys[1]}/balance`, value: 0}});
         sleep(200);
       });
 
       it('facilitate transfer between accounts', () => {
         syncRequest('POST', server1 + setEndpoint, {json: {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 10}});
         sleep(500);
-        const balance1 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/account/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
-        const balance2 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/account/${publicKeys[1]}/balance`).body.toString('utf-8')).result;
+        const balance1 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/accounts/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
+        const balance2 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/accounts/${publicKeys[1]}/balance`).body.toString('utf-8')).result;
         expect(balance1).to.equal(90);
         expect(balance2).to.equal(10);
       });
@@ -414,7 +414,7 @@ describe('Integration Tests', () => {
                 if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_FORGERS) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
-                    JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNT) ||
+                    JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNTS) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER))) {
                   transactionsOnBlockChain.push(transaction);
                 }

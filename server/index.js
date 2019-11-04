@@ -359,7 +359,7 @@ class P2pServer {
     const transaction = this.db.createTransaction({
         operation: {
           type: WriteDbOperations.SET_VALUE,
-          ref: this.votingUtil.resolveDbPath([PredefinedDbPaths.ACCOUNT, this.db.account.address, PredefinedDbPaths.BALANCE]),
+          ref: this.votingUtil.resolveDbPath([PredefinedDbPaths.ACCOUNTS, this.db.account.address, PredefinedDbPaths.BALANCE]),
           value: 1000
 
         }

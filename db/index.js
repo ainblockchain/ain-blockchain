@@ -1,19 +1,47 @@
 const escapeStringRegexp = require('escape-string-regexp');
 const ainUtil = require('@ainblockchain/ain-util');
+const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
+       DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, RuleProperties, DEBUG} = require('../constants');
 
 class DB {
   constructor(blockchain) {
     this.db = {};
+    this.initDb();
     this.func = new BuiltInFunctions(this);
     // TODO (lia): Add account importing functionality
     this.account = ainUtil.createAccount(); // { private_key, public_key, address }
     if (this instanceof BackUpDB) return;
     this.nonce = this.getNonce(blockchain);
     console.log(`creating new db with id ${this.account.address}`);
+  }
+
+  initDb() {
+    // Initialize DB owners.
+    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
+      [OwnerProperties.OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          "*": {
+            write_owner: true,
+            write_rule: true,
+            branch_owner: true
+          }
+        }
+      }
+    });
+    // Initialize DB rules.
+    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
+      [RuleProperties.WRITE]: true
+    });
+  }
+
+  static getDatabase(blockchain, tp) {
+    const db = new DB(blockchain);
+    blockchain.setBackDb(new BackUpDB(db.account));
+    db.reconstruct(blockchain, tp);
+    return db;
   }
 
   getNonce(blockchain) {
@@ -34,13 +62,6 @@ class DB {
     }
     console.log(`Setting nonce to ${nonce}`);
     return nonce;
-  }
-
-  static getDatabase(blockchain, tp) {
-    const db = new DB(blockchain);
-    blockchain.setBackDb(new BackUpDB(db.account));
-    db.reconstruct(blockchain, tp);
-    return db;
   }
 
   writeDatabase(fullPath, value) {
@@ -368,7 +389,7 @@ class DB {
     timestamp = timestamp || Date.now();
     let rule = false;
     const wildCards = {};
-    let currentRuleSet = this.db['rules'];
+    let currentRuleSet = this.db[PredefinedDbPaths.RULES_ROOT];
     let i = 0;
     do {
       if (RuleProperties.WRITE in currentRuleSet) {
@@ -430,9 +451,9 @@ class DB {
     if (ruleString.includes('currentTime')) {
       ruleString = ruleString.replace(/currentTime/g, timestamp);
     }
-    if (ruleString.includes('oldData')) {
+    if (ruleString.includes('data')) {
       ruleString =
-        ruleString.replace(/oldData/g, this.getValue(valuePath.join('/')));
+        ruleString.replace(/data/g, this.getValue(valuePath.join('/')));
     }
     if (ruleString.includes('db.getValue')) {
       ruleString = ruleString.replace(/db.getValue/g, 'this.getValue');

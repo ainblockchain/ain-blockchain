@@ -158,7 +158,7 @@ class BuiltInFunctions {
   }
 
   _getBalancePath(address) {
-    return `${PredefinedDbPaths.ACCOUNT}/${address}/${PredefinedDbPaths.BALANCE}`;
+    return `${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.BALANCE}`;
   }
 
   _getTransferResultPath(from, to, key) {

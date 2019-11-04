@@ -2,7 +2,8 @@ const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
-const {RULES_FILE_PATH, GENESIS_INFO} = require('../constants');
+const {GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths, GenesisToken, GenesisAccount}
+    = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -147,31 +148,56 @@ class ForgedBlock extends Block {
     return true;
   }
 
+  static getGenesisBlockData() {
+    const keyBuffer = Buffer.from(GenesisAccount.private_key, 'hex');
+    const tokenOp = {
+      type: 'SET_VALUE',
+      ref: `/${PredefinedDbPaths.TOKEN}`,
+      value: GenesisToken
+    };
+    const balancesOp = {
+      type: 'SET_VALUE',
+      ref: `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`,
+      value: GenesisToken.total_supply
+    };
+    if (!fs.existsSync(GENESIS_OWNERS)) {
+      throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
+    }
+    const ownersOp = {
+      type: 'SET_OWNER',
+      ref: '/',
+      value: JSON.parse(fs.readFileSync(GENESIS_OWNERS))
+    };
+    if (!fs.existsSync(GENESIS_RULES)) {
+      throw Error('Missing genesis owners file: ' + GENESIS_RULES);
+    }
+    const rulesOp = {
+      type: 'SET_RULE',
+      ref: '/',
+      value: JSON.parse(fs.readFileSync(GENESIS_RULES))
+    };
+    const firstTxData = {
+      nonce: -1,
+      timestamp: GenesisAccount.timestamp,
+      operation: {
+        type: 'SET',
+        op_list: [ tokenOp, balancesOp, ownersOp, rulesOp ]
+      }
+    };
+    const signature = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
+    const firstTx = new Transaction({ signature, transaction: firstTxData });
+    return [firstTx];
+  }
+
   static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
-    if (!fs.existsSync(RULES_FILE_PATH)) {
-      throw Error('Missing rules file for the genesis block.');
-    }
-    if (!fs.existsSync(GENESIS_INFO)) {
-      throw Error('Missing key and timestamp information for the genesis block.');
-    }
-    const genesisInfo = JSON.parse(fs.readFileSync(GENESIS_INFO));
-    const operation = { type: 'SET_RULE', ref: '/',
-                        value: JSON.parse(fs.readFileSync(RULES_FILE_PATH))['rules'] };
-    const genesisTxData = {
-      nonce: -1,
-      timestamp: genesisInfo.timestamp,
-      operation
-    };
-    const keyBuffer = Buffer.from(genesisInfo.private_key, 'hex');
-    const signature = ainUtil.ecSignTransaction(genesisTxData, keyBuffer);
-    const genesisTx = new Transaction({ signature, transaction: genesisTxData });
-    const timestamp = genesisInfo.timestamp;
+    const timestamp = GenesisAccount.timestamp;
     const height = 0;
-    const data = [genesisTx];
-    const forger = genesisInfo.address;
-    const blockSignature = ainUtil.ecSignMessage(stringify(data), keyBuffer);
+    const data = ForgedBlock.getGenesisBlockData();
+    const forger = GenesisAccount.address;
+    const blockSignature = ainUtil.ecSignMessage(stringify(data),
+                                                 Buffer.from(GenesisAccount.private_key, 'hex'));
     const lastHash = '';
     return new this(timestamp, lastHash, data, height, blockSignature, forger, [], -1);
   }

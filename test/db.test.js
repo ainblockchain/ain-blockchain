@@ -6,10 +6,11 @@ const chai = require('chai');
 const fs = require("fs")
 const expect = chai.expect;
 const assert = chai.assert;
-const {RULES_FILE_PATH} = require('../constants')
+const {GenesisToken, GenesisAccount, GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths}
+    = require('../constants')
 
 describe("DB initialization", () => {
-  let db, dbValues, dbRules, dbOwners, bc, tp;
+  let db, bc, tp;
 
   beforeEach(() => {
     tp = new TransactionPool();
@@ -17,10 +18,33 @@ describe("DB initialization", () => {
     db = DB.getDatabase(bc, tp);
   })
 
+  describe("token", () => {
+    it("loading token properly on initatiion", () => {
+      assert.deepEqual(db.getValue(`/${PredefinedDbPaths.TOKEN}`), GenesisToken);
+
+    })
+  })
+
+  describe("balances", () => {
+    it("loading balances properly on initatiion", () => {
+      const dbPath = `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`;
+      expect(db.getValue(dbPath)).to.equal(GenesisToken.total_supply);
+
+    })
+  })
+
+  describe("owners", () => {
+    it("loading owners properly on initatiion", () => {
+      const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
+      assert.deepEqual(db.getOwner("/"), owners);
+
+    })
+  })
+
   describe("rules", () => {
-    it("loading properly on initatiion", () => {
-      const rules = JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"];
-      assert.deepEqual(db.getRule("/"), JSON.parse(fs.readFileSync(RULES_FILE_PATH))["rules"])
+    it("loading rules properly on initatiion", () => {
+      const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
+      assert.deepEqual(db.getRule("/"), rules);
 
     })
   })
