@@ -273,7 +273,7 @@ class P2pServer {
         if (this.votingUtil.isStaked() && this.blockchain.syncedAfterStartup) {
           this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         }
-        if (this.votingUtil.isProposer()) { this.createBlock(); }
+        if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
         break;
       case VotingActionTypes.PROPOSED_BLOCK:
         let invalidTransactions = false;
@@ -333,7 +333,7 @@ class P2pServer {
     }
   }
 
-  createBlock() {
+  createAndProposeBlock() {
     const transactions = this.transactionPool.validTransactions();
     const blockNumber = this.blockchain.height() + 1;
     const validators = this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS);
@@ -379,7 +379,7 @@ class P2pServer {
     this.stakeAmount();
     this.votingUtil.registerForNextRound(0);
     this.executeAndBroadcastTransaction(this.votingUtil.instantiate(this.blockchain));
-    this.createBlock();
+    this.createAndProposeBlock();
   }
 
   addBlockToChain() {
@@ -419,7 +419,7 @@ class P2pServer {
         // TODO (lia): change so that validators with stakes that have enough time
         // until expiration will be auto-registered for the next round.
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
-        if (this.votingUtil.isProposer()) { this.createBlock(); }
+        if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
       }, BLOCK_CREATION_INTERVAL);
     }
     console.log(`New blockchain height is ${this.blockchain.height() + 1}`);
