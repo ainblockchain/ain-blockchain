@@ -160,14 +160,6 @@ class ForgedBlock extends Block {
       ref: `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`,
       value: GenesisToken.total_supply
     };
-    if (!fs.existsSync(GENESIS_OWNERS)) {
-      throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
-    }
-    const ownersOp = {
-      type: 'SET_OWNER',
-      ref: '/',
-      value: JSON.parse(fs.readFileSync(GENESIS_OWNERS))
-    };
     if (!fs.existsSync(GENESIS_RULES)) {
       throw Error('Missing genesis owners file: ' + GENESIS_RULES);
     }
@@ -176,12 +168,20 @@ class ForgedBlock extends Block {
       ref: '/',
       value: JSON.parse(fs.readFileSync(GENESIS_RULES))
     };
+    if (!fs.existsSync(GENESIS_OWNERS)) {
+      throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
+    }
+    const ownersOp = {
+      type: 'SET_OWNER',
+      ref: '/',
+      value: JSON.parse(fs.readFileSync(GENESIS_OWNERS))
+    };
     const firstTxData = {
       nonce: -1,
       timestamp: GenesisAccount.timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balancesOp, ownersOp, rulesOp ]
+        op_list: [ tokenOp, balancesOp, rulesOp, ownersOp]
       }
     };
     const signature = ainUtil.ecSignTransaction(firstTxData, keyBuffer);

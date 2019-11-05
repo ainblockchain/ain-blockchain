@@ -23,10 +23,10 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
         [OwnerProperties.OWNERS]: {
-          "*": {
-            write_owner: true,
-            write_rule: true,
-            branch_owner: true
+          [OwnerProperties.ANYONE]: {
+            [OwnerProperties.WRITE_OWNER]: true,
+            [OwnerProperties.BRANCH_OWNER]: true,
+            [OwnerProperties.WRITE_RULE]: true
           }
         }
       }
@@ -126,7 +126,7 @@ class DB {
   setValue(valuePath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
-      return {code: 2, error_message: 'No value write permission on: ' + valuePath};
+      return {code: 2, error_message: 'No .write permission on: ' + valuePath};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
@@ -173,7 +173,7 @@ class DB {
   setOwner(ownerPath, owner, address) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
-      return {code: 2, error_message: 'No write_owner permission on: ' + ownerPath};
+      return {code: 2, error_message: 'No write_owner or branch_owner permission on: ' + ownerPath};
     }
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -385,34 +385,34 @@ class DB {
 
   // TODO(seo): Add rule check for sub-nodes when newValue is an opject.
   getPermissionForValue(valuePath, newValue, address, timestamp) {
-    let lastRuleConfig;
+    let lastRuleNode;
     const wildCards = {};
-    const ruleConfigs = [];
-    let currentRuleConfig = this.db[PredefinedDbPaths.RULES_ROOT];
-    ruleConfigs.push(currentRuleConfig);
-    for (let i = 0; i < valuePath.length && currentRuleConfig !== undefined; i++) {
+    const ruleNodes = [];
+    let currentRuleNode = this.db[PredefinedDbPaths.RULES_ROOT];
+    ruleNodes.push(currentRuleNode);
+    for (let i = 0; i < valuePath.length && currentRuleNode; i++) {
       // Specific rule path has higher precedence over wildcard rule path.
-      lastRuleConfig = currentRuleConfig;
-      currentRuleConfig = currentRuleConfig[valuePath[i]];
-      if (currentRuleConfig) {
-        ruleConfigs.push(currentRuleConfig);
+      lastRuleNode = currentRuleNode;
+      currentRuleNode = currentRuleNode[valuePath[i]];
+      if (currentRuleNode) {
+        ruleNodes.push(currentRuleNode);
       } else {
-        // If no rule set is available for specific key, check for wildcards.
-        const keys = Object.keys(lastRuleConfig);
+        // If no rule config is available for specific path, check for wildcards.
+        const keys = Object.keys(lastRuleNode);
         for (let j = 0; j < keys.length; j++) {
           if (keys[j].startsWith('$')) {
             wildCards[keys[j]] = valuePath[i];
-            currentRuleConfig = lastRuleConfig[keys[j]];
-            ruleConfigs.push(currentRuleConfig);
+            currentRuleNode = lastRuleNode[keys[j]];
+            ruleNodes.push(currentRuleNode);
           }
         }
       }
     }
     let rule = false;
     // Find the closest ancestor that has a rule config.
-    for (let i = ruleConfigs.length - 1; i >= 0; i--) {
-      const refRuleConfig = ruleConfigs[i];
-      if (RuleProperties.WRITE in refRuleConfig) {
+    for (let i = ruleNodes.length - 1; i >= 0; i--) {
+      const refRuleConfig = ruleNodes[i];
+      if (refRuleConfig && RuleProperties.WRITE in refRuleConfig) {
         rule = refRuleConfig[RuleProperties.WRITE];
         break;
       }
@@ -420,21 +420,17 @@ class DB {
     if (typeof rule === 'string') {
       rule = this.evalRuleString(rule, wildCards, valuePath, newValue, address, timestamp);
     }
-
     return rule;
   }
 
   getPermissionForRule(rulePath, address) {
-    // TODO(seo): Implement this.
-    return true;
+    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(rulePath);
+    return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, false);
   }
 
   getPermissionForOwner(ownerPath, address) {
-    return true;
-  }
-
-  checkOwnerConfig(ownerConfig, ownerPath, address) {
-    return true;
+    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(ownerPath);
+    return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, true);
   }
 
   static substituteWildCards(ruleString, wildCards) {
@@ -477,6 +473,58 @@ class DB {
       console.log(`Failed to get permission with rule "${ruleString}"`);
     }
     return permission;
+  }
+
+  getOwnerConfig(ownerPath) {
+    const ownerNodes = [];
+    let currentOwnerNode = this.db[PredefinedDbPaths.OWNERS_ROOT];
+    ownerNodes.push(currentOwnerNode);
+    for (let i = 0; i < ownerPath.length && currentOwnerNode; i++) {
+      currentOwnerNode = currentOwnerNode[ownerPath[i]];
+      if (currentOwnerNode) {
+        ownerNodes.push(currentOwnerNode);
+      }
+    }
+    let ownerConfig = null;
+    let isAncestorConfig = (ownerPath.length !== 0);
+    // Find the closest ancestor that has a owner config.
+    for (let i = ownerNodes.length - 1; i >= 0; i--) {
+      const refOwnerConfig = ownerNodes[i];
+      if (refOwnerConfig && OwnerProperties.OWNER in refOwnerConfig) {
+        ownerConfig = refOwnerConfig[OwnerProperties.OWNER];
+        isAncestorConfig = (i !== ownerPath.length);
+        break;
+      }
+    }
+    return { ownerConfig, isAncestorConfig };
+  }
+
+  checkOwnerConfig(config, isAncestorConfig, address, isOwner) {
+    let owners = null;
+    let permissions = null;
+    if (config && OwnerProperties.OWNERS in config) {
+      owners = config[OwnerProperties.OWNERS];
+    }
+    // Step 1: Check if the address exists in owners.
+    if (owners && address in owners) {
+      permissions = owners[address];
+    }
+    // Step 2: If the address does not exist in owners, check permissions for anyone ('*').
+    if (owners && !permissions && OwnerProperties.ANYONE in owners) {
+      permissions = owners[OwnerProperties.ANYONE];
+    }
+    if (permissions) {
+      if (isOwner) {
+        if (isAncestorConfig) {
+          return (permissions[OwnerProperties.BRANCH_OWNER] === true);
+        } else {
+          return (permissions[OwnerProperties.WRITE_OWNER] === true);
+        }
+      } else {
+        return (permissions[OwnerProperties.WRITE_RULE] === true);
+      }
+    }
+    return false;
   }
 }
 

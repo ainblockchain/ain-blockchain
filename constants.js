@@ -98,8 +98,12 @@ const PredefinedDbPaths = {
  * @enum {string}
  */
 const OwnerProperties = {
+  ANYONE: '*',
+  BRANCH_OWNER: 'branch_owner',
   OWNER: '.owner',
   OWNERS: 'owners',
+  WRITE_OWNER: 'write_owner',
+  WRITE_RULE: 'write_rule',
 };
 
 /**

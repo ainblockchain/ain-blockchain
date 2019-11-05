@@ -80,19 +80,27 @@ describe("DB operations", () => {
     dbRules = {
       "some": {
         "path": {
-          ".write": "some rule config"
+          ".write": true
         }
       }
     };
-    db.setRule("/rule", dbRules);
+    db.setRule("test_rule", dbRules);
     dbOwners = {
       "some": {
         "path": {
-          ".owner": "some owner config"
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_owner": true,
+                "write_rule": true
+              }
+            }
+          }
         }
       }
     };
-    db.setOwner("/owner", dbOwners);
+    db.setOwner("test_owner", dbOwners);
   })
 
   describe("getValue operations", () => {
@@ -115,21 +123,31 @@ describe("DB operations", () => {
 
   describe("getRule operations", () => {
     it("when retrieving non-existing rule config", () => {
-      expect(db.getRule("/rule/other/rule/path")).to.equal(null);
+      expect(db.getRule("/test_rule/other/rule/path")).to.equal(null);
     })
 
     it("when retrieving existing rule config", () => {
-      assert.deepEqual(db.getRule("/rule/some/path"), {".write": "some rule config"});
+      assert.deepEqual(db.getRule("/test_rule/some/path"), {".write": true});
     })
   })
 
   describe("getOwner operations", () => {
     it("when retrieving non-existing owner config", () => {
-      expect(db.getOwner("/owner/other/owner/path")).to.equal(null)
+      expect(db.getOwner("/test_owner/other/owner/path")).to.equal(null)
     })
 
     it("when retrieving existing owner config", () => {
-      assert.deepEqual(db.getOwner("/owner/some/path"), {".owner": "some owner config"});
+      assert.deepEqual(db.getOwner("/test_owner/some/path"), {
+        ".owner": {
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_owner": true,
+              "write_rule": true
+            }
+          }
+        }
+      });
     })
   })
 
@@ -159,19 +177,27 @@ describe("DB operations", () => {
         },
         {
           type: "GET_RULE",
-          ref: "/rule/some/path",
+          ref: "/test_rule/some/path",
         },
         {
           type: "GET_OWNER",
-          ref: "/owner/some/path",
+          ref: "/test_owner/some/path",
         },
       ]), [
         456,
         {
-          ".write": "some rule config"
+          ".write": true
         },
         {
-          ".owner": "some owner config"
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_owner": true,
+                "write_rule": true
+              }
+            }
+          }
         }
       ]);
     })
@@ -228,16 +254,16 @@ describe("DB operations", () => {
   describe("setRule operations", () => {
     it("when retrieving existing rule config", () => {
       const ruleConfig = {".write": "other rule config"};
-      expect(db.setRule("/rule/some/path", ruleConfig)).to.equal(true)
-      assert.deepEqual(db.getRule("/rule/some/path"), ruleConfig)
+      expect(db.setRule("/test_rule/some/path", ruleConfig)).to.equal(true)
+      assert.deepEqual(db.getRule("/test_rule/some/path"), ruleConfig)
     })
   })
 
   describe("setOwner operations", () => {
     it("when retrieving existing owner config", () => {
       const ownerConfig = {".owner": "other owner config"};
-      expect(db.setOwner("/owner/some/path", ownerConfig)).to.equal(true)
-      assert.deepEqual(db.getOwner("/owner/some/path"), ownerConfig)
+      expect(db.setOwner("/test_owner/some/path", ownerConfig)).to.equal(true)
+      assert.deepEqual(db.getOwner("/test_owner/some/path"), ownerConfig)
     })
   })
 
@@ -263,14 +289,14 @@ describe("DB operations", () => {
         },
         {
           type: "SET_RULE",
-          ref: "/rule/some/path",
+          ref: "/test_rule/some/path",
           value: {
             ".write": "other rule config"
           }
         },
         {
           type: "SET_OWNER",
-          ref: "/owner/some/path",
+          ref: "/test_owner/some/path",
           value: {
             ".owner": "other owner config"
           }
@@ -279,8 +305,8 @@ describe("DB operations", () => {
       assert.deepEqual(db.getValue("nested/far/down"), { "new": 12345 })
       expect(db.getValue("test/increment/value")).to.equal(30)
       expect(db.getValue("test/decrement/value")).to.equal(10)
-      assert.deepEqual(db.getRule("/rule/some/path"), {".write": "other rule config"});
-      assert.deepEqual(db.getOwner("/owner/some/path"), {".owner": "other owner config"});
+      assert.deepEqual(db.getRule("/test_rule/some/path"), {".write": "other rule config"});
+      assert.deepEqual(db.getOwner("/test_owner/some/path"), {".owner": "other owner config"});
     })
 
     it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
@@ -359,7 +385,7 @@ describe("DB operations", () => {
         {
           operation: {
             type: "SET_RULE",
-            ref: "/rule/some/path",
+            ref: "/test_rule/some/path",
             value: {
               ".write": "other rule config"
             }
@@ -368,7 +394,7 @@ describe("DB operations", () => {
         {
           operation: {
             type: "SET_OWNER",
-            ref: "/owner/some/path",
+            ref: "/test_owner/some/path",
             value: {
               ".owner": "other owner config"
             }
@@ -378,8 +404,8 @@ describe("DB operations", () => {
       assert.deepEqual(db.getValue("nested/far/down"), { "new": 12345 })
       expect(db.getValue("test/increment/value")).to.equal(30)
       expect(db.getValue("test/decrement/value")).to.equal(10)
-      assert.deepEqual(db.getRule("/rule/some/path"), {".write": "other rule config"});
-      assert.deepEqual(db.getOwner("/owner/some/path"), {".owner": "other owner config"});
+      assert.deepEqual(db.getRule("/test_rule/some/path"), {".write": "other rule config"});
+      assert.deepEqual(db.getOwner("/test_owner/some/path"), {".owner": "other owner config"});
     })
 
     it("returning error code and leaving value unchanged if no operation is given", () => {
