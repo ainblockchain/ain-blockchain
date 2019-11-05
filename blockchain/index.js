@@ -70,7 +70,6 @@ class Blockchain {
     if (!(block instanceof Block)) {
       block = Block.parse(block);
     }
-
     this.chain.push(block);
     while (this.chain.length > 10) {
       this.backUpDB.executeBlockTransactions(this.chain.shift());
@@ -80,20 +79,23 @@ class Blockchain {
 
 
   static isValidChain(chain) {
-    // TODO (lia): fix validation logic
-    if (Block.hash(chain[0]) !== Block.genesis().hash) {
-      console.log('first block not genesis');
+    const firstBlock = Block.parse(chain[0]);
+    if (firstBlock.hash !== Block.genesis().hash) {
+      console.log('First block is not the Genesis block');
+      return false;
+    }
+    if (!Block.validateHashes(firstBlock)) {
+      console.log('Genesis block is corrupted')
       return false;
     }
     return Blockchain.isValidChainSubsection(chain);
   }
 
   static isValidChainSubsection(chainSubSection) {
-    for (let i=1; i < chainSubSection.length; i++) {
+    for (let i = 1; i < chainSubSection.length; i++) {
       const block = chainSubSection[i];
-      const lastBlock = chainSubSection[i - 1];
-      if (block.lastHash !== lastBlock.hash || block.hash !== Block.hash(block)) {
-        console.log(`Invalid hashing for block ${block.number}`);
+      const lastBlock = Block.parse(chainSubSection[i - 1]);
+      if (block.last_hash !== lastBlock.hash || !Block.validateHashes(block)) {
         return false;
       }
     }
@@ -149,13 +151,13 @@ class Blockchain {
   }
 
   /**
-    * Returns a section of the chain up to a maximuim of length CHAIN_SUBSECT_LENGTH, starting from the index of the queired lastBLock
+    * Returns a section of the chain up to a maximuim of length CHAIN_SUBSECT_LENGTH, starting from the index of the queired lastBlock
     *
     * @param {Block} lastBlock - The current highest block tin the querying nodes blockchain
     * @return {list} A list of Block instances with lastBlock at index 0, up to a maximuim length CHAIN_SUBSECT_LENGTH
     */
   requestBlockchainSection(lastBlock) {
-    console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.number}\t hash ${lastBlock.lastHash}`);
+    console.log(`Current chain height: ${this.height()}: Requesters height ${lastBlock.number}\t hash ${lastBlock.last_hash}`);
     const blockFiles = this.getBlockFiles(lastBlock.number, lastBlock.number + CHAIN_SUBSECT_LENGTH);
     if (blockFiles.length > 0 && Block.loadBlock(blockFiles[blockFiles.length - 1]).number > lastBlock.number &&
       blockFiles[0].indexOf(Block.getFileName(lastBlock)) < 0) {
@@ -181,9 +183,10 @@ class Blockchain {
       console.log('Received chain is of lower height than current height');
       return false;
     }
-    const firstBlock = chainSubSection.shift();
-    if (this.lastBlock().hash !== Block.hash(JSON.parse(JSON.stringify(firstBlock))) && this.lastBlock().hash !== Block.genesis().hash) {
-      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${Block.hash(JSON.parse(JSON.stringify(firstBlock))).substring(0, 5)}`);
+    const firstBlock = Block.parse(chainSubSection.shift());
+    // Fix this logic
+    if (this.lastBlock().hash !== firstBlock.hash && this.lastBlock().hash !== Block.genesis().hash) {
+      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} does not equal ${firstBlock.hash.substring(0, 5)}`);
       return false;
     }
     if (!Blockchain.isValidChainSubsection(chainSubSection)) {

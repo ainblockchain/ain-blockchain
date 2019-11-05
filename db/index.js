@@ -113,10 +113,6 @@ class DB {
     return resultList;
   }
 
-  stake(stakeAmount) {
-    return this.setValue([PredefinedDbPaths.STAKEHOLDER, this.account.address].join('/'), stakeAmount);
-  }
-
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Make set operation and function run tightly bound, i.e., revert the former
   //            if the latter fails.

@@ -105,7 +105,9 @@ describe('TransactionPool', () => {
 
     it('removes transactions included in block', () => {
       const number = 1;
-      const block = Block.createBlock(tp.validTransactions(), db, number, Block.genesis());
+      const lastBlock = Block.genesis();
+      const block = Block.createBlock(lastBlock.hash, [], tp.validTransactions(),
+          number, db.account.address, []);
       const newTransactions = {};
       newTransactions[db.account.address] = [];
       for (let i = 0; i < 10; i++) {

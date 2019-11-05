@@ -8,7 +8,7 @@ const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
 
 describe('Blockchain', () => {
-  let bc; let bc2; let tp;
+  let bc, bc2, tp, db1, db2;
 
   beforeEach(() => {
     bc = new Blockchain('first-blockchain');
@@ -34,7 +34,9 @@ describe('Blockchain', () => {
 
   it('adds new block', () => {
     const data = 'foo';
-    bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
+    const lastBlock = bc.lastBlock();
+    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.height() + 1,
+        db1.account.address, []));
     expect(bc.chain[bc.chain.length -1].transactions).to.equal(data);
   });
 
@@ -54,7 +56,9 @@ describe('Blockchain', () => {
 
   it('invalidates corrupt chain', () => {
     const data = 'foo';
-    bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
+    const lastBlock = bc.lastBlock();
+    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.height() + 1,
+        db1.account.address, []));
     bc.chain[bc.height()].transactions = ':(';
     expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
   });
@@ -74,7 +78,9 @@ describe('Blockchain', () => {
             value: 'val'
           }
         });
-        const block = Block.createBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock());
+        const lastBlock = bc.lastBlock();
+        const block = Block.createBlock(lastBlock.hash, [], tp.validTransactions(),
+            bc.height() + 1, db1.account.address, []);
         if (block.number === 500) {
           blockHash = block.hash;
         }

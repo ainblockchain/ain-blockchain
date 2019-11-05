@@ -1,6 +1,7 @@
 'use strict';
 
 const {ReadDbOperations, PredefinedDbPaths, TransactionStatus} = require('../constants');
+const {Block} = require('../blockchain/block');
 const ainUtil = require('@ainblockchain/ain-util');
 
 /**
@@ -28,22 +29,21 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
 
     ain_getRecentBlockNumber: function(args, done) {
       const block = blockchain.lastBlock();
-      done(null, block ? block.height : null);
+      done(null, block ? block.number : null);
     },
 
     ain_getBlockHeadersList: function(args, done) {
       const blocks = blockchain.getChainSection(args.from, args.to);
       const blockHeaders = [];
       blocks.forEach((block) => {
-        blockHeaders.push(block.header());
+        blockHeaders.push(block.header);
       });
       done(null, blockHeaders);
     },
 
     ain_getBlockByHash: function(args, done) {
       let block = blockchain.getBlockByHash(args.hash);
-      if (block) block = block.body();
-      if (args.getFullTransactions || !block) {
+      if (!block || args.getFullTransactions) {
         done(null, block);
       } else {
         block.transactions = extractTransactionHashes(block);
@@ -53,8 +53,7 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
 
     ain_getBlockByNumber: function(args, done) {
       let block = blockchain.getBlockByNumber(args.number);
-      if (block) block = block.body();
-      if (args.getFullTransactions || !block) {
+      if (!block || args.getFullTransactions) {
         done(null, block);
       } else {
         block.transactions = extractTransactionHashes(block);

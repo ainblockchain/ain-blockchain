@@ -1,4 +1,3 @@
-
 const shuffleSeed = require('shuffle-seed');
 const seedrandom = require('seedrandom');
 const { VotingStatus, PredefinedDbPaths, WriteDbOperations } = require('../constants');
@@ -9,37 +8,37 @@ class VotingUtil {
     this.db = db;
     this.status = VotingStatus.START_UP;
     this.block = null;
-    this.validatorTransactions = [];
+    this.lastVotes = [];
+    this.votes = [];
   }
 
   resolveDbPath(pathSubKeys) {
     return pathSubKeys.join('/');
   }
 
-  registerValidatingTransaction(transaction) {
+  registerVote(vote) {
     // Transactions can be null (when cascading from proposed_block) and duplicate (when cascading from pre_cote)
-    if (transaction && !this.validatorTransactions.find((trans) => {
-      return trans.hash === transaction.hash;
+    if (vote && !this.votes.find((_vote) => {
+      return _vote.hash === vote.hash;
     })) {
-      this.validatorTransactions.push(transaction);
+      this.votes.push(vote);
     }
   }
 
   checkPreVotes() {
-    const total = Object.values(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
+    const proposer = this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER)
+    const validatorsMinusProposer = Object.assign({},
+        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS));
+    delete validatorsMinusProposer[proposer];
+    const total = Object.values(validatorsMinusProposer).reduce(function(a, b) {
       return a + b;
     }, 0);
     console.log(`Total prevotes from validators : ${total}\nReceived prevotes ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     return (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) > (total *.6666)) || total === 0;
   }
 
-  addValidatorTransactionsToBlock() {
-    for (let i = 0; i < this.validatorTransactions.length; i++) {
-      this.block.validatorTransactions.push(this.validatorTransactions[i]);
-    }
-  }
-
   preVote() {
+    // TODO (lia): check this.status === VotingStatus.RECEIVED_BLOCK ?
     const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address]));
     this.status = VotingStatus.PRE_VOTE;
     console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
@@ -50,7 +49,7 @@ class VotingUtil {
         value: stake
       }
     });
-    this.registerValidatingTransaction(transaction);
+    this.registerVote(transaction);
     return transaction;
   }
 
@@ -62,7 +61,8 @@ class VotingUtil {
   reset() {
     this.status = VotingStatus.COMMITTED;
     this.block = null;
-    this.validatorTransactions.length = [];
+    this.lastVotes = this.votes;
+    this.votes = [];
   }
 
   isSyncedWithNetwork(bc) {
@@ -90,12 +90,16 @@ class VotingUtil {
         value: stake
       }
     });
-    this.registerValidatingTransaction(transaction);
+    this.registerVote(transaction);
     return transaction;
   }
 
   checkPreCommits() {
-    const total = Object.values(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).reduce(function(a, b) {
+    const proposer = this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER)
+    const validatorsMinusProposer = Object.assign({},
+        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS));
+    delete validatorsMinusProposer[proposer];
+    const total = Object.values(validatorsMinusProposer).reduce(function(a, b) {
       return a + b;
     }, 0);
     console.log(`Total pre_commits from validators : ${total}\nReceived pre_commits ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
@@ -109,8 +113,12 @@ class VotingUtil {
     // This user should establish themselves as the first node on the network, instantiate the first /consensus/voting entry t db
     // and commit this to the blockchain so it will be picked up by new peers on the network
     const time = Date.now();
-    const firstVotingData = {validators: {}, next_round_validators: {}, threshold: -1, proposer: this.db.account.address, pre_votes: 0,
-      pre_commits: 0, time, block_hash: '', number: bc.lastBlock().number + 1, lastHash: bc.lastBlock().hash};
+    const proposer = this.db.account.address;
+    const stakes = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, proposer]));
+    const firstVotingData = { validators: {[proposer]: stakes},
+        next_round_validators: {[proposer]: stakes}, threshold: -1,
+        proposer, pre_votes: 0, pre_commits: 0, time, block_hash: '',
+        number: bc.lastBlock().number + 1, last_hash: bc.lastBlock().hash };
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
@@ -127,22 +135,22 @@ class VotingUtil {
     let proposer;
     if (Object.keys(lastRound.next_round_validators).length) {
       proposer = this.getProposer(lastRound.next_round_validators, bc);
-      delete lastRound.next_round_validators[proposer];
     } else {
       proposer = this.db.account.address;
     }
-    const threshold = Math.round(Object.values(lastRound.next_round_validators).reduce(function(a, b) {
+    const validatorsMinusProposer = Object.assign({}, lastRound.next_round_validators);
+    delete validatorsMinusProposer[proposer];
+    const threshold = Math.round(Object.values(validatorsMinusProposer).reduce(function(a, b) {
       return a + b;
     }, 0) * .666) - 1;
-    let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, proposer: proposer, pre_votes: 0, pre_commits: 0, time, block_hash: null};
+    let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, proposer, pre_votes: 0, pre_commits: 0, time, block_hash: null};
     if (this.checkPreCommits()) {
       // Should be1
-      nextRound = Object.assign({}, nextRound, {number: lastRound.number + 1, lastHash: lastRound.block_hash});
+      nextRound = Object.assign({}, nextRound, {number: lastRound.number + 1, last_hash: lastRound.block_hash});
     } else {
       // Start same round
-      nextRound = Object.assign({}, nextRound, {number: lastRound.number, lastHash: lastRound.lastHash});
+      nextRound = Object.assign({}, nextRound, {number: lastRound.number, last_hash: lastRound.last_hash});
     }
-
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
@@ -154,11 +162,10 @@ class VotingUtil {
 
   registerForNextRound(number) {
     const votingRound = this.db.getValue(PredefinedDbPaths.VOTING_ROUND);
-    console.log(`${number + 1} is the expected number and actual info is ${votingRound.number + 1}`);
-    if (number !== votingRound.number) {
+    if ((!votingRound && number !== 0) || (votingRound && votingRound.number !== number)) {
+      console.log(`${number + 1} is the expected number and actual info is ${votingRound.number + 1}`);
       throw Error('Not valid block number');
     }
-
     const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]));
     return this.db.createTransaction({
       operation: {
@@ -169,11 +176,13 @@ class VotingUtil {
     });
   }
 
-  setBlock(block) {
+  setBlock(block, proposal) {
     console.log(`Setting block ${block.hash.substring(0, 5)} with number ${block.number}`);
     this.block = block;
     this.status = VotingStatus.BLOCK_RECEIVED;
-    this.validatorTransactions.length = 0;
+    this.lastVotes = this.votes;
+    this.votes = [];
+    this.registerVote(proposal);
   }
 
   getProposer(stakeHolders, bc) {
@@ -208,6 +217,7 @@ class VotingUtil {
   }
 
   isProposer() {
+    // TODO (lia): move this assignment code to somewhere else? or change to check?
     this.status = VotingStatus.WAIT_FOR_BLOCK;
     return this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER) === this.db.account.address;
   }

@@ -1,4 +1,5 @@
 node_modules
+.DS_Store
 package-lock.json
 blockchain/.blockchains
 client/.logs
@@ -8,4 +9,3 @@ load1.txt
 load2.txt
 blocks1.txt
 blocks2.txt
-
