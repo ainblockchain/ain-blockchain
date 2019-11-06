@@ -10,7 +10,7 @@ const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
-const {ForgedBlock} = require('../blockchain/block');
+const {Block} = require('../blockchain/block');
 const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
 const VotingUtil = require('./voting-util');
@@ -45,6 +45,7 @@ class P2pServer {
     server.on('connection', (socket) => this.connectSocket(socket));
     trackerWebSocket.on('open', () => this.connectTracker());
     console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`);
+    // DO WE NEED THIS?
     this.requestChainSubsection(this.blockchain.lastBlock());
   }
 
@@ -84,8 +85,8 @@ class P2pServer {
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
             if (this.blockchain.merge(data.chainSubsection)) {
-              if (data.height === this.blockchain.height()) {
-                // If peeer is new to network and has successfully reached the consensus blockchain height
+              if (data.number === this.blockchain.height()) {
+                // If peer is new to network and has successfully reached the consensus blockchain height,
                 // wait the duration of one more voting round before processing transactions.
                 if (!this.blockchain.syncedAfterStartup) {
                   setTimeout(() => {
@@ -114,7 +115,8 @@ class P2pServer {
             // Send a chunk of 20 blocks from  your blockchain to the requester.
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
-            const chainSubsection = this.blockchain.requestBlockchainSection(data.lastBlock);
+            const chainSubsection = this.blockchain.requestBlockchainSection(
+                Block.parse(data.lastBlock));
             if (chainSubsection) {
               this.sendChainSubsection(socket, chainSubsection, this.blockchain.height());
             }
@@ -130,8 +132,8 @@ class P2pServer {
     });
   }
 
-  sendChainSubsection(socket, chainSubsection, height) {
-    socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION, chainSubsection, height}));
+  sendChainSubsection(socket, chainSubsection, number) {
+    socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION, chainSubsection, number}));
   }
 
   requestChainSubsection(lastBlock) {
@@ -244,7 +246,7 @@ class P2pServer {
     const response = this.executeTransaction(votingAction.transaction);
     if (!this.checkForTransactionResultErrorCode(response)) {
       if ([VotingActionTypes.PRE_VOTE, VotingActionTypes.PRE_COMMIT].indexOf(votingAction.actionType) > -1) {
-        this.votingUtil.registerValidatingTransaction(votingAction.transaction);
+        this.votingUtil.registerVote(votingAction.transaction);
       }
       this.broadcastVotingAction(votingAction);
     }
@@ -271,48 +273,51 @@ class P2pServer {
         if (this.votingUtil.isStaked() && this.blockchain.syncedAfterStartup) {
           this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         }
-
-        this.checkIfForger();
+        if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
         break;
       case VotingActionTypes.PROPOSED_BLOCK:
         let invalidTransactions = false;
-        for (let i = 0; i < votingAction.block.data.length; i++) {
+        const proposedBlock = Block.parse(votingAction.block);
+        for (let i = 0; i < proposedBlock.transactions.length; i++) {
           // First check if the transation has already been received.
           // Next check that the received transaction is valid.
-          if (!this.transactionPool.isNotEligibleTransaction(votingAction.block.data[i])
-            && this.checkForTransactionResultErrorCode(this.executeTransaction(votingAction.block.data[i]))) {
+          if (!this.transactionPool.isNotEligibleTransaction(proposedBlock.transactions[i])
+            && this.checkForTransactionResultErrorCode(this.executeTransaction(proposedBlock.transactions[i]))) {
             if (DEBUG) {
-              console.log(`BLOCK ${votingAction.block} has invalid transaction ${votingAction.block.data[i]}`)
+              console.log(`BLOCK ${proposedBlock.hash} has invalid transaction ${proposedBlock.transactions[i]}`)
             }
             invalidTransactions = true;
             break
           }
         }
         if (invalidTransactions ||
-            !ForgedBlock.validateBlock(votingAction.block, this.blockchain) ||
-            votingAction.block === this.votingUtil.block ||
+            !Block.validateProposedBlock(proposedBlock, this.blockchain) ||
+            proposedBlock.hash === this.votingUtil.block ||
             [VotingStatus.WAIT_FOR_BLOCK, VotingStatus.SYNCING].indexOf(this.votingUtil.status) < 0) {
               if(DEBUG) {
-                console.log(`REJECTING BLOCK ${JSON.stringify(votingAction.block)}`)
+                console.log(`REJECTING BLOCK ${proposedBlock}`)
               }
           break;
         }
-        this.votingUtil.setBlock(votingAction.block);
+        this.votingUtil.setBlock(proposedBlock, votingAction.transaction);
         if(DEBUG) {
-          console.log(`ACCEPTING BLOCK ${JSON.stringify(votingAction.block)}`)
+          console.log(`ACCEPTING BLOCK ${proposedBlock}`)
         }
         if (this.votingUtil.isValidator()) {
+          // TODO (lia): check for results?
           this.executeAndBroadcastVotingAction({
             transaction: this.votingUtil.preVote(),
             actionType: VotingActionTypes.PRE_VOTE
           });
         }
       case VotingActionTypes.PRE_VOTE:
+        // TODO (lia): also verify the pre-vote transaction
         if (!this.votingUtil.checkPreVotes()) {
           break;
         }
         const preCommitTransaction = this.votingUtil.preCommit();
         if (preCommitTransaction !== null) {
+          // TODO (lia): check for results?
           this.executeAndBroadcastVotingAction({
             transaction: preCommitTransaction,
             actionType: VotingActionTypes.PRE_COMMIT
@@ -320,7 +325,7 @@ class P2pServer {
         }
       case VotingActionTypes.PRE_COMMIT:
         if (this.votingUtil.isCommit()) {
-          this.votingUtil.addValidatorTransactionsToBlock();
+          // this.votingUtil.addValidatorTransactionsToBlock();
           this.addBlockToChain();
           this.cleanupAfterVotingRound();
         }
@@ -328,27 +333,28 @@ class P2pServer {
     }
   }
 
-  forgeBlock() {
-    const data = this.transactionPool.validTransactions();
-    const blockHeight = this.blockchain.height() + 1;
-    this.votingUtil.setBlock(
-        ForgedBlock.forgeBlock(data, this.db, blockHeight, this.blockchain.lastBlock(),
-            this.db.account.address,
-            Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)),
-            this.db.getValue(PredefinedDbPaths.VOTING_ROUND_THRESHOLD)));
+  createAndProposeBlock() {
+    const transactions = this.transactionPool.validTransactions();
+    const blockNumber = this.blockchain.height() + 1;
+    const validators = this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS);
+    const newBlock = Block.createBlock(this.blockchain.lastBlock().hash,
+        this.votingUtil.lastVotes, transactions, blockNumber, this.db.account.address,
+        validators);
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
-    const value = this.votingUtil.block.hash;
-    console.log(`Forged block with hash ${this.votingUtil.block.hash} at height ${blockHeight}`);
+    const value = newBlock.hash;
+    console.log(`Proposing block with hash ${newBlock.hash} and number ${blockNumber}`);
     const blockHashTransaction = this.db.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref, value
-      }
-    });
+        operation: {
+          type: WriteDbOperations.SET_VALUE,
+          ref, value
+        }
+      });
+    this.votingUtil.setBlock(newBlock, blockHashTransaction);
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
-    if (!Object.keys(this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS)).length) {
-      console.log('No validators registered for this round');
+    if (!validators || !Object.keys(validators).length ||
+    (Object.keys(validators).length === 1 && validators[this.db.account.address])) {
+      console.log('No other validators registered for this round');
       this.addBlockToChain();
       this.cleanupAfterVotingRound();
     }
@@ -371,8 +377,9 @@ class P2pServer {
     this.votingUtil.status === VotingStatus.WAIT_FOR_BLOCK;
     this.increaseBalanceForDev();
     this.stakeAmount();
+    this.votingUtil.registerForNextRound(0);
     this.executeAndBroadcastTransaction(this.votingUtil.instantiate(this.blockchain));
-    this.forgeBlock();
+    this.createAndProposeBlock();
   }
 
   addBlockToChain() {
@@ -380,7 +387,7 @@ class P2pServer {
     this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
     this.votingUtil.reset();
     this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0 &&
+    if (this.waitInBlocks > 0 && /*!this.votingUtil.isStaked()) {*/
         !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]))) {
       this.waitInBlocks = this.waitInBlocks - 1;
       if (this.waitInBlocks === 0) {
@@ -396,32 +403,26 @@ class P2pServer {
       this.votingInterval = null;
     }
     if (ainUtil.areSameAddresses(this.db.account.address,
-        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_FORGER))) {
+        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.db.account.address} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
-      this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulForge());
+      this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulBlockCreation());
     }
-
-    if (this.db.getValue(PredefinedDbPaths.RECENT_FORGERS).indexOf(this.db.account.address) >= 0) {
+    if (this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS).indexOf(this.db.account.address) >= 0) {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
         if (this.checkForTransactionResultErrorCode(response)) {
-          console.log('Not designated forger');
+          console.log('Not designated proposer');
           return;
         }
         console.log(`User ${this.db.account.address} is starting round ${this.blockchain.height() + 1}`);
-
+        // TODO (lia): change so that validators with stakes that have enough time
+        // until expiration will be auto-registered for the next round.
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
-        this.checkIfForger();
+        if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
       }, BLOCK_CREATION_INTERVAL);
     }
     console.log(`New blockchain height is ${this.blockchain.height() + 1}`);
-  }
-
-  checkIfForger() {
-    if (this.votingUtil.isForger()) {
-      this.forgeBlock();
-    }
   }
 
   stakeAmount() {

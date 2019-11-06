@@ -89,16 +89,16 @@ class TransactionPool {
     // Remove transactions of newly added block to blockchain from the current transaction pool
     const transactionHashes = [];
     let transaction;
-    for (let i = 0; i < block.data.length; i++) {
-      transaction = block.data[i];
+    for (let i = 0; i < block.transactions.length; i++) {
+      transaction = block.transactions[i];
       if (transaction.nonce >= 0) {
         // Update nonceTracker while extracting transaction hashes
         this.nonceTracker[transaction.address] = transaction.nonce;
       }
       const status = TransactionStatus.BLOCK_STATUS;
-      const height = block.height;
+      const number = block.number;
       const index = i;
-      this.transactionTracker[transaction.hash] = { status, height, index };
+      this.transactionTracker[transaction.hash] = { status, number, index };
       transactionHashes.push(transaction.hash);
     }
 

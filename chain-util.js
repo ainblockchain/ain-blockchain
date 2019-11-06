@@ -5,6 +5,16 @@ const ainUtil = require('@ainblockchain/ain-util');
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
+  static hashString(stringData) {
+    if (typeof stringData !== 'string') return '';
+    return '0x' + ainUtil.hashMessage(stringData).toString('hex');
+  }
+
+  static shortenHash(hash) {
+    if (typeof hash !== 'string' || hash.length < 10) return hash;
+    return hash.substring(0,6) + '...' + hash.substring(hash.length - 4, hash.length);
+  }
+
   // TODO (lia): remove this function
   static genKeyPair() {
     let keyPair;

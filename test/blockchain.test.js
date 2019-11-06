@@ -1,5 +1,5 @@
 const Blockchain = require('../blockchain/');
-const {ForgedBlock} = require('../blockchain/block');
+const {Block} = require('../blockchain/block');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
@@ -8,7 +8,7 @@ const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
 
 describe('Blockchain', () => {
-  let bc; let bc2; let tp;
+  let bc, bc2, tp, db1, db2;
 
   beforeEach(() => {
     bc = new Blockchain('first-blockchain');
@@ -28,34 +28,38 @@ describe('Blockchain', () => {
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
   /*
   it('starts with genesis block', () => {
-    assert.deepEqual(bc.chain[0], ForgedBlock.genesis());
+    assert.deepEqual(bc.chain[0], Block.genesis());
   });
   */
 
   it('adds new block', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
-    expect(bc.chain[bc.chain.length -1].data).to.equal(data);
+    const lastBlock = bc.lastBlock();
+    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.height() + 1,
+        db1.account.address, []));
+    expect(bc.chain[bc.chain.length -1].transactions).to.equal(data);
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
   /*
   it('validates a valid chain', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
     expect(Blockchain.isValidChain(bc.chain)).to.equal(true);
   });
   */
 
   it('invalidates chain with corrupt genesis block', () => {
-    bc2.chain[0].data = ':(';
+    bc2.chain[0].transactions = ':(';
     expect(Blockchain.isValidChain(bc2.chain)).to.equal(false);
   });
 
   it('invalidates corrupt chain', () => {
     const data = 'foo';
-    bc.addNewBlock(ForgedBlock.forgeBlock(data, db1, bc.height() + 1, bc.lastBlock()));
-    bc.chain[bc.height()].data = ':(';
+    const lastBlock = bc.lastBlock();
+    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.height() + 1,
+        db1.account.address, []));
+    bc.chain[bc.height()].transactions = ':(';
     expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
   });
 
@@ -74,8 +78,10 @@ describe('Blockchain', () => {
             value: 'val'
           }
         });
-        const block = ForgedBlock.forgeBlock(tp.validTransactions(), db1, bc.height() + 1, bc.lastBlock());
-        if (block.height === 500) {
+        const lastBlock = bc.lastBlock();
+        const block = Block.createBlock(lastBlock.hash, [], tp.validTransactions(),
+            bc.height() + 1, db1.account.address, []);
+        if (block.number === 500) {
           blockHash = block.hash;
         }
         blocks.push(block);
@@ -99,12 +105,12 @@ describe('Blockchain', () => {
       assert.deepEqual(JSON.stringify(bc.getChainSection(980, 1010)), JSON.stringify(blocks.slice(979, 1010)));
     });
 
-    it('can be queried by block height', () => {
-      expect(bc.getBlockByNumber(600).height).to.equal(600);
+    it('can be queried by block number', () => {
+      expect(bc.getBlockByNumber(600).number).to.equal(600);
     });
 
     it('can be queried by block hash', () => {
-      expect(bc.getBlockByHash(blockHash).height).to.equal(500);
+      expect(bc.getBlockByHash(blockHash).number).to.equal(500);
     });
   });
 });
