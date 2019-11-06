@@ -1,5 +1,6 @@
 const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
+const ChainUtil = require('../chain-util');
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
 const {GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths, GenesisToken, GenesisAccount}
@@ -8,143 +9,128 @@ const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 
-
 class Block {
-  constructor(timestamp, lastHash, data) {
+  constructor(lastHash, lastVotes, transactions, number, timestamp, proposer, validators) {
+    this.last_votes = lastVotes;
+    this.transactions = transactions;
+    // Block's header
+    this.last_hash = lastHash;
+    this.last_votes_hash = ChainUtil.hashString(stringify(lastVotes));
+    this.transactions_hash = ChainUtil.hashString(stringify(transactions));
+    this.number = number;
     this.timestamp = timestamp;
-    this.lastHash = lastHash;
-    this.data = data;
-  }
-}
-
-class ForgedBlock extends Block {
-  constructor(timestamp, lastHash, data, height, signature, forger, validators, threshold) {
-    super(timestamp, lastHash, data);
-    this.validatorTransactions = [];
-    this.height = height;
-    this.signature = signature;
-    this.forger = forger;
+    this.proposer = proposer;
     this.validators = validators;
-    this.threshold = threshold;
-    this.blockSize = sizeof(this.data);
-    this.hash = ForgedBlock.hash({timestamp, lastHash, data, height, signature});
+    this.size = sizeof(this.transactions);
+    // Hash of block's header
+    this.hash = Block.hash(this);
   }
 
-  setValidatorTransactions(validatorTransactions) {
-    this.validatorTransactions = validatorTransactions;
-  }
-
-  // TODO (lia): remove "forger"?
-  static forgeBlock(data, db, height, lastBlock, forger, validators, threshold) {
-    const lastHash = lastBlock.hash;
-    const timestamp = Date.now();
-    const signature = db.sign(stringify(data)); // TODO (lia): include other information to sign?
-    return new ForgedBlock(timestamp, lastHash, data, height, signature, forger,
-        validators, threshold);
-  }
-
-  header() {
+  get header() {
     return {
-      hash: this.hash,
-      height: this.height,
-      threshold: this.threshold,
-      validators: this.validators,
-      forger: this.forger,
-      validatorTransactions: this.validatorTransactions,
-    };
-  }
-
-  body() {
-    return {
+      last_hash: this.last_hash,
+      last_votes_hash: this.last_votes_hash,
+      transactions_hash: this.transactions_hash,
+      number: this.number,
       timestamp: this.timestamp,
-      lastHash: this.lastHash,
-      hash: this.hash,
-      data: this.data,
-      forger: this.forger,
-      height: this.height,
-      signature: this.signature,
-      blockSize: this.blockSize,
+      proposer: this.proposer,
+      validators: this.validators,
+      size: this.size
     };
+  }
+
+  toString() {
+    return `Block -
+        hash:              ${ChainUtil.shortenHash(this.hash)}
+        last_hash:         ${ChainUtil.shortenHash(this.last_hash)}
+        last_votes_hash:   ${ChainUtil.shortenHash(this.last_votes_hash)}
+        transactions_hash: ${ChainUtil.shortenHash(this.transactions_hash)}
+        number:            ${this.number}
+        timestamp:         ${this.timestamp}
+        proposer:          ${this.proposer}
+        validators:        ${this.validators}
+        size:              ${this.size}`;
+  }
+
+  static hash(block) {
+    if (!(block instanceof Block)) block = Block.parse(block);
+    return ChainUtil.hashString(stringify(block.header));
+  }
+
+  static createBlock(lastHash, lastVotes, transactions, number, proposer, validators) {
+    return new Block(lastHash, lastVotes, transactions, number, Date.now(),
+        proposer, validators);
   }
 
   static getFileName(block) {
     return BlockFilePatterns.getBlockFileName(block);
   }
 
-  static hash(block) {
-    if (block.timestamp === undefined || block.lastHash === undefined ||
-        block.data === undefined || block.height === undefined ||
-        block.signature === undefined) {
-      throw Error('A block should contain timestamp, lastHash, data, height, and signature fields.');
-    }
-    let sanitizedBlockData = {
-      timestamp: block.timestamp,
-      lastHash: block.lastHash,
-      data: block.data,
-      height: block.height,
-      signature: block.signature
-    };
-    return '0x' + ainUtil.hashMessage(stringify(sanitizedBlockData)).toString('hex');
-  }
-
-  toString() {
-    return `Block -
-        Timestamp : ${this.timestamp}
-        Last Hash : ${this.lastHash.substring(0, 10)}
-        Hash      : ${this.hash.substring(0, 10)}
-        Data      : ${this.data}
-        Height    : ${this.height}
-        Size      : ${this.blockSize}`;
-  }
-
   static loadBlock(blockZipFile) {
     const unzippedfs = zipper.sync.unzip(blockZipFile).memory();
     const blockInfo = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], 'buffer').toString());
-    return ForgedBlock.parse(blockInfo);
+    return Block.parse(blockInfo);
   }
 
   static parse(blockInfo) {
-    const block = new ForgedBlock(blockInfo['timestamp'], blockInfo['lastHash'],
-        blockInfo['data'], blockInfo['height'], blockInfo['signature'],
-        blockInfo['forger'], blockInfo['validators'], blockInfo['threshold']);
-    blockInfo['validatorTransactions'].forEach((transaction) => {
-      block.validatorTransactions.push(transaction);
-    });
-    return block;
+    if (!Block.hasRequiredFields(blockInfo)) return null;
+    if (blockInfo instanceof Block) return blockInfo;
+    return new Block(blockInfo['last_hash'], blockInfo['last_votes'],
+        blockInfo['transactions'], blockInfo['number'], blockInfo['timestamp'],
+        blockInfo['proposer'], blockInfo['validators']);
   }
 
-  static validateBlock(block, blockchain) {
-    if (block.height !== (blockchain.height() + 1)) {
-      console.log(`Height is not correct for block ${block.hash}.
+  static hasRequiredFields(block) {
+    return (block.last_hash !== undefined && block.last_votes !== undefined &&
+        block.transactions !== undefined && block.number !== undefined &&
+        block.timestamp !== undefined && block.proposer !== undefined &&
+        block.validators !== undefined);
+  }
+
+  static validateHashes(block) {
+    if (block.hash !== Block.hash(block)) {
+      console.log(`Block hash is incorrect for  block ${block.hash}`);
+      return false;
+    }
+    if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
+      console.log(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
+      return false;
+    }
+    if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
+      console.log(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+      return false;
+    }
+    return true;
+  }
+
+  static validateProposedBlock(block, blockchain) {
+    if (!Block.validateHashes(block)) { return false; }
+    if (block.number !== (blockchain.height() + 1)) {
+      console.log(`Number is not correct for block ${block.hash}.
                    Expected: ${(blockchain.height() + 1)}
-                   Actual: ${block.height}`);
+                   Actual: ${block.number}`);
       return false;
     }
     const nonceTracker = {};
     let transaction;
-
-    for (let i=0; i<block.data.length; i++) {
-      transaction = block.data[i];
-
+    for (let i=0; i<block.transactions.length; i++) {
+      transaction = block.transactions[i];
       if (transaction.nonce < 0) {
         continue;
       }
-
       if (!(transaction.address in nonceTracker)) {
         nonceTracker[transaction.address] = transaction.nonce;
         continue;
       }
-
       if (transaction.nonce != nonceTracker[transaction.address] + 1) {
         console.log(`Invalid noncing for ${transaction.address}.
                      Expected ${nonceTracker[transaction.address] + 1}.
                      Received ${transaction.nonce}`);
         return false;
       }
-
       nonceTracker[transaction.address] = transaction.nonce;
     }
-    console.log(`Valid block at height ${block.height}`);
+    console.log(`Valid block of number ${block.number}`);
     return true;
   }
 
@@ -192,15 +178,16 @@ class ForgedBlock extends Block {
   static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
-    const timestamp = GenesisAccount.timestamp;
-    const height = 0;
-    const data = ForgedBlock.getGenesisBlockData();
-    const forger = GenesisAccount.address;
-    const blockSignature = ainUtil.ecSignMessage(stringify(data),
-                                                 Buffer.from(GenesisAccount.private_key, 'hex'));
     const lastHash = '';
-    return new this(timestamp, lastHash, data, height, blockSignature, forger, [], -1);
+    const lastVotes = [];
+    const transactions = Block.getGenesisBlockData();
+    const number = 0;
+    const timestamp = GenesisAccount.timestamp;
+    const proposer = GenesisAccount.address;
+    const validators = [];
+    return new this(lastHash, lastVotes, transactions, number, timestamp,
+        proposer, validators);
   }
 }
 
-module.exports = {ForgedBlock};
+module.exports = {Block};

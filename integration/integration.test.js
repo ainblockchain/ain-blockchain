@@ -10,6 +10,8 @@ const expect = chai.expect;
 const path = require('path');
 const syncRequest = require('sync-request');
 const itParam = require('mocha-param');
+const ainUtil = require('@ainblockchain/ain-util');
+const stringify = require('fast-json-stable-stringify');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
@@ -121,12 +123,29 @@ for (let i = 0; i < ENV_VARIABLES.length; i++) {
   SERVER_PROCS.push(new Process(APP_SERVER, ENV_VARIABLES[i]));
 }
 
+// Wait until there are two blocks of multiple validators.
+function waitUntilNodeStakes() {
+  let count = 0;
+  let blocksAfterStaking = 0;
+  let validators = {};
+  while (count <= MAX_PROMISE_STACK_DEPTH && blocksAfterStaking < 2) {
+    const result = JSON.parse(syncRequest('POST', server1 + '/json-rpc',
+        {json: {jsonrpc: '2.0', method: 'ain_getRecentBlock', id: 0}}).body.toString('utf-8')).result;
+    validators = result.validators;
+    if (Object.keys(validators).length >= 2) {
+      blocksAfterStaking++;
+    }
+    count++;
+    sleep(6000);
+  }
+}
+
 function waitUntilNewBlock(jsonRpcClient, numBlocks, stackDepth) {
   return new Promise((resolve) => {
     jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
       if (err) throw err;
-      currentHeight = response.result.height;
-      resolve(currentHeight - numBlocks);
+      currentNumber = response.result.number;
+      resolve(currentNumber - numBlocks);
     });
   }).then((numCreatedBlocks) => {
     if (numCreatedBlocks > 0) {
@@ -182,7 +201,7 @@ describe('Integration Tests', () => {
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
         if (err) throw err;
-        numBlocksOnStartup = response.result.height;
+        numBlocksOnStartup = response.result.number;
         resolve();
       });
     }));
@@ -213,8 +232,8 @@ describe('Integration Tests', () => {
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
           if (err) throw err;
-          numBlocks = response.result.height;
-          currentHeight = numBlocks;
+          numBlocks = response.result.number;
+          currentNumber = numBlocks;
           resolve();
         });
       // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
@@ -240,7 +259,7 @@ describe('Integration Tests', () => {
     /*
     it('will sync to new peers on startup', () => {
       let baseChain;
-      let height;
+      let number;
       const newServer = 'http://localhost:9095';
       const newServerProc = new Process(APP_SERVER, {P2P_PORT: 5005, PORT: 9095, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true});
       newServerProc.start();
@@ -249,12 +268,12 @@ describe('Integration Tests', () => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
           if (err) throw err;
           baseChain = response.result;
-          height = baseChain[baseChain.length - 1].height;
+          number = baseChain[baseChain.length - 1].number;
           resolve();
         });
       }).then(() => {
         return new Promise((resolve) => {
-          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: height + 1}, function(err, response) {
+          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: number + 1}, function(err, response) {
             if (err) throw err;
             const newChain = response.result;
             assert.deepEqual(baseChain.length, newChain.length);
@@ -270,6 +289,10 @@ describe('Integration Tests', () => {
     describe('leads to blockchains', () => {
       let baseChain;
 
+      before(() => {
+        waitUntilNodeStakes();
+      })
+
       beforeEach(() => {
         return new Promise((resolve) => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
@@ -284,9 +307,9 @@ describe('Integration Tests', () => {
       /*
       itParam('syncing across all chains', SERVERS, function(server) {
         let newChain;
-        const height = baseChain[baseChain.length - 1].height;
+        const number = baseChain[baseChain.length - 1].number;
         return new Promise((resolve) => {
-          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: height + 1}, function(err, response) {
+          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: number + 1}, function(err, response) {
             if (err) throw err;
             newChain = response.result;
             assert.deepEqual(baseChain, newChain);
@@ -296,43 +319,84 @@ describe('Integration Tests', () => {
       });
       */
 
-      it('having blocks with valid headers', () => {
-        const promises = [];
+      it('blocks have correct validators and voting data', () => {
+        let threshold = 0.6666; // TODO (lia): define this as a constant in genesis.
         for (let i = 0; i < SERVERS.length; i++) {
-          promises.push(new Promise((resolve) => {
-            jayson.client.http(SERVERS[i] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCK_HEADERS, [], (err, response) => {
-              if (err) throw err;
-              const headers = response.result;
-              for (let j = 0; j < headers.length; j++) {
-                let preVotes = 0;
-                let preCommits = 0;
-                for (let k = 0; k < headers[j].validatorTransactions.length; k++) {
-                  const transaction = headers[j].validatorTransactions[k];
-                  if (headers[j].validators.indexOf(transaction.address) < 0) {
-                    assert.fail(`Invalid validator is validating block ${transaction.address}`);
-                  }
-                  if (PredefinedDbPaths.VOTING_ROUND_PRE_VOTES === transaction.operation.ref) {
-                    preVotes += transaction.operation.value;
-                  } else if (preVotes <= headers[j].threshold) {
-                    assert.fail('PreCommits were made before PreVotes reached threshold');
-                  } else {
-                    preCommits += transaction.operation.value;
-                  }
-                }
-                expect(preVotes).greaterThan(headers[j].threshold);
-                expect(preCommits).greaterThan(headers[j].threshold);
+          const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
+              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}}).body.toString('utf-8')).result;
+          const len = blocks.length;
+          // The genesis and the following blocks are exceptions
+          // (validators and next_round_validators are set 'arbitrarily')
+          for (let j = 2; j < len; j++) {
+            let preVotes = 0;
+            let preCommits = 0;
+            const validatorsMinusProposer = Object.assign({}, blocks[j - 1].validators);
+            delete validatorsMinusProposer[blocks[j - 1].proposer];
+            let totalStakedAmount = Object.values(validatorsMinusProposer)
+                .reduce((a, b) => { return a + b; }, 0);
+            let majority = Math.floor(totalStakedAmount * threshold);
+            for (let k = 0; k < blocks[j].last_votes.length; k++) {
+              const last_vote = blocks[j].last_votes[k];
+              // if (blocks[j - 1].validators.indexOf(vote.address) < 0) {
+              if (!blocks[j - 1].validators[last_vote.address]) {
+                assert.fail(`Invalid validator is validating block ${last_vote.address}`);
               }
-              resolve();
-            });
-          }))
+              if (last_vote.operation.ref === PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH) {
+                continue;
+              } else if (last_vote.operation.ref === PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) {
+                preVotes += last_vote.operation.value;
+              } else if (preVotes <= majority) {
+                // TODO (lia): fix this issue. sometimes it fails this check.
+                assert.fail('PreCommits were made before PreVotes reached threshold');
+              } else {
+                preCommits += last_vote.operation.value;
+              }
+            }
+          }
         }
-        return Promise.all(promises);
+      });
+
+      it('blocks have valid hashes', () => {
+        const hashString = (str) => {
+          return '0x' + ainUtil.hashMessage(str).toString('hex');
+        }
+        const hashBlock = (block) => {
+          return hashString(stringify({
+            last_hash: block.last_hash,
+            last_votes_hash: block.last_votes_hash,
+            transactions_hash: block.transactions_hash,
+            number: block.number,
+            timestamp: block.timestamp,
+            proposer: block.proposer,
+            validators: block.validators,
+            size: block.size
+          }));
+        }
+        for (let i = 0; i < SERVERS.length; i++) {
+          const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
+              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}}).body.toString('utf-8')).result;
+          const len = blocks.length;
+          for (let j = 0; j < len; j++) {
+            const block = blocks[j];
+            if (block.hash !== hashBlock(block)) {
+              assert.fail(`Block hash is incorrect for  block ${block.hash}`);
+            }
+            if (block.transactions_hash !== hashString(stringify(block.transactions))) {
+              assert.fail(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
+            }
+            if (block.last_votes_hash !== hashString(stringify(block.last_votes))) {
+              assert.fail(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+            }
+          }
+        }
       });
 
       // TODO(seo): Uncomment this. It's flacky.
+      /*
       it('all having correct number of blocks', () => {
-        expect(numNewBlocks + numBlocksOnStartup).to.equal(baseChain.pop().height);
+        expect(numNewBlocks + numBlocksOnStartup).to.equal(baseChain.pop().number);
       });
+      */
     });
 
     describe('and rules', () => {
@@ -377,7 +441,7 @@ describe('Integration Tests', () => {
             if (err) throw err;
             body = response.result;
             assert.deepEqual([2, 3], body.map((blockHeader) => {
-              return blockHeader.height;
+              return blockHeader.number;
             }));
             resolve();
           });
@@ -409,10 +473,10 @@ describe('Integration Tests', () => {
             body = response.result;
             const transactionsOnBlockChain = [];
             body.forEach((block) => {
-              block.data.forEach((transaction) => {
+              block.transactions.forEach((transaction) => {
                 // TODO(seo): Find a better way.
                 if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
-                    JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_FORGERS) ||
+                    JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_PROPOSERS) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNTS) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER))) {
@@ -461,9 +525,9 @@ describe('Integration Tests', () => {
         sleep(30000);
         const lastBlockFromRunningBlockchain = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString('utf-8')).result.pop();
         const lastBlockFromStoppedBlockchain = JSON.parse(syncRequest('GET', server2 + '/blocks').body.toString('utf-8')).result.pop();
-        assert.deepEqual(lastBlockFromRunningBlockchain.data, lastBlockFromStoppedBlockchain.data);
+        assert.deepEqual(lastBlockFromRunningBlockchain.transactions, lastBlockFromStoppedBlockchain.transactions);
         expect(lastBlockFromRunningBlockchain.hash).to.equal(lastBlockFromStoppedBlockchain.hash);
-        expect(lastBlockFromRunningBlockchain.height).to.equal(lastBlockFromStoppedBlockchain.height);
+        expect(lastBlockFromRunningBlockchain.number).to.equal(lastBlockFromStoppedBlockchain.number);
       });
       */
     });

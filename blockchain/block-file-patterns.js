@@ -32,13 +32,13 @@ class BlockFilePatterns {
     return `${chainPath}/{${from}..${to - 1}}-*.${FILE_NAME_SUFFIX}`;
   }
   /**
-  * Returns the name of the block file corresponding to the given block e.g. <lastHash>-<currentHash>.json.zip
+  * Returns the name of the block file corresponding to the given block e.g. <last_hash>-<current_hash>.json.zip
   *
-  * @param {ForgedBlock} block - An instance of a ForgedBlock
+  * @param {Block} block - An instance of a Block
   * @return {String} The name of the corresponding block file.
   */
   static getBlockFileName(block) {
-    return `${block.height}-${block.lastHash}-${block.hash}.${FILE_NAME_SUFFIX}`;
+    return `${block.number}-${block.last_hash}-${block.hash}.${FILE_NAME_SUFFIX}`;
   }
 }
 
