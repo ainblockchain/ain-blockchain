@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain', 'genesis_token.json');
 const GENESIS_ACCOUNT = path.resolve(__dirname, 'blockchain', 'genesis_account.json');
+// TODO(seo): Make genesis owner/rule file paths switchable for integration tests.
 const GENESIS_OWNERS = path.resolve(__dirname, 'blockchain', 'genesis_owners.json');
 const GENESIS_RULES = path.resolve(__dirname, 'blockchain', 'genesis_rules.json');
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain', '.blockchains');

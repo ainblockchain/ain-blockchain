@@ -623,3 +623,163 @@ describe("DB rule config", () => {
     })
   })
 })
+
+describe("DB owner config", () => {
+  let db, bc, tp;
+
+  beforeEach(() => {
+    tp = new TransactionPool();
+    bc = new Blockchain("db-test");
+    db = DB.getDatabase(bc, tp);
+    db.setOwner("test_owner/mixed/true/true/true", 
+      {
+        ".owner": {
+          "owners": {
+            "*": {
+              "branch_owner": false,
+              "write_owner": false,
+              "write_rule": false
+            },
+            "aaaa": {
+              "branch_owner": false,
+              "write_owner": false,
+              "write_rule": false
+            },
+            "known_user": {
+              "branch_owner": true,
+              "write_owner": true,
+              "write_rule": true
+            }
+          }
+        }
+      }
+    );
+    db.setOwner("test_owner/mixed/false/true/true", 
+      {
+        ".owner": {
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_owner": false,
+              "write_rule": false
+            },
+            "aaaa": {
+              "branch_owner": true,
+              "write_owner": false,
+              "write_rule": false
+            },
+            "known_user": {
+              "branch_owner": false,
+              "write_owner": true,
+              "write_rule": true
+            }
+          }
+        }
+      }
+    );
+    db.setOwner("test_owner/mixed/true/false/true", 
+      {
+        ".owner": {
+          "owners": {
+            "*": {
+              "branch_owner": false,
+              "write_owner": true,
+              "write_rule": false
+            },
+            "aaaa": {
+              "branch_owner": false,
+              "write_owner": true,
+              "write_rule": false
+            },
+            "known_user": {
+              "branch_owner": true,
+              "write_owner": false,
+              "write_rule": true
+            }
+          }
+        }
+      }
+    );
+    db.setOwner("test_owner/mixed/true/true/false", 
+      {
+        ".owner": {
+          "owners": {
+            "*": {
+              "branch_owner": false,
+              "write_owner": false,
+              "write_rule": true
+            },
+            "aaaa": {
+              "branch_owner": false,
+              "write_owner": false,
+              "write_rule": true
+            },
+            "known_user": {
+              "branch_owner": true,
+              "write_owner": true,
+              "write_rule": false
+            }
+          }
+        }
+      }
+    );
+  })
+
+  // Known user
+  it("branch_owner permission for known user with mixed config", () => {
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/true/branch'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/false/true/true/branch'), 'known_user')).to.equal(false)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/false/true/branch'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/false/branch'), 'known_user')).to.equal(true)
+  })
+
+  it("write_owner permission for known user with mixed config", () => {
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/true'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/false/true/true'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/false/true'), 'known_user')).to.equal(false)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/false'), 'known_user')).to.equal(true)
+  })
+
+  it("write_rule permission for known user with mixed config", () => {
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/true'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/false/true/true'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/false/true'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/false'), 'known_user')).to.equal(false)
+  })
+
+  it("write_rule permission on deeper path for known user with mixed config", () => {
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/true/deeper_path'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/false/true/true/deeper_path'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/false/true/deeper_path'), 'known_user')).to.equal(true)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/false/deeper_path'), 'known_user')).to.equal(false)
+  })
+
+  // Unknown user
+  it("branch_owner permission for unknown user with mixed config", () => {
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/true/branch'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/false/true/true/branch'), 'unknown_user')).to.equal(true)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/false/true/branch'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/false/branch'), 'unknown_user')).to.equal(false)
+  })
+
+  it("write_owner permission for unknown user with mixed config", () => {
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/true'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/false/true/true'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/false/true'), 'unknown_user')).to.equal(true)
+    expect(db.getPermissionForOwner(ChainUtil.parsePath('/test_owner/mixed/true/true/false'), 'unknown_user')).to.equal(false)
+  })
+
+  it("write_rule permission for unknown user with mixed config", () => {
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/true'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/false/true/true'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/false/true'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/false'), 'unknown_user')).to.equal(true)
+  })
+
+  it("write_rule permission on deeper path for unknown user with mixed config", () => {
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/true/deeper_path'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/false/true/true/deeper_path'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/false/true/deeper_path'), 'unknown_user')).to.equal(false)
+    expect(db.getPermissionForRule(ChainUtil.parsePath('/test_owner/mixed/true/true/false/deeper_path'), 'unknown_user')).to.equal(true)
+  })
+})

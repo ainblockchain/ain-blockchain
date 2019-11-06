@@ -117,9 +117,10 @@ class DB {
     return this.setValue([PredefinedDbPaths.STAKEHOLDER, this.account.address].join('/'), stakeAmount);
   }
 
+  // TODO(seo): Add logic for deleting rule paths with only dangling points.
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
-  // TODO(seo): Make set operation and function run tightly bound, i.e., revert the former
-  //            if the latter fails.
+  // TODO(seo): Consider making set operation and built-in-function run tightly bound, i.e., revert
+  //            the former if the latter fails.
   // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
   // TODO(seo): Consider explicitly defining error code.
@@ -159,10 +160,12 @@ class DB {
     return this.setValue(valuePath, valueAfter, address, timestamp);
   }
 
+  // TODO(seo): Add rule config sanitization logic.
+  // TODO(seo): Add logic for deleting rule paths with only dangling points.
   setRule(rulePath, rule, address) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address)) {
-      return {code: 2, error_message: 'No write_rule permission on: ' + rulePath};
+      return {code: 3, error_message: 'No write_rule permission on: ' + rulePath};
     }
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
@@ -170,10 +173,12 @@ class DB {
     return true;
   }
 
+  // TODO(seo): Add owner config sanitization logic.
+  // TODO(seo): Add logic for deleting owner paths with only dangling points.
   setOwner(ownerPath, owner, address) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
-      return {code: 2, error_message: 'No write_owner or branch_owner permission on: ' + ownerPath};
+      return {code: 4, error_message: 'No write_owner or branch_owner permission on: ' + ownerPath};
     }
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -412,15 +417,12 @@ class DB {
     // Find the closest ancestor that has a rule config.
     for (let i = ruleNodes.length - 1; i >= 0; i--) {
       const refRuleConfig = ruleNodes[i];
-      if (refRuleConfig && RuleProperties.WRITE in refRuleConfig) {
+      if (refRuleConfig[RuleProperties.WRITE]) {
         rule = refRuleConfig[RuleProperties.WRITE];
         break;
       }
     }
-    if (typeof rule === 'string') {
-      rule = this.evalRuleString(rule, wildCards, valuePath, newValue, address, timestamp);
-    }
-    return rule;
+    return this.evalRule(rule, wildCards, valuePath, newValue, address, timestamp);
   }
 
   getPermissionForRule(rulePath, address) {
@@ -433,44 +435,49 @@ class DB {
     return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, true);
   }
 
-  static substituteWildCards(ruleString, wildCards) {
+  static substituteWildCards(rule, wildCards) {
     for (const wildCard in wildCards) {
-      if (ruleString.includes(wildCard)) {
+      if (rule.includes(wildCard)) {
         // May need to come back here to figure out how to change ALL occurrences of wildCards
         const wildCardValue = wildCards[wildCard];
-        ruleString = ruleString.replace(new RegExp(escapeStringRegexp(wildCard), 'g'),
+        rule = rule.replace(new RegExp(escapeStringRegexp(wildCard), 'g'),
             typeof wildCardValue === 'string' ? `${wildCardValue}` : JSON.stringify(wildCardValue));
       }
     }
-    return ruleString;
+    return rule;
   }
 
-  evalRuleString(ruleString, wildCards, valuePath, newValue, address, timestamp) {
-    if (ruleString.includes('auth')) {
-      ruleString = ruleString.replace(/auth/g, `'${address}'`);
+  evalRule(rule, wildCards, valuePath, newValue, address, timestamp) {
+    if (typeof rule === 'boolean') {
+      return rule;
+    } else if (typeof rule !== 'string') {
+      return false;
+    }
+    if (rule.includes('auth')) {
+      rule = rule.replace(/auth/g, `'${address}'`);
     }
     if (Object.keys(wildCards).length > 0) {
-      ruleString = DB.substituteWildCards(ruleString, wildCards);
+      rule = DB.substituteWildCards(rule, wildCards);
     }
-    if (ruleString.includes('data')) {
+    if (rule.includes('data')) {
       const data = this.getValue(valuePath.join('/'));
-      ruleString = ruleString.replace(/data/g,
+      rule = rule.replace(/data/g,
           typeof data === 'string' ? `${data}` : JSON.stringify(data));
     }
-    if (ruleString.includes('newData')) {
-      ruleString = ruleString.replace(/newData/g,
+    if (rule.includes('newData')) {
+      rule = rule.replace(/newData/g,
           typeof newValue === 'string' ? `${newValue}` : JSON.stringify(newValue));
     }
-    if (ruleString.includes('currentTime')) {
-      ruleString = ruleString.replace(/currentTime/g, timestamp);
+    if (rule.includes('currentTime')) {
+      rule = rule.replace(/currentTime/g, timestamp);
     }
-    if (ruleString.includes('db.getValue')) {
-      ruleString = ruleString.replace(/db.getValue/g, 'this.getValue');
+    if (rule.includes('db.getValue')) {
+      rule = rule.replace(/db.getValue/g, 'this.getValue');
     }
 
-    const permission = eval(ruleString);
+    const permission = eval(rule);
     if (!permission) {
-      console.log(`Failed to get permission with rule "${ruleString}"`);
+      console.log(`Failed to get .write permission with rule "${rule}"`);
     }
     return permission;
   }
@@ -490,7 +497,7 @@ class DB {
     // Find the closest ancestor that has a owner config.
     for (let i = ownerNodes.length - 1; i >= 0; i--) {
       const refOwnerConfig = ownerNodes[i];
-      if (refOwnerConfig && OwnerProperties.OWNER in refOwnerConfig) {
+      if (refOwnerConfig[OwnerProperties.OWNER]) {
         ownerConfig = refOwnerConfig[OwnerProperties.OWNER];
         isAncestorConfig = (i !== ownerPath.length);
         break;
@@ -500,31 +507,32 @@ class DB {
   }
 
   checkOwnerConfig(config, isAncestorConfig, address, isOwner) {
+    if (!config) {
+      return false;
+    }
     let owners = null;
-    let permissions = null;
-    if (config && OwnerProperties.OWNERS in config) {
-      owners = config[OwnerProperties.OWNERS];
+    owners = config[OwnerProperties.OWNERS];
+    if (!owners) {
+      return false;
     }
     // Step 1: Check if the address exists in owners.
-    if (owners && address in owners) {
-      permissions = owners[address];
-    }
+    let permissions = owners[address];
     // Step 2: If the address does not exist in owners, check permissions for anyone ('*').
-    if (owners && !permissions && OwnerProperties.ANYONE in owners) {
+    if (!permissions) {
       permissions = owners[OwnerProperties.ANYONE];
     }
-    if (permissions) {
-      if (isOwner) {
-        if (isAncestorConfig) {
-          return (permissions[OwnerProperties.BRANCH_OWNER] === true);
-        } else {
-          return (permissions[OwnerProperties.WRITE_OWNER] === true);
-        }
-      } else {
-        return (permissions[OwnerProperties.WRITE_RULE] === true);
-      }
+    if (!permissions) {
+      return false;
     }
-    return false;
+    if (isOwner) {
+      if (isAncestorConfig) {
+        return (permissions[OwnerProperties.BRANCH_OWNER] === true);
+      } else {
+        return (permissions[OwnerProperties.WRITE_OWNER] === true);
+      }
+    } else {
+      return (permissions[OwnerProperties.WRITE_RULE] === true);
+    }
   }
 }
 

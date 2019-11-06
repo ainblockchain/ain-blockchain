@@ -425,11 +425,13 @@ describe('Integration Tests', () => {
               const blockchainOp = transactionsOnBlockChain[i].operation;
               if (sentOperations[i][0].toUpperCase() === "BATCH") {
                 expect(sentOp.tx_list).to.not.equal(undefined);
+                // NOTE(seo): Sometimes test run fails at this point.
                 expect(sentOp.tx_list[0].operation.type).to.equal(blockchainOp.type);
                 expect(sentOp.tx_list[0].operation.ref).to.equal(blockchainOp.ref);
                 assert.deepEqual(sentOp.tx_list[0].operation.value, blockchainOp.value);
               } else {
                 expect(sentOperations[i][0].toUpperCase()).to.equal(blockchainOp.type);
+                // NOTE(seo): Sometimes test run fails at this point.
                 expect(sentOp.ref).to.equal(blockchainOp.ref);
                 assert.deepEqual(sentOp.value, blockchainOp.value);
               }
