@@ -18,26 +18,26 @@ const ENV_VARIABLES = [
   {
     PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f',
     P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
-    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
     PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d',
     P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
-    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
     PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6',
     P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
-    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
     PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764',
     P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
-    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
 ];
 

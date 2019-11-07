@@ -10,13 +10,13 @@ const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
 
 function setDbForTesting(db) {
-  const ownersFile = path.resolve(__dirname, './data/genesis_owners_test.json');
+  const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
   if (!fs.existsSync(ownersFile)) {
     throw Error('Missing owners file: ' + ownersFile);
   }
   const owners = JSON.parse(fs.readFileSync(ownersFile));
   db.setOwnersForTesting("test", owners);
-  const rulesFile = path.resolve(__dirname, './data/genesis_rules_test.json');
+  const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
   if (!fs.existsSync(rulesFile)) {
     throw Error('Missing rules file: ' + rulesFile);
   }
