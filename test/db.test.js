@@ -638,13 +638,20 @@ describe("DB rule config", () => {
         .to.equal(false)
   })
 
-  it("can handle nested wildcards", () => {
+  it("can handle nested path variables", () => {
     expect(db2.getPermissionForValue(
         ChainUtil.parsePath(`test/second_users/${db2.account.address}/${db2.account.address}`),
         "some value", null, null)).to.equal(true)
     expect(db1.getPermissionForValue(
         ChainUtil.parsePath(`test/second_users/${db1.account.address}/next_counter`),
         "some other value", null, null)).to.equal(false)
+  })
+
+  it("duplicated path variables", () => {
+    expect(db1.getPermissionForValue(
+        ChainUtil.parsePath('test/no_dup_key/aaa/bbb'), "some value", null, null)).to.equal(true)
+    expect(db1.getPermissionForValue(
+        ChainUtil.parsePath('test/dup_key/aaa/bbb'), "some value", null, null)).to.equal(false)
   })
 })
 

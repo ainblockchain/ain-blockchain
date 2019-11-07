@@ -156,8 +156,9 @@ class DB {
     return this.setValue(valuePath, valueAfter, address, timestamp);
   }
 
-  // TODO(seo): Add rule config sanitization logic.
-  // TODO(seo): Add logic for deleting rule paths with only dangling points.
+  // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
+  //            multiple path variables).
+  // TODO(seo): Add logic for deleting rule paths with only dangling points (w/o .write).
   setRule(rulePath, rule, address) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address)) {
@@ -170,7 +171,7 @@ class DB {
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  // TODO(seo): Add logic for deleting owner paths with only dangling points.
+  // TODO(seo): Add logic for deleting owner paths with only dangling points (w/o .owner).
   setOwner(ownerPath, owner, address) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
@@ -422,7 +423,7 @@ class DB {
         break;
       }
     }
-    return this.evalRule(rule, pathVars, valuePath, newValue, address, timestamp);
+    return !!this.evalRule(rule, pathVars, valuePath, newValue, address, timestamp);
   }
 
   getPermissionForRule(rulePath, address) {
