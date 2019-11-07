@@ -8,7 +8,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "auth === '$from' && !db.getValue(`transfer/$from/$to/$key`) && db.getValue(`accounts/$from/balance`) >= newData"
+            ".write": "auth === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && getValue('accounts/' + $from + '/balance') >= newData"
           }
         }
       }
@@ -19,26 +19,26 @@
   },
   "consensus": {
     "recent_proposers": {
-      ".write": "(newData.length < 20) && (db.getValue(`/consensus/voting/pre_commits`) > db.getValue(`/consensus/voting/threshold`)) && (db.getValue(`/consensus/voting/proposer`) === auth)"
+      ".write": "(newData.length < 20) && (getValue('/consensus/voting/pre_commits') > getValue('/consensus/voting/threshold')) && (getValue('/consensus/voting/proposer') === auth)"
     },
     "stakes": {
       "$uid": {
-        ".write": "auth === '$uid'"
+        ".write": "auth === $uid"
       }
     },
     "voting": {
-      ".write": "db.getValue(`/consensus/voting`) === null || db.getValue(`/consensus/recent_proposers`) !== null && (db.getValue(`/consensus/recent_proposers`)[db.getValue(`/consensus/recent_proposers`).length - Math.floor((currentTime - db.getValue(`/consensus/voting/time`)) / 6000)] === auth)" ,
+      ".write": "getValue('/consensus/voting') === null || getValue('/consensus/recent_proposers') !== null && (getValue('/consensus/recent_proposers')[getValue('/consensus/recent_proposers').length - Math.floor((currentTime - getValue('/consensus/voting/time')) / 6000)] === auth)" ,
       "block_hash": {
-        ".write": "db.getValue(`/consensus/voting/proposer`) === auth"
+        ".write": "getValue('/consensus/voting/proposer') === auth"
       },
       "next_round_validators": {
-        ".write": "Object.keys(db.getValue(`/consensus/stakes`)).indexOf(auth) > -1"
+        ".write": "Object.keys(getValue('/consensus/stakes')).indexOf(auth) > -1"
       },
       "pre_votes":{
-        ".write": "db.getValue(`/consensus/voting/block_hash`) !== null"
+        ".write": "getValue('/consensus/voting/block_hash') !== null"
       },
       "pre_commits": {
-        ".write":  "db.getValue(`/consensus/voting/pre_votes`) > db.getValue(`/consensus/voting/threshold`)"
+        ".write":  "getValue('/consensus/voting/pre_votes') > getValue('/consensus/voting/threshold')"
       }
     }
   },
@@ -47,7 +47,7 @@
       "$uid": {
         "$deposit_id": {
           "value": {
-            ".write": "auth === '$uid' && !db.getValue(`/deposit/$service_id/$uid/$deposit_id`) && db.getValue(`/accounts/$uid/balance`) >= newData"
+            ".write": "auth === $uid && !getValue('/deposit/' + $service_id + '/' + $uid + '/' + $deposit_id) && getValue('/accounts/' + $uid + '/balance') >= newData"
           },
           "createdAt": {
             ".write": false
@@ -60,7 +60,7 @@
     ".write": false,
     "$service_id": {
       "config": {
-        ".write": "!db.getValue(`/deposit_accounts/$service_id`) || (db.getOwner(`/deposit_accounts/$service_id`) && db.getOwner(`/deposit_accounts/$service_id`).owners && db.getOwner(`/deposit_accounts/$service_id`).owners[auth])"
+        ".write": "!getValue('/deposit_accounts/' + $service_id) || (getOwner('/deposit_accounts/' + $service_id) && getOwner('/deposit_accounts/' + $service_id).owners && getOwner('/deposit_accounts/' + $service_id).owners[auth])"
       },
       "$uid": {
         ".write": false
@@ -90,7 +90,7 @@
     },
     "users":{
       "$uid": {
-        ".write": "auth === '$uid'",
+        ".write": "auth === $uid",
         "balance": {
           ".write": "typeof newData === 'number' && newData >= 0"
         },
@@ -98,7 +98,7 @@
           ".write": "data !== null"
         },
         "balance_info": {
-          ".write": "db.getValue(`test/billing_keys/update_billing/$uid`) !== null"
+          ".write": "getValue('test/billing_keys/update_billing/' + $uid) !== null"
         },
         "next_counter": {
           ".write": "typeof newData === 'number' && newData === data + 1"
@@ -108,7 +108,21 @@
     "second_users": {
       "$wcard1":{
         "$wcard2": {
-          ".write": "'$wcard1' == '$wcard2'"
+          ".write": "$wcard1 == $wcard2"
+        }
+      }
+    },
+    "no_dup_key": {
+      "$key1": {
+        "$key2": {
+          ".write": true
+        }
+      }
+    },
+    "dup_key": {
+      "$key1": {
+        "$key1": {
+          ".write": true
         }
       }
     }
@@ -118,7 +132,7 @@
       "$uid": {
         "$withdraw_id": {
           "value": {
-            ".write": "auth === '$uid' && !db.getValue(`/withdraw/$service_id/$uid/$withdraw_id`) && db.getValue(`/deposit_accounts/$service_id/$uid/value`) >= newData"
+            ".write": "auth === $uid && !getValue('/withdraw/' + $service_id + '/' + $uid + '/' + $withdraw_id) && getValue('/deposit_accounts/' + $service_id + '/' + $uid + '/value') >= newData"
           },
           "createdAt": {
             ".write": false

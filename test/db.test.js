@@ -438,7 +438,8 @@ describe("DB operations", () => {
       expect(db.getValue("test/ai/foo")).to.equal("bar")
     })
 
-    it("returning error code and leaving value unchanged if invalid operation type is given", () => {
+    it("returning error code and leaving value unchanged if invalid operation type is given",
+        () => {
       assert.deepEqual(db.batch([
         {
           operation: {
@@ -603,8 +604,8 @@ describe("DB rule config", () => {
         ChainUtil.parsePath(`test/users/${db1.account.address}/info`), "something", null, null))
         .to.equal(true)
     expect(db2.getPermissionForValue(
-        ChainUtil.parsePath(`test/users/${db2.account.address}/info`), "something else", null, null))
-        .to.equal(false)
+        ChainUtil.parsePath(`test/users/${db2.account.address}/info`), "something else", null,
+        null)).to.equal(false)
     expect(db2.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${db2.account.address}/new_info`), "something",
         db2.account.address, null)).to.equal(true)
@@ -637,7 +638,7 @@ describe("DB rule config", () => {
         .to.equal(false)
   })
 
-  it("can handle nested wildcards", () => {
+  it("can handle nested path variables", () => {
     expect(db2.getPermissionForValue(
         ChainUtil.parsePath(`test/second_users/${db2.account.address}/${db2.account.address}`),
         "some value", null, null)).to.equal(true)
@@ -646,11 +647,11 @@ describe("DB rule config", () => {
         "some other value", null, null)).to.equal(false)
   })
 
-  describe("substituteWildCards", () => {
-    it("can handle multiple occurrences", () => {
-      assert.deepEqual(DB.substituteWildCards("!$aaa !== 'bbb' && !db.getValue($aaa)",
-          { '$aaa': 'AAA', '$bbb': 'BBB'}), "!AAA !== 'bbb' && !db.getValue(AAA)");
-    })
+  it("duplicated path variables", () => {
+    expect(db1.getPermissionForValue(
+        ChainUtil.parsePath('test/no_dup_key/aaa/bbb'), "some value", null, null)).to.equal(true)
+    expect(db1.getPermissionForValue(
+        ChainUtil.parsePath('test/dup_key/aaa/bbb'), "some value", null, null)).to.equal(false)
   })
 })
 
