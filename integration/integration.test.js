@@ -536,7 +536,8 @@ describe('Integration Tests', () => {
                     JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_PROPOSERS) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
                     JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNTS) ||
-                    JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER))) {
+                    JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER) ||
+                    JSON.stringify(transaction).includes(PredefinedDbPaths.DEPOSIT_CONSENSUS))) {
                   transactionsOnBlockChain.push(transaction);
                 }
               });
