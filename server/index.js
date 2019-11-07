@@ -213,6 +213,7 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
+    if (!transactionWithSig) return [];
     if (Transaction.isBatchTransaction(transactionWithSig)) {
       const resultList = [];
       const txListSucceeded = [];
@@ -270,7 +271,7 @@ class P2pServer {
         if (!this.votingUtil.isSyncedWithNetwork(this.blockchain)) {
           this.requestChainSubsection(this.blockchain.lastBlock());
         }
-        if (this.votingUtil.isStaked() && this.blockchain.syncedAfterStartup) {
+        if (this.votingUtil.getStakes(this.db.account.address) && this.blockchain.syncedAfterStartup) {
           this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         }
         if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
@@ -325,7 +326,6 @@ class P2pServer {
         }
       case VotingActionTypes.PRE_COMMIT:
         if (this.votingUtil.isCommit()) {
-          // this.votingUtil.addValidatorTransactionsToBlock();
           this.addBlockToChain();
           this.cleanupAfterVotingRound();
         }
@@ -367,7 +367,6 @@ class P2pServer {
           type: WriteDbOperations.SET_VALUE,
           ref: this.votingUtil.resolveDbPath([PredefinedDbPaths.ACCOUNTS, this.db.account.address, PredefinedDbPaths.BALANCE]),
           value: 1000
-
         }
       });
     this.executeAndBroadcastTransaction(transaction);
@@ -377,21 +376,29 @@ class P2pServer {
     this.votingUtil.status === VotingStatus.WAIT_FOR_BLOCK;
     this.increaseBalanceForDev();
     this.stakeAmount();
-    this.votingUtil.registerForNextRound(0);
-    this.executeAndBroadcastTransaction(this.votingUtil.instantiate(this.blockchain));
+    const initChainTx = this.votingUtil.instantiate(this.blockchain);
+    if (!initChainTx) {
+      throw Error(`Deposit by the initiating node was unsuccessful`);
+    }
+    this.executeAndBroadcastTransaction(initChainTx);
+    console.log("VOTING ROUND AFTER INITCHAIN:", this.db.getValue(`/consensus/voting`))
+    this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(1));
+    console.log("VOTING ROUND AFTER REGISTER FOR NEXT ROUND:", this.db.getValue(`/consensus/voting`))
     this.createAndProposeBlock();
+    console.log("VOTING ROUND AFTER CREATE AND PROPOSE BLOCK:", this.db.getValue(`/consensus/voting`))
   }
 
   addBlockToChain() {
-    this.blockchain.addNewBlock(this.votingUtil.block);
-    this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
-    this.votingUtil.reset();
-    this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0 && /*!this.votingUtil.isStaked()) {*/
-        !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]))) {
-      this.waitInBlocks = this.waitInBlocks - 1;
-      if (this.waitInBlocks === 0) {
-        this.stakeAmount();
+    if (this.blockchain.addNewBlock(this.votingUtil.block)) {
+      this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
+      this.votingUtil.reset();
+      this.db.reconstruct(this.blockchain, this.transactionPool);
+      if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.db.account.address)) {
+        this.waitInBlocks = this.waitInBlocks - 1;
+        if (this.waitInBlocks === 0) {
+          this.increaseBalanceForDev();
+          this.stakeAmount();
+        }
       }
     }
   }
@@ -405,7 +412,7 @@ class P2pServer {
     if (ainUtil.areSameAddresses(this.db.account.address,
         this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.db.account.address} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
-      this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulBlockCreation());
+      this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
     }
     if (this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS).indexOf(this.db.account.address) >= 0) {
       this.votingInterval = setInterval(()=> {

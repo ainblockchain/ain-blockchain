@@ -92,6 +92,9 @@ const PredefinedDbPaths = {
   WITHDRAW_CREATED_AT: 'created_at',
   WITHDRAW_RESULT: 'result',
   WITHDRAW_VALUE: 'value',
+  DEPOSIT_ACCOUNTS_CONSENSUS: '/deposit_accounts/consensus',
+  DEPOSIT_CONSENSUS: '/deposit/consensus',
+  WITHDRAW_CONSENSUS: '/withdraw/consensus'
 };
 
 /**

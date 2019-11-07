@@ -65,7 +65,8 @@ class Blockchain {
 
   addNewBlock(block) {
     if (block.number != this.height() + 1) {
-      throw Error('Blockchain height is wrong');
+      console.log('[blockchain.addNewBlock] Invalid blockchain height');
+      return false;
     }
     if (!(block instanceof Block)) {
       block = Block.parse(block);
@@ -75,6 +76,7 @@ class Blockchain {
       this.backUpDB.executeBlockTransactions(this.chain.shift());
     }
     this.writeChain();
+    return true;
   }
 
 
@@ -193,7 +195,12 @@ class Blockchain {
       console.log('Invalid chain subsection');
       return false;
     }
-    chainSubSection.forEach((block) => this.addNewBlock(block));
+    chainSubSection.forEach((block) => {
+      if (!this.addNewBlock(block)) {
+        console.log('Failed to add block '+ block);
+        return false;
+      }
+    });
     console.log(`Height after merge: ${this.height()}`);
     return true;
   }

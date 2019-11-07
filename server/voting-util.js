@@ -1,6 +1,7 @@
 const shuffleSeed = require('shuffle-seed');
 const seedrandom = require('seedrandom');
 const { VotingStatus, PredefinedDbPaths, WriteDbOperations } = require('../constants');
+const PushId = require('../db/push-id');
 const MAX_RECENT_PROPOSERS = 20;
 
 class VotingUtil {
@@ -17,7 +18,7 @@ class VotingUtil {
   }
 
   registerVote(vote) {
-    // Transactions can be null (when cascading from proposed_block) and duplicate (when cascading from pre_cote)
+    // Transactions can be null (when cascading from proposed_block) and duplicate (when cascading from pre_vote)
     if (vote && !this.votes.find((_vote) => {
       return _vote.hash === vote.hash;
     })) {
@@ -39,18 +40,23 @@ class VotingUtil {
 
   preVote() {
     // TODO (lia): check this.status === VotingStatus.RECEIVED_BLOCK ?
-    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address]));
-    this.status = VotingStatus.PRE_VOTE;
-    console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
-    const transaction = this.db.createTransaction({
-      operation: {
-        type: WriteDbOperations.INC_VALUE,
-        ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
-        value: stake
-      }
-    });
-    this.registerVote(transaction);
-    return transaction;
+    const stakes = this.getStakes(this.db.account.address);
+    if (stakes) {
+      this.status = VotingStatus.PRE_VOTE;
+      console.log(`Current prevotes are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
+      const transaction = this.db.createTransaction({
+        operation: {
+          type: WriteDbOperations.INC_VALUE,
+          ref: PredefinedDbPaths.VOTING_ROUND_PRE_VOTES,
+          value: stakes
+        }
+      });
+      this.registerVote(transaction);
+      return transaction;
+    } else {
+      // TODO (lia): deposit for consensus?
+      return null;
+    }
   }
 
   isCommit() {
@@ -80,18 +86,22 @@ class VotingUtil {
     if (this.status !== VotingStatus.PRE_VOTE) {
       return null;
     }
-    const stake = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address]));
-    console.log(`Current precommits are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
-    this.status = VotingStatus.PRE_COMMIT;
-    const transaction = this.db.createTransaction({
-      operation: {
-        type: WriteDbOperations.INC_VALUE,
-        ref: PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS,
-        value: stake
-      }
-    });
-    this.registerVote(transaction);
-    return transaction;
+    const stakes = this.getStakes(this.db.account.address);
+    if (stakes) {
+      console.log(`Current precommits are ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
+      this.status = VotingStatus.PRE_COMMIT;
+      const transaction = this.db.createTransaction({
+        operation: {
+          type: WriteDbOperations.INC_VALUE,
+          ref: PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS,
+          value: stakes
+        }
+      });
+      this.registerVote(transaction);
+      return transaction;
+    } else {
+      return null;
+    }
   }
 
   checkPreCommits() {
@@ -114,18 +124,23 @@ class VotingUtil {
     // and commit this to the blockchain so it will be picked up by new peers on the network
     const time = Date.now();
     const proposer = this.db.account.address;
-    const stakes = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, proposer]));
-    const firstVotingData = { validators: {[proposer]: stakes},
-        next_round_validators: {[proposer]: stakes}, threshold: -1,
-        proposer, pre_votes: 0, pre_commits: 0, time, block_hash: '',
-        number: bc.lastBlock().number + 1, last_hash: bc.lastBlock().hash };
-    return this.db.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: PredefinedDbPaths.VOTING_ROUND,
-        value: firstVotingData
-      }
-    });
+    const stakes = this.getStakes(proposer);
+    if (stakes) {
+      const firstVotingData = { validators: {[proposer]: stakes},
+          next_round_validators: {[proposer]: stakes}, threshold: -1,
+          proposer, pre_votes: 0, pre_commits: 0, time, block_hash: '',
+          number: bc.lastBlock().number + 1, last_hash: bc.lastBlock().hash };
+      return this.db.createTransaction({
+        operation: {
+          type: WriteDbOperations.SET_VALUE,
+          ref: PredefinedDbPaths.VOTING_ROUND,
+          value: firstVotingData
+        }
+      });
+    } else {
+      console.log(`Node should have staked by now but deposit was not made successfully.`)
+      return null;
+    }
   }
 
 
@@ -163,10 +178,14 @@ class VotingUtil {
   registerForNextRound(number) {
     const votingRound = this.db.getValue(PredefinedDbPaths.VOTING_ROUND);
     if ((!votingRound && number !== 0) || (votingRound && votingRound.number !== number)) {
-      console.log(`${number + 1} is the expected number and actual info is ${votingRound.number + 1}`);
-      throw Error('Not valid block number');
+      console.log(`[registerForNextRound] Invalid block number. Expected: ${number}, Actual: ${votingRound.number}`);
+      return null;
     }
-    const value = this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]));
+    const value = this.db.getValue(this.resolveDbPath([
+        PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
+        this.db.account.address,
+        PredefinedDbPaths.DEPOSIT_VALUE
+      ]));
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
@@ -206,14 +225,15 @@ class VotingUtil {
   }
 
   stake(stakeAmount) {
-    console.log(`Successfully staked ${stakeAmount}`);
+    const pushId = PushId.generate();
     return this.db.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]),
-        value: stakeAmount
-      }
-    });
+        operation: {
+          type: WriteDbOperations.SET_VALUE,
+          ref: this.resolveDbPath([PredefinedDbPaths.DEPOSIT_CONSENSUS,
+              this.db.account.address, pushId, PredefinedDbPaths.DEPOSIT_VALUE]),
+          value: stakeAmount
+        }
+      });
   }
 
   isProposer() {
@@ -226,11 +246,22 @@ class VotingUtil {
     return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address])));
   }
 
-  isStaked() {
-    return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address])));
+  // Returns the staked amount of address. If there is no stake or it's expired,
+  // it returns 0.
+  getStakes(address) {
+    const stakes = this.db.getValue(this.resolveDbPath([
+        PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
+        address
+      ]));
+    // TODO (lia): change Date.now() to some constant (e.g. block creation time * X)
+    if (stakes && stakes.value > 0 && stakes.expire_at > Date.now()) {
+      return stakes.value;
+    } else {
+      return 0;
+    }
   }
 
-  writeSuccessfulBlockCreation() {
+  updateRecentProposers() {
     let recentProposers = JSON.parse(JSON.stringify(this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS)));
     if (recentProposers == null) {
       recentProposers = [];

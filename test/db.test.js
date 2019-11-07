@@ -19,14 +19,14 @@ describe("DB initialization", () => {
   })
 
   describe("token", () => {
-    it("loading token properly on initatiion", () => {
+    it("loading token properly on initialization", () => {
       assert.deepEqual(db.getValue(`/${PredefinedDbPaths.TOKEN}`), GenesisToken);
 
     })
   })
 
   describe("balances", () => {
-    it("loading balances properly on initatiion", () => {
+    it("loading balances properly on initialization", () => {
       const dbPath =
           `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`;
       expect(db.getValue(dbPath)).to.equal(GenesisToken.total_supply);
@@ -35,7 +35,7 @@ describe("DB initialization", () => {
   })
 
   describe("owners", () => {
-    it("loading owners properly on initatiion", () => {
+    it("loading owners properly on initialization", () => {
       const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
       assert.deepEqual(db.getOwner("/"), owners);
 
@@ -43,7 +43,7 @@ describe("DB initialization", () => {
   })
 
   describe("rules", () => {
-    it("loading rules properly on initatiion", () => {
+    it("loading rules properly on initialization", () => {
       const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
       assert.deepEqual(db.getRule("/"), rules);
 
@@ -66,10 +66,10 @@ describe("DB operations", () => {
       },
       "increment": {
         "value": 20,
-      }, 
+      },
       "decrement": {
         "value": 20,
-      }, 
+      },
       "blockchain": [1,2,3,4],
       "nested": {
         "far": {
@@ -230,7 +230,7 @@ describe("DB operations", () => {
     })
 
     it("creating and increasing given path from 0 if not currently in database", () => {
-      db.incValue("test/completely/new/path/test", 100); 
+      db.incValue("test/completely/new/path/test", 100);
       expect(db.getValue("test/completely/new/path/test")).to.equal(100)
     })
   })
@@ -247,7 +247,7 @@ describe("DB operations", () => {
     })
 
     it("creating and decreasing given path from 0 if not currently in database", () => {
-      db.decValue("test/completely/new/path/test", 100); 
+      db.decValue("test/completely/new/path/test", 100);
       expect(db.getValue("test/completely/new/path/test")).to.equal(-100)
     })
   })
@@ -662,7 +662,7 @@ describe("DB owner config", () => {
     tp = new TransactionPool();
     bc = new Blockchain("db-test");
     db = DB.getDatabase(bc, tp);
-    db.setOwner("test_owner/mixed/true/true/true", 
+    db.setOwner("test_owner/mixed/true/true/true",
       {
         ".owner": {
           "owners": {
@@ -685,7 +685,7 @@ describe("DB owner config", () => {
         }
       }
     );
-    db.setOwner("test_owner/mixed/false/true/true", 
+    db.setOwner("test_owner/mixed/false/true/true",
       {
         ".owner": {
           "owners": {
@@ -708,7 +708,7 @@ describe("DB owner config", () => {
         }
       }
     );
-    db.setOwner("test_owner/mixed/true/false/true", 
+    db.setOwner("test_owner/mixed/true/false/true",
       {
         ".owner": {
           "owners": {
@@ -731,7 +731,7 @@ describe("DB owner config", () => {
         }
       }
     );
-    db.setOwner("test_owner/mixed/true/true/false", 
+    db.setOwner("test_owner/mixed/true/true/false",
       {
         ".owner": {
           "owners": {
