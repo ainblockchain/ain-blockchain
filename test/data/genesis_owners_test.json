@@ -1,26 +1,4 @@
 {
-  "apps": {
-    ".owner": {
-      "owners": {
-        "*": {
-          "branch_owner": true,
-          "write_owner": false,
-          "write_rule": false
-        }
-      }
-    }
-  },
-  "deposit_accounts": {
-    ".owner": {
-      "owners": {
-        "*": {
-          "write_owner": true,
-          "branch_owner": true,
-          "write_rule": true
-        }
-      }
-    }
-  },
   "test_rule": {
     ".owner": {
       "owners": {

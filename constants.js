@@ -2,10 +2,16 @@ const fs = require('fs');
 const path = require('path');
 const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain/genesis_token.json');
 const GENESIS_ACCOUNT = path.resolve(__dirname, 'blockchain/genesis_account.json');
-const GENESIS_OWNERS = path.resolve(__dirname, process.env.GENESIS_OWNERS ?
-    process.env.GENESIS_OWNERS : 'blockchain/genesis_owners.json');
-const GENESIS_RULES = path.resolve(__dirname, process.env.GENESIS_RULES ?
-    process.env.GENESIS_RULES : 'blockchain/genesis_rules.json');
+const GENESIS_OWNERS = path.resolve(__dirname, 'blockchain/genesis_owners.json');
+const ADDITIONAL_OWNERS = process.env.ADDITIONAL_OWNERS ? {
+  dbPath: process.env.ADDITIONAL_OWNERS.split(':')[0],
+  filePath: path.resolve(__dirname, process.env.ADDITIONAL_OWNERS.split(':')[1])
+} : null;
+const GENESIS_RULES = path.resolve(__dirname, 'blockchain/genesis_rules.json');
+const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
+  dbPath: process.env.ADDITIONAL_RULES.split(':')[0],
+  filePath: path.resolve(__dirname, process.env.ADDITIONAL_RULES.split(':')[1])
+} : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/.blockchains');
 // TODO (lia): remove this after changing the way genesis block is produced
 // (first node creates it and broadcasts to others)
@@ -172,7 +178,9 @@ const GenesisAccount = fs.existsSync(GENESIS_ACCOUNT) ? JSON.parse(fs.readFileSy
 
 module.exports = {
   GENESIS_OWNERS,
+  ADDITIONAL_OWNERS,
   GENESIS_RULES,
+  ADDITIONAL_RULES,
   BLOCKCHAINS_DIR,
   STAKE,
   DEBUG,

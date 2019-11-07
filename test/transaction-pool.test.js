@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require("fs")
 const ainUtil = require('@ainblockchain/ain-util');
 const TransactionPool = require('../db/transaction-pool');
 const Transaction = require('../db/transaction');
@@ -12,8 +13,17 @@ const shuffleSeed = require('shuffle-seed');
 
 function setDbForTesting(db) {
   const ownersFile = path.resolve(__dirname, './data/genesis_owners_test.json');
+  if (!fs.existsSync(ownersFile)) {
+    throw Error('Missing owners file: ' + ownersFile);
+  }
+  const owners = JSON.parse(fs.readFileSync(ownersFile));
+  db.setOwnersForTesting("test", owners);
   const rulesFile = path.resolve(__dirname, './data/genesis_rules_test.json');
-  db.setDbForTesting(ownersFile, rulesFile);
+  if (!fs.existsSync(rulesFile)) {
+    throw Error('Missing rules file: ' + rulesFile);
+  }
+  const rules = JSON.parse(fs.readFileSync(rulesFile));
+  db.setRulesForTesting("test", rules);
 }
 
 function getTransaction(db, txData) {

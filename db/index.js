@@ -38,15 +38,13 @@ class DB {
   }
 
   // For testing purpose only.
-  setDbForTesting(ownersFile, rulesFile) {
-    if (!fs.existsSync(ownersFile)) {
-      throw Error('Missing owners file: ' + ownersFile);
-    }
-    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(fs.readFileSync(ownersFile)));
-    if (!fs.existsSync(rulesFile)) {
-      throw Error('Missing rules file: ' + rulesFile);
-    }
-    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(fs.readFileSync(rulesFile)));
+  setOwnersForTesting(ownersPath, owners) {
+    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT, ...ChainUtil.parsePath(ownersPath)], owners);
+  }
+
+  // For testing purpose only.
+  setRulesForTesting(rulesPath, rules) {
+    this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
   static getDatabase(blockchain, tp) {

@@ -19,26 +19,26 @@ const ENV_VARIABLES = [
   {
     PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f',
     P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
-    GENESIS_RULES: './test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
+    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
   },
   {
     PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d',
     P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
-    GENESIS_RULES: './test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
+    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
   },
   {
     PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6',
     P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
-    GENESIS_RULES: './test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
+    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
   },
   {
     PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764',
     P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
-    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
-    GENESIS_RULES: './test/data/genesis_rules_test.json'
+    ADDITIONAL_OWNERS: 'test:./test/data/genesis_owners_test.json',
+    ADDITIONAL_RULES: 'test:./test/data/genesis_rules_test.json'
   },
 ];
 
@@ -96,7 +96,7 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_rule', {
       json: {
-        ref: '/test_rule/some/path',
+        ref: '/test/test_rule/some/path',
         value: {
           ".write": "some rule config"
         }
@@ -104,7 +104,7 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
-        ref: '/test_owner/some/path',
+        ref: '/test/test_owner/some/path',
         value: {
           ".owner": {
             "owners": {
@@ -129,13 +129,13 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
-        ref: '/test_owner/some/path',
+        ref: '/test/test_owner/some/path',
         value: {}
       }
     });
     syncRequest('POST', server2 + '/set_rule', {
       json: {
-        ref: '/test_rule/some/path',
+        ref: '/test/test_rule/some/path',
         value: {}
       }
     });
@@ -157,7 +157,7 @@ describe('API Tests', () => {
     it('get_rule simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get('/get_rule?ref=/test_rule/some/path')
+          .get('/get_rule?ref=/test/test_rule/some/path')
           .then((res) => {
             res.should.have.status(200);
             res.body.should.be.deep.eql({
@@ -174,7 +174,7 @@ describe('API Tests', () => {
     it('get_owner simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get('/get_owner?ref=/test_owner/some/path')
+          .get('/get_owner?ref=/test/test_owner/some/path')
           .then((res) => {
             res.should.have.status(200);
             res.body.should.be.deep.eql({
@@ -207,11 +207,11 @@ describe('API Tests', () => {
               },
               {
                 type: 'GET_RULE',
-                ref: "/test_rule/some/path",
+                ref: "/test/test_rule/some/path",
               },
               {
                 type: 'GET_OWNER',
-                ref: "/test_owner/some/path",
+                ref: "/test/test_owner/some/path",
               }
             ]
           })
@@ -281,7 +281,7 @@ describe('API Tests', () => {
       sleep(200)
       return chai.request(server4)
           .post('/set_rule').send({
-            ref: "/test_rule/other/path",
+            ref: "/test/test_rule/other/path",
             value: {
               ".write": "some other rule config"
             }
@@ -298,7 +298,7 @@ describe('API Tests', () => {
       sleep(200)
       return chai.request(server4)
           .post('/set_owner').send({
-            ref: "/test_owner/other/path",
+            ref: "/test/test_owner/other/path",
             value: {
               ".owner": "some other owner config"
             }
@@ -332,14 +332,14 @@ describe('API Tests', () => {
               },
               {
                 type: 'SET_RULE',
-                ref: "/test_rule/other2/path",
+                ref: "/test/test_rule/other2/path",
                 value: {
                   ".write": "some other2 rule config"
                 }
               },
               {
                 type: 'SET_OWNER',
-                ref: "/test_owner/other2/path",
+                ref: "/test/test_owner/other2/path",
                 value: {
                   ".owner": "some other2 owner config"
                 }
@@ -382,7 +382,7 @@ describe('API Tests', () => {
               {
                 operation: {
                   type: 'SET_RULE',
-                  ref: "/test_rule/other3/path",
+                  ref: "/test/test_rule/other3/path",
                   value: {
                     ".write": "some other3 rule config"
                   }
@@ -391,7 +391,7 @@ describe('API Tests', () => {
               {
                 operation: {
                   type: 'SET_OWNER',
-                  ref: "/test_owner/other3/path",
+                  ref: "/test/test_owner/other3/path",
                   value: {
                     ".owner": "some other3 owner config"
                   }
@@ -421,14 +421,14 @@ describe('API Tests', () => {
                     },
                     {
                       type: 'SET_RULE',
-                      ref: "/test_rule/other4/path",
+                      ref: "/test/test_rule/other4/path",
                       value: {
                         ".write": "some other4 rule config"
                       }
                     },
                     {
                       type: 'SET_OWNER',
-                      ref: "/test_owner/other4/path",
+                      ref: "/test/test_owner/other4/path",
                       value: {
                         ".owner": "some other4 owner config"
                       }
