@@ -387,7 +387,7 @@ class DB {
   // TODO(seo): Add rule check for sub-nodes when newValue is an opject.
   getPermissionForValue(valuePath, newValue, address, timestamp) {
     let lastRuleNode;
-    const wildCards = {};
+    const pathVars = {};
     const ruleNodes = [];
     let currentRuleNode = this.db[PredefinedDbPaths.RULES_ROOT];
     ruleNodes.push(currentRuleNode);
@@ -402,7 +402,11 @@ class DB {
         const keys = Object.keys(lastRuleNode);
         for (let j = 0; j < keys.length; j++) {
           if (keys[j].startsWith('$')) {
-            wildCards[keys[j]] = valuePath[i];
+            if (pathVars[keys[j]]) {
+              console.log('Duplicated path variables.')
+              return false;
+            }
+            pathVars[keys[j]] = valuePath[i];
             currentRuleNode = lastRuleNode[keys[j]];
             ruleNodes.push(currentRuleNode);
           }
@@ -418,7 +422,7 @@ class DB {
         break;
       }
     }
-    return this.evalRule(rule, wildCards, valuePath, newValue, address, timestamp);
+    return this.evalRule(rule, pathVars, valuePath, newValue, address, timestamp);
   }
 
   getPermissionForRule(rulePath, address) {
@@ -431,53 +435,23 @@ class DB {
     return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, true);
   }
 
-  static substituteWildCards(rule, wildCards) {
-    for (const wildCard in wildCards) {
-      if (rule.includes(wildCard)) {
-        // May need to come back here to figure out how to change ALL occurrences of wildCards
-        const wildCardValue = wildCards[wildCard];
-        rule = rule.replace(new RegExp(escapeStringRegexp(wildCard), 'g'),
-            typeof wildCardValue === 'string' ? `${wildCardValue}` : JSON.stringify(wildCardValue));
-      }
-    }
-    return rule;
+  makeEvalFunction(ruleString, pathVars) {
+    return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
+                        'getOwner', ...Object.keys(pathVars),
+                        '"use strict"; return ' + ruleString);
   }
 
-  evalRule(rule, wildCards, valuePath, newValue, address, timestamp) {
+  evalRule(rule, pathVars, valuePath, newValue, address, timestamp) {
     if (typeof rule === 'boolean') {
       return rule;
     } else if (typeof rule !== 'string') {
       return false;
     }
-    if (rule.includes('auth')) {
-      rule = rule.replace(/auth/g, `'${address}'`);
-    }
-    if (Object.keys(wildCards).length > 0) {
-      rule = DB.substituteWildCards(rule, wildCards);
-    }
-    if (rule.includes('data')) {
-      const data = this.getValue(valuePath.join('/'));
-      rule = rule.replace(/data/g,
-          typeof data === 'string' ? `${data}` : JSON.stringify(data));
-    }
-    if (rule.includes('newData')) {
-      rule = rule.replace(/newData/g,
-          typeof newValue === 'string' ? `${newValue}` : JSON.stringify(newValue));
-    }
-    if (rule.includes('currentTime')) {
-      rule = rule.replace(/currentTime/g, timestamp);
-    }
-    if (rule.includes('db.getValue')) {
-      rule = rule.replace(/db.getValue/g, 'this.getValue');
-    }
-
-    const permission = eval(rule);
-    if (!permission) {
-      console.log(`Failed to get .write permission with rule "${rule}"`);
-    }
-    const temp_rule = "return (const auth = 'aaaa'; "
-    const result = eval(rule);
-    return permission;
+    let evalFunc = this.makeEvalFunction(rule, pathVars);
+    const data = this.getValue(valuePath.join('/'));
+    return evalFunc(address, data, newValue, timestamp, this.getValue.bind(this),
+                    this.getRule.bind(this), this.getOwner.bind(this),
+                    ...Object.values(pathVars));
   }
 
   getOwnerConfig(ownerPath) {
