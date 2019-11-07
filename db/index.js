@@ -115,11 +115,11 @@ class DB {
 
   // TODO(seo): Add logic for deleting rule paths with only dangling points.
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
+  // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and built-in-function run tightly bound, i.e., revert
   //            the former if the latter fails.
   // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
-  // TODO(seo): Consider explicitly defining error code.
   setValue(valuePath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
@@ -475,6 +475,8 @@ class DB {
     if (!permission) {
       console.log(`Failed to get .write permission with rule "${rule}"`);
     }
+    const temp_rule = "return (const auth = 'aaaa'; "
+    const result = eval(rule);
     return permission;
   }
 

@@ -41,10 +41,14 @@ const setEndpoint = '/set_value';
 const getEndpoint = '/get_value'
 
 const ENV_VARIABLES = [
-  {PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f', P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
-  {PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d', P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
-  {PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6', P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
-  {PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764', P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f', P2P_PORT: 5001,
+      PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d', P2P_PORT: 5002,
+      PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6', P2P_PORT: 5003,
+      PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
+  {PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764', P2P_PORT: 5004,
+      PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
 ];
 
 // Data options
@@ -67,23 +71,35 @@ RANDOM_OPERATION = [
   ['dec_value', {ref: 'test/balance/user1', value: 10000}],
   ['dec_value', {ref: 'test/balance/user1', value: 10000}],
   ['dec_value', {ref: 'test/balance/user2', value: 100002}],
-  ['set', {op_list: [{ref: 'test/increase/first/level', value: 10}, {ref: 'test/increase/first/level2', value: 20}]}],
-  ['set', {op_list: [{ref: 'test/increase/second/level/deeper', value: 20}, {ref: 'test/increase/second/level/deeper', value: 1000}]}],
+  ['set', {op_list: [{ref: 'test/increase/first/level', value: 10},
+      {ref: 'test/increase/first/level2', value: 20}]}],
+  ['set', {op_list: [{ref: 'test/increase/second/level/deeper', value: 20},
+      {ref: 'test/increase/second/level/deeper', value: 1000}]}],
   ['set', {op_list: [{ref: 'test/increase', value: 1}]}],
   ['set', {op_list: [{ref: 'test/new', value: 1}]}],
   ['set', {op_list: [{ref: 'test/increase', value: 10000}]}],
   ['set', {op_list: [{ref: 'test/b/u', value: 10000}]}],
   ['set', {op_list: [{ref: 'test/builed/some/deep/place/next', value: 100002}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'testme'}}, {operation: {type: 'INC_VALUE', ref: 'test/b/u', value: 10000}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'no meeeee'}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeon/nnnnnn', value: 'through'}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn', value: 'testme'}},
+      {operation: {type: 'INC_VALUE', ref: 'test/b/u', value: 10000}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn',
+      value: 'no meeeee'}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeon/nnnnnn',
+      value: 'through'}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn/new',
+      value: {'new': 'path'}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep',
+      value: {'place': {'next': 1, 'level': 'down'}}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/heliii',
+      value: {'range': [1, 2, 3, 1, 4, 5]}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
+      value: {'range': [1, 4, 5], 'another': [234]}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
+      value: 'very nested'}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
+      value: {1: 2, 3: 4, 5: 6}}}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/new/final/path',
+      value: {'neste': [1, 2, 3, 4, 5]}}}]}],
 ];
 
 class Process {
@@ -108,7 +124,9 @@ class Process {
       options.stdio = 'inherit';
     }
     this.proc = spawn('node', [this.application], options).on('error', (err) => {
-      console.error(`Failed to start server${this.application} with variavles ${this.envVariables} with error: ` + err.message);
+      console.error(
+          `Failed to start server${this.application} with ${this.envVariables} with error: ` +
+          err.message);
     });
   }
 
@@ -130,7 +148,8 @@ function waitUntilNodeStakes() {
   let validators = {};
   while (count <= MAX_PROMISE_STACK_DEPTH && blocksAfterStaking < 2) {
     const result = JSON.parse(syncRequest('POST', server1 + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: 'ain_getRecentBlock', id: 0}}).body.toString('utf-8')).result;
+        {json: {jsonrpc: '2.0', method: 'ain_getRecentBlock', id: 0}})
+        .body.toString('utf-8')).result;
     validators = result.validators;
     if (Object.keys(validators).length >= 2) {
       blocksAfterStaking++;
@@ -223,10 +242,12 @@ describe('Integration Tests', () => {
   describe(`blockchain database mining/forging`, () => {
     beforeEach(() => {
       for (let i = 0; i < NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
-        const randomOperation = RANDOM_OPERATION[Math.floor(Math.random() * RANDOM_OPERATION.length)];
+        const randomOperation =
+            RANDOM_OPERATION[Math.floor(Math.random() * RANDOM_OPERATION.length)];
         sentOperations.push(randomOperation);
         const serverIndex = Math.floor(Math.random() * SERVERS.length);
-        syncRequest('POST', SERVERS[serverIndex] + '/' + randomOperation[0], {json: randomOperation[1]});
+        syncRequest('POST', SERVERS[serverIndex] + '/' + randomOperation[0],
+                    {json: randomOperation[1]});
         sleep(200);
       }
       return new Promise((resolve) => {
@@ -248,24 +269,29 @@ describe('Integration Tests', () => {
     });
 
     it('syncs accross all peers after mine', () => {
-      const baseValues = JSON.parse(syncRequest('GET', server1 + getEndpoint + '?ref=/').body.toString('utf-8'));
+      const baseValues = JSON.parse(syncRequest('GET', server1 + getEndpoint + '?ref=/')
+      .body.toString('utf-8'));
       for (let i = 1; i < SERVERS.length; i++) {
-        const values = JSON.parse(syncRequest('GET', SERVERS[i] + getEndpoint + '?ref=/').body.toString('utf-8'));
+        const values = JSON.parse(syncRequest('GET', SERVERS[i] + getEndpoint + '?ref=/')
+        .body.toString('utf-8'));
         assert.deepEqual(values, baseValues)
       }
     });
 
-    // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
+    // TODO(seo): Uncomment this test case. (see
+    // https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
     /*
     it('will sync to new peers on startup', () => {
       let baseChain;
       let number;
       const newServer = 'http://localhost:9095';
-      const newServerProc = new Process(APP_SERVER, {P2P_PORT: 5005, PORT: 9095, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true});
+      const newServerProc = new Process(APP_SERVER, {P2P_PORT: 5005, PORT: 9095, LOG: true,
+                                        STAKE: 250, LOCAL: true, DEBUG: true});
       newServerProc.start();
       sleep(5000);
       return new Promise((resolve) => {
-        jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
+        jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {},
+            function(err, response) {
           if (err) throw err;
           baseChain = response.result;
           number = baseChain[baseChain.length - 1].number;
@@ -273,7 +299,8 @@ describe('Integration Tests', () => {
         });
       }).then(() => {
         return new Promise((resolve) => {
-          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: number + 1}, function(err, response) {
+          jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
+              {to: number + 1}, function(err, response) {
             if (err) throw err;
             const newChain = response.result;
             assert.deepEqual(baseChain.length, newChain.length);
@@ -303,13 +330,15 @@ describe('Integration Tests', () => {
         });
       });
 
-      // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
+      // TODO(seo): Uncomment this test case. (see
+      // https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
       /*
       itParam('syncing across all chains', SERVERS, function(server) {
         let newChain;
         const number = baseChain[baseChain.length - 1].number;
         return new Promise((resolve) => {
-          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {to: number + 1}, function(err, response) {
+          jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
+              {to: number + 1}, function(err, response) {
             if (err) throw err;
             newChain = response.result;
             assert.deepEqual(baseChain, newChain);
@@ -323,7 +352,8 @@ describe('Integration Tests', () => {
         let threshold = 0.6666; // TODO (lia): define this as a constant in genesis.
         for (let i = 0; i < SERVERS.length; i++) {
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
-              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}}).body.toString('utf-8')).result;
+              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
+              .body.toString('utf-8')).result;
           const len = blocks.length;
           // The genesis and the following blocks are exceptions
           // (validators and next_round_validators are set 'arbitrarily')
@@ -374,7 +404,8 @@ describe('Integration Tests', () => {
         }
         for (let i = 0; i < SERVERS.length; i++) {
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
-              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}}).body.toString('utf-8')).result;
+              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
+              .body.toString('utf-8')).result;
           const len = blocks.length;
           for (let j = 0; j < len; j++) {
             const block = blocks[j];
@@ -401,23 +432,31 @@ describe('Integration Tests', () => {
 
     describe('and rules', () => {
       it('prevent users from restructed areas', () => {
-        const result = syncRequest('POST', server2 + setEndpoint, {json: {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}});
+        const result = syncRequest('POST', server2 + setEndpoint,
+            {json: {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}});
         expect(result.statusCode).to.equal(401);
       });
     });
 
     describe('and built in functions', () => {
       beforeEach(() => {
-        syncRequest('POST', server1 + setEndpoint, {json: {ref: `/accounts/${publicKeys[0]}/balance`, value: 100}});
-        syncRequest('POST', server2 + setEndpoint, {json: {ref: `/accounts/${publicKeys[1]}/balance`, value: 0}});
+        syncRequest('POST', server1 + setEndpoint,
+            {json: {ref: `/accounts/${publicKeys[0]}/balance`, value: 100}});
+        syncRequest('POST', server2 + setEndpoint,
+            {json: {ref: `/accounts/${publicKeys[1]}/balance`, value: 0}});
         sleep(200);
       });
 
       it('facilitate transfer between accounts', () => {
-        syncRequest('POST', server1 + setEndpoint, {json: {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 10}});
+        syncRequest('POST', server1 + setEndpoint,
+            {json: {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 10}});
         sleep(500);
-        const balance1 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/accounts/${publicKeys[0]}/balance`).body.toString('utf-8')).result;
-        const balance2 = JSON.parse(syncRequest('GET', server3 + getEndpoint + `?ref=/accounts/${publicKeys[1]}/balance`).body.toString('utf-8')).result;
+        const balance1 = JSON.parse(syncRequest('GET',
+            server3 + getEndpoint + `?ref=/accounts/${publicKeys[0]}/balance`)
+            .body.toString('utf-8')).result;
+        const balance2 = JSON.parse(syncRequest('GET',
+            server3 + getEndpoint + `?ref=/accounts/${publicKeys[1]}/balance`)
+            .body.toString('utf-8')).result;
         expect(balance1).to.equal(90);
         expect(balance2).to.equal(10);
       });
@@ -437,7 +476,8 @@ describe('Integration Tests', () => {
 
       it('can be queried by index ', () => {
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS, {from: 2, to: 4}, function(err, response) {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
+                                {from: 2, to: 4}, function(err, response) {
             if (err) throw err;
             body = response.result;
             assert.deepEqual([2, 3], body.map((blockHeader) => {
@@ -456,7 +496,8 @@ describe('Integration Tests', () => {
           });
         }).then((resultByNumber) => {
           return new Promise((resolve) => {
-            jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH, {hash: resultByNumber.hash}, function(err, response) {
+            jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH, {hash: resultByNumber.hash},
+                                  function(err, response) {
               if (err) throw err;
               const resultByHash = response.result;
               assert.deepEqual(resultByHash, resultByNumber);
@@ -500,17 +541,21 @@ describe('Integration Tests', () => {
                 assert.deepEqual(sentOp.value, blockchainOp.value);
               }
             };
-            // Subtract number of transactions that have been sent since the start of the test case as they will not be on the blockchain yet
+            // Subtract number of transactions that have been sent since the start of the test case
+            // as they will not be on the blockchain yet
             // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
-            // expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST).to.equal(transactionsOnBlockChain.length);
+            // expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST)
+            // .to.equal(transactionsOnBlockChain.length);
             resolve();
           });
         });
       });
 
       it('maintaining correct order', () => {
-        body1 = JSON.parse(syncRequest('GET', server1 + getEndpoint + '?ref=test').body.toString('utf-8'));
-        body2 = JSON.parse(syncRequest('GET', server2 + getEndpoint + '?ref=test').body.toString('utf-8'));
+        body1 = JSON.parse(syncRequest('GET', server1 + getEndpoint + '?ref=test')
+            .body.toString('utf-8'));
+        body2 = JSON.parse(syncRequest('GET', server2 + getEndpoint + '?ref=test')
+            .body.toString('utf-8'));
         assert.deepEqual(body1.result, body2.result);
       });
 
@@ -523,11 +568,15 @@ describe('Integration Tests', () => {
         console.log(`Starting server[1]...`);
         SERVER_PROCS[1].start();
         sleep(30000);
-        const lastBlockFromRunningBlockchain = JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString('utf-8')).result.pop();
-        const lastBlockFromStoppedBlockchain = JSON.parse(syncRequest('GET', server2 + '/blocks').body.toString('utf-8')).result.pop();
-        assert.deepEqual(lastBlockFromRunningBlockchain.transactions, lastBlockFromStoppedBlockchain.transactions);
+        const lastBlockFromRunningBlockchain =
+            JSON.parse(syncRequest('GET', server1 + '/blocks').body.toString('utf-8')).result.pop();
+        const lastBlockFromStoppedBlockchain =
+            JSON.parse(syncRequest('GET', server2 + '/blocks').body.toString('utf-8')).result.pop();
+        assert.deepEqual(lastBlockFromRunningBlockchain.transactions,
+                         lastBlockFromStoppedBlockchain.transactions);
         expect(lastBlockFromRunningBlockchain.hash).to.equal(lastBlockFromStoppedBlockchain.hash);
-        expect(lastBlockFromRunningBlockchain.number).to.equal(lastBlockFromStoppedBlockchain.number);
+        expect(lastBlockFromRunningBlockchain.number)
+        .to.equal(lastBlockFromStoppedBlockchain.number);
       });
       */
     });

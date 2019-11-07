@@ -481,16 +481,21 @@ describe('API Tests', () => {
     let balancePath;
 
     before(() => {
-      serviceAdmin = JSON.parse(syncRequest('GET', server1 + '/node_address').body.toString('utf-8')).result;
-      depositActor = JSON.parse(syncRequest('GET', server2 + '/node_address').body.toString('utf-8')).result;
-      badActor = JSON.parse(syncRequest('GET', server3 + '/node_address').body.toString('utf-8')).result;
+      serviceAdmin =
+          JSON.parse(syncRequest('GET', server1 + '/node_address').body.toString('utf-8')).result;
+      depositActor =
+          JSON.parse(syncRequest('GET', server2 + '/node_address').body.toString('utf-8')).result;
+      badActor =
+          JSON.parse(syncRequest('GET', server3 + '/node_address').body.toString('utf-8')).result;
       depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;
       balancePath = `/accounts/${depositActor}/balance`;
-      syncRequest('POST', server1+'/set_value', {json: {ref: `/accounts/${serviceAdmin}/balance`, value: 1000}});
+      syncRequest('POST', server1+'/set_value',
+                  {json: {ref: `/accounts/${serviceAdmin}/balance`, value: 1000}});
       syncRequest('POST', server1+'/set_value', {json: {ref: balancePath, value: 1000}});
-      syncRequest('POST', server1+'/set_value', {json: {ref: `/accounts/${badActor}/balance`, value: 1000}});
+      syncRequest('POST', server1+'/set_value',
+                  {json: {ref: `/accounts/${badActor}/balance`, value: 1000}});
     })
 
     describe('_deposit', () => {
@@ -599,7 +604,8 @@ describe('API Tests', () => {
       // TODO (lia): update test code after fixing timestamp verification logic.
       it('deposit with invalid timestamp', () => {
         const account = ainUtil.createAccount();
-        syncRequest('POST', server2+'/set_value', {json: {ref: `/accounts/${account.address}/balance`, value: 1000}});
+        syncRequest('POST', server2+'/set_value',
+                    {json: {ref: `/accounts/${account.address}/balance`, value: 1000}});
         const transaction = {
           operation: {
             type: 'SET_VALUE',
@@ -609,7 +615,8 @@ describe('API Tests', () => {
           timestamp: Date.now() + 100000,
           nonce: 0
         }
-        const signature = ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+        const signature =
+            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature })
         .then(res => {

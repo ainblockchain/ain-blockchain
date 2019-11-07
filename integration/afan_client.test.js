@@ -98,15 +98,18 @@ describe('aFan Client Test', () => {
   });
 
   set_value = (ref, value) => {
-    return Promise.resolve(JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {ref, value}}).body.toString('utf-8')));
+    return Promise.resolve(JSON.parse(syncRequest('POST', server1 + '/set_value',
+                           {json: {ref, value}}).body.toString('utf-8')));
   };
 
   set = (op_list) => {
-    return Promise.resolve(JSON.parse(syncRequest('POST', server2 + '/set', {json: {op_list}}).body.toString('utf-8')));
+    return Promise.resolve(JSON.parse(syncRequest('POST', server2 + '/set',
+                           {json: {op_list}}).body.toString('utf-8')));
   };
 
   get_value = (ref) => {
-    return Promise.resolve(JSON.parse(syncRequest('GET', server3 + `/get_value?ref=${ref}`).body.toString('utf-8')));
+    return Promise.resolve(JSON.parse(syncRequest('GET',
+                           server3 + `/get_value?ref=${ref}`).body.toString('utf-8')));
   };
 
   beforeEach(() => {
