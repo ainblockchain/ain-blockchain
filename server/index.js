@@ -182,6 +182,7 @@ class P2pServer {
    */
   // TODO(seo): Remove new Transaction() use cases.
   executeTransaction(transactionWithSig) {
+    if (!transactionWithSig) return [];
     const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
@@ -213,7 +214,6 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
-    if (!transactionWithSig) return [];
     if (Transaction.isBatchTransaction(transactionWithSig)) {
       const resultList = [];
       const txListSucceeded = [];
