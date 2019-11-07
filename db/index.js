@@ -1,4 +1,4 @@
-const escapeStringRegexp = require('escape-string-regexp');
+const fs = require('fs');
 const ainUtil = require('@ainblockchain/ain-util');
 const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
        DEBUG} = require('../constants');
@@ -35,6 +35,18 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
       [RuleProperties.WRITE]: true
     });
+  }
+
+  // For testing purpose only.
+  setDbForTesting(ownersFile, rulesFile) {
+    if (!fs.existsSync(ownersFile)) {
+      throw Error('Missing owners file: ' + ownersFile);
+    }
+    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(fs.readFileSync(ownersFile)));
+    if (!fs.existsSync(rulesFile)) {
+      throw Error('Missing rules file: ' + rulesFile);
+    }
+    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(fs.readFileSync(rulesFile)));
   }
 
   static getDatabase(blockchain, tp) {
@@ -403,7 +415,7 @@ class DB {
         const keys = Object.keys(lastRuleNode);
         for (let j = 0; j < keys.length; j++) {
           if (keys[j].startsWith('$')) {
-            if (pathVars[keys[j]]) {
+            if (pathVars[keys[j]] !== undefined) {
               console.log('Duplicated path variables.')
               return false;
             }

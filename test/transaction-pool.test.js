@@ -1,3 +1,4 @@
+const path = require('path');
 const ainUtil = require('@ainblockchain/ain-util');
 const TransactionPool = require('../db/transaction-pool');
 const Transaction = require('../db/transaction');
@@ -8,6 +9,12 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
+
+function setDbForTesting(db) {
+  const ownersFile = path.resolve(__dirname, './data/genesis_owners_test.json');
+  const rulesFile = path.resolve(__dirname, './data/genesis_rules_test.json');
+  db.setDbForTesting(ownersFile, rulesFile);
+}
 
 function getTransaction(db, txData) {
   txData.nonce = db.nonce;
@@ -22,6 +29,7 @@ describe('TransactionPool', () => {
     tp = new TransactionPool();
     bc = new Blockchain('test-blockchain');
     db = new DB(bc);
+    setDbForTesting(db);
 
     transaction = getTransaction(db, {
       operation: {
@@ -56,8 +64,11 @@ describe('TransactionPool', () => {
       tp.transactions[db.account.address] = shuffleSeed.shuffle(tp.transactions[db.account.address]);
 
       db2 = new DB(bc);
+      setDbForTesting(db2);
       db3 = new DB(bc);
+      setDbForTesting(db3);
       db4 = new DB(bc);
+      setDbForTesting(db4);
       const dbs = [db2, db3, db4];
       for (let j = 0; j < dbs.length; j++) {
         for (let i = 0; i < 11; i++) {

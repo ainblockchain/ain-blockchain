@@ -1,3 +1,4 @@
+const path = require('path');
 const Blockchain = require('../blockchain/');
 const {Block} = require('../blockchain/block');
 const chai = require('chai');
@@ -6,6 +7,12 @@ const rimraf = require('rimraf');
 const assert = chai.assert;
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
+
+function setDbForTesting(db) {
+  const ownersFile = path.resolve(__dirname, './data/genesis_owners_test.json');
+  const rulesFile = path.resolve(__dirname, './data/genesis_rules_test.json');
+  db.setDbForTesting(ownersFile, rulesFile);
+}
 
 describe('Blockchain', () => {
   let bc, bc2, tp, db1, db2;
@@ -16,7 +23,9 @@ describe('Blockchain', () => {
     // Manage use of these transaction pools beer
     tp = new TransactionPool();
     db1 = DB.getDatabase(bc, tp);
+    setDbForTesting(db1);
     db2 = DB.getDatabase(bc2, new TransactionPool());
+    setDbForTesting(db2);
   });
 
   afterEach(() => {

@@ -1,11 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain', 'genesis_token.json');
-const GENESIS_ACCOUNT = path.resolve(__dirname, 'blockchain', 'genesis_account.json');
-// TODO(seo): Make genesis owner/rule file paths switchable for integration tests.
-const GENESIS_OWNERS = path.resolve(__dirname, 'blockchain', 'genesis_owners.json');
-const GENESIS_RULES = path.resolve(__dirname, 'blockchain', 'genesis_rules.json');
-const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain', '.blockchains');
+const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain/genesis_token.json');
+const GENESIS_ACCOUNT = path.resolve(__dirname, 'blockchain/genesis_account.json');
+const GENESIS_OWNERS = path.resolve(__dirname, process.env.GENESIS_OWNERS ?
+    process.env.GENESIS_OWNERS : 'blockchain/genesis_owners.json');
+const GENESIS_RULES = path.resolve(__dirname, process.env.GENESIS_RULES ?
+    process.env.GENESIS_RULES : 'blockchain/genesis_rules.json');
+const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/.blockchains');
 // TODO (lia): remove this after changing the way genesis block is produced
 // (first node creates it and broadcasts to others)
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;

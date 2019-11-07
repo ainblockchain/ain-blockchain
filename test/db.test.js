@@ -1,3 +1,4 @@
+const path = require('path');
 const DB = require('../db')
 const TransactionPool = require("../db/transaction-pool")
 const ChainUtil = require('../chain-util')
@@ -8,6 +9,12 @@ const expect = chai.expect;
 const assert = chai.assert;
 const {GenesisToken, GenesisAccount, GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths}
     = require('../constants')
+
+function setDbForTesting(db) {
+  const ownersFile = path.resolve(__dirname, './data/genesis_owners_test.json');
+  const rulesFile = path.resolve(__dirname, './data/genesis_rules_test.json');
+  db.setDbForTesting(ownersFile, rulesFile);
+}
 
 describe("DB initialization", () => {
   let db, bc, tp;
@@ -21,7 +28,6 @@ describe("DB initialization", () => {
   describe("token", () => {
     it("loading token properly on initatiion", () => {
       assert.deepEqual(db.getValue(`/${PredefinedDbPaths.TOKEN}`), GenesisToken);
-
     })
   })
 
@@ -30,7 +36,6 @@ describe("DB initialization", () => {
       const dbPath =
           `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`;
       expect(db.getValue(dbPath)).to.equal(GenesisToken.total_supply);
-
     })
   })
 
@@ -38,7 +43,6 @@ describe("DB initialization", () => {
     it("loading owners properly on initatiion", () => {
       const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
       assert.deepEqual(db.getOwner("/"), owners);
-
     })
   })
 
@@ -46,7 +50,6 @@ describe("DB initialization", () => {
     it("loading rules properly on initatiion", () => {
       const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
       assert.deepEqual(db.getRule("/"), rules);
-
     })
   })
 })
@@ -58,6 +61,7 @@ describe("DB operations", () => {
     tp = new TransactionPool();
     bc = new Blockchain("db-test");
     db = DB.getDatabase(bc, tp);
+    setDbForTesting(db);
     dbValues = {
       "ai": {
         "comcom": 123,
@@ -207,14 +211,14 @@ describe("DB operations", () => {
   describe("setValue operations", () => {
     it("when overwriting nested value", () => {
       const newValue = {"new": 12345}
-      expect(db.setValue("nested/far/down", newValue)).to.equal(true)
-      assert.deepEqual(db.getValue("nested/far/down"), newValue)
+      expect(db.setValue("test/nested/far/down", newValue)).to.equal(true)
+      assert.deepEqual(db.getValue("test/nested/far/down"), newValue)
     })
 
     it("when creating new path in database", () => {
       const newValue = 12345
-      db.setValue("new/unchartered/nested/path", newValue)
-      expect(db.getValue("new/unchartered/nested/path")).to.equal(newValue)
+      db.setValue("test/new/unchartered/nested/path", newValue)
+      expect(db.getValue("test/new/unchartered/nested/path")).to.equal(newValue)
     })
   })
 
@@ -273,7 +277,7 @@ describe("DB operations", () => {
       expect(db.set([
         {
           // Default type: SET_VALUE
-          ref: "nested/far/down",
+          ref: "test/nested/far/down",
           value: {
             "new": 12345
           }
@@ -303,7 +307,7 @@ describe("DB operations", () => {
           }
         }
       ])).to.equal(true)
-      assert.deepEqual(db.getValue("nested/far/down"), { "new": 12345 })
+      assert.deepEqual(db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(db.getValue("test/increment/value")).to.equal(30)
       expect(db.getValue("test/decrement/value")).to.equal(10)
       assert.deepEqual(db.getRule("/test_rule/some/path"), {".write": "other rule config"});
@@ -314,7 +318,7 @@ describe("DB operations", () => {
       expect(db.set([
         {
           type: "SET_VALUE",
-          ref: "nested/far/down",
+          ref: "test/nested/far/down",
           value: {
             "new": 12345
           }
@@ -337,7 +341,7 @@ describe("DB operations", () => {
       expect(db.set([
         {
           type: "SET_VALUE",
-          ref: "nested/far/down",
+          ref: "test/nested/far/down",
           value: {
             "new": 12345
           }
@@ -363,7 +367,7 @@ describe("DB operations", () => {
         {
           operation: {
             // Default type: SET_VALUE
-            ref: "nested/far/down",
+            ref: "test/nested/far/down",
             value: {
               "new": 12345
             }
@@ -402,7 +406,7 @@ describe("DB operations", () => {
           }
         }
       ]), [ true, true, true, true, true ])
-      assert.deepEqual(db.getValue("nested/far/down"), { "new": 12345 })
+      assert.deepEqual(db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(db.getValue("test/increment/value")).to.equal(30)
       expect(db.getValue("test/decrement/value")).to.equal(10)
       assert.deepEqual(db.getRule("/test_rule/some/path"), {".write": "other rule config"});
@@ -414,7 +418,7 @@ describe("DB operations", () => {
         {
           operation: {
             type: "SET_VALUE",
-            ref: "nested/far/down",
+            ref: "test/nested/far/down",
             value: {
               "new": 12345
             }
@@ -444,7 +448,7 @@ describe("DB operations", () => {
         {
           operation: {
             type: "SET_VALUE",
-            ref: "nested/far/down",
+            ref: "test/nested/far/down",
             value: {
               "new": 12345
             }
@@ -479,7 +483,7 @@ describe("DB operations", () => {
         {
           operation: {
             type: "SET_VALUE",
-            ref: "nested/far/down",
+            ref: "test/nested/far/down",
             value: {
               "new": 12345
             }
@@ -514,7 +518,7 @@ describe("DB operations", () => {
         {
           operation: {
             type: "SET_VALUE",
-            ref: "nested/far/down",
+            ref: "test/nested/far/down",
             value: {
               "new": 12345
             }
@@ -554,11 +558,13 @@ describe("DB rule config", () => {
     bc = new Blockchain("db-test");
     bc2 = new Blockchain("db-test");
     db1 = DB.getDatabase(bc, tp);
+    setDbForTesting(db1);
     db2 = DB.getDatabase(bc2, tp);
+    setDbForTesting(db2);
     dbValues = {
       "comcom": "unreadable value",
       "unspecified": {
-        "nested": "readable"
+        "test/nested": "readable"
       },
       "ai" : "readable",
       "billing_keys": {
@@ -662,6 +668,7 @@ describe("DB owner config", () => {
     tp = new TransactionPool();
     bc = new Blockchain("db-test");
     db = DB.getDatabase(bc, tp);
+    setDbForTesting(db);
     db.setOwner("test_owner/mixed/true/true/true", 
       {
         ".owner": {

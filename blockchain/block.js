@@ -147,7 +147,7 @@ class Block {
       value: GenesisToken.total_supply
     };
     if (!fs.existsSync(GENESIS_RULES)) {
-      throw Error('Missing genesis owners file: ' + GENESIS_RULES);
+      throw Error('Missing genesis rules file: ' + GENESIS_RULES);
     }
     const rulesOp = {
       type: 'SET_RULE',

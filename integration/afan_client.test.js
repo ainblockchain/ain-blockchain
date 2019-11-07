@@ -14,77 +14,66 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 
 chai.use(chaiHttp);
 
-const server1 = 'http://localhost:9091';
-const server2 = 'http://localhost:9092';
-const server3 = 'http://localhost:9093';
-const server4 = 'http://localhost:9094';
+const ENV_VARIABLES = [
+  {
+    PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f',
+    P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
+    GENESIS_RULES: './test/data/genesis_rules_test.json'
+  },
+  {
+    PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d',
+    P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
+    GENESIS_RULES: './test/data/genesis_rules_test.json'
+  },
+  {
+    PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6',
+    P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
+    GENESIS_RULES: './test/data/genesis_rules_test.json'
+  },
+  {
+    PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764',
+    P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    GENESIS_OWNERS: './test/data/genesis_owners_test.json',
+    GENESIS_RULES: './test/data/genesis_rules_test.json'
+  },
+];
+
+const server1 = 'http://localhost:' + ENV_VARIABLES[0].PORT
+const server2 = 'http://localhost:' + ENV_VARIABLES[1].PORT
+const server3 = 'http://localhost:' + ENV_VARIABLES[2].PORT
+const server4 = 'http://localhost:' + ENV_VARIABLES[3].PORT
+
+function startServer(application, serverName, envVars, stdioInherit = false) {
+  const options = {
+    cwd: process.cwd(),
+    env: {
+        PATH: process.env.PATH, ...envVars
+    },
+  };
+  if (stdioInherit) {
+    options.stdio = 'inherit';
+  }
+  return spawn('node', [application], options).on('error', (err) => {
+    console.error(`Failed to start ${serverName} with error: ${err.message}`);
+  });
+}
 
 describe('aFan Client Test', () => {
   let tracker_proc; let server1_proc; let server2_proc; let server3_proc; let server4_proc;
 
   before(() => {
-    tracker_proc = spawn('node', [TRACKER_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-      },
-      stdio: 'inherit',
-    }).on('error', (err) => {
-      console.error('Failed to start tracker server with error: ' + err.message);
-    });
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, true);
     sleep(2000);
-    server1_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        STAKE: 250,
-        LOG: true,
-        P2P_PORT: 5001,
-        PORT: 9091,
-        LOCAL: true,
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server1 with error: ' + err.message);
-    });
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
     sleep(2000);
-    server2_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        LOG: true,
-        P2P_PORT: 5002,
-        PORT: 9092,
-        LOCAL: true,
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server2 with error: ' + err.message);
-    });
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1]);
     sleep(2000);
-    server3_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        LOG: true,
-        P2P_PORT: 5003,
-        PORT: 9093,
-        LOCAL: true,
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server3 with error: ' + err.message);
-    });
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2]);
     sleep(2000);
-    server4_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        LOG: true,
-        P2P_PORT: 5004,
-        PORT: 9094,
-        LOCAL: true,
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server4 with error: ' + err.message);
-    });
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3]);
     sleep(12000);
   });
 

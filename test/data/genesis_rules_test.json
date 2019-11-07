@@ -61,6 +61,61 @@
       }
     }
   },
+  "test": {
+    ".write": true,
+    "ai": {
+    },
+    "comcom": {
+    },
+    "billing_keys": {
+      "update_billing": {
+      }
+    },
+    "nested":{
+      ".write": true
+    },
+    "new":{
+      ".write": true
+    },
+    "users":{
+      "$uid": {
+        ".write": "auth === $uid",
+        "balance": {
+          ".write": "typeof newData === 'number' && newData >= 0"
+        },
+        "info": {
+          ".write": "data !== null"
+        },
+        "balance_info": {
+          ".write": "getValue('test/billing_keys/update_billing/' + $uid) !== null"
+        },
+        "next_counter": {
+          ".write": "typeof newData === 'number' && newData === data + 1"
+        }
+      }
+    },
+    "second_users": {
+      "$wcard1":{
+        "$wcard2": {
+          ".write": "$wcard1 == $wcard2"
+        }
+      }
+    },
+    "no_dup_key": {
+      "$key1": {
+        "$key2": {
+          ".write": true
+        }
+      }
+    },
+    "dup_key": {
+      "$key1": {
+        "$key1": {
+          ".write": true
+        }
+      }
+    }
+  },
   "transfer": {
     "$from": {
       "$to": {

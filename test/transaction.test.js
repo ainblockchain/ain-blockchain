@@ -1,8 +1,15 @@
+const path = require('path');
 const Transaction = require('../db/transaction');
 const DB = require('../db/');
 const chai = require('chai');
 const expect = chai.expect;
 const Blockchain = require('../blockchain/');
+
+function setDbForTesting(db) {
+  const ownersFile = path.resolve(__dirname, './data/genesis_owners_test.json');
+  const rulesFile = path.resolve(__dirname, './data/genesis_rules_test.json');
+  db.setDbForTesting(ownersFile, rulesFile);
+}
 
 function getTransaction(db, txData) {
   txData.nonce = db.nonce;
@@ -16,6 +23,7 @@ describe('Transaction', () => {
 
   beforeEach(() => {
     db = new DB(new Blockchain('test-blockchain'));
+    setDbForTesting(db);
     txData = {
       operation: {
         type: 'SET_VALUE',
