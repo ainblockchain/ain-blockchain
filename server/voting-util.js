@@ -246,30 +246,6 @@ class VotingUtil {
       });
   }
 
-  createRestakeTransaction(amount) {
-    const pushId1 = PushId.generate();
-    const pushId2 = PushId.generate();
-    return this.db.createTransaction({
-        operation: {
-          type: WriteDbOperations.SET,
-          op_list: [
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: this.resolveDbPath([PredefinedDbPaths.WITHDRAW_CONSENSUS,
-                  this.db.account.address, pushId1, PredefinedDbPaths.WITHDRAW_VALUE]),
-              value: amount
-            },
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: this.resolveDbPath([PredefinedDbPaths.DEPOSIT_CONSENSUS,
-                  this.db.account.address, pushId2, PredefinedDbPaths.DEPOSIT_VALUE]),
-              value: amount
-            }
-          ]
-        }
-      });
-  }
-
   // Returns the staked amount of address. If there is no stake or it's expired,
   // it returns 0.
   getStakes(address) {
@@ -287,7 +263,7 @@ class VotingUtil {
     }
   }
 
-  stakeExpired(address) {
+  needRestaking(address) {
     if (!address) address = this.db.account.address;
     const stakes = this.db.getValue(this.resolveDbPath([
         PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,

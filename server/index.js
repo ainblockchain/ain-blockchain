@@ -313,7 +313,7 @@ class P2pServer {
               transaction: preVote,
               actionType: VotingActionTypes.PRE_VOTE
             });
-          } else if (this.votingUtil.stakeExpired()) {
+          } else if (this.votingUtil.needRestaking()) {
             this.executeAndBroadcastTransaction(
                 this.renewStakes());
           }
@@ -330,7 +330,7 @@ class P2pServer {
             transaction: preCommitTransaction,
             actionType: VotingActionTypes.PRE_COMMIT
           });
-        } else if (this.votingUtil.stakeExpired()) {
+        } else if (this.votingUtil.needRestaking()) {
           this.executeAndBroadcastTransaction(
               this.renewStakes());
         }
@@ -430,7 +430,7 @@ class P2pServer {
           return;
         }
         console.log(`User ${this.db.account.address} is starting round ${this.blockchain.height() + 1}`);
-        if (this.votingUtil.stakeExpired()) {
+        if (this.votingUtil.needRestaking()) {
           console.log('[cleanupAfterVotingRound] stake has expired');
           this.renewStakes();
         }
@@ -452,9 +452,8 @@ class P2pServer {
     // withdraw expired stakes and re-deposit
     // TODO (lia): use a command line flag to specify whether the node should
     // automatically re-stake?
-    if (!STAKE) return;
-    console.log(`Re-staking amount ${STAKE}`);
-    const restakeTx = this.votingUtil.createRestakeTransaction(STAKE);
+    console.log(`Re-staking`);
+    const restakeTx = this.votingUtil.createStakeTransaction(0);
     this.executeAndBroadcastTransaction(restakeTx);
   }
 }
