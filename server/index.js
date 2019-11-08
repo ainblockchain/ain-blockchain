@@ -182,7 +182,7 @@ class P2pServer {
    */
   // TODO(seo): Remove new Transaction() use cases.
   executeTransaction(transactionWithSig) {
-    if (!transactionWithSig) return [];
+    if (!transactionWithSig) return null;
     const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
@@ -197,7 +197,7 @@ class P2pServer {
     }
     if (this.blockchain.syncedAfterStartup === false) {
       this.transactionPool.addTransaction(transaction);
-      return [];
+      return null;
     }
     const result = this.db.executeTransaction(transaction);
     if (!this.checkForTransactionResultErrorCode(result)) {
@@ -214,7 +214,7 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
-    if (!transactionWithSig) return [];
+    if (!transactionWithSig) return null;
     if (Transaction.isBatchTransaction(transactionWithSig)) {
       const resultList = [];
       const txListSucceeded = [];
