@@ -35,7 +35,7 @@ class VotingUtil {
       return a + b;
     }, 0);
     console.log(`Total prevotes from validators : ${total}\nReceived prevotes ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
-    return (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) > (total * 2/3)) || total === 0;
+    return (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) > (total * 2 / 3)) || total === 0;
   }
 
   preVote() {
@@ -112,7 +112,7 @@ class VotingUtil {
       return a + b;
     }, 0);
     console.log(`Total pre_commits from validators : ${total}\nReceived pre_commits ${this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
-    return (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS) > (total * 2/3)) || total === 0;
+    return (this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS) > (total * 2 / 3)) || total === 0;
   }
 
 
@@ -156,7 +156,7 @@ class VotingUtil {
     delete validatorsMinusProposer[proposer];
     const threshold = Math.round(Object.values(validatorsMinusProposer).reduce(function(a, b) {
       return a + b;
-    }, 0) * 2/3) - 1;
+    }, 0) * 2 / 3) - 1;
     let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, proposer, pre_votes: 0, pre_commits: 0, time, block_hash: null};
     if (this.checkPreCommits()) {
       // Should be1

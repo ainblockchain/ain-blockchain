@@ -365,7 +365,7 @@ describe('Integration Tests', () => {
       */
 
       it('blocks have correct validators and voting data', () => {
-        let threshold = 2/3; // TODO (lia): define this as a constant in genesis.
+        let threshold = 2 / 3; // TODO (lia): define this as a constant in genesis.
         for (let i = 0; i < SERVERS.length; i++) {
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
               {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
