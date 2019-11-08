@@ -390,11 +390,8 @@ class P2pServer {
       throw Error(`Deposit by the initiating node was unsuccessful`);
     }
     this.executeAndBroadcastTransaction(initChainTx);
-    console.log("VOTING ROUND AFTER INITCHAIN:", this.db.getValue(`/consensus/voting`))
     this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(1));
-    console.log("VOTING ROUND AFTER REGISTER FOR NEXT ROUND:", this.db.getValue(`/consensus/voting`))
     this.createAndProposeBlock();
-    console.log("VOTING ROUND AFTER CREATE AND PROPOSE BLOCK:", this.db.getValue(`/consensus/voting`))
   }
 
   addBlockToChain() {
