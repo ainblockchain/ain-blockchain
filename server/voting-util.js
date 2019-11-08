@@ -198,6 +198,7 @@ class VotingUtil {
     console.log(`Setting block ${block.hash.substring(0, 5)} with number ${block.number}`);
     this.block = block;
     this.status = VotingStatus.BLOCK_RECEIVED;
+    // TODO (lia): fix lastVotes logic while fixing the rounding system
     this.lastVotes = this.votes;
     this.votes = [];
     this.registerVote(proposal);

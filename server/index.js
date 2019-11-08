@@ -214,6 +214,7 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
+    if (!transactionWithSig) return [];
     if (Transaction.isBatchTransaction(transactionWithSig)) {
       const resultList = [];
       const txListSucceeded = [];
@@ -314,7 +315,7 @@ class P2pServer {
             });
           } else if (this.votingUtil.stakeExpired()) {
             this.executeAndBroadcastTransaction(
-                this.votingUtil.renewStakes(STAKE));
+                this.renewStakes());
           }
         }
       case VotingActionTypes.PRE_VOTE:
@@ -331,7 +332,7 @@ class P2pServer {
           });
         } else if (this.votingUtil.stakeExpired()) {
           this.executeAndBroadcastTransaction(
-              this.votingUtil.renewStakes(STAKE));
+              this.renewStakes());
         }
       case VotingActionTypes.PRE_COMMIT:
         if (this.votingUtil.isCommit()) {
@@ -429,6 +430,10 @@ class P2pServer {
           return;
         }
         console.log(`User ${this.db.account.address} is starting round ${this.blockchain.height() + 1}`);
+        if (this.votingUtil.stakeExpired()) {
+          console.log('[cleanupAfterVotingRound] stake has expired');
+          this.renewStakes();
+        }
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
       }, BLOCK_CREATION_INTERVAL);
@@ -443,7 +448,7 @@ class P2pServer {
     this.executeAndBroadcastTransaction(stakeTx);
   }
 
-  renewStakes(stakes) {
+  renewStakes() {
     // withdraw expired stakes and re-deposit
     // TODO (lia): use a command line flag to specify whether the node should
     // automatically re-stake?
