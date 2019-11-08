@@ -182,6 +182,7 @@ class P2pServer {
    */
   // TODO(seo): Remove new Transaction() use cases.
   executeTransaction(transactionWithSig) {
+    if (!transactionWithSig) return null;
     const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
@@ -196,7 +197,7 @@ class P2pServer {
     }
     if (this.blockchain.syncedAfterStartup === false) {
       this.transactionPool.addTransaction(transaction);
-      return [];
+      return null;
     }
     const result = this.db.executeTransaction(transaction);
     if (!this.checkForTransactionResultErrorCode(result)) {
@@ -213,6 +214,7 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(transactionWithSig) {
+    if (!transactionWithSig) return null;
     if (Transaction.isBatchTransaction(transactionWithSig)) {
       const resultList = [];
       const txListSucceeded = [];
@@ -270,7 +272,7 @@ class P2pServer {
         if (!this.votingUtil.isSyncedWithNetwork(this.blockchain)) {
           this.requestChainSubsection(this.blockchain.lastBlock());
         }
-        if (this.votingUtil.isStaked() && this.blockchain.syncedAfterStartup) {
+        if (this.votingUtil.getStakes(this.db.account.address) && this.blockchain.syncedAfterStartup) {
           this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         }
         if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
@@ -305,10 +307,16 @@ class P2pServer {
         }
         if (this.votingUtil.isValidator()) {
           // TODO (lia): check for results?
-          this.executeAndBroadcastVotingAction({
-            transaction: this.votingUtil.preVote(),
-            actionType: VotingActionTypes.PRE_VOTE
-          });
+          const preVote = this.votingUtil.preVote();
+          if (preVote) {
+            this.executeAndBroadcastVotingAction({
+              transaction: preVote,
+              actionType: VotingActionTypes.PRE_VOTE
+            });
+          } else if (this.votingUtil.needRestaking()) {
+            this.executeAndBroadcastTransaction(
+                this.renewStakes());
+          }
         }
       case VotingActionTypes.PRE_VOTE:
         // TODO (lia): also verify the pre-vote transaction
@@ -322,10 +330,12 @@ class P2pServer {
             transaction: preCommitTransaction,
             actionType: VotingActionTypes.PRE_COMMIT
           });
+        } else if (this.votingUtil.needRestaking()) {
+          this.executeAndBroadcastTransaction(
+              this.renewStakes());
         }
       case VotingActionTypes.PRE_COMMIT:
         if (this.votingUtil.isCommit()) {
-          // this.votingUtil.addValidatorTransactionsToBlock();
           this.addBlockToChain();
           this.cleanupAfterVotingRound();
         }
@@ -362,22 +372,27 @@ class P2pServer {
 
   initiateChain() {
     this.votingUtil.status === VotingStatus.WAIT_FOR_BLOCK;
-    this.stakeAmount();
-    this.votingUtil.registerForNextRound(0);
-    this.executeAndBroadcastTransaction(this.votingUtil.instantiate(this.blockchain));
+    this.depositStakes();
+    const initChainTx = this.votingUtil.instantiate(this.blockchain);
+    if (!initChainTx) {
+      throw Error(`Deposit by the initiating node was unsuccessful`);
+    }
+    this.executeAndBroadcastTransaction(initChainTx);
+    this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(1));
     this.createAndProposeBlock();
   }
 
   addBlockToChain() {
-    this.blockchain.addNewBlock(this.votingUtil.block);
-    this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
-    this.votingUtil.reset();
-    this.db.reconstruct(this.blockchain, this.transactionPool);
-    if (this.waitInBlocks > 0 && /*!this.votingUtil.isStaked()) {*/
-        !this.db.getValue(this.votingUtil.resolveDbPath([PredefinedDbPaths.STAKEHOLDER, this.db.account.address]))) {
-      this.waitInBlocks = this.waitInBlocks - 1;
-      if (this.waitInBlocks === 0) {
-        this.stakeAmount();
+    if (this.blockchain.addNewBlock(this.votingUtil.block)) {
+      this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
+      this.votingUtil.reset();
+      this.db.reconstruct(this.blockchain, this.transactionPool);
+      if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.db.account.address)) {
+        this.waitInBlocks = this.waitInBlocks - 1;
+        if (this.waitInBlocks === 0) {
+          this.increaseBalanceForDev();
+          this.depositStakes();
+        }
       }
     }
   }
@@ -391,7 +406,7 @@ class P2pServer {
     if (ainUtil.areSameAddresses(this.db.account.address,
         this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.db.account.address} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
-      this.executeAndBroadcastTransaction(this.votingUtil.writeSuccessfulBlockCreation());
+      this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
     }
     if (this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS).indexOf(this.db.account.address) >= 0) {
       this.votingInterval = setInterval(()=> {
@@ -402,8 +417,10 @@ class P2pServer {
           return;
         }
         console.log(`User ${this.db.account.address} is starting round ${this.blockchain.height() + 1}`);
-        // TODO (lia): change so that validators with stakes that have enough time
-        // until expiration will be auto-registered for the next round.
+        if (this.votingUtil.needRestaking()) {
+          console.log('[cleanupAfterVotingRound] stake has expired');
+          this.renewStakes();
+        }
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(this.blockchain.height() + 1));
         if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
       }, BLOCK_CREATION_INTERVAL);
@@ -411,12 +428,20 @@ class P2pServer {
     console.log(`New blockchain height is ${this.blockchain.height() + 1}`);
   }
 
-  stakeAmount() {
-    if (this.stake !== null) {
-      console.log(`Staking amount ${STAKE}`);
-      const transaction = this.votingUtil.stake(STAKE);
-      this.executeAndBroadcastTransaction(transaction);
-    }
+  depositStakes() {
+    console.log(`Staking amount ${STAKE}`);
+    if (!STAKE) return;
+    const stakeTx = this.votingUtil.createStakeTransaction(STAKE);
+    this.executeAndBroadcastTransaction(stakeTx);
+  }
+
+  renewStakes() {
+    // withdraw expired stakes and re-deposit
+    // TODO (lia): use a command line flag to specify whether the node should
+    // automatically re-stake?
+    console.log(`Re-staking`);
+    const restakeTx = this.votingUtil.createStakeTransaction(0);
+    this.executeAndBroadcastTransaction(restakeTx);
   }
 }
 

@@ -21,7 +21,7 @@
         ".write": "getValue('/consensus/voting/proposer') === auth"
       },
       "next_round_validators": {
-        ".write": "Object.keys(getValue('/consensus/stakes')).indexOf(auth) > -1"
+        ".write": "getValue('/deposit_accounts/consensus/' + auth + '/value') > 0 && getValue('/deposit_accounts/consensus/' + auth + '/expire_at') > currentTime"
       },
       "pre_votes":{
         ".write": "getValue('/consensus/voting/block_hash') !== null"

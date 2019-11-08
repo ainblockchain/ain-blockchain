@@ -49,7 +49,11 @@ class Block {
         timestamp:         ${this.timestamp}
         proposer:          ${this.proposer}
         validators:        ${this.validators}
-        size:              ${this.size}`;
+        size:              ${this.size}
+        last_votes len:    ${this.last_votes.length}
+        transactions len:  ${this.transactions.length}
+        last_votes:        ${stringify(this.last_votes)}
+        transactions:      ${stringify(this.transactions)}`;
   }
 
   static hash(block) {
@@ -111,6 +115,8 @@ class Block {
                    Actual: ${block.number}`);
       return false;
     }
+    // TODO (lia): check the contents of block.last_votes if they indeed voted for
+    // the previous block.
     const nonceTracker = {};
     let transaction;
     for (let i=0; i<block.transactions.length; i++) {
