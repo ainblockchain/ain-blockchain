@@ -50,10 +50,10 @@ class Block {
         proposer:          ${this.proposer}
         validators:        ${this.validators}
         size:              ${this.size}
-        last_votes:        ${stringify(this.last_votes)}
-        transactions:      ${stringify(this.transactions)}
         last_votes len:    ${this.last_votes.length}
-        transactions len:  ${this.transactions.length}`;
+        transactions len:  ${this.transactions.length}
+        last_votes:        ${stringify(this.last_votes)}
+        transactions:      ${stringify(this.transactions)}`;
   }
 
   static hash(block) {
