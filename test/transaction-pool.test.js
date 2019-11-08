@@ -11,7 +11,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
 
-function setDbForTesting(db) {
+function setDbForTesting(db, accountIndex = 0) {
   const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
   if (!fs.existsSync(ownersFile)) {
     throw Error('Missing owners file: ' + ownersFile);
@@ -24,6 +24,8 @@ function setDbForTesting(db) {
   }
   const rules = JSON.parse(fs.readFileSync(rulesFile));
   db.setRulesForTesting("test", rules);
+
+  db.setAccountForTesting(accountIndex);
 }
 
 function getTransaction(db, txData) {
@@ -39,7 +41,7 @@ describe('TransactionPool', () => {
     tp = new TransactionPool();
     bc = new Blockchain('test-blockchain');
     db = new DB(bc);
-    setDbForTesting(db);
+    setDbForTesting(db, 0);
 
     transaction = getTransaction(db, {
       operation: {
@@ -74,11 +76,11 @@ describe('TransactionPool', () => {
       tp.transactions[db.account.address] = shuffleSeed.shuffle(tp.transactions[db.account.address]);
 
       db2 = new DB(bc);
-      setDbForTesting(db2);
+      setDbForTesting(db2, 1);
       db3 = new DB(bc);
-      setDbForTesting(db3);
+      setDbForTesting(db3, 2);
       db4 = new DB(bc);
-      setDbForTesting(db4);
+      setDbForTesting(db4, 3);
       const dbs = [db2, db3, db4];
       for (let j = 0; j < dbs.length; j++) {
         for (let i = 0; i < 11; i++) {

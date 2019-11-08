@@ -6,7 +6,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const Blockchain = require('../blockchain/');
 
-function setDbForTesting(db) {
+function setDbForTesting(db, accountIndex = 0) {
   const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
   if (!fs.existsSync(ownersFile)) {
     throw Error('Missing owners file: ' + ownersFile);
@@ -19,6 +19,8 @@ function setDbForTesting(db) {
   }
   const rules = JSON.parse(fs.readFileSync(rulesFile));
   db.setRulesForTesting("test", rules);
+
+  db.setAccountForTesting(accountIndex)
 }
 
 function getTransaction(db, txData) {

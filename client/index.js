@@ -18,6 +18,11 @@
 
 // Require process, so we can mock environment variables
 const process = require('process');
+// NOTE(seo): This is very useful when the server dies without any logs.
+process.on('uncaughtException', function (err) {
+  console.log(err);
+}); 
+
 const moment = require('moment');
 const PORT = process.env.PORT || 8080;
 

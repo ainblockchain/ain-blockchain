@@ -360,22 +360,8 @@ class P2pServer {
     }
   }
 
-  // Increase node's balance for testing purposes. (To be removed)
-  increaseBalanceForDev() {
-    const transaction = this.db.createTransaction({
-        operation: {
-          type: WriteDbOperations.SET_VALUE,
-          ref: this.votingUtil.resolveDbPath([PredefinedDbPaths.ACCOUNTS, this.db.account.address, PredefinedDbPaths.BALANCE]),
-          value: 1000
-
-        }
-      });
-    this.executeAndBroadcastTransaction(transaction);
-  }
-
   initiateChain() {
     this.votingUtil.status === VotingStatus.WAIT_FOR_BLOCK;
-    this.increaseBalanceForDev();
     this.stakeAmount();
     this.votingUtil.registerForNextRound(0);
     this.executeAndBroadcastTransaction(this.votingUtil.instantiate(this.blockchain));

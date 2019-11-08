@@ -1,5 +1,4 @@
 const EC = require('elliptic').ec;
-const SHA256 = require('crypto-js/sha256');
 const ec = new EC('secp256k1');
 const ainUtil = require('@ainblockchain/ain-util');
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;

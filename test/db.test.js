@@ -7,10 +7,10 @@ const DB = require('../db')
 const TransactionPool = require("../db/transaction-pool")
 const ChainUtil = require('../chain-util')
 const Blockchain = require('../blockchain')
-const {GenesisToken, GenesisAccount, GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths}
+const {GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths}
     = require('../constants')
 
-function setDbForTesting(db) {
+function setDbForTesting(db, accountIndex = 0) {
   const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
   if (!fs.existsSync(ownersFile)) {
     throw Error('Missing owners file: ' + ownersFile);
@@ -23,6 +23,8 @@ function setDbForTesting(db) {
   }
   const rules = JSON.parse(fs.readFileSync(rulesFile));
   db.setRulesForTesting("test", rules);
+
+  db.setAccountForTesting(accountIndex)
 }
 
 describe("DB initialization", () => {
@@ -42,9 +44,12 @@ describe("DB initialization", () => {
 
   describe("balances", () => {
     it("loading balances properly on initatiion", () => {
+      const expected =
+          GenesisToken.total_supply - GenesisAccounts.others.length * GenesisAccounts.shares;
       const dbPath =
-          `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`;
-      expect(db.getValue(dbPath)).to.equal(GenesisToken.total_supply);
+          `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccounts.owner.address}/` +
+          `${PredefinedDbPaths.BALANCE}`;
+      expect(db.getValue(dbPath)).to.equal(expected);
     })
   })
 
@@ -70,7 +75,7 @@ describe("DB operations", () => {
     tp = new TransactionPool();
     bc = new Blockchain("db-test");
     db = DB.getDatabase(bc, tp);
-    setDbForTesting(db);
+    setDbForTesting(db, 0);
     dbValues = {
       "ai": {
         "comcom": 123,
@@ -567,9 +572,9 @@ describe("DB rule config", () => {
     bc = new Blockchain("db-test");
     bc2 = new Blockchain("db-test");
     db1 = DB.getDatabase(bc, tp);
-    setDbForTesting(db1);
+    setDbForTesting(db1, 0);
     db2 = DB.getDatabase(bc2, tp);
-    setDbForTesting(db2);
+    setDbForTesting(db2, 1);
     dbValues = {
       "comcom": "unreadable value",
       "unspecified": {
@@ -677,7 +682,7 @@ describe("DB owner config", () => {
     tp = new TransactionPool();
     bc = new Blockchain("db-test");
     db = DB.getDatabase(bc, tp);
-    setDbForTesting(db);
+    setDbForTesting(db, 0);
     db.setOwner("test/test_owner/mixed/true/true/true", 
       {
         ".owner": {

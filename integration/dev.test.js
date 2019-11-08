@@ -1,14 +1,11 @@
 const chai = require('chai');
-const chaiHttp = require('chai-http');
 const assert = chai.assert;
 const expect = chai.expect;
-const should = chai.should();
 const spawn = require("child_process").spawn;
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
-chai.use(chaiHttp);
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
@@ -17,26 +14,22 @@ const {BLOCKCHAINS_DIR, FunctionResultCode} = require('../constants')
 
 const ENV_VARIABLES = [
   {
-    PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f',
-    P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d',
-    P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5002, PORT: 9092, ACCOUNT_INDEX: 1, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6',
-    P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5003, PORT: 9093, ACCOUNT_INDEX: 2, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764',
-    P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5004, PORT: 9094, ACCOUNT_INDEX: 3, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -143,315 +136,291 @@ describe('API Tests', () => {
   });
 
   describe('/get_value', () => {
-    it('get_value simple', () => {
+    it('get_value', () => {
       sleep(200)
-      return chai.request(server1)
-          .get('/get_value?ref=test/test')
-          .then((res) => {
-            res.should.have.status(200);
-            res.body.should.be.deep.eql({code: 0, result: 100});
-          });
+      const body = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=test/test')
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: 100});
     })
   })
 
   describe('/get_rule', () => {
-    it('get_rule simple', () => {
+    it('get_rule', () => {
       sleep(200)
-      return chai.request(server1)
-          .get('/get_rule?ref=/test/test_rule/some/path')
-          .then((res) => {
-            res.should.have.status(200);
-            res.body.should.be.deep.eql({
-              code: 0,
-              result: {
-                ".write": "some rule config"
-              }
-            });
-          });
+      const body = JSON.parse(syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {
+        code: 0,
+        result: {
+          ".write": "some rule config"
+        }
+      });
     })
   })
 
   describe('/get_owner', () => {
-    it('get_owner simple', () => {
+    it('get_owner', () => {
       sleep(200)
-      return chai.request(server1)
-          .get('/get_owner?ref=/test/test_owner/some/path')
-          .then((res) => {
-            res.should.have.status(200);
-            res.body.should.be.deep.eql({
-              code: 0,
-              result: {
-                ".owner": {
-                  "owners": {
-                    "*": {
-                      "branch_owner": false,
-                      "write_owner": true,
-                      "write_rule": false
-                    }
-                  }
-                }
+      const body = JSON.parse(syncRequest('GET', server1 +
+                                          '/get_owner?ref=/test/test_owner/some/path')
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {
+        code: 0,
+        result: {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_owner": true,
+                "write_rule": false
               }
-            });
-          });
+            }
+          }
+        }
+      });
     })
   })
 
   describe('/get', () => {
-    it('get simple', () => {
+    it('get', () => {
       sleep(200)
-      return chai.request(server1)
-          .post('/get').send({
-            op_list: [
-              {
-                type: "GET_VALUE",
-                ref: "/test/test",
-              },
-              {
-                type: 'GET_RULE',
-                ref: "/test/test_rule/some/path",
-              },
-              {
-                type: 'GET_OWNER',
-                ref: "/test/test_owner/some/path",
-              }
-            ]
-          })
-          .then((res) => {
-            res.should.have.status(200);
-            res.body.should.be.deep.eql({
-              code: 0,
-              result: [
-                100,
-                {
-                  ".write": "some rule config"
-                },
-                {
-                  ".owner": {
-                    "owners": {
-                      "*": {
-                        "branch_owner": false,
-                        "write_owner": true,
-                        "write_rule": false
-                      }
-                    }
-                  }
+      const request = {
+        op_list: [
+          {
+            type: "GET_VALUE",
+            ref: "/test/test",
+          },
+          {
+            type: 'GET_RULE',
+            ref: "/test/test_rule/some/path",
+          },
+          {
+            type: 'GET_OWNER',
+            ref: "/test/test_owner/some/path",
+          }
+        ]
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {
+        code: 0,
+        result: [
+          100,
+          {
+            ".write": "some rule config"
+          },
+          {
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_owner": true,
+                  "write_rule": false
                 }
-              ]
-            });
-          });
+              }
+            }
+          }
+        ]
+      });
     })
   })
 
   describe('/set_value', () => {
-    it('set simple', () => {
-      return chai.request(server3)
-          .post('/set_value').send({ref: 'test/value', value: "something"})
-          .then((res) => {
-            res.should.have.status(201);
-            res.body.should.be.deep.eql({code: 0, result: true});
-          });
+    it('set_value', () => {
+      const request = {ref: 'test/value', value: "something"};
+      const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
     })
   })
 
   describe('/inc_value', () => {
-    it('inc_value simple', () => {
+    it('inc_value', () => {
       sleep(200)
-      return chai.request(server4)
-          .post('/inc_value').send({ref: "test/test", value: 10})
-          .then((res) => {
-            res.should.have.status(201);
-            res.body.should.be.deep.eql({code: 0, result: true});
-          });
+      const request = {ref: "test/test", value: 10};
+      const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
     })
   })
 
   describe('/dec_value', () => {
-    it('dec_value simple', () => {
+    it('dec_value', () => {
       sleep(200)
-      return chai.request(server4)
-          .post('/dec_value').send({ref: "test/test", value: 10})
-          .then((res) => {
-            res.should.have.status(201);
-            res.body.should.be.deep.eql({code: 0, result: true});
-          });
+      const request = {ref: "test/test", value: 10};
+      const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
     })
   })
 
   describe('/set_rule', () => {
-    it('set_rule simple', () => {
+    it('set_rule', () => {
       sleep(200)
-      return chai.request(server4)
-          .post('/set_rule').send({
-            ref: "/test/test_rule/other/path",
-            value: {
-              ".write": "some other rule config"
-            }
-          })
-          .then((res) => {
-            res.should.have.status(201);
-            res.body.should.be.deep.eql({code: 0, result: true});
-          });
+      const request = {
+        ref: "/test/test_rule/other/path",
+        value: {
+          ".write": "some other rule config"
+        }
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
     })
   })
 
   describe('/set_owner', () => {
-    it('set_owner simple', () => {
+    it('set_owner', () => {
       sleep(200)
-      return chai.request(server4)
-          .post('/set_owner').send({
-            ref: "/test/test_owner/other/path",
-            value: {
-              ".owner": "some other owner config"
-            }
-          })
-          .then((res) => {
-            res.should.have.status(201);
-            res.body.should.be.deep.eql({code: 0, result: true});
-          });
+      const request = {
+        ref: "/test/test_owner/other/path",
+        value: {
+          ".owner": "some other owner config"
+        }
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
     })
   })
 
   describe('/set', () => {
-    it('set composite', () => {
-      return chai.request(server1)
-          .post('/set').send({
-            op_list: [
-              {
-                type: "SET_VALUE",
-                ref: "test/balance",
-                value: {a: 1, b: 2}
-              },
-              {
-                type: 'INC_VALUE',
-                ref: "test/test",
-                value: 10
-              },
-              {
-                type: 'DEC_VALUE',
-                ref: "test/test2",
-                value: 10
-              },
-              {
-                type: 'SET_RULE',
-                ref: "/test/test_rule/other2/path",
-                value: {
-                  ".write": "some other2 rule config"
-                }
-              },
-              {
-                type: 'SET_OWNER',
-                ref: "/test/test_owner/other2/path",
-                value: {
-                  ".owner": "some other2 owner config"
-                }
-              }
-            ]
-          })
-          .then((res) => {
-            res.should.have.status(201);
-            res.body.should.be.deep.eql({code: 0, result: true});
-          });
+    it('set', () => {
+      const request = {
+        op_list: [
+          {
+            type: "SET_VALUE",
+            ref: "test/balance",
+            value: {a: 1, b: 2}
+          },
+          {
+            type: 'INC_VALUE',
+            ref: "test/test",
+            value: 10
+          },
+          {
+            type: 'DEC_VALUE',
+            ref: "test/test2",
+            value: 10
+          },
+          {
+            type: 'SET_RULE',
+            ref: "/test/test_rule/other2/path",
+            value: {
+              ".write": "some other2 rule config"
+            }
+          },
+          {
+            type: 'SET_OWNER',
+            ref: "/test/test_owner/other2/path",
+            value: {
+              ".owner": "some other2 owner config"
+            }
+          }
+        ]
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
     })
   })
 
   describe('/batch', () => {
     it('batch', () => {
-      return chai.request(server1)
-          .post(`/batch`).send({
-            tx_list: [
-              {
-                operation: {
-                  // Default type: SET_VALUE
-                  ref: 'test/a',
-                  value: 1
-                }
-              },
-              {
-                operation: {
+      const request = {
+        tx_list: [
+          {
+            operation: {
+              // Default type: SET_VALUE
+              ref: 'test/a',
+              value: 1
+            }
+          },
+          {
+            operation: {
+              type: 'INC_VALUE',
+              ref: "test/test",
+              value: 10
+            }
+          },
+          {
+            operation: {
+              type: 'DEC_VALUE',
+              ref: "test/test2",
+              value: 10
+            }
+          },
+          {
+            operation: {
+              type: 'SET_RULE',
+              ref: "/test/test_rule/other3/path",
+              value: {
+                ".write": "some other3 rule config"
+              }
+            }
+          },
+          {
+            operation: {
+              type: 'SET_OWNER',
+              ref: "/test/test_owner/other3/path",
+              value: {
+                ".owner": "some other3 owner config"
+              }
+            }
+          },
+          {
+            operation: {
+              type: 'SET',
+              op_list: [
+                {
+                  type: "SET_VALUE",
+                  ref: "test/balance",
+                  value: {
+                    a:1,
+                    b:2
+                  }
+                },
+                {
                   type: 'INC_VALUE',
                   ref: "test/test",
-                  value: 10
-                }
-              },
-              {
-                operation: {
+                  value: 5
+                },
+                {
                   type: 'DEC_VALUE',
                   ref: "test/test2",
-                  value: 10
-                }
-              },
-              {
-                operation: {
+                  value: 5
+                },
+                {
                   type: 'SET_RULE',
-                  ref: "/test/test_rule/other3/path",
+                  ref: "/test/test_rule/other4/path",
                   value: {
-                    ".write": "some other3 rule config"
+                    ".write": "some other4 rule config"
                   }
-                }
-              },
-              {
-                operation: {
+                },
+                {
                   type: 'SET_OWNER',
-                  ref: "/test/test_owner/other3/path",
+                  ref: "/test/test_owner/other4/path",
                   value: {
-                    ".owner": "some other3 owner config"
+                    ".owner": "some other4 owner config"
                   }
                 }
-              },
-              {
-                operation: {
-                  type: 'SET',
-                  op_list: [
-                    {
-                      type: "SET_VALUE",
-                      ref: "test/balance",
-                      value: {
-                        a:1,
-                        b:2
-                      }
-                    },
-                    {
-                      type: 'INC_VALUE',
-                      ref: "test/test",
-                      value: 5
-                    },
-                    {
-                      type: 'DEC_VALUE',
-                      ref: "test/test2",
-                      value: 5
-                    },
-                    {
-                      type: 'SET_RULE',
-                      ref: "/test/test_rule/other4/path",
-                      value: {
-                        ".write": "some other4 rule config"
-                      }
-                    },
-                    {
-                      type: 'SET_OWNER',
-                      ref: "/test/test_owner/other4/path",
-                      value: {
-                        ".owner": "some other4 owner config"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          })
-          .then((res) => {
-            res.should.have.status(201);
-            res.body.should.be.deep.eql({
-              code: 0,
-              result: [
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
               ]
-            });
+            }
+          }
+        ]
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {
+        code: 0,
+        result: [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+        ]
       });
     })
   })

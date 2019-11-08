@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain/genesis_token.json');
-const GENESIS_ACCOUNT = path.resolve(__dirname, 'blockchain/genesis_account.json');
+const GENESIS_ACCOUNTS = path.resolve(__dirname, 'blockchain/genesis_accounts.json');
 const GENESIS_OWNERS = path.resolve(__dirname, 'blockchain/genesis_owners.json');
 const ADDITIONAL_OWNERS = process.env.ADDITIONAL_OWNERS ? {
   dbPath: process.env.ADDITIONAL_OWNERS.split(':')[0],
@@ -173,8 +173,10 @@ const DefaultValues = {
   DEPOSIT_LOCKUP_DURATION_MS: 2592000000 // 30 days
 }
 
-const GenesisToken = fs.existsSync(GENESIS_TOKEN) ? JSON.parse(fs.readFileSync(GENESIS_TOKEN)) : null;
-const GenesisAccount = fs.existsSync(GENESIS_ACCOUNT) ? JSON.parse(fs.readFileSync(GENESIS_ACCOUNT)) : null;
+const GenesisToken = fs.existsSync(GENESIS_TOKEN) ?
+    JSON.parse(fs.readFileSync(GENESIS_TOKEN)) : null;
+const GenesisAccounts = fs.existsSync(GENESIS_ACCOUNTS) ?
+    JSON.parse(fs.readFileSync(GENESIS_ACCOUNTS)) : null;
 
 module.exports = {
   GENESIS_OWNERS,
@@ -196,5 +198,5 @@ module.exports = {
   TransactionStatus,
   DefaultValues,
   GenesisToken,
-  GenesisAccount
+  GenesisAccounts
 };
