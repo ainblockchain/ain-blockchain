@@ -3,8 +3,8 @@ const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../chain-util');
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
-const {GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths, GenesisToken, GenesisAccount}
-    = require('../constants');
+const {GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, PredefinedDbPaths,
+       GenesisToken, GenesisAccount} = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -147,20 +147,38 @@ class Block {
       value: GenesisToken.total_supply
     };
     if (!fs.existsSync(GENESIS_RULES)) {
-      throw Error('Missing genesis owners file: ' + GENESIS_RULES);
+      throw Error('Missing genesis rules file: ' + GENESIS_RULES);
+    }
+    const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
+    if (ADDITIONAL_RULES) {
+      if (fs.existsSync(ADDITIONAL_RULES.filePath)) {
+        const addRules = JSON.parse(fs.readFileSync(ADDITIONAL_RULES.filePath));
+        rules[ADDITIONAL_RULES.dbPath] = addRules;
+      } else {
+        throw Error('Missing additional rules file: ' + ADDITIONAL_RULES.filePath);
+      }
     }
     const rulesOp = {
       type: 'SET_RULE',
       ref: '/',
-      value: JSON.parse(fs.readFileSync(GENESIS_RULES))
+      value: rules
     };
     if (!fs.existsSync(GENESIS_OWNERS)) {
       throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
     }
+    const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
+    if (ADDITIONAL_OWNERS) {
+      if (fs.existsSync(ADDITIONAL_OWNERS.filePath)) {
+        const addOwners = JSON.parse(fs.readFileSync(ADDITIONAL_OWNERS.filePath));
+        owners[ADDITIONAL_OWNERS.dbPath] = addOwners;
+      } else {
+        throw Error('Missing additional owners file: ' + ADDITIONAL_OWNERS.filePath);
+      }
+    }
     const ownersOp = {
       type: 'SET_OWNER',
       ref: '/',
-      value: JSON.parse(fs.readFileSync(GENESIS_OWNERS))
+      value: owners
     };
     const firstTxData = {
       nonce: -1,

@@ -13,83 +13,69 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const {BLOCKCHAINS_DIR, PredefinedDbPaths, FunctionResultCode} = require('../constants')
+const {BLOCKCHAINS_DIR, FunctionResultCode} = require('../constants')
 
-const server1 = 'http://localhost:9091'
-const server2 = 'http://localhost:9092'
-const server3 = 'http://localhost:9093'
-const server4 = 'http://localhost:9094'
+const ENV_VARIABLES = [
+  {
+    PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f',
+    P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+  {
+    PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d',
+    P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+  {
+    PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6',
+    P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+  {
+    PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764',
+    P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+];
+
+const server1 = 'http://localhost:' + ENV_VARIABLES[0].PORT
+const server2 = 'http://localhost:' + ENV_VARIABLES[1].PORT
+const server3 = 'http://localhost:' + ENV_VARIABLES[2].PORT
+const server4 = 'http://localhost:' + ENV_VARIABLES[3].PORT
+
+function startServer(application, serverName, envVars, stdioInherit = false) {
+  const options = {
+    cwd: process.cwd(),
+    env: {
+      PATH: process.env.PATH,
+      ...envVars
+    },
+  };
+  if (stdioInherit) {
+    options.stdio = 'inherit';
+  }
+  return spawn('node', [application], options).on('error', (err) => {
+    console.error(`Failed to start ${serverName} with error: ${err.message}`);
+  });
+}
 
 describe('API Tests', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(() => {
-    tracker_proc = spawn('node', [TRACKER_SERVER], {
-      cwd: process.cwd(),
-      env: {
-          PATH: process.env.PATH
-      },
-      stdio: 'inherit'
-    }).on('error', (err) => {
-      console.error('Failed to start tracker server with error: ' + err.message);
-    });
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, true);
     sleep(2000)
-    server1_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        STAKE: 250,
-        LOG: true,
-        P2P_PORT:5001,
-        PORT: 9091,
-        LOCAL: true,
-        DEBUG: true
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server1 with error: ' + err.message);
-    });
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
     sleep(500)
-    server2_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        LOG: true,
-        P2P_PORT:5002,
-        PORT: 9092,
-        LOCAL: true,
-        DEBUG: true
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server2 with error: ' + err.message);
-    });
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1]);
     sleep(500)
-    server3_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        LOG: true,
-        P2P_PORT:5003,
-        PORT: 9093,
-        LOCAL: true,
-        DEBUG: true
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server3 with error: ' + err.message);
-    });
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2]);
     sleep(500)
-    server4_proc = spawn('node', [APP_SERVER], {
-      cwd: process.cwd(),
-      env: {
-        PATH: process.env.PATH,
-        LOG: true,
-        P2P_PORT:5004,
-        PORT: 9094,
-        LOCAL: true,
-        DEBUG: true
-      },
-    }).on('error', (err) => {
-      console.error('Failed to start server4 with error: ' + err.message);
-    });
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3]);
     sleep(12000)
   });
 
@@ -111,7 +97,7 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_rule', {
       json: {
-        ref: '/test_rule/some/path',
+        ref: '/test/test_rule/some/path',
         value: {
           ".write": "some rule config"
         }
@@ -119,7 +105,7 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
-        ref: '/test_owner/some/path',
+        ref: '/test/test_owner/some/path',
         value: {
           ".owner": {
             "owners": {
@@ -144,13 +130,13 @@ describe('API Tests', () => {
     });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
-        ref: '/test_owner/some/path',
+        ref: '/test/test_owner/some/path',
         value: {}
       }
     });
     syncRequest('POST', server2 + '/set_rule', {
       json: {
-        ref: '/test_rule/some/path',
+        ref: '/test/test_rule/some/path',
         value: {}
       }
     });
@@ -172,7 +158,7 @@ describe('API Tests', () => {
     it('get_rule simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get('/get_rule?ref=/test_rule/some/path')
+          .get('/get_rule?ref=/test/test_rule/some/path')
           .then((res) => {
             res.should.have.status(200);
             res.body.should.be.deep.eql({
@@ -189,7 +175,7 @@ describe('API Tests', () => {
     it('get_owner simple', () => {
       sleep(200)
       return chai.request(server1)
-          .get('/get_owner?ref=/test_owner/some/path')
+          .get('/get_owner?ref=/test/test_owner/some/path')
           .then((res) => {
             res.should.have.status(200);
             res.body.should.be.deep.eql({
@@ -222,11 +208,11 @@ describe('API Tests', () => {
               },
               {
                 type: 'GET_RULE',
-                ref: "/test_rule/some/path",
+                ref: "/test/test_rule/some/path",
               },
               {
                 type: 'GET_OWNER',
-                ref: "/test_owner/some/path",
+                ref: "/test/test_owner/some/path",
               }
             ]
           })
@@ -296,7 +282,7 @@ describe('API Tests', () => {
       sleep(200)
       return chai.request(server4)
           .post('/set_rule').send({
-            ref: "/test_rule/other/path",
+            ref: "/test/test_rule/other/path",
             value: {
               ".write": "some other rule config"
             }
@@ -313,7 +299,7 @@ describe('API Tests', () => {
       sleep(200)
       return chai.request(server4)
           .post('/set_owner').send({
-            ref: "/test_owner/other/path",
+            ref: "/test/test_owner/other/path",
             value: {
               ".owner": "some other owner config"
             }
@@ -347,14 +333,14 @@ describe('API Tests', () => {
               },
               {
                 type: 'SET_RULE',
-                ref: "/test_rule/other2/path",
+                ref: "/test/test_rule/other2/path",
                 value: {
                   ".write": "some other2 rule config"
                 }
               },
               {
                 type: 'SET_OWNER',
-                ref: "/test_owner/other2/path",
+                ref: "/test/test_owner/other2/path",
                 value: {
                   ".owner": "some other2 owner config"
                 }
@@ -397,7 +383,7 @@ describe('API Tests', () => {
               {
                 operation: {
                   type: 'SET_RULE',
-                  ref: "/test_rule/other3/path",
+                  ref: "/test/test_rule/other3/path",
                   value: {
                     ".write": "some other3 rule config"
                   }
@@ -406,7 +392,7 @@ describe('API Tests', () => {
               {
                 operation: {
                   type: 'SET_OWNER',
-                  ref: "/test_owner/other3/path",
+                  ref: "/test/test_owner/other3/path",
                   value: {
                     ".owner": "some other3 owner config"
                   }
@@ -436,14 +422,14 @@ describe('API Tests', () => {
                     },
                     {
                       type: 'SET_RULE',
-                      ref: "/test_rule/other4/path",
+                      ref: "/test/test_rule/other4/path",
                       value: {
                         ".write": "some other4 rule config"
                       }
                     },
                     {
                       type: 'SET_OWNER',
-                      ref: "/test_owner/other4/path",
+                      ref: "/test/test_owner/other4/path",
                       value: {
                         ".owner": "some other4 owner config"
                       }

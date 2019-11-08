@@ -21,12 +21,39 @@ const jayson = require('jayson');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 
+const ENV_VARIABLES = [
+  {
+    PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f',
+    P2P_PORT: 5001, PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+  {
+    PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d',
+    P2P_PORT: 5002, PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+  {
+    PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6',
+    P2P_PORT: 5003, PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+  {
+    PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764',
+    P2P_PORT: 5004, PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true,
+    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+  },
+];
+
 // Server configurations
-const server1 = 'http://localhost:9091';
-const server2 = 'http://localhost:9092';
-const server3 = 'http://localhost:9093';
-const server4 = 'http://localhost:9094';
 const trackerServer = 'http://localhost:5000';
+const server1 = 'http://localhost:' + ENV_VARIABLES[0].PORT
+const server2 = 'http://localhost:' + ENV_VARIABLES[1].PORT
+const server3 = 'http://localhost:' + ENV_VARIABLES[2].PORT
+const server4 = 'http://localhost:' + ENV_VARIABLES[3].PORT
 const SERVERS = [server1, server2, server3, server4];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
@@ -39,17 +66,6 @@ const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
 
 const setEndpoint = '/set_value';
 const getEndpoint = '/get_value'
-
-const ENV_VARIABLES = [
-  {PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f', P2P_PORT: 5001,
-      PORT: 9091, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
-  {PRIVATE_KEY: 'dd9b37f3e5b4db03dd90b37f1bff8ffc7b1d92e4b70edeef7ae1b12ac7766b5d', P2P_PORT: 5002,
-      PORT: 9092, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
-  {PRIVATE_KEY: 'b527c57ae72e772b4b4e418a95e51cba0ba9ad70850289783235135b86cb7dc6', P2P_PORT: 5003,
-      PORT: 9093, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
-  {PRIVATE_KEY: '31554fb0a188777cc434bca4f982a4cfe76c242376c5e70cb2619156eac9d764', P2P_PORT: 5004,
-      PORT: 9094, LOG: true, STAKE: 250, LOCAL: true, DEBUG: true},
-];
 
 // Data options
 RANDOM_OPERATION = [
@@ -109,7 +125,7 @@ class Process {
     this.proc = null;
   }
 
-  start(stdio_inherit = false) {
+  start(stdioInherit = false) {
     if (this.proc) {
       throw Error('Process already started');
     }
@@ -120,7 +136,7 @@ class Process {
         ...this.envVariables,
       },
     }
-    if (stdio_inherit) {
+    if (stdioInherit) {
       options.stdio = 'inherit';
     }
     this.proc = spawn('node', [this.application], options).on('error', (err) => {

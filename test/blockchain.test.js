@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require("fs")
 const Blockchain = require('../blockchain/');
 const {Block} = require('../blockchain/block');
 const chai = require('chai');
@@ -6,6 +8,21 @@ const rimraf = require('rimraf');
 const assert = chai.assert;
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
+
+function setDbForTesting(db) {
+  const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
+  if (!fs.existsSync(ownersFile)) {
+    throw Error('Missing owners file: ' + ownersFile);
+  }
+  const owners = JSON.parse(fs.readFileSync(ownersFile));
+  db.setOwnersForTesting("test", owners);
+  const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
+  if (!fs.existsSync(rulesFile)) {
+    throw Error('Missing rules file: ' + rulesFile);
+  }
+  const rules = JSON.parse(fs.readFileSync(rulesFile));
+  db.setRulesForTesting("test", rules);
+}
 
 describe('Blockchain', () => {
   let bc, bc2, tp, db1, db2;
@@ -16,7 +33,9 @@ describe('Blockchain', () => {
     // Manage use of these transaction pools beer
     tp = new TransactionPool();
     db1 = DB.getDatabase(bc, tp);
+    setDbForTesting(db1);
     db2 = DB.getDatabase(bc2, new TransactionPool());
+    setDbForTesting(db2);
   });
 
   afterEach(() => {

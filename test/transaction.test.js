@@ -1,8 +1,25 @@
+const path = require('path');
+const fs = require("fs")
 const Transaction = require('../db/transaction');
 const DB = require('../db/');
 const chai = require('chai');
 const expect = chai.expect;
 const Blockchain = require('../blockchain/');
+
+function setDbForTesting(db) {
+  const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
+  if (!fs.existsSync(ownersFile)) {
+    throw Error('Missing owners file: ' + ownersFile);
+  }
+  const owners = JSON.parse(fs.readFileSync(ownersFile));
+  db.setOwnersForTesting("test", owners);
+  const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
+  if (!fs.existsSync(rulesFile)) {
+    throw Error('Missing rules file: ' + rulesFile);
+  }
+  const rules = JSON.parse(fs.readFileSync(rulesFile));
+  db.setRulesForTesting("test", rules);
+}
 
 function getTransaction(db, txData) {
   txData.nonce = db.nonce;
@@ -16,6 +33,7 @@ describe('Transaction', () => {
 
   beforeEach(() => {
     db = new DB(new Blockchain('test-blockchain'));
+    setDbForTesting(db);
     txData = {
       operation: {
         type: 'SET_VALUE',

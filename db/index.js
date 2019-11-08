@@ -1,4 +1,4 @@
-const escapeStringRegexp = require('escape-string-regexp');
+const fs = require('fs');
 const ainUtil = require('@ainblockchain/ain-util');
 const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
        DEBUG} = require('../constants');
@@ -35,6 +35,16 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
       [RuleProperties.WRITE]: true
     });
+  }
+
+  // For testing purpose only.
+  setOwnersForTesting(ownersPath, owners) {
+    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT, ...ChainUtil.parsePath(ownersPath)], owners);
+  }
+
+  // For testing purpose only.
+  setRulesForTesting(rulesPath, rules) {
+    this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
   static getDatabase(blockchain, tp) {
@@ -403,7 +413,7 @@ class DB {
         const keys = Object.keys(lastRuleNode);
         for (let j = 0; j < keys.length; j++) {
           if (keys[j].startsWith('$')) {
-            if (pathVars[keys[j]]) {
+            if (pathVars[keys[j]] !== undefined) {
               console.log('Duplicated path variables.')
               return false;
             }
