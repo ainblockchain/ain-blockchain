@@ -106,11 +106,9 @@ class BuiltInFunctions {
     const userBalancePath = this._getBalancePath(user);
     const depositAmountPath = this._getDepositAmountPath(service, user);
     if (this._transferInternal(userBalancePath, depositAmountPath, value)) {
-      const configs = this.db.getValue(this._getDepositConfigPath(service)) || {};
+      const lockup = this.db.getValue(this._getDepositLockupDurationPath(service)) ||
+          DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       const expirationPath = this._getDepositExpirationPath(service, user);
-      const lockup = (configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] !== null &&
-          configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] !== undefined) ?
-          configs[PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION] : DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
           Number(timestamp) + Number(lockup));
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
@@ -171,8 +169,8 @@ class BuiltInFunctions {
     return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}`);
   }
 
-  _getDepositConfigPath(service) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${PredefinedDbPaths.DEPOSIT_CONFIG}`);
+  _getDepositLockupDurationPath(service) {
+    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
   }
 
   _getDepositAmountPath(service, user) {
