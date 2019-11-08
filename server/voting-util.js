@@ -54,7 +54,6 @@ class VotingUtil {
       this.registerVote(transaction);
       return transaction;
     } else {
-      // TODO (lia): deposit for consensus?
       return null;
     }
   }
@@ -157,7 +156,7 @@ class VotingUtil {
     delete validatorsMinusProposer[proposer];
     const threshold = Math.round(Object.values(validatorsMinusProposer).reduce(function(a, b) {
       return a + b;
-    }, 0) * .666) - 1;
+    }, 0) * .6666) - 1;
     let nextRound = {validators: lastRound.next_round_validators, next_round_validators: {}, threshold, proposer, pre_votes: 0, pre_commits: 0, time, block_hash: null};
     if (this.checkPreCommits()) {
       // Should be1
@@ -224,18 +223,6 @@ class VotingUtil {
     throw Error(`No proposer was selected from stakeholder dict ${stakeHolders} `);
   }
 
-  stake(stakeAmount) {
-    const pushId = PushId.generate();
-    return this.db.createTransaction({
-        operation: {
-          type: WriteDbOperations.SET_VALUE,
-          ref: this.resolveDbPath([PredefinedDbPaths.DEPOSIT_CONSENSUS,
-              this.db.account.address, pushId, PredefinedDbPaths.DEPOSIT_VALUE]),
-          value: stakeAmount
-        }
-      });
-  }
-
   isProposer() {
     // TODO (lia): move this assignment code to somewhere else? or change to check?
     this.status = VotingStatus.WAIT_FOR_BLOCK;
@@ -246,19 +233,66 @@ class VotingUtil {
     return Boolean(this.db.getValue(this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS, this.db.account.address])));
   }
 
+  createStakeTransaction(amount) {
+    const pushId = PushId.generate();
+    return this.db.createTransaction({
+        operation: {
+          type: WriteDbOperations.SET_VALUE,
+          ref: this.resolveDbPath([PredefinedDbPaths.DEPOSIT_CONSENSUS,
+              this.db.account.address, pushId, PredefinedDbPaths.DEPOSIT_VALUE]),
+          value: amount
+        }
+      });
+  }
+
+  createRestakeTransaction(amount) {
+    const pushId1 = PushId.generate();
+    const pushId2 = PushId.generate();
+    return this.db.createTransaction({
+        operation: {
+          type: WriteDbOperations.SET,
+          op_list: [
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: this.resolveDbPath([PredefinedDbPaths.WITHDRAW_CONSENSUS,
+                  this.db.account.address, pushId1, PredefinedDbPaths.WITHDRAW_VALUE]),
+              value: amount
+            },
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: this.resolveDbPath([PredefinedDbPaths.DEPOSIT_CONSENSUS,
+                  this.db.account.address, pushId2, PredefinedDbPaths.DEPOSIT_VALUE]),
+              value: amount
+            }
+          ]
+        }
+      });
+  }
+
   // Returns the staked amount of address. If there is no stake or it's expired,
   // it returns 0.
   getStakes(address) {
+    if (!address) address = this.db.account.address;
     const stakes = this.db.getValue(this.resolveDbPath([
         PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
         address
       ]));
-    // TODO (lia): change Date.now() to some constant (e.g. block creation time * X)
+    // TODO (lia): change Date.now() to Date.now() + some constant
+    // (e.g. block creation time * X blocks)
     if (stakes && stakes.value > 0 && stakes.expire_at > Date.now()) {
       return stakes.value;
     } else {
       return 0;
     }
+  }
+
+  stakeExpired(address) {
+    if (!address) address = this.db.account.address;
+    const stakes = this.db.getValue(this.resolveDbPath([
+        PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
+        address
+      ]));
+    return stakes && stakes.value > 0 && stakes.expire_at <= Date.now();
   }
 
   updateRecentProposers() {
