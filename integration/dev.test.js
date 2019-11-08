@@ -698,8 +698,11 @@ describe('API Tests', () => {
 
       it('deposit after withdraw', () => {
         const newVal = 100;
-        let beforeBalance = JSON.parse(syncRequest('GET', server2 +
+        const beforeBalance = JSON.parse(syncRequest('GET', server2 +
             `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8'))
+                .result;
+        const beforeDepositAccountValue = JSON.parse(syncRequest('GET', server2 +
+            `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8'))
                 .result;
         const result = syncRequest('POST', server2 + '/set_value', {json: {
               ref: depositPath + '/3/value',
@@ -719,7 +722,7 @@ describe('API Tests', () => {
             server2 + `/get_value?ref=${depositPath}/3/result/code`)
                 .body.toString('utf-8')).result
         expect(depositValue).to.equal(newVal);
-        expect(depositAccountValue).to.equal(newVal);
+        expect(depositAccountValue).to.equal(beforeDepositAccountValue + newVal);
         expect(balance).to.equal(beforeBalance - newVal);
         expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
       });
