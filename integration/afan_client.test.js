@@ -50,7 +50,8 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
     cwd: process.cwd(),
     env: {
-        PATH: process.env.PATH, ...envVars
+      PATH: process.env.PATH,
+      ...envVars
     },
   };
   if (stdioInherit) {
