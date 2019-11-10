@@ -140,7 +140,7 @@ class Block {
     return true;
   }
 
-  static getFirstTransaction(ownerAccount, keyBuffer) {
+  static getDbSetupTransaction(ownerAccount, keyBuffer) {
     // Token operation
     const tokenOp = {
       type: 'SET_VALUE',
@@ -206,7 +206,7 @@ class Block {
     return (new Transaction({ signature: firstSig, transaction: firstTxData }));
   }
 
-  static getSecondTransaction(ownerAccount, keyBuffer) {
+  static getAccountsSetupTransaction(ownerAccount, keyBuffer) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts.others;
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -243,8 +243,8 @@ class Block {
     }
     const keyBuffer = Buffer.from(ownerAccount.private_key, 'hex');
 
-    const firstTx = this.getFirstTransaction(ownerAccount, keyBuffer);
-    const secondTx = this.getSecondTransaction(ownerAccount, keyBuffer);
+    const firstTx = this.getDbSetupTransaction(ownerAccount, keyBuffer);
+    const secondTx = this.getAccountsSetupTransaction(ownerAccount, keyBuffer);
 
     return [firstTx, secondTx];
   }

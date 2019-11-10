@@ -44,7 +44,7 @@ describe("DB initialization", () => {
   })
 
   describe("balances", () => {
-    it("loading balances properly on initatiion", () => {
+    it("loading balances properly on initialization", () => {
       const expected =
           GenesisToken.total_supply - GenesisAccounts.others.length * GenesisAccounts.shares;
       const dbPath =
