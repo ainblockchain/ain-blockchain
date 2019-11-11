@@ -4,7 +4,7 @@ const ChainUtil = require('../chain-util');
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
 const {GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, PredefinedDbPaths,
-       GenesisToken, GenesisAccount} = require('../constants');
+       GenesisToken, GenesisAccounts} = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -140,26 +140,30 @@ class Block {
     return true;
   }
 
-  static getGenesisBlockData() {
-    const keyBuffer = Buffer.from(GenesisAccount.private_key, 'hex');
+  static getDbSetupTransaction(ownerAccount, keyBuffer) {
+    // Token operation
     const tokenOp = {
       type: 'SET_VALUE',
       ref: `/${PredefinedDbPaths.TOKEN}`,
       value: GenesisToken
     };
-    const balancesOp = {
+
+    // Balance operation
+    const balanceOp = {
       type: 'SET_VALUE',
-      ref: `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccount.address}/${PredefinedDbPaths.BALANCE}`,
+      ref: `/${PredefinedDbPaths.ACCOUNTS}/${ownerAccount.address}/${PredefinedDbPaths.BALANCE}`,
       value: GenesisToken.total_supply
     };
     if (!fs.existsSync(GENESIS_RULES)) {
       throw Error('Missing genesis rules file: ' + GENESIS_RULES);
     }
-    const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
+
+    // Rule configs operation
+    const ruleConfigs = JSON.parse(fs.readFileSync(GENESIS_RULES));
     if (ADDITIONAL_RULES) {
       if (fs.existsSync(ADDITIONAL_RULES.filePath)) {
         const addRules = JSON.parse(fs.readFileSync(ADDITIONAL_RULES.filePath));
-        rules[ADDITIONAL_RULES.dbPath] = addRules;
+        ruleConfigs[ADDITIONAL_RULES.dbPath] = addRules;
       } else {
         throw Error('Missing additional rules file: ' + ADDITIONAL_RULES.filePath);
       }
@@ -167,16 +171,18 @@ class Block {
     const rulesOp = {
       type: 'SET_RULE',
       ref: '/',
-      value: rules
+      value: ruleConfigs
     };
+
+    // Owner configs operation
     if (!fs.existsSync(GENESIS_OWNERS)) {
       throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
     }
-    const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
+    const ownerConfigs = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
     if (ADDITIONAL_OWNERS) {
       if (fs.existsSync(ADDITIONAL_OWNERS.filePath)) {
         const addOwners = JSON.parse(fs.readFileSync(ADDITIONAL_OWNERS.filePath));
-        owners[ADDITIONAL_OWNERS.dbPath] = addOwners;
+        ownerConfigs[ADDITIONAL_OWNERS.dbPath] = addOwners;
       } else {
         throw Error('Missing additional owners file: ' + ADDITIONAL_OWNERS.filePath);
       }
@@ -184,30 +190,75 @@ class Block {
     const ownersOp = {
       type: 'SET_OWNER',
       ref: '/',
-      value: owners
+      value: ownerConfigs
     };
+
+    // Transaction
     const firstTxData = {
       nonce: -1,
-      timestamp: GenesisAccount.timestamp,
+      timestamp: ownerAccount.timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balancesOp, rulesOp, ownersOp]
+        op_list: [ tokenOp, balanceOp, rulesOp, ownersOp ]
       }
     };
-    const signature = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
-    const firstTx = new Transaction({ signature, transaction: firstTxData });
-    return [firstTx];
+    const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
+    return (new Transaction({ signature: firstSig, transaction: firstTxData }));
+  }
+
+  static getAccountsSetupTransaction(ownerAccount, keyBuffer) {
+    const transferOps = [];
+    const otherAccounts = GenesisAccounts.others;
+    if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
+        GenesisAccounts.shares > 0) {
+      for (let i = 0; i < otherAccounts.length; i++) {
+        // Transfer operation
+        const op = {
+          type: 'SET_VALUE',
+          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAccount.address}/` +
+              `${otherAccounts[i].address}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
+          value: GenesisAccounts.shares
+        };
+        transferOps.push(op);
+      }
+    }
+
+    // Transaction
+    const secondTxData = {
+      nonce: -1,
+      timestamp: ownerAccount.timestamp,
+      operation: {
+        type: 'SET',
+        op_list: transferOps
+      }
+    };
+    const secondSig = ainUtil.ecSignTransaction(secondTxData, keyBuffer);
+    return (new Transaction({ signature: secondSig, transaction: secondTxData }));
+  }
+
+  static getGenesisBlockData() {
+    const ownerAccount = GenesisAccounts.owner;
+    if (!ownerAccount) {
+      throw Error('Missing owner account.');
+    }
+    const keyBuffer = Buffer.from(ownerAccount.private_key, 'hex');
+
+    const firstTx = this.getDbSetupTransaction(ownerAccount, keyBuffer);
+    const secondTx = this.getAccountsSetupTransaction(ownerAccount, keyBuffer);
+
+    return [firstTx, secondTx];
   }
 
   static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
+    const ownerAccount = GenesisAccounts.owner;
     const lastHash = '';
     const lastVotes = [];
     const transactions = Block.getGenesisBlockData();
     const number = 0;
-    const timestamp = GenesisAccount.timestamp;
-    const proposer = GenesisAccount.address;
+    const timestamp = ownerAccount.timestamp;
+    const proposer = ownerAccount.address;
     const validators = [];
     return new this(lastHash, lastVotes, transactions, number, timestamp,
         proposer, validators);

@@ -9,7 +9,7 @@ const assert = chai.assert;
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
 
-function setDbForTesting(db) {
+function setDbForTesting(db, accountIndex = 0) {
   const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
   if (!fs.existsSync(ownersFile)) {
     throw Error('Missing owners file: ' + ownersFile);
@@ -22,6 +22,8 @@ function setDbForTesting(db) {
   }
   const rules = JSON.parse(fs.readFileSync(rulesFile));
   db.setRulesForTesting("test", rules);
+
+  db.setAccountForTesting(accountIndex)
 }
 
 describe('Blockchain', () => {
@@ -33,9 +35,9 @@ describe('Blockchain', () => {
     // Manage use of these transaction pools beer
     tp = new TransactionPool();
     db1 = DB.getDatabase(bc, tp);
-    setDbForTesting(db1);
+    setDbForTesting(db1, 0);
     db2 = DB.getDatabase(bc2, new TransactionPool());
-    setDbForTesting(db2);
+    setDbForTesting(db2, 1);
   });
 
   afterEach(() => {

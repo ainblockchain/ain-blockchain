@@ -1,21 +1,24 @@
-const fs = require('fs');
 const ainUtil = require('@ainblockchain/ain-util');
-const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
-       DEBUG} = require('../constants');
+const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties,
+       RuleProperties, DEBUG, GenesisAccounts} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
+const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 
 class DB {
   constructor(blockchain) {
     this.db = {};
     this.initDb();
     this.func = new BuiltInFunctions(this);
-    // TODO (lia): Add account importing functionality
-    this.account = ainUtil.createAccount(); // { private_key, public_key, address }
-    if (this instanceof BackUpDB) return;
+    // TODO(lia): Add account importing functionality.
+    this.account = ACCOUNT_INDEX !== null ?
+        GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
+    if (this instanceof BackUpDB) {
+      return;
+    }
     this.nonce = this.getNonce(blockchain);
-    console.log(`creating new db with id ${this.account.address}`);
+    console.log(`Creating new db with account: ${this.account.address}`);
   }
 
   initDb() {
@@ -47,6 +50,11 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
+  // For testing purpose only.
+  setAccountForTesting(accountIndex) {
+    this.account = GenesisAccounts.others[accountIndex];
+  }
+
   static getDatabase(blockchain, tp) {
     const db = new DB(blockchain);
     blockchain.setBackDb(new BackUpDB(db.account));
@@ -55,11 +63,13 @@ class DB {
   }
 
   getNonce(blockchain) {
-    // TODO (Chris): Search through all blocks for any previous nonced transaction with current publicKey
+    // TODO (Chris): Search through all blocks for any previous nonced transaction with current
+    //               publicKey
     let nonce = 0;
     for (let i = blockchain.chain.length - 1; i > -1; i--) {
       for (let j = blockchain.chain[i].transactions.length -1; j > -1; j--) {
-        if (ainUtil.areSameAddresses(blockchain.chain[i].transactions[j].address, this.account.address)
+        if (ainUtil.areSameAddresses(blockchain.chain[i].transactions[j].address,
+                                     this.account.address)
             && blockchain.chain[i].transactions[j].nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
           nonce = blockchain.chain[i].transactions[j].nonce + 1;
@@ -296,10 +306,12 @@ class DB {
   }
 
   /**
-    * Validates transaction is valid according to AIN database rules and returns a transaction instance
+    * Validates transaction is valid according to AIN database rules and returns a transaction
+    * instance
     *
     * @param {dict} operation - Database write operation to be converted to transaction
-    * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or not
+    * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or
+    *                                        not
     * @return {Transaction} Instance of the transaction class
     */
   // TODO(Chris): Depricate this function
