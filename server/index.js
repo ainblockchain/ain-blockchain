@@ -390,7 +390,6 @@ class P2pServer {
       if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.db.account.address)) {
         this.waitInBlocks = this.waitInBlocks - 1;
         if (this.waitInBlocks === 0) {
-          this.increaseBalanceForDev();
           this.depositStakes();
         }
       }

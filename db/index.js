@@ -13,7 +13,7 @@ class DB {
     this.func = new BuiltInFunctions(this);
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
-        GenesisAccounts.others[ACCOUNT_INDEX] : GenesisAccounts.owner;
+        GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
     if (this instanceof BackUpDB) {
       return;
     }
