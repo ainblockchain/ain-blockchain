@@ -21,7 +21,7 @@ const jayson = require('jayson');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 
-// TODO (Chris): Make private keys work with 
+// TODO (Chris): Make private keys work with
 const ENV_VARIABLES = [
   {
     PRIVATE_KEY: '61a24a6825e6431e46976dc82e630906b67e732dc1a3921a95c8bb74e30ae5f',
@@ -119,7 +119,7 @@ RANDOM_OPERATION = [
 ];
 
 class Process {
-  constructor(application, envVariables) {  ['batch', {tx_list: [{type: 'INC_VALUE', ref: 'test/balance/user2', 
+  constructor(application, envVariables) {  ['batch', {tx_list: [{type: 'INC_VALUE', ref: 'test/balance/user2',
   value: 10000}]}],
     this.application = application;
     this.envVariables = envVariables;
@@ -318,21 +318,16 @@ describe('Integration Tests', () => {
       })
 
       beforeEach(() => {
-        
-        return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
-            if (err) throw err;
-            baseChain = response.result;
-            resolve();
-          });
-        });
+        baseChain = JSON.parse(syncRequest('POST', server2 + '/json-rpc',
+            {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
+            .body.toString('utf-8')).result;
       });
 
 
       it('syncing across all chains', () => {
         let server;
         let newChain;
-        for (let i = 0; i < SERVERS.length; i++) { 
+        for (let i = 0; i < SERVERS.length; i++) {
           server = SERVERS[i];
           sendTransactions(sentOperations);
           waitUntilNewBlock();
