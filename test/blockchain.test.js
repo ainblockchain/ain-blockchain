@@ -56,7 +56,7 @@ describe('Blockchain', () => {
   it('adds new block', () => {
     const data = 'foo';
     const lastBlock = bc.lastBlock();
-    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.height() + 1,
+    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.lastBlockNumber() + 1,
         db1.account.address, []));
     expect(bc.chain[bc.chain.length -1].transactions).to.equal(data);
   });
@@ -65,7 +65,7 @@ describe('Blockchain', () => {
   /*
   it('validates a valid chain', () => {
     const data = 'foo';
-    bc.addNewBlock(Block.createBlock(data, db1, bc.height() + 1, bc.lastBlock()));
+    bc.addNewBlock(Block.createBlock(data, db1, bc.lastBlockNumber() + 1, bc.lastBlock()));
     expect(Blockchain.isValidChain(bc.chain)).to.equal(true);
   });
   */
@@ -78,9 +78,9 @@ describe('Blockchain', () => {
   it('invalidates corrupt chain', () => {
     const data = 'foo';
     const lastBlock = bc.lastBlock();
-    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.height() + 1,
+    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.lastBlockNumber() + 1,
         db1.account.address, []));
-    bc.chain[bc.height()].transactions = ':(';
+    bc.chain[bc.lastBlockNumber()].transactions = ':(';
     expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
   });
 
@@ -101,7 +101,7 @@ describe('Blockchain', () => {
         });
         const lastBlock = bc.lastBlock();
         const block = Block.createBlock(lastBlock.hash, [], tp.validTransactions(),
-            bc.height() + 1, db1.account.address, []);
+            bc.lastBlockNumber() + 1, db1.account.address, []);
         if (block.number === 500) {
           blockHash = block.hash;
         }
@@ -122,8 +122,10 @@ describe('Blockchain', () => {
     });
 
     it('can be queried by index', () => {
-      assert.deepEqual(JSON.stringify(bc.getChainSection(10, 30)), JSON.stringify(blocks.slice(9, 29)));
-      assert.deepEqual(JSON.stringify(bc.getChainSection(980, 1010)), JSON.stringify(blocks.slice(979, 1010)));
+      assert.deepEqual(JSON.stringify(bc.getChainSection(10, 30)),
+          JSON.stringify(blocks.slice(9, 29)));
+      assert.deepEqual(JSON.stringify(bc.getChainSection(980, 1010)),
+          JSON.stringify(blocks.slice(979, 1010)));
     });
 
     it('can be queried by block number', () => {

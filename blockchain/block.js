@@ -109,9 +109,9 @@ class Block {
 
   static validateProposedBlock(block, blockchain) {
     if (!Block.validateHashes(block)) { return false; }
-    if (block.number !== (blockchain.height() + 1)) {
+    if (block.number !== (blockchain.lastBlockNumber() + 1)) {
       console.log(`Number is not correct for block ${block.hash}.
-                   Expected: ${(blockchain.height() + 1)}
+                   Expected: ${(blockchain.lastBlockNumber() + 1)}
                    Actual: ${block.number}`);
       return false;
     }
