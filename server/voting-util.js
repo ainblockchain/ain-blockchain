@@ -274,18 +274,16 @@ class VotingUtil {
 
   updateRecentProposers() {
     let recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS) || {};
-    let newRecentProposers;
     delete recentProposers[this.db.account.address];
     recentProposers[this.db.account.address] = true;
     while (Object.keys(recentProposers).length > MAX_RECENT_PROPOSERS) {
       delete recentProposers[Objcet.keys(recentProposers)[0]];
     }
-    newRecentProposers = recentProposers;
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
         ref: PredefinedDbPaths.RECENT_PROPOSERS,
-        value: newRecentProposers
+        value: recentProposers
       }
     });
   }
