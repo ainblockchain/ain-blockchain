@@ -8,7 +8,7 @@
   },
   "consensus": {
     "recent_proposers": {
-      ".write": "(newData.length < 20) && (getValue('/consensus/voting/pre_commits') > getValue('/consensus/voting/threshold')) && (getValue('/consensus/voting/proposer') === auth)"
+      ".write": "(newData && Object.keys(newData).length < 20) && (getValue('/consensus/voting/pre_commits') > getValue('/consensus/voting/threshold')) && (getValue('/consensus/voting/proposer') === auth)"
     },
     "stakes": {
       "$uid": {
@@ -16,7 +16,7 @@
       }
     },
     "voting": {
-      ".write": "getValue('/consensus/voting') === null || getValue('/consensus/recent_proposers') !== null && (getValue('/consensus/recent_proposers')[getValue('/consensus/recent_proposers').length - Math.floor((currentTime - getValue('/consensus/voting/time')) / 6000)] === auth)" ,
+      ".write": "getValue('/consensus/voting') === null || (getValue('/consensus/recent_proposers') !== null && (Object.keys(getValue('/consensus/recent_proposers'))[Object.keys(getValue('/consensus/recent_proposers')).length - Math.floor((currentTime - getValue('/consensus/voting/time')) / 6000)] === auth))" ,
       "block_hash": {
         ".write": "getValue('/consensus/voting/proposer') === auth"
       },

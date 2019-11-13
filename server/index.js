@@ -407,7 +407,8 @@ class P2pServer {
       console.log(`Peer ${this.db.account.address} will start next round at height ${this.blockchain.height() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
     }
-    if (this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS).indexOf(this.db.account.address) >= 0) {
+    const recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
+    if (recentProposers && recentProposers[this.db.account.address]) {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({transaction: newRoundTrans, actionType: VotingActionTypes.NEW_VOTING});
