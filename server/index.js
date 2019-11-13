@@ -119,7 +119,7 @@ class P2pServer {
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSubsection = this.blockchain.requestBlockchainSection(
-                Block.parse(data.lastBlock));
+                data.lastBlock ? Block.parse(data.lastBlock) : null);
             if (chainSubsection) {
               this.sendChainSubsection(socket, chainSubsection, this.blockchain.lastBlockNumber());
             }
@@ -293,7 +293,9 @@ class P2pServer {
           this.executeAndBroadcastTransaction(
               this.votingUtil.registerForNextRound(this.blockchain.lastBlockNumber() + 1));
         }
-        if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
+        if (this.votingUtil.isProposer()) {
+          this.createAndProposeBlock();
+        }
         break;
       case VotingActionTypes.PROPOSED_BLOCK:
         let invalidTransactions = false;
@@ -450,7 +452,9 @@ class P2pServer {
         }
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(
             this.blockchain.lastBlockNumber() + 1));
-        if (this.votingUtil.isProposer()) { this.createAndProposeBlock(); }
+        if (this.votingUtil.isProposer()) {
+          this.createAndProposeBlock();
+        }
       }, BLOCK_CREATION_INTERVAL);
     }
     console.log(`New blockchain last block number is ${this.blockchain.lastBlockNumber() + 1}`);

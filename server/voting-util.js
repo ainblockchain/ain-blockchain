@@ -135,10 +135,18 @@ class VotingUtil {
     const proposer = this.db.account.address;
     const stakes = this.getStakes(proposer);
     if (stakes) {
-      const firstVotingData = { validators: {[proposer]: stakes},
-          next_round_validators: {[proposer]: stakes}, threshold: -1,
-          proposer, pre_votes: 0, pre_commits: 0, time, block_hash: '',
-          number: bc.lastBlock().number + 1, last_hash: bc.lastBlock().hash };
+      const firstVotingData = {
+        validators: {[proposer]: stakes},
+        next_round_validators: {[proposer]: stakes},
+        threshold: -1,
+        proposer,
+        pre_votes: 0,
+        pre_commits: 0,
+        time,
+        block_hash: '',
+        number: bc.lastBlockNumber() + 1,
+        last_hash: bc.lastBlock().hash
+      };
       return this.db.createTransaction({
         operation: {
           type: WriteDbOperations.SET_VALUE,

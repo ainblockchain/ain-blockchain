@@ -11,7 +11,9 @@ const CHAIN_SUBSECT_LENGTH = 20;
 
 class Blockchain {
   constructor(blockchainDir) {
+    // TODO(seo): Switch between the two depending on the number of peers.
     this.chain = [Block.genesis()];
+    //this.chain = [];
     this.blockchain_dir = blockchainDir;
     this.backUpDB = null;
     this._proposedBlock = null;
@@ -55,14 +57,6 @@ class Blockchain {
       throw Error('Already set backupDB');
     }
     this.backUpDB = backUpDB;
-  }
-
-  height() {
-    const lastBlockNumber = this.lastBlockNumber();
-    if (lastBlockNumber >= 0) {
-      return lastBlockNumber + 1;
-    }
-    return 0;
   }
 
   lastBlock() {
@@ -142,8 +136,8 @@ class Blockchain {
   }
 
   writeChain() {
-    for (let i = this.chain[0].number; i < this.lastBlockNumber() + 1; i++) {
-      const block = this.chain[i - this.chain[0].number];
+    for (let i = 0; i < this.chain.length; i++) {
+      const block = this.chain[i];
       const filePath = this.pathToBlock(block);
       if (!(fs.existsSync(filePath))) {
         // Change to async implementation
@@ -154,25 +148,27 @@ class Blockchain {
 
   /**
     * Returns a section of the chain up to a maximuim of length CHAIN_SUBSECT_LENGTH, starting from
-    * the index of the queired lastBlock
+    * the block number of the reference block.
     *
-    * @param {Block} lastBlock - The current highest block tin the querying nodes blockchain
-    * @return {list} A list of Block instances with lastBlock at index 0, up to a maximuim length
+    * @param {Block} refBlock - The current highest block tin the querying nodes blockchain
+    * @return {list} A list of Block instances with refBlock at index 0, up to a maximuim length
     *                CHAIN_SUBSECT_LENGTH
     */
-  requestBlockchainSection(lastBlock) {
+  requestBlockchainSection(refBlock) {
+    const refBlockNumber = refBlock ? refBlock.number : 0;
     console.log(`Current last block number: ${this.lastBlockNumber()}, ` +
-        `Requester's last block number: ${lastBlock.number}\t (hash: ${lastBlock.last_hash})`);
+        `Requester's last block number: ${refBlockNumber}`);
     const blockFiles =
-        this.getBlockFiles(lastBlock.number, lastBlock.number + CHAIN_SUBSECT_LENGTH);
+        this.getBlockFiles(refBlockNumber, refBlockNumber + CHAIN_SUBSECT_LENGTH);
     if (blockFiles.length > 0 &&
-        Block.loadBlock(blockFiles[blockFiles.length - 1]).number > lastBlock.number &&
-      blockFiles[0].indexOf(Block.getFileName(lastBlock)) < 0) {
+        Block.loadBlock(blockFiles[blockFiles.length - 1]).number > refBlockNumber &&
+        (refBlock && blockFiles[0].indexOf(Block.getFileName(refBlock)) < 0)) {
       console.log(
           'Invalid blockchain request. Requesters last block does not belong to this blockchain');
       return;
     }
-    if (lastBlock.hash === this.lastBlock().hash) {
+    const refBlockHash = refBlock ? refBlock.hash : null;
+    if (refBlockHash === this.lastBlock().hash) {
       console.log('Requesters blockchain is up to date with this blockchain');
       return;
     }
@@ -187,28 +183,46 @@ class Blockchain {
   merge(chainSubSection) {
     // Call to shift here is important as it removes the first element from the list !!
     console.log(`Last block number before merge: ${this.lastBlockNumber()}`);
+    if (chainSubSection.length === 0) {
+      console.log('Empty chain sub section');
+      return false;
+    }
     if (chainSubSection[chainSubSection.length - 1].number <= this.lastBlockNumber()) {
       console.log('Received chain is of lower block number than current last block number');
       return false;
     }
-    const firstBlock = Block.parse(chainSubSection.shift());
-    // Fix this logic
-    if (this.lastBlock().hash !== firstBlock.hash &&
-        this.lastBlock().hash !== Block.genesis().hash) {
-      console.log(`Hash ${this.lastBlock().hash.substring(0, 5)} ` +
-          `does not equal ${firstBlock.hash.substring(0, 5)}`);
-      return false;
+    const firstBlock = Block.parse(chainSubSection[0]);
+    const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
+    if (lastBlockHash) {
+      // Case 1: Not a cold start.
+      if (lastBlockHash !== firstBlock.hash) {
+        console.log(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
+            `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
+        return false;
+      }
+    } else {
+      // Case 2: A cold start.
+      if (firstBlock.last_hash !== '') {
+        console.log(`First block of hash ${firstBlock.hash.substring(0, 5)} ` +
+            `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
+        return false;
+      }
     }
     if (!Blockchain.isValidChainSubsection(chainSubSection)) {
       console.log('Invalid chain subsection');
       return false;
     }
-    chainSubSection.forEach((block) => {
+    for (let i = 0; i < chainSubSection.length; i++) {
+      // Skip the first block if it's not a cold start (i.e., starting from genesis block).
+      if (lastBlockHash && i === 0) {
+        continue;
+      }
+      const block = chainSubSection[i];
       if (!this.addNewBlock(block)) {
         console.log('Failed to add block '+ block);
         return false;
       }
-    });
+    }
     console.log(`Last block number after merge: ${this.lastBlockNumber()}`);
     return true;
   }
