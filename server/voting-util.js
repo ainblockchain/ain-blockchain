@@ -273,6 +273,7 @@ class VotingUtil {
   }
 
   updateRecentProposers() {
+    // TODO (lia): get recent proposers from the blockchain itself.
     let recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS) || {};
     delete recentProposers[this.db.account.address];
     recentProposers[this.db.account.address] = true;
