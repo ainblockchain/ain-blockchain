@@ -273,22 +273,19 @@ class VotingUtil {
   }
 
   updateRecentProposers() {
-    let recentProposers = JSON.parse(JSON.stringify(this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS)));
-    if (recentProposers == null) {
-      recentProposers = [];
-    } else if (recentProposers.length == MAX_RECENT_PROPOSERS) {
-      recentProposers.shift();
+    let recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS) || {};
+    let newRecentProposers;
+    delete recentProposers[this.db.account.address];
+    recentProposers[this.db.account.address] = true;
+    while (Object.keys(recentProposers).length > MAX_RECENT_PROPOSERS) {
+      delete recentProposers[Objcet.keys(recentProposers)[0]];
     }
-
-    if (recentProposers.indexOf(this.db.account.address) >= 0) {
-      recentProposers.splice(recentProposers.indexOf(this.db.account.address), 1);
-    }
-    recentProposers.push(this.db.account.address);
+    newRecentProposers = recentProposers;
     return this.db.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
         ref: PredefinedDbPaths.RECENT_PROPOSERS,
-        value: recentProposers
+        value: newRecentProposers
       }
     });
   }
