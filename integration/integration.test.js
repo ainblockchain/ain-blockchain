@@ -533,6 +533,10 @@ describe('Integration Tests', () => {
               }
             });
           });
+<<<<<<< HEAD
+=======
+          // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
+>>>>>>> bdafe7ed1e68e542c5b388c2d1627da0e532bffd
           expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST)
             .to.equal(transactionsOnBlockChain.length);
           for (let i = 0; i < transactionsOnBlockChain.length; i ++) {
@@ -540,11 +544,19 @@ describe('Integration Tests', () => {
             const blockchainOp = transactionsOnBlockChain[i].operation;
             if (sentOperations[i][0].toUpperCase() === "BATCH") {
               expect(sentOp.tx_list).to.not.equal(undefined);
+<<<<<<< HEAD
+=======
+              // NOTE(seo): Sometimes test run fails at this point.
+>>>>>>> bdafe7ed1e68e542c5b388c2d1627da0e532bffd
               expect(sentOp.tx_list[0].operation.type).to.equal(blockchainOp.type);
               expect(sentOp.tx_list[0].operation.ref).to.equal(blockchainOp.ref);
               assert.deepEqual(sentOp.tx_list[0].operation.value, blockchainOp.value);
             } else {
               expect(sentOperations[i][0].toUpperCase()).to.equal(blockchainOp.type);
+<<<<<<< HEAD
+=======
+              // NOTE(seo): Sometimes test run fails at this point.
+>>>>>>> bdafe7ed1e68e542c5b388c2d1627da0e532bffd
               expect(sentOp.ref).to.equal(blockchainOp.ref);
               assert.deepEqual(sentOp.value, blockchainOp.value);
             }
