@@ -114,8 +114,7 @@ RANDOM_OPERATION = [
 ];
 
 class Process {
-  constructor(application, envVariables) {  ['batch', {tx_list: [{type: 'INC_VALUE', ref: 'test/balance/user2', 
-  value: 10000}]}],
+  constructor(application, envVariables) {
     this.application = application;
     this.envVariables = envVariables;
     this.proc = null;
