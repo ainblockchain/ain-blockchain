@@ -437,8 +437,8 @@ class P2pServer {
           `block number ${this.blockchain.lastBlockNumber() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
     }
-    if (this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS).indexOf(
-        this.db.account.address) >= 0) {
+    const recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
+    if (recentProposers && recentProposers[this.db.account.address]) {
       this.votingInterval = setInterval(()=> {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({
