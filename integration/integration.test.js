@@ -21,7 +21,7 @@ const jayson = require('jayson');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 
-// TODO (Chris): Make private keys work with
+// TODO (Chris): Make private keys work with 
 const ENV_VARIABLES = [
   {
     P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
@@ -115,7 +115,7 @@ RANDOM_OPERATION = [
 ];
 
 class Process {
-  constructor(application, envVariables) {  ['batch', {tx_list: [{type: 'INC_VALUE', ref: 'test/balance/user2',
+  constructor(application, envVariables) {  ['batch', {tx_list: [{type: 'INC_VALUE', ref: 'test/balance/user2', 
   value: 10000}]}],
     this.application = application;
     this.envVariables = envVariables;
@@ -314,16 +314,21 @@ describe('Integration Tests', () => {
       })
 
       beforeEach(() => {
-        baseChain = JSON.parse(syncRequest('POST', server2 + '/json-rpc',
-            {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
-            .body.toString('utf-8')).result;
+        
+        return new Promise((resolve) => {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
+            if (err) throw err;
+            baseChain = response.result;
+            resolve();
+          });
+        });
       });
 
 
       it('syncing across all chains', () => {
         let server;
         let newChain;
-        for (let i = 0; i < SERVERS.length; i++) {
+        for (let i = 0; i < SERVERS.length; i++) { 
           server = SERVERS[i];
           sendTransactions(sentOperations);
           waitUntilNewBlock();
@@ -533,10 +538,6 @@ describe('Integration Tests', () => {
               }
             });
           });
-<<<<<<< HEAD
-=======
-          // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
->>>>>>> bdafe7ed1e68e542c5b388c2d1627da0e532bffd
           expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST)
             .to.equal(transactionsOnBlockChain.length);
           for (let i = 0; i < transactionsOnBlockChain.length; i ++) {
@@ -544,19 +545,11 @@ describe('Integration Tests', () => {
             const blockchainOp = transactionsOnBlockChain[i].operation;
             if (sentOperations[i][0].toUpperCase() === "BATCH") {
               expect(sentOp.tx_list).to.not.equal(undefined);
-<<<<<<< HEAD
-=======
-              // NOTE(seo): Sometimes test run fails at this point.
->>>>>>> bdafe7ed1e68e542c5b388c2d1627da0e532bffd
               expect(sentOp.tx_list[0].operation.type).to.equal(blockchainOp.type);
               expect(sentOp.tx_list[0].operation.ref).to.equal(blockchainOp.ref);
               assert.deepEqual(sentOp.tx_list[0].operation.value, blockchainOp.value);
             } else {
               expect(sentOperations[i][0].toUpperCase()).to.equal(blockchainOp.type);
-<<<<<<< HEAD
-=======
-              // NOTE(seo): Sometimes test run fails at this point.
->>>>>>> bdafe7ed1e68e542c5b388c2d1627da0e532bffd
               expect(sentOp.ref).to.equal(blockchainOp.ref);
               assert.deepEqual(sentOp.value, blockchainOp.value);
             }
@@ -578,15 +571,14 @@ describe('Integration Tests', () => {
 
       // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
       // Ability to reuse private key is required to make this test case work
-      /*
       it('and can be stopped and restarted', () => {
-        console.log(`Shutting down server[1]...`);
-        SERVER_PROCS[1].kill();
+        console.log(`Shutting down server[0]...`);
+        SERVER_PROCS[0].kill();
         for (let i = 0; i < 2; i++){
           waitUntilNewBlock();
         }
-        console.log(`Starting server[1]...`);
-        SERVER_PROCS[1].start();
+        console.log(`Starting server[0]...`);
+        SERVER_PROCS[0].start();
         for (let i = 0; i < 4; i++){
           sendTransactions(sentOperations);
           waitUntilNewBlock();
@@ -601,7 +593,6 @@ describe('Integration Tests', () => {
         expect(lastBlockFromRunningBlockchain.number)
         .to.equal(lastBlockFromStoppedBlockchain.number);
       });
-      */
     });
   });
 });
