@@ -34,6 +34,11 @@ class P2pServer {
       const peers = JSON.parse(message);
       this.connectToPeers(peers);
       if (peers.length === 0) {
+        console.log("\n#########################################################################");
+        console.log("### THIS IS THE FIRST SERVER NODE. STARTING WITH THE GENESIS BLOCK... ###");
+        console.log("#########################################################################\n");
+        this.blockchain.startWithGenesisBlock();
+        this.db.startWithBlockchain(this.blockchain, this.transactionPool);
         this.blockchain.syncedAfterStartup = true;
         this.initiateChain();
       }

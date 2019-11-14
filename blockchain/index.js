@@ -11,9 +11,7 @@ const CHAIN_SUBSECT_LENGTH = 20;
 
 class Blockchain {
   constructor(blockchainDir) {
-    // TODO(seo): Switch between the two depending on the number of peers.
-    this.chain = [Block.genesis()];
-    //this.chain = [];
+    this.chain = [];
     this.blockchain_dir = blockchainDir;
     this.backUpDB = null;
     this._proposedBlock = null;
@@ -23,6 +21,11 @@ class Blockchain {
       newChain = Blockchain.loadChain(this._blockchainDir());
       this.chain = newChain ? newChain: this.chain;
     }
+  }
+
+  startWithGenesisBlock() {
+    console.log('Starting chain with a genesis block..')
+    this.chain.push(Block.genesis());
     this.writeChain();
   }
 
