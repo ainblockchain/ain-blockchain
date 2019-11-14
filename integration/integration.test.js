@@ -20,8 +20,7 @@ const rimraf = require('rimraf');
 const jayson = require('jayson');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
-
-// TODO (Chris): Make private keys work with 
+ 
 const ENV_VARIABLES = [
   {
     P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
@@ -314,14 +313,9 @@ describe('Integration Tests', () => {
       })
 
       beforeEach(() => {
-        
-        return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCKS, {}, function(err, response) {
-            if (err) throw err;
-            baseChain = response.result;
-            resolve();
-          });
-        });
+        baseChain = JSON.parse(syncRequest('POST', server2 + '/json-rpc',
+        {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
+        .body.toString('utf-8')).result;
       });
 
 
@@ -570,7 +564,7 @@ describe('Integration Tests', () => {
       });
 
       // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
-      // Ability to reuse private key is required to make this test case work
+      /*
       it('and can be stopped and restarted', () => {
         console.log(`Shutting down server[0]...`);
         SERVER_PROCS[0].kill();
@@ -593,6 +587,7 @@ describe('Integration Tests', () => {
         expect(lastBlockFromRunningBlockchain.number)
         .to.equal(lastBlockFromStoppedBlockchain.number);
       });
+      */
     });
   });
 });
