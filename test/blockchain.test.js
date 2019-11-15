@@ -1,5 +1,3 @@
-const path = require('path');
-const fs = require("fs")
 const Blockchain = require('../blockchain/');
 const {Block} = require('../blockchain/block');
 const chai = require('chai');
@@ -8,43 +6,25 @@ const rimraf = require('rimraf');
 const assert = chai.assert;
 const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
-
-function setDbForTesting(db, accountIndex = 0) {
-  const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
-  if (!fs.existsSync(ownersFile)) {
-    throw Error('Missing owners file: ' + ownersFile);
-  }
-  const owners = JSON.parse(fs.readFileSync(ownersFile));
-  db.setOwnersForTesting("test", owners);
-  const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
-  if (!fs.existsSync(rulesFile)) {
-    throw Error('Missing rules file: ' + rulesFile);
-  }
-  const rules = JSON.parse(fs.readFileSync(rulesFile));
-  db.setRulesForTesting("test", rules);
-
-  db.setAccountForTesting(accountIndex)
-}
+const {setDbForTesting} = require('./test-util')
 
 describe('Blockchain', () => {
-  let bc, bc2, tp, db1, db2;
+  let bc1, bc2, tp, db1, db2;
 
   beforeEach(() => {
-    bc = new Blockchain('first-blockchain');
-    bc2 = new Blockchain('second-blockchain');
-    // Manage use of these transaction pools beer
     tp = new TransactionPool();
-    db1 = DB.getDatabase(bc, tp);
-    setDbForTesting(db1, 0);
-    db2 = DB.getDatabase(bc2, new TransactionPool());
-    setDbForTesting(db2, 1);
+    bc1 = new Blockchain('test-blockchain1');
+    db1 = DB.getDatabase(bc1, tp);
+    setDbForTesting(bc1, tp, db1, 0);
+    bc2 = new Blockchain('test-blockchain2');
+    db2 = DB.getDatabase(bc2, tp);
+    setDbForTesting(bc2, tp, db2, 1);
   });
 
   afterEach(() => {
-    rimraf.sync(bc._blockchainDir());
+    rimraf.sync(bc1._blockchainDir());
     rimraf.sync(bc2._blockchainDir());
   });
-
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
   /*
@@ -55,18 +35,18 @@ describe('Blockchain', () => {
 
   it('adds new block', () => {
     const data = 'foo';
-    const lastBlock = bc.lastBlock();
-    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.lastBlockNumber() + 1,
+    const lastBlock = bc1.lastBlock();
+    bc1.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc1.lastBlockNumber() + 1,
         db1.account.address, []));
-    expect(bc.chain[bc.chain.length -1].transactions).to.equal(data);
+    expect(bc1.chain[bc1.chain.length -1].transactions).to.equal(data);
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
   /*
   it('validates a valid chain', () => {
     const data = 'foo';
-    bc.addNewBlock(Block.createBlock(data, db1, bc.lastBlockNumber() + 1, bc.lastBlock()));
-    expect(Blockchain.isValidChain(bc.chain)).to.equal(true);
+    bc1.addNewBlock(Block.createBlock(data, db1, bc1.lastBlockNumber() + 1, bc1.lastBlock()));
+    expect(Blockchain.isValidChain(bc1.chain)).to.equal(true);
   });
   */
 
@@ -77,11 +57,11 @@ describe('Blockchain', () => {
 
   it('invalidates corrupt chain', () => {
     const data = 'foo';
-    const lastBlock = bc.lastBlock();
-    bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc.lastBlockNumber() + 1,
+    const lastBlock = bc1.lastBlock();
+    bc1.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc1.lastBlockNumber() + 1,
         db1.account.address, []));
-    bc.chain[bc.lastBlockNumber()].transactions = ':(';
-    expect(Blockchain.isValidChain(bc.chain)).to.equal(false);
+    bc1.chain[bc1.lastBlockNumber()].transactions = ':(';
+    expect(Blockchain.isValidChain(bc1.chain)).to.equal(false);
   });
 
   describe('with lots of blocks', () => {
@@ -99,41 +79,41 @@ describe('Blockchain', () => {
             value: 'val'
           }
         });
-        const lastBlock = bc.lastBlock();
+        const lastBlock = bc1.lastBlock();
         const block = Block.createBlock(lastBlock.hash, [], tp.validTransactions(),
-            bc.lastBlockNumber() + 1, db1.account.address, []);
+            bc1.lastBlockNumber() + 1, db1.account.address, []);
         if (block.number === 500) {
           blockHash = block.hash;
         }
         blocks.push(block);
-        bc.addNewBlock(block);
+        bc1.addNewBlock(block);
         tp.removeCommitedTransactions(block);
       }
     });
 
     it(' can sync on startup', () => {
-      while (bc.lastBlock().hash !== bc2.lastBlock().hash) {
-        const blockSection = bc.requestBlockchainSection(bc2.lastBlock());
+      while (bc1.lastBlock().hash !== bc2.lastBlock().hash) {
+        const blockSection = bc1.requestBlockchainSection(bc2.lastBlock());
         if (blockSection) {
           bc2.merge(blockSection);
         }
       }
-      assert.deepEqual(JSON.stringify(bc.chain), JSON.stringify(bc2.chain));
+      assert.deepEqual(JSON.stringify(bc1.chain), JSON.stringify(bc2.chain));
     });
 
     it('can be queried by index', () => {
-      assert.deepEqual(JSON.stringify(bc.getChainSection(10, 30)),
+      assert.deepEqual(JSON.stringify(bc1.getChainSection(10, 30)),
           JSON.stringify(blocks.slice(9, 29)));
-      assert.deepEqual(JSON.stringify(bc.getChainSection(980, 1010)),
+      assert.deepEqual(JSON.stringify(bc1.getChainSection(980, 1010)),
           JSON.stringify(blocks.slice(979, 1010)));
     });
 
     it('can be queried by block number', () => {
-      expect(bc.getBlockByNumber(600).number).to.equal(600);
+      expect(bc1.getBlockByNumber(600).number).to.equal(600);
     });
 
     it('can be queried by block hash', () => {
-      expect(bc.getBlockByHash(blockHash).number).to.equal(500);
+      expect(bc1.getBlockByHash(blockHash).number).to.equal(500);
     });
   });
 });
