@@ -116,9 +116,8 @@ app.post('/get', (req, res, next) => {
 
 app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE),
-                                              isNoncedTransaction);
+  const result = createTransaction(
+      createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -127,9 +126,8 @@ app.post('/set_value', (req, res, next) => {
 
 app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE),
-                                              isNoncedTransaction);
+  const result = createTransaction(
+      createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -138,9 +136,8 @@ app.post('/inc_value', (req, res, next) => {
 
 app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE),
-                                              isNoncedTransaction);
+  const result = createTransaction(
+      createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -149,9 +146,8 @@ app.post('/dec_value', (req, res, next) => {
 
 app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.SET_RULE),
-                                              isNoncedTransaction);
+  const result = createTransaction(
+      createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
@@ -160,9 +156,8 @@ app.post('/set_rule', (req, res, next) => {
 
 app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result =
-      createTransaction(createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER),
-                                              isNoncedTransaction);
+  const result = createTransaction(
+      createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
