@@ -60,8 +60,8 @@ const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
 const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
 
-const setEndpoint = '/set_value';
-const getEndpoint = '/get_value'
+const SET_VALUE_ENDPOINT = '/set_value';
+const GET_VALUE_ENDPOINT = '/get_value'
 const BLOCKS_ENDPOINT = '/blocks'
 
 // Data options
@@ -171,16 +171,18 @@ function waitUntilNodeStakes() {
 }
 
 function waitUntilNewBlock() {
-  let latestBlocks = JSON.parse(syncRequest('GET', server1 + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
-  const initialLastBlockHeight = Number(latestBlocks[latestBlocks.length -1].number);
-  let updatedHeight = initialLastBlockHeight
-  console.log(`Initial height ${initialLastBlockHeight}`)
-  while (!(updatedHeight > initialLastBlockHeight)) {
+  let latestBlocks =
+      JSON.parse(syncRequest('GET', server1 + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
+  const initialLastBlockNumber = Number(latestBlocks[latestBlocks.length - 1].number);
+  let updatedLastBlockNumber = initialLastBlockNumber
+  console.log(`Initial last block number: ${initialLastBlockNumber}`)
+  while (!(updatedLastBlockNumber > initialLastBlockNumber)) {
     sleep(500)
-    latestBlocks = JSON.parse(syncRequest('GET', server1 + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
-    updatedHeight = Number(latestBlocks[latestBlocks.length -1].number);
+    latestBlocks =
+        JSON.parse(syncRequest('GET', server1 + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
+    updatedLastBlockNumber = Number(latestBlocks[latestBlocks.length - 1].number);
   }
-  console.log(`Updated height ${updatedHeight}`)
+  console.log(`Updated last block number: ${updatedLastBlockNumber}`)
 }
 
 
@@ -199,7 +201,6 @@ function sendTransactions(sentOperations) {
 describe('Integration Tests', () => {
   let trackerProc;
   let numNewBlocks = 0;
-  let numBlocks;
   let numBlocksOnStartup;
   let jsonRpcClient;
   let trackerRpcClient;
@@ -261,9 +262,9 @@ describe('Integration Tests', () => {
       for (let i = 1; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
-        let baseValues = JSON.parse(syncRequest('GET', server1 + getEndpoint + '?ref=/')
+        let baseValues = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=/')
           .body.toString('utf-8'));
-        const values = JSON.parse(syncRequest('GET', SERVERS[i] + getEndpoint + '?ref=/')
+        const values = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=/')
         .body.toString('utf-8'));
         assert.deepEqual(values, baseValues)
       }
@@ -275,10 +276,16 @@ describe('Integration Tests', () => {
       let baseChain;
       let number;
       const newServer = 'http://localhost:9095';
-      const newServerProc = new Process(APP_SERVER, {P2P_PORT: 5005, PORT: 9095, LOG: true,
-                                        STAKE: 250, LOCAL: true, DEBUG: true,
-                                        ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-                                        ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'});
+      const newServerProc = new Process(APP_SERVER, {
+        P2P_PORT: 5005,
+        PORT: 9095,
+        LOG: true,
+        STAKE: 250,
+        LOCAL: true,
+        DEBUG: true,
+        ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
+        ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+      });
       newServerProc.start();
       sleep(10000);
       return new Promise((resolve) => {
@@ -362,7 +369,9 @@ describe('Integration Tests', () => {
               // if (blocks[j - 1].validators.indexOf(vote.address) < 0) {
               if (!blocks[j - 1].validators[last_vote.address]) {
                 console.log(blocks[j -1])
-                console.log(`Votes for block ${j -1} had validator ${last_vote.address} which was not in designated validators list ${JSON.stringify(blocks[j - 1].validators)}`)
+                console.log(`Votes for block ${j -1} had validator ${last_vote.address} ` +
+                    `which was not in designated validators list ` +
+                    `${JSON.stringify(blocks[j - 1].validators)}`)
                 assert.fail(`Invalid validator is validating block ${last_vote.address}`);
               }
               if (last_vote.operation.ref === PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH) {
@@ -430,7 +439,7 @@ describe('Integration Tests', () => {
       it('prevent users from restructed areas', () => {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
-        const result = syncRequest('POST', server2 + setEndpoint,
+        const result = syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
             {json: {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}});
         expect(result.statusCode).to.equal(401);
       });
@@ -438,9 +447,9 @@ describe('Integration Tests', () => {
 
     describe('and built in functions', () => {
       beforeEach(() => {
-        syncRequest('POST', server1 + setEndpoint,
+        syncRequest('POST', server1 + SET_VALUE_ENDPOINT,
             {json: {ref: `/accounts/${publicKeys[0]}/balance`, value: 100}});
-        syncRequest('POST', server2 + setEndpoint,
+        syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
             {json: {ref: `/accounts/${publicKeys[1]}/balance`, value: 0}});
         sleep(200);
       });
@@ -448,14 +457,14 @@ describe('Integration Tests', () => {
       it('facilitate transfer between accounts', () => {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
-        syncRequest('POST', server1 + setEndpoint,
+        syncRequest('POST', server1 + SET_VALUE_ENDPOINT,
             {json: {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 10}});
         sleep(500);
         const balance1 = JSON.parse(syncRequest('GET',
-            server3 + getEndpoint + `?ref=/accounts/${publicKeys[0]}/balance`)
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${publicKeys[0]}/balance`)
             .body.toString('utf-8')).result;
         const balance2 = JSON.parse(syncRequest('GET',
-            server3 + getEndpoint + `?ref=/accounts/${publicKeys[1]}/balance`)
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${publicKeys[1]}/balance`)
             .body.toString('utf-8')).result;
         expect(balance1).to.equal(90);
         expect(balance2).to.equal(10);
@@ -516,7 +525,8 @@ describe('Integration Tests', () => {
         for (let i = 0; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
           waitUntilNewBlock();
-          blocks = JSON.parse(syncRequest('GET', SERVERS[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
+          blocks = JSON.parse(syncRequest(
+              'GET', SERVERS[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
           const transactionsOnBlockChain = [];
           blocks.forEach((block) => {
             block.transactions.forEach((transaction) => {
@@ -554,9 +564,9 @@ describe('Integration Tests', () => {
         for (let i = 1; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
           waitUntilNewBlock();
-          body1 = JSON.parse(syncRequest('GET', server1 + getEndpoint + '?ref=test')
+          body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
               .body.toString('utf-8'));
-          body2 = JSON.parse(syncRequest('GET', SERVERS[i] + getEndpoint + '?ref=test')
+          body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
               .body.toString('utf-8'));
           assert.deepEqual(body1.result, body2.result);
         }
