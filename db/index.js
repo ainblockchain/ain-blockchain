@@ -55,6 +55,12 @@ class DB {
     this.account = GenesisAccounts.others[accountIndex];
   }
 
+  startWithBlockchain(blockchain, tp) {
+    console.log('Starting database with a blockchain..')
+    this.nonce = this.getNonce(blockchain);
+    this.reconstruct(blockchain, tp);
+  }
+
   static getDatabase(blockchain, tp) {
     const db = new DB(blockchain);
     blockchain.setBackDb(new BackUpDB(db.account));

@@ -1,47 +1,22 @@
-const path = require('path');
-const fs = require("fs")
-const ainUtil = require('@ainblockchain/ain-util');
-const TransactionPool = require('../db/transaction-pool');
-const Transaction = require('../db/transaction');
-const Blockchain = require('../blockchain/');
-const {Block} = require('../blockchain/block');
-const DB = require('../db');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
-
-function setDbForTesting(db, accountIndex = 0) {
-  const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
-  if (!fs.existsSync(ownersFile)) {
-    throw Error('Missing owners file: ' + ownersFile);
-  }
-  const owners = JSON.parse(fs.readFileSync(ownersFile));
-  db.setOwnersForTesting("test", owners);
-  const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
-  if (!fs.existsSync(rulesFile)) {
-    throw Error('Missing rules file: ' + rulesFile);
-  }
-  const rules = JSON.parse(fs.readFileSync(rulesFile));
-  db.setRulesForTesting("test", rules);
-
-  db.setAccountForTesting(accountIndex);
-}
-
-function getTransaction(db, txData) {
-  txData.nonce = db.nonce;
-  db.nonce++;
-  return Transaction.newTransaction(db.account.private_key, txData);
-}
+const ainUtil = require('@ainblockchain/ain-util');
+const TransactionPool = require('../db/transaction-pool');
+const Blockchain = require('../blockchain/');
+const {Block} = require('../blockchain/block');
+const DB = require('../db');
+const {setDbForTesting, getTransaction} = require('./test-util')
 
 describe('TransactionPool', () => {
   let tp; let db; let bc; let transaction;
 
   beforeEach(() => {
-    tp = new TransactionPool();
     bc = new Blockchain('test-blockchain');
-    db = new DB(bc);
-    setDbForTesting(db, 0);
+    tp = new TransactionPool();
+    db = DB.getDatabase(bc, tp);
+    setDbForTesting(bc, tp, db, 0);
 
     transaction = getTransaction(db, {
       operation: {
@@ -75,12 +50,15 @@ describe('TransactionPool', () => {
       }
       tp.transactions[db.account.address] = shuffleSeed.shuffle(tp.transactions[db.account.address]);
 
-      db2 = new DB(bc);
-      setDbForTesting(db2, 1);
-      db3 = new DB(bc);
-      setDbForTesting(db3, 2);
-      db4 = new DB(bc);
-      setDbForTesting(db4, 3);
+      const bc2 = new Blockchain('test-blockchain2');
+      db2 = DB.getDatabase(bc2, tp);
+      setDbForTesting(bc2, tp, db2, 1);
+      const bc3 = new Blockchain('test-blockchain3');
+      db3 = DB.getDatabase(bc3, tp);
+      setDbForTesting(bc3, tp, db3, 2);
+      const bc4 = new Blockchain('test-blockchain4');
+      db4 = DB.getDatabase(bc4, tp);
+      setDbForTesting(bc4, tp, db4, 3);
       const dbs = [db2, db3, db4];
       for (let j = 0; j < dbs.length; j++) {
         for (let i = 0; i < 11; i++) {

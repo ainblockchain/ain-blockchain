@@ -1,5 +1,5 @@
-const path = require('path');
 const fs = require("fs")
+const rimraf = require('rimraf');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -9,32 +9,21 @@ const ChainUtil = require('../chain-util')
 const Blockchain = require('../blockchain')
 const {GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths}
     = require('../constants')
-
-function setDbForTesting(db, accountIndex = 0) {
-  const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
-  if (!fs.existsSync(ownersFile)) {
-    throw Error('Missing owners file: ' + ownersFile);
-  }
-  const owners = JSON.parse(fs.readFileSync(ownersFile));
-  db.setOwnersForTesting("test", owners);
-  const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
-  if (!fs.existsSync(rulesFile)) {
-    throw Error('Missing rules file: ' + rulesFile);
-  }
-  const rules = JSON.parse(fs.readFileSync(rulesFile));
-  db.setRulesForTesting("test", rules);
-
-  db.setAccountForTesting(accountIndex)
-}
+const {setDbForTesting} = require('./test-util')
 
 describe("DB initialization", () => {
   let db, bc, tp;
 
   beforeEach(() => {
     tp = new TransactionPool();
-    bc = new Blockchain("db-test");
+    bc = new Blockchain("test-blockchain");
     db = DB.getDatabase(bc, tp);
+    setDbForTesting(bc, tp, db, 0, true);
   })
+
+  afterEach(() => {
+    rimraf.sync(bc._blockchainDir());
+  });
 
   describe("token", () => {
     it("loading token properly on initialization", () => {
@@ -58,7 +47,6 @@ describe("DB initialization", () => {
     it("loading owners properly on initialization", () => {
       const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
       assert.deepEqual(db.getOwner("/"), owners);
-
     })
   })
 
@@ -66,7 +54,6 @@ describe("DB initialization", () => {
     it("loading rules properly on initialization", () => {
       const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
       assert.deepEqual(db.getRule("/"), rules);
-
     })
   })
 })
@@ -75,10 +62,12 @@ describe("DB operations", () => {
   let db, dbValues, dbRules, dbOwners, bc, tp;
 
   beforeEach(() => {
+    let result;
+
     tp = new TransactionPool();
-    bc = new Blockchain("db-test");
+    bc = new Blockchain("test-blockchain");
     db = DB.getDatabase(bc, tp);
-    setDbForTesting(db, 0);
+    setDbForTesting(bc, tp, db);
     dbValues = {
       "ai": {
         "comcom": 123,
@@ -98,7 +87,8 @@ describe("DB operations", () => {
         }
       }
     };
-    db.setValue("test", dbValues);
+    result = db.setValue("test", dbValues);
+    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
     dbRules = {
       "some": {
         "path": {
@@ -106,7 +96,8 @@ describe("DB operations", () => {
         }
       }
     };
-    db.setRule("test/test_rule", dbRules);
+    result = db.setRule("test/test_rule", dbRules);
+    console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
     dbOwners = {
       "some": {
         "path": {
@@ -122,8 +113,13 @@ describe("DB operations", () => {
         }
       }
     };
-    db.setOwner("test/test_owner", dbOwners);
+    result = db.setOwner("test/test_owner", dbOwners);
+    console.log(`Result of setOwner(): ${JSON.stringify(result, null, 2)}`);
   })
+
+  afterEach(() => {
+    rimraf.sync(bc._blockchainDir());
+  });
 
   describe("getValue operations", () => {
     it("when retrieving high value near top of database", () => {
@@ -572,12 +568,12 @@ describe("DB rule config", () => {
 
   beforeEach(() => {
     tp = new TransactionPool();
-    bc = new Blockchain("db-test");
-    bc2 = new Blockchain("db-test");
-    db1 = DB.getDatabase(bc, tp);
-    setDbForTesting(db1, 0);
+    bc1 = new Blockchain("test-blockchain1");
+    db1 = DB.getDatabase(bc1, tp);
+    setDbForTesting(bc1, tp, db1, 0);
+    bc2 = new Blockchain("test-blockchain2");
     db2 = DB.getDatabase(bc2, tp);
-    setDbForTesting(db2, 1);
+    setDbForTesting(bc2, tp, db2, 1);
     dbValues = {
       "comcom": "unreadable value",
       "unspecified": {
@@ -608,6 +604,11 @@ describe("DB rule config", () => {
     db1.setValue("test", dbValues);
     db2.setValue("test", dbValues);
   })
+
+  afterEach(() => {
+    rimraf.sync(bc1._blockchainDir());
+    rimraf.sync(bc2._blockchainDir());
+  });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
     expect(db2.getPermissionForValue(
@@ -683,9 +684,9 @@ describe("DB owner config", () => {
 
   beforeEach(() => {
     tp = new TransactionPool();
-    bc = new Blockchain("db-test");
+    bc = new Blockchain("test-blockchain");
     db = DB.getDatabase(bc, tp);
-    setDbForTesting(db, 0);
+    setDbForTesting(bc, tp, db, 0);
     db.setOwner("test/test_owner/mixed/true/true/true", 
       {
         ".owner": {
@@ -779,6 +780,10 @@ describe("DB owner config", () => {
       }
     );
   })
+
+  afterEach(() => {
+    rimraf.sync(bc._blockchainDir());
+  });
 
   // Known user
   it("branch_owner permission for known user with mixed config", () => {
