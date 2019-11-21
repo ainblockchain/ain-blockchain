@@ -25,7 +25,7 @@ class Blockchain {
 
   startWithGenesisBlock() {
     console.log('Starting chain with a genesis block..')
-    this.chain.push(Block.genesis());
+    this.chain = [Block.genesis()];
     this.writeChain();
   }
 
