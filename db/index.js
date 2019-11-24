@@ -125,6 +125,21 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
+  evalRule(valuePath, value, address, timestamp) {
+    const parsedPath = ChainUtil.parsePath(valuePath);
+    return this.getPermissionForValue(parsedPath, value, address, timestamp);
+  }
+
+  evalOwner(ruleOrOwnerPath, address) {
+    const parsedPath = ChainUtil.parsePath(ruleOrOwnerPath);
+    const { ownerConfig } = this.getOwnerConfig(parsedPath);
+    const permissions = this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return {};
+    }
+    return permissions;
+  }
+
   get(opList) {
     const resultList = [];
     opList.forEach((item) => {
@@ -451,17 +466,29 @@ class DB {
         break;
       }
     }
-    return !!this.evalRule(rule, pathVars, valuePath, newValue, address, timestamp);
+    return !!this.evalRuleString(rule, pathVars, valuePath, newValue, address, timestamp);
   }
 
   getPermissionForRule(rulePath, address) {
-    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(rulePath);
-    return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, false);
+    const { ownerConfig } = this.getOwnerConfig(rulePath);
+    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return false;
+    }
+    return (permissions[OwnerProperties.WRITE_RULE] === true);
   }
 
   getPermissionForOwner(ownerPath, address) {
     const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(ownerPath);
-    return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, true);
+    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return false;
+    }
+    if (isAncestorConfig) {
+      return (permissions[OwnerProperties.BRANCH_OWNER] === true);
+    } else {
+      return (permissions[OwnerProperties.WRITE_OWNER] === true);
+    }
   }
 
   makeEvalFunction(ruleString, pathVars) {
@@ -470,7 +497,7 @@ class DB {
                         '"use strict"; return ' + ruleString);
   }
 
-  evalRule(rule, pathVars, valuePath, newValue, address, timestamp) {
+  evalRuleString(rule, pathVars, valuePath, newValue, address, timestamp) {
     if (typeof rule === 'boolean') {
       return rule;
     } else if (typeof rule !== 'string') {
@@ -507,14 +534,14 @@ class DB {
     return { ownerConfig, isAncestorConfig };
   }
 
-  checkOwnerConfig(config, isAncestorConfig, address, isOwner) {
+  getOwnerPermissions(config, address) {
     if (!config) {
-      return false;
+      return null;
     }
     let owners = null;
     owners = config[OwnerProperties.OWNERS];
     if (!owners) {
-      return false;
+      return null;
     }
     // Step 1: Check if the address exists in owners.
     let permissions = owners[address];
@@ -523,17 +550,9 @@ class DB {
       permissions = owners[OwnerProperties.ANYONE];
     }
     if (!permissions) {
-      return false;
+      return null;
     }
-    if (isOwner) {
-      if (isAncestorConfig) {
-        return (permissions[OwnerProperties.BRANCH_OWNER] === true);
-      } else {
-        return (permissions[OwnerProperties.WRITE_OWNER] === true);
-      }
-    } else {
-      return (permissions[OwnerProperties.WRITE_RULE] === true);
-    }
+    return permissions;
   }
 }
 

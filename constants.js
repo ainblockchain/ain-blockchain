@@ -133,6 +133,8 @@ const ReadDbOperations = {
   GET_VALUE: 'GET_VALUE',
   GET_RULE: 'GET_RULE',
   GET_OWNER: 'GET_OWNER',
+  EVAL_RULE: 'EVAL_RULE',
+  EVAL_OWNER: 'EVAL_OWNER',
   GET: 'GET',
 };
 
