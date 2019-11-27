@@ -119,6 +119,12 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
+  getFunction(functionPath) {
+    const parsedPath = ChainUtil.parsePath(functionPath);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    return this.readDatabase(fullPath);
+  }
+
   getOwner(ownerPath) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -209,6 +215,18 @@ class DB {
     return true;
   }
 
+  setFunction(functionPath, functionInfo, address) {
+    const parsedPath = ChainUtil.parsePath(functionPath);
+    // TODO(minhyun): Use getPermissionForFunction
+    if (!this.getPermissionForFunction(parsedPath, address)) {
+      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
+    }
+    const functionInfoCopy = ChainUtil.isDict(functionInfo) ? JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    this.writeDatabase(fullPath, functionInfoCopy);
+    return true;
+  }
+
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   set(opList, address, timestamp) {
     let ret = true;
@@ -236,6 +254,11 @@ class DB {
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
         ret = this.setOwner(op.ref, op.value, address);
+        if (ret !== true) {
+          break;
+        }
+      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
+        ret = this.setFunction(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
@@ -399,6 +422,8 @@ class DB {
         return this.decValue(operation.ref, operation.value, address, timestamp);
       case WriteDbOperations.SET_RULE:
         return this.setRule(operation.ref, operation.value, address);
+      case WriteDbOperations.SET_FUNCTION:
+        return this.setFunction(operation.ref, operation.value, address);
       case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address);
       case WriteDbOperations.SET:
@@ -456,12 +481,20 @@ class DB {
 
   getPermissionForRule(rulePath, address) {
     const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(rulePath);
-    return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, false);
+    return this.checkOwnerConfig(ownerConfig, address, OwnerProperties.WRITE_RULE);
+  }
+
+  getPermissionForFunction(functionPath, address) {
+    console.log("functionPath", functionPath)
+    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(functionPath);
+    console.log("getPermissionForFunction", ownerConfig)
+    return this.checkOwnerConfig(ownerConfig, address, OwnerProperties.WRITE_FUNCTION);
   }
 
   getPermissionForOwner(ownerPath, address) {
     const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(ownerPath);
-    return this.checkOwnerConfig(ownerConfig, isAncestorConfig, address, true);
+    return this.checkOwnerConfig(ownerConfig, address,
+      isAncestorConfig ? OwnerProperties.BRANCH_OWNER :OwnerProperties.WRITE_OWNER);
   }
 
   makeEvalFunction(ruleString, pathVars) {
@@ -507,17 +540,21 @@ class DB {
     return { ownerConfig, isAncestorConfig };
   }
 
-  checkOwnerConfig(config, isAncestorConfig, address, isOwner) {
+  checkOwnerConfig(config, address, ownerProperties) {
     if (!config) {
       return false;
     }
+    console.log("1")
     let owners = null;
     owners = config[OwnerProperties.OWNERS];
+    console.log("2")
     if (!owners) {
+      console.log("3")
       return false;
     }
     // Step 1: Check if the address exists in owners.
     let permissions = owners[address];
+    console.log("permissions", permissions)
     // Step 2: If the address does not exist in owners, check permissions for anyone ('*').
     if (!permissions) {
       permissions = owners[OwnerProperties.ANYONE];
@@ -525,15 +562,7 @@ class DB {
     if (!permissions) {
       return false;
     }
-    if (isOwner) {
-      if (isAncestorConfig) {
-        return (permissions[OwnerProperties.BRANCH_OWNER] === true);
-      } else {
-        return (permissions[OwnerProperties.WRITE_OWNER] === true);
-      }
-    } else {
-      return (permissions[OwnerProperties.WRITE_RULE] === true);
-    }
+    return (permissions[ownerProperties] === true);
   }
 }
 

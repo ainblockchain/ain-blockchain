@@ -106,7 +106,8 @@ describe("DB operations", () => {
               "*": {
                 "branch_owner": true,
                 "write_owner": true,
-                "write_rule": true
+                "write_rule": true,
+                "write_function": true,
               }
             }
           }
@@ -161,7 +162,8 @@ describe("DB operations", () => {
             "*": {
               "branch_owner": true,
               "write_owner": true,
-              "write_rule": true
+              "write_rule": true,
+              "write_function": true,
             }
           }
         }
@@ -212,7 +214,8 @@ describe("DB operations", () => {
               "*": {
                 "branch_owner": true,
                 "write_owner": true,
-                "write_rule": true
+                "write_rule": true,
+                "write_funtion": true,
               }
             }
           }
@@ -282,6 +285,16 @@ describe("DB operations", () => {
       const ownerConfig = {".owner": "other owner config"};
       expect(db.setOwner("/test/test_owner/some/path", ownerConfig)).to.equal(true)
       assert.deepEqual(db.getOwner("/test/test_owner/some/path"), ownerConfig)
+    })
+  })
+
+  describe("setFunction operations", () => {
+    it("when retrieving existing function config", () => {
+      const functionConfig = {"registry_service": "functions.ainetwork.ai",
+                              "event_listener": "events.ainetwork.ai",
+                              "function_hash": '0xFUNCTION_HASH'};
+      expect(db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
+      assert.deepEqual(db.getFunction("/test/test_function/some/path"), functionConfig)
     })
   })
 
@@ -687,7 +700,7 @@ describe("DB owner config", () => {
     bc = new Blockchain("test-blockchain");
     db = DB.getDatabase(bc, tp);
     setDbForTesting(bc, tp, db, 0);
-    db.setOwner("test/test_owner/mixed/true/true/true", 
+    db.setOwner("test/test_owner/mixed/true/true/true",
       {
         ".owner": {
           "owners": {
