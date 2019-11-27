@@ -217,7 +217,6 @@ class DB {
 
   setFunction(functionPath, functionInfo, address) {
     const parsedPath = ChainUtil.parsePath(functionPath);
-    // TODO(minhyun): Use getPermissionForFunction
     if (!this.getPermissionForFunction(parsedPath, address)) {
       return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
     }

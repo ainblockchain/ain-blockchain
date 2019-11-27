@@ -290,9 +290,13 @@ describe("DB operations", () => {
 
   describe("setFunction operations", () => {
     it("when retrieving existing function config", () => {
-      const functionConfig = {"registry_service": "functions.ainetwork.ai",
+      const functionConfig = {".function": {
+        "functions": {
+          '0xFUNCTION_HASH': {"registry_service": "functions.ainetwork.ai",
                               "event_listener": "events.ainetwork.ai",
-                              "function_hash": '0xFUNCTION_HASH'};
+                              "deployed_by": '0xaddress'}
+        }
+      }};
       expect(db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
       assert.deepEqual(db.getFunction("/test/test_function/some/path"), functionConfig)
     })
