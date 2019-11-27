@@ -215,7 +215,7 @@ describe("DB operations", () => {
                 "branch_owner": true,
                 "write_owner": true,
                 "write_rule": true,
-                "write_funtion": true,
+                "write_function": true,
               }
             }
           }

@@ -485,9 +485,7 @@ class DB {
   }
 
   getPermissionForFunction(functionPath, address) {
-    console.log("functionPath", functionPath)
     const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(functionPath);
-    console.log("getPermissionForFunction", ownerConfig)
     return this.checkOwnerConfig(ownerConfig, address, OwnerProperties.WRITE_FUNCTION);
   }
 
@@ -544,17 +542,13 @@ class DB {
     if (!config) {
       return false;
     }
-    console.log("1")
     let owners = null;
     owners = config[OwnerProperties.OWNERS];
-    console.log("2")
     if (!owners) {
-      console.log("3")
       return false;
     }
     // Step 1: Check if the address exists in owners.
     let permissions = owners[address];
-    console.log("permissions", permissions)
     // Step 2: If the address does not exist in owners, check permissions for anyone ('*').
     if (!permissions) {
       permissions = owners[OwnerProperties.ANYONE];
