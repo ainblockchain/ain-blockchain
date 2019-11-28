@@ -491,7 +491,7 @@ class DB {
   getPermissionForOwner(ownerPath, address) {
     const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(ownerPath);
     return this.checkOwnerConfig(ownerConfig, address,
-      isAncestorConfig ? OwnerProperties.BRANCH_OWNER :OwnerProperties.WRITE_OWNER);
+      isAncestorConfig ? OwnerProperties.BRANCH_OWNER : OwnerProperties.WRITE_OWNER);
   }
 
   makeEvalFunction(ruleString, pathVars) {
@@ -537,7 +537,7 @@ class DB {
     return { ownerConfig, isAncestorConfig };
   }
 
-  checkOwnerConfig(config, address, ownerProperties) {
+  checkOwnerConfig(config, address, ownerProperty) {
     if (!config) {
       return false;
     }
@@ -555,7 +555,7 @@ class DB {
     if (!permissions) {
       return false;
     }
-    return (permissions[ownerProperties] === true);
+    return (permissions[ownerProperty] === true);
   }
 }
 
