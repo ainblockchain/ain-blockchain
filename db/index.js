@@ -4,6 +4,7 @@ const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties,
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
+const RuleUtil = require('./rule-util');
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 
 class DB {
@@ -479,12 +480,12 @@ class DB {
   }
 
   getPermissionForRule(rulePath, address) {
-    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(rulePath);
+    const { ownerConfig } = this.getOwnerConfig(rulePath);
     return this.checkOwnerConfig(ownerConfig, address, OwnerProperties.WRITE_RULE);
   }
 
   getPermissionForFunction(functionPath, address) {
-    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(functionPath);
+    const { ownerConfig } = this.getOwnerConfig(functionPath);
     return this.checkOwnerConfig(ownerConfig, address, OwnerProperties.WRITE_FUNCTION);
   }
 
@@ -496,7 +497,7 @@ class DB {
 
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-                        'getOwner', ...Object.keys(pathVars),
+                        'getOwner', 'util', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
@@ -509,7 +510,7 @@ class DB {
     let evalFunc = this.makeEvalFunction(rule, pathVars);
     const data = this.getValue(valuePath.join('/'));
     return evalFunc(address, data, newValue, timestamp, this.getValue.bind(this),
-                    this.getRule.bind(this), this.getOwner.bind(this),
+                    this.getRule.bind(this), this.getOwner.bind(this), new RuleUtil(),
                     ...Object.values(pathVars));
   }
 
