@@ -36,7 +36,7 @@
       "$uid": {
         "$deposit_id": {
           "value": {
-            ".write": "auth === $uid && !getValue('/deposit/' + $service_id + '/' + $uid + '/' + $deposit_id) && getValue('/accounts/' + $uid + '/balance') >= newData"
+            ".write": "auth === $uid && !getValue('/deposit/' + $service_id + '/' + $uid + '/' + $deposit_id) && (util.length($uid) !== 40 || util.isChecksumAddr($uid)) && getValue('/accounts/' + $uid + '/balance') >= newData"
           },
           "createdAt": {
             ".write": false
@@ -66,7 +66,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "auth === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && getValue('accounts/' + $from + '/balance') >= newData"
+            ".write": "auth === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 40 || util.isChecksumAddr($from)) && (util.length($to) !== 40 || util.isChecksumAddr($to)) && getValue('accounts/' + $from + '/balance') >= newData"
           }
         }
       }

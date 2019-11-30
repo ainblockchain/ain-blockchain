@@ -1,6 +1,7 @@
 const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
+const _ = require("lodash");
 const spawn = require("child_process").spawn;
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
@@ -588,6 +589,24 @@ describe('API Tests', () => {
               value: val
             }});
         expect(result.statusCode).to.equal(401);
+      });
+
+      it('deposit with non-checksum addreess', () => {
+        const addrLowerCase = _.toLower(depositActor);
+        const depositPathLowerCase = `/deposit/checksum_addr_test_service/${addrLowerCase}`;
+        const resultLowerCase = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: depositPathLowerCase + '/100/value',
+              value: val
+            }});
+        expect(resultLowerCase.statusCode).to.equal(401);
+
+        const addrUpperCase = _.toUpper(depositActor);
+        const depositPathUpperCase = `/deposit/checksum_addr_test_service/${addrUpperCase}`;
+        const resultUpperCase = syncRequest('POST', server2 + '/set_value', {json: {
+              ref: depositPathUpperCase + '/100/value',
+              value: val
+            }});
+        expect(resultUpperCase.statusCode).to.equal(401);
       });
     });
 

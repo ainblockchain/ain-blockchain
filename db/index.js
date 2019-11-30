@@ -4,7 +4,7 @@ const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties,
 const ChainUtil = require('../chain-util');
 const Transaction = require('./transaction');
 const BuiltInFunctions = require('./built-in-functions');
-const RuleUtil = require('./rule-util');
+const BuiltInRuleUtil = require('./built-in-rule-util');
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 
 class DB {
@@ -510,7 +510,7 @@ class DB {
     let evalFunc = this.makeEvalFunction(rule, pathVars);
     const data = this.getValue(valuePath.join('/'));
     return evalFunc(address, data, newValue, timestamp, this.getValue.bind(this),
-                    this.getRule.bind(this), this.getOwner.bind(this), new RuleUtil(),
+                    this.getRule.bind(this), this.getOwner.bind(this), new BuiltInRuleUtil(),
                     ...Object.values(pathVars));
   }
 
