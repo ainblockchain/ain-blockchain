@@ -27,8 +27,9 @@ class DB {
       [OwnerProperties.OWNER]: {
         [OwnerProperties.OWNERS]: {
           [OwnerProperties.ANYONE]: {
-            [OwnerProperties.WRITE_OWNER]: true,
             [OwnerProperties.BRANCH_OWNER]: true,
+            [OwnerProperties.WRITE_FUNCTION]: true,
+            [OwnerProperties.WRITE_OWNER]: true,
             [OwnerProperties.WRITE_RULE]: true
           }
         }
@@ -119,7 +120,7 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
-  getFunction(functionPath) {
+  getFunc(functionPath) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     return this.readDatabase(fullPath);
@@ -131,6 +132,21 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
+  evalRule(valuePath, value, address, timestamp) {
+    const parsedPath = ChainUtil.parsePath(valuePath);
+    return this.getPermissionForValue(parsedPath, value, address, timestamp);
+  }
+
+  evalOwner(ruleOrOwnerPath, address) {
+    const parsedPath = ChainUtil.parsePath(ruleOrOwnerPath);
+    const { ownerConfig } = this.getOwnerConfig(parsedPath);
+    const permissions = this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return {};
+    }
+    return permissions;
+  }
+
   get(opList) {
     const resultList = [];
     opList.forEach((item) => {
@@ -140,6 +156,10 @@ class DB {
         resultList.push(this.getRule(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
+      } else if (item.type === ReadDbOperations.EVAL_RULE) {
+        resultList.push(this.evalRule(item.ref, item.value, item.address));
+      } else if (item.type === ReadDbOperations.EVAL_OWNER) {
+        resultList.push(this.evalOwner(item.ref, item.address));
       }
     });
     return resultList;
@@ -215,7 +235,7 @@ class DB {
     return true;
   }
 
-  setFunction(functionPath, functionInfo, address) {
+  setFunc(functionPath, functionInfo, address) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     if (!this.getPermissionForFunction(parsedPath, address)) {
       return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
@@ -256,8 +276,8 @@ class DB {
         if (ret !== true) {
           break;
         }
-      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, address);
+      } else if (op.type === WriteDbOperations.SET_FUNC) {
+        ret = this.setFunc(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
@@ -421,8 +441,8 @@ class DB {
         return this.decValue(operation.ref, operation.value, address, timestamp);
       case WriteDbOperations.SET_RULE:
         return this.setRule(operation.ref, operation.value, address);
-      case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(operation.ref, operation.value, address);
+      case WriteDbOperations.SET_FUNC:
+        return this.setFunc(operation.ref, operation.value, address);
       case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address);
       case WriteDbOperations.SET:
@@ -475,23 +495,38 @@ class DB {
         break;
       }
     }
-    return !!this.evalRule(rule, pathVars, valuePath, newValue, address, timestamp);
+    return !!this.evalRuleString(rule, pathVars, valuePath, newValue, address, timestamp);
   }
 
   getPermissionForRule(rulePath, address) {
-    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(rulePath);
-    return this.checkOwnerConfig(ownerConfig, address, OwnerProperties.WRITE_RULE);
+    const { ownerConfig } = this.getOwnerConfig(rulePath);
+    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return false;
+    }
+    return (permissions[OwnerProperties.WRITE_RULE] === true);
   }
 
   getPermissionForFunction(functionPath, address) {
-    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(functionPath);
-    return this.checkOwnerConfig(ownerConfig, address, OwnerProperties.WRITE_FUNCTION);
+    const { ownerConfig } = this.getOwnerConfig(functionPath);
+    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return false;
+    }
+    return (permissions[OwnerProperties.WRITE_FUNCTION] === true);
   }
 
   getPermissionForOwner(ownerPath, address) {
     const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(ownerPath);
-    return this.checkOwnerConfig(ownerConfig, address,
-      isAncestorConfig ? OwnerProperties.BRANCH_OWNER : OwnerProperties.WRITE_OWNER);
+    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return false;
+    }
+    if (isAncestorConfig) {
+      return (permissions[OwnerProperties.BRANCH_OWNER] === true);
+    } else {
+      return (permissions[OwnerProperties.WRITE_OWNER] === true);
+    }
   }
 
   makeEvalFunction(ruleString, pathVars) {
@@ -500,7 +535,7 @@ class DB {
                         '"use strict"; return ' + ruleString);
   }
 
-  evalRule(rule, pathVars, valuePath, newValue, address, timestamp) {
+  evalRuleString(rule, pathVars, valuePath, newValue, address, timestamp) {
     if (typeof rule === 'boolean') {
       return rule;
     } else if (typeof rule !== 'string') {
@@ -537,14 +572,14 @@ class DB {
     return { ownerConfig, isAncestorConfig };
   }
 
-  checkOwnerConfig(config, address, ownerProperty) {
+  getOwnerPermissions(config, address) {
     if (!config) {
-      return false;
+      return null;
     }
     let owners = null;
     owners = config[OwnerProperties.OWNERS];
     if (!owners) {
-      return false;
+      return null;
     }
     // Step 1: Check if the address exists in owners.
     let permissions = owners[address];
@@ -553,9 +588,9 @@ class DB {
       permissions = owners[OwnerProperties.ANYONE];
     }
     if (!permissions) {
-      return false;
+      return null;
     }
-    return (permissions[ownerProperty] === true);
+    return permissions;
   }
 }
 

@@ -106,6 +106,25 @@ app.get('/get_owner', (req, res, next) => {
     .end();
 });
 
+app.post('/eval_rule', (req, res, next) => {
+  const body = req.body;
+  const timestamp = Date.now();
+  const result = db.evalRule(body.ref, body.value, body.address, timestamp);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.post('/eval_owner', (req, res, next) => {
+  const body = req.body;
+  const result = db.evalOwner(body.ref, body.address);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.post('/get', (req, res, next) => {
   const result = db.get(req.body.op_list);
   res.status(result ? 200 : 400)
@@ -231,7 +250,7 @@ function createSingleSetTxData(input, opType) {
       type: opType,
       ref: input.ref,
       value: input.value,
-    },
+    }
   };
   if (input.address !== undefined) {
     txData.address = input.address;
@@ -247,7 +266,7 @@ function createMultiSetTxData(input) {
     operation: {
       type: WriteDbOperations.SET,
       op_list: input.op_list,
-    },
+    }
   };
   if (input.address !== undefined) {
     txData.address = input.address;

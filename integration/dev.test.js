@@ -92,7 +92,7 @@ describe('API Tests', () => {
       json: {
         ref: '/test/test_rule/some/path',
         value: {
-          ".write": "some rule config"
+          ".write": "auth === 'abcd'"
         }
       }
     });
@@ -104,8 +104,9 @@ describe('API Tests', () => {
             "owners": {
               "*": {
                 "branch_owner": false,
+                "write_function": true,
                 "write_owner": true,
-                "write_rule": false
+                "write_rule": false,
               }
             }
           }
@@ -147,12 +148,13 @@ describe('API Tests', () => {
   describe('/get_rule', () => {
     it('get_rule', () => {
       sleep(200)
-      const body = JSON.parse(syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
-          .body.toString('utf-8'));
+      const body =
+          JSON.parse(syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
+            .body.toString('utf-8'));
       assert.deepEqual(body, {
         code: 0,
         result: {
-          ".write": "some rule config"
+          ".write": "auth === 'abcd'"
         }
       });
     })
@@ -171,11 +173,59 @@ describe('API Tests', () => {
             "owners": {
               "*": {
                 "branch_owner": false,
+                "write_function": true,
                 "write_owner": true,
-                "write_rule": false
+                "write_rule": false,
               }
             }
           }
+        }
+      });
+    })
+  })
+
+  describe('/eval_rule', () => {
+    it('eval_rule returning true', () => {
+      sleep(200)
+      const request = {
+        ref: "/test/test_rule/some/path",
+        value: "value",
+        address: "abcd" 
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
+    })
+
+    it('eval_rule returning false', () => {
+      sleep(200)
+      const request = {
+        ref: "/test/test_rule/some/path",
+        value: "value",
+        address: "efgh" 
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: false});
+    })
+  })
+
+  describe('/eval_owner', () => {
+    it('eval_owner', () => {
+      sleep(200)
+      const request = {
+        ref: "/test/test_owner/some/path",
+        address: "abcd"
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {
+        code: 0,
+        result: {
+          "branch_owner": false,
+          "write_function": true,
+          "write_owner": true,
+          "write_rule": false,
         }
       });
     })
@@ -207,15 +257,16 @@ describe('API Tests', () => {
         result: [
           100,
           {
-            ".write": "some rule config"
+            ".write": "auth === 'abcd'"
           },
           {
             ".owner": {
               "owners": {
                 "*": {
                   "branch_owner": false,
+                  "write_function": true,
                   "write_owner": true,
-                  "write_rule": false
+                  "write_rule": false,
                 }
               }
             }
