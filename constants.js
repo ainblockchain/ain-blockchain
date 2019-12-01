@@ -62,6 +62,7 @@ const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
   RULES_ROOT: 'rules',
+  FUNCTIONS_ROOT: 'functions',
   VALUES_ROOT: 'values',
   // Consensus
   RECENT_PROPOSERS: '/consensus/recent_proposers',
@@ -115,6 +116,7 @@ const OwnerProperties = {
   OWNERS: 'owners',
   WRITE_OWNER: 'write_owner',
   WRITE_RULE: 'write_rule',
+  WRITE_FUNCTION: 'write_function',
 };
 
 /**
@@ -147,6 +149,7 @@ const WriteDbOperations = {
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
+  SET_FUNCTION: 'SET_FUNCTION',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
 };

@@ -119,6 +119,12 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
+  getFunction(functionPath) {
+    const parsedPath = ChainUtil.parsePath(functionPath);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    return this.readDatabase(fullPath);
+  }
+
   getOwner(ownerPath) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -224,6 +230,17 @@ class DB {
     return true;
   }
 
+  setFunction(functionPath, functionInfo, address) {
+    const parsedPath = ChainUtil.parsePath(functionPath);
+    if (!this.getPermissionForFunction(parsedPath, address)) {
+      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
+    }
+    const functionInfoCopy = ChainUtil.isDict(functionInfo) ? JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    this.writeDatabase(fullPath, functionInfoCopy);
+    return true;
+  }
+
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   set(opList, address, timestamp) {
     let ret = true;
@@ -251,6 +268,11 @@ class DB {
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
         ret = this.setOwner(op.ref, op.value, address);
+        if (ret !== true) {
+          break;
+        }
+      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
+        ret = this.setFunction(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
@@ -414,6 +436,8 @@ class DB {
         return this.decValue(operation.ref, operation.value, address, timestamp);
       case WriteDbOperations.SET_RULE:
         return this.setRule(operation.ref, operation.value, address);
+      case WriteDbOperations.SET_FUNCTION:
+        return this.setFunction(operation.ref, operation.value, address);
       case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address);
       case WriteDbOperations.SET:
@@ -476,6 +500,15 @@ class DB {
       return false;
     }
     return (permissions[OwnerProperties.WRITE_RULE] === true);
+  }
+
+  getPermissionForFunction(functionPath, address) {
+    const { ownerConfig } = this.getOwnerConfig(functionPath);
+    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    if (!permissions) {
+      return false;
+    }
+    return (permissions[OwnerProperties.WRITE_FUNCTION] === true);
   }
 
   getPermissionForOwner(ownerPath, address) {
