@@ -543,7 +543,7 @@ describe('API Tests', () => {
         const fromLowerCase = _.toLower(transferFrom);
         const transferPathFromLowerCase = `/transfer/${fromLowerCase}/${transferTo}`;
         const resultFromLowerCase = syncRequest('POST', server1 + '/set_value', {json: {
-              ref: transferPathFromLowerCase + '/100/value',
+              ref: transferPathFromLowerCase + '/101/value',
               value: transferAmount
             }});
         expect(resultFromLowerCase.statusCode).to.equal(401);
@@ -551,7 +551,7 @@ describe('API Tests', () => {
         const toLowerCase = _.toLower(transferTo);
         const transferPathToLowerCase = `/transfer/${transferFrom}/${toLowerCase}`;
         const resultToLowerCase = syncRequest('POST', server1 + '/set_value', {json: {
-              ref: transferPathToLowerCase + '/200/value',
+              ref: transferPathToLowerCase + '/102/value',
               value: transferAmount
             }});
         expect(resultToLowerCase.statusCode).to.equal(401);
@@ -559,7 +559,7 @@ describe('API Tests', () => {
         const fromUpperCase = _.toLower(transferFrom);
         const transferPathFromUpperCase = `/transfer/${fromUpperCase}/${transferTo}`;
         const resultFromUpperCase = syncRequest('POST', server1 + '/set_value', {json: {
-              ref: transferPathFromUpperCase + '/100/value',
+              ref: transferPathFromUpperCase + '/103/value',
               value: transferAmount
             }});
         expect(resultFromUpperCase.statusCode).to.equal(401);
@@ -567,7 +567,7 @@ describe('API Tests', () => {
         const toUpperCase = _.toLower(transferTo);
         const transferPathToUpperCase = `/transfer/${transferFrom}/${toUpperCase}`;
         const resultToUpperCase = syncRequest('POST', server1 + '/set_value', {json: {
-              ref: transferPathToUpperCase + '/200/value',
+              ref: transferPathToUpperCase + '/104/value',
               value: transferAmount
             }});
         expect(resultToUpperCase.statusCode).to.equal(401);
@@ -704,7 +704,7 @@ describe('API Tests', () => {
         const addrLowerCase = _.toLower(depositActor);
         const depositPathLowerCase = `/deposit/checksum_addr_test_service/${addrLowerCase}`;
         const resultLowerCase = syncRequest('POST', server2 + '/set_value', {json: {
-              ref: depositPathLowerCase + '/100/value',
+              ref: depositPathLowerCase + '/101/value',
               value: depositAmount
             }});
         expect(resultLowerCase.statusCode).to.equal(401);
@@ -712,7 +712,7 @@ describe('API Tests', () => {
         const addrUpperCase = _.toUpper(depositActor);
         const depositPathUpperCase = `/deposit/checksum_addr_test_service/${addrUpperCase}`;
         const resultUpperCase = syncRequest('POST', server2 + '/set_value', {json: {
-              ref: depositPathUpperCase + '/100/value',
+              ref: depositPathUpperCase + '/102/value',
               value: depositAmount
             }});
         expect(resultUpperCase.statusCode).to.equal(401);
