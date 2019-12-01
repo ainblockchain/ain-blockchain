@@ -68,6 +68,7 @@ describe("DB operations", () => {
     bc = new Blockchain("test-blockchain");
     db = DB.getDatabase(bc, tp);
     setDbForTesting(bc, tp, db);
+
     dbValues = {
       "ai": {
         "comcom": 123,
@@ -89,18 +90,27 @@ describe("DB operations", () => {
     };
     result = db.setValue("test", dbValues);
     console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+
     dbRules = {
       "some": {
         "path": {
-          ".write": true
-        },
-        "path2": {
           ".write": "auth === 'abcd'"
         }
       }
     };
     result = db.setRule("test/test_rule", dbRules);
     console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
+
+    dbFuncs = {
+      "some": {
+        "path": {
+          ".function": "some function config"
+        },
+      }
+    };
+    result = db.setFunc("test/test_function", dbFuncs);
+    console.log(`Result of setFunc(): ${JSON.stringify(result, null, 2)}`);
+
     dbOwners = {
       "some": {
         "path": {
@@ -111,18 +121,6 @@ describe("DB operations", () => {
                 "write_function": true,
                 "write_owner": true,
                 "write_rule": true,
-              }
-            }
-          }
-        },
-        "path2": {
-          ".owner": {
-            "owners": {
-              "*": {
-                "branch_owner": false,
-                "write_function": false,
-                "write_owner": false,
-                "write_rule": false,
               },
               "abcd": {
                 "branch_owner": false,
@@ -167,7 +165,18 @@ describe("DB operations", () => {
     })
 
     it("when retrieving existing rule config", () => {
-      assert.deepEqual(db.getRule("/test/test_rule/some/path"), {".write": true});
+      assert.deepEqual(db.getRule("/test/test_rule/some/path"), { ".write": "auth === 'abcd'" });
+    })
+  })
+
+  describe("getFunc operations", () => {
+    it("when retrieving non-existing function config", () => {
+      expect(db.getFunc("/test/test_function/other/function/path")).to.equal(null);
+    })
+
+    it("when retrieving existing function config", () => {
+      assert.deepEqual(db.getFunc("/test/test_function/some/path"),
+          { ".function": "some function config" });
     })
   })
 
@@ -185,6 +194,12 @@ describe("DB operations", () => {
               "write_function": true,
               "write_owner": true,
               "write_rule": true,
+            },
+            "abcd": {
+              "branch_owner": false,
+              "write_function": true,
+              "write_owner": false,
+              "write_rule": true,
             }
           }
         }
@@ -199,12 +214,12 @@ describe("DB operations", () => {
     })
 
     it("when evaluating existing rule config returning true", () => {
-      expect(db.evalRule("/test/test_rule/some/path2", 'value', 'abcd', Date.now()))
+      expect(db.evalRule("/test/test_rule/some/path", 'value', 'abcd', Date.now()))
           .to.equal(true);
     })
 
     it("when evaluating existing rule config returning false", () => {
-      expect(db.evalRule("/test/test_rule/some/path2", 'value', 'efgh', Date.now()))
+      expect(db.evalRule("/test/test_rule/some/path", 'value', 'efgh', Date.now()))
           .to.equal(false);
     })
   })
@@ -215,7 +230,7 @@ describe("DB operations", () => {
     })
 
     it("when evaluating existing owner config with matching address", () => {
-      assert.deepEqual(db.evalOwner("/test/test_owner/some/path2", 'abcd'), {
+      assert.deepEqual(db.evalOwner("/test/test_owner/some/path", 'abcd'), {
         "branch_owner": false,
         "write_function": true,
         "write_owner": false,
@@ -224,11 +239,11 @@ describe("DB operations", () => {
     })
 
     it("when evaluating existing owner config without matching address", () => {
-      assert.deepEqual(db.evalOwner("/test/test_owner/some/path2", 'efgh'), {
-        "branch_owner": false,
-        "write_function": false,
-        "write_owner": false,
-        "write_rule": false,
+      assert.deepEqual(db.evalOwner("/test/test_owner/some/path", 'efgh'), {
+        "branch_owner": true,
+        "write_function": true,
+        "write_owner": true,
+        "write_rule": true,
       });
     })
   })
@@ -278,19 +293,19 @@ describe("DB operations", () => {
         },
         {
           type: "EVAL_RULE",
-          ref: "/test/test_rule/some/path2",
+          ref: "/test/test_rule/some/path",
           value: "value",
           address: "abcd",
         },
         {
           type: "EVAL_OWNER",
-          ref: "/test/test_owner/some/path2",
+          ref: "/test/test_owner/some/path",
           address: "abcd"
         },
       ]), [
         456,
         {
-          ".write": true
+          ".write": "auth === 'abcd'"
         },
         {
           ".owner": {
@@ -299,6 +314,12 @@ describe("DB operations", () => {
                 "branch_owner": true,
                 "write_function": true,
                 "write_owner": true,
+                "write_rule": true,
+              },
+              "abcd": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": false,
                 "write_rule": true,
               }
             }
@@ -381,17 +402,7 @@ describe("DB operations", () => {
 
   describe("setFunc operations", () => {
     it("when overwriting existing function config", () => {
-      const functionConfig = {
-        ".function": {
-          "functions": {
-            '0xFUNCTION_HASH': {
-              "registry_service": "functions.ainetwork.ai",
-              "event_listener": "events.ainetwork.ai",
-              "deployed_by": '0xaddress'
-            }
-          }
-        }
-      };
+      const functionConfig = {".function": "other function config"};
       expect(db.setFunc("/test/test_function/some/path", functionConfig)).to.equal(true)
       assert.deepEqual(db.getFunc("/test/test_function/some/path"), functionConfig)
     })
