@@ -496,7 +496,7 @@ class DB {
 
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-                        'getOwner', ...Object.keys(pathVars),
+                        'getOwner', 'getFunction', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
@@ -509,7 +509,7 @@ class DB {
     let evalFunc = this.makeEvalFunction(rule, pathVars);
     const data = this.getValue(valuePath.join('/'));
     return evalFunc(address, data, newValue, timestamp, this.getValue.bind(this),
-                    this.getRule.bind(this), this.getOwner.bind(this),
+                    this.getRule.bind(this), this.getOwner.bind(this), this.getFunction.bind(this),
                     ...Object.values(pathVars));
   }
 
