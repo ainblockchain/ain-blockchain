@@ -135,6 +135,8 @@ const ReadDbOperations = {
   GET_VALUE: 'GET_VALUE',
   GET_RULE: 'GET_RULE',
   GET_OWNER: 'GET_OWNER',
+  EVAL_RULE: 'EVAL_RULE',
+  EVAL_OWNER: 'EVAL_OWNER',
   GET: 'GET',
 };
 
@@ -147,7 +149,7 @@ const WriteDbOperations = {
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
-  SET_FUNCTION: 'SET_FUNCTION',
+  SET_FUNC: 'SET_FUNC',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
 };
