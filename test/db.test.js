@@ -93,6 +93,9 @@ describe("DB operations", () => {
       "some": {
         "path": {
           ".write": true
+        },
+        "path2": {
+          ".write": "auth === 'abcd'"
         }
       }
     };
@@ -105,9 +108,27 @@ describe("DB operations", () => {
             "owners": {
               "*": {
                 "branch_owner": true,
+                "write_function": true,
                 "write_owner": true,
                 "write_rule": true,
+              }
+            }
+          }
+        },
+        "path2": {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              "abcd": {
+                "branch_owner": false,
                 "write_function": true,
+                "write_owner": false,
+                "write_rule": true,
               }
             }
           }
@@ -161,12 +182,53 @@ describe("DB operations", () => {
           "owners": {
             "*": {
               "branch_owner": true,
+              "write_function": true,
               "write_owner": true,
               "write_rule": true,
-              "write_function": true,
             }
           }
         }
+      });
+    })
+  })
+
+  describe("evalRule operations", () => {
+    it("when evaluating non-existing rule config", () => {
+      expect(db.evalRule("/test/test_rule/other/rule/path", 'value', 'abcd', Date.now()))
+          .to.equal(true);  // Evaluation result of the closest ancestor's rule config.
+    })
+
+    it("when evaluating existing rule config returning true", () => {
+      expect(db.evalRule("/test/test_rule/some/path2", 'value', 'abcd', Date.now()))
+          .to.equal(true);
+    })
+
+    it("when evaluating existing rule config returning false", () => {
+      expect(db.evalRule("/test/test_rule/some/path2", 'value', 'efgh', Date.now()))
+          .to.equal(false);
+    })
+  })
+
+  describe("evalOwner operations", () => {
+    it("when evaluating non-existing owner config", () => {
+      assert.deepEqual(db.evalOwner("/test/test_owner/other/owner/path", 'abcd'), {})
+    })
+
+    it("when evaluating existing owner config with matching address", () => {
+      assert.deepEqual(db.evalOwner("/test/test_owner/some/path2", 'abcd'), {
+        "branch_owner": false,
+        "write_function": true,
+        "write_owner": false,
+        "write_rule": true,
+      });
+    })
+
+    it("when evaluating existing owner config without matching address", () => {
+      assert.deepEqual(db.evalOwner("/test/test_owner/some/path2", 'efgh'), {
+        "branch_owner": false,
+        "write_function": false,
+        "write_owner": false,
+        "write_rule": false,
       });
     })
   })
@@ -186,7 +248,18 @@ describe("DB operations", () => {
           type: "GET_OWNER",
           ref: "/owner/other/path",
         },
-      ]), [null, null, null]);
+        {
+          type: "EVAL_RULE",
+          ref: "/rule/other/path",
+          value: "value",
+          address: "abcd"
+        },
+        {
+          type: "EVAL_OWNER",
+          ref: "/owner/other/path",
+          address: "abcd"
+        },
+      ]), [null, null, null, false, {}]);
     })
 
     it("when retrieving existing value or rule or owner", () => {
@@ -203,6 +276,17 @@ describe("DB operations", () => {
           type: "GET_OWNER",
           ref: "/test/test_owner/some/path",
         },
+        {
+          type: "EVAL_RULE",
+          ref: "/test/test_rule/some/path2",
+          value: "value",
+          address: "abcd",
+        },
+        {
+          type: "EVAL_OWNER",
+          ref: "/test/test_owner/some/path2",
+          address: "abcd"
+        },
       ]), [
         456,
         {
@@ -213,12 +297,19 @@ describe("DB operations", () => {
             "owners": {
               "*": {
                 "branch_owner": true,
+                "write_function": true,
                 "write_owner": true,
                 "write_rule": true,
-                "write_function": true,
               }
             }
           }
+        },
+        true,
+        {
+          "branch_owner": false,
+          "write_function": true,
+          "write_owner": false,
+          "write_rule": true,
         }
       ]);
     })
