@@ -27,8 +27,9 @@ class DB {
       [OwnerProperties.OWNER]: {
         [OwnerProperties.OWNERS]: {
           [OwnerProperties.ANYONE]: {
-            [OwnerProperties.WRITE_OWNER]: true,
             [OwnerProperties.BRANCH_OWNER]: true,
+            [OwnerProperties.WRITE_FUNCTION]: true,
+            [OwnerProperties.WRITE_OWNER]: true,
             [OwnerProperties.WRITE_RULE]: true
           }
         }
@@ -119,7 +120,7 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
-  getFunction(functionPath) {
+  getFunc(functionPath) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     return this.readDatabase(fullPath);
@@ -234,7 +235,7 @@ class DB {
     return true;
   }
 
-  setFunction(functionPath, functionInfo, address) {
+  setFunc(functionPath, functionInfo, address) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     if (!this.getPermissionForFunction(parsedPath, address)) {
       return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
@@ -275,8 +276,8 @@ class DB {
         if (ret !== true) {
           break;
         }
-      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, address);
+      } else if (op.type === WriteDbOperations.SET_FUNC) {
+        ret = this.setFunc(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
@@ -440,8 +441,8 @@ class DB {
         return this.decValue(operation.ref, operation.value, address, timestamp);
       case WriteDbOperations.SET_RULE:
         return this.setRule(operation.ref, operation.value, address);
-      case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(operation.ref, operation.value, address);
+      case WriteDbOperations.SET_FUNC:
+        return this.setFunc(operation.ref, operation.value, address);
       case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address);
       case WriteDbOperations.SET:

@@ -364,7 +364,7 @@ describe("DB operations", () => {
   })
 
   describe("setRule operations", () => {
-    it("when retrieving existing rule config", () => {
+    it("when overwriting existing rule config", () => {
       const ruleConfig = {".write": "other rule config"};
       expect(db.setRule("/test/test_rule/some/path", ruleConfig)).to.equal(true)
       assert.deepEqual(db.getRule("/test/test_rule/some/path"), ruleConfig)
@@ -372,24 +372,28 @@ describe("DB operations", () => {
   })
 
   describe("setOwner operations", () => {
-    it("when retrieving existing owner config", () => {
+    it("when overwriting existing owner config", () => {
       const ownerConfig = {".owner": "other owner config"};
       expect(db.setOwner("/test/test_owner/some/path", ownerConfig)).to.equal(true)
       assert.deepEqual(db.getOwner("/test/test_owner/some/path"), ownerConfig)
     })
   })
 
-  describe("setFunction operations", () => {
-    it("when retrieving existing function config", () => {
-      const functionConfig = {".function": {
-        "functions": {
-          '0xFUNCTION_HASH': {"registry_service": "functions.ainetwork.ai",
-                              "event_listener": "events.ainetwork.ai",
-                              "deployed_by": '0xaddress'}
+  describe("setFunc operations", () => {
+    it("when overwriting existing function config", () => {
+      const functionConfig = {
+        ".function": {
+          "functions": {
+            '0xFUNCTION_HASH': {
+              "registry_service": "functions.ainetwork.ai",
+              "event_listener": "events.ainetwork.ai",
+              "deployed_by": '0xaddress'
+            }
+          }
         }
-      }};
-      expect(db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
-      assert.deepEqual(db.getFunction("/test/test_function/some/path"), functionConfig)
+      };
+      expect(db.setFunc("/test/test_function/some/path", functionConfig)).to.equal(true)
+      assert.deepEqual(db.getFunc("/test/test_function/some/path"), functionConfig)
     })
   })
 
