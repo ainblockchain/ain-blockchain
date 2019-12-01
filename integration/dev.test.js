@@ -539,6 +539,15 @@ describe('API Tests', () => {
         expect(result.statusCode).to.equal(401);
       });
 
+      it('transfer with same addresses', () => {
+        const transferPathSameAddrs = `/transfer/${transferFrom}/${transferFrom}`;
+        const result = syncRequest('POST', server1 + '/set_value', {json: {
+              ref: transferPathSameAddrs + '/4/value',
+              value: transferAmount
+            }});
+        expect(result.statusCode).to.equal(401);
+      });
+
       it('transfer with non-checksum addreess', () => {
         const fromLowerCase = _.toLower(transferFrom);
         const transferPathFromLowerCase = `/transfer/${fromLowerCase}/${transferTo}`;
