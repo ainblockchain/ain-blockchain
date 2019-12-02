@@ -15,7 +15,7 @@
   "scripts": {
     "clean": "sh stop_servers.sh & echo 'cleaned'",
     "tracker": "npm run clean & node ./tracker-server/index.js",
-    "client": "STAKE=250 LOCAL=true P2P_PORT=5020 PORT=8081 node ./client/index.js",
+    "client": "STAKE=250 LOCAL=true P2P_PORT=5020 PORT=8081 ACCOUNT_INDEX=0 node ./client/index.js",
     "test_unit": "find ./test -name '*.test.js' | sort | grep -v 'node_modules' |  xargs mocha --timeout 160000 -R  spec",
     "test_integration": "find ./integration -name '*integration.test.js' | sort | grep -v 'node_modules' |  xargs mocha --timeout 160000 -R  spec",
     "test_smoke": "find ./integration -name '*.test.js' | grep -v integration.test | sort | grep -v 'node_modules' |  xargs mocha --timeout 160000 -R  spec",
