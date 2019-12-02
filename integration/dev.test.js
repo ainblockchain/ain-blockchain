@@ -381,7 +381,7 @@ describe('API Tests', () => {
       const request = {
         ref: "/test/test_function/other/path",
         value: {
-          ".write": "some other function config"
+          ".function": "some other function config"
         }
       };
       const body = JSON.parse(syncRequest('POST', server1 + '/set_func', {json: request})
