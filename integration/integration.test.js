@@ -84,6 +84,20 @@ RANDOM_OPERATION = [
   ['dec_value', {ref: 'test/balance/user1', value: 10000}],
   ['dec_value', {ref: 'test/balance/user1', value: 10000}],
   ['dec_value', {ref: 'test/balance/user2', value: 100002}],
+  ['set_rule', {ref: 'test/test_rule/', value: { ".write": "some rule config"}}],
+  ['set_func', {ref: 'test/test_function/', value: { ".function": "some function config"}}],
+  ['set_owner', {ref: 'test/test_owner/', value: {
+    ".owner": {
+      "owners": {
+        "*": {
+          "branch_owner": false,
+          "write_function": true,
+          "write_owner": true,
+          "write_rule": false,
+        }
+      }
+    }
+  }}],
   ['set', {op_list: [{ref: 'test/increase/first/level', value: 10},
       {ref: 'test/increase/first/level2', value: 20}]}],
   ['set', {op_list: [{ref: 'test/increase/second/level/deeper', value: 20},
