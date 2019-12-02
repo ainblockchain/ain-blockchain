@@ -4,6 +4,7 @@
       "owners": {
         "*": {
           "branch_owner": true,
+          "write_function": true,
           "write_owner": false,
           "write_rule": false
         }
@@ -14,8 +15,9 @@
     ".owner": {
       "owners": {
         "*": {
-          "write_owner": true,
           "branch_owner": true,
+          "write_function": true,
+          "write_owner": true,
           "write_rule": true
         }
       }

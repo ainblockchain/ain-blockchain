@@ -164,6 +164,14 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
       }
     },
 
+    ain_evalRule: function(args, done) {
+      done(null, p2pServer.db.evalRule(args.ref, args.value, args.address, args.timestamp || Date.now()));
+    },
+
+    ain_evalOwner: function(args, done) {
+      done (null, p2pServer.db.evalOwner(args.ref, args.address));
+    },
+
     // Account API
     // TODO (lia): verify and convert to checksum addresses
     ain_getBalance: function(args, done) {
