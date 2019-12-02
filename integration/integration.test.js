@@ -455,9 +455,10 @@ describe('Integration Tests', () => {
       it('prevent users from restructed areas', () => {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
-        const result = syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
-            {json: {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}});
-        expect(result.statusCode).to.equal(401);
+        const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, {json: {
+          ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
       });
     });
 
