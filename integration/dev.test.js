@@ -186,49 +186,74 @@ describe('API Tests', () => {
   })
 
   describe('/eval_rule', () => {
+    let client;
+    before(() => {
+      client = jayson.client.http(server1 + '/json-rpc');
+    })
+
     it('eval_rule returning true', () => {
       sleep(200)
-      const request = {
-        ref: "/test/test_rule/some/path",
-        value: "value",
-        address: "abcd" 
-      };
+      const ref = "/test/test_rule/some/path";
+      const value = "value";
+      const address = "abcd";
+      const request = { ref, value, address };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
           .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: true});
+      return client.request('ain_evalRule', request)
+      .then(res => {
+        expect(res.result).to.equal(true);
+      })
+      .catch(error => {
+        console.log('error:',error);
+      })
     })
 
     it('eval_rule returning false', () => {
       sleep(200)
-      const request = {
-        ref: "/test/test_rule/some/path",
-        value: "value",
-        address: "efgh" 
-      };
+      const ref = "/test/test_rule/some/path";
+      const value = "value";
+      const address = "efgh";
+      const request = { ref, value, address };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
           .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: false});
+      return client.request('ain_evalRule', request)
+      .then(res => {
+        expect(res.result).to.equal(false);
+      })
+      .catch(error => {
+        console.log('error:',error);
+      })
     })
   })
 
   describe('/eval_owner', () => {
     it('eval_owner', () => {
       sleep(200)
-      const request = {
-        ref: "/test/test_owner/some/path",
-        address: "abcd"
-      };
+      const client = jayson.client.http(server1 + '/json-rpc');
+      const ref = "/test/test_owner/some/path";
+      const address = "abcd";
+      const request = { ref, address };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
           .body.toString('utf-8'));
+      const expected = {
+        "branch_owner": false,
+        "write_function": true,
+        "write_owner": true,
+        "write_rule": false,
+      };
       assert.deepEqual(body, {
         code: 0,
-        result: {
-          "branch_owner": false,
-          "write_function": true,
-          "write_owner": true,
-          "write_rule": false,
-        }
+        result: expected
       });
+      return client.request('ain_evalOwner', request)
+      .then(res => {
+        assert.deepEqual(res.result, expected);
+      })
+      .catch(error => {
+        console.log('error:',error);
+      })
     })
   })
 
