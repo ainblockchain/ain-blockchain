@@ -177,12 +177,16 @@ module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
     ain_getNonce: function(args, done) {
       const address = args.address;
       if (args.from === 'pending') {
-        const nonce = (ainUtil.areSameAddresses(p2pServer.db.account.address, address) ?
-            p2pServer.db.nonce : transactionPool.pendingNonceTracker[address]) || -1;
-        done(null, nonce);
+        if (ainUtil.areSameAddresses(p2pServer.db.account.address, address)) {
+          done(null, p2pServer.db.nonce);
+        } else {
+          const nonce = transactionPool.pendingNonceTracker[address];
+          done(null, nonce === undefined ? -1 : nonce);
+        }
       } else {
-        // get committed nonce by default
-        done(null, transactionPool.committedNonceTracker[address]) || -1;
+        // get the "committed nonce" by default
+        const nonce = transactionPool.committedNonceTracker[address];
+        done(null, nonce === undefined ? -1 : nonce);
       }
     },
 
