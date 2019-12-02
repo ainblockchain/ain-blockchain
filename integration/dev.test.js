@@ -656,12 +656,12 @@ describe('API Tests', () => {
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
-        const statusCode = JSON.parse(syncRequest('GET',
+        const resultCode = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferPath}/1/result/code`)
           .body.toString('utf-8')).result
         expect(fromAfterBalance).to.equal(fromBeforeBalance - transferAmount);
         expect(toAfterBalance).to.equal(toBeforeBalance + transferAmount);
-        expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
+        expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
       });
 
       it('transfer more than account balance', () => {
@@ -979,13 +979,13 @@ describe('API Tests', () => {
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        const statusCode = JSON.parse(syncRequest('GET',
+        const resultCode = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/result/code`)
                 .body.toString('utf-8')).result;
         expect(depositValue).to.equal(newDepositAmount);
         expect(depositAccountValue).to.equal(beforeDepositAccountValue + newDepositAmount);
         expect(balance).to.equal(beforeBalance - newDepositAmount);
-        expect(statusCode).to.equal(FunctionResultCode.SUCCESS);
+        expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
       });
     });
   });
