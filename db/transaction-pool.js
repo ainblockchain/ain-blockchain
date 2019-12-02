@@ -5,7 +5,8 @@ class TransactionPool {
   constructor() {
     // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
     this.transactions = {};
-    this.nonceTracker = {};
+    this.committedNonceTracker = {};
+    this.pendingNonceTracker = {};
     this.transactionTracker = {};
   }
 
@@ -29,6 +30,10 @@ class TransactionPool {
     const address = transaction.address;
     const index = this.transactions[transaction.address].length - 1;
     this.transactionTracker[transaction.hash] = { status, address, index };
+    if (transaction.nonce >= 0 && (!(address in this.pendingNonceTracker) ||
+        transaction.nonce > this.pendingNonceTracker[address])) {
+      this.pendingNonceTracker[address] = transaction.nonce;
+    }
 
     if (DEBUG) {
       console.log(`ADDING: ${JSON.stringify(transaction)}`);
@@ -39,7 +44,7 @@ class TransactionPool {
   isNotEligibleTransaction(transaction) {
     return ((transaction.address in this.transactions) &&
             (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash) !== undefined)) ||
-            (transaction.nonce >= 0 && transaction.nonce <= this.nonceTracker[transaction.address]) ||
+            (transaction.nonce >= 0 && transaction.nonce <= this.committedNonceTracker[transaction.address]) ||
             (transaction.nonce < 0 && transaction.hash in this.transactionTracker);
   }
 
@@ -55,7 +60,7 @@ class TransactionPool {
     // Secondly transaction are combined and ordered by timestamp, while still remaining ordered noncing from the initial sort by nonce
     const orderedUnvalidatedTransactions = Object.values(unvalidatedTransactions);
     while (orderedUnvalidatedTransactions.length > 1) {
-      const tempNonceTracker = JSON.parse(JSON.stringify(this.nonceTracker));
+      const tempNonceTracker = JSON.parse(JSON.stringify(this.committedNonceTracker));
       const list1 = orderedUnvalidatedTransactions.shift();
       const list2 = orderedUnvalidatedTransactions.shift();
       const newList = [];
@@ -93,7 +98,7 @@ class TransactionPool {
       transaction = block.transactions[i];
       if (transaction.nonce >= 0) {
         // Update nonceTracker while extracting transaction hashes
-        this.nonceTracker[transaction.address] = transaction.nonce;
+        this.committedNonceTracker[transaction.address] = transaction.nonce;
       }
       const status = TransactionStatus.BLOCK_STATUS;
       const number = block.number;
