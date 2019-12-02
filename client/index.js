@@ -116,8 +116,7 @@ app.get('/get_owner', (req, res, next) => {
 
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const timestamp = Date.now();
-  const result = db.evalRule(body.ref, body.value, body.address, timestamp);
+  const result = db.evalRule(body.ref, body.value, body.address, body.timestamp || Date.now());
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -221,30 +220,43 @@ app.post('/batch', (req, res, next) => {
 });
 
 app.get('/blocks', (req, res, next) => {
-  const statusCode = 200;
   const result = bc.getChainSection(0, bc.length);
-  res.status(statusCode)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/last_block', (req, res, next) => {
+  const result = bc.lastBlock();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/last_block_number', (req, res, next) => {
+  const result = bc.lastBlockNumber();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
     .end();
 });
 
 app.get('/transactions', (req, res, next) => {
-  const statusCode = 200;
   const result = tp.transactions;
-  res.status(statusCode)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: 0, result})
     .end();
 });
 
 // For testing purposes
 app.get('/node_address', (req, res, next) => {
-  const statusCode = 200;
   const result = db.account.address;
-  res.status(statusCode)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: 0, result})
     .end();
 })
 
