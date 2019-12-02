@@ -31,7 +31,7 @@ class TransactionPool {
     const index = this.transactions[transaction.address].length - 1;
     this.transactionTracker[transaction.hash] = { status, address, index };
     if (transaction.nonce >= 0 && (!(address in this.pendingNonceTracker) ||
-        transaction.nonce <= this.pendingNonceTracker[address])) {
+        transaction.nonce > this.pendingNonceTracker[address])) {
       this.pendingNonceTracker[address] = transaction.nonce;
     }
 
