@@ -15,11 +15,25 @@ class BuiltInRuleUtil {
     return Array.isArray(value);
   }
 
-  length(value) {
-    if (!this.isString(value) && !this.isArray(value)) {
-      return 0;
+  isDict(value) {
+    return (typeof value === 'object' && value !== null && !Array.isArray(value));
+  }
+
+  keys(value) {
+    if (this.isDict(value)) {
+      return Object.keys(value);
     }
-    return value.length;
+    return [];
+  }
+
+  length(value) {
+    if (this.isString(value) || this.isArray(value)) {
+      return value.length;
+    }
+    if (this.isDict(value)) {
+      return this.keys(value).length;
+    }
+    return 0;
   }
 
   isValidAddress(addr) {
