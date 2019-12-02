@@ -36,13 +36,12 @@ class BuiltInRuleUtil {
     return 0;
   }
 
-  isValidAddress(addr) {
+  isValAddr(addr) {
     return this.isString(addr) && ainUtil.isValidAddress(addr);
   }
 
-  isChecksumAddr(addr) {
-    return this.isString(addr) && ainUtil.isValidAddress(addr) &&
-        addr === ainUtil.toChecksumAddress(addr);
+  isCksumAddr(addr) {
+    return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 }
 

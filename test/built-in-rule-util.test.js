@@ -137,54 +137,54 @@ describe("BuiltInRuleUtil", () => {
     })
   })
 
-  describe("isValidAddress", () => {
+  describe("isValAddr", () => {
     it("when non-string input", () => {
-      expect(util.isValidAddress(0)).to.equal(false);
-      expect(util.isValidAddress(10)).to.equal(false);
-      expect(util.isValidAddress(null)).to.equal(false);
-      expect(util.isValidAddress(undefined)).to.equal(false);
-      expect(util.isValidAddress(Infinity)).to.equal(false);
-      expect(util.isValidAddress(NaN)).to.equal(false);
-      expect(util.isValidAddress(0xCAcD898dBaEdBD9037aCd25b82417587E972838d)).to.equal(false);
-      expect(util.isValidAddress({})).to.equal(false);
-      expect(util.isValidAddress({a: 'A'})).to.equal(false);
-      expect(util.isValidAddress([])).to.equal(false);
-      expect(util.isValidAddress([10])).to.equal(false);
-      expect(util.isValidAddress([10, 'abc'])).to.equal(false);
+      expect(util.isValAddr(0)).to.equal(false);
+      expect(util.isValAddr(10)).to.equal(false);
+      expect(util.isValAddr(null)).to.equal(false);
+      expect(util.isValAddr(undefined)).to.equal(false);
+      expect(util.isValAddr(Infinity)).to.equal(false);
+      expect(util.isValAddr(NaN)).to.equal(false);
+      expect(util.isValAddr(0xCAcD898dBaEdBD9037aCd25b82417587E972838d)).to.equal(false);
+      expect(util.isValAddr({})).to.equal(false);
+      expect(util.isValAddr({a: 'A'})).to.equal(false);
+      expect(util.isValAddr([])).to.equal(false);
+      expect(util.isValAddr([10])).to.equal(false);
+      expect(util.isValAddr([10, 'abc'])).to.equal(false);
     })
 
     it("when string input", () => {
-      expect(util.isValidAddress('')).to.equal(false);
-      expect(util.isValidAddress('abc')).to.equal(false);
-      expect(util.isValidAddress('0')).to.equal(false);
-      expect(util.isValidAddress('0xcacd898dbaedbd9037acd25b82417587e972838d')).to.equal(true);
-      expect(util.isValidAddress('0xCACD898DBAEDBD9037ACD25B82417587E972838D')).to.equal(true);
-      expect(util.isValidAddress('0xCAcD898dBaEdBD9037aCd25b82417587E972838d')).to.equal(true);
+      expect(util.isValAddr('')).to.equal(false);
+      expect(util.isValAddr('abc')).to.equal(false);
+      expect(util.isValAddr('0')).to.equal(false);
+      expect(util.isValAddr('0xcacd898dbaedbd9037acd25b82417587e972838d')).to.equal(true);
+      expect(util.isValAddr('0xCACD898DBAEDBD9037ACD25B82417587E972838D')).to.equal(true);
+      expect(util.isValAddr('0xCAcD898dBaEdBD9037aCd25b82417587E972838d')).to.equal(true);
     })
   })
 
-  describe("isChecksumAddr", () => {
+  describe("isCksumAddr", () => {
     it("when invalid-address input", () => {
-      expect(util.isChecksumAddr(0)).to.equal(false);
-      expect(util.isChecksumAddr(10)).to.equal(false);
-      expect(util.isChecksumAddr(null)).to.equal(false);
-      expect(util.isChecksumAddr(undefined)).to.equal(false);
-      expect(util.isChecksumAddr(Infinity)).to.equal(false);
-      expect(util.isChecksumAddr(NaN)).to.equal(false);
-      expect(util.isChecksumAddr({})).to.equal(false);
-      expect(util.isChecksumAddr({a: 'a'})).to.equal(false);
-      expect(util.isChecksumAddr('')).to.equal(false);
-      expect(util.isChecksumAddr('abc')).to.equal(false);
-      expect(util.isChecksumAddr('0')).to.equal(false);
-      expect(util.isChecksumAddr([])).to.equal(false);
-      expect(util.isChecksumAddr([10])).to.equal(false);
-      expect(util.isChecksumAddr([10, 'abc'])).to.equal(false);
+      expect(util.isCksumAddr(0)).to.equal(false);
+      expect(util.isCksumAddr(10)).to.equal(false);
+      expect(util.isCksumAddr(null)).to.equal(false);
+      expect(util.isCksumAddr(undefined)).to.equal(false);
+      expect(util.isCksumAddr(Infinity)).to.equal(false);
+      expect(util.isCksumAddr(NaN)).to.equal(false);
+      expect(util.isCksumAddr({})).to.equal(false);
+      expect(util.isCksumAddr({a: 'a'})).to.equal(false);
+      expect(util.isCksumAddr('')).to.equal(false);
+      expect(util.isCksumAddr('abc')).to.equal(false);
+      expect(util.isCksumAddr('0')).to.equal(false);
+      expect(util.isCksumAddr([])).to.equal(false);
+      expect(util.isCksumAddr([10])).to.equal(false);
+      expect(util.isCksumAddr([10, 'abc'])).to.equal(false);
     })
 
     it("when valid-address input", () => {
-      expect(util.isChecksumAddr('0xcacd898dbaedbd9037acd25b82417587e972838d')).to.equal(false);
-      expect(util.isChecksumAddr('0xCACD898DBAEDBD9037ACD25B82417587E972838D')).to.equal(false);
-      expect(util.isChecksumAddr('0xCAcD898dBaEdBD9037aCd25b82417587E972838d')).to.equal(true);
+      expect(util.isCksumAddr('0xcacd898dbaedbd9037acd25b82417587e972838d')).to.equal(false);
+      expect(util.isCksumAddr('0xCACD898DBAEDBD9037ACD25B82417587E972838D')).to.equal(false);
+      expect(util.isCksumAddr('0xCAcD898dBaEdBD9037aCd25b82417587E972838d')).to.equal(true);
     })
   })
 })
