@@ -17,7 +17,7 @@ const DB = require('../db');
 const TransactionPool = require('../db/transaction-pool');
 const { BLOCKCHAINS_DIR, PredefinedDbPaths } = require('../constants');
 const rimraf = require('rimraf');
-const jayson = require('jayson');
+const jayson = require('jayson/promise');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
  
@@ -59,10 +59,12 @@ const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
 const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
 const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
 const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
+const JSON_RPC_GET_NONCE = 'ain_getNonce';
 
 const SET_VALUE_ENDPOINT = '/set_value';
 const GET_VALUE_ENDPOINT = '/get_value'
 const BLOCKS_ENDPOINT = '/blocks'
+const GET_ADDR_ENDPOINT = '/node_address';
 
 // Data options
 RANDOM_OPERATION = [
@@ -472,7 +474,11 @@ describe('Integration Tests', () => {
     });
 
     describe('leads to blockchains', () => {
-      let db;
+      let db, address, committedNonceAfterBroadcast, pendingNonceAfterBroadcast;
+
+      before(() => {
+        address = JSON.parse(syncRequest('GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
+      });
 
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
@@ -570,6 +576,64 @@ describe('Integration Tests', () => {
               .body.toString('utf-8'));
           assert.deepEqual(body1.result, body2.result);
         }
+      });
+
+      it('keeps track of nonces correctly after creating and broadcasting a transaction', () => {
+        return new Promise((resolve, reject) => {
+          let promises = [];
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address }));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address, from: 'pending' }));
+          Promise.all(promises).then(res => {
+            promises = [];
+            const committedNonceBefore = res[0].result;
+            const pendingNonceBefore = res[1].result;
+            syncRequest('POST', server2 + '/' + 'set_value',
+                  {
+                    json: {
+                      ref: '/test/nonce_test',
+                      value: 'testing...'
+                    }
+                  });
+            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address }));
+            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address, from: 'pending' }));
+            Promise.all(promises).then(resAfterBroadcast => {
+              promises = [];
+              committedNonceAfterBroadcast = resAfterBroadcast[0].result;
+              pendingNonceAfterBroadcast = resAfterBroadcast[1].result;
+              expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
+              expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
+              resolve();
+            })
+            .catch(e => {
+              console.log("error:",e);
+              reject();
+            });
+          })
+          .catch(e => {
+            console.log("error:",e);
+            reject();
+          });
+        });
+      });
+      
+      it('keeps track of nonces correctly after committing to a block', () => {
+        return new Promise((resolve, reject) => {
+          waitUntilNewBlock();
+          let promises = [];
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address }));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address, from: 'pending' }));
+          Promise.all(promises).then(resAfterCommit => {
+            const committedNonceAfterCommit = resAfterCommit[0].result;
+            const pendingNonceAfterCommit = resAfterCommit[1].result;
+            expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast + 1);
+            expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
+            resolve();
+          })
+          .catch(e => {
+            console.log("error:",e);
+            reject();
+          });
+        });
       });
 
       // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
