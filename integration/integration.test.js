@@ -605,12 +605,12 @@ describe('Integration Tests', () => {
               resolve();
             })
             .catch(e => {
-              console.log("error:",e);
+              console.log("error:", e);
               reject();
             });
           })
           .catch(e => {
-            console.log("error:",e);
+            console.log("error:", e);
             reject();
           });
         });
@@ -630,7 +630,7 @@ describe('Integration Tests', () => {
             resolve();
           })
           .catch(e => {
-            console.log("error:",e);
+            console.log("error:", e);
             reject();
           });
         });
