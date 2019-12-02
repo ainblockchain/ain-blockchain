@@ -155,6 +155,8 @@ class DB {
         resultList.push(this.getValue(item.ref));
       } else if (item.type === ReadDbOperations.GET_RULE) {
         resultList.push(this.getRule(item.ref));
+      } else if (item.type === ReadDbOperations.GET_FUNC) {
+        resultList.push(this.getFunc(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
       } else if (item.type === ReadDbOperations.EVAL_RULE) {
@@ -272,13 +274,13 @@ class DB {
         if (ret !== true) {
           break;
         }
-      } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, address);
+      } else if (op.type === WriteDbOperations.SET_FUNC) {
+        ret = this.setFunc(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === WriteDbOperations.SET_FUNC) {
-        ret = this.setFunc(op.ref, op.value, address);
+      } else if (op.type === WriteDbOperations.SET_OWNER) {
+        ret = this.setOwner(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
@@ -302,6 +304,7 @@ class DB {
           case WriteDbOperations.INC_VALUE:
           case WriteDbOperations.DEC_VALUE:
           case WriteDbOperations.SET_RULE:
+          case WriteDbOperations.SET_FUNC:
           case WriteDbOperations.SET_OWNER:
           case WriteDbOperations.SET:
             resultList.push(this.executeOperation(operation, tx.address, tx.timestamp));

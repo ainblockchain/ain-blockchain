@@ -98,6 +98,14 @@ app.get('/get_rule', (req, res, next) => {
     .end();
 });
 
+app.get('/get_func', (req, res, next) => {
+  const result = db.getFunc(req.query.ref);
+  res.status(result ? 200 : 400)
+    .set('Content-Type', 'application/json')
+    .send({code: result ? 0 : 1, result})
+    .end();
+});
+
 app.get('/get_owner', (req, res, next) => {
   const result = db.getOwner(req.query.ref);
   res.status(result ? 200 : 400)
@@ -167,6 +175,16 @@ app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
+  res.status(result === true ? 201 : 401)
+    .set('Content-Type', 'application/json')
+    .send({code: result === true ? 0 : 1, result})
+    .end();
+});
+
+app.post('/set_func', (req, res, next) => {
+  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
+  const result = createTransaction(
+      createSingleSetTxData(req.body, WriteDbOperations.SET_FUNC), isNoncedTransaction);
   res.status(result === true ? 201 : 401)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})

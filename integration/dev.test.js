@@ -97,6 +97,14 @@ describe('API Tests', () => {
         }
       }
     });
+    syncRequest('POST', server2 + '/set_func', {
+      json: {
+        ref: '/test/test_function/some/path',
+        value: {
+          ".function": "some function config"
+        }
+      }
+    });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
         ref: '/test/test_owner/some/path',
@@ -117,21 +125,27 @@ describe('API Tests', () => {
   });
 
   afterEach(() => {
-    syncRequest('POST', server2 + '/set_value', {
-      json: {
-        ref: '/test',
-        value: {}
-      }
-    });
     syncRequest('POST', server2 + '/set_owner', {
       json: {
         ref: '/test/test_owner/some/path',
         value: {}
       }
     });
+    syncRequest('POST', server2 + '/set_func', {
+      json: {
+        ref: '/test/test_function/some/path',
+        value: {}
+      }
+    });
     syncRequest('POST', server2 + '/set_rule', {
       json: {
         ref: '/test/test_rule/some/path',
+        value: {}
+      }
+    });
+    syncRequest('POST', server2 + '/set_value', {
+      json: {
+        ref: '/test',
         value: {}
       }
     });
@@ -156,6 +170,21 @@ describe('API Tests', () => {
         code: 0,
         result: {
           ".write": "auth === 'abcd'"
+        }
+      });
+    })
+  })
+
+  describe('/get_func', () => {
+    it('get_func', () => {
+      sleep(200)
+      const body =
+          JSON.parse(syncRequest('GET', server1 + '/get_func?ref=/test/test_function/some/path')
+            .body.toString('utf-8'));
+      assert.deepEqual(body, {
+        code: 0,
+        result: {
+          ".function": "some function config"
         }
       });
     })
@@ -271,8 +300,23 @@ describe('API Tests', () => {
             ref: "/test/test_rule/some/path",
           },
           {
+            type: 'GET_FUNC',
+            ref: "/test/test_function/some/path",
+          },
+          {
             type: 'GET_OWNER',
             ref: "/test/test_owner/some/path",
+          },
+          {
+            type: 'EVAL_RULE',
+            ref: "/test/test_rule/some/path",
+            value: "value",
+            address: "abcd" 
+          },
+          {
+            type: 'EVAL_OWNER',
+            ref: "/test/test_owner/some/path",
+            address: "abcd"
           }
         ]
       };
@@ -286,6 +330,9 @@ describe('API Tests', () => {
             ".write": "auth === 'abcd'"
           },
           {
+            ".function": "some function config"
+          },
+          {
             ".owner": {
               "owners": {
                 "*": {
@@ -296,6 +343,13 @@ describe('API Tests', () => {
                 }
               }
             }
+          },
+          true,
+          {
+            "branch_owner": false,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": false,
           }
         ]
       });
@@ -346,6 +400,21 @@ describe('API Tests', () => {
     })
   })
 
+  describe('/set_func', () => {
+    it('set_func', () => {
+      sleep(200)
+      const request = {
+        ref: "/test/test_function/other/path",
+        value: {
+          ".function": "some other function config"
+        }
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/set_func', {json: request})
+          .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
+    })
+  })
+
   describe('/set_owner', () => {
     it('set_owner', () => {
       sleep(200)
@@ -385,6 +454,13 @@ describe('API Tests', () => {
             ref: "/test/test_rule/other2/path",
             value: {
               ".write": "some other2 rule config"
+            }
+          },
+          {
+            type: 'SET_FUNC',
+            ref: "/test/test_function/other2/path",
+            value: {
+              ".function": "some other2 function config"
             }
           },
           {
@@ -438,6 +514,15 @@ describe('API Tests', () => {
           },
           {
             operation: {
+              type: 'SET_FUNC',
+              ref: "/test/test_function/other3/path",
+              value: {
+                ".function": "some other3 function config"
+              }
+            }
+          },
+          {
+            operation: {
               type: 'SET_OWNER',
               ref: "/test/test_owner/other3/path",
               value: {
@@ -475,6 +560,13 @@ describe('API Tests', () => {
                   }
                 },
                 {
+                  type: 'SET_FUNC',
+                  ref: "/test/test_function/other4/path",
+                  value: {
+                    ".function": "some other4 function config"
+                  }
+                },
+                {
                   type: 'SET_OWNER',
                   ref: "/test/test_owner/other4/path",
                   value: {
@@ -491,6 +583,7 @@ describe('API Tests', () => {
       assert.deepEqual(body, {
         code: 0,
         result: [
+          true,
           true,
           true,
           true,

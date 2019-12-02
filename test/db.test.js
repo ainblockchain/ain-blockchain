@@ -260,6 +260,10 @@ describe("DB operations", () => {
           ref: "/rule/other/path",
         },
         {
+          type: "GET_FUNC",
+          ref: "/function/other/path",
+        },
+        {
           type: "GET_OWNER",
           ref: "/owner/other/path",
         },
@@ -274,7 +278,7 @@ describe("DB operations", () => {
           ref: "/owner/other/path",
           address: "abcd"
         },
-      ]), [null, null, null, false, {}]);
+      ]), [null, null, null, null, false, {}]);
     })
 
     it("when retrieving existing value or rule or owner", () => {
@@ -286,6 +290,10 @@ describe("DB operations", () => {
         {
           type: "GET_RULE",
           ref: "/test/test_rule/some/path",
+        },
+        {
+          type: "GET_FUNC",
+          ref: "/test/test_function/some/path",
         },
         {
           type: "GET_OWNER",
@@ -306,6 +314,9 @@ describe("DB operations", () => {
         456,
         {
           ".write": "auth === 'abcd'"
+        },
+        {
+          ".function": "some function config"
         },
         {
           ".owner": {
