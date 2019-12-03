@@ -34,15 +34,13 @@ class P2pServer {
       const peers = JSON.parse(message);
       this.connectToPeers(peers);
       if (peers.length === 0) {
-        if (this.blockchain.chain.length === 0) {
-          console.log("\n#########################################################################");
-          console.log("### THIS IS THE FIRST SERVER NODE. STARTING WITH THE GENESIS BLOCK... ###");
-          console.log("#########################################################################\n");
-          this.blockchain.startWithGenesisBlock();
-          this.db.startWithBlockchain(this.blockchain, this.transactionPool);
-        }
+        this.blockchain.init(true);
+        this.db.startWithBlockchain(this.blockchain, this.transactionPool);
         this.blockchain.syncedAfterStartup = true;
         this.initiateChain();
+      } else {
+        this.blockchain.init(false);
+        this.db.startWithBlockchain(this.blockchain, this.transactionPool);
       }
     });
     trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ?
@@ -402,7 +400,7 @@ class P2pServer {
   }
 
   initiateChain() {
-    this.votingUtil.status === VotingStatus.WAIT_FOR_BLOCK;
+    this.votingUtil.status = VotingStatus.WAIT_FOR_BLOCK;
     this.depositStakes();
     const initChainTx = this.votingUtil.instantiate(this.blockchain);
     if (!initChainTx) {

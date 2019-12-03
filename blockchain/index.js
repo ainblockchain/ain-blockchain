@@ -16,17 +16,44 @@ class Blockchain {
     this.backUpDB = null;
     this._proposedBlock = null;
     this.syncedAfterStartup = false;
-    let newChain;
-    if (this.createBlockchainDir()) {
-      newChain = Blockchain.loadChain(this._blockchainDir());
-      this.chain = newChain ? newChain: this.chain;
-    }
   }
 
-  startWithGenesisBlock() {
-    console.log('Starting chain with a genesis block..')
-    this.chain = [Block.genesis()];
-    this.writeChain();
+  init(isFirstNode) {
+    if (this.createBlockchainDir()) {
+      if (isFirstNode) {
+        console.log("\n");
+        console.log("##############################################################");
+        console.log("## This is THE FIRST node. Starting with a GENESIS block... ##");
+        console.log("##############################################################");
+        console.log("\n");
+        this.chain = [Block.genesis()];
+        this.writeChain();
+      } else {
+        console.log("\n");
+        console.log("###############################################################");
+        console.log("## This is NOT the first node. Starting with EMPTY blocks... ##");
+        console.log("###############################################################");
+        console.log("\n");
+      }
+    } else {
+      if (isFirstNode) {
+        console.log("\n");
+        console.log("##############################################################");
+        console.log("## This is THE FIRST node. Starting with EXISTING blocks... ##");
+        console.log("##############################################################");
+        console.log("\n");
+      } else {
+        console.log("\n");
+        console.log("##################################################################");
+        console.log("## This is NOT the first node. Starting with EXISTING blocks... ##");
+        console.log("##################################################################");
+        console.log("\n");
+      }
+      let newChain = Blockchain.loadChain(this._blockchainDir());
+      if (newChain) {
+        this.chain = newChain;
+      }
+    }
   }
 
   /**
@@ -127,15 +154,15 @@ class Blockchain {
   }
 
   createBlockchainDir() {
-    let alreadyExists = true;
+    let created = false;
     const dirs = [BLOCKCHAINS_DIR, this._blockchainDir()];
     dirs.forEach((directory) => {
       if (!(fs.existsSync(directory))) {
         fs.mkdirSync(directory);
-        alreadyExists = false;
+        created = true;
       }
     });
-    return alreadyExists;
+    return created;
   }
 
   writeChain() {
