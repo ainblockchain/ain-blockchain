@@ -8,7 +8,7 @@
   },
   "consensus": {
     "recent_proposers": {
-      ".write": "(newData && Object.keys(newData).length < 20) && (getValue('/consensus/voting/pre_commits') > getValue('/consensus/voting/threshold')) && (getValue('/consensus/voting/proposer') === auth)"
+      ".write": "(newData && util.isDict(newData) && util.length(newData) < 20) && (getValue('/consensus/voting/pre_commits') > getValue('/consensus/voting/threshold')) && (getValue('/consensus/voting/proposer') === auth)"
     },
     "stakes": {
       "$uid": {
@@ -16,7 +16,7 @@
       }
     },
     "voting": {
-      ".write": "getValue('/consensus/voting') === null || (getValue('/consensus/recent_proposers') !== null && (Object.keys(getValue('/consensus/recent_proposers'))[Object.keys(getValue('/consensus/recent_proposers')).length - Math.floor((currentTime - getValue('/consensus/voting/time')) / 6000)] === auth))" ,
+      ".write": "getValue('/consensus/voting') === null || (getValue('/consensus/recent_proposers') !== null && (util.keys(getValue('/consensus/recent_proposers'))[util.keys(getValue('/consensus/recent_proposers')).length - Math.floor((currentTime - getValue('/consensus/voting/time')) / 6000)] === auth))" ,
       "block_hash": {
         ".write": "getValue('/consensus/voting/proposer') === auth"
       },
@@ -36,7 +36,7 @@
       "$uid": {
         "$deposit_id": {
           "value": {
-            ".write": "auth === $uid && !getValue('/deposit/' + $service_id + '/' + $uid + '/' + $deposit_id) && (util.length($uid) !== 42 || util.isChecksumAddr($uid)) && getValue('/accounts/' + $uid + '/balance') >= newData"
+            ".write": "auth === $uid && !getValue('/deposit/' + $service_id + '/' + $uid + '/' + $deposit_id) && (util.length($uid) !== 42 || util.isCksumAddr($uid)) && util.isNumber(newData) && getValue('/accounts/' + $uid + '/balance') >= newData"
           },
           "createdAt": {
             ".write": false
@@ -66,7 +66,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "auth === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 42 || util.isChecksumAddr($from)) && (util.length($to) !== 42 || util.isChecksumAddr($to)) && $from !== $to && getValue('accounts/' + $from + '/balance') >= newData"
+            ".write": "auth === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 42 || util.isCksumAddr($from)) && (util.length($to) !== 42 || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue('accounts/' + $from + '/balance') >= newData"
           }
         }
       }
@@ -77,7 +77,7 @@
       "$uid": {
         "$withdraw_id": {
           "value": {
-            ".write": "auth === $uid && !getValue('/withdraw/' + $service_id + '/' + $uid + '/' + $withdraw_id) && getValue('/deposit_accounts/' + $service_id + '/' + $uid + '/value') >= newData"
+            ".write": "auth === $uid && !getValue('/withdraw/' + $service_id + '/' + $uid + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service_id + '/' + $uid + '/value') >= newData"
           },
           "createdAt": {
             ".write": false

@@ -15,20 +15,33 @@ class BuiltInRuleUtil {
     return Array.isArray(value);
   }
 
-  length(value) {
-    if (!this.isString(value) && !this.isArray(value)) {
-      return 0;
-    }
-    return value.length;
+  isDict(value) {
+    return (typeof value === 'object' && value !== null && !Array.isArray(value));
   }
 
-  isValidAddress(addr) {
+  keys(value) {
+    if (this.isDict(value)) {
+      return Object.keys(value);
+    }
+    return [];
+  }
+
+  length(value) {
+    if (this.isString(value) || this.isArray(value)) {
+      return value.length;
+    }
+    if (this.isDict(value)) {
+      return this.keys(value).length;
+    }
+    return 0;
+  }
+
+  isValAddr(addr) {
     return this.isString(addr) && ainUtil.isValidAddress(addr);
   }
 
-  isChecksumAddr(addr) {
-    return this.isString(addr) && ainUtil.isValidAddress(addr) &&
-        addr === ainUtil.toChecksumAddress(addr);
+  isCksumAddr(addr) {
+    return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 }
 
