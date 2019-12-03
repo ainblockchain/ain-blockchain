@@ -27,7 +27,7 @@ class ChainUtil {
   }
 
   static isDict(data) {
-    return (typeof data==='object' && data!==null && !(data instanceof Array));
+    return (typeof data === 'object' && data !== null && !Array.isArray(data));
   }
 
   static parsePath(queryString) {
