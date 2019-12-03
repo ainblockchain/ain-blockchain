@@ -84,7 +84,7 @@ app.get('/', (req, res, next) => {
 
 app.get('/get_value', (req, res, next) => {
   const result = db.getValue(req.query.ref);
-  res.status(result !== null ? 200 : 400)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
     .end();
@@ -92,32 +92,31 @@ app.get('/get_value', (req, res, next) => {
 
 app.get('/get_rule', (req, res, next) => {
   const result = db.getRule(req.query.ref);
-  res.status(result ? 200 : 400)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
 app.get('/get_func', (req, res, next) => {
   const result = db.getFunc(req.query.ref);
-  res.status(result ? 200 : 400)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
 app.get('/get_owner', (req, res, next) => {
   const result = db.getOwner(req.query.ref);
-  res.status(result ? 200 : 400)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const timestamp = Date.now();
-  const result = db.evalRule(body.ref, body.value, body.address, timestamp);
+  const result = db.evalRule(body.ref, body.value, body.address, body.timestamp || Date.now());
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -135,9 +134,9 @@ app.post('/eval_owner', (req, res, next) => {
 
 app.post('/get', (req, res, next) => {
   const result = db.get(req.body.op_list);
-  res.status(result ? 200 : 400)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: 0, result})
     .end();
 });
 
@@ -145,7 +144,7 @@ app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
-  res.status(result === true ? 201 : 401)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
@@ -155,7 +154,7 @@ app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
-  res.status(result === true ? 201 : 401)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
@@ -165,7 +164,7 @@ app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
-  res.status(result === true ? 201 : 401)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
@@ -175,7 +174,7 @@ app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
-  res.status(result === true ? 201 : 401)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
@@ -185,7 +184,7 @@ app.post('/set_func', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_FUNC), isNoncedTransaction);
-  res.status(result === true ? 201 : 401)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
@@ -195,7 +194,7 @@ app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
-  res.status(result === true ? 201 : 401)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
@@ -205,7 +204,7 @@ app.post('/set_owner', (req, res, next) => {
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
-  res.status(result === true ? 201 : 401)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
@@ -214,37 +213,50 @@ app.post('/set', (req, res, next) => {
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(createBatchTxData(req.body), isNoncedTransaction);
-  res.status(201)
+  res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
 });
 
 app.get('/blocks', (req, res, next) => {
-  const statusCode = 200;
   const result = bc.getChainSection(0, bc.length);
-  res.status(statusCode)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/last_block', (req, res, next) => {
+  const result = bc.lastBlock();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/last_block_number', (req, res, next) => {
+  const result = bc.lastBlockNumber();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
     .end();
 });
 
 app.get('/transactions', (req, res, next) => {
-  const statusCode = 200;
   const result = tp.transactions;
-  res.status(statusCode)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: 0, result})
     .end();
 });
 
 // For testing purposes
 app.get('/node_address', (req, res, next) => {
-  const statusCode = 200;
   const result = db.account.address;
-  res.status(statusCode)
+  res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result ? 0 : 1, result})
+    .send({code: 0, result})
     .end();
 })
 

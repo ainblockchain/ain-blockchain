@@ -65,6 +65,7 @@ const SET_VALUE_ENDPOINT = '/set_value';
 const GET_VALUE_ENDPOINT = '/get_value'
 const BLOCKS_ENDPOINT = '/blocks'
 const GET_ADDR_ENDPOINT = '/node_address';
+const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number'
 
 // Data options
 RANDOM_OPERATION = [
@@ -187,16 +188,15 @@ function waitUntilNodeStakes() {
 }
 
 function waitUntilNewBlock() {
-  let latestBlocks =
-      JSON.parse(syncRequest('GET', server1 + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
-  const initialLastBlockNumber = Number(latestBlocks[latestBlocks.length - 1].number);
-  let updatedLastBlockNumber = initialLastBlockNumber
+  const initialLastBlockNumber =
+      JSON.parse(syncRequest('GET', server1 + LAST_BLOCK_NUMBER_ENDPOINT)
+        .body.toString('utf-8'))['result'];
+  let updatedLastBlockNumber = initialLastBlockNumber;
   console.log(`Initial last block number: ${initialLastBlockNumber}`)
   while (!(updatedLastBlockNumber > initialLastBlockNumber)) {
     sleep(500)
-    latestBlocks =
-        JSON.parse(syncRequest('GET', server1 + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
-    updatedLastBlockNumber = Number(latestBlocks[latestBlocks.length - 1].number);
+    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server1 + LAST_BLOCK_NUMBER_ENDPOINT)
+      .body.toString('utf-8'))['result'];
   }
   console.log(`Updated last block number: ${updatedLastBlockNumber}`)
 }
@@ -455,9 +455,10 @@ describe('Integration Tests', () => {
       it('prevent users from restructed areas', () => {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
-        const result = syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
-            {json: {ref: 'restricted/path', value: 'anything', is_nonced_transaction: false}});
-        expect(result.statusCode).to.equal(401);
+        const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, {json: {
+          ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
       });
     });
 
