@@ -17,7 +17,7 @@ describe("DB initialization", () => {
   beforeEach(() => {
     tp = new TransactionPool();
     bc = new Blockchain("test-blockchain");
-    db = DB.getDatabase(bc, tp);
+    db = new DB();
     setDbForTesting(bc, tp, db, 0, true);
   })
 
@@ -66,7 +66,7 @@ describe("DB operations", () => {
 
     tp = new TransactionPool();
     bc = new Blockchain("test-blockchain");
-    db = DB.getDatabase(bc, tp);
+    db = new DB();
     setDbForTesting(bc, tp, db);
 
     dbValues = {
@@ -703,10 +703,10 @@ describe("DB rule config", () => {
   beforeEach(() => {
     tp = new TransactionPool();
     bc1 = new Blockchain("test-blockchain1");
-    db1 = DB.getDatabase(bc1, tp);
+    db1 = new DB();
     setDbForTesting(bc1, tp, db1, 0);
     bc2 = new Blockchain("test-blockchain2");
-    db2 = DB.getDatabase(bc2, tp);
+    db2 = new DB();
     setDbForTesting(bc2, tp, db2, 1);
     dbValues = {
       "comcom": "unreadable value",
@@ -819,7 +819,7 @@ describe("DB owner config", () => {
   beforeEach(() => {
     tp = new TransactionPool();
     bc = new Blockchain("test-blockchain");
-    db = DB.getDatabase(bc, tp);
+    db = new DB();
     setDbForTesting(bc, tp, db, 0);
     db.setOwner("test/test_owner/mixed/true/true/true",
       {

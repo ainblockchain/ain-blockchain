@@ -22,31 +22,31 @@ class Blockchain {
     if (this.createBlockchainDir()) {
       if (isFirstNode) {
         console.log("\n");
-        console.log("##############################################################");
-        console.log("## This is THE FIRST node. Starting with a GENESIS block... ##");
-        console.log("##############################################################");
+        console.log("############################################################");
+        console.log("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
+        console.log("############################################################");
         console.log("\n");
         this.chain = [Block.genesis()];
         this.writeChain();
       } else {
         console.log("\n");
-        console.log("###############################################################");
-        console.log("## This is NOT the first node. Starting with EMPTY blocks... ##");
-        console.log("###############################################################");
+        console.log("#############################################################");
+        console.log("## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##");
+        console.log("#############################################################");
         console.log("\n");
       }
     } else {
       if (isFirstNode) {
         console.log("\n");
-        console.log("##############################################################");
-        console.log("## This is THE FIRST node. Starting with EXISTING blocks... ##");
-        console.log("##############################################################");
+        console.log("############################################################");
+        console.log("## Starting FIRST-NODE blockchain with EXISTING blocks... ##");
+        console.log("############################################################");
         console.log("\n");
       } else {
         console.log("\n");
-        console.log("##################################################################");
-        console.log("## This is NOT the first node. Starting with EXISTING blocks... ##");
-        console.log("##################################################################");
+        console.log("################################################################");
+        console.log("## Starting NON-FIRST-NODE blockchain with EXISTING blocks... ##");
+        console.log("################################################################");
         console.log("\n");
       }
       let newChain = Blockchain.loadChain(this._blockchainDir());

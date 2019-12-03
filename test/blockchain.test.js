@@ -14,10 +14,10 @@ describe('Blockchain', () => {
   beforeEach(() => {
     tp = new TransactionPool();
     bc1 = new Blockchain('test-blockchain1');
-    db1 = DB.getDatabase(bc1, tp);
+    db1 = new DB();
     setDbForTesting(bc1, tp, db1, 0);
     bc2 = new Blockchain('test-blockchain2');
-    db2 = DB.getDatabase(bc2, tp);
+    db2 = new DB();
     setDbForTesting(bc2, tp, db2, 1);
   });
 

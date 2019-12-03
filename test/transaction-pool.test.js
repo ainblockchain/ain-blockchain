@@ -15,7 +15,7 @@ describe('TransactionPool', () => {
   beforeEach(() => {
     bc = new Blockchain('test-blockchain');
     tp = new TransactionPool();
-    db = DB.getDatabase(bc, tp);
+    db = new DB();
     setDbForTesting(bc, tp, db, 0);
 
     transaction = getTransaction(db, {
@@ -51,13 +51,13 @@ describe('TransactionPool', () => {
       tp.transactions[db.account.address] = shuffleSeed.shuffle(tp.transactions[db.account.address]);
 
       const bc2 = new Blockchain('test-blockchain2');
-      db2 = DB.getDatabase(bc2, tp);
+      db2 = new DB();
       setDbForTesting(bc2, tp, db2, 1);
       const bc3 = new Blockchain('test-blockchain3');
-      db3 = DB.getDatabase(bc3, tp);
+      db3 = new DB();
       setDbForTesting(bc3, tp, db3, 2);
       const bc4 = new Blockchain('test-blockchain4');
-      db4 = DB.getDatabase(bc4, tp);
+      db4 = new DB();
       setDbForTesting(bc4, tp, db4, 3);
       const dbs = [db2, db3, db4];
       for (let j = 0; j < dbs.length; j++) {

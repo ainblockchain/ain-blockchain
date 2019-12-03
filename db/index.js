@@ -8,9 +8,9 @@ const BuiltInRuleUtil = require('./built-in-rule-util');
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 
 class DB {
-  constructor(blockchain) {
-    this.db = {};
-    this.initDb();
+  constructor() {
+    this.dbData = {};
+    this.initDbData();
     this.func = new BuiltInFunctions(this);
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
@@ -18,11 +18,10 @@ class DB {
     if (this instanceof BackUpDB) {
       return;
     }
-    this.nonce = this.getNonce(blockchain);
     console.log(`Creating new db with account: ${this.account.address}`);
   }
 
-  initDb() {
+  initDbData() {
     // Initialize DB owners.
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
@@ -59,15 +58,9 @@ class DB {
 
   startWithBlockchain(blockchain, tp) {
     console.log('Starting database with a blockchain..')
+    blockchain.setBackDb(new BackUpDB(this.account));
     this.nonce = this.getNonce(blockchain);
     this.reconstruct(blockchain, tp);
-  }
-
-  static getDatabase(blockchain, tp) {
-    const db = new DB(blockchain);
-    blockchain.setBackDb(new BackUpDB(db.account));
-    db.reconstruct(blockchain, tp);
-    return db;
   }
 
   getNonce(blockchain) {
@@ -94,9 +87,9 @@ class DB {
 
   writeDatabase(fullPath, value) {
     if (fullPath.length === 0) {
-      this.db = value;
+      this.dbData = value;
     } else if (fullPath.length === 1) {
-      this.db[fullPath[0]] = value;
+      this.dbData[fullPath[0]] = value;
     } else {
       const pathToKey = fullPath.slice().splice(0, fullPath.length - 1);
       const refKey = fullPath[fullPath.length - 1];
@@ -332,29 +325,29 @@ class DB {
    * Returns reference to the input path for reading if exists, otherwise null.
    */
   getRefForReading(fullPath) {
-    let subDb = this.db;
+    let subData = this.dbData;
     for (let i = 0; i < fullPath.length; i++) {
       const key = fullPath[i];
-      if (!ChainUtil.isDict(subDb) || !(key in subDb)) {
+      if (!ChainUtil.isDict(subData) || !(key in subData)) {
         return null;
       }
-      subDb = subDb[key];
+      subData = subData[key];
     }
-    return subDb;
+    return subData;
   }
 
   /**
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
   getRefForWriting(fullPath) {
-    let subDb = this.db;
+    let subData = this.dbData;
     fullPath.forEach((key) => {
-      if (!(key in subDb) || !ChainUtil.isDict(subDb[key])) {
-        subDb[key] = {};
+      if (!(key in subData) || !ChainUtil.isDict(subData[key])) {
+        subData[key] = {};
       }
-      subDb = subDb[key];
+      subData = subData[key];
     });
-    return subDb;
+    return subData;
   }
 
   /**
@@ -427,7 +420,7 @@ class DB {
 
   setDBToBackUp(backUpDB) {
     if (ainUtil.areSameAddresses(this.account.address, backUpDB.account.address)) {
-      this.db = JSON.parse(JSON.stringify(backUpDB.db));
+      this.dbData = JSON.parse(JSON.stringify(backUpDB.dbData));
     }
   }
 
@@ -466,7 +459,7 @@ class DB {
     let lastRuleNode;
     const pathVars = {};
     const ruleNodes = [];
-    let currentRuleNode = this.db[PredefinedDbPaths.RULES_ROOT];
+    let currentRuleNode = this.dbData[PredefinedDbPaths.RULES_ROOT];
     ruleNodes.push(currentRuleNode);
     for (let i = 0; i < valuePath.length && currentRuleNode; i++) {
       // Specific rule path has higher precedence over wildcard rule path.
@@ -554,7 +547,7 @@ class DB {
 
   getOwnerConfig(ownerPath) {
     const ownerNodes = [];
-    let currentOwnerNode = this.db[PredefinedDbPaths.OWNERS_ROOT];
+    let currentOwnerNode = this.dbData[PredefinedDbPaths.OWNERS_ROOT];
     ownerNodes.push(currentOwnerNode);
     for (let i = 0; i < ownerPath.length && currentOwnerNode; i++) {
       currentOwnerNode = currentOwnerNode[ownerPath[i]];

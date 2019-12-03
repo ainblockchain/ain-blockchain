@@ -497,7 +497,7 @@ describe('Integration Tests', () => {
 
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-        db = DB.getDatabase(new Blockchain('test-integration'), new TransactionPool());
+        db = new DB();
         sentOperations.forEach((op) => {
           const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
           db.executeTransaction({ operation });
