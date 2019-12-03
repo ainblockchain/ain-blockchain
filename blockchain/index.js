@@ -12,7 +12,7 @@ const CHAIN_SUBSECT_LENGTH = 20;
 class Blockchain {
   constructor(blockchainDir) {
     this.chain = [];
-    this.blockchain_dir = blockchainDir;
+    this.blockchainDir = blockchainDir;
     this.backUpDB = null;
     this._proposedBlock = null;
     this.syncedAfterStartup = false;
@@ -146,7 +146,7 @@ class Blockchain {
   }
 
   _blockchainDir() {
-    return path.resolve(BLOCKCHAINS_DIR, this.blockchain_dir);
+    return path.resolve(BLOCKCHAINS_DIR, this.blockchainDir);
   }
 
   pathToBlock(block) {
@@ -155,7 +155,10 @@ class Blockchain {
 
   createBlockchainDir() {
     let created = false;
-    const dirs = [BLOCKCHAINS_DIR, this._blockchainDir()];
+    const dirs = [BLOCKCHAINS_DIR];
+    if (this.blockchainDir) {
+      dirs.push(this._blockchainDir());
+    }
     dirs.forEach((directory) => {
       if (!(fs.existsSync(directory))) {
         fs.mkdirSync(directory);
