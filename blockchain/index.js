@@ -13,7 +13,7 @@ class Blockchain {
   constructor(blockchainDir) {
     this.chain = [];
     this.blockchainDir = blockchainDir;
-    this.backUpDB = null;
+    this.backupDb = null;
     this._proposedBlock = null;
     this.syncedAfterStartup = false;
   }
@@ -82,11 +82,11 @@ class Blockchain {
     return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
   }
 
-  setBackDb(backUpDB) {
-    if (this.backUpDB !== null) {
-      throw Error('Already set backupDB');
+  setBackDb(backupDb) {
+    if (this.backupDb !== null) {
+      throw Error('Already set backupdb');
     }
-    this.backUpDB = backUpDB;
+    this.backupDb = backupDb;
   }
 
   lastBlock() {
@@ -114,7 +114,7 @@ class Blockchain {
     }
     this.chain.push(block);
     while (this.chain.length > 10) {
-      this.backUpDB.executeBlockTransactions(this.chain.shift());
+      this.backupDb.executeBlockTransactions(this.chain.shift());
     }
     this.writeChain();
     return true;

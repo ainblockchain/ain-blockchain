@@ -15,7 +15,7 @@ class DB {
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    if (this instanceof BackUpDB) {
+    if (this instanceof BackupDB) {
       return;
     }
     console.log(`Creating new db with account: ${this.account.address}`);
@@ -58,7 +58,7 @@ class DB {
 
   startWithBlockchain(blockchain, tp) {
     console.log('Starting database with a blockchain..')
-    blockchain.setBackDb(new BackUpDB(this.account));
+    blockchain.setBackDb(new BackupDB(this.account));
     this.nonce = this.getNonce(blockchain);
     this.reconstruct(blockchain, tp);
   }
@@ -395,7 +395,7 @@ class DB {
 
   reconstruct(blockchain, transactionPool) {
     console.log('Reconstructing database');
-    this.setDBToBackUp(blockchain.backUpDB);
+    this.setDBToBackUp(blockchain.backupDb);
     this.createDatabase(blockchain);
     this.addTransactionPool(transactionPool.validTransactions());
   }
@@ -418,9 +418,9 @@ class DB {
     });
   }
 
-  setDBToBackUp(backUpDB) {
-    if (ainUtil.areSameAddresses(this.account.address, backUpDB.account.address)) {
-      this.dbData = JSON.parse(JSON.stringify(backUpDB.dbData));
+  setDBToBackUp(backupDb) {
+    if (ainUtil.areSameAddresses(this.account.address, backupDb.account.address)) {
+      this.dbData = JSON.parse(JSON.stringify(backupDb.dbData));
     }
   }
 
@@ -591,7 +591,7 @@ class DB {
   }
 }
 
-class BackUpDB extends DB {
+class BackupDB extends DB {
   constructor(account) {
     super();
     this.account = account;
