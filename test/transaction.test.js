@@ -14,7 +14,7 @@ describe('Transaction', () => {
   beforeEach(() => {
     bc = new Blockchain('test-blockchain');
     tp = new TransactionPool();
-    db = DB.getDatabase(bc, tp);
+    db = new DB();
     setDbForTesting(bc, tp, db);
     txData = {
       operation: {

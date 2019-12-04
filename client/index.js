@@ -49,7 +49,7 @@ if (LOG) {
 
 // [START gae_flex_mysql_app]
 const express = require('express');
-const Database = require('../db');
+const DB = require('../db');
 const P2pServer = require('../server');
 
 // Define peer2peer server here which will broadcast changes in the database
@@ -68,7 +68,7 @@ app.use(express.json()); // support json encoded bodies
 const { WriteDbOperations } = require('../constants');
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
-const db = Database.getDatabase(bc, tp);
+const db = new DB();
 const p2pServer = new P2pServer(db, bc, tp);
 const jayson = require('jayson');
 

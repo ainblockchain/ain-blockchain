@@ -5,7 +5,7 @@ const Transaction = require('../db/transaction');
 function setDbForTesting(bc, tp, db, accountIndex = 0, skipTestingConfig = false) {
   db.setAccountForTesting(accountIndex);
 
-  bc.startWithGenesisBlock();
+  bc.init(true);
   db.startWithBlockchain(bc, tp);
 
   if (!skipTestingConfig) {

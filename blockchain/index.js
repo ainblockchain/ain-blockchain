@@ -12,21 +12,48 @@ const CHAIN_SUBSECT_LENGTH = 20;
 class Blockchain {
   constructor(blockchainDir) {
     this.chain = [];
-    this.blockchain_dir = blockchainDir;
-    this.backUpDB = null;
+    this.blockchainDir = blockchainDir;
+    this.backupDb = null;
     this._proposedBlock = null;
     this.syncedAfterStartup = false;
-    let newChain;
-    if (this.createBlockchainDir()) {
-      newChain = Blockchain.loadChain(this._blockchainDir());
-      this.chain = newChain ? newChain: this.chain;
-    }
   }
 
-  startWithGenesisBlock() {
-    console.log('Starting chain with a genesis block..')
-    this.chain = [Block.genesis()];
-    this.writeChain();
+  init(isFirstNode) {
+    if (this.createBlockchainDir()) {
+      if (isFirstNode) {
+        console.log("\n");
+        console.log("############################################################");
+        console.log("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
+        console.log("############################################################");
+        console.log("\n");
+        this.chain = [Block.genesis()];
+        this.writeChain();
+      } else {
+        console.log("\n");
+        console.log("#############################################################");
+        console.log("## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##");
+        console.log("#############################################################");
+        console.log("\n");
+      }
+    } else {
+      if (isFirstNode) {
+        console.log("\n");
+        console.log("############################################################");
+        console.log("## Starting FIRST-NODE blockchain with EXISTING blocks... ##");
+        console.log("############################################################");
+        console.log("\n");
+      } else {
+        console.log("\n");
+        console.log("################################################################");
+        console.log("## Starting NON-FIRST-NODE blockchain with EXISTING blocks... ##");
+        console.log("################################################################");
+        console.log("\n");
+      }
+      let newChain = Blockchain.loadChain(this._blockchainDir());
+      if (newChain) {
+        this.chain = newChain;
+      }
+    }
   }
 
   /**
@@ -55,11 +82,11 @@ class Blockchain {
     return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
   }
 
-  setBackDb(backUpDB) {
-    if (this.backUpDB !== null) {
-      throw Error('Already set backupDB');
+  setBackDb(backupDb) {
+    if (this.backupDb !== null) {
+      throw Error('Already set backupdb');
     }
-    this.backUpDB = backUpDB;
+    this.backupDb = backupDb;
   }
 
   lastBlock() {
@@ -87,7 +114,7 @@ class Blockchain {
     }
     this.chain.push(block);
     while (this.chain.length > 10) {
-      this.backUpDB.executeBlockTransactions(this.chain.shift());
+      this.backupDb.executeBlockTransactions(this.chain.shift());
     }
     this.writeChain();
     return true;
@@ -119,7 +146,7 @@ class Blockchain {
   }
 
   _blockchainDir() {
-    return path.resolve(BLOCKCHAINS_DIR, this.blockchain_dir);
+    return path.resolve(BLOCKCHAINS_DIR, this.blockchainDir);
   }
 
   pathToBlock(block) {
@@ -127,15 +154,18 @@ class Blockchain {
   }
 
   createBlockchainDir() {
-    let alreadyExists = true;
-    const dirs = [BLOCKCHAINS_DIR, this._blockchainDir()];
+    let created = false;
+    const dirs = [BLOCKCHAINS_DIR];
+    if (this.blockchainDir) {
+      dirs.push(this._blockchainDir());
+    }
     dirs.forEach((directory) => {
       if (!(fs.existsSync(directory))) {
         fs.mkdirSync(directory);
-        alreadyExists = false;
+        created = true;
       }
     });
-    return alreadyExists;
+    return created;
   }
 
   writeChain() {

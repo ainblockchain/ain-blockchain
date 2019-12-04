@@ -361,6 +361,7 @@ describe('Integration Tests', () => {
         }
       });
 
+      // NOTE(seo): Flaky test case, rarely fails.
       it('blocks have correct validators and voting data', () => {
         let threshold = 2 / 3; // TODO (lia): define this as a constant in genesis.
         for (let i = 0; i < SERVERS.length; i++) {
@@ -382,7 +383,6 @@ describe('Integration Tests', () => {
             let majority = Math.floor(totalStakedAmount * threshold);
             for (let k = 0; k < blocks[j].last_votes.length; k++) {
               const last_vote = blocks[j].last_votes[k];
-              // if (blocks[j - 1].validators.indexOf(vote.address) < 0) {
               if (!blocks[j - 1].validators[last_vote.address]) {
                 console.log(blocks[j -1])
                 console.log(`Votes for block ${j -1} had validator ${last_vote.address} ` +
@@ -497,7 +497,7 @@ describe('Integration Tests', () => {
 
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-        db = DB.getDatabase(new Blockchain('test-integration'), new TransactionPool());
+        db = new DB();
         sentOperations.forEach((op) => {
           const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
           db.executeTransaction({ operation });
