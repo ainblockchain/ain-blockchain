@@ -78,7 +78,6 @@ const app = express();
 const transactionBatch = [];
 
 app.use(express.json()); // support json encoded bodies
-// app.use(validateParams);
 
 const { WriteDbOperations } = require('../constants');
 const bc = new Blockchain(String(PORT));
@@ -350,7 +349,7 @@ function validateVersion(req, res, next) {
     .send({code: 1, result: "Protocol version not specified.",
            protocolVersion: CURRENT_PROTOCOL_VERSION})
     .end();
-  } else if (!VERSION_LIST[version] || !semver.valid(version)) {
+  } else if (!semver.valid(version)) {
     res.status(200)
       .set('Content-Type', 'application/json')
       .send({code: 1, result: "Invalid protocol version.",
