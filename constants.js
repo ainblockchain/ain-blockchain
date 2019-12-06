@@ -13,6 +13,7 @@ const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_RULES.split(':')[1])
 } : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/.blockchains');
+const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 // TODO (lia): remove this after changing the way genesis block is produced
 // (first node creates it and broadcasts to others)
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
@@ -193,6 +194,7 @@ module.exports = {
   GENESIS_RULES,
   ADDITIONAL_RULES,
   BLOCKCHAINS_DIR,
+  PROTOCOL_VERSIONS,
   STAKE,
   DEBUG,
   MessageTypes,

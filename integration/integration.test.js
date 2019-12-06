@@ -20,6 +20,7 @@ const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
  
 const ENV_VARIABLES = [
   {
@@ -176,8 +177,9 @@ function waitUntilNodeStakes() {
   let validators = {};
   while (count <= MAX_PROMISE_STACK_DEPTH && blocksAfterStaking < 2) {
     const result = JSON.parse(syncRequest('POST', server1 + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: 'ain_getRecentBlock', id: 0}})
-        .body.toString('utf-8')).result;
+        {json: {jsonrpc: '2.0', method: 'ain_getRecentBlock', id: 0,
+                params: {protocolVersion: CURRENT_PROTOCOL_VERSION}}})
+        .body.toString('utf-8')).result.block;
     validators = result.validators;
     if (Object.keys(validators).length >= 2) {
       blocksAfterStaking++;
@@ -250,9 +252,10 @@ describe('Integration Tests', () => {
     sleep(20000);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK, {}, function(err, response) {
+      jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
+          {protocolVersion: CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) throw err;
-        numBlocksOnStartup = response.result.number;
+        numBlocksOnStartup = response.result.block ? response.result.block.number : 0;
         resolve();
       });
     }));
@@ -305,24 +308,26 @@ describe('Integration Tests', () => {
       newServerProc.start();
       sleep(10000);
       return new Promise((resolve) => {
-        jayson.client.http(server1 + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS, {},
+        jayson.client.http(server1 + JSON_RPC_ENDPOINT)
+        .request(JSON_RPC_GET_BLOCKS, {protocolVersion: CURRENT_PROTOCOL_VERSION},
             function(err, response) {
           if (err) throw err;
-          baseChain = response.result;
+          baseChain = response.result.blocks;
           number = baseChain[baseChain.length - 1].number;
           resolve();
         });
       }).then(() => {
         return new Promise((resolve) => {
           jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
-              {to: number + 1}, function(err, response) {
-            if (err) throw err;
-            const newChain = response.result;
-            assert.deepEqual(baseChain.length, newChain.length);
-            assert.deepEqual(baseChain, newChain);
-            newServerProc.kill();
-            resolve();
-          });
+              {to: number + 1, protocolVersion: CURRENT_PROTOCOL_VERSION},
+              function(err, response) {
+                if (err) throw err;
+                const newChain = response.result.blocks;
+                assert.deepEqual(baseChain.length, newChain.length);
+                assert.deepEqual(baseChain, newChain);
+                newServerProc.kill();
+                resolve();
+              });
         });
       });
     });
@@ -336,8 +341,9 @@ describe('Integration Tests', () => {
 
       beforeEach(() => {
         baseChain = JSON.parse(syncRequest('POST', server2 + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
-        .body.toString('utf-8')).result;
+        {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
+                params: {protocolVersion: CURRENT_PROTOCOL_VERSION}}})
+        .body.toString('utf-8')).result.blocks;
       });
 
 
@@ -350,13 +356,16 @@ describe('Integration Tests', () => {
           waitUntilNewBlock();
           const number = baseChain[baseChain.length - 1].number;
           return new Promise((resolve) => {
-            jayson.client.http(server + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
-                {to: number + 1}, function(err, response) {
-              if (err) throw err;
-              newChain = response.result;
-              assert.deepEqual(baseChain, newChain);
-              resolve();
-            });
+            jayson.client.http(server + JSON_RPC_ENDPOINT)
+            .request(
+                JSON_RPC_GET_BLOCKS,
+                {to: number + 1, protocolVersion: CURRENT_PROTOCOL_VERSION}, 
+                function(err, response) {
+                  if (err) throw err;
+                  newChain = response.result.blocks;
+                  assert.deepEqual(baseChain, newChain);
+                  resolve();
+                });
           });
         }
       });
@@ -368,8 +377,9 @@ describe('Integration Tests', () => {
           sendTransactions(sentOperations);
           waitUntilNewBlock();
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
-              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
-              .body.toString('utf-8')).result;
+              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
+                      params: {protocolVersion: CURRENT_PROTOCOL_VERSION}}})
+              .body.toString('utf-8')).result.blocks;
           const len = blocks.length;
           // The genesis and the following blocks are exceptions
           // (validators and next_round_validators are set 'arbitrarily')
@@ -425,8 +435,9 @@ describe('Integration Tests', () => {
           sendTransactions(sentOperations);
           waitUntilNewBlock();
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
-              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0, params: {}}})
-              .body.toString('utf-8')).result;
+              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
+                      params: {protocolVersion: CURRENT_PROTOCOL_VERSION}}})
+              .body.toString('utf-8')).result.blocks;
           const len = blocks.length;
           for (let j = 0; j < len; j++) {
             const block = blocks[j];
@@ -509,9 +520,10 @@ describe('Integration Tests', () => {
         waitUntilNewBlock();
         return new Promise((resolve) => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
-                                {from: 2, to: 4}, function(err, response) {
+                                {from: 2, to: 4, protocolVersion: CURRENT_PROTOCOL_VERSION},
+                                function(err, response) {
             if (err) throw err;
-            const body = response.result;
+            const body = response.result.headers;
             assert.deepEqual([2, 3], body.map((blockHeader) => {
               return blockHeader.number;
             }));
@@ -524,16 +536,18 @@ describe('Integration Tests', () => {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER, {number: 2}, function(err, response) {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+              {number: 2, protocolVersion: CURRENT_PROTOCOL_VERSION}, function(err, response) {
             if (err) throw err;
-            resolve(response.result);
+            resolve(response.result.block);
           });
         }).then((resultByNumber) => {
           return new Promise((resolve) => {
-            jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH, {hash: resultByNumber.hash},
+            jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH,
+                {hash: resultByNumber.hash, protocolVersion: CURRENT_PROTOCOL_VERSION},
                                   function(err, response) {
               if (err) throw err;
-              const resultByHash = response.result;
+              const resultByHash = response.result.block;
               assert.deepEqual(resultByHash, resultByNumber);
               resolve();
             });
@@ -596,12 +610,14 @@ describe('Integration Tests', () => {
       it('keeps track of nonces correctly after creating and broadcasting a transaction', () => {
         return new Promise((resolve, reject) => {
           let promises = [];
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address }));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address, from: 'pending' }));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+              { address, protocolVersion: CURRENT_PROTOCOL_VERSION }));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+              { address, from: 'pending', protocolVersion: CURRENT_PROTOCOL_VERSION }));
           Promise.all(promises).then(res => {
             promises = [];
-            const committedNonceBefore = res[0].result;
-            const pendingNonceBefore = res[1].result;
+            const committedNonceBefore = res[0].result.nonce;
+            const pendingNonceBefore = res[1].result.nonce;
             syncRequest('POST', server2 + '/' + 'set_value',
                   {
                     json: {
@@ -609,12 +625,14 @@ describe('Integration Tests', () => {
                       value: 'testing...'
                     }
                   });
-            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address }));
-            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address, from: 'pending' }));
+            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+              { address, protocolVersion: CURRENT_PROTOCOL_VERSION }));
+            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+                { address, from: 'pending', protocolVersion: CURRENT_PROTOCOL_VERSION }));
             Promise.all(promises).then(resAfterBroadcast => {
               promises = [];
-              committedNonceAfterBroadcast = resAfterBroadcast[0].result;
-              pendingNonceAfterBroadcast = resAfterBroadcast[1].result;
+              committedNonceAfterBroadcast = resAfterBroadcast[0].result.nonce;
+              pendingNonceAfterBroadcast = resAfterBroadcast[1].result.nonce;
               expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
               expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
               resolve();
@@ -635,11 +653,13 @@ describe('Integration Tests', () => {
         return new Promise((resolve, reject) => {
           waitUntilNewBlock();
           let promises = [];
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address }));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE, { address, from: 'pending' }));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+              { address, protocolVersion: CURRENT_PROTOCOL_VERSION }));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+              { address, from: 'pending', protocolVersion: CURRENT_PROTOCOL_VERSION }));
           Promise.all(promises).then(resAfterCommit => {
-            const committedNonceAfterCommit = resAfterCommit[0].result;
-            const pendingNonceAfterCommit = resAfterCommit[1].result;
+            const committedNonceAfterCommit = resAfterCommit[0].result.nonce;
+            const pendingNonceAfterCommit = resAfterCommit[1].result.nonce;
             expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast + 1);
             expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
             resolve();
@@ -676,6 +696,57 @@ describe('Integration Tests', () => {
         .to.equal(lastBlockFromStoppedBlockchain.number);
       });
       */
+    });
+
+    describe('protocolVersion', () => {
+      it('accepts API calls with correct protocolVersion', () => {
+        return new Promise((resolve, reject) => {
+          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+              {number: 0, protocolVersion: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+            if (err) throw err;
+            expect(response.result.block.number).to.equal(0);
+            expect(response.result.protocolVersion).to.equal(CURRENT_PROTOCOL_VERSION);
+            resolve();
+          });
+        });
+      });
+
+      it('rejects API calls with incorrect protocolVersion', () => {
+        return new Promise((resolve, reject) => {
+          let promises = [];
+          promises.push(jsonRpcClient.request(
+              JSON_RPC_GET_BLOCK_BY_NUMBER,
+              {number: 0, protocolVersion: CURRENT_PROTOCOL_VERSION + '.0'}));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+              {number: 0, protocolVersion: CURRENT_PROTOCOL_VERSION + '-alpha.1'}));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+              {number: 0, protocolVersion: '0.0.01'}));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+              {number: 0, protocolVersion: '1'}));
+          Promise.all(promises).then(res => {
+            for (let response of res) {
+              expect(response.code).to.equal(1);
+              expect(response.result).to.equal("Invalid protocol version.");
+            }
+            resolve();
+          })
+        });
+      });
+
+      it('rejects API calls with no protocolVersion', () => {
+        return new Promise((resolve, reject) => {
+          jsonRpcClient.request(
+              JSON_RPC_GET_BLOCK_BY_NUMBER,
+              {number: 0},
+              function(err, response) {
+                if (err) throw err;
+                expect(response.code).to.equal(1);
+                expect(response.result).to.equal("Protocol version not specified.");
+                resolve();
+              }
+          );
+        });
+      });
     });
   });
 });

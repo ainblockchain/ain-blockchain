@@ -12,6 +12,7 @@ const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
 const {BLOCKCHAINS_DIR, FunctionResultCode} = require('../constants')
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
@@ -225,13 +226,13 @@ describe('API Tests', () => {
       const ref = "/test/test_rule/some/path";
       const value = "value";
       const address = "abcd";
-      const request = { ref, value, address };
+      const request = { ref, value, address, protocolVersion: CURRENT_PROTOCOL_VERSION };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: true});
       return client.request('ain_evalRule', request)
       .then(res => {
-        expect(res.result).to.equal(true);
+        expect(res.result.permission).to.equal(true);
       })
       .catch(error => {
         console.log('error:',error);
@@ -243,13 +244,13 @@ describe('API Tests', () => {
       const ref = "/test/test_rule/some/path";
       const value = "value";
       const address = "efgh";
-      const request = { ref, value, address };
+      const request = { ref, value, address, protocolVersion: CURRENT_PROTOCOL_VERSION };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: false});
       return client.request('ain_evalRule', request)
       .then(res => {
-        expect(res.result).to.equal(false);
+        expect(res.result.permission).to.equal(false);
       })
       .catch(error => {
         console.log('error:',error);
@@ -263,7 +264,7 @@ describe('API Tests', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       const ref = "/test/test_owner/some/path";
       const address = "abcd";
-      const request = { ref, address };
+      const request = { ref, address, protocolVersion: CURRENT_PROTOCOL_VERSION };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
         .body.toString('utf-8'));
       const expected = {
@@ -278,7 +279,7 @@ describe('API Tests', () => {
       });
       return client.request('ain_evalOwner', request)
       .then(res => {
-        assert.deepEqual(res.result, expected);
+        assert.deepEqual(res.result.permission, expected);
       })
       .catch(error => {
         console.log('error:',error);
@@ -595,6 +596,16 @@ describe('API Tests', () => {
     })
   })
 
+  describe('/ain_protocolVersion', () => {
+    it('returns the correct version', () => {
+      const client = jayson.client.http(server1 + '/json-rpc');
+      return client.request('ain_protocolVersion', {})
+      .then(res => {
+        expect(res.result.protocolVersion).to.equal(CURRENT_PROTOCOL_VERSION);
+      })
+    });
+  })
+
   describe('built-in functions', () => {
     let transferFrom; // = server1
     let transferTo; // = server2
@@ -861,7 +872,8 @@ describe('API Tests', () => {
         const signature =
             ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature })
+        return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature,
+              protocolVersion: CURRENT_PROTOCOL_VERSION })
         .then(res => {
           const depositResult = JSON.parse(syncRequest('GET',
               server2 + `/get_value?ref=/deposit/test_service/${account.address}/1/result/code`)

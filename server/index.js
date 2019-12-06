@@ -17,9 +17,11 @@ const ainUtil = require('@ainblockchain/ain-util');
 const VotingUtil = require('./voting-util');
 const { WriteDbOperations, DEBUG } = require('../constants');
 const BLOCK_CREATION_INTERVAL = 6000;
+const semver = require('semver');
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 class P2pServer {
-  constructor(db, blockchain, transactionPool) {
+  constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
     this.db = db;
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
@@ -27,6 +29,8 @@ class P2pServer {
     this.votingUtil = new VotingUtil(db);
     this.votingInterval = null;
     this.waitInBlocks = 4;
+    this.minProtocolVersion = minProtocolVersion;
+    this.maxProtocolVersion = maxProtocolVersion;
   }
 
   async connectTracker() {
@@ -74,6 +78,14 @@ class P2pServer {
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
+        const version = data.protocolVersion;
+        if (!version || !semver.valid(version)) {
+          return;
+        }
+        if (semver.gt(this.minProtocolVersion, version) ||
+            (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
+          return;
+        }
 
         switch (data.type) {
           case MessageTypes.VOTING:
@@ -141,12 +153,21 @@ class P2pServer {
   }
 
   sendChainSubsection(socket, chainSubsection, number) {
-    socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION, chainSubsection, number}));
+    socket.send(JSON.stringify({
+        type: MessageTypes.CHAIN_SUBSECTION,
+        chainSubsection,
+        number,
+        protocolVersion: CURRENT_PROTOCOL_VERSION
+      }));
   }
 
   requestChainSubsection(lastBlock) {
     this.sockets.forEach((socket) => {
-      socket.send(JSON.stringify({type: MessageTypes.CHAIN_SUBSECTION_REQUEST, lastBlock}));
+      socket.send(JSON.stringify({
+          type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
+          lastBlock,
+          protocolVersion: CURRENT_PROTOCOL_VERSION
+        }));
     });
   }
 
@@ -159,7 +180,11 @@ class P2pServer {
       console.log(`SENDING: ${JSON.stringify(transaction)}`);
     }
     this.sockets.forEach((socket) => {
-      socket.send(JSON.stringify({type: MessageTypes.TRANSACTION, transaction}));
+      socket.send(JSON.stringify({
+          type: MessageTypes.TRANSACTION,
+          transaction,
+          protocolVersion: CURRENT_PROTOCOL_VERSION
+        }));
     });
   }
 
@@ -175,7 +200,8 @@ class P2pServer {
           actionType: VotingActionTypes.PROPOSED_BLOCK,
           block: this.votingUtil.block,
           transaction: blockHashTransaction
-        }
+        },
+        protocolVersion: CURRENT_PROTOCOL_VERSION
       }));
     });
   }
@@ -185,7 +211,11 @@ class P2pServer {
       console.log(`SENDING: ${JSON.stringify(votingAction.transaction)}`);
     }
     this.sockets.forEach((socket) => {
-      socket.send(JSON.stringify({type: MessageTypes.VOTING, votingAction}));
+      socket.send(JSON.stringify({
+          type: MessageTypes.VOTING,
+          votingAction,
+          protocolVersion: CURRENT_PROTOCOL_VERSION
+        }));
     });
   }
 

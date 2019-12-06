@@ -46,6 +46,7 @@
     "rimraf": "^2.6.3",
     "secp256k1": "^3.7.0",
     "seedrandom": "^2.4.4",
+    "semver": "^6.3.0",
     "shuffle-seed": "^1.1.6",
     "util": "^0.11.1",
     "uuid": "^3.3.2",
