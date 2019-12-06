@@ -242,6 +242,6 @@ function extractTransactionHashes(block) {
 }
 
 function addProtocolVersion(result) {
-  result['protocolVersion'] = CURRENT_PROTOCOL_VERSION;
+  result['protoVer'] = CURRENT_PROTOCOL_VERSION;
   return result;
 }

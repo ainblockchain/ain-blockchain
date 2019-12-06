@@ -336,10 +336,10 @@ function checkIfTransactionShouldBeNonced(input) {
 
 function validateVersion(req, res, next) {
   let version = null;
-  if (req.query.protocolVersion) {
-    version = req.query.protocolVersion;
+  if (req.query.protoVer) {
+    version = req.query.protoVer;
   } else if (req.body.params) {
-    version = req.body.params.protocolVersion;
+    version = req.body.params.protoVer;
   }
   if (req.body.method === 'ain_protocolVersion') {
     next();
@@ -347,13 +347,13 @@ function validateVersion(req, res, next) {
     res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 1, result: "Protocol version not specified.",
-           protocolVersion: CURRENT_PROTOCOL_VERSION})
+           protoVer: CURRENT_PROTOCOL_VERSION})
     .end();
   } else if (!semver.valid(version)) {
     res.status(200)
       .set('Content-Type', 'application/json')
       .send({code: 1, result: "Invalid protocol version.",
-             protocolVersion: CURRENT_PROTOCOL_VERSION})
+             protoVer: CURRENT_PROTOCOL_VERSION})
       .end();
   } else {
     if (semver.gt(minProtocolVersion, version) ||
@@ -361,7 +361,7 @@ function validateVersion(req, res, next) {
       res.status(200)
       .set('Content-Type', 'application/json')
       .send({code: 1, result: "Incompatible protocol version.",
-             protocolVersion: CURRENT_PROTOCOL_VERSION})
+             protoVer: CURRENT_PROTOCOL_VERSION})
       .end();
     } else {
       next();

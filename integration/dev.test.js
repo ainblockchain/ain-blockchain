@@ -226,7 +226,7 @@ describe('API Tests', () => {
       const ref = "/test/test_rule/some/path";
       const value = "value";
       const address = "abcd";
-      const request = { ref, value, address, protocolVersion: CURRENT_PROTOCOL_VERSION };
+      const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: true});
@@ -244,7 +244,7 @@ describe('API Tests', () => {
       const ref = "/test/test_rule/some/path";
       const value = "value";
       const address = "efgh";
-      const request = { ref, value, address, protocolVersion: CURRENT_PROTOCOL_VERSION };
+      const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: false});
@@ -264,7 +264,7 @@ describe('API Tests', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       const ref = "/test/test_owner/some/path";
       const address = "abcd";
-      const request = { ref, address, protocolVersion: CURRENT_PROTOCOL_VERSION };
+      const request = { ref, address, protoVer: CURRENT_PROTOCOL_VERSION };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
         .body.toString('utf-8'));
       const expected = {
@@ -601,7 +601,7 @@ describe('API Tests', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       return client.request('ain_protocolVersion', {})
       .then(res => {
-        expect(res.result.protocolVersion).to.equal(CURRENT_PROTOCOL_VERSION);
+        expect(res.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
       })
     });
   })
@@ -873,7 +873,7 @@ describe('API Tests', () => {
             ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature,
-              protocolVersion: CURRENT_PROTOCOL_VERSION })
+          protoVer: CURRENT_PROTOCOL_VERSION })
         .then(res => {
           const depositResult = JSON.parse(syncRequest('GET',
               server2 + `/get_value?ref=/deposit/test_service/${account.address}/1/result/code`)

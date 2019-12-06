@@ -78,7 +78,7 @@ class P2pServer {
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
-        const version = data.protocolVersion;
+        const version = data.protoVer;
         if (!version || !semver.valid(version)) {
           return;
         }
@@ -157,7 +157,7 @@ class P2pServer {
         type: MessageTypes.CHAIN_SUBSECTION,
         chainSubsection,
         number,
-        protocolVersion: CURRENT_PROTOCOL_VERSION
+        protoVer: CURRENT_PROTOCOL_VERSION
       }));
   }
 
@@ -166,7 +166,7 @@ class P2pServer {
       socket.send(JSON.stringify({
           type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
           lastBlock,
-          protocolVersion: CURRENT_PROTOCOL_VERSION
+          protoVer: CURRENT_PROTOCOL_VERSION
         }));
     });
   }
@@ -183,7 +183,7 @@ class P2pServer {
       socket.send(JSON.stringify({
           type: MessageTypes.TRANSACTION,
           transaction,
-          protocolVersion: CURRENT_PROTOCOL_VERSION
+          protoVer: CURRENT_PROTOCOL_VERSION
         }));
     });
   }
@@ -201,7 +201,7 @@ class P2pServer {
           block: this.votingUtil.block,
           transaction: blockHashTransaction
         },
-        protocolVersion: CURRENT_PROTOCOL_VERSION
+        protoVer: CURRENT_PROTOCOL_VERSION
       }));
     });
   }
@@ -214,7 +214,7 @@ class P2pServer {
       socket.send(JSON.stringify({
           type: MessageTypes.VOTING,
           votingAction,
-          protocolVersion: CURRENT_PROTOCOL_VERSION
+          protoVer: CURRENT_PROTOCOL_VERSION
         }));
     });
   }
