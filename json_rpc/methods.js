@@ -1,5 +1,6 @@
 'use strict';
 
+const semver = require('semver');
 const {ReadDbOperations, PredefinedDbPaths, TransactionStatus} = require('../constants');
 const {Block} = require('../blockchain/block');
 const ainUtil = require('@ainblockchain/ain-util');
@@ -15,10 +16,30 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(blockchain, transactionPool, p2pServer) {
+module.exports = function getMethods(
+    blockchain,
+    transactionPool,
+    p2pServer,
+    minProtocolVersion,
+    maxProtocolVersion
+  ) {
   return {
-    ain_protocolVersion: function(args, done) {
+    ain_getProtocolVersion: function(args, done) {
       done(null, addProtocolVersion({}));
+    },
+
+    ain_checkProtocolVersion: function(args, done) {
+      const version = args.version;
+      if (version === undefined) {
+        done(null, addProtocolVersion({ code: 1, result: 'Protocol version not specified.' }));
+      } else if (!semver.valid(version)) {
+        done(null, addProtocolVersion({ code: 1, result: 'Invalid protocol version.' }));
+      } else if (semver.gt(minProtocolVersion, version) ||
+                (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
+        done(null, addProtocolVersion({ code: 1, result: 'Incompatible protocol version.' }));
+      } else {
+        done(null, addProtocolVersion({ code: 0, result: 'Success' }));
+      }
     },
 
     // Bloock API

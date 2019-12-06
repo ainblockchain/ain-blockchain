@@ -714,20 +714,23 @@ describe('Integration Tests', () => {
       it('rejects API calls with incorrect protoVer', () => {
         return new Promise((resolve, reject) => {
           let promises = [];
-          promises.push(jsonRpcClient.request(
-              JSON_RPC_GET_BLOCK_BY_NUMBER,
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
               {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '.0'}));
           promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
               {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '-alpha.1'}));
           promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 0, protoVer: '0.0.01'}));
+              {number: 0, protoVer: '0.01.0'}));
           promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
               {number: 0, protoVer: '1'}));
           Promise.all(promises).then(res => {
-            for (let response of res) {
-              expect(response.code).to.equal(1);
-              expect(response.result).to.equal("Invalid protocol version.");
-            }
+            expect(res[0].code).to.equal(1);
+            expect(res[0].result).to.equal("Invalid protocol version.");
+            expect(res[1].code).to.equal(1);
+            expect(res[1].result).to.equal("Incompatible protocol version.");
+            expect(res[2].code).to.equal(1);
+            expect(res[2].result).to.equal("Invalid protocol version.");
+            expect(res[3].code).to.equal(1);
+            expect(res[3].result).to.equal("Invalid protocol version.");
             resolve();
           })
         });

@@ -86,7 +86,8 @@ const db = new DB();
 const p2pServer = new P2pServer(db, bc, tp, minProtocolVersion, maxProtocolVersion);
 const jayson = require('jayson');
 
-const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
+const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer,
+    minProtocolVersion, maxProtocolVersion);
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
@@ -341,9 +342,10 @@ function validateVersion(req, res, next) {
   } else if (req.body.params) {
     version = req.body.params.protoVer;
   }
-  if (req.body.method === 'ain_protocolVersion') {
+  if (req.body.method === 'ain_getProtocolVersion' ||
+      req.body.method === 'ain_checkProtocolVersion') {
     next();
-  } else if (!version) {
+  } else if (version === undefined) {
     res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 1, result: "Protocol version not specified.",
@@ -355,16 +357,14 @@ function validateVersion(req, res, next) {
       .send({code: 1, result: "Invalid protocol version.",
              protoVer: CURRENT_PROTOCOL_VERSION})
       .end();
+  } else if (semver.gt(minProtocolVersion, version) ||
+      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
+    res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 1, result: "Incompatible protocol version.",
+            protoVer: CURRENT_PROTOCOL_VERSION})
+    .end();
   } else {
-    if (semver.gt(minProtocolVersion, version) ||
-        (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
-      res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({code: 1, result: "Incompatible protocol version.",
-             protoVer: CURRENT_PROTOCOL_VERSION})
-      .end();
-    } else {
-      next();
-    }
+    next();
   }
 }
