@@ -18,13 +18,27 @@
 
 // Require process, so we can mock environment variables
 const process = require('process');
+const fs = require('fs');
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
   console.log(err);
 }); 
 
 const moment = require('moment');
+const semver = require('semver');
 const PORT = process.env.PORT || 8080;
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const { PROTOCOL_VERSIONS } = require('../constants');
+if (!fs.existsSync(PROTOCOL_VERSIONS)) {
+  throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
+}
+const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
+if (!VERSION_LIST[CURRENT_PROTOCOL_VERSION]) {
+  throw Error("Current protocol version doesn't exist in the protocol versions file");
+}
+const minProtocolVersion =
+    VERSION_LIST[CURRENT_PROTOCOL_VERSION].min || CURRENT_PROTOCOL_VERSION;
+const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_VERSION].max;
 
 // Initiate logging
 const LOG = process.env.LOG || false;
@@ -69,11 +83,12 @@ const { WriteDbOperations } = require('../constants');
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = new DB();
-const p2pServer = new P2pServer(db, bc, tp);
+const p2pServer = new P2pServer(db, bc, tp, minProtocolVersion, maxProtocolVersion);
 const jayson = require('jayson');
 
-const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer);
-app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
+const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer,
+    minProtocolVersion, maxProtocolVersion);
+app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
   res.status(200)
@@ -251,7 +266,6 @@ app.get('/transactions', (req, res, next) => {
     .end();
 });
 
-// For testing purposes
 app.get('/node_address', (req, res, next) => {
   const result = db.account.address;
   res.status(200)
@@ -319,4 +333,38 @@ function createTransaction(txData, isNoncedTransaction) {
 function checkIfTransactionShouldBeNonced(input) {
   // Default to true if noncing information is not specified
   return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
+}
+
+function validateVersion(req, res, next) {
+  let version = null;
+  if (req.query.protoVer) {
+    version = req.query.protoVer;
+  } else if (req.body.params) {
+    version = req.body.params.protoVer;
+  }
+  if (req.body.method === 'ain_getProtocolVersion' ||
+      req.body.method === 'ain_checkProtocolVersion') {
+    next();
+  } else if (version === undefined) {
+    res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 1, result: "Protocol version not specified.",
+           protoVer: CURRENT_PROTOCOL_VERSION})
+    .end();
+  } else if (!semver.valid(version)) {
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 1, result: "Invalid protocol version.",
+             protoVer: CURRENT_PROTOCOL_VERSION})
+      .end();
+  } else if (semver.gt(minProtocolVersion, version) ||
+      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
+    res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 1, result: "Incompatible protocol version.",
+            protoVer: CURRENT_PROTOCOL_VERSION})
+    .end();
+  } else {
+    next();
+  }
 }
