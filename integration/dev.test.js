@@ -618,15 +618,15 @@ describe('API Tests', () => {
         promises.push(client.request('ain_checkProtocolVersion', {version: '0.0.1'}));
         Promise.all(promises).then(res => {
           expect(res[0].result.code).to.equal(1);
-          expect(res[0].result.result).to.equal("Protocol version not specified.");
+          expect(res[0].result.message).to.equal("Protocol version not specified.");
           expect(res[1].result.code).to.equal(1);
-          expect(res[1].result.result).to.equal("Invalid protocol version.");
+          expect(res[1].result.message).to.equal("Invalid protocol version.");
           expect(res[2].result.code).to.equal(1);
-          expect(res[2].result.result).to.equal("Invalid protocol version.");
+          expect(res[2].result.message).to.equal("Invalid protocol version.");
           expect(res[3].result.code).to.equal(0);
           expect(res[3].result.result).to.equal("Success");
           expect(res[4].result.code).to.equal(1);
-          expect(res[4].result.result).to.equal("Incompatible protocol version.");
+          expect(res[4].result.message).to.equal("Incompatible protocol version.");
           resolve();
         })
       });

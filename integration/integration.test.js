@@ -724,13 +724,13 @@ describe('Integration Tests', () => {
               {number: 0, protoVer: '1'}));
           Promise.all(promises).then(res => {
             expect(res[0].code).to.equal(1);
-            expect(res[0].result).to.equal("Invalid protocol version.");
+            expect(res[0].message).to.equal("Invalid protocol version.");
             expect(res[1].code).to.equal(1);
-            expect(res[1].result).to.equal("Incompatible protocol version.");
+            expect(res[1].message).to.equal("Incompatible protocol version.");
             expect(res[2].code).to.equal(1);
-            expect(res[2].result).to.equal("Invalid protocol version.");
+            expect(res[2].message).to.equal("Invalid protocol version.");
             expect(res[3].code).to.equal(1);
-            expect(res[3].result).to.equal("Invalid protocol version.");
+            expect(res[3].message).to.equal("Invalid protocol version.");
             resolve();
           })
         });
@@ -744,7 +744,7 @@ describe('Integration Tests', () => {
               function(err, response) {
                 if (err) throw err;
                 expect(response.code).to.equal(1);
-                expect(response.result).to.equal("Protocol version not specified.");
+                expect(response.message).to.equal("Protocol version not specified.");
                 resolve();
               }
           );
