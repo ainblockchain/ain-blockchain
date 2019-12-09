@@ -31,12 +31,12 @@ module.exports = function getMethods(
     ain_checkProtocolVersion: function(args, done) {
       const version = args.version;
       if (version === undefined) {
-        done(null, addProtocolVersion({ code: 1, result: 'Protocol version not specified.' }));
+        done(null, addProtocolVersion({ code: 1, message: 'Protocol version not specified.' }));
       } else if (!semver.valid(version)) {
-        done(null, addProtocolVersion({ code: 1, result: 'Invalid protocol version.' }));
+        done(null, addProtocolVersion({ code: 1, message: 'Invalid protocol version.' }));
       } else if (semver.gt(minProtocolVersion, version) ||
                 (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
-        done(null, addProtocolVersion({ code: 1, result: 'Incompatible protocol version.' }));
+        done(null, addProtocolVersion({ code: 1, message: 'Incompatible protocol version.' }));
       } else {
         done(null, addProtocolVersion({ code: 0, result: 'Success' }));
       }
@@ -70,7 +70,7 @@ module.exports = function getMethods(
     ain_getBlockByHash: function(args, done) {
       let block = blockchain.getBlockByHash(args.hash);
       if (!block || args.getFullTransactions) {
-        done(null, block);
+        done(null, addProtocolVersion({ block }));
       } else {
         block.transactions = extractTransactionHashes(block);
         done(null, addProtocolVersion({ block }));
@@ -80,7 +80,7 @@ module.exports = function getMethods(
     ain_getBlockByNumber: function(args, done) {
       let block = blockchain.getBlockByNumber(args.number);
       if (!block || args.getFullTransactions) {
-        done(null, block);
+        done(null, addProtocolVersion({ block }));
       } else {
         block.transactions = extractTransactionHashes(block);
         done(null, addProtocolVersion({ block }));
@@ -124,13 +124,13 @@ module.exports = function getMethods(
 
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
-      done(null, addProtocolVersion({ success: p2pServer.executeAndBroadcastTransaction(args) }));
+      done(null, addProtocolVersion({ result: p2pServer.executeAndBroadcastTransaction(args) }));
     },
 
     ain_getTransactionByHash: function(args, done) {
       const transactionInfo = transactionPool.transactionTracker[args.hash];
       if (!transactionInfo) {
-        done(null, null);
+        done(null, addProtocolVersion({ transaction: null }));
       } else {
         let transaction = null;
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
@@ -155,7 +155,7 @@ module.exports = function getMethods(
         const block = blockchain.getBlockByHash(args.block_hash);
         result = block.transactions.length > index && index >= 0 ? block.transactions[index] : null;
       }
-      done(null, { transaction: result, protocolVersion: CURRENT_PROTOCOL_VERSION });
+      done(null, addProtocolVersion({ transaction: result }));
     },
 
     ain_getTransactionByBlockNumberAndIndex: function(args, done) {
@@ -186,7 +186,7 @@ module.exports = function getMethods(
           done(null, addProtocolVersion({ result: p2pServer.db.get(args.op_list) }));
           return;
         default:
-          done(null, addProtocolVersion({ error: "Invalid get request type" }));
+          done(null, addProtocolVersion({ code: 1, message: "Invalid get request type" }));
       }
     },
 

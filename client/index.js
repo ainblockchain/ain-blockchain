@@ -348,20 +348,20 @@ function validateVersion(req, res, next) {
   } else if (version === undefined) {
     res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 1, result: "Protocol version not specified.",
+    .send({code: 1, message: "Protocol version not specified.",
            protoVer: CURRENT_PROTOCOL_VERSION})
     .end();
   } else if (!semver.valid(version)) {
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: 1, result: "Invalid protocol version.",
+      .send({code: 1, message: "Invalid protocol version.",
              protoVer: CURRENT_PROTOCOL_VERSION})
       .end();
   } else if (semver.gt(minProtocolVersion, version) ||
       (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
     res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 1, result: "Incompatible protocol version.",
+    .send({code: 1, message: "Incompatible protocol version.",
             protoVer: CURRENT_PROTOCOL_VERSION})
     .end();
   } else {
