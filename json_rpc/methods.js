@@ -35,7 +35,7 @@ module.exports = function getMethods(
     },
 
     ain_checkProtocolVersion: function(args, done) {
-      const version = args.version;
+      const version = args.protoVer;
       if (version === undefined) {
         done(null, addProtocolVersion({ code: 1, message: 'Protocol version not specified.' }));
       } else if (!semver.valid(version)) {

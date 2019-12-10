@@ -612,10 +612,10 @@ describe('API Tests', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         let promises = [];
         promises.push(client.request('ain_checkProtocolVersion', {}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: '0'}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: 0}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: CURRENT_PROTOCOL_VERSION}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: '0.0.1'}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0'}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: 0}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: CURRENT_PROTOCOL_VERSION}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0.0.1'}));
         Promise.all(promises).then(res => {
           expect(res[0].result.code).to.equal(1);
           expect(res[0].result.message).to.equal("Protocol version not specified.");
