@@ -14,8 +14,6 @@ const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
 } : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/.blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
-// TODO (lia): remove this after changing the way genesis block is produced
-// (first node creates it and broadcasts to others)
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 1000;
