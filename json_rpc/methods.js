@@ -6,7 +6,8 @@ const {
     ReadDbOperations,
     PredefinedDbPaths,
     TransactionStatus,
-    MAX_TX_BYTES
+    MAX_TX_BYTES,
+    NETWORK_ID
   } = require('../constants');
 const {Block} = require('../blockchain/block');
 const ainUtil = require('@ainblockchain/ain-util');
@@ -266,6 +267,10 @@ module.exports = function getMethods(
       // is currently syncing.
       done(null, addProtocolVersion({ result: !blockchain.syncedAfterStartup }));
     },
+
+    net_getId: function(args, done) {
+      done(null, addProtocolVersion({ id: NETWORK_ID }));
+    }
   };
 };
 
