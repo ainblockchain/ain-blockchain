@@ -1,7 +1,13 @@
 'use strict';
 
 const semver = require('semver');
-const {ReadDbOperations, PredefinedDbPaths, TransactionStatus} = require('../constants');
+const sizeof = require('object-sizeof');
+const {
+    ReadDbOperations,
+    PredefinedDbPaths,
+    TransactionStatus,
+    MAX_TX_BYTES
+  } = require('../constants');
 const {Block} = require('../blockchain/block');
 const ainUtil = require('@ainblockchain/ain-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -124,7 +130,11 @@ module.exports = function getMethods(
 
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
-      done(null, addProtocolVersion({ result: p2pServer.executeAndBroadcastTransaction(args) }));
+      if (sizeof(args) > MAX_TX_BYTES) {
+        done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.` }));
+      } else {
+        done(null, addProtocolVersion({ result: p2pServer.executeAndBroadcastTransaction(args) }));
+      }
     },
 
     ain_getTransactionByHash: function(args, done) {
