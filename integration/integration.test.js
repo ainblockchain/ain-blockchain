@@ -65,7 +65,7 @@ const JSON_RPC_GET_NONCE = 'ain_getNonce';
 const SET_VALUE_ENDPOINT = '/set_value';
 const GET_VALUE_ENDPOINT = '/get_value'
 const BLOCKS_ENDPOINT = '/blocks'
-const GET_ADDR_ENDPOINT = '/node_address';
+const GET_ADDR_ENDPOINT = '/get_address';
 const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number'
 
 // Data options
