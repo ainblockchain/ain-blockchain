@@ -11,7 +11,7 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const {BLOCKCHAINS_DIR, FunctionResultCode} = require('../constants')
+const {BLOCKCHAINS_DIR, FunctionResultCode, MAX_TX_SIZE} = require('../constants')
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
@@ -631,6 +631,37 @@ describe('API Tests', () => {
         })
       });
     });
+
+    describe('/ain_sendSignedTransaction', () => {
+      it('rejects a transaction that exceeds the size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const longText = require('./data/tx_exceeds_size_limit.js').text;
+        const transaction = {
+          operation: {
+            type: 'SET_VALUE',
+            value: longText,
+            ref: `test/test_long_text`
+          },
+          timestamp: Date.now() + 100000,
+          nonce: -1
+        }
+        const signature =
+            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', { transaction, signature,
+            protoVer: CURRENT_PROTOCOL_VERSION })
+          .then((res) => {
+            assert.deepEqual(res.result, {
+              code: 1,
+              message: `Transaction size exceeds ${MAX_TX_SIZE} bytes.`,
+              protoVer: CURRENT_PROTOCOL_VERSION
+            });
+          })
+          .catch((error) => {
+            console.log("ERROR:", error)
+          })
+      })
+    })
   });
 
   describe('built-in functions', () => {

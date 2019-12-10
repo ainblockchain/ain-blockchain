@@ -18,6 +18,7 @@ const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json
 // (first node creates it and broadcasts to others)
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
+const MAX_TX_SIZE = 1000;
 
 /**
  * Message types for communication between nodes
@@ -197,6 +198,7 @@ module.exports = {
   PROTOCOL_VERSIONS,
   STAKE,
   DEBUG,
+  MAX_TX_SIZE,
   MessageTypes,
   VotingStatus,
   VotingActionTypes,
