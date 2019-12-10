@@ -612,10 +612,10 @@ describe('API Tests', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         let promises = [];
         promises.push(client.request('ain_checkProtocolVersion', {}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: '0'}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: 0}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: CURRENT_PROTOCOL_VERSION}));
-        promises.push(client.request('ain_checkProtocolVersion', {version: '0.0.1'}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0'}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: 0}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: CURRENT_PROTOCOL_VERSION}));
+        promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0.0.1'}));
         Promise.all(promises).then(res => {
           expect(res[0].result.code).to.equal(1);
           expect(res[0].result.message).to.equal("Protocol version not specified.");
@@ -662,6 +662,19 @@ describe('API Tests', () => {
           })
       })
     })
+    
+    describe('/ain_getAddress', () => {
+      it('returns the correct node address', () => {
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_getAddress', { protoVer: CURRENT_PROTOCOL_VERSION })
+        .then(res => {
+          expect(res.result.address).to.equal('0xbA58D93edD8343C001eC5f43E620712Ba8C10813');
+        })
+        .catch(error =>{ 
+          console.log("ERROR", error);
+        })
+      });
+    });
   });
 
   describe('built-in functions', () => {
@@ -684,21 +697,21 @@ describe('API Tests', () => {
 
     before(() => {
       transferFrom =
-          JSON.parse(syncRequest('GET', server1 + '/node_address').body.toString('utf-8')).result;
+          JSON.parse(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
       transferTo =
-          JSON.parse(syncRequest('GET', server2 + '/node_address').body.toString('utf-8')).result;
+          JSON.parse(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
       transferFromBad =
-          JSON.parse(syncRequest('GET', server3 + '/node_address').body.toString('utf-8')).result;
+          JSON.parse(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
       transferPath = `/transfer/${transferFrom}/${transferTo}`;
       transferFromBalancePath = `/accounts/${transferFrom}/balance`;
       transferToBalancePath = `/accounts/${transferTo}/balance`;
 
       depositServiceAdmin =
-          JSON.parse(syncRequest('GET', server1 + '/node_address').body.toString('utf-8')).result;
+          JSON.parse(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
       depositActor =
-          JSON.parse(syncRequest('GET', server2 + '/node_address').body.toString('utf-8')).result;
+          JSON.parse(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
       depositActorBad =
-          JSON.parse(syncRequest('GET', server3 + '/node_address').body.toString('utf-8')).result;
+          JSON.parse(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
       depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;

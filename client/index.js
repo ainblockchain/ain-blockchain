@@ -266,7 +266,7 @@ app.get('/transactions', (req, res, next) => {
     .end();
 });
 
-app.get('/node_address', (req, res, next) => {
+app.get('/get_address', (req, res, next) => {
   const result = db.account.address;
   res.status(200)
     .set('Content-Type', 'application/json')
