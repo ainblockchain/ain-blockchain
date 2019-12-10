@@ -182,6 +182,9 @@ module.exports = function getMethods(
         case ReadDbOperations.GET_OWNER:
           done(null, addProtocolVersion({ owner: p2pServer.db.getOwner(args.ref) }));
           return;
+        case ReadDbOperations.GET_FUNC:
+          done(null, addProtocolVersion({ func: p2pServer.db.getFunc(args.ref) }));
+          return;
         case ReadDbOperations.GET:
           done(null, addProtocolVersion({ result: p2pServer.db.get(args.op_list) }));
           return;
