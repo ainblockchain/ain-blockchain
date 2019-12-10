@@ -268,8 +268,8 @@ module.exports = function getMethods(
       done(null, addProtocolVersion({ result: !blockchain.syncedAfterStartup }));
     },
 
-    net_getId: function(args, done) {
-      done(null, addProtocolVersion({ id: NETWORK_ID }));
+    net_getNetworkId: function(args, done) {
+      done(null, addProtocolVersion({ result: NETWORK_ID }));
     }
   };
 };
