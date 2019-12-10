@@ -215,6 +215,11 @@ module.exports = function getMethods(
 
     // Account API
     // TODO (lia): verify and convert to checksum addresses
+    ain_getAddress: function(args, done) {
+      done(null, addProtocolVersion({ address: p2pServer.db.account ?
+          p2pServer.db.account.address : null }));
+    },
+
     ain_getBalance: function(args, done) {
       const address = args.address;
       // TODO (lia): Check validity of the address with ain-util
