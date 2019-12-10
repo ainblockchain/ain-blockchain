@@ -11,7 +11,7 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const {BLOCKCHAINS_DIR, FunctionResultCode, MAX_TX_SIZE} = require('../constants')
+const {BLOCKCHAINS_DIR, FunctionResultCode, MAX_TX_BYTES} = require('../constants')
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
@@ -653,7 +653,7 @@ describe('API Tests', () => {
           .then((res) => {
             assert.deepEqual(res.result, {
               code: 1,
-              message: `Transaction size exceeds ${MAX_TX_SIZE} bytes.`,
+              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
               protoVer: CURRENT_PROTOCOL_VERSION
             });
           })

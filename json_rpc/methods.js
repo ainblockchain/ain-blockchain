@@ -6,7 +6,7 @@ const {
     ReadDbOperations,
     PredefinedDbPaths,
     TransactionStatus,
-    MAX_TX_SIZE
+    MAX_TX_BYTES
   } = require('../constants');
 const {Block} = require('../blockchain/block');
 const ainUtil = require('@ainblockchain/ain-util');
@@ -130,8 +130,8 @@ module.exports = function getMethods(
 
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
-      if (sizeof(args) > MAX_TX_SIZE) {
-        done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ${MAX_TX_SIZE} bytes.` }));
+      if (sizeof(args) > MAX_TX_BYTES) {
+        done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.` }));
       } else {
         done(null, addProtocolVersion({ result: p2pServer.executeAndBroadcastTransaction(args) }));
       }
