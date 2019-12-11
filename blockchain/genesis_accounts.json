@@ -5,7 +5,7 @@
     "public_key": "a6faafd0e86acead841179ac405a92499221bd0227f140c3e817996ce04a497e3b9e2abbef2e782ddea311985f9eaa016397bfabebcc64241e4fef9e0f3fb667",
     "timestamp": 1571819318272
   },
-  "shares": 10000,
+  "shares": 1000000,
   "others": [
     {
       "address": "0xCAcD898dBaEdBD9037aCd25b82417587E972838d",
