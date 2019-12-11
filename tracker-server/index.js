@@ -14,6 +14,13 @@ const TIMEZONE = 'timezone';
 const MASK = 'xxx';
 const PORT = 5000;
 
+function printPeers() {
+  for (let i = 0; i < PEERS.length; i++) {
+    const peer = PEERS[i];
+    console.log(`  Peer[${i}]: ${peer.publicKey} (${peer.url})`);
+  }
+}
+
 webSocketServer.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
@@ -23,7 +30,8 @@ webSocketServer.on('connection', (ws) => {
       console.log(`Added peer node ${peer.url}`);
       console.log(`New peer node is connected to  ${peer.getPeerList()}`);
       PEERS.push(peer);
-      console.log(`Number of peers is ${PEERS.length}`);
+      console.log(`Number of peers: ${PEERS.length}`);
+      printPeers();
     } catch (err) {
       console.log(err.stack);
     }
@@ -35,7 +43,9 @@ webSocketServer.on('connection', (ws) => {
       const peer = PEERS.find((p) => p.ws === ws);
       const peerIndex = PEERS.indexOf(peer);
       PEERS.splice(peerIndex, 1);
-      const effectedPeers = PEERS.filter((p)=> {
+      console.log(`Number of peers: ${PEERS.length}`);
+      printPeers();
+      const effectedPeers = PEERS.filter((p) => {
         if (p.getPeerList().indexOf(peer.url) !== -1) {
           return true;
         }
