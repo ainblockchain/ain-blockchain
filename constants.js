@@ -16,7 +16,7 @@ const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/.blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
-const MAX_TX_BYTES = 1000;
+const MAX_TX_BYTES = 10000;
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet'; // TODO (lia): Check network id in all messages
 
 /**
