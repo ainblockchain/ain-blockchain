@@ -636,7 +636,10 @@ describe('API Tests', () => {
       it('rejects a transaction that exceeds the size limit.', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = require('./data/tx_exceeds_size_limit.js').text;
+        let longText = '';
+        for (let i = 0; i < MAX_TX_BYTES / 2; i++) {
+          longText += 'a'
+        }
         const transaction = {
           operation: {
             type: 'SET_VALUE',
