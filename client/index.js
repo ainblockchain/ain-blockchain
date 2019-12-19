@@ -51,7 +51,7 @@ if (LOG) {
     fs.mkdirSync(logDir);
   }
   const logFile =
-    fs.createWriteStream(logDir + '/' + PORT +'debug.log', {flags: 'w'});
+    fs.createWriteStream(logDir + '/' + PORT +'debug.log', {flags: 'a'});
   const logStdout = process.stdout;
 
   console.log = function(d) {

@@ -1,4 +1,5 @@
 const Websocket = require('ws');
+const sleep = require('sleep');
 const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
 const publicIp = require('public-ip');
@@ -431,13 +432,25 @@ class P2pServer {
 
   initiateChain() {
     this.votingUtil.status = VotingStatus.WAIT_FOR_BLOCK;
-    this.depositStakes();
-    const initChainTx = this.votingUtil.instantiate(this.blockchain);
+    const prevDeposit = this.votingUtil.getStakes();
+    console.log("previous Deposit = "+prevDeposit)
+    if (!prevDeposit) {
+      this.depositStakes();
+    }
+    let initChainTx = this.votingUtil.instantiate(this.blockchain);
     if (!initChainTx) {
       throw Error(`Deposit by the initiating node was unsuccessful`);
     }
-    this.executeAndBroadcastTransaction(initChainTx);
-    this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(1));
+    // This code doesn't work if the first node with existing
+    // blockchain data was not a validator (is not in the recent_proposers).
+    let initResult = this.executeAndBroadcastTransaction(initChainTx);
+    while (this.checkForTransactionResultErrorCode(initResult)) {
+      sleep.sleep(1);
+      initChainTx = this.votingUtil.instantiate(this.blockchain);
+      initResult = this.executeAndBroadcastTransaction(initChainTx);
+    }
+    this.executeAndBroadcastTransaction(
+      this.votingUtil.registerForNextRound(this.blockchain.lastBlockNumber() + 1));
     this.createAndProposeBlock();
   }
 
@@ -461,6 +474,7 @@ class P2pServer {
       clearInterval(this.votingInterval);
       this.votingInterval = null;
     }
+    this.votingUtil.status = VotingStatus.WAIT_FOR_BLOCK;
     if (ainUtil.areSameAddresses(this.db.account.address,
         this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.db.account.address} will start next round at ` +
@@ -469,7 +483,7 @@ class P2pServer {
     }
     const recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
     if (recentProposers && recentProposers[this.db.account.address]) {
-      this.votingInterval = setInterval(()=> {
+      this.votingInterval = setInterval(() => {
         const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
         const response = this.executeAndBroadcastVotingAction({
           transaction: newRoundTrans,
@@ -492,7 +506,7 @@ class P2pServer {
         }
       }, BLOCK_CREATION_INTERVAL);
     }
-    console.log(`New blockchain last block number is ${this.blockchain.lastBlockNumber() + 1}`);
+    console.log(`New blockchain last block number is ${this.blockchain.lastBlockNumber()}`);
   }
 
   depositStakes() {
