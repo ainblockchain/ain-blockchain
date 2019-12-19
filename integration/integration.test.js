@@ -176,11 +176,11 @@ function waitUntilNodeStakes() {
   let blocksAfterStaking = 0;
   let validators = {};
   while (count <= MAX_PROMISE_STACK_DEPTH && blocksAfterStaking < 2) {
-    const result = JSON.parse(syncRequest('POST', server1 + '/json-rpc',
+    const block = JSON.parse(syncRequest('POST', server1 + '/json-rpc',
         {json: {jsonrpc: '2.0', method: 'ain_getRecentBlock', id: 0,
                 params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.block;
-    validators = result.validators;
+        .body.toString('utf-8')).result.result;
+    validators = block.validators;
     if (Object.keys(validators).length >= 2) {
       blocksAfterStaking++;
     }
@@ -199,6 +199,7 @@ function waitUntilNewBlock() {
     sleep(500)
     updatedLastBlockNumber = JSON.parse(syncRequest('GET', server1 + LAST_BLOCK_NUMBER_ENDPOINT)
       .body.toString('utf-8'))['result'];
+    console.log(`block number... ${updatedLastBlockNumber}`)
   }
   console.log(`Updated last block number: ${updatedLastBlockNumber}`)
 }
@@ -255,7 +256,7 @@ describe('Integration Tests', () => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
           {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) throw err;
-        numBlocksOnStartup = response.result.block ? response.result.block.number : 0;
+        numBlocksOnStartup = response.result.result ? response.result.result.number : 0;
         resolve();
       });
     }));
@@ -312,7 +313,7 @@ describe('Integration Tests', () => {
         .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
             function(err, response) {
           if (err) throw err;
-          baseChain = response.result.blocks;
+          baseChain = response.result.result;
           number = baseChain[baseChain.length - 1].number;
           resolve();
         });
@@ -322,7 +323,7 @@ describe('Integration Tests', () => {
               {to: number + 1, protoVer: CURRENT_PROTOCOL_VERSION},
               function(err, response) {
                 if (err) throw err;
-                const newChain = response.result.blocks;
+                const newChain = response.result.result;
                 assert.deepEqual(baseChain.length, newChain.length);
                 assert.deepEqual(baseChain, newChain);
                 newServerProc.kill();
@@ -343,7 +344,7 @@ describe('Integration Tests', () => {
         baseChain = JSON.parse(syncRequest('POST', server2 + '/json-rpc',
         {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                 params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.blocks;
+        .body.toString('utf-8')).result.result;
       });
 
 
@@ -362,7 +363,7 @@ describe('Integration Tests', () => {
                 {to: number + 1, protoVer: CURRENT_PROTOCOL_VERSION}, 
                 function(err, response) {
                   if (err) throw err;
-                  newChain = response.result.blocks;
+                  newChain = response.result.result;
                   assert.deepEqual(baseChain, newChain);
                   resolve();
                 });
@@ -379,7 +380,7 @@ describe('Integration Tests', () => {
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
               {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-              .body.toString('utf-8')).result.blocks;
+              .body.toString('utf-8')).result.result;
           const len = blocks.length;
           // The genesis and the following blocks are exceptions
           // (validators and next_round_validators are set 'arbitrarily')
@@ -437,7 +438,7 @@ describe('Integration Tests', () => {
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
               {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-              .body.toString('utf-8')).result.blocks;
+              .body.toString('utf-8')).result.result;
           const len = blocks.length;
           for (let j = 0; j < len; j++) {
             const block = blocks[j];
@@ -523,7 +524,7 @@ describe('Integration Tests', () => {
                                 {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
                                 function(err, response) {
             if (err) throw err;
-            const body = response.result.headers;
+            const body = response.result.result;
             assert.deepEqual([2, 3], body.map((blockHeader) => {
               return blockHeader.number;
             }));
@@ -539,7 +540,7 @@ describe('Integration Tests', () => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
               {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
             if (err) throw err;
-            resolve(response.result.block);
+            resolve(response.result.result);
           });
         }).then((resultByNumber) => {
           return new Promise((resolve) => {
@@ -547,7 +548,7 @@ describe('Integration Tests', () => {
                 {hash: resultByNumber.hash, protoVer: CURRENT_PROTOCOL_VERSION},
                                   function(err, response) {
               if (err) throw err;
-              const resultByHash = response.result.block;
+              const resultByHash = response.result.result;
               assert.deepEqual(resultByHash, resultByNumber);
               resolve();
             });
@@ -616,8 +617,8 @@ describe('Integration Tests', () => {
               { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
           Promise.all(promises).then(res => {
             promises = [];
-            const committedNonceBefore = res[0].result.nonce;
-            const pendingNonceBefore = res[1].result.nonce;
+            const committedNonceBefore = res[0].result.result;
+            const pendingNonceBefore = res[1].result.result;
             syncRequest('POST', server2 + '/' + 'set_value',
                   {
                     json: {
@@ -631,8 +632,8 @@ describe('Integration Tests', () => {
                 { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
             Promise.all(promises).then(resAfterBroadcast => {
               promises = [];
-              committedNonceAfterBroadcast = resAfterBroadcast[0].result.nonce;
-              pendingNonceAfterBroadcast = resAfterBroadcast[1].result.nonce;
+              committedNonceAfterBroadcast = resAfterBroadcast[0].result.result;
+              pendingNonceAfterBroadcast = resAfterBroadcast[1].result.result;
               expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
               expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
               resolve();
@@ -658,8 +659,8 @@ describe('Integration Tests', () => {
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
               { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
           Promise.all(promises).then(resAfterCommit => {
-            const committedNonceAfterCommit = resAfterCommit[0].result.nonce;
-            const pendingNonceAfterCommit = resAfterCommit[1].result.nonce;
+            const committedNonceAfterCommit = resAfterCommit[0].result.result;
+            const pendingNonceAfterCommit = resAfterCommit[1].result.result;
             expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast + 1);
             expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
             resolve();
@@ -704,7 +705,7 @@ describe('Integration Tests', () => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
               {number: 0, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
             if (err) throw err;
-            expect(response.result.block.number).to.equal(0);
+            expect(response.result.result.number).to.equal(0);
             expect(response.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
             resolve();
           });
