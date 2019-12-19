@@ -7,13 +7,15 @@ class TransactionPool {
     this.transactions = {};
     this.committedNonceTracker = {};
     this.pendingNonceTracker = {};
+    // TODO (lia): do not store txs in the pool
+    // (they're already tracked by this.transactions..)
     this.transactionTracker = {};
   }
 
   addTransaction(transaction) {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
-    // (closer to the communication layers where nodes first receives transactions)
+    // (closer to the communication layers where the node first receives transactions)
     if (!Transaction.verifyTransaction(transaction)) {
       console.log('Invalid transaction');
       if (DEBUG) {
@@ -118,6 +120,17 @@ class TransactionPool {
         this.transactions[address].forEach((transaction) => {
           this.transactionTracker[transaction.hash].index = this.transactions[address].indexOf(transaction);
         });
+      }
+    }
+  }
+
+  updateCommittedNonces(transactions) {
+    let len = transactions.length;
+    for (let i = 0; i < len; i++) {
+      const tx = transactions[i];
+      if (tx.nonce >= 0 && (this.committedNonceTracker[tx.address] === undefined ||
+                            this.committedNonceTracker[tx.address] <= tx.nonce)) {
+        this.committedNonceTracker[tx.address] = tx.nonce;
       }
     }
   }
