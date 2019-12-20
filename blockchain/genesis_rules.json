@@ -16,7 +16,7 @@
       }
     },
     "voting": {
-      ".write": "getValue('/consensus/voting') === null || (getValue('/consensus/recent_proposers') !== null && (util.keys(getValue('/consensus/recent_proposers'))[util.length(getValue('/consensus/recent_proposers'))-1 - ((Math.floor((currentTime - getValue('/consensus/voting/time')) / 6000) - 1) % util.length(getValue('/consensus/recent_proposers')))] === auth))",
+      ".write": "getValue('/consensus/voting') === null || (getValue('/consensus/recent_proposers') !== null && (util.keys(getValue('/consensus/recent_proposers'))[util.length(getValue('/consensus/recent_proposers')) - 1 - ((Math.floor((currentTime - getValue('/consensus/voting/time')) / 6000) - 1) % util.length(getValue('/consensus/recent_proposers')))] === auth))",
       "block_hash": {
         ".write": "getValue('/consensus/voting/proposer') === auth"
       },
