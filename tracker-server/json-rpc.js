@@ -9,22 +9,22 @@
  */
 module.exports = function getMethods(nodes) {
   return {
-    getAllNodeInfo: function(args, done) {
+    getNodeInfoList: function(args, done) {
       done(null, nodes.map((entry) => {
         return entry.getNodeInfo();
       }));
     },
 
-    getNodePublicKeys: function(args, done) {
+    getNodeAddressList: function(args, done) {
       done(null, nodes.map((entry) => {
-        return entry.publicKey;
+        return entry.address;
       }));
     },
 
-    getNodeInfoByPublicKey: function(args, done) {
+    getNodeInfoByAddress: function(args, done) {
       let result = null;
       for (let i = 0; i < nodes.length; i++) {
-        if (nodes[i].publicKey === args[0]) {
+        if (nodes[i].address === args[0]) {
           result = nodes[i].getNodeInfo();
           break;
         }

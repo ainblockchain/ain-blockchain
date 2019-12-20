@@ -17,10 +17,6 @@ function getNumNodes() {
   return Object.keys(NODES).length;
 }
 
-function findNode(ws) {
-  Object.values(NODES).find((node) => node.ws === ws);
-}
-
 function getAffectedNodes(address) {
   return Object.values(NODES).filter((node) => {
     if (node.connectedPeers[address]) {
