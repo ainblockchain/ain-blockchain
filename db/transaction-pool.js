@@ -129,7 +129,7 @@ class TransactionPool {
     for (let i = 0; i < len; i++) {
       const tx = transactions[i];
       if (tx.nonce >= 0 && (this.committedNonceTracker[tx.address] === undefined ||
-                            this.committedNonceTracker[tx.address] <= tx.nonce)) {
+                            this.committedNonceTracker[tx.address] < tx.nonce)) {
         this.committedNonceTracker[tx.address] = tx.nonce;
       }
     }
