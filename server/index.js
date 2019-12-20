@@ -241,6 +241,9 @@ class P2pServer {
       return null;
     }
     if (this.blockchain.syncedAfterStartup === false) {
+      if (DEBUG) {
+        console.log(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`)
+      }
       this.transactionPool.addTransaction(transaction);
       return null;
     }
@@ -506,7 +509,6 @@ class P2pServer {
         }
       }, BLOCK_CREATION_INTERVAL);
     }
-    console.log(`New blockchain last block number is ${this.blockchain.lastBlockNumber()}`);
   }
 
   depositStakes() {
