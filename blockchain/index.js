@@ -105,6 +105,10 @@ class Blockchain {
   }
 
   addNewBlock(block) {
+    if (!block) {
+      console.log(`[blockchain.addNewBlock] Block is null`);
+      return false;
+    }
     if (block.number != this.lastBlockNumber() + 1) {
       console.log(`[blockchain.addNewBlock] Invalid blockchain number: ${block.number}`);
       return false;
