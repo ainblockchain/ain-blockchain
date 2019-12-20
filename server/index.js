@@ -433,7 +433,7 @@ class P2pServer {
   initiateChain() {
     this.votingUtil.status = VotingStatus.WAIT_FOR_BLOCK;
     const prevDeposit = this.votingUtil.getStakes();
-    console.log("previous Deposit = "+prevDeposit)
+    console.log("previous Deposit = " + prevDeposit)
     if (!prevDeposit) {
       this.depositStakes();
     }
