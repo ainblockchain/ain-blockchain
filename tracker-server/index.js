@@ -1,4 +1,3 @@
-#! /usr/bin/node
 const WebSocketServer = require('ws').Server;
 const geoip = require('geoip-lite');
 const webSocketServer = new WebSocketServer({port: 3001});
@@ -15,13 +14,13 @@ const MASK = 'xxx';
 const PORT = 5000;
 
 function printPeers() {
-  console.log(`=> Number of peers: ${NODES.length}`);
+  console.log(`Number of peers: ${NODES.length}`);
   for (let i = 0; i < NODES.length; i++) {
     const peer = NODES[i];
-    console.log(`  Peer[${i}]: ${peer.getNodeSummary()})`);
+    console.log(`  Node[${i}]: ${peer.getNodeSummary()})`);
     for (let j = 0; j < peer.connectedPeers.length; j++) {
       const connected = peer.connectedPeers[j];
-      console.log(`    Connected[${j}]: ${connected.getNodeSummary()})`);
+      console.log(`    Peer[${j}]: ${connected.getNodeSummary()})`);
     }
   }
 }
@@ -30,7 +29,7 @@ function printPeers() {
 function setTimer(ws) {
   setTimeout(() => {
     ws.close();
-  }, 60000);
+  }, 30000);
 }
 
 webSocketServer.on('connection', (ws) => {
@@ -39,12 +38,12 @@ webSocketServer.on('connection', (ws) => {
   */
   ws.on('message', (message) => {
     try {
-      peerUrlInfo = JSON.parse(message);
-      const peer = Node.getPeer(ws, peerUrlInfo);
-      ws.send(JSON.stringify(peer.getPeerList()));
-      console.log(`Added new peer node ${peer.getNodeSummary()})`);
-      console.log(`New peer node is connected to ${peer.getPeerSummary()}`);
-      NODES.push(peer);
+      nodeUrlInfo = JSON.parse(message);
+      const node = Node.getNode(ws, nodeUrlInfo);
+      ws.send(JSON.stringify(node.getPeerList()));
+      console.log(`=> Connected to new node ${node.getNodeSummary()}, ` +
+          `which is connected to peers: ${node.getPeersSummary()}`);
+      NODES.push(node);
       printPeers();
     } catch (err) {
       console.log(err.stack);
@@ -53,21 +52,21 @@ webSocketServer.on('connection', (ws) => {
 
   ws.on('close', (code) => {
     try {
-      const peer = NODES.find((p) => p.ws === ws);
-      console.log(`Peer node ${peer.getNodeSummary()}) disconnected with code: ${code}`);
-      const peerIndex = NODES.indexOf(peer);
-      NODES.splice(peerIndex, 1);
-      const effectedPeers = NODES.filter((p) => {
-        if (p.getPeerList().indexOf(peer.url) !== -1) {
+      const node = NODES.find((p) => p.ws === ws);
+      console.log(`=> Disconnected to node ${node.getNodeSummary()}) with code: ${code}`);
+      const nodeIndex = NODES.indexOf(node);
+      NODES.splice(nodeIndex, 1);
+      const affectedPeers = NODES.filter((p) => {
+        if (p.getPeerList().indexOf(node.url) !== -1) {
           return true;
         }
         return false;
       });
-      for (let i = 0; i < effectedPeers.length; i++) {
-        const effected = effectedPeers[i];
-        effected.removePeer(peer);
-        if (i + 1 < effectedPeers.length) {
-          effected.connect(effectedPeers[i + 1]);
+      for (let i = 0; i < affectedPeers.length; i++) {
+        const affected = affectedPeers[i];
+        affected.removePeer(node);
+        if (i + 1 < affectedPeers.length) {
+          affected.connect(affectedPeers[i + 1]);
         }
       }
       printPeers();
@@ -78,15 +77,15 @@ webSocketServer.on('connection', (ws) => {
 });
 
 class Node {
-  constructor(ws, peerUrlInfo) {
-    this.protocol = peerUrlInfo.PROTOCOL;
-    this.ip = peerUrlInfo.HOST;
-    this.port = peerUrlInfo.P2P_PORT;
-    this.publicKey = peerUrlInfo.PUBLIC_KEY;
-    this.url = Node.getPeerUrl(this.protocol, this.ip, this.port);
+  constructor(ws, nodeUrlInfo) {
+    this.protocol = nodeUrlInfo.PROTOCOL;
+    this.ip = nodeUrlInfo.HOST;
+    this.port = nodeUrlInfo.P2P_PORT;
+    this.publicKey = nodeUrlInfo.PUBLIC_KEY;
+    this.url = Node.getNodeUrl(this.protocol, this.ip, this.port);
     this.ws = ws;
     this.connectedPeers = [];
-    const locationDict = Node.getPeerLocation(this.ip);
+    const locationDict = Node.getNodeLocation(this.ip);
     this.country = (locationDict === null || locationDict[COUNTRY].length === 0) ?
         null : locationDict[COUNTRY];
     this.region = (locationDict === null ||locationDict[REGION].length === 0) ?
@@ -97,14 +96,14 @@ class Node {
         null : locationDict[TIMEZONE];
   }
 
-  getPeerInfo() {
+  getNodeInfo() {
     return {
       ip: Node.maskIp(this.ip),
       port: this.port,
-      url: Node.getPeerUrl(this.protocol, Node.maskIp(this.ip), this.port),
+      url: Node.getNodeUrl(this.protocol, Node.maskIp(this.ip), this.port),
       publicKey: this.publicKey,
       connectedPeers: this.connectedPeers.map((peer) => {
-        return Node.getPeerUrl(peer.protocol, Node.maskIp(peer.ip), peer.port);
+        return Node.getNodeUrl(peer.protocol, Node.maskIp(peer.ip), peer.port);
       }),
       country: this.country,
       region: this.region,
@@ -114,10 +113,11 @@ class Node {
   }
 
   getNodeSummary() {
-    return `${this.publicKey.substring(0, 6)} (${this.url})`;
+    return `${this.publicKey.substring(0, 6)}..` +
+        `${this.publicKey.substring(this.publicKey.length - 4)} (${this.url})`;
   }
 
-  getPeerSummary() {
+  getPeersSummary() {
     const list = this.connectedPeers.map((peer) => {
       return peer.getNodeSummary();
     });
@@ -131,7 +131,7 @@ class Node {
     return ipList.join('.');
   }
 
-  static getPeerLocation(ip) {
+  static getNodeLocation(ip) {
     const geoLocationDict = geoip.lookup(ip);
     if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 &&
         geoLocationDict[REGION].length === 0 && geoLocationDict[CITY].length === 0 &&
@@ -146,11 +146,11 @@ class Node {
     };
   }
 
-  static getPeerUrl(protocol, host, port) {
+  static getNodeUrl(protocol, host, port) {
     return protocol + '://' + host + ':' + port;
   }
 
-  static getPeer(ws, peerInfo) {
+  static getNode(ws, peerInfo) {
     const peer = new Node(ws, peerInfo);
     if (NODES.length === 1) {
       peer.addPeer(NODES[0]);
@@ -197,7 +197,8 @@ class Node {
   }
 
   connect(peer) {
-    console.log(`Connecting ${this.getNodeSummary()}) to ${peer.getNodeSummary()})`);
+    console.log(`  => Now connecting node ${this.getNodeSummary()}) with new peer: ` +
+        `${peer.getNodeSummary()})`);
     this.ws.send(JSON.stringify([peer.url]));
     this.addPeer(peer);
   }

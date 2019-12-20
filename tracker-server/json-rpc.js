@@ -3,29 +3,29 @@
  * Defines the list of funtions which are accessibly to clients through the
  * JSON-RPC calls
  *
- * @param {list} peers - List of all peers from.
+ * @param {list} nodes - List of all nodes from.
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(peers) {
+module.exports = function getMethods(nodes) {
   return {
-    getAllPeerInfo: function(args, done) {
-      done(null, peers.map((peer) => {
-        return peer.getPeerInfo();
+    getAllNodeInfo: function(args, done) {
+      done(null, nodes.map((entry) => {
+        return entry.getNodeInfo();
       }));
     },
 
-    getPeerPublicKeys: function(args, done) {
-      done(null, peers.map((peer) => {
-        return peer.publicKey;
+    getNodePublicKeys: function(args, done) {
+      done(null, nodes.map((entry) => {
+        return entry.publicKey;
       }));
     },
 
-    getPeerInfoByPublicKey: function(args, done) {
+    getNodeInfoByPublicKey: function(args, done) {
       let result = null;
-      for (let i = 0; i < peers.length; i++) {
-        if (peers[i].publicKey === args[0]) {
-          result = peers[i].getPeerInfo();
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].publicKey === args[0]) {
+          result = nodes[i].getNodeInfo();
           break;
         }
       }
