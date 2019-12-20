@@ -35,9 +35,9 @@ class P2pServer {
 
   async connectTracker() {
     trackerWebSocket.on('message', (message) => {
-      const peers = JSON.parse(message);
-      this.connectToPeers(peers);
-      if (peers.length === 0) {
+      const peerInfoList = JSON.parse(message);
+      this.connectToPeers(peerInfoList);
+      if (peerInfoList.length === 0) {
         this.blockchain.init(true);
         this.db.startWithBlockchain(this.blockchain, this.transactionPool);
         this.blockchain.syncedAfterStartup = true;
@@ -60,10 +60,10 @@ class P2pServer {
     this.requestChainSubsection(this.blockchain.lastBlock());
   }
 
-  connectToPeers(peers) {
-    peers.forEach((peer) => {
-      console.log(`[${P2P_PORT}] Connecting to peer ${peer}`);
-      const socket = new Websocket(peer);
+  connectToPeers(peerInfoList) {
+    peerInfoList.forEach((peerInfo) => {
+      console.log(`[${P2P_PORT}] Connecting to peer ${peerInfo}`);
+      const socket = new Websocket(peerInfo.url);
       socket.on('open', () => this.connectSocket(socket));
     });
   }

@@ -5,7 +5,7 @@ const express = require('express');
 const jayson = require('jayson');
 
 const MAX_PER_SERVER = 2;
-const NODES = [];
+const NODES = {};
 const REGION = 'region';
 const COUNTRY = 'country';
 const CITY = 'city';
@@ -13,13 +13,32 @@ const TIMEZONE = 'timezone';
 const MASK = 'xxx';
 const PORT = 5000;
 
-function printPeers() {
-  console.log(`Number of peers: ${NODES.length}`);
-  for (let i = 0; i < NODES.length; i++) {
-    const peer = NODES[i];
-    console.log(`  Node[${i}]: ${peer.getNodeSummary()})`);
-    for (let j = 0; j < peer.connectedPeers.length; j++) {
-      const connected = peer.connectedPeers[j];
+function getNumNodes() {
+  return Object.keys(NODES).length;
+}
+
+function findNode(ws) {
+  Object.values(NODES).find((node) => node.ws === ws);
+}
+
+function getAffectedNodes(address) {
+  return Object.values(NODES).filter((node) => {
+    if (node.connectedPeers[address]) {
+      return true;
+    }
+    return false;
+  })
+}
+
+function printNodes() {
+  console.log(`Number of nodes: ${getNumNodes()}`);
+  const nodeList = Object.values(NODES);
+  for (let i = 0; i < nodeList.length; i++) {
+    const node = nodeList[i];
+    console.log(`  Node[${i}]: ${node.getNodeSummary()})`);
+    const peerList = node.getPeerList();
+    for (let j = 0; j < peerList.length; j++) {
+      const connected = peerList[j];
       console.log(`    Peer[${j}]: ${connected.getNodeSummary()})`);
     }
   }
@@ -36,15 +55,23 @@ webSocketServer.on('connection', (ws) => {
   /*
   setTimer(ws);
   */
+  let node = null;
   ws.on('message', (message) => {
     try {
       nodeInfo = JSON.parse(message);
-      const node = Node.getNode(ws, nodeInfo);
-      ws.send(JSON.stringify(node.getPeerList()));
+      node = Node.create(ws, nodeInfo);
+      ws.send(JSON.stringify(node.getPeerInfoList()));
       console.log(`=> Connected to new node ${node.getNodeSummary()}, ` +
           `which is connected to peers: ${node.getPeersSummary()}`);
-      NODES.push(node);
-      printPeers();
+      // TODO(seo): Handle this case properly.
+      if (NODES[node.address]) {
+        node.getPeerList().forEach((peer) => {
+          peer.removePeer(node);
+        });
+        delete NODES[node.address];
+      }
+      NODES[node.address] = node;
+      printNodes();
     } catch (err) {
       console.log(err.stack);
     }
@@ -52,16 +79,9 @@ webSocketServer.on('connection', (ws) => {
 
   ws.on('close', (code) => {
     try {
-      const node = NODES.find((p) => p.ws === ws);
       console.log(`=> Disconnected to node ${node.getNodeSummary()}) with code: ${code}`);
-      const nodeIndex = NODES.indexOf(node);
-      NODES.splice(nodeIndex, 1);
-      const affectedPeers = NODES.filter((p) => {
-        if (p.getPeerList().indexOf(node.url) !== -1) {
-          return true;
-        }
-        return false;
-      });
+      delete NODES[node.address];
+      const affectedPeers = getAffectedNodes(node.address);
       for (let i = 0; i < affectedPeers.length; i++) {
         const affected = affectedPeers[i];
         affected.removePeer(node);
@@ -69,7 +89,7 @@ webSocketServer.on('connection', (ws) => {
           affected.connect(affectedPeers[i + 1]);
         }
       }
-      printPeers();
+      printNodes();
     } catch (err) {
       console.log(err.stack);
     }
@@ -84,7 +104,7 @@ class Node {
     this.address = nodeInfo.ADDRESS;
     this.url = Node.getNodeUrl(this.protocol, this.ip, this.port);
     this.ws = ws;
-    this.connectedPeers = [];
+    this.connectedPeers = {};
     const locationDict = Node.getNodeLocation(this.ip);
     this.country = (locationDict === null || locationDict[COUNTRY].length === 0) ?
         null : locationDict[COUNTRY];
@@ -102,7 +122,7 @@ class Node {
       port: this.port,
       url: Node.getNodeUrl(this.protocol, Node.maskIp(this.ip), this.port),
       address: this.address,
-      connectedPeers: this.connectedPeers.map((peer) => {
+      connectedPeers: Object.values(this.connectedPeers).map((peer) => {
         return Node.getNodeUrl(peer.protocol, Node.maskIp(peer.ip), peer.port);
       }),
       country: this.country,
@@ -118,8 +138,8 @@ class Node {
   }
 
   getPeersSummary() {
-    const list = this.connectedPeers.map((entry) => {
-      return entry.getNodeSummary();
+    const list = Object.values(this.connectedPeers).map((peer) => {
+      return peer.getNodeSummary();
     });
     return list.join(', ');
   }
@@ -150,50 +170,45 @@ class Node {
     return protocol + '://' + host + ':' + port;
   }
 
-  static getNode(ws, nodeInfo) {
+  static create(ws, nodeInfo) {
     const node = new Node(ws, nodeInfo);
-    if (NODES.length === 1) {
-      node.addPeer(NODES[0]);
-    } else if (NODES.length > 1) {
+    if (getNumNodes() === 1) {
+      node.addPeer(Object.values(NODES)[0]);
+    } else if (getNumNodes() > 1) {
       while (node.getPeerList().length < MAX_PER_SERVER) {
-        node.addPeer(NODES[Math.floor(Math.random() * NODES.length)]);
+        node.addPeer(Object.values(NODES)[Math.floor(Math.random() * getNumNodes())]);
       }
     }
 
     return node;
   }
 
-  length() {
-    return this.connectedPeers.length;
-  }
-
   addPeer(peer) {
-    if (this.connectedPeers.indexOf(peer) > -1) {
-      return;
+    if (peer && peer.address !== this.address && !this.connectedPeers[peer.address]) {
+      this.connectedPeers[peer.address] = peer;
+      if (!peer.connectedPeers[this.address]) {
+        peer.addPeer(this);
+      }
     }
-    this.connectedPeers.push(peer);
-    peer.addPeer(this);
   }
 
   removePeer(peer) {
-    if (this.connectedPeers.indexOf(peer) < 0) {
-      return;
-    }
-    this.connectedPeers = this.connectedPeers.filter((p) => {
-      if (p.url !== peer.url) {
-        return p;
+    if (peer && peer.address !== this.address && this.connectedPeers[peer.address]) {
+      delete this.connectedPeers[peer.address];
+      if (peer.connectedPeers[this.address]) {
+        peer.removePeer(this);
       }
-    });
-    if (peer) {
-      peer.removePeer(this);
     }
   }
 
   getPeerList() {
-    const peerUrls = this.connectedPeers.map((peer) => {
-      return peer.url;
+    return Object.values(this.connectedPeers);
+  }
+
+  getPeerInfoList() {
+    return Object.values(this.connectedPeers).map((peer) => {
+      return { address: peer.address, url: peer.url };
     });
-    return peerUrls;
   }
 
   connect(peer) {
