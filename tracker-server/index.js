@@ -38,8 +38,8 @@ webSocketServer.on('connection', (ws) => {
   */
   ws.on('message', (message) => {
     try {
-      nodeUrlInfo = JSON.parse(message);
-      const node = Node.getNode(ws, nodeUrlInfo);
+      nodeInfo = JSON.parse(message);
+      const node = Node.getNode(ws, nodeInfo);
       ws.send(JSON.stringify(node.getPeerList()));
       console.log(`=> Connected to new node ${node.getNodeSummary()}, ` +
           `which is connected to peers: ${node.getPeersSummary()}`);
@@ -77,11 +77,11 @@ webSocketServer.on('connection', (ws) => {
 });
 
 class Node {
-  constructor(ws, nodeUrlInfo) {
-    this.protocol = nodeUrlInfo.PROTOCOL;
-    this.ip = nodeUrlInfo.HOST;
-    this.port = nodeUrlInfo.P2P_PORT;
-    this.publicKey = nodeUrlInfo.PUBLIC_KEY;
+  constructor(ws, nodeInfo) {
+    this.protocol = nodeInfo.PROTOCOL;
+    this.ip = nodeInfo.HOST;
+    this.port = nodeInfo.P2P_PORT;
+    this.address = nodeInfo.ADDRESS;
     this.url = Node.getNodeUrl(this.protocol, this.ip, this.port);
     this.ws = ws;
     this.connectedPeers = [];
@@ -101,7 +101,7 @@ class Node {
       ip: Node.maskIp(this.ip),
       port: this.port,
       url: Node.getNodeUrl(this.protocol, Node.maskIp(this.ip), this.port),
-      publicKey: this.publicKey,
+      address: this.address,
       connectedPeers: this.connectedPeers.map((peer) => {
         return Node.getNodeUrl(peer.protocol, Node.maskIp(peer.ip), peer.port);
       }),
@@ -113,13 +113,13 @@ class Node {
   }
 
   getNodeSummary() {
-    return `${this.publicKey.substring(0, 6)}..` +
-        `${this.publicKey.substring(this.publicKey.length - 4)} (${this.url})`;
+    return `${this.address.substring(0, 6)}..` +
+        `${this.address.substring(this.address.length - 4)} (${this.url})`;
   }
 
   getPeersSummary() {
-    const list = this.connectedPeers.map((peer) => {
-      return peer.getNodeSummary();
+    const list = this.connectedPeers.map((entry) => {
+      return entry.getNodeSummary();
     });
     return list.join(', ');
   }
@@ -150,17 +150,17 @@ class Node {
     return protocol + '://' + host + ':' + port;
   }
 
-  static getNode(ws, peerInfo) {
-    const peer = new Node(ws, peerInfo);
+  static getNode(ws, nodeInfo) {
+    const node = new Node(ws, nodeInfo);
     if (NODES.length === 1) {
-      peer.addPeer(NODES[0]);
+      node.addPeer(NODES[0]);
     } else if (NODES.length > 1) {
-      while (peer.getPeerList().length < MAX_PER_SERVER) {
-        peer.addPeer(NODES[Math.floor(Math.random() * NODES.length)]);
+      while (node.getPeerList().length < MAX_PER_SERVER) {
+        node.addPeer(NODES[Math.floor(Math.random() * NODES.length)]);
       }
     }
 
-    return peer;
+    return node;
   }
 
   length() {

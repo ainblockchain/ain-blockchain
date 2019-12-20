@@ -48,7 +48,7 @@ class P2pServer {
       }
     });
     trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ?
-        ip.address() : (await publicIp.v4()), P2P_PORT, PUBLIC_KEY: this.db.account.address}));
+        ip.address() : (await publicIp.v4()), P2P_PORT, ADDRESS: this.db.account.address}));
   }
 
   listen() {
