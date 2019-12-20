@@ -225,8 +225,12 @@ class Blockchain {
       }
       return false;
     }
-    if (chainSubSection[chainSubSection.length - 1].number <= this.lastBlockNumber()) {
+    if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
       console.log('Received chain is of lower block number than current last block number');
+      return false;
+    }
+    if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {
+      console.log('Received chain is at the same block number');
       if (!this.syncedAfterStartup) {
         // Regard this situation as if you're synced.
         // TODO (lia): ask the tracker server for another peer.
