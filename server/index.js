@@ -48,8 +48,12 @@ class P2pServer {
         this.db.startWithBlockchain(this.blockchain, this.transactionPool);
       }
     });
-    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ?
-        ip.address() : (await publicIp.v4()), P2P_PORT, ADDRESS: this.db.account.address}));
+    trackerWebSocket.send(JSON.stringify({
+      PROTOCOL,
+      HOST: LOCAL ? ip.address() : (await publicIp.v4()),
+      P2P_PORT,
+      ADDRESS: this.db.account.address
+    }));
   }
 
   listen() {
@@ -57,8 +61,6 @@ class P2pServer {
     server.on('connection', (socket) => this.connectSocket(socket));
     trackerWebSocket.on('open', () => this.connectTracker());
     console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`);
-    // DO WE NEED THIS?
-    this.requestChainSubsection(this.blockchain.lastBlock());
   }
 
   connectToPeers(peerInfoList) {

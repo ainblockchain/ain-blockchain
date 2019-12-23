@@ -75,8 +75,6 @@ const TransactionPool = require('../db/transaction-pool');
 
 const app = express();
 
-const transactionBatch = [];
-
 app.use(express.json()); // support json encoded bodies
 
 const { WriteDbOperations } = require('../constants');
