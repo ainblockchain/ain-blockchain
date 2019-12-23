@@ -232,7 +232,7 @@ describe('API Tests', () => {
       assert.deepEqual(body, {code: 0, result: true});
       return client.request('ain_evalRule', request)
       .then(res => {
-        expect(res.result.permission).to.equal(true);
+        expect(res.result.result).to.equal(true);
       })
       .catch(error => {
         console.log('error:',error);
@@ -250,7 +250,7 @@ describe('API Tests', () => {
       assert.deepEqual(body, {code: 0, result: false});
       return client.request('ain_evalRule', request)
       .then(res => {
-        expect(res.result.permission).to.equal(false);
+        expect(res.result.result).to.equal(false);
       })
       .catch(error => {
         console.log('error:',error);
@@ -279,7 +279,7 @@ describe('API Tests', () => {
       });
       return client.request('ain_evalOwner', request)
       .then(res => {
-        assert.deepEqual(res.result.permission, expected);
+        assert.deepEqual(res.result.result, expected);
       })
       .catch(error => {
         console.log('error:',error);
@@ -312,7 +312,7 @@ describe('API Tests', () => {
             type: 'EVAL_RULE',
             ref: "/test/test_rule/some/path",
             value: "value",
-            address: "abcd" 
+            address: "abcd"
           },
           {
             type: 'EVAL_OWNER',
@@ -665,7 +665,7 @@ describe('API Tests', () => {
           })
       })
     })
-    
+
     describe('/ain_getAddress', () => {
       it('returns the correct node address', () => {
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -673,7 +673,7 @@ describe('API Tests', () => {
         .then(res => {
           expect(res.result.address).to.equal('0xbA58D93edD8343C001eC5f43E620712Ba8C10813');
         })
-        .catch(error =>{ 
+        .catch(error =>{
           console.log("ERROR", error);
         })
       });
@@ -888,7 +888,7 @@ describe('API Tests', () => {
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
         const resultCode = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/result/code`)
-          .body.toString('utf-8')).result
+          .body.toString('utf-8')).result;
         expect(depositValue).to.equal(depositAmount);
         expect(depositAccountValue).to.equal(depositAmount);
         expect(balance).to.equal(beforeBalance - depositAmount);
@@ -908,7 +908,7 @@ describe('API Tests', () => {
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result
+            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
         expect(depositAccountValue).to.equal(beforeDepositAccountValue);
         expect(balance).to.equal(beforeBalance);
       });

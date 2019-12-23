@@ -160,7 +160,6 @@ class VotingUtil {
     }
   }
 
-
   startNewRound(bc) {
     const lastRound = this.db.getValue(PredefinedDbPaths.VOTING_ROUND);
     const time = Date.now();
@@ -185,13 +184,11 @@ class VotingUtil {
       time, block_hash: null
     };
     if (this.checkPreCommits()) {
-      // Should be1
       nextRound = Object.assign({}, nextRound, {
         number: lastRound.number + 1,
         last_hash: lastRound.block_hash
       });
     } else {
-      // Start same round
       nextRound = Object.assign({}, nextRound, {
         number: lastRound.number,
         last_hash: lastRound.last_hash
@@ -259,8 +256,6 @@ class VotingUtil {
   }
 
   isProposer() {
-    // TODO (lia): move this assignment code to somewhere else? or change to check?
-    this.status = VotingStatus.WAIT_FOR_BLOCK;
     return this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER) === this.db.account.address;
   }
 
