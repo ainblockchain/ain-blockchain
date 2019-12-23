@@ -3,12 +3,11 @@ const sleep = require('sleep');
 const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
 const publicIp = require('public-ip');
-const trackerWebSocketAddr = process.env.TRACKER_IP || 'ws://localhost:3001';
+const TRACKER_WS_ADDR = process.env.TRACKER_IP || 'ws://localhost:3001';
 // Set LOCAL to true if your are running all blockchains in a local environment where all
 // blcokchain nodes are being run in the same network (e.g. on your laptop) and will not
 // communicate with external servers.
 const LOCAL = process.env.LOCAL || false;
-const trackerWebSocket = new Websocket(trackerWebSocketAddr);
 const PROTOCOL = 'ws';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
@@ -23,6 +22,8 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 class P2pServer {
   constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
+    this.trackerWebSocket = null;
+    this.isStarting = true;
     this.db = db;
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
@@ -34,21 +35,35 @@ class P2pServer {
     this.maxProtocolVersion = maxProtocolVersion;
   }
 
-  async connectTracker() {
-    trackerWebSocket.on('message', (message) => {
+  async setTrackerEventHandlers() {
+    this.trackerWebSocket.on('message', (message) => {
       const peerInfoList = JSON.parse(message);
       this.connectToPeers(peerInfoList);
-      if (peerInfoList.length === 0) {
-        this.blockchain.init(true);
-        this.db.startWithBlockchain(this.blockchain, this.transactionPool);
-        this.blockchain.syncedAfterStartup = true;
-        this.initiateChain();
-      } else {
-        this.blockchain.init(false);
-        this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+      if (this.isStarting) {
+        this.isStarting = false;
+        if (peerInfoList.length === 0) {
+          this.blockchain.init(true);
+          this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+          this.blockchain.syncedAfterStartup = true;
+          this.initiateChain();
+        } else {
+          this.blockchain.init(false);
+          this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+        }
       }
     });
-    trackerWebSocket.send(JSON.stringify({
+
+    this.trackerWebSocket.on('close', (code) => {
+      try {
+        console.log(`[TRACKER] => Disconnected to tracker server with code: ${code}`);
+        console.log('[TRACKER] => Reconnecting...');
+        this.connectTracker();
+      } catch (err) {
+        console.log(err.stack);
+      }
+    });
+
+    this.trackerWebSocket.send(JSON.stringify({
       PROTOCOL,
       HOST: LOCAL ? ip.address() : (await publicIp.v4()),
       P2P_PORT,
@@ -59,8 +74,13 @@ class P2pServer {
   listen() {
     const server = new Websocket.Server({port: P2P_PORT});
     server.on('connection', (socket) => this.connectSocket(socket));
-    trackerWebSocket.on('open', () => this.connectTracker());
+    this.connectTracker();
     console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`);
+  }
+
+  connectTracker() {
+    this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
+    this.trackerWebSocket.on('open', () => this.setTrackerEventHandlers());
   }
 
   connectToPeers(peerInfoList) {
@@ -73,11 +93,11 @@ class P2pServer {
 
   connectSocket(socket) {
     this.sockets.push(socket);
-    this.messageHandler(socket);
+    this.setPeerEventHandlers(socket);
     this.requestChainSubsection(this.blockchain.lastBlock());
   }
 
-  messageHandler(socket) {
+  setPeerEventHandlers(socket) {
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
