@@ -65,7 +65,7 @@ function printNodesInfo() {
 function setTimer(ws) {
   setTimeout(() => {
     ws.close();
-  }, 30000);
+  }, 15000);
 }
 
 webSocketServer.on('connection', (ws) => {

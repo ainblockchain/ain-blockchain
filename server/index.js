@@ -16,14 +16,17 @@ const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
 const VotingUtil = require('./voting-util');
 const { WriteDbOperations, DEBUG } = require('../constants');
-const BLOCK_CREATION_INTERVAL = 6000;
 const semver = require('semver');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const BLOCK_CREATION_INTERVAL_MS = 6000;
+const RECONNECT_INTERVAL_MS = 10000;
 
 class P2pServer {
   constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
-    this.trackerWebSocket = null;
     this.isStarting = true;
+    this.ipAddress = null;
+    this.trackerWebSocket = null;
+    this.interval = null;
     this.db = db;
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
@@ -33,6 +36,54 @@ class P2pServer {
     this.waitInBlocks = 4;
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
+  }
+
+  listen() {
+    const server = new Websocket.Server({port: P2P_PORT});
+    server.on('connection', (socket) => this.connectSocket(socket));
+    this.connectTracker();
+    this.setIntervalForTracker();
+    console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`);
+  }
+
+  setIntervalForTracker() {
+    this.interval = setInterval(() => {
+      this.connectTracker();
+    }, RECONNECT_INTERVAL_MS)
+  }
+
+  clearIntervalForTracker() {
+    clearInterval(this.interval)
+    this.interval = null;
+  }
+
+  connectTracker() {
+    console.log('[TRACKER] => Reconnecting to tracker server...');
+    this.getIpAddress()
+    .then(() => {
+      this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
+      this.trackerWebSocket.on('open', () => {
+        this.clearIntervalForTracker();
+        this.setTrackerEventHandlers();
+        this.trackerWebSocket.send(JSON.stringify({
+          PROTOCOL,
+          HOST: this.ipAddress,
+          P2P_PORT,
+          ADDRESS: this.db.account.address
+        }));
+      });
+    });
+  }
+
+  getIpAddress() {
+    return Promise.resolve()
+    .then(() => {
+      return LOCAL ? ip.address() : publicIp.v4();
+    })
+    .then((ipAddr) => {
+      this.ipAddress = ipAddr;
+      return ipAddr;
+    });
   }
 
   async setTrackerEventHandlers() {
@@ -56,31 +107,12 @@ class P2pServer {
     this.trackerWebSocket.on('close', (code) => {
       try {
         console.log(`[TRACKER] => Disconnected to tracker server with code: ${code}`);
-        console.log('[TRACKER] => Reconnecting...');
         this.connectTracker();
+        this.setIntervalForTracker();
       } catch (err) {
         console.log(err.stack);
       }
     });
-
-    this.trackerWebSocket.send(JSON.stringify({
-      PROTOCOL,
-      HOST: LOCAL ? ip.address() : (await publicIp.v4()),
-      P2P_PORT,
-      ADDRESS: this.db.account.address
-    }));
-  }
-
-  listen() {
-    const server = new Websocket.Server({port: P2P_PORT});
-    server.on('connection', (socket) => this.connectSocket(socket));
-    this.connectTracker();
-    console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`);
-  }
-
-  connectTracker() {
-    this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
-    this.trackerWebSocket.on('open', () => this.setTrackerEventHandlers());
   }
 
   connectToPeers(peerInfoList) {
@@ -139,7 +171,7 @@ class P2pServer {
                     } catch (error) {
                       console.log(`Error in starting:${error.stack}`);
                     }
-                  }, BLOCK_CREATION_INTERVAL);
+                  }, BLOCK_CREATION_INTERVAL_MS);
                 }
               }
               for (let i=0; i<data.chainSubsection.length; i++) {
@@ -503,7 +535,8 @@ class P2pServer {
     if (ainUtil.areSameAddresses(this.db.account.address,
         this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.db.account.address} will start next round at ` +
-          `block number ${this.blockchain.lastBlockNumber() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
+          `block number ${this.blockchain.lastBlockNumber() + 1} in ` +
+          `${BLOCK_CREATION_INTERVAL_MS}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
     }
     const recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
@@ -529,7 +562,7 @@ class P2pServer {
         if (this.votingUtil.isProposer()) {
           this.createAndProposeBlock();
         }
-      }, BLOCK_CREATION_INTERVAL);
+      }, BLOCK_CREATION_INTERVAL_MS);
     }
   }
 
