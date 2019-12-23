@@ -105,6 +105,10 @@ class Blockchain {
   }
 
   addNewBlock(block) {
+    if (!block) {
+      console.log(`[blockchain.addNewBlock] Block is null`);
+      return false;
+    }
     if (block.number != this.lastBlockNumber() + 1) {
       console.log(`[blockchain.addNewBlock] Invalid blockchain number: ${block.number}`);
       return false;
@@ -203,7 +207,7 @@ class Blockchain {
     const refBlockHash = refBlock ? refBlock.hash : null;
     if (refBlockHash === this.lastBlock().hash) {
       console.log('Requesters blockchain is up to date with this blockchain');
-      return;
+      return [ this.lastBlock() ];
     }
 
     const chainSubSection = [];
@@ -218,10 +222,24 @@ class Blockchain {
     console.log(`Last block number before merge: ${this.lastBlockNumber()}`);
     if (chainSubSection.length === 0) {
       console.log('Empty chain sub section');
+      if (!this.syncedAfterStartup) {
+        // Regard this situation as if you're synced.
+        // TODO (lia): ask the tracker server for another peer.
+        this.syncedAfterStartup = true;
+      }
       return false;
     }
-    if (chainSubSection[chainSubSection.length - 1].number <= this.lastBlockNumber()) {
+    if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
       console.log('Received chain is of lower block number than current last block number');
+      return false;
+    }
+    if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {
+      console.log('Received chain is at the same block number');
+      if (!this.syncedAfterStartup) {
+        // Regard this situation as if you're synced.
+        // TODO (lia): ask the tracker server for another peer.
+        this.syncedAfterStartup = true;
+      }
       return false;
     }
     const firstBlock = Block.parse(chainSubSection[0]);

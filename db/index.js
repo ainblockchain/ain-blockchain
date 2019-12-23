@@ -396,13 +396,14 @@ class DB {
   reconstruct(blockchain, transactionPool) {
     console.log('Reconstructing database');
     this.setDBToBackUp(blockchain.backupDb);
-    this.createDatabase(blockchain);
+    this.createDatabase(blockchain, transactionPool);
     this.addTransactionPool(transactionPool.validTransactions());
   }
 
-  createDatabase(blockchain) {
+  createDatabase(blockchain, transactionPool) {
     blockchain.chain.forEach((block) => {
       this.executeBlockTransactions(block);
+      transactionPool.updateCommittedNonces(block.transactions);
     });
   }
 
