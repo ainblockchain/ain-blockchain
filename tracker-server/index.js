@@ -36,8 +36,15 @@ function getPeerNodesByAddress(address) {
   })
 }
 
-function getRandomPeer() {
+function getRandomLivePeer() {
   return getLiveNodes()[Math.floor(Math.random() * numLiveNodes())];
+}
+
+function assignRandomLivePeers(node) {
+  const expectedNumPeers = Math.min(numLiveNodes() > 1 ? numLiveNodes() - 1 : 0, MAX_NUM_PEERS);
+  while (node.getPeerList().length < expectedNumPeers) {
+    node.addPeer(getRandomLivePeer());
+  }
 }
 
 function printNodesInfo() {
@@ -69,10 +76,7 @@ webSocketServer.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       nodeInfo = JSON.parse(message);
-      node = Node.create(ws, nodeInfo);
-      ws.send(JSON.stringify(node.getPeerInfoList()));
-      console.log(`=> Connected to new node ${node.getNodeSummary()}, ` +
-          `which is connected to peers: ${node.getPeersSummary()}`);
+      node = new Node(ws, nodeInfo);
       // TODO(seo): Handle this case properly.
       if (NODES[node.address]) {
         node.getPeerList().forEach((peer) => {
@@ -80,6 +84,10 @@ webSocketServer.on('connection', (ws) => {
         });
       }
       NODES[node.address] = node;
+      assignRandomLivePeers(node);
+      ws.send(JSON.stringify(node.getPeerInfoList()));
+      console.log(`=> Connected to new node ${node.getNodeSummary()}, ` +
+          `which is connected to peers: ${node.getPeersSummary()}`);
       printNodesInfo();
     } catch (err) {
       console.log(err.stack);
@@ -94,15 +102,7 @@ webSocketServer.on('connection', (ws) => {
       for (let i = 0; i < affectedPeers.length; i++) {
         const affected = affectedPeers[i];
         affected.removePeer(node);
-        let maxNumPeers = 0;
-        if (numLiveNodes() === 2) {
-          maxNumPeers = 1;
-        } else if (numLiveNodes() > 2) {
-          maxNumPeers = MAX_NUM_PEERS;
-        }
-        while (affected.getPeerList().length < maxNumPeers) {
-          affected.addPeer(getRandomPeer());
-        }
+        assignRandomLivePeers(affected);
       }
       printNodesInfo();
     } catch (err) {
@@ -187,19 +187,6 @@ class Node {
 
   static getNodeUrl(protocol, host, port) {
     return protocol + '://' + host + ':' + port;
-  }
-
-  static create(ws, nodeInfo) {
-    const node = new Node(ws, nodeInfo);
-    if (numLiveNodes() === 1) {
-      node.addPeer(getLiveNodes()[0]);
-    } else if (numLiveNodes() > 1) {
-      while (node.getPeerList().length < MAX_NUM_PEERS) {
-        node.addPeer(getRandomPeer());
-      }
-    }
-
-    return node;
   }
 
   addPeer(peer) {
