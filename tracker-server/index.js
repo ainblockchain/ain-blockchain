@@ -23,17 +23,16 @@ function getLiveNodes() {
   });
 }
 
+function isLiveNode(address) {
+  return NODES[address] && NODES[address].isLive;
+}
+
 function numLiveNodes() {
   return getLiveNodes().length;
 }
 
-function getPeerNodesByAddress(address) {
-  return Object.values(NODES).filter((node) => {
-    if (node.connectedPeers[address]) {
-      return true;
-    }
-    return false;
-  })
+function numLivePeers(address) {
+  return Math.max(0, numLiveNodes() - (isLiveNode(address) ? 1 : 0));
 }
 
 function getRandomLivePeer() {
@@ -41,14 +40,14 @@ function getRandomLivePeer() {
 }
 
 function assignRandomLivePeers(node) {
-  const expectedNumPeers = Math.min(numLiveNodes() > 1 ? numLiveNodes() - 1 : 0, MAX_NUM_PEERS);
+  const expectedNumPeers = Math.min(numLivePeers(), MAX_NUM_PEERS);
   while (node.getPeerList().length < expectedNumPeers) {
     node.addPeer(getRandomLivePeer());
   }
 }
 
 function printNodesInfo() {
-  console.log(`Number of nodes: ${numNodes()}`);
+  console.log(`Number of nodes: ${numLiveNodes()} / ${numNodes()}`);
   const nodeList = Object.values(NODES);
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
@@ -77,14 +76,8 @@ webSocketServer.on('connection', (ws) => {
     try {
       nodeInfo = JSON.parse(message);
       node = new Node(ws, nodeInfo);
-      // TODO(seo): Handle this case properly.
-      if (NODES[node.address]) {
-        node.getPeerList().forEach((peer) => {
-          peer.removePeer(node);
-        });
-      }
-      NODES[node.address] = node;
       assignRandomLivePeers(node);
+      NODES[node.address] = node;
       ws.send(JSON.stringify(node.getPeerInfoList()));
       console.log(`=> Connected to new node ${node.getNodeSummary()}, ` +
           `which is connected to peers: ${node.getPeersSummary()}`);
@@ -98,12 +91,6 @@ webSocketServer.on('connection', (ws) => {
     try {
       console.log(`=> Disconnected to node ${node.getNodeSummary()}) with code: ${code}`);
       NODES[node.address].isLive = false;
-      const affectedPeers = getPeerNodesByAddress(node.address);
-      for (let i = 0; i < affectedPeers.length; i++) {
-        const affected = affectedPeers[i];
-        affected.removePeer(node);
-        assignRandomLivePeers(affected);
-      }
       printNodesInfo();
     } catch (err) {
       console.log(err.stack);
@@ -152,7 +139,7 @@ class Node {
   getNodeSummary() {
     return `${this.address.substring(0, 6)}..` +
         `${this.address.substring(this.address.length - 4)}(${this.url})` +
-            `=${this.isLive ? 'Live' : 'Dead'}`;
+            ` == ${this.isLive ? 'LLLL' : 'DDDD'}`;
   }
 
   getPeersSummary() {
@@ -192,18 +179,12 @@ class Node {
   addPeer(peer) {
     if (peer && peer.address !== this.address && !this.connectedPeers[peer.address]) {
       this.connectedPeers[peer.address] = true;
-      if (!peer.connectedPeers[this.address]) {
-        peer.addPeer(this);
-      }
     }
   }
 
   removePeer(peer) {
     if (peer && peer.address !== this.address && this.connectedPeers[peer.address]) {
       delete this.connectedPeers[peer.address];
-      if (peer.connectedPeers[this.address]) {
-        peer.removePeer(this);
-      }
     }
   }
 
