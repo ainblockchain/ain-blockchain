@@ -23,26 +23,27 @@ function getLiveNodes() {
   });
 }
 
-function isLiveNode(address) {
-  return NODES[address] && NODES[address].isLive;
-}
-
 function numLiveNodes() {
   return getLiveNodes().length;
 }
 
-function numLivePeers(address) {
-  return Math.max(0, numLiveNodes() - (isLiveNode(address) ? 1 : 0));
+function getPeerCandidates(address) {
+  return Object.values(NODES).filter((node) => {
+    return node.address !== address && node.isLive && !node.connectedPeers[address];
+  });
 }
 
-function getRandomLivePeer() {
-  return getLiveNodes()[Math.floor(Math.random() * numLiveNodes())];
+function numPeerCandidates(address) {
+  return getPeerCandidates(address).length;
 }
 
-function assignRandomLivePeers(node) {
-  const expectedNumPeers = Math.min(numLivePeers(), MAX_NUM_PEERS);
-  while (node.getPeerList().length < expectedNumPeers) {
-    node.addPeer(getRandomLivePeer());
+function getRandomPeer(address) {
+  return getPeerCandidates(address)[Math.floor(Math.random() * numPeerCandidates(address))];
+}
+
+function assignRandomPeers(node) {
+  while (node.getPeerList().length < Math.min(numPeerCandidates(node.address), MAX_NUM_PEERS)) {
+    node.addPeer(getRandomPeer(node.address));
   }
 }
 
@@ -68,19 +69,19 @@ function setTimer(ws) {
 }
 
 webSocketServer.on('connection', (ws) => {
-  /*
   setTimer(ws);
-  */
   let node = null;
   ws.on('message', (message) => {
     try {
       nodeInfo = JSON.parse(message);
+      console.log(`=> New connection to node: ${JSON.stringify(nodeInfo, null, 2)}`)
       node = new Node(ws, nodeInfo);
-      assignRandomLivePeers(node);
+      assignRandomPeers(node);
       NODES[node.address] = node;
+      // TODO(seo): Return only new peers.
       ws.send(JSON.stringify(node.getPeerInfoList()));
-      console.log(`=> Connected to new node ${node.getNodeSummary()}, ` +
-          `which is connected to peers: ${node.getPeersSummary()}`);
+      console.log(`=> Node ${node.getNodeSummary()} is connected to peers: ` +
+          `${node.getPeersSummary()}`);
       printNodesInfo();
     } catch (err) {
       console.log(err.stack);
@@ -101,11 +102,9 @@ webSocketServer.on('connection', (ws) => {
 class Node {
   constructor(ws, nodeInfo) {
     this.isLive = true;
-    this.protocol = nodeInfo.PROTOCOL;
-    this.ip = nodeInfo.HOST;
-    this.port = nodeInfo.P2P_PORT;
-    this.address = nodeInfo.ADDRESS;
-    this.url = Node.getNodeUrl(this.protocol, this.ip, this.port);
+    this.ip = nodeInfo.ip;
+    this.address = nodeInfo.address;
+    this.url = nodeInfo.url;
     this.ws = ws;
     this.connectedPeers = {};
     const locationDict = Node.getNodeLocation(this.ip);
@@ -123,11 +122,10 @@ class Node {
     return {
       ip: Node.maskIp(this.ip),
       port: this.port,
-      url: Node.getNodeUrl(this.protocol, Node.maskIp(this.ip), this.port),
+      url: this.url,
       address: this.address,
       connectedPeers: Object.keys(this.connectedPeers).map((addr) => {
-        const peer = NODES[addr];
-        return Node.getNodeUrl(peer.protocol, Node.maskIp(peer.ip), peer.port);
+        return NODES[addr].url;
       }),
       country: this.country,
       region: this.region,
@@ -139,7 +137,7 @@ class Node {
   getNodeSummary() {
     return `${this.address.substring(0, 6)}..` +
         `${this.address.substring(this.address.length - 4)}(${this.url})` +
-            ` == ${this.isLive ? 'LLLL' : 'DDDD'}`;
+            `=${this.isLive ? 'Up' : 'Down'}`;
   }
 
   getPeersSummary() {
@@ -170,10 +168,6 @@ class Node {
       [CITY]: geoLocationDict[CITY],
       [TIMEZONE]: geoLocationDict[TIMEZONE]
     };
-  }
-
-  static getNodeUrl(protocol, host, port) {
-    return protocol + '://' + host + ':' + port;
   }
 
   addPeer(peer) {
