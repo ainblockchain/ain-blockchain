@@ -30,7 +30,7 @@ class P2pServer {
     this.db = db;
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
-    this.peerInfoList = [];
+    this.managedPeersInfo = {}
     this.sockets = [];
     this.votingUtil = new VotingUtil(db);
     this.votingInterval = null;
@@ -75,7 +75,7 @@ class P2pServer {
           }),
           ip: this.ipAddress,
           address: this.db.account.address,
-          peers: this.peerInfoList
+          managedPeersInfo: this.managedPeersInfo,
         }));
       });
     });
@@ -94,11 +94,13 @@ class P2pServer {
 
   async setTrackerEventHandlers() {
     this.trackerWebSocket.on('message', (message) => {
-      this.peerInfoList = JSON.parse(message);
-      this.connectToPeers();
+      const newManagedPeerInfoList = JSON.parse(message);
+      console.log(`[TRACKER] New managed peer info list: ` +
+          `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
+      this.connectToPeers(newManagedPeerInfoList);
       if (this.isStarting) {
         this.isStarting = false;
-        if (this.peerInfoList.length === 0) {
+        if (Object.keys(this.managedPeersInfo).length === 0) {
           this.blockchain.init(true);
           this.db.startWithBlockchain(this.blockchain, this.transactionPool);
           this.blockchain.syncedAfterStartup = true;
@@ -121,12 +123,16 @@ class P2pServer {
     });
   }
 
-  // TODO(seo): Make connections to only new peers.
-  connectToPeers() {
-    this.peerInfoList.forEach((peerInfo) => {
-      console.log(`[PEER] Connecting to peer ${peerInfo}`);
-      const socket = new Websocket(peerInfo.url);
-      socket.on('open', () => this.setSocket(socket));
+  connectToPeers(newManagedPeerInfoList) {
+    newManagedPeerInfoList.forEach((peerInfo) => {
+      if (this.managedPeersInfo[peerInfo.address]) {
+        console.log(`[PEER] ${peerInfo.address} is already a managed peer.`)
+      } else {
+        console.log(`[PEER] Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
+        this.managedPeersInfo[peerInfo.address] = peerInfo;
+        const socket = new Websocket(peerInfo.url);
+        socket.on('open', () => this.setSocket(socket));
+      }
     });
   }
 
@@ -212,6 +218,7 @@ class P2pServer {
     socket.on('close', () => {
       const removed = this.removeFromListIfExists(socket);
       console.log(`socket removed=${removed}, sockets.length=${this.sockets.length}`);
+      // TODO(seo): Update managed peers.
     });
   }
 
