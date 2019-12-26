@@ -66,9 +66,8 @@ webSocketServer.on('connection', (ws) => {
       console.log(`\n=> New update from node [${abbrAddr(nodeInfo.address)}]: ` +
           `${JSON.stringify(nodeInfo, null, 2)}`)
       if (NODES[nodeInfo.address]) {
-        node = NODES[nodeInfo.address];
+        node = NODES[nodeInfo.address].reconstruct(nodeInfo);
         node.assignRandomPeers();
-        node.reconstruct(nodeInfo);
       } else {
         node = new Node(nodeInfo);
         node.assignRandomPeers();
@@ -118,6 +117,8 @@ class Node {
         null : locationDict[CITY];
     this.timezone = (locationDict === null ||locationDict[TIMEZONE].length === 0) ?
         null : locationDict[TIMEZONE];
+
+    return this;
   }
 
   getNodeInfo() {
