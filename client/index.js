@@ -46,7 +46,7 @@ const LOG = process.env.LOG || false;
 if (LOG) {
   const fs = require('fs');
   const util = require('util');
-  const logDir = __dirname + '/' + '.logs';
+  const logDir = __dirname + '/' + 'logs';
   if (!(fs.existsSync(logDir))) {
     fs.mkdirSync(logDir);
   }
