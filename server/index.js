@@ -5,10 +5,11 @@ const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
 const publicIp = require('public-ip');
 const TRACKER_WS_ADDR = process.env.TRACKER_IP || 'ws://localhost:3001';
-// Set LOCAL to true if your are running all blockchains in a local environment where all
-// blcokchain nodes are being run in the same network (e.g. on your laptop) and will not
-// communicate with external servers.
-const LOCAL = process.env.LOCAL || false;
+const axios = require('axios');
+// HOSTING_ENV is a variable used in extracting the ip address of the host machine,
+// of which value could be either 'local', 'default', or 'gcp'.
+const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
+const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
 const {Block} = require('../blockchain/block');
@@ -22,6 +23,7 @@ const BLOCK_CREATION_INTERVAL_MS = 6000;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
 
+// TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
   constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
     this.isStarting = true;
@@ -92,7 +94,23 @@ class P2pServer {
   getIpAddress() {
     return Promise.resolve()
     .then(() => {
-      return LOCAL ? ip.address() : publicIp.v4();
+      if (HOSTING_ENV === 'gcp') {
+        return axios.get(GCP_EXTERNAL_IP_URL, {
+          headers: {'Metadata-Flavor': 'Google'},
+          timeout: 3000
+        })
+        .then((res) => {
+          return res.data;
+        })
+        .catch((err) => {
+          console.log(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+          process.exit(0);
+        });
+      } else if (HOSTING_ENV === 'local') {
+        return ip.address();
+      } else {
+        return publicIp.v4();
+      }
     })
     .then((ipAddr) => {
       this.ipAddress = ipAddr;

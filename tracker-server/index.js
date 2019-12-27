@@ -13,6 +13,8 @@ const TIMEZONE = 'timezone';
 const MASK = 'xxx';
 const PORT = 5000;
 
+// TODO(seo): Sign messages to nodes.
+
 function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
@@ -93,7 +95,8 @@ webSocketServer.on('connection', (ws) => {
   });
 
   ws.on('close', (code) => {
-    console.log(`\nDisconnected from node [${abbrAddr(node.address)}] with code: ${code}`);
+    console.log(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
+        `with code: ${code}`);
     NODES[node.address].isLive = false;
     printNodesInfo();
   });
