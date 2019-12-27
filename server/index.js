@@ -83,8 +83,8 @@ class P2pServer {
         this.setIntervalForTrackerUpdate();
       });
       this.trackerWebSocket.on('error', (error) => {
-        console.log(`[TRACKER] Failed to connect to tracker (${TRACKER_WS_ADDR}) ` +
-            `with error: ${JSON.stringify(error)}`)
+        console.log(`[TRACKER] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+            `${JSON.stringify(error, null, 2)}`)
       });
     });
   }
@@ -102,24 +102,28 @@ class P2pServer {
 
   async setTrackerEventHandlers() {
     this.trackerWebSocket.on('message', (message) => {
-      const parsedMsg = JSON.parse(message);
-      console.log(`\n[TRACKER] New message from tracker: ` +
-          `${JSON.stringify(parsedMsg, null, 2)}`)
-      if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-        console.log(`[TRACKER] => Updated managed peers info: ` +
-            `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
-      }
-      if (this.isStarting) {
-        this.isStarting = false;
-        if (parsedMsg.numLivePeers === 0) {
-          this.blockchain.init(true);
-          this.db.startWithBlockchain(this.blockchain, this.transactionPool);
-          this.blockchain.syncedAfterStartup = true;
-          this.initiateChain();
-        } else {
-          this.blockchain.init(false);
-          this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+      try {
+        const parsedMsg = JSON.parse(message);
+        console.log(`\n[TRACKER] New message from tracker: ` +
+            `${JSON.stringify(parsedMsg, null, 2)}`)
+        if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
+          console.log(`[TRACKER] => Updated managed peers info: ` +
+              `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
+        if (this.isStarting) {
+          this.isStarting = false;
+          if (parsedMsg.numLivePeers === 0) {
+            this.blockchain.init(true);
+            this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+            this.blockchain.syncedAfterStartup = true;
+            this.initiateChain();
+          } else {
+            this.blockchain.init(false);
+            this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+          }
+        }
+      } catch (error) {
+        console.log(error.stack);
       }
     });
 
@@ -160,10 +164,6 @@ class P2pServer {
         socket.on('open', () => {
           console.log(`[PEER] Connected to peer ${peerInfo.address} (${peerInfo.url}).`)
           this.setSocket(socket, peerInfo.address);
-        });
-        socket.on('error', (error) => {
-          console.log(`[PEER] Failed to connect to peer ${peerInfo.address} (${peerInfo.url}) ` +
-              `with error: ${JSON.stringify(error)}`)
         });
       }
     });
@@ -257,6 +257,11 @@ class P2pServer {
         console.log(`[PEER] => Updated managed peers info: ` +
             `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
       }
+    });
+
+    socket.on('error', (error) => {
+      console.log(`[PEER] Error in communication with peer ${address}: ` +
+          `${JSON.stringify(error, null, 2)}`);
     });
   }
 

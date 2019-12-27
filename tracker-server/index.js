@@ -65,33 +65,42 @@ webSocketServer.on('connection', (ws) => {
   */
   let node = null;
   ws.on('message', (message) => {
-    const nodeInfo = JSON.parse(message);
-    console.log(`\nNew update from node [${abbrAddr(nodeInfo.address)}]: ` +
-        `${JSON.stringify(nodeInfo, null, 2)}`)
-    if (NODES[nodeInfo.address]) {
-      node = NODES[nodeInfo.address].reconstruct(nodeInfo);
-      node.assignRandomPeers();
-    } else {
-      node = new Node(nodeInfo);
-      node.assignRandomPeers();
-      NODES[nodeInfo.address] = node;
+    try {
+      const nodeInfo = JSON.parse(message);
+      console.log(`\nNew update from node [${abbrAddr(nodeInfo.address)}]: ` +
+          `${JSON.stringify(nodeInfo, null, 2)}`)
+      if (NODES[nodeInfo.address]) {
+        node = NODES[nodeInfo.address].reconstruct(nodeInfo);
+        node.assignRandomPeers();
+      } else {
+        node = new Node(nodeInfo);
+        node.assignRandomPeers();
+        NODES[nodeInfo.address] = node;
+      }
+      const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
+        return !nodeInfo.managedPeersInfo[peerInfo.address];
+      });
+      console.log(`  => Node [${abbrAddr(node.address)}]'s new managed peers: ` +
+          `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
+      ws.send(JSON.stringify({
+        newManagedPeerInfoList,
+        numLivePeers: numLivePeers(node.address)
+      }));
+      printNodesInfo();
+    } catch (error) {
+      console.log(error.stack);
     }
-    const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
-      return !nodeInfo.managedPeersInfo[peerInfo.address];
-    });
-    console.log(`  => Node [${abbrAddr(node.address)}]'s new managed peers: ` +
-        `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
-    ws.send(JSON.stringify({
-      newManagedPeerInfoList,
-      numLivePeers: numLivePeers(node.address)
-    }));
-    printNodesInfo();
   });
 
   ws.on('close', (code) => {
-    console.log(`\nDisconnected from node ${abbrAddr(node.address)}) with code: ${code}`);
+    console.log(`\nDisconnected from node [${abbrAddr(node.address)}] with code: ${code}`);
     NODES[node.address].isLive = false;
     printNodesInfo();
+  });
+
+  ws.on('error', (error) => {
+    console.log(`Error in communication with node [${abbrAddr(node.address)}]: ` +
+        `${JSON.stringify(error, null, 2)}`)
   });
 });
 
