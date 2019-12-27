@@ -102,16 +102,16 @@ class P2pServer {
 
   async setTrackerEventHandlers() {
     this.trackerWebSocket.on('message', (message) => {
-      const newManagedPeerInfoList = JSON.parse(message);
-      console.log(`\n[TRACKER] New managed peer info list from tracker: ` +
-          `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
-      if (this.connectToPeers(newManagedPeerInfoList)) {
+      const parsedMsg = JSON.parse(message);
+      console.log(`\n[TRACKER] New message from tracker: ` +
+          `${JSON.stringify(parsedMsg, null, 2)}`)
+      if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
         console.log(`[TRACKER] => Updated managed peers info: ` +
             `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
       }
       if (this.isStarting) {
         this.isStarting = false;
-        if (Object.keys(this.managedPeersInfo).length === 0) {
+        if (parsedMsg.numLivePeers === 0) {
           this.blockchain.init(true);
           this.db.startWithBlockchain(this.blockchain, this.transactionPool);
           this.blockchain.syncedAfterStartup = true;

@@ -21,14 +21,18 @@ function numNodes() {
   return Object.keys(NODES).length;
 }
 
-function getLiveNodes() {
-  return Object.values(NODES).filter((node) => {
+function numLiveNodes() {
+  const liveNodes = Object.values(NODES).filter((node) => {
     return node.isLive;
   });
+  return liveNodes.length;
 }
 
-function numLiveNodes() {
-  return getLiveNodes().length;
+function numLivePeers(address) {
+  const livePeers = Object.values(NODES).filter((node) => {
+    return node.isLive && node.address !== address;
+  });
+  return livePeers.length;
 }
 
 function printNodesInfo() {
@@ -77,7 +81,10 @@ webSocketServer.on('connection', (ws) => {
     });
     console.log(`  => Node [${abbrAddr(node.address)}]'s new managed peers: ` +
         `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
-    ws.send(JSON.stringify(newManagedPeerInfoList));
+    ws.send(JSON.stringify({
+      newManagedPeerInfoList,
+      numLivePeers: numLivePeers(node.address)
+    }));
     printNodesInfo();
   });
 
