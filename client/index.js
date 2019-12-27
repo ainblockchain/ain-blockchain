@@ -61,7 +61,6 @@ if (LOG) {
   };
 }
 
-// [START gae_flex_mysql_app]
 const express = require('express');
 const DB = require('../db');
 const P2pServer = require('../server');
@@ -278,7 +277,6 @@ app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
   console.log('Press Ctrl+C to quit.');
 });
-// [END gae_flex_mysql_app]
 
 // Lets start this p2p server up so we listen for changes in either DATABASE
 // or NUMBER OF SERVERS

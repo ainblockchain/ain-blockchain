@@ -32,18 +32,18 @@ function numLiveNodes() {
 }
 
 function printNodesInfo() {
-  console.log(`\n[NODES] Number of nodes: ${numLiveNodes()} / ${numNodes()}`);
+  console.log(`\n  => [NODES] Number of nodes: ${numLiveNodes()} / ${numNodes()}`);
   const nodeList = Object.values(NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
-    console.log(`  Node[${i}]: ${node.getNodeSummary()} ` +
+    console.log(`    Node[${i}]: ${node.getNodeSummary()} ` +
         `Peers: ${node.numPeers()} (+${node.numManagedPeers()} -${node.numUnmanagedPeers()})`);
     Object.keys(node.managedPeers).forEach((addr) => {
       const peerSummary =
           NODES[addr] ? NODES[addr].getNodeSummary() : Node.getUnknownNodeSummary(addr);
-      console.log(`    Managed peer: ${peerSummary}`);
+      console.log(`      Managed peer: ${peerSummary}`);
     });
   }
 }
@@ -61,38 +61,30 @@ webSocketServer.on('connection', (ws) => {
   */
   let node = null;
   ws.on('message', (message) => {
-    try {
-      const nodeInfo = JSON.parse(message);
-      console.log(`\n=> New update from node [${abbrAddr(nodeInfo.address)}]: ` +
-          `${JSON.stringify(nodeInfo, null, 2)}`)
-      if (NODES[nodeInfo.address]) {
-        node = NODES[nodeInfo.address].reconstruct(nodeInfo);
-        node.assignRandomPeers();
-      } else {
-        node = new Node(nodeInfo);
-        node.assignRandomPeers();
-        NODES[nodeInfo.address] = node;
-      }
-      const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
-        return !nodeInfo.managedPeersInfo[peerInfo.address];
-      });
-      console.log(`  Node [${abbrAddr(node.address)}]'s new managed peers: ` +
-          `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
-      ws.send(JSON.stringify(newManagedPeerInfoList));
-      printNodesInfo();
-    } catch (err) {
-      console.log(err.stack);
+    const nodeInfo = JSON.parse(message);
+    console.log(`\nNew update from node [${abbrAddr(nodeInfo.address)}]: ` +
+        `${JSON.stringify(nodeInfo, null, 2)}`)
+    if (NODES[nodeInfo.address]) {
+      node = NODES[nodeInfo.address].reconstruct(nodeInfo);
+      node.assignRandomPeers();
+    } else {
+      node = new Node(nodeInfo);
+      node.assignRandomPeers();
+      NODES[nodeInfo.address] = node;
     }
+    const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
+      return !nodeInfo.managedPeersInfo[peerInfo.address];
+    });
+    console.log(`  => Node [${abbrAddr(node.address)}]'s new managed peers: ` +
+        `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
+    ws.send(JSON.stringify(newManagedPeerInfoList));
+    printNodesInfo();
   });
 
   ws.on('close', (code) => {
-    try {
-      console.log(`\n=> Disconnected from node ${abbrAddr(node.address)}) with code: ${code}`);
-      NODES[node.address].isLive = false;
-      printNodesInfo();
-    } catch (err) {
-      console.log(err.stack);
-    }
+    console.log(`\nDisconnected from node ${abbrAddr(node.address)}) with code: ${code}`);
+    NODES[node.address].isLive = false;
+    printNodesInfo();
   });
 });
 
