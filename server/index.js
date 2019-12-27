@@ -122,7 +122,7 @@ class P2pServer {
     this.trackerWebSocket.on('message', (message) => {
       try {
         const parsedMsg = JSON.parse(message);
-        console.log(`\n[TRACKER] New message from tracker: ` +
+        console.log(`\n[TRACKER] Message from tracker: ` +
             `${JSON.stringify(parsedMsg, null, 2)}`)
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
           console.log(`[TRACKER] => Updated managed peers info: ` +
@@ -153,7 +153,7 @@ class P2pServer {
   }
 
   updateStatusToTracker() {
-    const update = {
+    const updateToTracker = {
       url: url.format({
         protocol: 'ws',
         hostname: this.ipAddress,
@@ -163,9 +163,9 @@ class P2pServer {
       address: this.db.account.address,
       managedPeersInfo: this.managedPeersInfo,
     };
-    console.log(`\n[TRACKER] New update to tracker ${TRACKER_WS_ADDR}: ` +
-        `${JSON.stringify(update, null, 2)}`)
-    this.trackerWebSocket.send(JSON.stringify(update));
+    console.log(`\n[TRACKER] Update to tracker ${TRACKER_WS_ADDR}: ` +
+        `${JSON.stringify(updateToTracker, null, 2)}`)
+    this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
 
   connectToPeers(newManagedPeerInfoList) {

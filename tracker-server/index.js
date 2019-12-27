@@ -38,7 +38,7 @@ function numLivePeers(address) {
 }
 
 function printNodesInfo() {
-  console.log(`\n  => [NODES] Number of nodes: ${numLiveNodes()} / ${numNodes()}`);
+  console.log(`Updated [NODES]: (Number of nodes: ${numLiveNodes()} / ${numNodes()})`);
   const nodeList = Object.values(NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
@@ -69,7 +69,7 @@ webSocketServer.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       const nodeInfo = JSON.parse(message);
-      console.log(`\nNew update from node [${abbrAddr(nodeInfo.address)}]: ` +
+      console.log(`\nUpdate from node [${abbrAddr(nodeInfo.address)}]: ` +
           `${JSON.stringify(nodeInfo, null, 2)}`)
       if (NODES[nodeInfo.address]) {
         node = NODES[nodeInfo.address].reconstruct(nodeInfo);
@@ -82,12 +82,13 @@ webSocketServer.on('connection', (ws) => {
       const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
         return !nodeInfo.managedPeersInfo[peerInfo.address];
       });
-      console.log(`  => Node [${abbrAddr(node.address)}]'s new managed peers: ` +
-          `${JSON.stringify(newManagedPeerInfoList, null, 2)}`)
-      ws.send(JSON.stringify({
+      const msgToNode = {
         newManagedPeerInfoList,
         numLivePeers: numLivePeers(node.address)
-      }));
+      };
+      console.log(`Message to node [${abbrAddr(node.address)}]: ` +
+          `${JSON.stringify(msgToNode, null, 2)}`)
+      ws.send(JSON.stringify(msgToNode));
       printNodesInfo();
     } catch (error) {
       console.log(error.stack);
