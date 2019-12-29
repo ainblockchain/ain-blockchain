@@ -38,14 +38,14 @@ function numLivePeers(address) {
 }
 
 function printNodesInfo() {
-  console.log(`Updated [NODES]: (Number of nodes: ${numLiveNodes()} / ${numNodes()})`);
+  console.log(`Updated [NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()})`);
   const nodeList = Object.values(NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
-    console.log(`    Node[${i}]: ${node.getNodeSummary()} ` +
-        `Peers: ${node.numPeers()} (+${node.numManagedPeers()} -${node.numUnmanagedPeers()})`);
+    console.log(`    Node[${i}]: ${node.getNodeSummary()} Block: ${node.lastBlockNumber} ` +
+        `Peers: ${node.numPeers()} (+${node.numManagedPeers()}/-${node.numUnmanagedPeers()})`);
     Object.keys(node.managedPeers).forEach((addr) => {
       const peerSummary =
           NODES[addr] ? NODES[addr].getNodeSummary() : Node.getUnknownNodeSummary(addr);
@@ -69,7 +69,7 @@ webSocketServer.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       const nodeInfo = JSON.parse(message);
-      console.log(`\nUpdate from node [${abbrAddr(nodeInfo.address)}]: ` +
+      console.log(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
           `${JSON.stringify(nodeInfo, null, 2)}`)
       if (NODES[nodeInfo.address]) {
         node = NODES[nodeInfo.address].reconstruct(nodeInfo);
@@ -86,7 +86,7 @@ webSocketServer.on('connection', (ws) => {
         newManagedPeerInfoList,
         numLivePeers: numLivePeers(node.address)
       };
-      console.log(`Message to node [${abbrAddr(node.address)}]: ` +
+      console.log(`>> Message to node [${abbrAddr(node.address)}]: ` +
           `${JSON.stringify(msgToNode, null, 2)}`)
       ws.send(JSON.stringify(msgToNode));
       printNodesInfo();
@@ -118,6 +118,7 @@ class Node {
     this.ip = nodeInfo.ip;
     this.address = nodeInfo.address;
     this.url = nodeInfo.url;
+    this.lastBlockNumber = nodeInfo.lastBlockNumber;
     this.managedPeers = Node.constructManagedPeers(nodeInfo);
     this.unmanagedPeers = Node.constructUnmanagedPeers(nodeInfo.address);
     const locationDict = Node.getNodeLocation(this.ip);
