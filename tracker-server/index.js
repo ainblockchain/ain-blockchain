@@ -5,7 +5,7 @@ const express = require('express');
 const jayson = require('jayson');
 
 const MAX_NUM_PEERS = 2;
-const NODES = {};
+const PEER_NODES = {};
 const REGION = 'region';
 const COUNTRY = 'country';
 const CITY = 'city';
@@ -20,26 +20,26 @@ function abbrAddr(address) {
 }
 
 function numNodes() {
-  return Object.keys(NODES).length;
+  return Object.keys(PEER_NODES).length;
 }
 
 function numLiveNodes() {
-  const liveNodes = Object.values(NODES).filter((node) => {
+  const liveNodes = Object.values(PEER_NODES).filter((node) => {
     return node.isLive;
   });
   return liveNodes.length;
 }
 
 function numLivePeers(address) {
-  const livePeers = Object.values(NODES).filter((node) => {
+  const livePeers = Object.values(PEER_NODES).filter((node) => {
     return node.isLive && node.address !== address;
   });
   return livePeers.length;
 }
 
 function printNodesInfo() {
-  console.log(`Updated [NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()})`);
-  const nodeList = Object.values(NODES).sort((x, y) => {
+  console.log(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()})`);
+  const nodeList = Object.values(PEER_NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
   for (let i = 0; i < nodeList.length; i++) {
@@ -48,23 +48,23 @@ function printNodesInfo() {
         `(${node.timestamp}, ${node.lastBlockNumber}) ` +
         `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()})`);
     Object.keys(node.managedPeers).forEach((addr) => {
-      const peerSummary =
-          NODES[addr] ? NODES[addr].getNodeSummary() : Node.getUnknownNodeSummary(addr);
+      const peerSummary = PEER_NODES[addr] ?
+          PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
       console.log(`      Managed peer: ${peerSummary}`);
     });
   }
 }
 
 // A util function for testing/debugging.
-function setTimer(ws) {
+function setTimer(ws, timeSec) {
   setTimeout(() => {
     ws.close();
-  }, 15000);
+  }, timeSec * 1000);
 }
 
 webSocketServer.on('connection', (ws) => {
   /*
-  setTimer(ws);
+  setTimer(ws, 15);
   */
   let node = null;
   ws.on('message', (message) => {
@@ -72,13 +72,13 @@ webSocketServer.on('connection', (ws) => {
       const nodeInfo = JSON.parse(message);
       console.log(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
           `${JSON.stringify(nodeInfo, null, 2)}`)
-      if (NODES[nodeInfo.address]) {
-        node = NODES[nodeInfo.address].reconstruct(nodeInfo);
+      if (PEER_NODES[nodeInfo.address]) {
+        node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
         node.assignRandomPeers();
       } else {
-        node = new Node(nodeInfo);
+        node = new PeerNode(nodeInfo);
         node.assignRandomPeers();
-        NODES[nodeInfo.address] = node;
+        PEER_NODES[nodeInfo.address] = node;
       }
       const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
         return !nodeInfo.managedPeersInfo[peerInfo.address];
@@ -99,7 +99,7 @@ webSocketServer.on('connection', (ws) => {
   ws.on('close', (code) => {
     console.log(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
         `with code: ${code}`);
-    NODES[node.address].isLive = false;
+    PEER_NODES[node.address].isLive = false;
     printNodesInfo();
   });
 
@@ -109,7 +109,7 @@ webSocketServer.on('connection', (ws) => {
   });
 });
 
-class Node {
+class PeerNode {
   constructor(nodeInfo) {
     this.reconstruct(nodeInfo);
   }
@@ -121,9 +121,9 @@ class Node {
     this.url = nodeInfo.url;
     this.timestamp = nodeInfo.timestamp;
     this.lastBlockNumber = nodeInfo.lastBlockNumber;
-    this.managedPeers = Node.constructManagedPeers(nodeInfo);
-    this.unmanagedPeers = Node.constructUnmanagedPeers(nodeInfo.address);
-    const locationDict = Node.getNodeLocation(this.ip);
+    this.managedPeers = PeerNode.constructManagedPeers(nodeInfo);
+    this.unmanagedPeers = PeerNode.constructUnmanagedPeers(nodeInfo.address);
+    const locationDict = PeerNode.getNodeLocation(this.ip);
     this.country = (locationDict === null || locationDict[COUNTRY].length === 0) ?
         null : locationDict[COUNTRY];
     this.region = (locationDict === null ||locationDict[REGION].length === 0) ?
@@ -138,7 +138,7 @@ class Node {
 
   getNodeInfo() {
     return {
-      ip: Node.maskIp(this.ip),
+      ip: PeerNode.maskIp(this.ip),
       port: this.port,
       url: this.url,
       address: this.address,
@@ -165,7 +165,8 @@ class Node {
 
   getPeersSummary() {
     const list = Object.keys(this.managedPeers).map((addr) => {
-      return NODES[addr] ? NODES[addr].getNodeSummary() : Node.getUnknownNodeSummary(addr);
+      return PEER_NODES[addr] ?
+          PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
     });
     return list.join(', ');
   }
@@ -202,7 +203,7 @@ class Node {
 
   static constructUnmanagedPeers(address) {
     const unmanagedPeers = {};
-    Object.values(NODES).forEach((node) => {
+    Object.values(PEER_NODES).forEach((node) => {
       if (node.address != address && node.managedPeers[address])
       unmanagedPeers[node.address] = true;
     });
@@ -241,7 +242,7 @@ class Node {
   }
 
   getPeerCandidates() {
-    return Object.values(NODES).filter((other) => {
+    return Object.values(PEER_NODES).filter((other) => {
       return other.address !== this.address && other.isLive && !this.managedPeers[other.address] &&
           !this.unmanagedPeers[other.address];
     });
@@ -264,10 +265,10 @@ class Node {
   getManagedPeerInfoList() {
     const peerInfoList = [];
     Object.keys(this.managedPeers).forEach((addr) => {
-      if (NODES[addr]) {
+      if (PEER_NODES[addr]) {
         peerInfoList.push({
           address: addr,
-          url: NODES[addr].url
+          url: PEER_NODES[addr].url
         });
       }
     });
@@ -277,7 +278,7 @@ class Node {
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
-const jsonRpcMethods = require('./json-rpc')(NODES);
+const jsonRpcMethods = require('./json-rpc')(PEER_NODES);
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);

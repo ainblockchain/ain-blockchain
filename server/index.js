@@ -23,6 +23,13 @@ const BLOCK_CREATION_INTERVAL_MS = 6000;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
 
+// A util function for testing/debugging.
+function setTimer(ws, timeSec) {
+  setTimeout(() => {
+    ws.close();
+  }, timeSec * 1000);
+}
+
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
   constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
@@ -191,6 +198,9 @@ class P2pServer {
   }
 
   setSocket(socket, address) {
+    /*
+    setTimer(socket, 60);
+    */
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.blockchain.lastBlock());
