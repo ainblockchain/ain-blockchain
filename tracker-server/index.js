@@ -44,8 +44,9 @@ function printNodesInfo() {
   });
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
-    console.log(`    Node[${i}]: ${node.getNodeSummary()} Block: ${node.lastBlockNumber} ` +
-        `Peers: ${node.numPeers()} (+${node.numManagedPeers()}/-${node.numUnmanagedPeers()})`);
+    console.log(`    Node[${i}]: ${node.getNodeSummary()} ` +
+        `(${node.timestamp}, ${node.lastBlockNumber}) ` +
+        `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()})`);
     Object.keys(node.managedPeers).forEach((addr) => {
       const peerSummary =
           NODES[addr] ? NODES[addr].getNodeSummary() : Node.getUnknownNodeSummary(addr);
@@ -118,6 +119,7 @@ class Node {
     this.ip = nodeInfo.ip;
     this.address = nodeInfo.address;
     this.url = nodeInfo.url;
+    this.timestamp = nodeInfo.timestamp;
     this.lastBlockNumber = nodeInfo.lastBlockNumber;
     this.managedPeers = Node.constructManagedPeers(nodeInfo);
     this.unmanagedPeers = Node.constructUnmanagedPeers(nodeInfo.address);
@@ -154,7 +156,7 @@ class Node {
   }
 
   getNodeSummary() {
-    return `[${abbrAddr(this.address)}] (${this.url}) -> ${this.isLive ? '(o)' : '(x)'}`;
+    return `[${abbrAddr(this.address)}] (${this.url}) -> ${this.isLive ? '(O)' : '(X)'}`;
   }
 
   static getUnknownNodeSummary(address) {

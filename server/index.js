@@ -161,6 +161,7 @@ class P2pServer {
       }),
       ip: this.ipAddress,
       address: this.db.account.address,
+      timestamp: Date.now(),
       lastBlockNumber: this.blockchain.lastBlockNumber(),
       managedPeersInfo: this.managedPeersInfo,
     };
