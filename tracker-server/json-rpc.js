@@ -10,15 +10,19 @@
 module.exports = function getMethods(nodes) {
   return {
     getNodeInfoList: function(args, done) {
-      done(null, nodes.map((entry) => {
-        return entry.getNodeInfo();
-      }));
+      let list = [];
+      Object.keys(nodes).forEach((key) => {
+        list.push(nodes[key].getNodeInfo());
+      });
+      done(null, list);
     },
 
     getNodeAddressList: function(args, done) {
-      done(null, nodes.map((entry) => {
-        return entry.address;
-      }));
+      let list = [];
+      Object.keys(nodes).forEach((key) => {
+        list.push(nodes[key].address);
+      });
+      done(null, list);
     },
 
     getNodeInfoByAddress: function(args, done) {
