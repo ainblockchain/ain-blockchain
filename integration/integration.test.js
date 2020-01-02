@@ -24,22 +24,26 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
  
 const ENV_VARIABLES = [
   {
-    P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
+    DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5002, PORT: 9092, ACCOUNT_INDEX: 1, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5002, PORT: 9092, ACCOUNT_INDEX: 1, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
+    DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5003, PORT: 9093, ACCOUNT_INDEX: 2, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5003, PORT: 9093, ACCOUNT_INDEX: 2, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
+    DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5004, PORT: 9094, ACCOUNT_INDEX: 3, STAKE: 250, LOG: true, LOCAL: true, DEBUG: true,
+    P2P_PORT: 5004, PORT: 9094, ACCOUNT_INDEX: 3, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
+    DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -57,7 +61,7 @@ const JSON_RPC_ENDPOINT = '/json-rpc';
 const JSON_RPC_GET_RECENT_BLOCK = 'ain_getRecentBlock';
 const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
-const JSON_RPC_GET_PEER_PUBLIC_KEYS = 'getPeerPublicKeys';
+const JSON_RPC_GET_NODE_ADDRESS_LIST = 'getNodeAddressList';
 const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
 const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
 const JSON_RPC_GET_NONCE = 'ain_getNonce';
@@ -224,7 +228,7 @@ describe('Integration Tests', () => {
   let jsonRpcClient;
   let trackerRpcClient;
   const sentOperations = [];
-  const publicKeys = [];
+  const nodeAddressList = [];
 
   before(() => {
     console.log('Removing stored blockchain data...');
@@ -233,7 +237,7 @@ describe('Integration Tests', () => {
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, {});
     console.log('Starting tracker server...');
-    trackerProc.start(true);
+    trackerProc.start(false);
     trackerRpcClient = jayson.client.http(trackerServer + JSON_RPC_ENDPOINT);
     sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
@@ -242,10 +246,13 @@ describe('Integration Tests', () => {
       proc.start();
       sleep(5000);
       promises.push(new Promise((resolve) => {
-        trackerRpcClient.request(JSON_RPC_GET_PEER_PUBLIC_KEYS, [], function(err, response) {
-          if (err) throw err;
-          // The newest element in this list will be the publicKey of the server just started
-          publicKeys.push(response.result.pop());
+        trackerRpcClient.request(JSON_RPC_GET_NODE_ADDRESS_LIST, [], function(err, response) {
+          if (err) {
+            resolve();
+            throw err;
+          }
+          // The newest element in this list will be the address of the server just started
+          nodeAddressList.push(response.result.pop());
           resolve();
         });
       }));
@@ -255,7 +262,10 @@ describe('Integration Tests', () => {
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
           {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
-        if (err) throw err;
+        if (err) {
+          resolve();
+          throw err;
+        }
         numBlocksOnStartup = response.result.result ? response.result.result.number : 0;
         resolve();
       });
@@ -276,9 +286,7 @@ describe('Integration Tests', () => {
   });
 
   describe(`blockchain database mining/forging`, () => {
-
     it('syncs accross all peers after mine', () => {
-
       for (let i = 1; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
@@ -467,7 +475,7 @@ describe('Integration Tests', () => {
       it('prevent users from restructed areas', () => {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
-        const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, {json: {
+        const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
           ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
@@ -477,23 +485,24 @@ describe('Integration Tests', () => {
     describe('and built in functions', () => {
       beforeEach(() => {
         syncRequest('POST', server1 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${publicKeys[0]}/balance`, value: 100}});
+            {json: {ref: `/accounts/${nodeAddressList[0]}/balance`, value: 100}});
         syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${publicKeys[1]}/balance`, value: 0}});
+            {json: {ref: `/accounts/${nodeAddressList[1]}/balance`, value: 0}});
         sleep(200);
       });
 
       it('facilitate transfer between accounts', () => {
         sendTransactions(sentOperations);
         waitUntilNewBlock();
-        syncRequest('POST', server1 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/transfer/${publicKeys[0]}/${publicKeys[1]}/1/value`, value: 10}});
+        syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
+          ref: `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`, value: 10
+        }});
         sleep(500);
         const balance1 = JSON.parse(syncRequest('GET',
-            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${publicKeys[0]}/balance`)
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
             .body.toString('utf-8')).result;
         const balance2 = JSON.parse(syncRequest('GET',
-            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${publicKeys[1]}/balance`)
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
             .body.toString('utf-8')).result;
         expect(balance1).to.equal(90);
         expect(balance2).to.equal(10);

@@ -55,13 +55,13 @@ Operates a single peer node instance of the AIN blockchain. A single blockchain-
 #### To enter docker container and see blockchain files
 
 	docker exec -it <container_id> /bin/bash
-	cd blockchain/.blockchains/8080/
+	cd blockchain/blockchains/8080/
 
 
 ### To enter docker container and see log files
 
 	docker exec -it <container_id> /bin/bash
-	cat client/.logs/8080debug.log
+	cat client/logs/8080debug.log
 
 
 #### The blockchain database exposes the following endpoint:

@@ -12,7 +12,7 @@ sleep 5
 STAKE=250 LOG=true LOCAL=true node $BASEDIR/../client/index.js > $BASEDIR/log1.txt &
 PID2=$!
 sleep 10
-STAKE=250 P2P_PORT=5020 PORT=8081 LOG=true LOCAL=true node $BASEDIR/../client/index.js > $BASEDIR/log2.txt &
+STAKE=250 P2P_PORT=5020 PORT=8081 LOG=true HOSTING_ENV=local node $BASEDIR/../client/index.js > $BASEDIR/log2.txt &
 PID3=$!
 
 sleep 20
@@ -34,7 +34,7 @@ RESULT1=$(wget -qO-  http://localhost:8080/get?ref=/test/increase/first/level)
 
 diff $BASEDIR/blocks1.txt $BASEDIR/blocks2.txt
 kill  -9 $PID1 $PID2 $PID3
-rm -rf $BASEDIR/blockchain/.blockchains
+rm -rf $BASEDIR/blockchain/blockchains
 
 echo $RESULT1
 if [ "$RESULT1"=="{'code':0,'result':50000}" ] ;

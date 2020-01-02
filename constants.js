@@ -12,7 +12,7 @@ const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
   dbPath: process.env.ADDITIONAL_RULES.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_RULES.split(':')[1])
 } : null;
-const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/.blockchains');
+const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;

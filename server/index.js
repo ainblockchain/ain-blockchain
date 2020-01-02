@@ -1,15 +1,15 @@
+const url = require('url');
 const Websocket = require('ws');
 const sleep = require('sleep');
 const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
 const publicIp = require('public-ip');
-const trackerWebSocketAddr = process.env.TRACKER_IP || 'ws://localhost:3001';
-// Set LOCAL to true if your are running all blockchains in a local environment where all
-// blcokchain nodes are being run in the same network (e.g. on your laptop) and will not
-// communicate with external servers.
-const LOCAL = process.env.LOCAL || false;
-const trackerWebSocket = new Websocket(trackerWebSocketAddr);
-const PROTOCOL = 'ws';
+const TRACKER_WS_ADDR = process.env.TRACKER_IP || 'ws://localhost:3001';
+const axios = require('axios');
+// HOSTING_ENV is a variable used in extracting the ip address of the host machine,
+// of which value could be either 'local', 'default', or 'gcp'.
+const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
+const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
 const {Block} = require('../blockchain/block');
@@ -17,15 +17,30 @@ const Transaction = require('../db/transaction');
 const ainUtil = require('@ainblockchain/ain-util');
 const VotingUtil = require('./voting-util');
 const { WriteDbOperations, DEBUG } = require('../constants');
-const BLOCK_CREATION_INTERVAL = 6000;
 const semver = require('semver');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const BLOCK_CREATION_INTERVAL_MS = 6000;
+const RECONNECT_INTERVAL_MS = 10000;
+const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
 
+// A util function for testing/debugging.
+function setTimer(ws, timeSec) {
+  setTimeout(() => {
+    ws.close();
+  }, timeSec * 1000);
+}
+
+// TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
   constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
+    this.isStarting = true;
+    this.ipAddress = null;
+    this.trackerWebSocket = null;
+    this.interval = null;
     this.db = db;
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
+    this.managedPeersInfo = {}
     this.sockets = [];
     this.votingUtil = new VotingUtil(db);
     this.votingInterval = null;
@@ -34,48 +49,161 @@ class P2pServer {
     this.maxProtocolVersion = maxProtocolVersion;
   }
 
-  async connectTracker() {
-    trackerWebSocket.on('message', (message) => {
-      const peers = JSON.parse(message);
-      this.connectToPeers(peers);
-      if (peers.length === 0) {
-        this.blockchain.init(true);
-        this.db.startWithBlockchain(this.blockchain, this.transactionPool);
-        this.blockchain.syncedAfterStartup = true;
-        this.initiateChain();
-      } else {
-        this.blockchain.init(false);
-        this.db.startWithBlockchain(this.blockchain, this.transactionPool);
-      }
-    });
-    trackerWebSocket.send(JSON.stringify({PROTOCOL, HOST: LOCAL ?
-        ip.address() : (await publicIp.v4()), P2P_PORT, PUBLIC_KEY: this.db.account.address}));
-  }
-
   listen() {
     const server = new Websocket.Server({port: P2P_PORT});
-    server.on('connection', (socket) => this.connectSocket(socket));
-    trackerWebSocket.on('open', () => this.connectTracker());
-    console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`);
-    // DO WE NEED THIS?
-    this.requestChainSubsection(this.blockchain.lastBlock());
+    server.on('connection', (socket) => this.setSocket(socket, null));
+    console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}\n`);
+    this.setIntervalForTrackerConnection();
   }
 
-  connectToPeers(peers) {
-    peers.forEach((peer) => {
-      console.log(`[${P2P_PORT}] Connecting to peer ${peer}`);
-      const socket = new Websocket(peer);
-      socket.on('open', () => this.connectSocket(socket));
+  setIntervalForTrackerConnection() {
+    this.connectToTracker();
+    this.intervalConnection = setInterval(() => {
+      this.connectToTracker();
+    }, RECONNECT_INTERVAL_MS)
+  }
+
+  clearIntervalForTrackerConnection() {
+    clearInterval(this.intervalConnection)
+    this.intervalConnection = null;
+  }
+
+  setIntervalForTrackerUpdate() {
+    this.updateStatusToTracker();
+    this.intervalUpdate = setInterval(() => {
+      this.updateStatusToTracker();
+    }, UPDATE_TO_TRACKER_INTERVAL_MS)
+  }
+
+  clearIntervalForTrackerUpdate() {
+    clearInterval(this.intervalUpdate)
+    this.intervalUpdate = null;
+  }
+
+  connectToTracker() {
+    console.log(`[TRACKER] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
+    this.getIpAddress()
+    .then(() => {
+      this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
+      this.trackerWebSocket.on('open', () => {
+        console.log(`[TRACKER] Connected to tracker (${TRACKER_WS_ADDR})`);
+        this.clearIntervalForTrackerConnection();
+        this.setTrackerEventHandlers();
+        this.setIntervalForTrackerUpdate();
+      });
+      this.trackerWebSocket.on('error', (error) => {
+        console.log(`[TRACKER] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+            `${JSON.stringify(error, null, 2)}`)
+      });
     });
   }
 
-  connectSocket(socket) {
+  getIpAddress() {
+    return Promise.resolve()
+    .then(() => {
+      if (HOSTING_ENV === 'gcp') {
+        return axios.get(GCP_EXTERNAL_IP_URL, {
+          headers: {'Metadata-Flavor': 'Google'},
+          timeout: 3000
+        })
+        .then((res) => {
+          return res.data;
+        })
+        .catch((err) => {
+          console.log(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+          process.exit(0);
+        });
+      } else if (HOSTING_ENV === 'local') {
+        return ip.address();
+      } else {
+        return publicIp.v4();
+      }
+    })
+    .then((ipAddr) => {
+      this.ipAddress = ipAddr;
+      return ipAddr;
+    });
+  }
+
+  async setTrackerEventHandlers() {
+    this.trackerWebSocket.on('message', (message) => {
+      try {
+        const parsedMsg = JSON.parse(message);
+        console.log(`\n[TRACKER] << Message from tracker: ` +
+            `${JSON.stringify(parsedMsg, null, 2)}`)
+        if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
+          console.log(`[TRACKER] Updated managed peers info: ` +
+              `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+        }
+        if (this.isStarting) {
+          this.isStarting = false;
+          if (parsedMsg.numLivePeers === 0) {
+            this.blockchain.init(true);
+            this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+            this.blockchain.syncedAfterStartup = true;
+            this.initiateChain();
+          } else {
+            this.blockchain.init(false);
+            this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+          }
+        }
+      } catch (error) {
+        console.log(error.stack);
+      }
+    });
+
+    this.trackerWebSocket.on('close', (code) => {
+      console.log(`\n[TRACKER] Disconnected from tracker ${TRACKER_WS_ADDR} with code: ${code}`);
+      this.clearIntervalForTrackerUpdate();
+      this.setIntervalForTrackerConnection();
+    });
+  }
+
+  updateStatusToTracker() {
+    const updateToTracker = {
+      url: url.format({
+        protocol: 'ws',
+        hostname: this.ipAddress,
+        port: P2P_PORT
+      }),
+      ip: this.ipAddress,
+      address: this.db.account.address,
+      timestamp: Date.now(),
+      lastBlockNumber: this.blockchain.lastBlockNumber(),
+      managedPeersInfo: this.managedPeersInfo,
+    };
+    console.log(`\n[TRACKER] >> Update to tracker ${TRACKER_WS_ADDR}: ` +
+        `${JSON.stringify(updateToTracker, null, 2)}`)
+    this.trackerWebSocket.send(JSON.stringify(updateToTracker));
+  }
+
+  connectToPeers(newManagedPeerInfoList) {
+    let updated = false;
+    newManagedPeerInfoList.forEach((peerInfo) => {
+      if (this.managedPeersInfo[peerInfo.address]) {
+        console.log(`[PEER] Node ${peerInfo.address} is already a managed peer. ` +
+            `Something is wrong.`)
+      } else {
+        console.log(`[PEER] Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
+        this.managedPeersInfo[peerInfo.address] = peerInfo;
+        updated = true;
+        const socket = new Websocket(peerInfo.url);
+        socket.on('open', () => {
+          console.log(`[PEER] Connected to peer ${peerInfo.address} (${peerInfo.url}).`)
+          this.setSocket(socket, peerInfo.address);
+        });
+      }
+    });
+    return updated;
+  }
+
+  setSocket(socket, address) {
     this.sockets.push(socket);
-    this.messageHandler(socket);
+    this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.blockchain.lastBlock());
   }
 
-  messageHandler(socket) {
+  setPeerEventHandlers(socket, address) {
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
@@ -117,7 +245,7 @@ class P2pServer {
                     } catch (error) {
                       console.log(`Error in starting:${error.stack}`);
                     }
-                  }, BLOCK_CREATION_INTERVAL);
+                  }, BLOCK_CREATION_INTERVAL_MS);
                 }
               }
               for (let i=0; i<data.chainSubsection.length; i++) {
@@ -149,8 +277,28 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      this.sockets.splice(this.sockets.indexOf(socket), 1);
+      console.log(`\n[PEER] Disconnected from a peer: ${address || 'unknown'}`);
+      this.removeFromListIfExists(socket);
+      if (address && this.managedPeersInfo[address]) {
+        delete this.managedPeersInfo[address];
+        console.log(`[PEER] => Updated managed peers info: ` +
+            `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+      }
     });
+
+    socket.on('error', (error) => {
+      console.log(`[PEER] Error in communication with peer ${address}: ` +
+          `${JSON.stringify(error, null, 2)}`);
+    });
+  }
+
+  removeFromListIfExists(entry) {
+    const index = this.sockets.indexOf(entry);
+    if (index >= 0) {
+      this.sockets.splice(index, 1);
+      return true;
+    }
+    return false;
   }
 
   sendChainSubsection(socket, chainSubsection, number) {
@@ -481,7 +629,8 @@ class P2pServer {
     if (ainUtil.areSameAddresses(this.db.account.address,
         this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.db.account.address} will start next round at ` +
-          `block number ${this.blockchain.lastBlockNumber() + 1} in ${BLOCK_CREATION_INTERVAL}ms`);
+          `block number ${this.blockchain.lastBlockNumber() + 1} in ` +
+          `${BLOCK_CREATION_INTERVAL_MS}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
     }
     const recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
@@ -507,7 +656,7 @@ class P2pServer {
         if (this.votingUtil.isProposer()) {
           this.createAndProposeBlock();
         }
-      }, BLOCK_CREATION_INTERVAL);
+      }, BLOCK_CREATION_INTERVAL_MS);
     }
   }
 

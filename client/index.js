@@ -46,7 +46,7 @@ const LOG = process.env.LOG || false;
 if (LOG) {
   const fs = require('fs');
   const util = require('util');
-  const logDir = __dirname + '/' + '.logs';
+  const logDir = __dirname + '/' + 'logs';
   if (!(fs.existsSync(logDir))) {
     fs.mkdirSync(logDir);
   }
@@ -61,7 +61,6 @@ if (LOG) {
   };
 }
 
-// [START gae_flex_mysql_app]
 const express = require('express');
 const DB = require('../db');
 const P2pServer = require('../server');
@@ -74,8 +73,6 @@ const Blockchain = require('../blockchain');
 const TransactionPool = require('../db/transaction-pool');
 
 const app = express();
-
-const transactionBatch = [];
 
 app.use(express.json()); // support json encoded bodies
 
@@ -280,7 +277,6 @@ app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
   console.log('Press Ctrl+C to quit.');
 });
-// [END gae_flex_mysql_app]
 
 // Lets start this p2p server up so we listen for changes in either DATABASE
 // or NUMBER OF SERVERS

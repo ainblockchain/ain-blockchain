@@ -1,12 +1,11 @@
-#! /usr/bin/node
 const WebSocketServer = require('ws').Server;
 const geoip = require('geoip-lite');
 const webSocketServer = new WebSocketServer({port: 3001});
 const express = require('express');
 const jayson = require('jayson');
 
-const MAX_PER_SERVER = 2;
-const PEERS = [];
+const MAX_NUM_PEERS = 2;
+const PEER_NODES = {};
 const REGION = 'region';
 const COUNTRY = 'country';
 const CITY = 'city';
@@ -14,85 +13,154 @@ const TIMEZONE = 'timezone';
 const MASK = 'xxx';
 const PORT = 5000;
 
-function printPeers() {
-  for (let i = 0; i < PEERS.length; i++) {
-    const peer = PEERS[i];
-    console.log(`  Peer[${i}]: ${peer.publicKey} (${peer.url})`);
+// TODO(seo): Sign messages to nodes.
+
+function abbrAddr(address) {
+  return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
+}
+
+function numNodes() {
+  return Object.keys(PEER_NODES).length;
+}
+
+function numLiveNodes() {
+  const liveNodes = Object.values(PEER_NODES).filter((node) => {
+    return node.isLive;
+  });
+  return liveNodes.length;
+}
+
+function numLivePeers(address) {
+  const livePeers = Object.values(PEER_NODES).filter((node) => {
+    return node.isLive && node.address !== address;
+  });
+  return livePeers.length;
+}
+
+function printNodesInfo() {
+  console.log(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()})`);
+  const nodeList = Object.values(PEER_NODES).sort((x, y) => {
+    return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
+  });
+  for (let i = 0; i < nodeList.length; i++) {
+    const node = nodeList[i];
+    console.log(`    Node[${i}]: ${node.getNodeSummary()} ` +
+        `(${node.timestamp}, ${node.lastBlockNumber}) ` +
+        `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()})`);
+    Object.keys(node.managedPeers).forEach((addr) => {
+      const peerSummary = PEER_NODES[addr] ?
+          PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
+      console.log(`      Managed peer: ${peerSummary}`);
+    });
   }
 }
 
+// A util function for testing/debugging.
+function setTimer(ws, timeSec) {
+  setTimeout(() => {
+    ws.close();
+  }, timeSec * 1000);
+}
+
 webSocketServer.on('connection', (ws) => {
+  /*
+  setTimer(ws, 15);
+  */
+  let node = null;
   ws.on('message', (message) => {
     try {
-      peerUrlInfo = JSON.parse(message);
-      const peer = Peer.getPeer(ws, peerUrlInfo);
-      ws.send(JSON.stringify(peer.getPeerList()));
-      console.log(`Added peer node ${peer.url}`);
-      console.log(`New peer node is connected to  ${peer.getPeerList()}`);
-      PEERS.push(peer);
-      console.log(`Number of peers: ${PEERS.length}`);
-      printPeers();
-    } catch (err) {
-      console.log(err.stack);
+      const nodeInfo = JSON.parse(message);
+      console.log(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
+          `${JSON.stringify(nodeInfo, null, 2)}`)
+      if (PEER_NODES[nodeInfo.address]) {
+        node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
+        node.assignRandomPeers();
+      } else {
+        node = new PeerNode(nodeInfo);
+        node.assignRandomPeers();
+        PEER_NODES[nodeInfo.address] = node;
+      }
+      const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
+        return !nodeInfo.managedPeersInfo[peerInfo.address];
+      });
+      const msgToNode = {
+        newManagedPeerInfoList,
+        numLivePeers: numLivePeers(node.address)
+      };
+      console.log(`>> Message to node [${abbrAddr(node.address)}]: ` +
+          `${JSON.stringify(msgToNode, null, 2)}`)
+      ws.send(JSON.stringify(msgToNode));
+      printNodesInfo();
+    } catch (error) {
+      console.log(error.stack);
     }
   });
 
   ws.on('close', (code) => {
-    console.log(`Connection closed with code: ` + code);
-    try {
-      const peer = PEERS.find((p) => p.ws === ws);
-      const peerIndex = PEERS.indexOf(peer);
-      PEERS.splice(peerIndex, 1);
-      console.log(`Number of peers: ${PEERS.length}`);
-      printPeers();
-      const effectedPeers = PEERS.filter((p) => {
-        if (p.getPeerList().indexOf(peer.url) !== -1) {
-          return true;
-        }
-        return false;
-      });
-      let lastPeer = effectedPeers.pop();
-      for (let i = effectedPeers.length - 1; i >= 0; i--) {
-        console.log(`Connecting peer ${lastPeer.url} to peer ${effectedPeers[i].url}`);
-        lastPeer.connect(effectedPeers[i]);
-        lastPeer = effectedPeers.pop();
-      }
-    } catch (err) {
-      console.log(err.stack);
-    }
+    console.log(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
+        `with code: ${code}`);
+    PEER_NODES[node.address].isLive = false;
+    printNodesInfo();
+  });
+
+  ws.on('error', (error) => {
+    console.log(`Error in communication with node [${abbrAddr(node.address)}]: ` +
+        `${JSON.stringify(error, null, 2)}`)
   });
 });
 
-class Peer {
-  constructor(ws, peerUrlInfo) {
-    this.protocol = peerUrlInfo.PROTOCOL;
-    this.ip = peerUrlInfo.HOST;
-    this.port = peerUrlInfo.P2P_PORT;
-    this.publicKey = peerUrlInfo.PUBLIC_KEY;
-    this.url = Peer.getPeerUrl(this.protocol, this.ip, this.port);
-    this.ws = ws;
-    this.connectedPeers = [];
-    const locationDict = Peer.getPeerLocation(this.ip);
-    this.country = locationDict == null || locationDict[COUNTRY].length === 0 ? null : locationDict[COUNTRY];
-    this.region = locationDict == null ||locationDict[REGION].length === 0 ? null : locationDict[REGION];
-    this.city = locationDict == null ||locationDict[CITY].length === 0 ? null : locationDict[CITY];
-    this.timezone = locationDict == null ||locationDict[TIMEZONE].length === 0 ? null : locationDict[TIMEZONE];
+class PeerNode {
+  constructor(nodeInfo) {
+    this.reconstruct(nodeInfo);
   }
 
-  getPeerInfo() {
+  reconstruct(nodeInfo) {
+    this.isLive = true;
+    this.ip = nodeInfo.ip;
+    this.address = nodeInfo.address;
+    this.url = nodeInfo.url;
+    this.timestamp = nodeInfo.timestamp;
+    this.lastBlockNumber = nodeInfo.lastBlockNumber;
+    this.managedPeers = PeerNode.constructManagedPeers(nodeInfo);
+    this.unmanagedPeers = PeerNode.constructUnmanagedPeers(nodeInfo.address);
+    const locationDict = PeerNode.getNodeLocation(this.ip);
+    this.country = (locationDict === null || locationDict[COUNTRY].length === 0) ?
+        null : locationDict[COUNTRY];
+    this.region = (locationDict === null ||locationDict[REGION].length === 0) ?
+        null : locationDict[REGION];
+    this.city = (locationDict === null ||locationDict[CITY].length === 0) ?
+        null : locationDict[CITY];
+    this.timezone = (locationDict === null ||locationDict[TIMEZONE].length === 0) ?
+        null : locationDict[TIMEZONE];
+
+    return this;
+  }
+
+  getNodeInfo() {
     return {
-      ip: Peer.maskIp(this.ip),
+      ip: PeerNode.maskIp(this.ip),
       port: this.port,
-      url: Peer.getPeerUrl(this.protocol, Peer.maskIp(this.ip), this.port),
-      publicKey: this.publicKey,
-      connectedPeers: this.connectedPeers.map((peer) => {
-        return Peer.getPeerUrl(peer.protocol, Peer.maskIp(peer.ip), peer.port);
+      url: this.url,
+      address: this.address,
+      managedPeers: Object.keys(this.managedPeers).map((addr) => {
+        return addr;
+      }),
+      unmanagedPeers: Object.keys(this.unmanagedPeers).map((addr) => {
+        return addr;
       }),
       country: this.country,
       region: this.region,
       city: this.city,
       timezone: this.timezone,
     };
+  }
+
+  getNodeSummary() {
+    return `[${abbrAddr(this.address)}] (${this.url}) -> ${this.isLive ? '(O)' : '(X)'}`;
+  }
+
+  static getUnknownNodeSummary(address) {
+    return `[${abbrAddr(address)}] (unknown) -> unknown`;
   }
 
   static maskIp(ip) {
@@ -102,71 +170,96 @@ class Peer {
     return ipList.join('.');
   }
 
-  static getPeerLocation(ip) {
+  static getNodeLocation(ip) {
     const geoLocationDict = geoip.lookup(ip);
-    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 && geoLocationDict[REGION].length === 0 && geoLocationDict[CITY].length === 0 && geoLocationDict[TIMEZONE].length === 0)) {
+    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 &&
+        geoLocationDict[REGION].length === 0 && geoLocationDict[CITY].length === 0 &&
+        geoLocationDict[TIMEZONE].length === 0)) {
       return null;
     }
-    return {[COUNTRY]: geoLocationDict[COUNTRY], [REGION]: geoLocationDict[REGION], [CITY]: geoLocationDict[CITY], [TIMEZONE]: geoLocationDict[TIMEZONE]};
+    return {
+      [COUNTRY]: geoLocationDict[COUNTRY],
+      [REGION]: geoLocationDict[REGION],
+      [CITY]: geoLocationDict[CITY],
+      [TIMEZONE]: geoLocationDict[TIMEZONE]
+    };
   }
 
-  static getPeerUrl(protocol, host, port) {
-    return protocol + '://' + host + ':' + port;
+  static constructManagedPeers(nodeInfo) {
+    const managedPeers = {};
+    Object.values(nodeInfo.managedPeersInfo).forEach((peerInfo) => {
+      managedPeers[peerInfo.address] = true;
+    });
+    return managedPeers;
   }
 
-  static getPeer(ws, peerInfo) {
-    const peer = new Peer(ws, peerInfo);
-    if (PEERS.length == 1) {
-      peer.addPeer(PEERS[0]);
-    } else if (PEERS.length > 1) {
-      while (peer.getPeerList().length < MAX_PER_SERVER) {
-        peer.addPeer(PEERS[Math.floor(Math.random() * PEERS.length)]);
-      }
-    }
-
-    return peer;
+  static constructUnmanagedPeers(address) {
+    const unmanagedPeers = {};
+    Object.values(PEER_NODES).forEach((node) => {
+      if (node.address != address && node.managedPeers[address])
+      unmanagedPeers[node.address] = true;
+    });
+    return unmanagedPeers;
   }
 
-  length() {
-    return this.connectedPeers.length;
+  numManagedPeers() {
+    return Object.keys(this.managedPeers).length;
+  }
+
+  numUnmanagedPeers() {
+    return Object.keys(this.unmanagedPeers).length;
+  }
+
+  numPeers() {
+    return this.numManagedPeers() + this.numUnmanagedPeers();
   }
 
   addPeer(peer) {
-    if (this.connectedPeers.indexOf(peer) > -1) {
-      return;
+    if (peer && peer.address !== this.address && !this.managedPeers[peer.address] &&
+        !this.unmanagedPeers[peer.address]) {
+      this.managedPeers[peer.address] = true;
+      peer.unmanagedPeers[this.address] = true;
     }
-    this.connectedPeers.push(peer);
-    peer.addPeer(this);
   }
 
-  removePeer(peer) {
-    if (this.connectedPeers.indexOf(peer) < 0) {
-      return;
+  getPeerCandidates() {
+    return Object.values(PEER_NODES).filter((other) => {
+      return other.address !== this.address && other.isLive && !this.managedPeers[other.address] &&
+          !this.unmanagedPeers[other.address];
+    });
+  }
+
+  numPeerCandidates() {
+    return this.getPeerCandidates().length;
+  }
+
+  getRandomPeer() {
+    return this.getPeerCandidates()[Math.floor(Math.random() * this.numPeerCandidates())];
+  }
+
+  assignRandomPeers() {
+    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < MAX_NUM_PEERS) {
+      this.addPeer(this.getRandomPeer());
     }
-    this.connectedPeers = this.connectedPeers.filter((p) => {
-      if (p.url !== peer.url) {
-        return p;
+  }
+
+  getManagedPeerInfoList() {
+    const peerInfoList = [];
+    Object.keys(this.managedPeers).forEach((addr) => {
+      if (PEER_NODES[addr]) {
+        peerInfoList.push({
+          address: addr,
+          url: PEER_NODES[addr].url
+        });
       }
     });
-    peer.removePeer(this);
-  }
-
-  getPeerList() {
-    const peerUrls = this.connectedPeers.map((peer) => {
-      return peer.url;
-    });
-    return peerUrls;
-  }
-
-  connect(peer) {
-    this.ws.send(JSON.stringify([peer.url]));
-    this.addPeer(peer);
+    return peerInfoList;
   }
 }
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
-const jsonRpcMethods = require('./json-rpc')(PEERS);
+const jsonRpcMethods = require('./json-rpc')(PEER_NODES);
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
