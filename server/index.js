@@ -198,9 +198,6 @@ class P2pServer {
   }
 
   setSocket(socket, address) {
-    /*
-    setTimer(socket, 60);
-    */
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.blockchain.lastBlock());

@@ -163,14 +163,6 @@ class PeerNode {
     return `[${abbrAddr(address)}] (unknown) -> unknown`;
   }
 
-  getPeersSummary() {
-    const list = Object.keys(this.managedPeers).map((addr) => {
-      return PEER_NODES[addr] ?
-          PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
-    });
-    return list.join(', ');
-  }
-
   static maskIp(ip) {
     const ipList = ip.split('.');
     ipList[0] = MASK;
@@ -227,17 +219,6 @@ class PeerNode {
         !this.unmanagedPeers[peer.address]) {
       this.managedPeers[peer.address] = true;
       peer.unmanagedPeers[this.address] = true;
-    }
-  }
-
-  removePeer(peer) {
-    if (peer) {
-      if (this.managedPeers[peer.address]) {
-        delete this.managedPeers[peer.address];
-      }
-      if (peer.unmanagedPeers[this.address]) {
-        delete peer.unmanagedPeers[this.address];
-      }
     }
   }
 
