@@ -140,7 +140,7 @@ class Block {
     return true;
   }
 
-  static getDbSetupTransaction(ownerAccount, keyBuffer) {
+  static getDbSetupTransaction(ownerAccount, timestamp, keyBuffer) {
     // Token operation
     const tokenOp = {
       type: 'SET_VALUE',
@@ -196,7 +196,7 @@ class Block {
     // Transaction
     const firstTxData = {
       nonce: -1,
-      timestamp: ownerAccount.timestamp,
+      timestamp,
       operation: {
         type: 'SET',
         op_list: [ tokenOp, balanceOp, rulesOp, ownersOp ]
@@ -206,7 +206,7 @@ class Block {
     return (new Transaction({ signature: firstSig, transaction: firstTxData }));
   }
 
-  static getAccountsSetupTransaction(ownerAccount, keyBuffer) {
+  static getAccountsSetupTransaction(ownerAccount, timestamp, keyBuffer) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts.others;
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -226,7 +226,7 @@ class Block {
     // Transaction
     const secondTxData = {
       nonce: -1,
-      timestamp: ownerAccount.timestamp,
+      timestamp,
       operation: {
         type: 'SET',
         op_list: transferOps
@@ -241,10 +241,14 @@ class Block {
     if (!ownerAccount) {
       throw Error('Missing owner account.');
     }
+    const timestamp = GenesisAccounts.timestamp;
+    if (!timestamp) {
+      throw Error('Missing timestamp.');
+    }
     const keyBuffer = Buffer.from(ownerAccount.private_key, 'hex');
 
-    const firstTx = this.getDbSetupTransaction(ownerAccount, keyBuffer);
-    const secondTx = this.getAccountsSetupTransaction(ownerAccount, keyBuffer);
+    const firstTx = this.getDbSetupTransaction(ownerAccount, timestamp, keyBuffer);
+    const secondTx = this.getAccountsSetupTransaction(ownerAccount, timestamp, keyBuffer);
 
     return [firstTx, secondTx];
   }
@@ -253,11 +257,11 @@ class Block {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
     const ownerAccount = GenesisAccounts.owner;
+    const timestamp = GenesisAccounts.timestamp;
     const lastHash = '';
     const lastVotes = [];
     const transactions = Block.getGenesisBlockData();
     const number = 0;
-    const timestamp = ownerAccount.timestamp;
     const proposer = ownerAccount.address;
     const validators = [];
     return new this(lastHash, lastVotes, transactions, number, timestamp,

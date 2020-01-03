@@ -37,6 +37,7 @@
     "glob": "^7.1.4",
     "ip": "^1.1.5",
     "jayson": "^3.1.1",
+    "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "node-cron": "^2.0.3",
     "node-natural-sort": "^0.8.7",
