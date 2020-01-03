@@ -1,34 +1,25 @@
-#! /usr/bin/node
-/**
- * Copyright 2017, Google, Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 'use strict';
 
-// Require process, so we can mock environment variables
 const process = require('process');
 const fs = require('fs');
+const moment = require('moment');
+const semver = require('semver');
+const express = require('express');
+const jayson = require('jayson');
+const DB = require('../db');
+const P2pServer = require('../server');
+const Blockchain = require('../blockchain');
+const TransactionPool = require('../db/transaction-pool');
+const { WriteDbOperations, PROTOCOL_VERSIONS } = require('../constants');
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const util = require('util');
+
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
   console.log(err);
 }); 
 
-const moment = require('moment');
-const semver = require('semver');
 const PORT = process.env.PORT || 8080;
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { PROTOCOL_VERSIONS } = require('../constants');
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
@@ -44,8 +35,6 @@ const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_VERSION].max;
 const LOG = process.env.LOG || false;
 
 if (LOG) {
-  const fs = require('fs');
-  const util = require('util');
   const logDir = __dirname + '/' + 'logs';
   if (!(fs.existsSync(logDir))) {
     fs.mkdirSync(logDir);
@@ -61,27 +50,13 @@ if (LOG) {
   };
 }
 
-const express = require('express');
-const DB = require('../db');
-const P2pServer = require('../server');
-
-// Define peer2peer server here which will broadcast changes in the database
-// and also track which servers are in the network
-
-// Applictation dependencies
-const Blockchain = require('../blockchain');
-const TransactionPool = require('../db/transaction-pool');
-
 const app = express();
-
 app.use(express.json()); // support json encoded bodies
 
-const { WriteDbOperations } = require('../constants');
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
 const db = new DB();
 const p2pServer = new P2pServer(db, bc, tp, minProtocolVersion, maxProtocolVersion);
-const jayson = require('jayson');
 
 const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer,
     minProtocolVersion, maxProtocolVersion);
@@ -90,7 +65,7 @@ app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware(
 app.get('/', (req, res, next) => {
   res.status(200)
     .set('Content-Type', 'text/plain')
-    .send('Welcome to AIN Blockchain Database')
+    .send('Welcome to AIN Blockchain Node')
     .end();
 });
 
