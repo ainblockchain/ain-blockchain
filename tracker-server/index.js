@@ -1,9 +1,10 @@
 const WebSocketServer = require('ws').Server;
 const geoip = require('geoip-lite');
-const webSocketServer = new WebSocketServer({port: 3001});
 const express = require('express');
 const jayson = require('jayson');
 
+const P2P_PORT = 3001;
+const PORT = 5000;
 const MAX_NUM_PEERS = 2;
 const PEER_NODES = {};
 const REGION = 'region';
@@ -11,9 +12,6 @@ const COUNTRY = 'country';
 const CITY = 'city';
 const TIMEZONE = 'timezone';
 const MASK = 'xxx';
-const PORT = 5000;
-
-// TODO(seo): Sign messages to nodes.
 
 function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
@@ -62,10 +60,10 @@ function setTimer(ws, timeSec) {
   }, timeSec * 1000);
 }
 
-webSocketServer.on('connection', (ws) => {
-  /*
-  setTimer(ws, 15);
-  */
+// A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
+// TODO(seo): Sign messages to nodes.
+const server = new WebSocketServer({port: P2P_PORT});
+server.on('connection', (ws) => {
   let node = null;
   ws.on('message', (message) => {
     try {
@@ -259,8 +257,24 @@ class PeerNode {
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
+
 const jsonRpcMethods = require('./json-rpc')(PEER_NODES);
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
+
+app.get('/', (req, res, next) => {
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send('Welcome to AIN Blockchain Tracker')
+    .end();
+});
+
+app.get('/peer_nodes', (req, res, next) => {
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ result: PEER_NODES })
+    .end();
+});
+
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
   console.log('Press Ctrl+C to quit.');
