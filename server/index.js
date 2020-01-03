@@ -30,6 +30,7 @@ function setTimer(ws, timeSec) {
   }, timeSec * 1000);
 }
 
+// A peer-to-peer network server that broadcasts changes in the database.
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
   constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
