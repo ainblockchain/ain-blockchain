@@ -61,7 +61,6 @@ const JSON_RPC_ENDPOINT = '/json-rpc';
 const JSON_RPC_GET_RECENT_BLOCK = 'ain_getRecentBlock';
 const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
-const JSON_RPC_GET_NODE_ADDRESS_LIST = 'getNodeAddressList';
 const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
 const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
 const JSON_RPC_GET_NONCE = 'ain_getNonce';
@@ -226,7 +225,6 @@ describe('Integration Tests', () => {
   let numNewBlocks = 0;
   let numBlocksOnStartup;
   let jsonRpcClient;
-  let trackerRpcClient;
   const sentOperations = [];
   const nodeAddressList = [];
 
@@ -238,24 +236,15 @@ describe('Integration Tests', () => {
     trackerProc = new Process(TRACKER_SERVER, {});
     console.log('Starting tracker server...');
     trackerProc.start(false);
-    trackerRpcClient = jayson.client.http(trackerServer + JSON_RPC_ENDPOINT);
     sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
-      proc = SERVER_PROCS[i];
+      const proc = SERVER_PROCS[i];
       console.log(`Starting server[${i}]...`);
       proc.start();
       sleep(5000);
-      promises.push(new Promise((resolve) => {
-        trackerRpcClient.request(JSON_RPC_GET_NODE_ADDRESS_LIST, [], function(err, response) {
-          if (err) {
-            resolve();
-            throw err;
-          }
-          // The newest element in this list will be the address of the server just started
-          nodeAddressList.push(response.result.pop());
-          resolve();
-        });
-      }));
+      const address =
+          JSON.parse(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;
+      nodeAddressList.push(address);
     };
     sleep(20000);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);

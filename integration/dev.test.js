@@ -11,7 +11,7 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const {BLOCKCHAINS_DIR, FunctionResultCode, MAX_TX_BYTES} = require('../constants')
+const {BLOCKCHAINS_DIR, FunctionResultCode, MAX_TX_BYTES, GenesisAccounts} = require('../constants')
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
@@ -660,10 +660,11 @@ describe('API Tests', () => {
 
     describe('/ain_getAddress', () => {
       it('returns the correct node address', () => {
+        const expAddr = GenesisAccounts.others[1].address;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_getAddress', { protoVer: CURRENT_PROTOCOL_VERSION })
         .then(res => {
-          expect(res.result.result).to.equal('0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204');
+          expect(res.result.result).to.equal(expAddr);
         });
       });
     });
