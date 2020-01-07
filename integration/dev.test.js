@@ -66,7 +66,7 @@ describe('API Tests', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(() => {
-    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, true);
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000)
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
     sleep(500)
@@ -238,9 +238,6 @@ describe('API Tests', () => {
       .then(res => {
         expect(res.result.result).to.equal(true);
       })
-      .catch(error => {
-        console.log('error:',error);
-      })
     })
 
     it('eval_rule returning false', () => {
@@ -255,9 +252,6 @@ describe('API Tests', () => {
       return client.request('ain_evalRule', request)
       .then(res => {
         expect(res.result.result).to.equal(false);
-      })
-      .catch(error => {
-        console.log('error:',error);
       })
     })
   })
@@ -284,9 +278,6 @@ describe('API Tests', () => {
       return client.request('ain_evalOwner', request)
       .then(res => {
         assert.deepEqual(res.result.result, expected);
-      })
-      .catch(error => {
-        console.log('error:',error);
       })
     })
   })
@@ -664,9 +655,6 @@ describe('API Tests', () => {
               protoVer: CURRENT_PROTOCOL_VERSION
             });
           })
-          .catch((error) => {
-            console.log("ERROR:", error)
-          })
       })
     })
 
@@ -675,11 +663,8 @@ describe('API Tests', () => {
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_getAddress', { protoVer: CURRENT_PROTOCOL_VERSION })
         .then(res => {
-          expect(res.result.address).to.equal('0xbA58D93edD8343C001eC5f43E620712Ba8C10813');
-        })
-        .catch(error =>{
-          console.log("ERROR", error);
-        })
+          expect(res.result.result).to.equal('0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204');
+        });
       });
     });
   });

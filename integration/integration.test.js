@@ -646,15 +646,7 @@ describe('Integration Tests', () => {
               expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
               expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
               resolve();
-            })
-            .catch(e => {
-              console.log("error:", e);
-              reject();
             });
-          })
-          .catch(e => {
-            console.log("error:", e);
-            reject();
           });
         });
       });
@@ -673,10 +665,6 @@ describe('Integration Tests', () => {
             expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast + 1);
             expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
             resolve();
-          })
-          .catch(e => {
-            console.log("error:", e);
-            reject();
           });
         });
       });

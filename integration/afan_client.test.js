@@ -63,7 +63,7 @@ describe('aFan Client Test', () => {
   let tracker_proc; let server1_proc; let server2_proc; let server3_proc; let server4_proc;
 
   before(() => {
-    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, true);
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
     sleep(2000);
