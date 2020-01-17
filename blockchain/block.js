@@ -1,8 +1,8 @@
-const Transaction = require('../db/transaction');
-const ainUtil = require('@ainblockchain/ain-util');
-const ChainUtil = require('../chain-util');
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
+const ainUtil = require('@ainblockchain/ain-util');
+const ChainUtil = require('../chain-util');
+const Transaction = require('../tx-pool/transaction');
 const {GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, PredefinedDbPaths,
        GenesisToken, GenesisAccounts} = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');

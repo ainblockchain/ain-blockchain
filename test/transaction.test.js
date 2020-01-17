@@ -4,7 +4,7 @@ const DB = require('../db/');
 const chai = require('chai');
 const expect = chai.expect;
 const Blockchain = require('../blockchain/');
-const TransactionPool = require('../db/transaction-pool');
+const TransactionPool = require('../tx-pool');
 const {setDbForTesting, getTransaction} = require('./test-util')
 
 describe('Transaction', () => {

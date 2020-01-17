@@ -1,7 +1,7 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const {GenesisAccounts} = require('../constants');
 const DB = require('../db');
-const Transaction = require('../db/transaction');
+const Transaction = require('../tx-pool/transaction');
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 
 class Node {

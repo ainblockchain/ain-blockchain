@@ -5,7 +5,7 @@ const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
 const DB = require('../db');
-const TransactionPool = require('../db/transaction-pool');
+const TransactionPool = require('../tx-pool');
 const {setDbForTesting} = require('./test-util')
 
 describe('Blockchain', () => {

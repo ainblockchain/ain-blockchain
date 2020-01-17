@@ -1,7 +1,7 @@
 const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
        DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
-const Transaction = require('./transaction');
+const Transaction = require('../tx-pool/transaction');
 const BuiltInFunctions = require('./built-in-functions');
 const BuiltInRuleUtil = require('./built-in-rule-util');
 

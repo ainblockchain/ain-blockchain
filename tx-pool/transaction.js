@@ -1,5 +1,5 @@
-const { WriteDbOperations, DEBUG } = require('../constants');
 const ainUtil = require('@ainblockchain/ain-util');
+const { WriteDbOperations, DEBUG } = require('../constants');
 
 // TODO(seo): Remove 'txWithSig.transaction ?' use cases.
 class Transaction {

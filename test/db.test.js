@@ -4,7 +4,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const DB = require('../db')
-const TransactionPool = require("../db/transaction-pool")
+const TransactionPool = require("../tx-pool")
 const ChainUtil = require('../chain-util')
 const Blockchain = require('../blockchain')
 const {GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths}
