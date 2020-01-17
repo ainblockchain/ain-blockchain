@@ -4,21 +4,21 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const DB = require('../db');
+const Node = require('../node');
 const TransactionPool = require('../tx-pool');
 const {setDbForTesting} = require('./test-util')
 
 describe('Blockchain', () => {
-  let bc1, bc2, tp, db1, db2;
+  let bc1, bc2, tp, node1, node2;
 
   beforeEach(() => {
     tp = new TransactionPool();
     bc1 = new Blockchain('test-blockchain1');
-    db1 = new DB();
-    setDbForTesting(bc1, tp, db1, 0);
+    node1 = new Node();
+    setDbForTesting(bc1, tp, node1, 0);
     bc2 = new Blockchain('test-blockchain2');
-    db2 = new DB();
-    setDbForTesting(bc2, tp, db2, 1);
+    node2 = new Node();
+    setDbForTesting(bc2, tp, node2, 1);
   });
 
   afterEach(() => {
@@ -37,7 +37,7 @@ describe('Blockchain', () => {
     const data = 'foo';
     const lastBlock = bc1.lastBlock();
     bc1.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc1.lastBlockNumber() + 1,
-        db1.account.address, []));
+        node1.account.address, []));
     expect(bc1.chain[bc1.chain.length -1].transactions).to.equal(data);
   });
 
@@ -45,7 +45,7 @@ describe('Blockchain', () => {
   /*
   it('validates a valid chain', () => {
     const data = 'foo';
-    bc1.addNewBlock(Block.createBlock(data, db1, bc1.lastBlockNumber() + 1, bc1.lastBlock()));
+    bc1.addNewBlock(Block.createBlock(data, node1, bc1.lastBlockNumber() + 1, bc1.lastBlock()));
     expect(Blockchain.isValidChain(bc1.chain)).to.equal(true);
   });
   */
@@ -59,7 +59,7 @@ describe('Blockchain', () => {
     const data = 'foo';
     const lastBlock = bc1.lastBlock();
     bc1.addNewBlock(Block.createBlock(lastBlock.hash, [], data, bc1.lastBlockNumber() + 1,
-        db1.account.address, []));
+        node1.account.address, []));
     bc1.chain[bc1.lastBlockNumber()].transactions = ':(';
     expect(Blockchain.isValidChain(bc1.chain)).to.equal(false);
   });
@@ -72,7 +72,7 @@ describe('Blockchain', () => {
 
       for (let i = 0; i<1000; i++) {
         // let i represent a fake block here
-        db1.createTransaction({
+        node1.createTransaction({
           operation: {
             type: 'SET_VALUE',
             ref: 'test/something',
@@ -81,7 +81,7 @@ describe('Blockchain', () => {
         });
         const lastBlock = bc1.lastBlock();
         const block = Block.createBlock(lastBlock.hash, [], tp.validTransactions(),
-            bc1.lastBlockNumber() + 1, db1.account.address, []);
+            bc1.lastBlockNumber() + 1, node1.account.address, []);
         if (block.number === 500) {
           blockHash = block.hash;
         }

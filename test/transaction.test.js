@@ -1,21 +1,21 @@
 const rimraf = require('rimraf');
-const Transaction = require('../db/transaction');
-const DB = require('../db/');
 const chai = require('chai');
 const expect = chai.expect;
-const Blockchain = require('../blockchain/');
 const TransactionPool = require('../tx-pool');
+const Transaction = require('../tx-pool/transaction');
+const Node = require('../node/');
+const Blockchain = require('../blockchain/');
 const {setDbForTesting, getTransaction} = require('./test-util')
 
 describe('Transaction', () => {
-  let txData, transaction, bc, tp, db;
+  let txData, transaction, bc, tp, node;
   let txDataSkipVerif; let txSkipVerif;
 
   beforeEach(() => {
     bc = new Blockchain('test-blockchain');
     tp = new TransactionPool();
-    db = new DB();
-    setDbForTesting(bc, tp, db);
+    node = new Node();
+    setDbForTesting(bc, tp, node);
     txData = {
       operation: {
         type: 'SET_VALUE',
@@ -23,7 +23,7 @@ describe('Transaction', () => {
         value: 'val'
       }
     };
-    transaction = getTransaction(db, txData);
+    transaction = getTransaction(node, txData);
     txDataSkipVerif = {
       operation: {
         type: 'SET_VALUE',
@@ -33,7 +33,7 @@ describe('Transaction', () => {
       skip_verif: true,
       address: 'abcd'
     };
-    txSkipVerif = getTransaction(db, txDataSkipVerif);
+    txSkipVerif = getTransaction(node, txDataSkipVerif);
   });
 
   afterEach(() => {
@@ -43,8 +43,8 @@ describe('Transaction', () => {
   it('assigns nonces correctly', () => {
     let t;
     let currentNonce;
-    for (currentNonce = db.nonce - 1; currentNonce < 50; currentNonce++) {
-      t = getTransaction(db, txData);
+    for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
+      t = getTransaction(node, txData);
     }
     expect(t.nonce).to.equal(currentNonce);
   });

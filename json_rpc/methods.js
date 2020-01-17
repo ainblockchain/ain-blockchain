@@ -182,19 +182,19 @@ module.exports = function getMethods(
     ain_get: function(args, done) { // TODO (lia): split this method
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
-          done(null, addProtocolVersion({ result: p2pServer.db.getValue(args.ref) }));
+          done(null, addProtocolVersion({ result: p2pServer.node.db.getValue(args.ref) }));
           return;
         case ReadDbOperations.GET_RULE:
-          done(null, addProtocolVersion({ result: p2pServer.db.getRule(args.ref) }));
+          done(null, addProtocolVersion({ result: p2pServer.node.db.getRule(args.ref) }));
           return;
         case ReadDbOperations.GET_OWNER:
-          done(null, addProtocolVersion({ result: p2pServer.db.getOwner(args.ref) }));
+          done(null, addProtocolVersion({ result: p2pServer.node.db.getOwner(args.ref) }));
           return;
         case ReadDbOperations.GET_FUNC:
-          done(null, addProtocolVersion({ result: p2pServer.db.getFunc(args.ref) }));
+          done(null, addProtocolVersion({ result: p2pServer.node.db.getFunc(args.ref) }));
           return;
         case ReadDbOperations.GET:
-          done(null, addProtocolVersion({ result: p2pServer.db.get(args.op_list) }));
+          done(null, addProtocolVersion({ result: p2pServer.node.db.get(args.op_list) }));
           return;
         default:
           done(null, addProtocolVersion({ code: 1, message: "Invalid get request type" }));
@@ -202,33 +202,34 @@ module.exports = function getMethods(
     },
 
     ain_evalRule: function(args, done) {
-      const permission = p2pServer.db.evalRule(args.ref, args.value, args.address, args.timestamp || Date.now());
+      const permission = p2pServer.node.db.evalRule(
+          args.ref, args.value, args.address, args.timestamp || Date.now());
       done(null, addProtocolVersion({ result: permission }));
     },
 
     ain_evalOwner: function(args, done) {
-      const permission = p2pServer.db.evalOwner(args.ref, args.address);
+      const permission = p2pServer.node.db.evalOwner(args.ref, args.address);
       done (null, addProtocolVersion({ result: permission }));
     },
 
     // Account API
     ain_getAddress: function(args, done) {
-      done(null, addProtocolVersion({ result: p2pServer.db.account ?
-          p2pServer.db.account.address : null }));
+      done(null, addProtocolVersion({ result: p2pServer.node.account ?
+          p2pServer.node.account.address : null }));
     },
 
     ain_getBalance: function(args, done) {
       const address = args.address;
-      const balance = p2pServer.db
-          .getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
+      const balance =
+          p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
       done(null, addProtocolVersion({ result: balance }));
     },
 
     ain_getNonce: function(args, done) {
       const address = args.address;
       if (args.from === 'pending') {
-        if (ainUtil.areSameAddresses(p2pServer.db.account.address, address)) {
-          done(null, addProtocolVersion({ result: p2pServer.db.nonce }));
+        if (ainUtil.areSameAddresses(p2pServer.node.account.address, address)) {
+          done(null, addProtocolVersion({ result: p2pServer.node.nonce }));
         } else {
           const nonce = transactionPool.pendingNonceTracker[address];
           done(null, addProtocolVersion({ result: nonce === undefined ? -1 : nonce }));
@@ -242,7 +243,7 @@ module.exports = function getMethods(
 
     ain_isValidator: function(args, done) {
       // TODO (lia): update this function after revamping consensus staking
-      const staked = p2pServer.db.getValue(
+      const staked = p2pServer.node.db.getValue(
           `${PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS}/${args.address}`);
       done(null, addProtocolVersion({ result: staked ? staked > 0 : false }));
     },
