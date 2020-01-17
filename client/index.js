@@ -6,7 +6,7 @@ const moment = require('moment');
 const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
-const DB = require('../db');
+const Node = require('../node');
 const P2pServer = require('../server');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../db/transaction-pool');
@@ -55,8 +55,8 @@ app.use(express.json()); // support json encoded bodies
 
 const bc = new Blockchain(String(PORT));
 const tp = new TransactionPool();
-const db = new DB();
-const p2pServer = new P2pServer(db, bc, tp, minProtocolVersion, maxProtocolVersion);
+const node = new Node();
+const p2pServer = new P2pServer(node, bc, tp, minProtocolVersion, maxProtocolVersion);
 
 const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer,
     minProtocolVersion, maxProtocolVersion);
@@ -70,7 +70,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = db.getValue(req.query.ref);
+  const result = node.db.getValue(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -78,7 +78,7 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = db.getRule(req.query.ref);
+  const result = node.db.getRule(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -86,7 +86,7 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_func', (req, res, next) => {
-  const result = db.getFunc(req.query.ref);
+  const result = node.db.getFunc(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -94,7 +94,7 @@ app.get('/get_func', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = db.getOwner(req.query.ref);
+  const result = node.db.getOwner(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -103,7 +103,7 @@ app.get('/get_owner', (req, res, next) => {
 
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const result = db.evalRule(body.ref, body.value, body.address, body.timestamp || Date.now());
+  const result = node.db.evalRule(body.ref, body.value, body.address, body.timestamp || Date.now());
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -112,7 +112,7 @@ app.post('/eval_rule', (req, res, next) => {
 
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
-  const result = db.evalOwner(body.ref, body.address);
+  const result = node.db.evalOwner(body.ref, body.address);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -120,7 +120,7 @@ app.post('/eval_owner', (req, res, next) => {
 });
 
 app.post('/get', (req, res, next) => {
-  const result = db.get(req.body.op_list);
+  const result = node.db.get(req.body.op_list);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -239,7 +239,7 @@ app.get('/transactions', (req, res, next) => {
 });
 
 app.get('/get_address', (req, res, next) => {
-  const result = db.account.address;
+  const result = node.account.address;
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -297,7 +297,7 @@ function createBatchTxData(input) {
 }
 
 function createTransaction(txData, isNoncedTransaction) {
-  const transaction = db.createTransaction(txData, isNoncedTransaction);
+  const transaction = node.createTransaction(txData, isNoncedTransaction);
   return p2pServer.executeAndBroadcastTransaction(transaction);
 }
 
