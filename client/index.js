@@ -54,7 +54,7 @@ app.use(express.json()); // support json encoded bodies
 const node = new Node();
 const p2pServer = new P2pServer(node, minProtocolVersion, maxProtocolVersion);
 
-const jsonRpcMethods = require('../json_rpc/methods')(
+const jsonRpcMethods = require('../json_rpc')(
     node, p2pServer, minProtocolVersion, maxProtocolVersion);
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
