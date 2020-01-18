@@ -8,8 +8,6 @@ const express = require('express');
 const jayson = require('jayson');
 const Node = require('../node');
 const P2pServer = require('../server');
-const Blockchain = require('../blockchain');
-const TransactionPool = require('../tx-pool');
 const { WriteDbOperations, PROTOCOL_VERSIONS } = require('../constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const util = require('util');
@@ -53,13 +51,11 @@ if (LOG) {
 const app = express();
 app.use(express.json()); // support json encoded bodies
 
-const bc = new Blockchain(String(PORT));
-const tp = new TransactionPool();
 const node = new Node();
-const p2pServer = new P2pServer(node, bc, tp, minProtocolVersion, maxProtocolVersion);
+const p2pServer = new P2pServer(node, minProtocolVersion, maxProtocolVersion);
 
-const jsonRpcMethods = require('../json_rpc/methods')(bc, tp, p2pServer,
-    minProtocolVersion, maxProtocolVersion);
+const jsonRpcMethods = require('../json_rpc/methods')(
+    node, p2pServer, minProtocolVersion, maxProtocolVersion);
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
@@ -207,7 +203,7 @@ app.post('/batch', (req, res, next) => {
 });
 
 app.get('/blocks', (req, res, next) => {
-  const result = bc.getChainSection(0, bc.length);
+  const result = node.bc.getChainSection(0, node.bc.length);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -215,7 +211,7 @@ app.get('/blocks', (req, res, next) => {
 });
 
 app.get('/last_block', (req, res, next) => {
-  const result = bc.lastBlock();
+  const result = node.bc.lastBlock();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -223,7 +219,7 @@ app.get('/last_block', (req, res, next) => {
 });
 
 app.get('/last_block_number', (req, res, next) => {
-  const result = bc.lastBlockNumber();
+  const result = node.bc.lastBlockNumber();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -231,7 +227,7 @@ app.get('/last_block_number', (req, res, next) => {
 });
 
 app.get('/transactions', (req, res, next) => {
-  const result = tp.transactions;
+  const result = node.tp.transactions;
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})

@@ -1,21 +1,17 @@
 const rimraf = require('rimraf');
 const chai = require('chai');
 const expect = chai.expect;
-const TransactionPool = require('../tx-pool');
 const Transaction = require('../tx-pool/transaction');
 const Node = require('../node/');
-const Blockchain = require('../blockchain/');
 const {setDbForTesting, getTransaction} = require('./test-util')
 
 describe('Transaction', () => {
-  let txData, transaction, bc, tp, node;
+  let txData, transaction, node;
   let txDataSkipVerif; let txSkipVerif;
 
   beforeEach(() => {
-    bc = new Blockchain('test-blockchain');
-    tp = new TransactionPool();
     node = new Node();
-    setDbForTesting(bc, tp, node);
+    setDbForTesting(node);
     txData = {
       operation: {
         type: 'SET_VALUE',
@@ -37,7 +33,7 @@ describe('Transaction', () => {
   });
 
   afterEach(() => {
-    rimraf.sync(bc._blockchainDir());
+    rimraf.sync(node.bc._blockchainDir());
   });
 
   it('assigns nonces correctly', () => {

@@ -3,13 +3,12 @@
 const semver = require('semver');
 const sizeof = require('object-sizeof');
 const {
-    ReadDbOperations,
-    PredefinedDbPaths,
-    TransactionStatus,
-    MAX_TX_BYTES,
-    NETWORK_ID
-  } = require('../constants');
-const {Block} = require('../blockchain/block');
+  ReadDbOperations,
+  PredefinedDbPaths,
+  TransactionStatus,
+  MAX_TX_BYTES,
+  NETWORK_ID
+} = require('../constants');
 const ainUtil = require('@ainblockchain/ain-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -17,15 +16,13 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
  * Defines the list of funtions which are accessibly to clients through the
  * JSON-RPC calls
  *
- * @param {Blockchain} blockchain Instance of the Blockchain class.
- * @param {TransactionPool} transactionPool Instance of the TransactionPool class.
+ * @param {Node} node Instance of the Node class.
  * @param {P2pServer} p2pServer Instance of the the P2pServer class.
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
 module.exports = function getMethods(
-    blockchain,
-    transactionPool,
+    node,
     p2pServer,
     minProtocolVersion,
     maxProtocolVersion
@@ -51,21 +48,21 @@ module.exports = function getMethods(
 
     // Bloock API
     ain_getBlockList: function(args, done) {
-      const blocks = blockchain.getChainSection(args.from, args.to);
+      const blocks = node.bc.getChainSection(args.from, args.to);
       done(null, addProtocolVersion({ result: blocks }));
     },
 
     ain_getRecentBlock: function(args, done) {
-      done(null, addProtocolVersion({ result: blockchain.lastBlock() }));
+      done(null, addProtocolVersion({ result: node.bc.lastBlock() }));
     },
 
     ain_getRecentBlockNumber: function(args, done) {
-      const block = blockchain.lastBlock();
+      const block = node.bc.lastBlock();
       done(null, addProtocolVersion({ result: block ? block.number : null }));
     },
 
     ain_getBlockHeadersList: function(args, done) {
-      const blocks = blockchain.getChainSection(args.from, args.to);
+      const blocks = node.bc.getChainSection(args.from, args.to);
       const blockHeaders = [];
       blocks.forEach((block) => {
         blockHeaders.push(block.header);
@@ -74,7 +71,7 @@ module.exports = function getMethods(
     },
 
     ain_getBlockByHash: function(args, done) {
-      let block = blockchain.getBlockByHash(args.hash);
+      let block = node.bc.getBlockByHash(args.hash);
       if (block && !args.getFullTransactions) {
         block.transactions = extractTransactionHashes(block);
       }
@@ -82,7 +79,7 @@ module.exports = function getMethods(
     },
 
     ain_getBlockByNumber: function(args, done) {
-      let block = blockchain.getBlockByNumber(args.number);
+      let block = node.bc.getBlockByNumber(args.number);
       if (!block || args.getFullTransactions) {
         done(null, addProtocolVersion({ result: block }));
       } else {
@@ -92,38 +89,38 @@ module.exports = function getMethods(
     },
 
     ain_getProposerByHash: function(args, done) {
-      const block = blockchain.getBlockByHash(args.hash);
+      const block = node.bc.getBlockByHash(args.hash);
       done(null, addProtocolVersion({ result: block ? block.proposer : null }));
     },
 
     ain_getProposerByNumber: function(args, done) {
-      const block = blockchain.getBlockByNumber(args.number);
+      const block = node.bc.getBlockByNumber(args.number);
       done(null, addProtocolVersion({ result: block ? block.proposer : null }));
     },
 
     ain_getValidatorsByNumber: function(args, done) {
-      const block = blockchain.getBlockByNumber(args.number);
+      const block = node.bc.getBlockByNumber(args.number);
       done(null, addProtocolVersion({ result: block ? block.validators : null }));
     },
 
     ain_getValidatorsByHash: function(args, done) {
-      const block = blockchain.getBlockByHash(args.hash);
+      const block = node.bc.getBlockByHash(args.hash);
       done(null, addProtocolVersion({ result: block ? block.validators : null }));
     },
 
     ain_getBlockTransactionCountByHash: function(args, done) {
-      const block = blockchain.getBlockByHash(args.hash);
+      const block = node.bc.getBlockByHash(args.hash);
       done(null, addProtocolVersion({ result: block ? block.transactions.length : null }));
     },
 
     ain_getBlockTransactionCountByNumber: function(args, done) {
-      const block = blockchain.getBlockByNumber(args.number);
+      const block = node.bc.getBlockByNumber(args.number);
       done(null, addProtocolVersion({ result: block ? block.transactions.length : null }));
     },
 
     // Transaction API
     ain_getPendingTransactions: function(args, done) {
-      done(null, addProtocolVersion({ result: transactionPool.transactions }));
+      done(null, addProtocolVersion({ result: node.tp.transactions }));
     },
 
     ain_sendSignedTransaction: function(args, done) {
@@ -136,19 +133,19 @@ module.exports = function getMethods(
     },
 
     ain_getTransactionByHash: function(args, done) {
-      const transactionInfo = transactionPool.transactionTracker[args.hash];
+      const transactionInfo = node.tp.transactionTracker[args.hash];
       if (!transactionInfo) {
         done(null, addProtocolVersion({ result: null }));
       } else {
         let transaction = null;
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
-          const block = blockchain.getBlockByNumber(transactionInfo.number);
+          const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
           transaction = block.transactions[index];
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
           const address = transactionInfo.address;
           const index = transactionInfo.index;
-          transaction = transactionPool.transactions[address][index];
+          transaction = node.tp.transactions[address][index];
         }
         done(null, addProtocolVersion({ result: transaction }));
       }
@@ -160,7 +157,7 @@ module.exports = function getMethods(
         result = null;
       } else {
         const index = Number(args.index);
-        const block = blockchain.getBlockByHash(args.block_hash);
+        const block = node.bc.getBlockByHash(args.block_hash);
         result = block.transactions.length > index && index >= 0 ? block.transactions[index] : null;
       }
       done(null, addProtocolVersion({ result }));
@@ -172,7 +169,7 @@ module.exports = function getMethods(
         result = null;
       } else {
         const index = Number(args.index);
-        const block = blockchain.getBlockByNumber(args.block_number);
+        const block = node.bc.getBlockByNumber(args.block_number);
         result = block.transactions.length > index && index >= 0 ? block.transactions[index] : null;
       }
       done(null, addProtocolVersion({ result }));
@@ -231,12 +228,12 @@ module.exports = function getMethods(
         if (ainUtil.areSameAddresses(p2pServer.node.account.address, address)) {
           done(null, addProtocolVersion({ result: p2pServer.node.nonce }));
         } else {
-          const nonce = transactionPool.pendingNonceTracker[address];
+          const nonce = node.tp.pendingNonceTracker[address];
           done(null, addProtocolVersion({ result: nonce === undefined ? -1 : nonce }));
         }
       } else {
         // get the "committed nonce" by default
-        const nonce = transactionPool.committedNonceTracker[address];
+        const nonce = node.tp.committedNonceTracker[address];
         done(null, addProtocolVersion({ result: nonce === undefined ? -1 : nonce }));
       }
     },
@@ -263,7 +260,7 @@ module.exports = function getMethods(
     net_syncing: function(args, done) {
       // TODO (lia): return { starting, latest } with block numbers if the node
       // is currently syncing.
-      done(null, addProtocolVersion({ result: !blockchain.syncedAfterStartup }));
+      done(null, addProtocolVersion({ result: !node.bc.syncedAfterStartup }));
     },
 
     net_getNetworkId: function(args, done) {

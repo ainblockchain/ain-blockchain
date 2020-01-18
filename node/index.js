@@ -1,11 +1,17 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const {GenesisAccounts} = require('../constants');
+const Blockchain = require('../blockchain');
+const TransactionPool = require('../tx-pool');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
+
+const PORT = process.env.PORT || 8080;
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 
 class Node {
   constructor() {
+    this.bc = new Blockchain(String(PORT));
+    this.tp = new TransactionPool();
     this.db = new DB();
     this.nonce = null;
     // TODO(lia): Add account importing functionality.
@@ -19,25 +25,25 @@ class Node {
     this.account = GenesisAccounts.others[accountIndex];
   }
 
-  startWithBlockchain(blockchain, tp) {
+  startWithBlockchain(isFirstNode) {
     console.log('Starting database with a blockchain..')
-    //blockchain.setBackDb(new BackupDb(this.account));
-    blockchain.setBackDb(new DB());
-    this.nonce = this.getNonce(blockchain);
-    this.reconstruct(blockchain, tp);
+    this.bc.init(isFirstNode);
+    this.bc.setBackDb(new DB());
+    this.nonce = this.getNonce();
+    this.reconstruct();
   }
 
-  getNonce(blockchain) {
+  getNonce() {
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
     //               publicKey
     let nonce = 0;
-    for (let i = blockchain.chain.length - 1; i > -1; i--) {
-      for (let j = blockchain.chain[i].transactions.length -1; j > -1; j--) {
-        if (ainUtil.areSameAddresses(blockchain.chain[i].transactions[j].address,
+    for (let i = this.bc.chain.length - 1; i > -1; i--) {
+      for (let j = this.bc.chain[i].transactions.length -1; j > -1; j--) {
+        if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
                                      this.account.address)
-            && blockchain.chain[i].transactions[j].nonce > -1) {
+            && this.bc.chain[i].transactions[j].nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
-          nonce = blockchain.chain[i].transactions[j].nonce + 1;
+          nonce = this.bc.chain[i].transactions[j].nonce + 1;
           break;
         }
       }
@@ -87,11 +93,11 @@ class Node {
     return Transaction.newTransaction(this.account.private_key, txData);
   }
 
-  reconstruct(blockchain, transactionPool) {
+  reconstruct() {
     console.log('Reconstructing database');
-    this.db.setDbToSnapshot(blockchain.backupDb);
-    this.db.createDatabase(blockchain, transactionPool);
-    this.db.addTransactionPool(transactionPool.validTransactions());
+    this.db.setDbToSnapshot(this.bc.backupDb);
+    this.db.createDatabase(this.bc, this.tp);
+    this.db.addTransactionPool(this.tp.validTransactions());
   }
 }
 
