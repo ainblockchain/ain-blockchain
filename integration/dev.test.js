@@ -1019,8 +1019,6 @@ describe('API Tests', () => {
       it('withdraw', () => {
         let beforeBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        const depositAccountBefore = JSON.parse(syncRequest('GET',
-            server2 + `/get_value?ref=/deposit_accounts`).body.toString('utf-8')).result;
         const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${withdrawPath}/2/value`,
           value: depositAmount

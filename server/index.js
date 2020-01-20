@@ -6,18 +6,18 @@ const ip = require('ip');
 const publicIp = require('public-ip');
 const TRACKER_WS_ADDR = process.env.TRACKER_IP || 'ws://localhost:3001';
 const axios = require('axios');
+const semver = require('semver');
+const ainUtil = require('@ainblockchain/ain-util');
+const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
+    = require('../constants');
+const {Block} = require('../blockchain/block');
+const Transaction = require('../tx-pool/transaction');
+const VotingUtil = require('./voting-util');
+const { WriteDbOperations, DEBUG } = require('../constants');
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
 // of which value could be either 'local', 'default', or 'gcp'.
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
-const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
-    = require('../constants');
-const {Block} = require('../blockchain/block');
-const Transaction = require('../db/transaction');
-const ainUtil = require('@ainblockchain/ain-util');
-const VotingUtil = require('./voting-util');
-const { WriteDbOperations, DEBUG } = require('../constants');
-const semver = require('semver');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const BLOCK_CREATION_INTERVAL_MS = 6000;
 const RECONNECT_INTERVAL_MS = 10000;
@@ -33,17 +33,15 @@ function setTimer(ws, timeSec) {
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
-  constructor(db, blockchain, transactionPool, minProtocolVersion, maxProtocolVersion) {
+  constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.isStarting = true;
     this.ipAddress = null;
     this.trackerWebSocket = null;
     this.interval = null;
-    this.db = db;
-    this.blockchain = blockchain;
-    this.transactionPool = transactionPool;
+    this.node = node;
     this.managedPeersInfo = {}
     this.sockets = [];
-    this.votingUtil = new VotingUtil(db);
+    this.votingUtil = new VotingUtil(node);
     this.votingInterval = null;
     this.waitInBlocks = 4;
     this.minProtocolVersion = minProtocolVersion;
@@ -139,13 +137,11 @@ class P2pServer {
         if (this.isStarting) {
           this.isStarting = false;
           if (parsedMsg.numLivePeers === 0) {
-            this.blockchain.init(true);
-            this.db.startWithBlockchain(this.blockchain, this.transactionPool);
-            this.blockchain.syncedAfterStartup = true;
+            this.node.startWithBlockchain(true);
+            this.node.bc.syncedAfterStartup = true;
             this.initiateChain();
           } else {
-            this.blockchain.init(false);
-            this.db.startWithBlockchain(this.blockchain, this.transactionPool);
+            this.node.startWithBlockchain(false);
           }
         }
       } catch (error) {
@@ -168,9 +164,9 @@ class P2pServer {
         port: P2P_PORT
       }),
       ip: this.ipAddress,
-      address: this.db.account.address,
+      address: this.node.account.address,
       timestamp: Date.now(),
-      lastBlockNumber: this.blockchain.lastBlockNumber(),
+      lastBlockNumber: this.node.bc.lastBlockNumber(),
       managedPeersInfo: this.managedPeersInfo,
     };
     console.log(`\n[TRACKER] >> Update to tracker ${TRACKER_WS_ADDR}: ` +
@@ -201,7 +197,7 @@ class P2pServer {
   setSocket(socket, address) {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
-    this.requestChainSubsection(this.blockchain.lastBlock());
+    this.requestChainSubsection(this.node.bc.lastBlock());
   }
 
   setPeerEventHandlers(socket, address) {
@@ -233,16 +229,16 @@ class P2pServer {
           case MessageTypes.CHAIN_SUBSECTION:
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
-            if (this.blockchain.merge(data.chainSubsection)) {
-              if (data.number === this.blockchain.lastBlockNumber()) {
+            if (this.node.bc.merge(data.chainSubsection)) {
+              if (data.number === this.node.bc.lastBlockNumber()) {
                 // If peer is new to network and has successfully reached the consensus blockchain
                 // height, wait the duration of one more voting round before processing
                 // transactions.
-                if (!this.blockchain.syncedAfterStartup) {
+                if (!this.node.bc.syncedAfterStartup) {
                   setTimeout(() => {
                     try {
-                      this.db.reconstruct(this.blockchain, this.transactionPool);
-                      this.blockchain.syncedAfterStartup = true;
+                      this.node.reconstruct();
+                      this.node.bc.syncedAfterStartup = true;
                     } catch (error) {
                       console.log(`Error in starting:${error.stack}`);
                     }
@@ -250,25 +246,26 @@ class P2pServer {
                 }
               }
               for (let i=0; i<data.chainSubsection.length; i++) {
-                this.transactionPool.removeCommitedTransactions(data.chainSubsection[i]);
+                this.node.tp.removeCommitedTransactions(data.chainSubsection[i]);
               }
-              this.db.reconstruct(this.blockchain, this.transactionPool);
+              this.node.reconstruct();
               // Continuously request the blockchain in subsections until
               // your local blockchain matches the height of the consensus blockchain.
-              this.requestChainSubsection(this.blockchain.lastBlock());
+              this.requestChainSubsection(this.node.bc.lastBlock());
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION_REQUEST:
-            if (this.blockchain.chain.length === 0) {
+            if (this.node.bc.chain.length === 0) {
               return;
             }
             // Send a chunk of 20 blocks from  your blockchain to the requester.
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
-            const chainSubsection = this.blockchain.requestBlockchainSection(
+            const chainSubsection = this.node.bc.requestBlockchainSection(
                 data.lastBlock ? Block.parse(data.lastBlock) : null);
             if (chainSubsection) {
-              this.sendChainSubsection(socket, chainSubsection, this.blockchain.lastBlockNumber());
+              this.sendChainSubsection(
+                  socket, chainSubsection, this.node.bc.lastBlockNumber());
             }
             break;
         }
@@ -382,24 +379,24 @@ class P2pServer {
     if (DEBUG) {
       console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
     }
-    if (this.transactionPool.isNotEligibleTransaction(transaction)) {
+    if (this.node.tp.isNotEligibleTransaction(transaction)) {
       if (DEBUG) {
         console.log(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
       }
       console.log('Transaction already received');
       return null;
     }
-    if (this.blockchain.syncedAfterStartup === false) {
+    if (this.node.bc.syncedAfterStartup === false) {
       if (DEBUG) {
         console.log(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`)
       }
-      this.transactionPool.addTransaction(transaction);
+      this.node.tp.addTransaction(transaction);
       return null;
     }
-    const result = this.db.executeTransaction(transaction);
+    const result = this.node.db.executeTransaction(transaction);
     if (!this.checkForTransactionResultErrorCode(result)) {
       // Add transaction to pool
-      this.transactionPool.addTransaction(transaction);
+      this.node.tp.addTransaction(transaction);
     } else if (DEBUG) {
       console.log(
           `FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
@@ -473,13 +470,13 @@ class P2pServer {
     }
     switch (votingAction.actionType) {
       case VotingActionTypes.NEW_VOTING:
-        if (!this.votingUtil.isSyncedWithNetwork(this.blockchain)) {
-          this.requestChainSubsection(this.blockchain.lastBlock());
+        if (!this.votingUtil.isSyncedWithNetwork(this.node.bc)) {
+          this.requestChainSubsection(this.node.bc.lastBlock());
         }
-        if (this.votingUtil.getStakes(this.db.account.address) &&
-            this.blockchain.syncedAfterStartup) {
+        if (this.votingUtil.getStakes(this.node.account.address) &&
+            this.node.bc.syncedAfterStartup) {
           this.executeAndBroadcastTransaction(
-              this.votingUtil.registerForNextRound(this.blockchain.lastBlockNumber() + 1));
+              this.votingUtil.registerForNextRound(this.node.bc.lastBlockNumber() + 1));
         }
         if (this.votingUtil.isProposer()) {
           this.createAndProposeBlock();
@@ -491,7 +488,7 @@ class P2pServer {
         for (let i = 0; i < proposedBlock.transactions.length; i++) {
           // First check if the transation has already been received.
           // Next check that the received transaction is valid.
-          if (!this.transactionPool.isNotEligibleTransaction(proposedBlock.transactions[i])
+          if (!this.node.tp.isNotEligibleTransaction(proposedBlock.transactions[i])
             && this.checkForTransactionResultErrorCode(
                 this.executeTransaction(proposedBlock.transactions[i]))) {
             if (DEBUG) {
@@ -504,7 +501,7 @@ class P2pServer {
           }
         }
         if (invalidTransactions ||
-            !Block.validateProposedBlock(proposedBlock, this.blockchain) ||
+            !Block.validateProposedBlock(proposedBlock, this.node.bc) ||
             proposedBlock.hash === this.votingUtil.block ||
             [VotingStatus.WAIT_FOR_BLOCK, VotingStatus.SYNCING].indexOf(
                 this.votingUtil.status) < 0) {
@@ -556,16 +553,16 @@ class P2pServer {
   }
 
   createAndProposeBlock() {
-    const transactions = this.transactionPool.validTransactions();
-    const blockNumber = this.blockchain.lastBlockNumber() + 1;
-    const validators = this.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS);
-    const newBlock = Block.createBlock(this.blockchain.lastBlock().hash,
-        this.votingUtil.lastVotes, transactions, blockNumber, this.db.account.address,
+    const transactions = this.node.tp.validTransactions();
+    const blockNumber = this.node.bc.lastBlockNumber() + 1;
+    const validators = this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS);
+    const newBlock = Block.createBlock(this.node.bc.lastBlock().hash,
+        this.votingUtil.lastVotes, transactions, blockNumber, this.node.account.address,
         validators);
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = newBlock.hash;
     console.log(`Proposing block with hash ${newBlock.hash} and number ${blockNumber}`);
-    const blockHashTransaction = this.db.createTransaction({
+    const blockHashTransaction = this.node.createTransaction({
         operation: {
           type: WriteDbOperations.SET_VALUE,
           ref, value
@@ -575,7 +572,7 @@ class P2pServer {
     this.executeTransaction(blockHashTransaction);
     this.broadcastBlock(blockHashTransaction);
     if (!validators || !Object.keys(validators).length ||
-    (Object.keys(validators).length === 1 && validators[this.db.account.address])) {
+    (Object.keys(validators).length === 1 && validators[this.node.account.address])) {
       console.log('No other validators registered for this round');
       this.addBlockToChain();
       this.cleanupAfterVotingRound();
@@ -589,7 +586,7 @@ class P2pServer {
     if (!prevDeposit) {
       this.depositStakes();
     }
-    let initChainTx = this.votingUtil.instantiate(this.blockchain);
+    let initChainTx = this.votingUtil.instantiate(this.node.bc);
     if (!initChainTx) {
       throw Error(`Deposit by the initiating node was unsuccessful`);
     }
@@ -598,20 +595,20 @@ class P2pServer {
     let initResult = this.executeAndBroadcastTransaction(initChainTx);
     while (this.checkForTransactionResultErrorCode(initResult)) {
       sleep.sleep(1);
-      initChainTx = this.votingUtil.instantiate(this.blockchain);
+      initChainTx = this.votingUtil.instantiate(this.node.bc);
       initResult = this.executeAndBroadcastTransaction(initChainTx);
     }
     this.executeAndBroadcastTransaction(
-      this.votingUtil.registerForNextRound(this.blockchain.lastBlockNumber() + 1));
+      this.votingUtil.registerForNextRound(this.node.bc.lastBlockNumber() + 1));
     this.createAndProposeBlock();
   }
 
   addBlockToChain() {
-    if (this.blockchain.addNewBlock(this.votingUtil.block)) {
-      this.transactionPool.removeCommitedTransactions(this.votingUtil.block);
+    if (this.node.bc.addNewBlock(this.votingUtil.block)) {
+      this.node.tp.removeCommitedTransactions(this.votingUtil.block);
       this.votingUtil.reset();
-      this.db.reconstruct(this.blockchain, this.transactionPool);
-      if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.db.account.address)) {
+      this.node.reconstruct();
+      if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.node.account.address)) {
         this.waitInBlocks = this.waitInBlocks - 1;
         if (this.waitInBlocks === 0) {
           this.depositStakes();
@@ -627,17 +624,17 @@ class P2pServer {
       this.votingInterval = null;
     }
     this.votingUtil.status = VotingStatus.WAIT_FOR_BLOCK;
-    if (ainUtil.areSameAddresses(this.db.account.address,
-        this.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
-      console.log(`Peer ${this.db.account.address} will start next round at ` +
-          `block number ${this.blockchain.lastBlockNumber() + 1} in ` +
+    if (ainUtil.areSameAddresses(this.node.account.address,
+        this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
+      console.log(`Peer ${this.node.account.address} will start next round at ` +
+          `block number ${this.node.bc.lastBlockNumber() + 1} in ` +
           `${BLOCK_CREATION_INTERVAL_MS}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
     }
-    const recentProposers = this.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
-    if (recentProposers && recentProposers[this.db.account.address]) {
+    const recentProposers = this.node.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
+    if (recentProposers && recentProposers[this.node.account.address]) {
       this.votingInterval = setInterval(() => {
-        const newRoundTrans = this.votingUtil.startNewRound(this.blockchain);
+        const newRoundTrans = this.votingUtil.startNewRound(this.node.bc);
         const response = this.executeAndBroadcastVotingAction({
           transaction: newRoundTrans,
           actionType: VotingActionTypes.NEW_VOTING
@@ -646,14 +643,14 @@ class P2pServer {
           console.log('Not designated proposer');
           return;
         }
-        console.log(`User ${this.db.account.address} is starting round of block number ` +
-            `${this.blockchain.lastBlockNumber() + 1}`);
+        console.log(`User ${this.node.account.address} is starting round of block number ` +
+            `${this.node.bc.lastBlockNumber() + 1}`);
         if (this.votingUtil.needRestaking()) {
           console.log('[cleanupAfterVotingRound] stake has expired');
           this.renewStakes();
         }
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(
-            this.blockchain.lastBlockNumber() + 1));
+            this.node.bc.lastBlockNumber() + 1));
         if (this.votingUtil.isProposer()) {
           this.createAndProposeBlock();
         }

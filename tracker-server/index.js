@@ -13,6 +13,11 @@ const CITY = 'city';
 const TIMEZONE = 'timezone';
 const MASK = 'xxx';
 
+// NOTE(seo): This is very useful when the server dies without any logs.
+process.on('uncaughtException', function (err) {
+  console.log(err);
+});
+
 function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
@@ -36,7 +41,7 @@ function numLivePeers(address) {
 }
 
 function printNodesInfo() {
-  console.log(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()})`);
+  console.log(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()} at ${Date.now()})`);
   const nodeList = Object.values(PEER_NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });

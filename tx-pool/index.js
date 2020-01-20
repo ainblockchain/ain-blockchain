@@ -1,5 +1,5 @@
-const Transaction = require('./transaction');
 const {DEBUG, TransactionStatus} = require('../constants');
+const Transaction = require('./transaction');
 
 class TransactionPool {
   constructor() {
