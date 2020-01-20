@@ -553,7 +553,7 @@ class P2pServer {
   }
 
   createAndProposeBlock() {
-    const transactions = this.node.tp.validTransactions();
+    const transactions = this.node.tp.getValidTransactions();
     const blockNumber = this.node.bc.lastBlockNumber() + 1;
     const validators = this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_VALIDATORS);
     const newBlock = Block.createBlock(this.node.bc.lastBlock().hash,

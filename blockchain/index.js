@@ -118,7 +118,8 @@ class Blockchain {
     }
     this.chain.push(block);
     while (this.chain.length > 10) {
-      this.backupDb.executeBlockTransactions(this.chain.shift());
+      const block = this.chain.shift();
+      this.backupDb.executeTransactionList(block.transactions);
     }
     this.writeChain();
     return true;

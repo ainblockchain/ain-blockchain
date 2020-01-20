@@ -96,8 +96,16 @@ class Node {
   reconstruct() {
     console.log('Reconstructing database');
     this.db.setDbToSnapshot(this.bc.backupDb);
-    this.db.createDatabase(this.bc, this.tp);
-    this.db.addTransactionPool(this.tp.validTransactions());
+    this.buildDatabaseWithChain();
+    this.db.executeTransactionList(this.tp.getValidTransactions());
+  }
+
+  buildDatabaseWithChain() {
+    this.bc.chain.forEach((block) => {
+      const transactions = block.transactions;
+      this.db.executeTransactionList(transactions);
+      this.tp.updateCommittedNonces(transactions);
+    });
   }
 }
 

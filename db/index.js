@@ -307,25 +307,6 @@ class DB {
     return subData;
   }
 
-  createDatabase(blockchain, transactionPool) {
-    blockchain.chain.forEach((block) => {
-      this.executeBlockTransactions(block);
-      transactionPool.updateCommittedNonces(block.transactions);
-    });
-  }
-
-  executeBlockTransactions(block) {
-    block.transactions.forEach((tx) =>{
-      this.executeTransaction(tx);
-    });
-  }
-
-  addTransactionPool(transactions) {
-    transactions.forEach((tx) => {
-      this.executeTransaction(tx);
-    });
-  }
-
   setDbToSnapshot(snapshot) {
     this.dbData = JSON.parse(JSON.stringify(snapshot.dbData));
   }
@@ -358,6 +339,12 @@ class DB {
       return this.batch(tx.tx_list);
     }
     return this.executeOperation(tx.operation, tx.address, tx.timestamp);
+  }
+
+  executeTransactionList(txList) {
+    txList.forEach((tx) => {
+      this.executeTransaction(tx);
+    });
   }
 
   // TODO(seo): Add rule check for sub-nodes when newValue is an opject.

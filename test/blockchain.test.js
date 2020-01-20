@@ -77,7 +77,7 @@ describe('Blockchain', () => {
           }
         });
         const lastBlock = node1.bc.lastBlock();
-        const block = Block.createBlock(lastBlock.hash, [], node1.tp.validTransactions(),
+        const block = Block.createBlock(lastBlock.hash, [], node1.tp.getValidTransactions(),
             node1.bc.lastBlockNumber() + 1, node1.account.address, []);
         if (block.number === 500) {
           blockHash = block.hash;
