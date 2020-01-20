@@ -237,7 +237,7 @@ class P2pServer {
                 if (!this.node.bc.syncedAfterStartup) {
                   setTimeout(() => {
                     try {
-                      this.node.reconstruct(this.node.bc, this.node.tp);
+                      this.node.reconstruct();
                       this.node.bc.syncedAfterStartup = true;
                     } catch (error) {
                       console.log(`Error in starting:${error.stack}`);
@@ -248,7 +248,7 @@ class P2pServer {
               for (let i=0; i<data.chainSubsection.length; i++) {
                 this.node.tp.removeCommitedTransactions(data.chainSubsection[i]);
               }
-              this.node.reconstruct(this.node.bc, this.node.tp);
+              this.node.reconstruct();
               // Continuously request the blockchain in subsections until
               // your local blockchain matches the height of the consensus blockchain.
               this.requestChainSubsection(this.node.bc.lastBlock());
@@ -607,7 +607,7 @@ class P2pServer {
     if (this.node.bc.addNewBlock(this.votingUtil.block)) {
       this.node.tp.removeCommitedTransactions(this.votingUtil.block);
       this.votingUtil.reset();
-      this.node.reconstruct(this.node.bc, this.node.tp);
+      this.node.reconstruct();
       if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.node.account.address)) {
         this.waitInBlocks = this.waitInBlocks - 1;
         if (this.waitInBlocks === 0) {
