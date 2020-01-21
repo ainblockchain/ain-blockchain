@@ -172,7 +172,7 @@ class P2pServer {
       lastBlockNumber: this.node.bc.lastBlockNumber(),
       managedPeersInfo: this.managedPeersInfo,
     };
-    const diskUsage = this.getDiskuage();
+    const diskUsage = this.getDiskUsage();
     if (diskUsage !== null) {
       updateToTracker.diskUsage = diskUsage;
     }
@@ -181,7 +181,7 @@ class P2pServer {
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
 
-  getDiskuage() {
+  getDiskUsage() {
     try {
       return disk.checkSync(DISK_USAGE_PATH);
     }
