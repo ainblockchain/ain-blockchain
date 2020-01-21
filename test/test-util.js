@@ -5,7 +5,7 @@ const Transaction = require('../tx-pool/transaction');
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
 
-  node.startWithBlockchain(true);
+  node.init(true);
 
   if (!skipTestingConfig) {
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');

@@ -25,10 +25,10 @@ class Node {
     this.account = GenesisAccounts.others[accountIndex];
   }
 
-  startWithBlockchain(isFirstNode) {
-    console.log('Starting database with a blockchain..')
+  init(isFirstNode) {
+    console.log('Initializing node..')
     this.bc.init(isFirstNode);
-    this.bc.setBackDb(new DB());
+    this.bc.setBackupDb(new DB());
     this.nonce = this.getNonce();
     this.reconstruct();
   }
@@ -96,11 +96,11 @@ class Node {
   reconstruct() {
     console.log('Reconstructing database');
     this.db.setDbToSnapshot(this.bc.backupDb);
-    this.buildDatabaseWithChain();
+    this.executeChainOnDb();
     this.db.executeTransactionList(this.tp.getValidTransactions());
   }
 
-  buildDatabaseWithChain() {
+  executeChainOnDb() {
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       this.db.executeTransactionList(transactions);

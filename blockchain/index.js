@@ -82,7 +82,7 @@ class Blockchain {
     return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
   }
 
-  setBackDb(backupDb) {
+  setBackupDb(backupDb) {
     if (this.backupDb !== null) {
       throw Error('Already set backupdb');
     }

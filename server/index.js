@@ -137,11 +137,11 @@ class P2pServer {
         if (this.isStarting) {
           this.isStarting = false;
           if (parsedMsg.numLivePeers === 0) {
-            this.node.startWithBlockchain(true);
+            this.node.init(true);
             this.node.bc.syncedAfterStartup = true;
             this.initiateChain();
           } else {
-            this.node.startWithBlockchain(false);
+            this.node.init(false);
           }
         }
       } catch (error) {
