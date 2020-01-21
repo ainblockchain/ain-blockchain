@@ -74,28 +74,28 @@ describe('TransactionPool', () => {
     });
 
     it('transactions are correctly numbered', () => {
-      const sortedNonces1 = node.tp.validTransactions().filter((transaction) => {
+      const sortedNonces1 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.nonce;
       });
-      const sortedNonces2 = node.tp.validTransactions().filter((transaction) => {
+      const sortedNonces2 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node2.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.nonce;
       });
-      const sortedNonces3 = node.tp.validTransactions().filter((transaction) => {
+      const sortedNonces3 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node3.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.nonce;
       });
-      const sortedNonces4 = node.tp.validTransactions().filter((transaction) => {
+      const sortedNonces4 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node4.account.address)) {
           return transaction;
         }
@@ -111,7 +111,7 @@ describe('TransactionPool', () => {
     it('removes transactions included in block', () => {
       const number = 1;
       const lastBlock = Block.genesis();
-      const block = Block.createBlock(lastBlock.hash, [], node.tp.validTransactions(),
+      const block = Block.createBlock(lastBlock.hash, [], node.tp.getValidTransactions(),
           number, node.account.address, []);
       const newTransactions = {};
       newTransactions[node.account.address] = [];

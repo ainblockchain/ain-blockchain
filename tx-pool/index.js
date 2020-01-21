@@ -50,7 +50,7 @@ class TransactionPool {
             (transaction.nonce < 0 && transaction.hash in this.transactionTracker);
   }
 
-  validTransactions() {
+  getValidTransactions() {
     // Transactions are first ordered by nonce in their individual lists by publicKey
     const unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
     for (const address in unvalidatedTransactions) {
