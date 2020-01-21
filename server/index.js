@@ -7,6 +7,8 @@ const publicIp = require('public-ip');
 const TRACKER_WS_ADDR = process.env.TRACKER_IP || 'ws://localhost:3001';
 const axios = require('axios');
 const semver = require('semver');
+const disk = require('diskusage');
+const os = require('os');
 const ainUtil = require('@ainblockchain/ain-util');
 const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
     = require('../constants');
@@ -22,6 +24,7 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const BLOCK_CREATION_INTERVAL_MS = 6000;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
+const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
 // A util function for testing/debugging.
 function setTimer(ws, timeSec) {
@@ -169,9 +172,23 @@ class P2pServer {
       lastBlockNumber: this.node.bc.lastBlockNumber(),
       managedPeersInfo: this.managedPeersInfo,
     };
+    const diskUsage = this.getDiskuage();
+    if (diskUsage !== null) {
+      updateToTracker.diskUsage = diskUsage;
+    }
     console.log(`\n[TRACKER] >> Update to tracker ${TRACKER_WS_ADDR}: ` +
         `${JSON.stringify(updateToTracker, null, 2)}`)
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
+  }
+
+  getDiskuage() {
+    try {
+      return disk.checkSync(DISK_USAGE_PATH);
+    }
+    catch (err) {
+      console.log(err);
+      return null;
+    }
   }
 
   connectToPeers(newManagedPeerInfoList) {
