@@ -47,8 +47,9 @@ function printNodesInfo() {
   });
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
+    const diskAvailableMb = Math.floor(node.diskUsage.available / 1000000);
     console.log(`    Node[${i}]: ${node.getNodeSummary()} ` +
-        `(${node.timestamp}, ${node.lastBlockNumber}) ` +
+        `(${node.timestamp}, ${node.lastBlockNumber}, ${diskAvailableMb}MB) ` +
         `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()})`);
     Object.keys(node.managedPeers).forEach((addr) => {
       const peerSummary = PEER_NODES[addr] ?
@@ -124,6 +125,7 @@ class PeerNode {
     this.url = nodeInfo.url;
     this.timestamp = nodeInfo.timestamp;
     this.lastBlockNumber = nodeInfo.lastBlockNumber;
+    this.diskUsage = nodeInfo.diskUsage;
     this.managedPeers = PeerNode.constructManagedPeers(nodeInfo);
     this.unmanagedPeers = PeerNode.constructUnmanagedPeers(nodeInfo.address);
     const locationDict = PeerNode.getNodeLocation(this.ip);
