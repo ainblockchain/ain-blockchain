@@ -1,108 +1,245 @@
-## Tracker Server
+# Blockchain Database
+
+## Tracker
 
 Tracker server is required by new peers who wish to join the AIN network. Each peer is sent the ipaddress of 2 other nodes in the network. These nodes then gossip information through the network of all transactions and blocks.
 
 NOTE: Tracker Server must be started first before starting any blockchain-database instances
 
-### To build docker image locally
-	cd tracker-server/
-	docker build -t ainblockchain/tracker-server .
+### How to run (without Docker)
 
+#### Dev (Local) 
 
-### To pull docker image
-	docker pull ainblockchain/tracker-server
+##### Install npm packages
 
+```
+cd tracker-server
+npm install
+cd ..
+```
 
-### To run docker image
-	docker run --network="host" -d ainblockchain/tracker-server:latest
+##### Run Tracker server
 
-  ### Description
-By default this tracker-server service is queriable by blockchain-database instances at ws://localhost:3001
+```
+node tracker-server/index.js
+```
 
----
-## Blockchain Database
+#### Prod (GCP)
+
+##### Deploy code (in common with Node server)
+
+```
+gcloud init
+
+sh deploy_prod.sh <SEASON> <YOUR_GCP_USER_NAME>
+```
+
+For example,
+```
+sh deploy_prod.sh spring seo
+```
+
+##### Set up Ubuntu machine (if it's on a new VM)
+
+```
+sh setup_ubuntu.sh
+```
+
+##### Copy files to a sharable folder & install npm packages
+
+```
+cd
+sudo mkdir ../blockchain-database
+sudo chmod 777 ../blockchain-database
+mv * ../blockchain-database 
+cd ../blockchain-database/tracker-server
+npm install
+cd ..
+```
+
+##### Start tracker server job
+
+```
+nohup node tracker-server/index.js > logs.txt &
+```
+
+### How to run with Docker
+
+#### Build Docker image
+ 
+```
+cd tracker-server/
+docker build -t ainblockchain/tracker-server .
+```
+
+#### Pull Docker image
+ 
+```
+docker pull ainblockchain/tracker-server
+```
+
+#### Run with Docker image
+ 
+```
+docker run --network="host" -d ainblockchain/tracker-server:latest
+```
+
+### Client API
+
+GET http://<ip_address>:5000/ -> Tracker health check
+
+GET http://<ip_address>:5000/peer_nodes -> Node status 
+
+## Node 
 
 Operates a single peer node instance of the AIN blockchain. A single blockchain-database instance processes incoming transaction requests and maintains a local copy of the entire blockchain blockchain. The blockchain-database first queries the tracker-server for ipaddresses of other peers, and then syncs it's local blockchain to the network consensus blockchain. If the blockchain specifies a "STAKE" argument on startup, it will then begin to take part in the forging/validating process for new blocks.
 
 
+### How to run (without Docker)
 
-### To run test cases
-	npm init && npm run test
+#### Dev (Local) 
 
-### To build docker image locally
-	docker build -t ainblockchain/blockchain-database .
+##### Install npm packages
 
-### To pull docker image
+```
+npm install
+```
 
-	docker pull ainblockchain/blockchain-database
+##### Run Node server
 
-### To run docker image
+```
+STAKE=250 P2P_PORT=5001 PORT=8081 ACCOUNT_INDEX=0 HOSTING_ENV=local LOG=true DEBUG=false node client/index.js
+STAKE=250 P2P_PORT=5002 PORT=8082 ACCOUNT_INDEX=1 HOSTING_ENV=local LOG=true DEBUG=false node client/index.js 
+STAKE=250 P2P_PORT=5003 PORT=8083 ACCOUNT_INDEX=2 HOSTING_ENV=local LOG=true DEBUG=false node client/index.js 
+STAKE=250 P2P_PORT=5004 PORT=8084 ACCOUNT_INDEX=3 HOSTING_ENV=local LOG=true DEBUG=false node client/index.js 
+STAKE=250 P2P_PORT=5005 PORT=8085 ACCOUNT_INDEX=4 HOSTING_ENV=local LOG=true DEBUG=false node client/index.js 
+```
 
-	docker run -e LOG=true -e STAKE=250 -e TRACKER_IP="ws://<ip_address_of_tracker_server>:3001" --network="host" -d ainblockchain/blockchain-database:latest
+Before starting node jobs, remove existing blockchain files and logs if necessary:
+
+```
+rm -rf blockchain/blockchains client/logs
+```
+
+##### How to test
+ 
+```
+npm run test_unit
+npm run test_smoke
+npm run test_integration
+```
+
+#### Prod (GCP)
+
+##### Deploy code (in common with Tracker server) 
+
+```
+gcloud init
+
+sh deploy_prod.sh <SEASON> <YOUR_GCP_USER_NAME>
+```
+
+For example,
+```
+sh deploy_prod.sh spring seo
+```
+
+##### Set up Ubuntu machine (if it's on a new VM)
+
+```
+sh setup_ubuntu.sh
+```
+
+##### Copy files to a sharable folder & install npm packages
+
+```
+cd
+sudo mkdir ../blockchain-database
+sudo chmod 777 ../blockchain-database
+mv * ../blockchain-database 
+cd ../blockchain-database
+npm install
+```
+
+##### Start Node server job
+
+```
+sh start_prod_node.sh <SEASON> <SERVER_INDEX>
+```
+
+For example,
+
+```
+sh start_prod_node.sh spring 0
+```
+
+### How to run with Docker
+
+#### Build Docker image
+ 
+```
+docker build -t ainblockchain/blockchain-database .
+```
+
+#### Pull Docker image
+ 
+```
+docker pull ainblockchain/blockchain-database
+```
+
+#### Run with Docker image
+ 
+```
+docker run -e LOG=true -e STAKE=250 -e TRACKER_IP="ws://<ip_address_of_tracker_server>:3001" --network="host" -d ainblockchain/blockchain-database:latest
+```
 
 
-### Description
+#### Enter Docker container and inspect blockchain files
+ 
+```
+docker exec -it <container_id> /bin/bash
+cd blockchain/blockchains/8080/
+```
 
+#### Enter docker container and inspect log files
+ 
+```
+docker exec -it <container_id> /bin/bash
+cat client/logs/8080debug.log
+```
 
-#### Optional arguments:
-  
-	STAKE: Set if you would like node participate in the block forg/validating process. Likelihood of node being chosen as proposer is propotional to amount staked
+### Client API
 
-	LOG: Set to true if you want blockchain-database to maintain log files
+GET http://<ip_address>:8080/ -> Node health check
 
+GET http://<ip_address>:8080/blocks -> See all blocks in the blockchain
 
+GET http://<ip_address>:8080/transactions -> See all transactions in the transaction pool
 
-#### To enter docker container and see blockchain files
+GET http://<ip_address>:8080/blocks?from=1&to=100 -> psql -h localhost -U postgres -d postgresQuery for specific list of blocks from blockchain
 
-	docker exec -it <container_id> /bin/bash
-	cd blockchain/blockchains/8080/
+GET http://<ip_address>:8080/get_value?ref=/database/path/to/query -> Query for data at specific database location
 
+POST http://<ip_address>:8080/get with json_body {"op_list": [{"type": "GET_VALUE", "ref": "test/increase/first/level"}, {"type": "DEC_RULE", "ref": "test/decrease/first/level2"}]}
 
-### To enter docker container and see log files
+POST http://<ip_address>:8080/set_value with json_body {"ref": "test/comeonnnnnnn", "value": "testme"}
 
-	docker exec -it <container_id> /bin/bash
-	cat client/logs/8080debug.log
+POST http://<ip_address>:8080/inc_value with json_body {"ref": "test/increase/first/level", "value": 10}
 
+POST http://<ip_address>:8080/dec_value with json_body {"ref": "test/decrease/first/level", "value": 10}
 
-#### The blockchain database exposes the following endpoint:
+POST http://<ip_address>:8080/set with json_body {"op_list": [{"type": "INC_VALUE", "ref": "test/increase/first/level", "value": 10}, {"type": "DEC_VALUE", "ref": "test/decrease/first/level2", "value": 20}]}
 
-GET https://<ip_address>:8080/blocks -> See all blocks in the blockchain
+POST http://<ip_address>:8080/batch with json_body {"tx_list": [{"operation": {"type": "SET_VALUE", "ref": "test/comeonnnnnnn", "value": "testme"}}, {"operation": {"type": "INC_VALUE", "ref": "test/b/u", "value": 10000}}]}
 
-GET https://<ip_address>:8080/transactions -> See all transactions in the transaction pool
+## Utility scripts
 
-GET https://<ip_address>:8080/blocks?from=1&to=100 -> psql -h localhost -U postgres -d postgresQuery for specific list of blocks from blockchain
+Four Node server with a Tracker server can be started all at once using `start_servers.sh` like:
+```
+sh start_servers.sh
+```
 
-GET https://<ip_address>:8080/get_value?ref=/database/path/to/query -> Query for data at specific database location
-
-POST https://<ip_address>:8080/get with json_body {"op_list": [{"type": "GET_VALUE", "ref": "test/increase/first/level"}, {"type": "DEC_RULE", "ref": "test/decrease/first/level2"}]}
-
-POST https://<ip_address>:8080/set_value with json_body {"ref": "test/comeonnnnnnn", "value": "testme"}
-
-POST https://<ip_address>:8080/inc_value with json_body {"ref": "test/increase/first/level", "value": 10}
-
-POST https://<ip_address>:8080/dec_value with json_body {"ref": "test/decrease/first/level", "value": 10}
-
-POST https://<ip_address>:8080/set with json_body {"op_list": [{"type": "INC_VALUE", "ref": "test/increase/first/level", "value": 10}, {"type": "DEC_VALUE", "ref": "test/decrease/first/level2", "value": 20}]}
-
-POST https://<ip_address>:8080/batch with json_body {"tx_list": [{"operation": {"type": "SET_VALUE", "ref": "test/comeonnnnnnn", "value": "testme"}}, {"operation": {"type": "INC_VALUE", "ref": "test/b/u", "value": 10000}}]}
-
-
-
-## Postgres Database (will move to different repositoy)
-
-Database which will be used by ain_scan to store data regarding blocks and transactions. CUrrently defines schemas for database of blocks and transactions
-
-
-
-### To build docker image locally
-
-	cd postgres/
-	docker build -t ainblockchain/postgres .
-
-### To run docker image
-
-	docker run --rm --name pg-docker -e POSTGRES_PASSWORD=postgres -d -p 5432:5432 ainblockchain/postgres
-
-### To enter postgres container and check default schemas
-
-	psql -h localhost -U postgres -d postgres
+and can be stopped all at once using `stop_servers.sh` like:
+```
+sh stop_servers.sh
+```
