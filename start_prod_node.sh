@@ -28,4 +28,4 @@ export HOSTING_ENV=gcp
 export LOG=true
 export DEBUG=false 
 
-nohup node client/index.js >logs.txt 2>&1 &
+nohup node client/index.js >/dev/null 2>&1 &
