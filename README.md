@@ -212,13 +212,29 @@ cat client/logs/8080debug.log
 
 GET http://<ip_address>:8080/ -> Node health check
 
-GET http://<ip_address>:8080/blocks -> See all blocks in the blockchain
-
-GET http://<ip_address>:8080/transactions -> See all transactions in the transaction pool
+GET http://<ip_address>:8080/blocks -> Fetch blocks in the blockchain
 
 GET http://<ip_address>:8080/blocks?from=1&to=100 -> psql -h localhost -U postgres -d postgresQuery for specific list of blocks from blockchain
 
-GET http://<ip_address>:8080/get_value?ref=/database/path/to/query -> Query for data at specific database location
+GET http://<ip_address>:8080/tx_pool -> Fetch transactions in the transaction pool
+
+GET http://<ip_address>:8080/tx_tracker -> Fetch transaction status in the transaction tracker
+
+GET http://<ip_address>:8080/committed_nonce_tracker -> Fetch nonce status in the committed nonce tracker
+
+GET http://<ip_address>:8080/pending_nonce_tracker -> Fetch nonce status in the pending nonce tracker
+
+GET http://<ip_address>:8080/get_value?ref=/database/path/to/fetch -> Fetch value at specific database location
+
+GET http://<ip_address>:8080/get_rule?ref=/database/path/to/fetch -> Fetch rule at specific database location
+
+GET http://<ip_address>:8080/get_func?ref=/database/path/to/fetch -> Fetch function at specific database location
+
+GET http://<ip_address>:8080/get_owner?ref=/database/path/to/fetch -> Fetch owner at specific database location
+
+POST http://<ip_address>:8080/eval_rule with json_body {"ref": "test/comeonnnnnnn", "value": "testme", "address": "0xABCD...Z", "timestamp": "1234567890"}
+
+POST http://<ip_address>:8080/eval_owner with json_body {"ref": "test/comeonnnnnnn", "address": "0xABCD...Z"}
 
 POST http://<ip_address>:8080/get with json_body {"op_list": [{"type": "GET_VALUE", "ref": "test/increase/first/level"}, {"type": "DEC_RULE", "ref": "test/decrease/first/level2"}]}
 
