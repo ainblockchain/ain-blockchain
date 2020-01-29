@@ -12,6 +12,8 @@ const { WriteDbOperations, PROTOCOL_VERSIONS } = require('../constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const util = require('util');
 
+const MAX_BLOCKS = 20;
+
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
   console.log(err);
@@ -203,7 +205,9 @@ app.post('/batch', (req, res, next) => {
 });
 
 app.get('/blocks', (req, res, next) => {
-  const result = node.bc.getChainSection(0, node.bc.length);
+  const blockEnd = node.bc.lastBlockNumber() + 1;
+  const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
+  const result = node.bc.getChainSection(blockBegin, blockEnd);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -226,8 +230,32 @@ app.get('/last_block_number', (req, res, next) => {
     .end();
 });
 
-app.get('/transactions', (req, res, next) => {
+app.get('/tx_pool', (req, res, next) => {
   const result = node.tp.transactions;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/tx_tracker', (req, res, next) => {
+  const result = node.tp.transactionTracker;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/committed_nonce_tracker', (req, res, next) => {
+  const result = node.tp.committedNonceTracker;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/pending_nonce_tracker', (req, res, next) => {
+  const result = node.tp.pendingNonceTracker;
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})

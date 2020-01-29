@@ -308,8 +308,12 @@ class Blockchain {
   }
 
   getChainSection(from, to) {
-    from = from ? Number(from) : 0;
-    to = to ? Number(to) : this.lastBlockNumber();
+    if (!Number.isInteger(from) || from < 0) {
+      from = 0;
+    }
+    if (!Number.isInteger(to) || to < 0) {
+      to = this.lastBlockNumber() + 1;
+    }
     const chain = [];
     const blockFiles = this.getBlockFiles(from, to);
     blockFiles.forEach((blockFile) => {

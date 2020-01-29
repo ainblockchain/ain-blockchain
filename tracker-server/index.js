@@ -125,17 +125,21 @@ class PeerNode {
     this.url = nodeInfo.url;
     this.timestamp = nodeInfo.timestamp;
     this.lastBlockNumber = nodeInfo.lastBlockNumber;
+    this.txPoolSize = nodeInfo.txPoolSize;
+    this.txTrackerSize = nodeInfo.txTrackerSize;
+    this.committedNonceTrackerSize = nodeInfo.committedNonceTrackerSize;
+    this.pendingNonceTrackerSize = nodeInfo.pendingNonceTrackerSize;
     this.diskUsage = nodeInfo.diskUsage;
     this.managedPeers = PeerNode.constructManagedPeers(nodeInfo);
     this.unmanagedPeers = PeerNode.constructUnmanagedPeers(nodeInfo.address);
     const locationDict = PeerNode.getNodeLocation(this.ip);
     this.country = (locationDict === null || locationDict[COUNTRY].length === 0) ?
         null : locationDict[COUNTRY];
-    this.region = (locationDict === null ||locationDict[REGION].length === 0) ?
+    this.region = (locationDict === null || locationDict[REGION].length === 0) ?
         null : locationDict[REGION];
-    this.city = (locationDict === null ||locationDict[CITY].length === 0) ?
+    this.city = (locationDict === null || locationDict[CITY].length === 0) ?
         null : locationDict[CITY];
-    this.timezone = (locationDict === null ||locationDict[TIMEZONE].length === 0) ?
+    this.timezone = (locationDict === null || locationDict[TIMEZONE].length === 0) ?
         null : locationDict[TIMEZONE];
 
     return this;
