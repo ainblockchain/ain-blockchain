@@ -212,7 +212,7 @@ cat client/logs/8080debug.log
 
 GET http://<ip_address>:8080/ -> Node health check
 
-GET http://<ip_address>:8080/blocks -> Fetch blocks in the blockchain
+GET http://<ip_address>:8080/blocks -> Fetch latest blocks in the blockchain (up to 20 blocks)
 
 GET http://<ip_address>:8080/blocks?from=1&to=100 -> psql -h localhost -U postgres -d postgresQuery for specific list of blocks from blockchain
 
