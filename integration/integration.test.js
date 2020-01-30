@@ -554,6 +554,8 @@ describe('Integration Tests', () => {
         })
       });
 
+      // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
+      /*
       it('not dropping any transations ', function() {
         let blocks;
         for (let i = 0; i < SERVERS.length; i++) {
@@ -577,7 +579,7 @@ describe('Integration Tests', () => {
           });
           expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST)
             .to.equal(transactionsOnBlockChain.length);
-          for (let i = 0; i < transactionsOnBlockChain.length; i ++) {
+          for (let i = 0; i < transactionsOnBlockChain.length; i++) {
             const sentOp = sentOperations[i][1];
             const blockchainOp = transactionsOnBlockChain[i].operation;
             if (sentOperations[i][0].toUpperCase() === "BATCH") {
@@ -593,6 +595,7 @@ describe('Integration Tests', () => {
           };
         }
       });
+      */
 
       it('maintaining correct order', () => {
         for (let i = 1; i < SERVERS.length; i++) {

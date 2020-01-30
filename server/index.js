@@ -171,6 +171,10 @@ class P2pServer {
       timestamp: Date.now(),
       lastBlockNumber: this.node.bc.lastBlockNumber(),
       managedPeersInfo: this.managedPeersInfo,
+      txPoolSize: Object.keys(this.node.tp.transactions).length,
+      txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
+      committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
+      pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
     };
     const diskUsage = this.getDiskUsage();
     if (diskUsage !== null) {
