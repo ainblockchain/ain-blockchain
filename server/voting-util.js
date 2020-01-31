@@ -12,10 +12,10 @@ class VotingUtil {
     this.votes = [];
   }
 
-  setStatus(status, labels = []) {
+  setStatus(status, setter = "") {
     this.status = status;
     this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
-    this.labels = labels;
+    this.setter = setter;
   }
 
   resolveDbPath(pathSubKeys) {

@@ -173,7 +173,7 @@ class P2pServer {
       votingStatus: {
         status: this.votingUtil.status,
         statusChangedBlockNumber: this.votingUtil.statusChangedBlockNumber,
-        labels: this.votingUtil.labels,
+        setter: this.votingUtil.setter,
       },
       txStatus: {
         txPoolSize: Object.keys(this.node.tp.transactions).length,
@@ -608,7 +608,7 @@ class P2pServer {
   }
 
   initiateChain() {
-    this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, ["initiateChain"]);
+    this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, "initiateChain");
     const prevDeposit = this.votingUtil.getStakes();
     console.log("previous Deposit = " + prevDeposit)
     if (!prevDeposit) {
@@ -651,7 +651,7 @@ class P2pServer {
       clearInterval(this.votingInterval);
       this.votingInterval = null;
     }
-    this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, ["cleanupAfterVotingRound"]);
+    this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, "cleanupAfterVotingRound");
     if (ainUtil.areSameAddresses(this.node.account.address,
         this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.node.account.address} will start next round at ` +
