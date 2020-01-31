@@ -304,7 +304,7 @@ describe('Integration Tests', () => {
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
       });
       newServerProc.start();
-      sleep(10000);
+      sleep(15000);
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)
         .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},

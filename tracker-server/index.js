@@ -2,15 +2,12 @@ const WebSocketServer = require('ws').Server;
 const geoip = require('geoip-lite');
 const express = require('express');
 const jayson = require('jayson');
+const _ = require('lodash');
 
 const P2P_PORT = 3001;
 const PORT = 5000;
 const MAX_NUM_PEERS = 2;
 const PEER_NODES = {};
-const REGION = 'region';
-const COUNTRY = 'country';
-const CITY = 'city';
-const TIMEZONE = 'timezone';
 const MASK = 'xxx';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
@@ -125,22 +122,12 @@ class PeerNode {
     this.url = nodeInfo.url;
     this.timestamp = nodeInfo.timestamp;
     this.lastBlockNumber = nodeInfo.lastBlockNumber;
-    this.txPoolSize = nodeInfo.txPoolSize;
-    this.txTrackerSize = nodeInfo.txTrackerSize;
-    this.committedNonceTrackerSize = nodeInfo.committedNonceTrackerSize;
-    this.pendingNonceTrackerSize = nodeInfo.pendingNonceTrackerSize;
+    this.votingStatus = nodeInfo.votingStatus;
+    this.txStatus = nodeInfo.txStatus;
+    this.location = this.getNodeLocation();
     this.diskUsage = nodeInfo.diskUsage;
     this.managedPeers = PeerNode.constructManagedPeers(nodeInfo);
     this.unmanagedPeers = PeerNode.constructUnmanagedPeers(nodeInfo.address);
-    const locationDict = PeerNode.getNodeLocation(this.ip);
-    this.country = (locationDict === null || locationDict[COUNTRY].length === 0) ?
-        null : locationDict[COUNTRY];
-    this.region = (locationDict === null || locationDict[REGION].length === 0) ?
-        null : locationDict[REGION];
-    this.city = (locationDict === null || locationDict[CITY].length === 0) ?
-        null : locationDict[CITY];
-    this.timezone = (locationDict === null || locationDict[TIMEZONE].length === 0) ?
-        null : locationDict[TIMEZONE];
 
     return this;
   }
@@ -179,18 +166,21 @@ class PeerNode {
     return ipList.join('.');
   }
 
-  static getNodeLocation(ip) {
-    const geoLocationDict = geoip.lookup(ip);
-    if (geoLocationDict === null || (geoLocationDict[COUNTRY].length === 0 &&
-        geoLocationDict[REGION].length === 0 && geoLocationDict[CITY].length === 0 &&
-        geoLocationDict[TIMEZONE].length === 0)) {
-      return null;
+  getNodeLocation() {
+    const geoLocationDict = geoip.lookup(this.ip);
+    if (geoLocationDict === null) {
+      return {
+        country: null,
+        region: null,
+        city: null,
+        timezone: null,
+      };
     }
     return {
-      [COUNTRY]: geoLocationDict[COUNTRY],
-      [REGION]: geoLocationDict[REGION],
-      [CITY]: geoLocationDict[CITY],
-      [TIMEZONE]: geoLocationDict[TIMEZONE]
+      country: _.isEmpty(geoLocationDict.country) ? null : geoLocationDict.country,
+      region: _.isEmpty(geoLocationDict.region) ? null : geoLocationDict.region,
+      city: _.isEmpty(geoLocationDict.city) ? null : geoLocationDict.city,
+      timezone: _.isEmpty(geoLocationDict.timezone) ? null : geoLocationDict.timezone,
     };
   }
 

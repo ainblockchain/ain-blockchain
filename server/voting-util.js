@@ -6,10 +6,16 @@ const MAX_RECENT_PROPOSERS = 20;
 class VotingUtil {
   constructor(node) {
     this.node = node;
-    this.status = VotingStatus.START_UP;
+    this.setStatus(VotingStatus.START_UP);
     this.block = null;
     this.lastVotes = [];
     this.votes = [];
+  }
+
+  setStatus(status, labels = []) {
+    this.status = status;
+    this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
+    this.labels = labels;
   }
 
   resolveDbPath(pathSubKeys) {
@@ -44,7 +50,7 @@ class VotingUtil {
     // TODO (lia): check this.status === VotingStatus.RECEIVED_BLOCK ?
     const stakes = this.getStakes(this.node.account.address);
     if (stakes) {
-      this.status = VotingStatus.PRE_VOTE;
+      this.setStatus(VotingStatus.PRE_VOTE);
       console.log(
           `Current prevotes are ` +
           `${this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
@@ -68,20 +74,20 @@ class VotingUtil {
   }
 
   reset() {
-    this.status = VotingStatus.COMMITTED;
+    this.setStatus(VotingStatus.COMMITTED);
     this.block = null;
     this.lastVotes = this.votes;
     this.votes = [];
   }
 
-  isSyncedWithNetwork(bc) {
+  isSyncedWithNetwork() {
     // This does not currently take in to a count the situation where consensus is not reached.
     // Need to add logic to account for this situation
     const sync = (VotingStatus.COMMITTED === this.status &&
-        bc.lastBlockNumber() + 1 ===
+        this.node.bc.lastBlockNumber() + 1 ===
             Number(this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_NUMBER)));
     if (!sync) {
-      this.status = VotingStatus.SYNCING;
+      this.setStatus(VotingStatus.SYNCING);
     }
     return sync;
   }
@@ -96,7 +102,7 @@ class VotingUtil {
       console.log(
           `Current precommits are ` +
           `${this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
-      this.status = VotingStatus.PRE_COMMIT;
+      this.setStatus(VotingStatus.PRE_COMMIT);
       const transaction = this.node.createTransaction({
         operation: {
           type: WriteDbOperations.INC_VALUE,
@@ -127,7 +133,7 @@ class VotingUtil {
   }
 
 
-  instantiate(bc) {
+  instantiate() {
     console.log('Initialising voting !!');
     // This method should only be called by the very first node on the network !!
     // This user should establish themselves as the first node on the network, instantiate
@@ -146,8 +152,8 @@ class VotingUtil {
         pre_commits: 0,
         time,
         block_hash: '',
-        number: bc.lastBlockNumber() + 1,
-        last_hash: bc.lastBlock().hash
+        number: this.node.bc.lastBlockNumber() + 1,
+        last_hash: this.node.bc.lastBlock().hash
       };
       return this.node.createTransaction({
         operation: {
@@ -162,12 +168,12 @@ class VotingUtil {
     }
   }
 
-  startNewRound(bc) {
+  startNewRound() {
     const lastRound = this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND);
     const time = Date.now();
     let proposer;
     if (Object.keys(lastRound.next_round_validators).length) {
-      proposer = this.getProposer(lastRound.next_round_validators, bc);
+      proposer = this.getProposer(lastRound.next_round_validators);
     } else {
       proposer = this.node.account.address;
     }
@@ -230,24 +236,25 @@ class VotingUtil {
   setBlock(block, proposal) {
     console.log(`Setting block ${block.hash.substring(0, 5)} with number ${block.number}`);
     this.block = block;
-    this.status = VotingStatus.BLOCK_RECEIVED;
+    this.setStatus(VotingStatus.BLOCK_RECEIVED);
     // TODO (lia): fix lastVotes logic while fixing the rounding system
     this.lastVotes = this.votes;
     this.votes = [];
     this.registerVote(proposal);
   }
 
-  getProposer(stakeHolders, bc) {
+  getProposer(stakeHolders) {
     const alphabeticallyOrderedStakeHolders = Object.keys(stakeHolders).sort();
     const totalStakedAmount = Object.values(stakeHolders).reduce(function(a, b) {
       return a + b;
     }, 0);
-    const seed = bc.chain.length > 5 ? bc.chain[bc.chain.length - 4].hash : bc.chain[0].hash;
+    const seed = this.node.bc.chain.length > 5 ?
+        this.node.bc.chain[this.node.bc.chain.length - 4].hash : this.node.bc.chain[0].hash;
 
     let cumulativeStakeFromPotentialValidators = 0;
     const randomNumGenerator = seedrandom(seed);
     const targetValue = randomNumGenerator() * totalStakedAmount;
-    for (let i=0; i < alphabeticallyOrderedStakeHolders.length; i++) {
+    for (let i = 0; i < alphabeticallyOrderedStakeHolders.length; i++) {
       cumulativeStakeFromPotentialValidators += stakeHolders[alphabeticallyOrderedStakeHolders[i]];
       if (targetValue < cumulativeStakeFromPotentialValidators) {
         console.log(`Proposer is ${alphabeticallyOrderedStakeHolders[i]}`);
