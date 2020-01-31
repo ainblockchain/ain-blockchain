@@ -71,9 +71,9 @@ class P2pServer {
   }
 
   setIntervalForTrackerUpdate() {
-    this.updateStatusToTracker();
+    this.updateNodeStatusToTracker();
     this.intervalUpdate = setInterval(() => {
-      this.updateStatusToTracker();
+      this.updateNodeStatusToTracker();
     }, UPDATE_TO_TRACKER_INTERVAL_MS)
   }
 
@@ -159,7 +159,7 @@ class P2pServer {
     });
   }
 
-  updateStatusToTracker() {
+  updateNodeStatusToTracker() {
     const updateToTracker = {
       url: url.format({
         protocol: 'ws',
@@ -170,11 +170,18 @@ class P2pServer {
       address: this.node.account.address,
       timestamp: Date.now(),
       lastBlockNumber: this.node.bc.lastBlockNumber(),
+      votingStatus: {
+        status: this.votingUtil.status,
+        statusChangedBlockNumber: this.votingUtil.statusChangedBlockNumber,
+        setter: this.votingUtil.setter,
+      },
+      txStatus: {
+        txPoolSize: Object.keys(this.node.tp.transactions).length,
+        txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
+        committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
+        pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
+      },
       managedPeersInfo: this.managedPeersInfo,
-      txPoolSize: Object.keys(this.node.tp.transactions).length,
-      txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
-      committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
-      pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
     };
     const diskUsage = this.getDiskUsage();
     if (diskUsage !== null) {
@@ -491,7 +498,7 @@ class P2pServer {
     }
     switch (votingAction.actionType) {
       case VotingActionTypes.NEW_VOTING:
-        if (!this.votingUtil.isSyncedWithNetwork(this.node.bc)) {
+        if (!this.votingUtil.isSyncedWithNetwork()) {
           this.requestChainSubsection(this.node.bc.lastBlock());
         }
         if (this.votingUtil.getStakes(this.node.account.address) &&
@@ -601,13 +608,13 @@ class P2pServer {
   }
 
   initiateChain() {
-    this.votingUtil.status = VotingStatus.WAIT_FOR_BLOCK;
+    this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, "initiateChain");
     const prevDeposit = this.votingUtil.getStakes();
     console.log("previous Deposit = " + prevDeposit)
     if (!prevDeposit) {
       this.depositStakes();
     }
-    let initChainTx = this.votingUtil.instantiate(this.node.bc);
+    let initChainTx = this.votingUtil.instantiate();
     if (!initChainTx) {
       throw Error(`Deposit by the initiating node was unsuccessful`);
     }
@@ -616,7 +623,7 @@ class P2pServer {
     let initResult = this.executeAndBroadcastTransaction(initChainTx);
     while (this.checkForTransactionResultErrorCode(initResult)) {
       sleep.sleep(1);
-      initChainTx = this.votingUtil.instantiate(this.node.bc);
+      initChainTx = this.votingUtil.instantiate();
       initResult = this.executeAndBroadcastTransaction(initChainTx);
     }
     this.executeAndBroadcastTransaction(
@@ -644,7 +651,7 @@ class P2pServer {
       clearInterval(this.votingInterval);
       this.votingInterval = null;
     }
-    this.votingUtil.status = VotingStatus.WAIT_FOR_BLOCK;
+    this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, "cleanupAfterVotingRound");
     if (ainUtil.areSameAddresses(this.node.account.address,
         this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
       console.log(`Peer ${this.node.account.address} will start next round at ` +
@@ -655,7 +662,7 @@ class P2pServer {
     const recentProposers = this.node.db.getValue(PredefinedDbPaths.RECENT_PROPOSERS);
     if (recentProposers && recentProposers[this.node.account.address]) {
       this.votingInterval = setInterval(() => {
-        const newRoundTrans = this.votingUtil.startNewRound(this.node.bc);
+        const newRoundTrans = this.votingUtil.startNewRound();
         const response = this.executeAndBroadcastVotingAction({
           transaction: newRoundTrans,
           actionType: VotingActionTypes.NEW_VOTING
