@@ -104,7 +104,7 @@ class Node {
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       this.db.executeTransactionList(transactions);
-      this.tp.updateCommittedNonces(transactions);
+      this.tp.updateNonceTrackers(transactions);
     });
   }
 }

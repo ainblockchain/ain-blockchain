@@ -124,13 +124,19 @@ class TransactionPool {
     }
   }
 
-  updateCommittedNonces(transactions) {
+  updateNonceTrackers(transactions) {
     let len = transactions.length;
     for (let i = 0; i < len; i++) {
       const tx = transactions[i];
-      if (tx.nonce >= 0 && (this.committedNonceTracker[tx.address] === undefined ||
-                            this.committedNonceTracker[tx.address] < tx.nonce)) {
-        this.committedNonceTracker[tx.address] = tx.nonce;
+      if (tx.nonce >= 0) {
+        if (this.committedNonceTracker[tx.address] === undefined ||
+            this.committedNonceTracker[tx.address] < tx.nonce) {
+          this.committedNonceTracker[tx.address] = tx.nonce;
+        }
+        if (this.pendingNonceTracker[tx.address] === undefined ||
+            this.pendingNonceTracker[tx.address] < tx.nonce) {
+          this.pendingNonceTracker[tx.address] = tx.nonce;
+        }
       }
     }
   }

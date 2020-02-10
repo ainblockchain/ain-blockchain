@@ -136,6 +136,7 @@ class Blockchain {
       console.log('Genesis block is corrupted')
       return false;
     }
+    // TODO (lia): Check if the tx nonces are correct.
     return Blockchain.isValidChainSubsection(chain);
   }
 
