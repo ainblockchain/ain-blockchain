@@ -83,6 +83,16 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
+  matchRule(valuePath) {
+    const parsedPath = ChainUtil.parsePath(valuePath);
+    return this.matchRuleForValuePath(parsedPath);
+  }
+
+  matchOwner(rulePath) {
+    const parsedPath = ChainUtil.parsePath(rulePath);
+    return this.matchOwnerForRulePath(parsedPath);
+  }
+
   evalRule(valuePath, value, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     return this.getPermissionForValue(parsedPath, value, address, timestamp);
@@ -364,14 +374,14 @@ class DB {
     let lastRuleNode;
     const pathVars = {};
     const ruleNodes = [];
-    let currentRuleNode = this.dbData[PredefinedDbPaths.RULES_ROOT];
-    ruleNodes.push(currentRuleNode);
-    for (let i = 0; i < valuePath.length && currentRuleNode; i++) {
+    let curRuleNode = this.dbData[PredefinedDbPaths.RULES_ROOT];
+    ruleNodes.push(curRuleNode);
+    for (let i = 0; i < valuePath.length && curRuleNode; i++) {
       // Specific rule path has higher precedence over wildcard rule path.
-      lastRuleNode = currentRuleNode;
-      currentRuleNode = currentRuleNode[valuePath[i]];
-      if (currentRuleNode) {
-        ruleNodes.push(currentRuleNode);
+      lastRuleNode = curRuleNode;
+      curRuleNode = curRuleNode[valuePath[i]];
+      if (curRuleNode) {
+        ruleNodes.push(curRuleNode);
       } else {
         // If no rule config is available for specific path, check for wildcards.
         const keys = Object.keys(lastRuleNode);
@@ -382,8 +392,8 @@ class DB {
               return false;
             }
             pathVars[keys[j]] = valuePath[i];
-            currentRuleNode = lastRuleNode[keys[j]];
-            ruleNodes.push(currentRuleNode);
+            curRuleNode = lastRuleNode[keys[j]];
+            ruleNodes.push(curRuleNode);
           }
         }
       }
@@ -429,6 +439,74 @@ class DB {
     } else {
       return (permissions[OwnerProperties.WRITE_OWNER] === true);
     }
+  }
+
+  // Does a DFS search to find most specific nodes matched in the rule tree.
+  matchRuleNodeForValuePath(valuePath, depth, curRuleNode) {
+    if (depth === valuePath.length) {
+      // Matched.
+      return {
+        rulePath: [],
+        rules: curRuleNode,
+      };
+    }
+    // 1) Try to match with non-variable node.
+    const nextRuleNode = curRuleNode[valuePath[depth]];
+    if (nextRuleNode !== undefined) {
+      const matched = this.matchRuleNodeForValuePath(valuePath, depth + 1, nextRuleNode);
+      if (matched.rulePath !== null) {
+        return {
+          rulePath: [valuePath[depth], ...matched.rulePath],
+          rules: matched.rules,
+        };
+      }
+    }
+    // 2) If no non-variable node is matched, try to match with variable node (i.e., wildcard node).
+    const keys = Object.keys(curRuleNode);
+    for (let i = 0; i < keys.length; i++) {
+      // It's assumed that there is at most one variable child node.
+      if (keys[i].startsWith('$')) {
+        const nextRuleNode = curRuleNode[keys[i]];
+        const matched = this.matchRuleNodeForValuePath(valuePath, depth + 1, nextRuleNode);
+        if (matched.rulePath !== null) {
+          return {
+            rulePath: [keys[i], ...matched.rulePath],
+            rules: matched.rules,
+          };
+        }
+        break;
+      }
+    }
+    // No match found.
+    return { rulePath: null };
+  }
+
+  getPathVariables(valuePath, rulePath) {
+    const pathVars = {};
+    for (let i = 0; i < rulePath.length && i < valuePath.length; i++) {
+      const ruleNode = rulePath[i];
+      if (ruleNode.startsWith('$')) {
+        pathVars[ruleNode] = valuePath[i];
+      }
+    }
+    return pathVars;
+  }
+
+  matchRuleForValuePath(valuePath) {
+    const matched =
+        this.matchRuleNodeForValuePath(valuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
+    if (matched.rulePath !== null) {
+      const pathVars = this.getPathVariables(valuePath, matched.rulePath);
+      return {
+        rulePath: matched.rulePath,
+        rules: matched.rules,
+        pathVars,
+      };
+    }
+  }
+
+  matchOwnerForRulePath(rulePath) {
+    // TODO(seo): Fill this out.
   }
 
   makeEvalFunction(ruleString, pathVars) {
