@@ -804,7 +804,7 @@ describe("DB rule config", () => {
     expect(node1.db.getPermissionForValue(
         ChainUtil.parsePath('test/no_dup_key/aaa/bbb'), "some value", null, null)).to.equal(true)
     expect(node1.db.getPermissionForValue(
-        ChainUtil.parsePath('test/dup_key/aaa/bbb'), "some value", null, null)).to.equal(false)
+        ChainUtil.parsePath('test/dup_key/aaa/bbb'), "some value", null, null)).to.equal(true)
   })
 })
 

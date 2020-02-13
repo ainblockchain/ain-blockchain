@@ -371,43 +371,9 @@ class DB {
 
   // TODO(seo): Add rule check for sub-nodes when newValue is an opject.
   getPermissionForValue(valuePath, newValue, address, timestamp) {
-    let lastRuleNode;
-    const pathVars = {};
-    const ruleNodes = [];
-    let curRuleNode = this.dbData[PredefinedDbPaths.RULES_ROOT];
-    ruleNodes.push(curRuleNode);
-    for (let i = 0; i < valuePath.length && curRuleNode; i++) {
-      // Specific rule path has higher precedence over wildcard rule path.
-      lastRuleNode = curRuleNode;
-      curRuleNode = curRuleNode[valuePath[i]];
-      if (curRuleNode) {
-        ruleNodes.push(curRuleNode);
-      } else {
-        // If no rule config is available for specific path, check for wildcards.
-        const keys = Object.keys(lastRuleNode);
-        for (let j = 0; j < keys.length; j++) {
-          if (keys[j].startsWith('$')) {
-            if (pathVars[keys[j]] !== undefined) {
-              console.log('Duplicated path variables.')
-              return false;
-            }
-            pathVars[keys[j]] = valuePath[i];
-            curRuleNode = lastRuleNode[keys[j]];
-            ruleNodes.push(curRuleNode);
-          }
-        }
-      }
-    }
-    let rule = false;
-    // Find the closest ancestor that has a rule config.
-    for (let i = ruleNodes.length - 1; i >= 0; i--) {
-      const refRuleConfig = ruleNodes[i];
-      if (refRuleConfig[RuleProperties.WRITE]) {
-        rule = refRuleConfig[RuleProperties.WRITE];
-        break;
-      }
-    }
-    return !!this.evalRuleString(rule, pathVars, valuePath, newValue, address, timestamp);
+    const matched = this.matchRuleForValuePath(valuePath);
+    const rule = matched.ruleNode ? matched.ruleNode[RuleProperties.WRITE] : false;
+    return !!this.evalRuleString(rule, matched.pathVars, valuePath, newValue, address, timestamp);
   }
 
   getPermissionForRule(rulePath, address) {
