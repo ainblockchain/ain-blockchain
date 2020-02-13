@@ -441,68 +441,62 @@ class DB {
     }
   }
 
+  static ruleMatched(ruleNode) {
+    return ruleNode[RuleProperties.WRITE] !== undefined;
+  }
+
   // Does a DFS search to find most specific nodes matched in the rule tree.
   matchRuleNodeForValuePath(valuePath, depth, curRuleNode) {
+    // Maximum depth reached.
     if (depth === valuePath.length) {
-      // Matched.
       return {
         rulePath: [],
-        rules: curRuleNode,
+        pathVars: {},
+        ruleNode: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
       };
     }
-    // 1) Try to match with non-variable node.
+    // 1) Try to match with non-variable child node.
     const nextRuleNode = curRuleNode[valuePath[depth]];
     if (nextRuleNode !== undefined) {
       const matched = this.matchRuleNodeForValuePath(valuePath, depth + 1, nextRuleNode);
-      if (matched.rulePath !== null) {
-        return {
-          rulePath: [valuePath[depth], ...matched.rulePath],
-          rules: matched.rules,
-        };
+      if (matched.ruleNode !== null) {
+        // Matched with a non-variable child node.
+        matched.rulePath.unshift(valuePath[depth]);
+        return matched;
       }
     }
-    // 2) If no non-variable node is matched, try to match with variable node (i.e., wildcard node).
+    // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
+    //    child node.
     const keys = Object.keys(curRuleNode);
     for (let i = 0; i < keys.length; i++) {
-      // It's assumed that there is at most one variable child node.
       if (keys[i].startsWith('$')) {
         const nextRuleNode = curRuleNode[keys[i]];
         const matched = this.matchRuleNodeForValuePath(valuePath, depth + 1, nextRuleNode);
-        if (matched.rulePath !== null) {
-          return {
-            rulePath: [keys[i], ...matched.rulePath],
-            rules: matched.rules,
-          };
+        if (matched.ruleNode !== null) {
+          // Matched with a variable (i.e., with '$') child node.
+          matched.rulePath.unshift(keys[i]);
+          if (matched.pathVars[keys[i]] !== undefined) {
+            // This should not happen!
+            console.log('Duplicated path variables.')
+          } else {
+            matched.pathVars[keys[i]] = valuePath[depth];
+          }
+          return matched;
         }
+        // It's assumed that there is at most one variable (i.e., with '$') child node.
         break;
       }
     }
-    // No match found.
-    return { rulePath: null };
-  }
-
-  getPathVariables(valuePath, rulePath) {
-    const pathVars = {};
-    for (let i = 0; i < rulePath.length && i < valuePath.length; i++) {
-      const ruleNode = rulePath[i];
-      if (ruleNode.startsWith('$')) {
-        pathVars[ruleNode] = valuePath[i];
-      }
-    }
-    return pathVars;
+    // No match with child nodes.
+    return {
+      rulePath: [],
+      pathVars: {},
+      ruleNode: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
+    };
   }
 
   matchRuleForValuePath(valuePath) {
-    const matched =
-        this.matchRuleNodeForValuePath(valuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
-    if (matched.rulePath !== null) {
-      const pathVars = this.getPathVariables(valuePath, matched.rulePath);
-      return {
-        rulePath: matched.rulePath,
-        rules: matched.rules,
-        pathVars,
-      };
-    }
+    return this.matchRuleNodeForValuePath(valuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
   }
 
   matchOwnerForRulePath(rulePath) {
