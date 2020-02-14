@@ -6,6 +6,11 @@
   "afan": {
     ".write": true
   },
+  "apps": {
+    "chatbots": {
+      ".write": true
+    }
+  },
   "consensus": {
     "recent_proposers": {
       ".write": "(newData && util.isDict(newData) && util.length(newData) < 20) && (getValue('/consensus/voting/pre_commits') > getValue('/consensus/voting/threshold')) && (getValue('/consensus/voting/proposer') === auth)"
