@@ -98,10 +98,10 @@ class DB {
     return this.getPermissionForValue(parsedPath, value, address, timestamp);
   }
 
-  evalOwner(ruleOrOwnerPath, address) {
-    const parsedPath = ChainUtil.parsePath(ruleOrOwnerPath);
-    const { ownerConfig } = this.getOwnerConfig(parsedPath);
-    const permissions = this.getOwnerPermissions(ownerConfig, address);
+  evalOwner(refPath, address) {
+    const parsedPath = ChainUtil.parsePath(refPath);
+    const { config } = this.matchOwnerForParsedPath(parsedPath);
+    const permissions = this.getOwnerPermissions(config, address);
     if (!permissions) {
       return {};
     }
@@ -377,8 +377,8 @@ class DB {
   }
 
   getPermissionForRule(parsedRulePath, address) {
-    const { ownerConfig } = this.getOwnerConfig(parsedRulePath);
-    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    const { config } = this.matchOwnerForParsedPath(parsedRulePath);
+    const permissions =  this.getOwnerPermissions(config, address);
     if (!permissions) {
       return false;
     }
@@ -386,8 +386,8 @@ class DB {
   }
 
   getPermissionForFunction(parsedFuncPath, address) {
-    const { ownerConfig } = this.getOwnerConfig(parsedFuncPath);
-    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    const { config } = this.matchOwnerForParsedPath(parsedFuncPath);
+    const permissions =  this.getOwnerPermissions(config, address);
     if (!permissions) {
       return false;
     }
@@ -395,15 +395,15 @@ class DB {
   }
 
   getPermissionForOwner(parsedOwnerPath, address) {
-    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(parsedOwnerPath);
-    const permissions =  this.getOwnerPermissions(ownerConfig, address);
+    const { path, config } = this.matchOwnerForParsedPath(parsedOwnerPath);
+    const permissions =  this.getOwnerPermissions(config, address);
     if (!permissions) {
       return false;
     }
-    if (isAncestorConfig) {
-      return (permissions[OwnerProperties.BRANCH_OWNER] === true);
-    } else {
+    if (path.length === parsedOwnerPath.length) {
       return (permissions[OwnerProperties.WRITE_OWNER] === true);
+    } else {
+      return (permissions[OwnerProperties.BRANCH_OWNER] === true);
     }
   }
 
@@ -443,7 +443,7 @@ class DB {
           matched.path.unshift(keys[i]);
           if (matched.vars[keys[i]] !== undefined) {
             // This should not happen!
-            console.log('Duplicated path variables.')
+            console.log('Duplicated path variables that should NOT happen!')
           } else {
             matched.vars[keys[i]] = parsedValuePath[depth];
           }
@@ -484,60 +484,40 @@ class DB {
                     new BuiltInRuleUtil(), ...Object.values(pathVars));
   }
 
-  getOwnerConfig(ownerPath) {
-    const ownerNodes = [];
-    let curOwnerNode = this.dbData[PredefinedDbPaths.OWNERS_ROOT];
-    ownerNodes.push(curOwnerNode);
-    for (let i = 0; i < ownerPath.length && curOwnerNode; i++) {
-      curOwnerNode = curOwnerNode[ownerPath[i]];
-      if (curOwnerNode) {
-        ownerNodes.push(curOwnerNode);
-      }
+  static getOwnerConfig(ownerNode) {
+    if (!ownerNode) {
+      return null;
     }
-    let ownerConfig = null;
-    let isAncestorConfig = (ownerPath.length !== 0);
-    // Find the closest ancestor that has a owner config.
-    for (let i = ownerNodes.length - 1; i >= 0; i--) {
-      const refOwnerConfig = ownerNodes[i];
-      if (refOwnerConfig[OwnerProperties.OWNER]) {
-        ownerConfig = refOwnerConfig[OwnerProperties.OWNER];
-        isAncestorConfig = (i !== ownerPath.length);
-        break;
-      }
-    }
-    return { ownerConfig, isAncestorConfig };
+    const config = ownerNode[OwnerProperties.OWNER];
+    return config !== undefined ? config : null;
   }
 
-  static ownerMatched(ownerNode) {
-    return ownerNode[OwnerProperties.OWNER] !== undefined;
-  }
-
-  matchOwnerNode(parsedPath, depth, curOwnerNode) {
+  matchOwnerNode(parsedRefPath, depth, curOwnerNode) {
     // Maximum depth reached.
-    if (depth === parsedPath.length) {
+    if (depth === parsedRefPath.length) {
       return {
         path: [],
-        node: DB.ownerMatched(curOwnerNode) ? curOwnerNode : null,
+        config: DB.getOwnerConfig(curOwnerNode),
       };
     }
-    const nextOwnerNode = curOwnerNode[parsedPath[depth]];
+    const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
     if (nextOwnerNode !== undefined) {
-      const matched = this.matchOwnerNode(parsedPath, depth + 1, nextOwnerNode);
-      if (matched.node !== null) {
+      const matched = this.matchOwnerNode(parsedRefPath, depth + 1, nextOwnerNode);
+      if (matched.config !== null) {
         // Matched with a child node.
-        matched.path.unshift(parsedPath[depth]);
+        matched.path.unshift(parsedRefPath[depth]);
         return matched;
       }
     }
     // No match with child nodes.
     return {
       path: [],
-      node: DB.ownerMatched(curOwnerNode) ? curOwnerNode : null,
+      config: DB.getOwnerConfig(curOwnerNode),
     };
   }
 
-  matchOwnerForParsedPath(parsedPath) {
-    return this.matchOwnerNode(parsedPath, 0, this.dbData[PredefinedDbPaths.OWNERS_ROOT]);
+  matchOwnerForParsedPath(parsedRefPath) {
+    return this.matchOwnerNode(parsedRefPath, 0, this.dbData[PredefinedDbPaths.OWNERS_ROOT]);
   }
 
   getOwnerPermissions(config, address) {
