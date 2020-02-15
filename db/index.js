@@ -85,12 +85,12 @@ class DB {
 
   matchRule(valuePath) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    return this.matchRuleForValuePath(parsedPath);
+    return this.matchRuleForParsedPath(parsedPath);
   }
 
   matchOwner(rulePath) {
     const parsedPath = ChainUtil.parsePath(rulePath);
-    return this.matchOwnerForRulePath(parsedPath);
+    return this.matchOwnerForParsedPath(parsedPath);
   }
 
   evalRule(valuePath, value, address, timestamp) {
@@ -370,14 +370,14 @@ class DB {
   }
 
   // TODO(seo): Add rule check for sub-nodes when newValue is an opject.
-  getPermissionForValue(valuePath, newValue, address, timestamp) {
-    const matched = this.matchRuleForValuePath(valuePath);
-    const rule = matched.ruleNode ? matched.ruleNode[RuleProperties.WRITE] : false;
-    return !!this.evalRuleString(rule, matched.pathVars, valuePath, newValue, address, timestamp);
+  getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
+    const matched = this.matchRuleForParsedPath(parsedValuePath);
+    const rule = matched.node ? matched.node[RuleProperties.WRITE] : false;
+    return !!this.evalRuleString(rule, matched.vars, parsedValuePath, newValue, address, timestamp);
   }
 
-  getPermissionForRule(rulePath, address) {
-    const { ownerConfig } = this.getOwnerConfig(rulePath);
+  getPermissionForRule(parsedRulePath, address) {
+    const { ownerConfig } = this.getOwnerConfig(parsedRulePath);
     const permissions =  this.getOwnerPermissions(ownerConfig, address);
     if (!permissions) {
       return false;
@@ -385,8 +385,8 @@ class DB {
     return (permissions[OwnerProperties.WRITE_RULE] === true);
   }
 
-  getPermissionForFunction(functionPath, address) {
-    const { ownerConfig } = this.getOwnerConfig(functionPath);
+  getPermissionForFunction(parsedFuncPath, address) {
+    const { ownerConfig } = this.getOwnerConfig(parsedFuncPath);
     const permissions =  this.getOwnerPermissions(ownerConfig, address);
     if (!permissions) {
       return false;
@@ -394,8 +394,8 @@ class DB {
     return (permissions[OwnerProperties.WRITE_FUNCTION] === true);
   }
 
-  getPermissionForOwner(ownerPath, address) {
-    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(ownerPath);
+  getPermissionForOwner(parsedOwnerPath, address) {
+    const { ownerConfig, isAncestorConfig } = this.getOwnerConfig(parsedOwnerPath);
     const permissions =  this.getOwnerPermissions(ownerConfig, address);
     if (!permissions) {
       return false;
@@ -412,22 +412,22 @@ class DB {
   }
 
   // Does a DFS search to find most specific nodes matched in the rule tree.
-  matchRuleNodeForValuePath(valuePath, depth, curRuleNode) {
+  matchRuleNode(parsedValuePath, depth, curRuleNode) {
     // Maximum depth reached.
-    if (depth === valuePath.length) {
+    if (depth === parsedValuePath.length) {
       return {
-        rulePath: [],
-        pathVars: {},
-        ruleNode: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
+        path: [],
+        vars: {},
+        node: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
       };
     }
     // 1) Try to match with non-variable child node.
-    const nextRuleNode = curRuleNode[valuePath[depth]];
+    const nextRuleNode = curRuleNode[parsedValuePath[depth]];
     if (nextRuleNode !== undefined) {
-      const matched = this.matchRuleNodeForValuePath(valuePath, depth + 1, nextRuleNode);
-      if (matched.ruleNode !== null) {
+      const matched = this.matchRuleNode(parsedValuePath, depth + 1, nextRuleNode);
+      if (matched.node !== null) {
         // Matched with a non-variable child node.
-        matched.rulePath.unshift(valuePath[depth]);
+        matched.path.unshift(parsedValuePath[depth]);
         return matched;
       }
     }
@@ -437,15 +437,15 @@ class DB {
     for (let i = 0; i < keys.length; i++) {
       if (keys[i].startsWith('$')) {
         const nextRuleNode = curRuleNode[keys[i]];
-        const matched = this.matchRuleNodeForValuePath(valuePath, depth + 1, nextRuleNode);
-        if (matched.ruleNode !== null) {
+        const matched = this.matchRuleNode(parsedValuePath, depth + 1, nextRuleNode);
+        if (matched.node !== null) {
           // Matched with a variable (i.e., with '$') child node.
-          matched.rulePath.unshift(keys[i]);
-          if (matched.pathVars[keys[i]] !== undefined) {
+          matched.path.unshift(keys[i]);
+          if (matched.vars[keys[i]] !== undefined) {
             // This should not happen!
             console.log('Duplicated path variables.')
           } else {
-            matched.pathVars[keys[i]] = valuePath[depth];
+            matched.vars[keys[i]] = parsedValuePath[depth];
           }
           return matched;
         }
@@ -455,18 +455,14 @@ class DB {
     }
     // No match with child nodes.
     return {
-      rulePath: [],
-      pathVars: {},
-      ruleNode: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
+      path: [],
+      vars: {},
+      node: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
     };
   }
 
-  matchRuleForValuePath(valuePath) {
-    return this.matchRuleNodeForValuePath(valuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
-  }
-
-  matchOwnerForRulePath(rulePath) {
-    // TODO(seo): Fill this out.
+  matchRuleForParsedPath(parsedValuePath) {
+    return this.matchRuleNode(parsedValuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
   }
 
   makeEvalFunction(ruleString, pathVars) {
@@ -475,14 +471,14 @@ class DB {
                         '"use strict"; return ' + ruleString);
   }
 
-  evalRuleString(rule, pathVars, valuePath, newValue, address, timestamp) {
+  evalRuleString(rule, pathVars, parsedValuePath, newValue, address, timestamp) {
     if (typeof rule === 'boolean') {
       return rule;
     } else if (typeof rule !== 'string') {
       return false;
     }
     let evalFunc = this.makeEvalFunction(rule, pathVars);
-    const data = this.getValue(valuePath.join('/'));
+    const data = this.getValue(parsedValuePath.join('/'));
     return evalFunc(address, data, newValue, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
                     new BuiltInRuleUtil(), ...Object.values(pathVars));
@@ -490,12 +486,12 @@ class DB {
 
   getOwnerConfig(ownerPath) {
     const ownerNodes = [];
-    let currentOwnerNode = this.dbData[PredefinedDbPaths.OWNERS_ROOT];
-    ownerNodes.push(currentOwnerNode);
-    for (let i = 0; i < ownerPath.length && currentOwnerNode; i++) {
-      currentOwnerNode = currentOwnerNode[ownerPath[i]];
-      if (currentOwnerNode) {
-        ownerNodes.push(currentOwnerNode);
+    let curOwnerNode = this.dbData[PredefinedDbPaths.OWNERS_ROOT];
+    ownerNodes.push(curOwnerNode);
+    for (let i = 0; i < ownerPath.length && curOwnerNode; i++) {
+      curOwnerNode = curOwnerNode[ownerPath[i]];
+      if (curOwnerNode) {
+        ownerNodes.push(curOwnerNode);
       }
     }
     let ownerConfig = null;
@@ -510,6 +506,38 @@ class DB {
       }
     }
     return { ownerConfig, isAncestorConfig };
+  }
+
+  static ownerMatched(ownerNode) {
+    return ownerNode[OwnerProperties.OWNER] !== undefined;
+  }
+
+  matchOwnerNode(parsedPath, depth, curOwnerNode) {
+    // Maximum depth reached.
+    if (depth === parsedPath.length) {
+      return {
+        path: [],
+        node: DB.ownerMatched(curOwnerNode) ? curOwnerNode : null,
+      };
+    }
+    const nextOwnerNode = curOwnerNode[parsedPath[depth]];
+    if (nextOwnerNode !== undefined) {
+      const matched = this.matchOwnerNode(parsedPath, depth + 1, nextOwnerNode);
+      if (matched.node !== null) {
+        // Matched with a child node.
+        matched.path.unshift(parsedPath[depth]);
+        return matched;
+      }
+    }
+    // No match with child nodes.
+    return {
+      path: [],
+      node: DB.ownerMatched(curOwnerNode) ? curOwnerNode : null,
+    };
+  }
+
+  matchOwnerForParsedPath(parsedPath) {
+    return this.matchOwnerNode(parsedPath, 0, this.dbData[PredefinedDbPaths.OWNERS_ROOT]);
   }
 
   getOwnerPermissions(config, address) {
