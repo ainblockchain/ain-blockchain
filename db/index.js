@@ -2,14 +2,14 @@ const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, 
        DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
-const BuiltInFunctions = require('./built-in-functions');
+const Functions = require('./functions');
 const BuiltInRuleUtil = require('./built-in-rule-util');
 
 class DB {
   constructor() {
     this.dbData = {};
     this.initDbData();
-    this.func = new BuiltInFunctions(this);
+    this.func = new Functions(this);
   }
 
   initDbData() {
@@ -133,7 +133,7 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
-    this.func.runFunctions(parsedPath, valueCopy, timestamp, Date.now());
+    this.func.runBuiltInFunctions(parsedPath, valueCopy, timestamp, Date.now());
     return true;
   }
 

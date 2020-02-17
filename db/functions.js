@@ -14,7 +14,7 @@ const FunctionPaths = {
 /**
  * Built-in functions with function paths.
  */
-class BuiltInFunctions {
+class Functions {
   constructor(db) {
     this.db = db;
     this.funcMap = {
@@ -31,7 +31,7 @@ class BuiltInFunctions {
    * @param {*} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
    */
-  runFunctions(parsedValuePath, value, timestamp, currentTime) {
+  runBuiltInFunctions(parsedValuePath, value, timestamp, currentTime) {
     const matches = this._matchFunctionPaths(parsedValuePath);
     matches.forEach((elem) => {
       console.log(
@@ -61,7 +61,7 @@ class BuiltInFunctions {
     let funcs = [];
     Object.keys(this.funcMap).forEach((path) => {
       const parsedFuncPath = ChainUtil.parsePath(path);
-      const result = BuiltInFunctions.matchPaths(parsedValuePath, parsedFuncPath);
+      const result = Functions.matchPaths(parsedValuePath, parsedFuncPath);
       if (result !== null) {
         funcs.push({ func: this.funcMap[path], params: result.params })
       }
@@ -232,4 +232,4 @@ class BuiltInFunctions {
   }
 }
 
-module.exports = BuiltInFunctions;
+module.exports = Functions;
