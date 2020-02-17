@@ -339,6 +339,7 @@ class DB {
       return this.batch(tx.tx_list);
     }
     const result = this.executeOperation(tx.operation, tx.address, tx.timestamp);
+    // TODO(minhyun): Support BATCH & SET.
     if (result && (tx.operation.type == WriteDbOperations.SET_VALUE
       || tx.operation.type == WriteDbOperations.INC_VALUE
       || tx.operation.type == WriteDbOperations.DEC_VALUE)) {
