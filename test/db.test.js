@@ -24,7 +24,6 @@ describe("DB initialization", () => {
   describe("token", () => {
     it("loading token properly on initialization", () => {
       assert.deepEqual(node.db.getValue(`/${PredefinedDbPaths.TOKEN}`), GenesisToken);
-
     })
   })
 

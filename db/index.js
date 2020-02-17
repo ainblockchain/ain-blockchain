@@ -338,7 +338,13 @@ class DB {
     if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
-    return this.executeOperation(tx.operation, tx.address, tx.timestamp);
+    const result = this.executeOperation(tx.operation, tx.address, tx.timestamp);
+    if (result && (tx.operation.type == WriteDbOperations.SET_VALUE
+      || tx.operation.type == WriteDbOperations.INC_VALUE
+      || tx.operation.type == WriteDbOperations.DEC_VALUE)) {
+      this.func.triggerEvent(tx)
+    }
+    return result;
   }
 
   executeTransactionList(txList) {

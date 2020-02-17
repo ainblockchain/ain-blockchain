@@ -1,7 +1,9 @@
 const { PredefinedDbPaths, FunctionResultCode, DefaultValues } = require('../constants');
 const ChainUtil = require('../chain-util');
+const axios = require('axios')
 
 const FUNC_PARAM_PATTERN = /^{(.*)}$/;
+const EventListenerWhitelist = {'https://events.ainetwork.ai': true}
 
 const FunctionPaths = {
   TRANSFER: `${PredefinedDbPaths.TRANSFER}/{from}/{to}/{key}/${PredefinedDbPaths.TRANSFER_VALUE}`,
@@ -39,6 +41,21 @@ class BuiltInFunctions {
     })
   }
 
+  triggerEvent(transaction) {
+    const parsedValuePath = ChainUtil.parsePath(transaction.operation.ref);
+    const match = this.matchTriggerPaths(parsedValuePath);
+    if (match && match.event_listener) {
+      if (match.event_listener in EventListenerWhitelist) {
+        console.log(
+          `  ==> Triggering function event'${match}' with transaction '${transaction}'`)
+        return axios.post(match.event_listener, {
+          transaction: transaction,
+          function: match
+        })
+      }
+    }
+  }
+
   // TODO(seo): Optimize function path matching (e.g. using Aho-Corasick-like algorithm).
   _matchFunctionPaths(parsedValuePath) {
     let funcs = [];
@@ -70,6 +87,19 @@ class BuiltInFunctions {
       }
     }
     return null
+  }
+
+  matchTriggerPaths(parsedValuePath) {
+    let params = {};
+    let matched = true;
+    let currentRef = this.db.getRefForReading([PredefinedDbPaths.FUNCTIONS_ROOT])
+    for (let i = 0; i < parsedValuePath.length; i++) {
+      // TODO(minhyun): Support $key
+      if (currentRef[parsedValuePath[i]]) {
+        currentRef = currentRef[parsedValuePath[i]]
+      }
+    }
+    return currentRef['.function']
   }
 
   // TODO(seo): Add adress validity check.
