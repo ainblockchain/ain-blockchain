@@ -129,6 +129,14 @@ const RuleProperties = {
 };
 
 /**
+ * Properties of function configs
+ * @enum {string}
+ */
+const FunctionProperties = {
+  FUNCTION: '.function',
+};
+
+/**
  * Types of read database operations
  * @enum {string}
  */
@@ -205,6 +213,7 @@ module.exports = {
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
+  FunctionProperties,
   ReadDbOperations,
   WriteDbOperations,
   FunctionResultCode,

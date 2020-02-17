@@ -1,5 +1,6 @@
 const { PredefinedDbPaths, FunctionResultCode, DefaultValues } = require('../constants');
 const ChainUtil = require('../chain-util');
+const {FunctionProperties} = require('../constants')
 const axios = require('axios')
 
 const FUNC_PARAM_PATTERN = /^{(.*)}$/;
@@ -99,7 +100,7 @@ class Functions {
         currentRef = currentRef[parsedValuePath[i]]
       }
     }
-    return currentRef['.function']
+    return currentRef[FunctionProperties.FUNCTION]
   }
 
   // TODO(seo): Add adress validity check.
