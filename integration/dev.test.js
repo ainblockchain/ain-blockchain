@@ -102,7 +102,7 @@ describe('API Tests', () => {
         }
       }
     });
-    syncRequest('POST', server2 + '/set_func', {
+    syncRequest('POST', server2 + '/set_function', {
       json: {
         ref: '/test/test_function/some/path',
         value: {
@@ -136,7 +136,7 @@ describe('API Tests', () => {
         value: {}
       }
     });
-    syncRequest('POST', server2 + '/set_func', {
+    syncRequest('POST', server2 + '/set_function', {
       json: {
         ref: '/test/test_function/some/path',
         value: {}
@@ -396,8 +396,8 @@ describe('API Tests', () => {
     })
   })
 
-  describe('/set_func', () => {
-    it('set_func', () => {
+  describe('/set_function', () => {
+    it('set_function', () => {
       sleep(200)
       const request = {
         ref: "/test/test_function/other/path",
@@ -405,7 +405,7 @@ describe('API Tests', () => {
           ".function": "some other function config"
         }
       };
-      const body = JSON.parse(syncRequest('POST', server1 + '/set_func', {json: request})
+      const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: true});
     })
@@ -453,7 +453,7 @@ describe('API Tests', () => {
             }
           },
           {
-            type: 'SET_FUNC',
+            type: 'SET_FUNCTION',
             ref: "/test/test_function/other2/path",
             value: {
               ".function": "some other2 function config"
@@ -510,7 +510,7 @@ describe('API Tests', () => {
           },
           {
             operation: {
-              type: 'SET_FUNC',
+              type: 'SET_FUNCTION',
               ref: "/test/test_function/other3/path",
               value: {
                 ".function": "some other3 function config"
@@ -556,7 +556,7 @@ describe('API Tests', () => {
                   }
                 },
                 {
-                  type: 'SET_FUNC',
+                  type: 'SET_FUNCTION',
                   ref: "/test/test_function/other4/path",
                   value: {
                     ".function": "some other4 function config"

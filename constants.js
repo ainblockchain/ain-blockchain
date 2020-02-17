@@ -129,6 +129,14 @@ const RuleProperties = {
 };
 
 /**
+ * Properties of function configs
+ * @enum {string}
+ */
+const FunctionProperties = {
+  FUNCTION: '.function',
+};
+
+/**
  * Types of read database operations
  * @enum {string}
  */
@@ -151,7 +159,7 @@ const WriteDbOperations = {
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
-  SET_FUNC: 'SET_FUNC',
+  SET_FUNCTION: 'SET_FUNCTION',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
 };
@@ -205,6 +213,7 @@ module.exports = {
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
+  FunctionProperties,
   ReadDbOperations,
   WriteDbOperations,
   FunctionResultCode,

@@ -21,7 +21,7 @@ const jayson = require('jayson/promise');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
- 
+
 const ENV_VARIABLES = [
   {
     P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
@@ -92,7 +92,7 @@ RANDOM_OPERATION = [
   ['dec_value', {ref: 'test/balance/user1', value: 10000}],
   ['dec_value', {ref: 'test/balance/user2', value: 100002}],
   ['set_rule', {ref: 'test/test_rule/', value: { ".write": "some rule config"}}],
-  ['set_func', {ref: 'test/test_function/', value: { ".function": "some function config"}}],
+  ['set_function', {ref: 'test/test_function/', value: { ".function": "some function config"}}],
   ['set_owner', {ref: 'test/test_owner/', value: {
     ".owner": {
       "owners": {
@@ -348,7 +348,7 @@ describe('Integration Tests', () => {
       it('syncing across all chains', () => {
         let server;
         let newChain;
-        for (let i = 0; i < SERVERS.length; i++) { 
+        for (let i = 0; i < SERVERS.length; i++) {
           server = SERVERS[i];
           sendTransactions(sentOperations);
           waitUntilNewBlock();
@@ -357,7 +357,7 @@ describe('Integration Tests', () => {
             jayson.client.http(server + JSON_RPC_ENDPOINT)
             .request(
                 JSON_RPC_GET_BLOCKS,
-                {to: number + 1, protoVer: CURRENT_PROTOCOL_VERSION}, 
+                {to: number + 1, protoVer: CURRENT_PROTOCOL_VERSION},
                 function(err, response) {
                   if (err) throw err;
                   newChain = response.result.result;
@@ -642,7 +642,7 @@ describe('Integration Tests', () => {
           });
         });
       });
-      
+
       it('keeps track of nonces correctly after committing to a block', () => {
         return new Promise((resolve, reject) => {
           waitUntilNewBlock();

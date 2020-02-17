@@ -188,7 +188,7 @@ module.exports = function getMethods(
           done(null, addProtocolVersion({ result: p2pServer.node.db.getOwner(args.ref) }));
           return;
         case ReadDbOperations.GET_FUNC:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.getFunc(args.ref) }));
+          done(null, addProtocolVersion({ result: p2pServer.node.db.getFunction(args.ref) }));
           return;
         case ReadDbOperations.GET:
           done(null, addProtocolVersion({ result: p2pServer.node.db.get(args.op_list) }));

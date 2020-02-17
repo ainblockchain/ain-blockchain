@@ -1,7 +1,11 @@
 const { PredefinedDbPaths, FunctionResultCode, DefaultValues } = require('../constants');
 const ChainUtil = require('../chain-util');
+const {FunctionProperties} = require('../constants')
+const axios = require('axios')
 
 const FUNC_PARAM_PATTERN = /^{(.*)}$/;
+const EventListenerWhitelist = {'https://events.ainetwork.ai/trigger': true,
+  'http://localhost:3000/trigger': true}
 
 const FunctionPaths = {
   TRANSFER: `${PredefinedDbPaths.TRANSFER}/{from}/{to}/{key}/${PredefinedDbPaths.TRANSFER_VALUE}`,
@@ -12,7 +16,7 @@ const FunctionPaths = {
 /**
  * Built-in functions with function paths.
  */
-class BuiltInFunctions {
+class Functions {
   constructor(db) {
     this.db = db;
     this.funcMap = {
@@ -29,7 +33,7 @@ class BuiltInFunctions {
    * @param {*} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
    */
-  runFunctions(parsedValuePath, value, timestamp, currentTime) {
+  runBuiltInFunctions(parsedValuePath, value, timestamp, currentTime) {
     const matches = this._matchFunctionPaths(parsedValuePath);
     matches.forEach((elem) => {
       console.log(
@@ -39,12 +43,27 @@ class BuiltInFunctions {
     })
   }
 
+  triggerEvent(transaction) {
+    const parsedValuePath = ChainUtil.parsePath(transaction.operation.ref);
+    const match = this.matchTriggerPaths(parsedValuePath);
+    if (match && match.event_listener) {
+      if (match.event_listener in EventListenerWhitelist) {
+        console.log(
+          `  ==> Triggering function event'${match.event_listener}' with transaction '${transaction}'`)
+        return axios.post(match.event_listener, {
+          transaction: transaction,
+          function: match
+        })
+      }
+    }
+  }
+
   // TODO(seo): Optimize function path matching (e.g. using Aho-Corasick-like algorithm).
   _matchFunctionPaths(parsedValuePath) {
     let funcs = [];
     Object.keys(this.funcMap).forEach((path) => {
       const parsedFuncPath = ChainUtil.parsePath(path);
-      const result = BuiltInFunctions.matchPaths(parsedValuePath, parsedFuncPath);
+      const result = Functions.matchPaths(parsedValuePath, parsedFuncPath);
       if (result !== null) {
         funcs.push({ func: this.funcMap[path], params: result.params })
       }
@@ -70,6 +89,39 @@ class BuiltInFunctions {
       }
     }
     return null
+  }
+
+  matchTriggerPaths(parsedValuePath) {
+    let params = {};
+    let matched = true;
+    let currentRef = this.db.getRefForReading([PredefinedDbPaths.FUNCTIONS_ROOT])
+    if (!currentRef) {
+      return null;
+    }
+    for (let i = 0; i < parsedValuePath.length; i++) {
+      if (currentRef[parsedValuePath[i]]) {
+        currentRef = currentRef[parsedValuePath[i]]
+      } else {
+        // check for wildcards.
+        const keys = Object.keys(currentRef);
+        let found = false;
+        for (let j = 0; j < keys.length; j++) {
+          if (keys[j].startsWith('$')) {
+            currentRef = currentRef[keys[j]];
+            // TODO(minhyun): Support multiple match.
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          return null;
+        }
+      }
+    }
+    if (currentRef) {
+      return currentRef[FunctionProperties.FUNCTION]
+    }
+    return null;
   }
 
   // TODO(seo): Add adress validity check.
@@ -202,4 +254,4 @@ class BuiltInFunctions {
   }
 }
 
-module.exports = BuiltInFunctions;
+module.exports = Functions;

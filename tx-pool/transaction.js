@@ -83,7 +83,7 @@ class Transaction {
         const sanitizedOp = { ref: op.ref, value: op.value };
         if (op.type === WriteDbOperations.SET_VALUE || op.type === WriteDbOperations.INC_VALUE ||
             op.type === WriteDbOperations.DEC_VALUE || op.type === WriteDbOperations.SET_RULE ||
-            op.type === WriteDbOperations.SET_FUNC || op.type === WriteDbOperations.SET_OWNER) {
+            op.type === WriteDbOperations.SET_FUNCTION || op.type === WriteDbOperations.SET_OWNER) {
           sanitizedOp.type = op.type;
         }
         sanitized.push(sanitizedOp);
@@ -103,7 +103,7 @@ class Transaction {
       case WriteDbOperations.INC_VALUE:
       case WriteDbOperations.DEC_VALUE:
       case WriteDbOperations.SET_RULE:
-      case WriteDbOperations.SET_FUNC:
+      case WriteDbOperations.SET_FUNCTION:
       case WriteDbOperations.SET_OWNER:
         sanitized.ref = op.ref;
         sanitized.value = op.value;
