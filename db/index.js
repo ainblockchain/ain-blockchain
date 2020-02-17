@@ -71,7 +71,7 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
-  getFunc(functionPath) {
+  getFunction(functionPath) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     return this.readDatabase(fullPath);
@@ -106,7 +106,7 @@ class DB {
       } else if (item.type === ReadDbOperations.GET_RULE) {
         resultList.push(this.getRule(item.ref));
       } else if (item.type === ReadDbOperations.GET_FUNC) {
-        resultList.push(this.getFunc(item.ref));
+        resultList.push(this.getFunction(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
       } else if (item.type === ReadDbOperations.EVAL_RULE) {
@@ -224,7 +224,7 @@ class DB {
         if (ret !== true) {
           break;
         }
-      } else if (op.type === WriteDbOperations.SET_FUNC) {
+      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
         ret = this.setFunc(op.ref, op.value, address);
         if (ret !== true) {
           break;
@@ -234,6 +234,9 @@ class DB {
         if (ret !== true) {
           break;
         }
+      } else {
+        // Invalid Operation
+        return {code: 5, error_message: 'Invalid opeartionn type: ' + op.type};
       }
     }
     return ret;
@@ -254,7 +257,7 @@ class DB {
           case WriteDbOperations.INC_VALUE:
           case WriteDbOperations.DEC_VALUE:
           case WriteDbOperations.SET_RULE:
-          case WriteDbOperations.SET_FUNC:
+          case WriteDbOperations.SET_FUNCTION:
           case WriteDbOperations.SET_OWNER:
           case WriteDbOperations.SET:
             resultList.push(this.executeOperation(operation, tx.address, tx.timestamp));
@@ -325,7 +328,7 @@ class DB {
         return this.decValue(operation.ref, operation.value, address, timestamp);
       case WriteDbOperations.SET_RULE:
         return this.setRule(operation.ref, operation.value, address);
-      case WriteDbOperations.SET_FUNC:
+      case WriteDbOperations.SET_FUNCTION:
         return this.setFunc(operation.ref, operation.value, address);
       case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address);
@@ -340,9 +343,11 @@ class DB {
     }
     const result = this.executeOperation(tx.operation, tx.address, tx.timestamp);
     // TODO(minhyun): Support BATCH & SET.
+    console.log(result)
     if (result && (tx.operation.type == WriteDbOperations.SET_VALUE
       || tx.operation.type == WriteDbOperations.INC_VALUE
       || tx.operation.type == WriteDbOperations.DEC_VALUE)) {
+        console.log("trigger")
       this.func.triggerEvent(tx)
     }
     return result;
@@ -428,7 +433,7 @@ class DB {
 
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-                        'getFunc', 'getOwner', 'util', ...Object.keys(pathVars),
+                        'getFunction', 'getOwner', 'util', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
@@ -441,7 +446,7 @@ class DB {
     let evalFunc = this.makeEvalFunction(rule, pathVars);
     const data = this.getValue(valuePath.join('/'));
     return evalFunc(address, data, newValue, timestamp, this.getValue.bind(this),
-                    this.getRule.bind(this), this.getFunc.bind(this), this.getOwner.bind(this),
+                    this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
                     new BuiltInRuleUtil(), ...Object.values(pathVars));
   }
 

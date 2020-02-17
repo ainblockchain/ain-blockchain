@@ -159,7 +159,7 @@ const WriteDbOperations = {
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
   SET_RULE: 'SET_RULE',
-  SET_FUNC: 'SET_FUNC',
+  SET_FUNCTION: 'SET_FUNCTION',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
 };

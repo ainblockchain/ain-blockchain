@@ -4,7 +4,8 @@ const {FunctionProperties} = require('../constants')
 const axios = require('axios')
 
 const FUNC_PARAM_PATTERN = /^{(.*)}$/;
-const EventListenerWhitelist = {'https://events.ainetwork.ai': true}
+const EventListenerWhitelist = {'https://events.ainetwork.ai/trigger': true,
+  'http://localhost:3000/trigger': true}
 
 const FunctionPaths = {
   TRANSFER: `${PredefinedDbPaths.TRANSFER}/{from}/{to}/{key}/${PredefinedDbPaths.TRANSFER_VALUE}`,
@@ -48,7 +49,7 @@ class Functions {
     if (match && match.event_listener) {
       if (match.event_listener in EventListenerWhitelist) {
         console.log(
-          `  ==> Triggering function event'${match}' with transaction '${transaction}'`)
+          `  ==> Triggering function event'${match.event_listener}' with transaction '${transaction}'`)
         return axios.post(match.event_listener, {
           transaction: transaction,
           function: match
@@ -94,6 +95,9 @@ class Functions {
     let params = {};
     let matched = true;
     let currentRef = this.db.getRefForReading([PredefinedDbPaths.FUNCTIONS_ROOT])
+    if (!currentRef) {
+      return null;
+    }
     for (let i = 0; i < parsedValuePath.length; i++) {
       if (currentRef[parsedValuePath[i]]) {
         currentRef = currentRef[parsedValuePath[i]]

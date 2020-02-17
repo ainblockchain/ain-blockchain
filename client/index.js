@@ -17,7 +17,7 @@ const MAX_BLOCKS = 20;
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
   console.log(err);
-}); 
+});
 
 const PORT = process.env.PORT || 8080;
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
@@ -83,8 +83,8 @@ app.get('/get_rule', (req, res, next) => {
     .end();
 });
 
-app.get('/get_func', (req, res, next) => {
-  const result = node.db.getFunc(req.query.ref);
+app.get('/get_function', (req, res, next) => {
+  const result = node.db.getFunction(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -165,10 +165,10 @@ app.post('/set_rule', (req, res, next) => {
     .end();
 });
 
-app.post('/set_func', (req, res, next) => {
+app.post('/set_function', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_FUNC), isNoncedTransaction);
+      createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})

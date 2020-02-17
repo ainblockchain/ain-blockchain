@@ -56,7 +56,7 @@ describe("Functions", () => {
         "some": {
           "path": {
             ".function": {
-              "event_listener": "https://events.ainetwork.ai",
+              "event_listener": "https://events.ainetwork.ai/trigger",
               "service_name": "https://ainize.ai",
               "function_hash": "0x12345"
             }

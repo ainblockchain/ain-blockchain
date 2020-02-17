@@ -163,13 +163,13 @@ describe("DB operations", () => {
     })
   })
 
-  describe("getFunc operations", () => {
+  describe("getFunction operations", () => {
     it("when retrieving non-existing function config", () => {
-      expect(node.db.getFunc("/test/test_function/other/function/path")).to.equal(null);
+      expect(node.db.getFunction("/test/test_function/other/function/path")).to.equal(null);
     })
 
     it("when retrieving existing function config", () => {
-      assert.deepEqual(node.db.getFunc("/test/test_function/some/path"),
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"),
           { ".function": "some function config" });
     })
   })
@@ -409,7 +409,7 @@ describe("DB operations", () => {
     it("when overwriting existing function config", () => {
       const functionConfig = {".function": "other function config"};
       expect(node.db.setFunc("/test/test_function/some/path", functionConfig)).to.equal(true)
-      assert.deepEqual(node.db.getFunc("/test/test_function/some/path"), functionConfig)
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), functionConfig)
     })
   })
 
