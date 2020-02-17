@@ -95,12 +95,29 @@ class Functions {
     let matched = true;
     let currentRef = this.db.getRefForReading([PredefinedDbPaths.FUNCTIONS_ROOT])
     for (let i = 0; i < parsedValuePath.length; i++) {
-      // TODO(minhyun): Support $key
       if (currentRef[parsedValuePath[i]]) {
         currentRef = currentRef[parsedValuePath[i]]
+      } else {
+        // check for wildcards.
+        const keys = Object.keys(currentRef);
+        let found = false;
+        for (let j = 0; j < keys.length; j++) {
+          if (keys[j].startsWith('$')) {
+            currentRef = currentRef[keys[j]];
+            // TODO(minhyun): Support multiple match.
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          return null;
+        }
       }
     }
-    return currentRef[FunctionProperties.FUNCTION]
+    if (currentRef) {
+      return currentRef[FunctionProperties.FUNCTION]
+    }
+    return null;
   }
 
   // TODO(seo): Add adress validity check.

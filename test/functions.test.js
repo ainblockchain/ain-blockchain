@@ -11,21 +11,41 @@ describe("Functions", () => {
   describe("matchTriggerPaths", () => {
     beforeEach(() => {
       db = new DB();
-      dbFuncs = {
+      dbFuncs1 = {
         "some": {
           "path": {
-            ".function": "some function config"
+            ".function": "some function config1"
           },
         }
       };
-      result = db.setFunc("test/test_function", dbFuncs);
+      dbFuncs2 = {
+        "message": {
+          "$key": {
+            ".function": "some function config2"
+          },
+        }
+      };
+      result = db.setFunc("test/test_function1", dbFuncs1);
+      result = db.setFunc("test/test_function2", dbFuncs2);
       functions = new Functions(db)
     })
 
     it("when matching function paths", () => {
-      parsedValuePath = ChainUtil.parsePath(`test/test_function/some/path`)
+      parsedValuePath = ChainUtil.parsePath(`test/test_function1/some/path`)
       result = functions.matchTriggerPaths(parsedValuePath)
-      expect(result).to.equal("some function config")
+      expect(result).to.equal("some function config1")
+    })
+
+    it("supports whild card", () => {
+      parsedValuePath = ChainUtil.parsePath(`test/test_function2/message/1`)
+      result = functions.matchTriggerPaths(parsedValuePath)
+      expect(result).to.equal("some function config2")
+    })
+
+    it("whild card doesn't match", () => {
+      parsedValuePath = ChainUtil.parsePath(`test/test_function2/message/too/deep`)
+      result = functions.matchTriggerPaths(parsedValuePath)
+      expect(result).to.equal(null)
     })
   })
 
@@ -37,7 +57,7 @@ describe("Functions", () => {
           "path": {
             ".function": {
               "event_listener": "https://events.ainetwork.ai",
-              "function_provider": "https://ainize.ai",
+              "service_name": "https://ainize.ai",
               "function_hash": "0x12345"
             }
           },
