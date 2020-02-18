@@ -48,19 +48,14 @@ sh setup_ubuntu.sh
 ##### Copy files to a sharable folder & install npm packages
 
 ```
-cd
-sudo mkdir ../blockchain-database
-sudo chmod 777 ../blockchain-database
-mv * ../blockchain-database 
-cd ../blockchain-database/tracker-server
-npm install
-cd ..
+sh setup_tracker_gcp.sh
 ```
 
 ##### Start tracker server job
 
+In the project root, run:
 ```
-nohup node tracker-server/index.js > logs.txt &
+sh start_tracker_prod.sh
 ```
 
 ### How to run with Docker
@@ -153,24 +148,20 @@ sh setup_ubuntu.sh
 ##### Copy files to a sharable folder & install npm packages
 
 ```
-cd
-sudo mkdir ../blockchain-database
-sudo chmod 777 ../blockchain-database
-mv * ../blockchain-database 
-cd ../blockchain-database
-npm install
+sh setup_node_gcp.sh
 ```
 
 ##### Start Node server job
 
+In the project root, run:
 ```
-sh start_prod_node.sh <SEASON> <SERVER_INDEX>
+sh start_node_prod.sh <SEASON> <SERVER_INDEX>
 ```
 
 For example,
 
 ```
-sh start_prod_node.sh spring 0
+sh start_node_prod.sh spring 0
 ```
 
 ### How to run with Docker
