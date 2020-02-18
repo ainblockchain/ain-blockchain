@@ -27,7 +27,7 @@
     "ref": "/apps/chatbots/common/message/$key",
     "value": {
       ".function": {
-        "event_listener": "http://events.ainetwork.ai/trigger",
+        "event_listener": "https://events.ainetwork.ai/trigger",
         "service_name": "https://ainize.ai",
         "function_id": "liayoo-ainjs"
       }
