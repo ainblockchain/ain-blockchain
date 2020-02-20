@@ -343,12 +343,12 @@ class DB {
     }
     const result = this.executeOperation(tx.operation, tx.address, tx.timestamp);
     // TODO(minhyun): Support BATCH & SET.
-    console.log(result)
+    //console.log(result);
     if (result && (tx.operation.type == WriteDbOperations.SET_VALUE
-      || tx.operation.type == WriteDbOperations.INC_VALUE
-      || tx.operation.type == WriteDbOperations.DEC_VALUE)) {
-        console.log("trigger")
-      this.func.triggerEvent(tx)
+        || tx.operation.type == WriteDbOperations.INC_VALUE
+        || tx.operation.type == WriteDbOperations.DEC_VALUE)) {
+      //console.log("trigger");
+      this.func.triggerEvent(tx);
     }
     return result;
   }

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ "$#" -lt 2 ]; then
-    echo "Usage: sh start_node.sh spring 1"
+    echo "Usage: sh start_node.sh spring 0"
     exit
 fi
 

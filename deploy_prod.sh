@@ -16,8 +16,8 @@ echo "SEASON=$SEASON"
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
 
-FILES_FOR_TRACKER="setup_ubuntu.sh tracker-server/"
-FILES_FOR_NODE="blockchain/ chain-util.js client/ constants.js db json_rpc node/ package.json server/ setup_ubuntu.sh start_prod_node.sh tx-pool/"
+FILES_FOR_TRACKER="setup_tracker_gcp.sh setup_ubuntu.sh start_tracker_prod.sh tracker-server/"
+FILES_FOR_NODE="blockchain/ chain-util.js client/ constants.js db json_rpc node/ package.json server/ setup_node_gcp.sh setup_ubuntu.sh start_node_prod.sh tx-pool/"
 
 printf "\nRemoving redundant files..."
 rm -rf blockchain/blockchains client/logs tracker-server/node_modules
