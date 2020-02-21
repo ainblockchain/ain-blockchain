@@ -90,7 +90,7 @@ class DB {
 
   matchOwner(rulePath) {
     const parsedPath = ChainUtil.parsePath(rulePath);
-    return this.matchOwnerForParsedPath(parsedPath);
+    return this.convertOwnerMatch(this.matchOwnerForParsedPath(parsedPath));
   }
 
   evalRule(valuePath, value, address, timestamp) {
@@ -98,14 +98,10 @@ class DB {
     return this.getPermissionForValue(parsedPath, value, address, timestamp);
   }
 
-  evalOwner(refPath, address) {
+  evalOwner(refPath, permission, address) {
     const parsedPath = ChainUtil.parsePath(refPath);
-    const { config } = this.matchOwnerForParsedPath(parsedPath);
-    const permissions = this.getOwnerPermissions(config, address);
-    if (!permissions) {
-      return {};
-    }
-    return permissions;
+    const matched = this.matchOwnerForParsedPath(parsedPath);
+    return this.checkPermission(matched.closestOwner.config, address, permission);
   }
 
   get(opList) {
@@ -122,7 +118,7 @@ class DB {
       } else if (item.type === ReadDbOperations.EVAL_RULE) {
         resultList.push(this.evalRule(item.ref, item.value, item.address));
       } else if (item.type === ReadDbOperations.EVAL_OWNER) {
-        resultList.push(this.evalOwner(item.ref, item.address));
+        resultList.push(this.evalOwner(item.ref, item.permission, item.address));
       }
     });
     return resultList;
@@ -387,37 +383,28 @@ class DB {
     const newData =
         this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
     return !!this.evalRuleString(
-        matched.closestRule.rule, matched.pathVars, data, newData, address, timestamp);
+        matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
   }
 
   getPermissionForRule(parsedRulePath, address) {
-    const { config } = this.matchOwnerForParsedPath(parsedRulePath);
-    const permissions =  this.getOwnerPermissions(config, address);
-    if (!permissions) {
-      return false;
-    }
-    return (permissions[OwnerProperties.WRITE_RULE] === true);
+    const matched = this.matchOwnerForParsedPath(parsedRulePath);
+    return this.checkPermission(matched.closestOwner.config, address, OwnerProperties.WRITE_RULE);
   }
 
   getPermissionForFunction(parsedFuncPath, address) {
-    const { config } = this.matchOwnerForParsedPath(parsedFuncPath);
-    const permissions =  this.getOwnerPermissions(config, address);
-    if (!permissions) {
-      return false;
-    }
-    return (permissions[OwnerProperties.WRITE_FUNCTION] === true);
+    const matched = this.matchOwnerForParsedPath(parsedFuncPath);
+    return this.checkPermission(
+        matched.closestOwner.config, address, OwnerProperties.WRITE_FUNCTION);
   }
 
   getPermissionForOwner(parsedOwnerPath, address) {
-    const { path, config } = this.matchOwnerForParsedPath(parsedOwnerPath);
-    const permissions =  this.getOwnerPermissions(config, address);
-    if (!permissions) {
-      return false;
-    }
-    if (path.length === parsedOwnerPath.length) {
-      return (permissions[OwnerProperties.WRITE_OWNER] === true);
+    const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
+    if (matched.closestOwner.path.length === parsedOwnerPath.length) {
+      return this.checkPermission(
+          matched.closestOwner.config, address, OwnerProperties.WRITE_OWNER);
     } else {
-      return (permissions[OwnerProperties.BRANCH_OWNER] === true);
+      return this.checkPermission(
+          matched.closestOwner.config, address, OwnerProperties.BRANCH_OWNER);
     }
   }
 
@@ -432,12 +419,12 @@ class DB {
     return null;
   }
 
-  static hasRule(ruleNode) {
-    return ruleNode[RuleProperties.WRITE] !== undefined;
+  static hasRuleConfig(ruleNode) {
+    return ruleNode && ruleNode[RuleProperties.WRITE] !== undefined;
   }
 
-  static getRule(ruleNode) {
-    return DB.hasRule(ruleNode) ? ruleNode[RuleProperties.WRITE] : null;
+  static getRuleConfig(ruleNode) {
+    return DB.hasRuleConfig(ruleNode) ? ruleNode[RuleProperties.WRITE] : null;
   }
 
   // Does a DFS search to find most specific nodes matched in the rule tree.
@@ -449,19 +436,18 @@ class DB {
         matchedRulePath: [],
         pathVars: {},
         matchedRuleNode: curRuleNode,
-        closestConfigNode: DB.hasRule(curRuleNode) ? curRuleNode : null,
-        closestConfigDepth: depth,
+        closestConfigNode: DB.hasRuleConfig(curRuleNode) ? curRuleNode : null,
+        closestConfigDepth: DB.hasRuleConfig(curRuleNode) ? depth : 0,
       };
     }
     // 1) Try to match with non-variable child node.
     const nextRuleNode = curRuleNode[parsedValuePath[depth]];
     if (nextRuleNode !== undefined) {
       const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
-      // Matched with a non-variable child node.
       matched.matchedValuePath.unshift(parsedValuePath[depth]);
       matched.matchedRulePath.unshift(parsedValuePath[depth]);
-      if (!matched.closestConfigNode && DB.hasRule(curRuleNode)) {
-        matched.closestConfigNode = DB.hasRule(curRuleNode) ? curRuleNode : null;
+      if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+        matched.closestConfigNode = curRuleNode;
         matched.closestConfigDepth = depth;
       }
       return matched;
@@ -472,7 +458,6 @@ class DB {
     if (varNodeName !== null) {
       const nextRuleNode = curRuleNode[varNodeName];
       const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
-      // Matched with a variable (i.e., with '$') child node.
       matched.matchedValuePath.unshift(parsedValuePath[depth]);
       matched.matchedRulePath.unshift(varNodeName);
       if (matched.pathVars[varNodeName] !== undefined) {
@@ -481,8 +466,8 @@ class DB {
       } else {
         matched.pathVars[varNodeName] = parsedValuePath[depth];
       }
-      if (!matched.closestConfigNode && DB.hasRule(curRuleNode)) {
-        matched.closestConfigNode = DB.hasRule(curRuleNode) ? curRuleNode : null;
+      if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+        matched.closestConfigNode = curRuleNode;
         matched.closestConfigDepth = depth;
       }
       return matched;
@@ -493,8 +478,8 @@ class DB {
       matchedRulePath: [],
       pathVars: {},
       matchedRuleNode: curRuleNode,
-      closestConfigNode: DB.hasRule(curRuleNode) ? curRuleNode : null,
-      closestConfigDepth: depth,
+      closestConfigNode: DB.hasRuleConfig(curRuleNode) ? curRuleNode : null,
+      closestConfigDepth: DB.hasRuleConfig(curRuleNode) ? depth : 0,
     };
   }
 
@@ -505,10 +490,10 @@ class DB {
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
     const rules = [];
-    if (depth !== 0 && DB.hasRule(curRuleNode)) {
+    if (depth !== 0 && DB.hasRuleConfig(curRuleNode)) {
       rules.push({
         path: [],
-        rule: DB.getRule(curRuleNode),
+        config: DB.getRuleConfig(curRuleNode),
       })
     }
     const varNodeName = DB.getVariableNodeName(curRuleNode);
@@ -548,26 +533,26 @@ class DB {
       pathVars: matched.pathVars,
       closestRule: {
         path: matched.matchedRulePath.slice(0, matched.closestConfigDepth),
-        rule: DB.getRule(matched.closestConfigNode),
+        config: DB.getRuleConfig(matched.closestConfigNode),
       },
       subtreeRules,
     }
   }
 
-  convertPathAndRule(pathAndRule) {
+  convertPathAndConfig(pathAndConfig) {
     return {
-      path: '/' + pathAndRule.path.join('/'),
-      rule: pathAndRule.rule,
+      path: '/' + pathAndConfig.path.join('/'),
+      config: pathAndConfig.config,
     }
   }
 
   convertRuleMatch(matched) {
-    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndRule(entry));
+    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry));
     return {
       matched_value_path: '/' + matched.matchedValuePath.join('/'),
       matched_rule_path: '/' + matched.matchedRulePath.join('/'),
       path_vars: matched.pathVars,
-      closest_rule: this.convertPathAndRule(matched.closestRule),
+      closest_rule: this.convertPathAndConfig(matched.closestRule),
       subtree_rules: subtreeRules,
     };
   }
@@ -590,40 +575,61 @@ class DB {
                     new BuiltInRuleUtil(), ...Object.values(pathVars));
   }
 
-  static getOwnerConfig(ownerNode) {
-    if (!ownerNode) {
-      return null;
-    }
-    const config = ownerNode[OwnerProperties.OWNER];
-    return config !== undefined ? config : null;
+  static hasOwnerConfig(ownerNode) {
+    return ownerNode && ownerNode[OwnerProperties.OWNER] !== undefined;
   }
 
-  matchOwnerNode(parsedRefPath, depth, curOwnerNode) {
+  static getOwnerConfig(ownerNode) {
+    return DB.hasOwnerConfig(ownerNode) ? ownerNode[OwnerProperties.OWNER] : null;
+  }
+
+  matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {
     // Maximum depth reached.
     if (depth === parsedRefPath.length) {
       return {
-        path: [],
-        config: DB.getOwnerConfig(curOwnerNode),
+        matchedDepth: depth,
+        closestConfigNode: DB.hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
+        closestConfigDepth: DB.hasOwnerConfig(curOwnerNode) ? depth : 0,
       };
     }
     const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
     if (nextOwnerNode !== undefined) {
-      const matched = this.matchOwnerNode(parsedRefPath, depth + 1, nextOwnerNode);
-      if (matched.config !== null) {
-        // Matched with a child node.
-        matched.path.unshift(parsedRefPath[depth]);
-        return matched;
+      const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
+      if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
+        matched.closestConfigNode = curOwnerNode;
+        matched.closestConfigDepth = depth;
       }
+      return matched;
     }
     // No match with child nodes.
     return {
-      path: [],
-      config: DB.getOwnerConfig(curOwnerNode),
+      matchedDepth: depth,
+      closestConfigNode: DB.hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
+      closestConfigDepth: DB.hasOwnerConfig(curOwnerNode) ? depth : 0,
     };
   }
 
+  matchOwnerPath(parsedRefPath) {
+    return this.matchOwnerPathRecursive(
+        parsedRefPath, 0, this.dbData[PredefinedDbPaths.OWNERS_ROOT]);
+  }
+
   matchOwnerForParsedPath(parsedRefPath) {
-    return this.matchOwnerNode(parsedRefPath, 0, this.dbData[PredefinedDbPaths.OWNERS_ROOT]);
+    const matched = this.matchOwnerPath(parsedRefPath);
+    return {
+      matchedOwnerPath: parsedRefPath.slice(0, matched.matchedDepth),
+      closestOwner: {
+        path: parsedRefPath.slice(0, matched.closestConfigDepth),
+        config: DB.getOwnerConfig(matched.closestConfigNode),
+      },
+    }
+  }
+
+  convertOwnerMatch(matched) {
+    return {
+      matched_owner_path: '/' + matched.matchedOwnerPath.join('/'),
+      closest_owner: this.convertPathAndConfig(matched.closestOwner),
+    };
   }
 
   getOwnerPermissions(config, address) {
@@ -645,6 +651,11 @@ class DB {
       return null;
     }
     return permissions;
+  }
+
+  checkPermission(config, address, permission) {
+    const permissions = this.getOwnerPermissions(config, address);
+    return !!(permissions && permissions[permission] === true);
   }
 }
 

@@ -115,9 +115,9 @@ const OwnerProperties = {
   BRANCH_OWNER: 'branch_owner',
   OWNER: '.owner',
   OWNERS: 'owners',
+  WRITE_FUNCTION: 'write_function',
   WRITE_OWNER: 'write_owner',
   WRITE_RULE: 'write_rule',
-  WRITE_FUNCTION: 'write_function',
 };
 
 /**

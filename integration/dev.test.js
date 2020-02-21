@@ -262,22 +262,17 @@ describe('API Tests', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       const ref = "/test/test_owner/some/path";
       const address = "abcd";
-      const request = { ref, address, protoVer: CURRENT_PROTOCOL_VERSION };
+      const permission = "write_owner";
+      const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
       const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
         .body.toString('utf-8'));
-      const expected = {
-        "branch_owner": false,
-        "write_function": true,
-        "write_owner": true,
-        "write_rule": false,
-      };
       assert.deepEqual(body, {
         code: 0,
-        result: expected
+        result: true,
       });
       return client.request('ain_evalOwner', request)
       .then(res => {
-        assert.deepEqual(res.result.result, expected);
+        assert.deepEqual(res.result.result, true);
       })
     })
   })
@@ -312,6 +307,7 @@ describe('API Tests', () => {
           {
             type: 'EVAL_OWNER',
             ref: "/test/test_owner/some/path",
+            permission: "write_owner",
             address: "abcd"
           }
         ]
@@ -341,12 +337,7 @@ describe('API Tests', () => {
             }
           },
           true,
-          {
-            "branch_owner": false,
-            "write_function": true,
-            "write_owner": true,
-            "write_rule": false,
-          }
+          true,
         ]
       });
     })

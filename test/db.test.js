@@ -220,25 +220,18 @@ describe("DB operations", () => {
 
   describe("evalOwner operations", () => {
     it("when evaluating non-existing owner config", () => {
-      assert.deepEqual(node.db.evalOwner("/test/test_owner/other/owner/path", 'abcd'), {})
+      assert.deepEqual(
+          node.db.evalOwner("/test/test_owner/other/owner/path", 'write_rule', 'abcd'), false)
     })
 
     it("when evaluating existing owner config with matching address", () => {
-      assert.deepEqual(node.db.evalOwner("/test/test_owner/some/path", 'abcd'), {
-        "branch_owner": false,
-        "write_function": true,
-        "write_owner": false,
-        "write_rule": true,
-      });
+      assert.deepEqual(
+          node.db.evalOwner("/test/test_owner/some/path", 'write_rule', 'abcd'), true)
     })
 
     it("when evaluating existing owner config without matching address", () => {
-      assert.deepEqual(node.db.evalOwner("/test/test_owner/some/path", 'efgh'), {
-        "branch_owner": true,
-        "write_function": true,
-        "write_owner": true,
-        "write_rule": true,
-      });
+      assert.deepEqual(
+          node.db.evalOwner("/test/test_owner/some/path", 'write_owner', 'efgh'), true)
     })
   })
 
@@ -270,9 +263,10 @@ describe("DB operations", () => {
         {
           type: "EVAL_OWNER",
           ref: "/owner/other/path",
+          permission: "write_rule",
           address: "abcd"
         },
-      ]), [null, null, null, null, false, {}]);
+      ]), [null, null, null, null, false, false]);
     })
 
     it("when retrieving existing value or rule or owner", () => {
@@ -302,6 +296,7 @@ describe("DB operations", () => {
         {
           type: "EVAL_OWNER",
           ref: "/test/test_owner/some/path",
+          permission: "write_rule",
           address: "abcd"
         },
       ]), [
@@ -331,12 +326,7 @@ describe("DB operations", () => {
           }
         },
         true,
-        {
-          "branch_owner": false,
-          "write_function": true,
-          "write_owner": false,
-          "write_rule": true,
-        }
+        true,
       ]);
     })
   })
