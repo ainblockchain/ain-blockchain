@@ -85,7 +85,7 @@ class DB {
 
   matchRule(valuePath) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    return this.matchRuleForParsedPath(parsedPath);
+    return this.convertRuleMatch(this.matchRuleForParsedPath(parsedPath));
   }
 
   matchOwner(rulePath) {
@@ -378,6 +378,7 @@ class DB {
     return newValue;
   }
 
+  // TODO(seo): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const value = this.getValue(parsedValuePath.join('/'));
@@ -545,12 +546,30 @@ class DB {
       matchedValuePath: matched.matchedValuePath,
       matchedRulePath: matched.matchedRulePath,
       pathVars: matched.pathVars,
-      subtreeRules,
       closestRule: {
         path: matched.matchedRulePath.slice(0, matched.closestConfigDepth),
         rule: DB.getRule(matched.closestConfigNode),
       },
+      subtreeRules,
     }
+  }
+
+  convertPathAndRule(pathAndRule) {
+    return {
+      path: '/' + pathAndRule.path.join('/'),
+      rule: pathAndRule.rule,
+    }
+  }
+
+  convertRuleMatch(matched) {
+    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndRule(entry));
+    return {
+      matched_value_path: '/' + matched.matchedValuePath.join('/'),
+      matched_rule_path: '/' + matched.matchedRulePath.join('/'),
+      path_vars: matched.pathVars,
+      closest_rule: this.convertPathAndRule(matched.closestRule),
+      subtree_rules: subtreeRules,
+    };
   }
 
   makeEvalFunction(ruleString, pathVars) {
