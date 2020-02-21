@@ -369,14 +369,24 @@ class DB {
     });
   }
 
-  getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
-    const matched = this.matchRulePath(parsedValuePath);
-    if (!matched.closestConfigNode || !DB.hasRule(matched.closestConfigNode)) {
-      return false;
+  addPathToValue(value, matchedValuePath, closestConfigDepth) {
+    const pathToAdd = matchedValuePath.slice(closestConfigDepth, matchedValuePath.length);
+    let newValue = value;
+    for (let i = pathToAdd.length - 1; i >= 0; i--) {
+      newValue = { [pathToAdd[i]]: newValue };
     }
-    const rule = DB.getRule(matched.closestConfigNode);
+    return newValue;
+  }
+
+  getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
+    const matched = this.matchRuleForParsedPath(parsedValuePath);
+    const value = this.getValue(parsedValuePath.join('/'));
+    const data =
+        this.addPathToValue(value, matched.matchedValuePath, matched.closestRule.path.length);
+    const newData =
+        this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
     return !!this.evalRuleString(
-        rule, matched.pathVars, parsedValuePath, newValue, address, timestamp);
+        matched.closestRule.rule, matched.pathVars, data, newData, address, timestamp);
   }
 
   getPermissionForRule(parsedRulePath, address) {
@@ -549,15 +559,14 @@ class DB {
                         '"use strict"; return ' + ruleString);
   }
 
-  evalRuleString(rule, pathVars, parsedValuePath, newValue, address, timestamp) {
+  evalRuleString(rule, pathVars, data, newData, address, timestamp) {
     if (typeof rule === 'boolean') {
       return rule;
     } else if (typeof rule !== 'string') {
       return false;
     }
     let evalFunc = this.makeEvalFunction(rule, pathVars);
-    const data = this.getValue(parsedValuePath.join('/'));
-    return evalFunc(address, data, newValue, timestamp, this.getValue.bind(this),
+    return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
                     new BuiltInRuleUtil(), ...Object.values(pathVars));
   }
