@@ -369,11 +369,14 @@ class DB {
     });
   }
 
-  // TODO(seo): Add rule check for sub-nodes when newValue is an opject.
   getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
-    const matched = this.matchRuleForParsedPath(parsedValuePath);
-    const rule = matched.node ? matched.node[RuleProperties.WRITE] : false;
-    return !!this.evalRuleString(rule, matched.vars, parsedValuePath, newValue, address, timestamp);
+    const matched = this.matchRulePath(parsedValuePath);
+    if (!matched.closestConfigNode || !DB.hasRule(matched.closestConfigNode)) {
+      return false;
+    }
+    const rule = DB.getRule(matched.closestConfigNode);
+    return !!this.evalRuleString(
+        rule, matched.pathVars, parsedValuePath, newValue, address, timestamp);
   }
 
   getPermissionForRule(parsedRulePath, address) {
@@ -407,62 +410,137 @@ class DB {
     }
   }
 
-  static ruleMatched(ruleNode) {
+  static getVariableNodeName(ruleNode) {
+    const keys = Object.keys(ruleNode);
+    for (let i = 0; i < keys.length; i++) {
+      if (keys[i].startsWith('$')) {
+        // It's assumed that there is at most one variable (i.e., with '$') child node.
+        return keys[i];
+      }
+    }
+    return null;
+  }
+
+  static hasRule(ruleNode) {
     return ruleNode[RuleProperties.WRITE] !== undefined;
   }
 
+  static getRule(ruleNode) {
+    return DB.hasRule(ruleNode) ? ruleNode[RuleProperties.WRITE] : null;
+  }
+
   // Does a DFS search to find most specific nodes matched in the rule tree.
-  matchRuleNode(parsedValuePath, depth, curRuleNode) {
+  matchRulePathRecursive(parsedValuePath, depth, curRuleNode) {
     // Maximum depth reached.
     if (depth === parsedValuePath.length) {
       return {
-        path: [],
-        vars: {},
-        node: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
+        matchedValuePath: [],
+        matchedRulePath: [],
+        pathVars: {},
+        matchedRuleNode: curRuleNode,
+        closestConfigNode: DB.hasRule(curRuleNode) ? curRuleNode : null,
+        closestConfigDepth: depth,
       };
     }
     // 1) Try to match with non-variable child node.
     const nextRuleNode = curRuleNode[parsedValuePath[depth]];
     if (nextRuleNode !== undefined) {
-      const matched = this.matchRuleNode(parsedValuePath, depth + 1, nextRuleNode);
-      if (matched.node !== null) {
-        // Matched with a non-variable child node.
-        matched.path.unshift(parsedValuePath[depth]);
-        return matched;
+      const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+      // Matched with a non-variable child node.
+      matched.matchedValuePath.unshift(parsedValuePath[depth]);
+      matched.matchedRulePath.unshift(parsedValuePath[depth]);
+      if (!matched.closestConfigNode && DB.hasRule(curRuleNode)) {
+        matched.closestConfigNode = DB.hasRule(curRuleNode) ? curRuleNode : null;
+        matched.closestConfigDepth = depth;
       }
+      return matched;
     }
     // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
     //    child node.
-    const keys = Object.keys(curRuleNode);
-    for (let i = 0; i < keys.length; i++) {
-      if (keys[i].startsWith('$')) {
-        const nextRuleNode = curRuleNode[keys[i]];
-        const matched = this.matchRuleNode(parsedValuePath, depth + 1, nextRuleNode);
-        if (matched.node !== null) {
-          // Matched with a variable (i.e., with '$') child node.
-          matched.path.unshift(keys[i]);
-          if (matched.vars[keys[i]] !== undefined) {
-            // This should not happen!
-            console.log('Duplicated path variables that should NOT happen!')
-          } else {
-            matched.vars[keys[i]] = parsedValuePath[depth];
-          }
-          return matched;
-        }
-        // It's assumed that there is at most one variable (i.e., with '$') child node.
-        break;
+    const varNodeName = DB.getVariableNodeName(curRuleNode);
+    if (varNodeName !== null) {
+      const nextRuleNode = curRuleNode[varNodeName];
+      const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+      // Matched with a variable (i.e., with '$') child node.
+      matched.matchedValuePath.unshift(parsedValuePath[depth]);
+      matched.matchedRulePath.unshift(varNodeName);
+      if (matched.pathVars[varNodeName] !== undefined) {
+        // This should not happen!
+        console.log('Duplicated path variables that should NOT happen!')
+      } else {
+        matched.pathVars[varNodeName] = parsedValuePath[depth];
       }
+      if (!matched.closestConfigNode && DB.hasRule(curRuleNode)) {
+        matched.closestConfigNode = DB.hasRule(curRuleNode) ? curRuleNode : null;
+        matched.closestConfigDepth = depth;
+      }
+      return matched;
     }
     // No match with child nodes.
     return {
-      path: [],
-      vars: {},
-      node: DB.ruleMatched(curRuleNode) ? curRuleNode : null,
+      matchedValuePath: [],
+      matchedRulePath: [],
+      pathVars: {},
+      matchedRuleNode: curRuleNode,
+      closestConfigNode: DB.hasRule(curRuleNode) ? curRuleNode : null,
+      closestConfigDepth: depth,
     };
   }
 
+  matchRulePath(parsedValuePath) {
+    return this.matchRulePathRecursive(
+        parsedValuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
+  }
+
+  getSubtreeRulesRecursive(depth, curRuleNode) {
+    const rules = [];
+    if (depth !== 0 && DB.hasRule(curRuleNode)) {
+      rules.push({
+        path: [],
+        rule: DB.getRule(curRuleNode),
+      })
+    }
+    const varNodeName = DB.getVariableNodeName(curRuleNode);
+    // 1) Traverse non-variable child nodes.
+    for (const key in curRuleNode) {
+      const nextRuleNode = curRuleNode[key];
+      if (key !== varNodeName && ChainUtil.isDict(nextRuleNode)) {
+        const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
+        subtreeRules.forEach((entry) => {
+          entry.path.unshift(key);
+          rules.push(entry);
+        });
+      }
+    }
+    // 2) Traverse variable child node if available.
+    if (varNodeName !== null) {
+      const nextRuleNode = curRuleNode[varNodeName];
+      const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
+      subtreeRules.forEach((entry) => {
+        entry.path.unshift(varNodeName);
+        rules.push(entry);
+      });
+    }
+    return rules;
+  }
+
+  getSubtreeRules(ruleNode) {
+    return this.getSubtreeRulesRecursive(0, ruleNode);
+  }
+
   matchRuleForParsedPath(parsedValuePath) {
-    return this.matchRuleNode(parsedValuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
+    const matched = this.matchRulePath(parsedValuePath);
+    const subtreeRules = this.getSubtreeRules(matched.matchedRuleNode);
+    return {
+      matchedValuePath: matched.matchedValuePath,
+      matchedRulePath: matched.matchedRulePath,
+      pathVars: matched.pathVars,
+      subtreeRules,
+      closestRule: {
+        path: matched.matchedRulePath.slice(0, matched.closestConfigDepth),
+        rule: DB.getRule(matched.closestConfigNode),
+      },
+    }
   }
 
   makeEvalFunction(ruleString, pathVars) {
