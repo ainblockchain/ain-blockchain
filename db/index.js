@@ -115,6 +115,10 @@ class DB {
         resultList.push(this.getFunction(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
+      } else if (item.type === ReadDbOperations.MATCH_RULE) {
+        resultList.push(this.matchRule(item.ref));
+      } else if (item.type === ReadDbOperations.MATCH_OWNER) {
+        resultList.push(this.matchOwner(item.ref));
       } else if (item.type === ReadDbOperations.EVAL_RULE) {
         resultList.push(
             this.evalRule(item.ref, item.value, item.address, item.timestamp || Date.now()));

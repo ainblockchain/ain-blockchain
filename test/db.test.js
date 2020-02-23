@@ -522,18 +522,72 @@ describe("DB operations", () => {
           ref: "/owner/other/path",
         },
         {
+          type: "MATCH_RULE",
+          ref: "/test/test_rule/some/path/deeper",
+        },
+        {
+          type: "MATCH_OWNER",
+          ref: "/test/test_owner/some/path/deeper",
+        },
+        {
           type: "EVAL_RULE",
           ref: "/rule/other/path",
           value: "value",
-          address: "abcd"
+          address: "abcd",
+          timestamp: Date.now(),
         },
         {
           type: "EVAL_OWNER",
           ref: "/owner/other/path",
           permission: "write_rule",
-          address: "abcd"
+          address: "abcd",
+          timestamp: Date.now(),
         },
-      ]), [null, null, null, null, false, false]);
+      ]), [
+        null,
+        null,
+        null,
+        null,
+        {
+          "closest_rule": {
+            "config": "auth === 'abcd'",
+            "path": "/test/test_rule/some/path"
+          },
+          "matched_rule_path": "/test/test_rule/some/path/deeper",
+          "matched_value_path": "/test/test_rule/some/path/deeper",
+          "path_vars": {},
+          "subtree_rules": [
+            {
+              "config": "auth === 'ijkl'",
+              "path": "/path"
+            }
+          ]
+        },
+        {
+          "closest_owner": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true
+                },
+                "abcd": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false
+                }
+              }
+            },
+            "path": "/test/test_owner/some/path"
+          },
+          "matched_owner_path": "/test/test_owner/some/path/deeper"
+        },
+        false,
+        false
+      ]);
     })
 
     it("when retrieving existing value or rule or owner", () => {
@@ -555,16 +609,26 @@ describe("DB operations", () => {
           ref: "/test/test_owner/some/path",
         },
         {
+          type: "MATCH_RULE",
+          ref: "/test/test_rule/some/path",
+        },
+        {
+          type: "MATCH_OWNER",
+          ref: "/test/test_owner/some/path",
+        },
+        {
           type: "EVAL_RULE",
           ref: "/test/test_rule/some/path",
           value: "value",
           address: "abcd",
+          timestamp: Date.now(),
         },
         {
           type: "EVAL_OWNER",
           ref: "/test/test_owner/some/path",
           permission: "write_owner",
-          address: "abcd"
+          address: "abcd",
+          timestamp: Date.now(),
         },
       ]), [
         456,
@@ -616,6 +680,43 @@ describe("DB operations", () => {
               }
             }
           }
+        },
+        {
+          "closest_rule": {
+            "config": "auth === 'abcd'",
+            "path": "/test/test_rule/some/path"
+          },
+          "matched_rule_path": "/test/test_rule/some/path",
+          "matched_value_path": "/test/test_rule/some/path",
+          "path_vars": {},
+          "subtree_rules": [
+            {
+              "config": "auth === 'ijkl'",
+              "path": "/deeper/path"
+            }
+          ]
+        },
+        {
+          "closest_owner": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true
+                },
+                "abcd": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false
+                }
+              }
+            },
+            "path": "/test/test_owner/some/path"
+          },
+          "matched_owner_path": "/test/test_owner/some/path"
         },
         true,
         true,
