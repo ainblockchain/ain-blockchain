@@ -219,6 +219,94 @@ describe('API Tests', () => {
     })
   })
 
+  describe('/match_rule', () => {
+    let client;
+    before(() => {
+      client = jayson.client.http(server1 + '/json-rpc');
+    })
+
+    it('match_rule', () => {
+      sleep(200)
+      const ref = "/test/test_rule/some/path";
+      const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+      const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+        .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: {
+        "closest_rule": {
+          "config": "auth === 'abcd'",
+          "path": "/test/test_rule/some/path"
+        },
+        "matched_rule_path": "/test/test_rule/some/path",
+        "matched_value_path": "/test/test_rule/some/path",
+        "path_vars": {},
+        "subtree_rules": []
+      }});
+      return client.request('ain_matchRule', request)
+      .then(res => {
+        assert.deepEqual(res.result.result, {
+          "closest_rule": {
+            "config": "auth === 'abcd'",
+            "path": "/test/test_rule/some/path"
+          },
+          "matched_rule_path": "/test/test_rule/some/path",
+          "matched_value_path": "/test/test_rule/some/path",
+          "path_vars": {},
+          "subtree_rules": []
+        });
+      })
+    })
+  })
+
+  describe('/match_owner', () => {
+    let client;
+    before(() => {
+      client = jayson.client.http(server1 + '/json-rpc');
+    })
+
+    it('match_owner', () => {
+      sleep(200)
+      const ref = "/test/test_owner/some/path";
+      const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+      const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
+        .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: {
+        "closest_owner": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": false
+              }
+            }
+          },
+          "path": "/test/test_owner/some/path"
+        },
+        "matched_owner_path": "/test/test_owner/some/path"
+      }});
+      return client.request('ain_matchOwner', request)
+      .then(res => {
+        assert.deepEqual(res.result.result, {
+          "closest_owner": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": false
+                }
+              }
+            },
+            "path": "/test/test_owner/some/path"
+          },
+          "matched_owner_path": "/test/test_owner/some/path"
+        });
+      })
+    })
+  })
+
   describe('/eval_rule', () => {
     let client;
     before(() => {

@@ -563,13 +563,13 @@ class DB {
                         '"use strict"; return ' + ruleString);
   }
 
-  evalRuleString(rule, pathVars, data, newData, address, timestamp) {
-    if (typeof rule === 'boolean') {
-      return rule;
-    } else if (typeof rule !== 'string') {
+  evalRuleString(ruleString, pathVars, data, newData, address, timestamp) {
+    if (typeof ruleString === 'boolean') {
+      return ruleString;
+    } else if (typeof ruleString !== 'string') {
       return false;
     }
-    let evalFunc = this.makeEvalFunction(rule, pathVars);
+    const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
                     new BuiltInRuleUtil(), ...Object.values(pathVars));
