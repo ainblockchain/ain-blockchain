@@ -514,7 +514,7 @@ describe("DB operations", () => {
           ref: "/rule/other/path",
         },
         {
-          type: "GET_FUNC",
+          type: "GET_FUNCTION",
           ref: "/function/other/path",
         },
         {
@@ -547,7 +547,7 @@ describe("DB operations", () => {
           ref: "/test/test_rule/some/path",
         },
         {
-          type: "GET_FUNC",
+          type: "GET_FUNCTION",
           ref: "/test/test_function/some/path",
         },
         {

@@ -143,7 +143,7 @@ const FunctionProperties = {
 const ReadDbOperations = {
   GET_VALUE: 'GET_VALUE',
   GET_RULE: 'GET_RULE',
-  GET_FUNC: 'GET_FUNC',
+  GET_FUNCTION: 'GET_FUNCTION',
   GET_OWNER: 'GET_OWNER',
   EVAL_RULE: 'EVAL_RULE',
   EVAL_OWNER: 'EVAL_OWNER',

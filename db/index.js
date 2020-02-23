@@ -111,7 +111,7 @@ class DB {
         resultList.push(this.getValue(item.ref));
       } else if (item.type === ReadDbOperations.GET_RULE) {
         resultList.push(this.getRule(item.ref));
-      } else if (item.type === ReadDbOperations.GET_FUNC) {
+      } else if (item.type === ReadDbOperations.GET_FUNCTION) {
         resultList.push(this.getFunction(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));

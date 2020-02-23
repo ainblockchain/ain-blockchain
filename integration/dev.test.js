@@ -180,11 +180,11 @@ describe('API Tests', () => {
     })
   })
 
-  describe('/get_func', () => {
-    it('get_func', () => {
+  describe('/get_function', () => {
+    it('get_function', () => {
       sleep(200)
       const body =
-          JSON.parse(syncRequest('GET', server1 + '/get_func?ref=/test/test_function/some/path')
+          JSON.parse(syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
             .body.toString('utf-8'));
       assert.deepEqual(body, {
         code: 0,
@@ -379,7 +379,7 @@ describe('API Tests', () => {
             ref: "/test/test_rule/some/path",
           },
           {
-            type: 'GET_FUNC',
+            type: 'GET_FUNCTION',
             ref: "/test/test_function/some/path",
           },
           {

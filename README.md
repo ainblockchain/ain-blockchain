@@ -219,9 +219,13 @@ GET http://<ip_address>:8080/get_value?ref=/database/path/to/fetch -> Fetch valu
 
 GET http://<ip_address>:8080/get_rule?ref=/database/path/to/fetch -> Fetch rule at specific database location
 
-GET http://<ip_address>:8080/get_func?ref=/database/path/to/fetch -> Fetch function at specific database location
+GET http://<ip_address>:8080/get_function?ref=/database/path/to/fetch -> Fetch function at specific database location
 
 GET http://<ip_address>:8080/get_owner?ref=/database/path/to/fetch -> Fetch owner at specific database location
+
+GET http://<ip_address>:8080/match_rule?ref=/database/path/to/match -> Match rule with database value location
+
+GET http://<ip_address>:8080/match_owner?ref=/database/path/to/match -> Match owner with database rule/function/owner location
 
 POST http://<ip_address>:8080/eval_rule with json_body {"ref": "test/comeonnnnnnn", "value": "testme", "address": "0xABCD...Z", "timestamp": "1234567890"}
 
