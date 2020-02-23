@@ -116,7 +116,8 @@ class DB {
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
       } else if (item.type === ReadDbOperations.EVAL_RULE) {
-        resultList.push(this.evalRule(item.ref, item.value, item.address));
+        resultList.push(
+            this.evalRule(item.ref, item.value, item.address, item.timestamp || Date.now()));
       } else if (item.type === ReadDbOperations.EVAL_OWNER) {
         resultList.push(this.evalOwner(item.ref, item.permission, item.address));
       }
