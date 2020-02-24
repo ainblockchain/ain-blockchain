@@ -84,7 +84,7 @@ describe('Blockchain', () => {
         }
         blocks.push(block);
         node1.bc.addNewBlock(block);
-        node1.tp.removeCommitedTransactions(block);
+        node1.tp.removeCommittedTransactions(block);
       }
     });
 

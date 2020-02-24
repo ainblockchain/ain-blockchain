@@ -8,6 +8,7 @@ const glob = require('glob');
 const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const CHAIN_SUBSECT_LENGTH = 20;
+const CONFIRMED_CHAIN_LENGTH = 10;
 
 class Blockchain {
   constructor(blockchainDir) {
@@ -102,6 +103,37 @@ class Blockchain {
       return -1;
     }
     return lastBlock.number;
+  }
+
+  lastBlockTimestamp() {
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return -1;
+    }
+    return lastBlock.timestamp;
+  }
+
+  confirmedBlock() {
+    if (this.chain.length < CONFIRMED_CHAIN_LENGTH + 1) {
+      return null;
+    }
+    return this.chain[this.chain.length - CONFIRMED_CHAIN_LENGTH - 1];
+  }
+
+  confirmedBlockNumber() {
+    const confirmedBlock = this.confirmedBlock();
+    if (!confirmedBlock) {
+      return -1;
+    }
+    return confirmedBlock.number;
+  }
+
+  confirmedBlockTimestamp() {
+    const confirmedBlock = this.confirmedBlock();
+    if (!confirmedBlock) {
+      return -1;
+    }
+    return confirmedBlock.timestamp;
   }
 
   addNewBlock(block) {

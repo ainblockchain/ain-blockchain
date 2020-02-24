@@ -92,7 +92,7 @@ class TransactionPool {
     return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0]: [];
   }
 
-  removeCommitedTransactions(block) {
+  removeCommittedTransactions(block) {
     // Remove transactions of newly added block to blockchain from the current transaction pool
     const transactionHashes = [];
     let transaction;

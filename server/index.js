@@ -170,6 +170,9 @@ class P2pServer {
       address: this.node.account.address,
       timestamp: Date.now(),
       lastBlockNumber: this.node.bc.lastBlockNumber(),
+      lastBlockTimestamp: this.node.bc.lastBlockTimestamp(),
+      confirmedBlockNumber: this.node.bc.confirmedBlockNumber(),
+      confirmedBlockTimestamp: this.node.bc.confirmedBlockTimestamp(),
       votingStatus: {
         status: this.votingUtil.status,
         statusChangedBlockNumber: this.votingUtil.statusChangedBlockNumber,
@@ -274,7 +277,7 @@ class P2pServer {
                 }
               }
               for (let i=0; i<data.chainSubsection.length; i++) {
-                this.node.tp.removeCommitedTransactions(data.chainSubsection[i]);
+                this.node.tp.removeCommittedTransactions(data.chainSubsection[i]);
               }
               this.node.reconstruct();
               // Continuously request the blockchain in subsections until
@@ -633,7 +636,7 @@ class P2pServer {
 
   addBlockToChain() {
     if (this.node.bc.addNewBlock(this.votingUtil.block)) {
-      this.node.tp.removeCommitedTransactions(this.votingUtil.block);
+      this.node.tp.removeCommittedTransactions(this.votingUtil.block);
       this.votingUtil.reset();
       this.node.reconstruct();
       if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.node.account.address)) {

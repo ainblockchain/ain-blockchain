@@ -125,7 +125,7 @@ describe('TransactionPool', () => {
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
-      node.tp.removeCommitedTransactions(block);
+      node.tp.removeCommittedTransactions(block);
       assert.deepEqual(newTransactions, node.tp.transactions);
     });
   });
