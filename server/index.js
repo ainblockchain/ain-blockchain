@@ -168,11 +168,11 @@ class P2pServer {
       }),
       ip: this.ipAddress,
       address: this.node.account.address,
-      timestamp: Date.now(),
-      lastBlockNumber: this.node.bc.lastBlockNumber(),
-      lastBlockTimestamp: this.node.bc.lastBlockTimestamp(),
-      confirmedBlockNumber: this.node.bc.confirmedBlockNumber(),
-      confirmedBlockTimestamp: this.node.bc.confirmedBlockTimestamp(),
+      updatedAt: Date.now(),
+      lastBlock: {
+        number: this.node.bc.lastBlockNumber(),
+        timestamp: this.node.bc.lastBlockTimestamp(),
+      },
       votingStatus: {
         status: this.votingUtil.status,
         statusChangedBlockNumber: this.votingUtil.statusChangedBlockNumber,
