@@ -10,9 +10,9 @@ const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
 const ainUtil = require('@ainblockchain/ain-util');
-const {MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths}
+const { MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths }
     = require('../constants');
-const {Block} = require('../blockchain/block');
+const { Block} = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const VotingUtil = require('./voting-util');
 const { WriteDbOperations, DEBUG } = require('../constants');
@@ -410,7 +410,7 @@ class P2pServer {
     if (DEBUG) {
       console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
     }
-    if (this.node.tp.isTimedOutTransaction(transaction, this.node.bc.lastBlockTimestamp())) {
+    if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
       if (DEBUG) {
         console.log(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
       }

@@ -17,7 +17,8 @@ const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
-const TRANSACTION_TIME_OUT_MS = 24 * 60 * 60 * 1000;  // 24 hours in milliseconds
+const TRANSACTION_POOL_TIME_OUT_MS = 60 * 60 * 1000;  // 1 hour in ms
+const TRANSACTION_TRACKER_TIME_OUT_MS = 24 * 60 * 60 * 1000;  // 24 hours in ms
 // TODO (lia): Check network id in all messages
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 
@@ -212,7 +213,8 @@ module.exports = {
   STAKE,
   DEBUG,
   MAX_TX_BYTES,
-  TRANSACTION_TIME_OUT_MS,
+  TRANSACTION_POOL_TIME_OUT_MS,
+  TRANSACTION_TRACKER_TIME_OUT_MS,
   NETWORK_ID,
   MessageTypes,
   VotingStatus,

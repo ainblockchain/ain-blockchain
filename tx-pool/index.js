@@ -1,4 +1,5 @@
-const {DEBUG, TRANSACTION_TIME_OUT_MS, TransactionStatus} = require('../constants');
+const { DEBUG, TRANSACTION_POOL_TIME_OUT_MS, TRANSACTION_TRACKER_TIME_OUT_MS,
+  TransactionStatus } = require('../constants');
 const Transaction = require('./transaction');
 
 class TransactionPool {
@@ -32,6 +33,7 @@ class TransactionPool {
       status: TransactionStatus.POOL_STATUS,
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
+      timestamp: tx.timestamp,
     };
     if (tx.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
@@ -45,14 +47,22 @@ class TransactionPool {
     return true;
   }
 
-  isTimedOutTransaction(tx, lastBlockTimestamp) {
+  isTimedOut(txTimestamp, lastBlockTimestamp, timeout) {
     if (lastBlockTimestamp < 0) {
       return false;
     }
-    if (!(typeof tx.timestamp === 'number' && isFinite(tx.timestamp))) {
+    if (!(typeof txTimestamp === 'number' && isFinite(txTimestamp))) {
       return true;
     }
-    return lastBlockTimestamp >= tx.timestamp + TRANSACTION_TIME_OUT_MS;
+    return lastBlockTimestamp >= txTimestamp + timeout;
+  }
+
+  isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_POOL_TIME_OUT_MS);
+  }
+
+  isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIME_OUT_MS);
   }
 
   isNotEligibleTransaction(tx) {
@@ -111,20 +121,23 @@ class TransactionPool {
     const timedOutTxs = new Set();
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
-        if (this.isTimedOutTransaction(tx, blockTimestamp)) {
+        if (this.isTimedOutFromPool(tx.timestamp, blockTimestamp)) {
           timedOutTxs.add(tx.hash);
         }
       });
     }
-    // Remove transactions from transactionTracker.
-    timedOutTxs.forEach((hash) => {
-      delete this.transactionTracker[hash];
-    })
     // Remove transactions from the pool.
     for (const address in this.transactions) {
       this.transactions[address] = this.transactions[address].filter((tx) => {
         return !timedOutTxs.has(tx.hash);
       });
+    }
+    // Remove transactions from transactionTracker.
+    for (const hash in this.transactionTracker) {
+      const txData = this.transactionTracker[hash];
+      if (this.isTimedOutFromTracker(txData.timestamp, blockTimestamp)) {
+        delete this.transactionTracker[hash];
+      }
     }
   }
 
@@ -142,6 +155,7 @@ class TransactionPool {
         status: TransactionStatus.BLOCK_STATUS,
         number: block.number,
         index: i,
+        timestamp: tx.timestamp,
       };
       inBlockTxs.add(tx.hash);
     }
