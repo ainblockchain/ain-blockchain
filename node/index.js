@@ -1,5 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const {GenesisAccounts} = require('../constants');
+const { GenesisAccounts } = require('../constants');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const DB = require('../db');
@@ -104,7 +104,7 @@ class Node {
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       this.db.executeTransactionList(transactions);
-      this.tp.updateNonceTrackers(transactions);
+      this.tp.updateCommittedNonceTracker(transactions);
     });
   }
 }

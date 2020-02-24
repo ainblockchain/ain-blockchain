@@ -179,7 +179,7 @@ class P2pServer {
         setter: this.votingUtil.setter,
       },
       txStatus: {
-        txPoolSize: Object.keys(this.node.tp.transactions).length,
+        txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
         committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
         pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
@@ -276,8 +276,8 @@ class P2pServer {
                   }, BLOCK_CREATION_INTERVAL_MS);
                 }
               }
-              for (let i=0; i<data.chainSubsection.length; i++) {
-                this.node.tp.removeCommittedTransactions(data.chainSubsection[i]);
+              for (let i = 0; i < data.chainSubsection.length; i++) {
+                this.node.tp.cleanUpForNewBlock(data.chainSubsection[i]);
               }
               this.node.reconstruct();
               // Continuously request the blockchain in subsections until
@@ -410,6 +410,13 @@ class P2pServer {
     if (DEBUG) {
       console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
     }
+    if (this.node.tp.isTimedOutTransaction(transaction, this.node.bc.lastBlockTimestamp())) {
+      if (DEBUG) {
+        console.log(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
+      }
+      console.log('Timed-out transaction');
+      return null;
+    }
     if (this.node.tp.isNotEligibleTransaction(transaction)) {
       if (DEBUG) {
         console.log(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
@@ -426,7 +433,6 @@ class P2pServer {
     }
     const result = this.node.db.executeTransaction(transaction);
     if (!this.checkForTransactionResultErrorCode(result)) {
-      // Add transaction to pool
       this.node.tp.addTransaction(transaction);
     } else if (DEBUG) {
       console.log(
@@ -636,7 +642,7 @@ class P2pServer {
 
   addBlockToChain() {
     if (this.node.bc.addNewBlock(this.votingUtil.block)) {
-      this.node.tp.removeCommittedTransactions(this.votingUtil.block);
+      this.node.tp.cleanUpForNewBlock(this.votingUtil.block);
       this.votingUtil.reset();
       this.node.reconstruct();
       if (this.waitInBlocks > 0 && !this.votingUtil.getStakes(this.node.account.address)) {
