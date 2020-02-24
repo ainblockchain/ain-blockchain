@@ -30,15 +30,21 @@ class ChainUtil {
     return (typeof data === 'object' && data !== null && !Array.isArray(data));
   }
 
-  static parsePath(queryString) {
-    // Need to remove quotes that come in
-    queryString = queryString.replace(/^"(.*)"$/, '$1');
-    const queryList = queryString.split('/').filter((endpoint) => {
-      if (endpoint) {
-        return endpoint;
-      }
+  static parsePath(path) {
+    if (!path) {
+      return [];
+    }
+    path = path.replace(/^"(.*)"$/, '$1');
+    return path.split('/').filter((node) => {
+      return !!node;
     });
-    return queryList;
+  }
+
+  static formatPath(parsedPath) {
+    if (!Array.isArray(parsedPath)) {
+      return '/';
+    }
+    return '/' + parsedPath.join('/');
   }
 }
 

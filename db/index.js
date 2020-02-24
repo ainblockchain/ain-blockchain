@@ -382,7 +382,7 @@ class DB {
   // TODO(seo): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
     const matched = this.matchRuleForParsedPath(parsedValuePath);
-    const value = this.getValue(parsedValuePath.join('/'));
+    const value = this.getValue(ChainUtil.formatPath(parsedValuePath));
     const data =
         this.addPathToValue(value, matched.matchedValuePath, matched.closestRule.path.length);
     const newData =
@@ -546,7 +546,7 @@ class DB {
 
   convertPathAndConfig(pathAndConfig) {
     return {
-      path: '/' + pathAndConfig.path.join('/'),
+      path: ChainUtil.formatPath(pathAndConfig.path),
       config: pathAndConfig.config,
     }
   }
@@ -554,8 +554,8 @@ class DB {
   convertRuleMatch(matched) {
     const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry));
     return {
-      matched_value_path: '/' + matched.matchedValuePath.join('/'),
-      matched_rule_path: '/' + matched.matchedRulePath.join('/'),
+      matched_value_path: ChainUtil.formatPath(matched.matchedValuePath),
+      matched_rule_path: ChainUtil.formatPath(matched.matchedRulePath),
       path_vars: matched.pathVars,
       closest_rule: this.convertPathAndConfig(matched.closestRule),
       subtree_rules: subtreeRules,
@@ -632,7 +632,7 @@ class DB {
 
   convertOwnerMatch(matched) {
     return {
-      matched_owner_path: '/' + matched.matchedOwnerPath.join('/'),
+      matched_owner_path: ChainUtil.formatPath(matched.matchedOwnerPath),
       closest_owner: this.convertPathAndConfig(matched.closestOwner),
     };
   }
