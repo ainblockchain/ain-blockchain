@@ -1,6 +1,7 @@
 const seedrandom = require('seedrandom');
 const { VotingStatus, PredefinedDbPaths, WriteDbOperations } = require('../constants');
 const PushId = require('../db/push-id');
+const ChainUtil = require('../chain-util');
 const MAX_RECENT_PROPOSERS = 20;
 
 class VotingUtil {
@@ -16,10 +17,6 @@ class VotingUtil {
     this.status = status;
     this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
     this.setter = setter;
-  }
-
-  resolveDbPath(pathSubKeys) {
-    return pathSubKeys.join('/');
   }
 
   registerVote(vote) {
@@ -218,7 +215,7 @@ class VotingUtil {
           `Expected: ${number}, Actual: ${votingRound.number}`);
       return null;
     }
-    const value = this.node.db.getValue(this.resolveDbPath([
+    const value = this.node.db.getValue(ChainUtil.formatPath([
         PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
         this.node.account.address,
         PredefinedDbPaths.DEPOSIT_VALUE
@@ -226,7 +223,7 @@ class VotingUtil {
     return this.node.createTransaction({
       operation: {
         type: WriteDbOperations.SET_VALUE,
-        ref: this.resolveDbPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS,
+        ref: ChainUtil.formatPath([PredefinedDbPaths.VOTING_NEXT_ROUND_VALIDATORS,
             this.node.account.address]),
         value
       }
@@ -271,7 +268,7 @@ class VotingUtil {
 
   isValidator() {
     return Boolean(this.node.db.getValue(
-        this.resolveDbPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS,
+        ChainUtil.formatPath([PredefinedDbPaths.VOTING_ROUND_VALIDATORS,
             this.node.account.address])));
   }
 
@@ -280,7 +277,7 @@ class VotingUtil {
     return this.node.createTransaction({
         operation: {
           type: WriteDbOperations.SET_VALUE,
-          ref: this.resolveDbPath([PredefinedDbPaths.DEPOSIT_CONSENSUS,
+          ref: ChainUtil.formatPath([PredefinedDbPaths.DEPOSIT_CONSENSUS,
               this.node.account.address, pushId, PredefinedDbPaths.DEPOSIT_VALUE]),
           value: amount
         }
@@ -291,7 +288,7 @@ class VotingUtil {
   // it returns 0.
   getStakes(address) {
     if (!address) address = this.node.account.address;
-    const stakes = this.node.db.getValue(this.resolveDbPath([
+    const stakes = this.node.db.getValue(ChainUtil.formatPath([
         PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
         address
       ]));
@@ -306,7 +303,7 @@ class VotingUtil {
 
   needRestaking(address) {
     if (!address) address = this.node.account.address;
-    const stakes = this.node.db.getValue(this.resolveDbPath([
+    const stakes = this.node.db.getValue(ChainUtil.formatPath([
         PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
         address
       ]));

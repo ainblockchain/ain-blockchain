@@ -215,29 +215,37 @@ GET http://<ip_address>:8080/committed_nonce_tracker -> Fetch nonce status in th
 
 GET http://<ip_address>:8080/pending_nonce_tracker -> Fetch nonce status in the pending nonce tracker
 
-GET http://<ip_address>:8080/get_value?ref=/database/path/to/fetch -> Fetch value at specific database location
+GET http://<ip_address>:8080/get_value?ref=/db/path/to/fetch -> Fetch value
 
-GET http://<ip_address>:8080/get_rule?ref=/database/path/to/fetch -> Fetch rule at specific database location
+GET http://<ip_address>:8080/get_rule?ref=/db/path/to/fetch -> Fetch rule
 
-GET http://<ip_address>:8080/get_func?ref=/database/path/to/fetch -> Fetch function at specific database location
+GET http://<ip_address>:8080/get_function?ref=/db/path/to/fetch -> Fetch function
 
-GET http://<ip_address>:8080/get_owner?ref=/database/path/to/fetch -> Fetch owner at specific database location
+GET http://<ip_address>:8080/get_owner?ref=/db/path/to/fetch -> Fetch owner
 
-POST http://<ip_address>:8080/eval_rule with json_body {"ref": "test/comeonnnnnnn", "value": "testme", "address": "0xABCD...Z", "timestamp": "1234567890"}
+GET http://<ip_address>:8080/match_rule?ref=/db/path/to/match -> Match rule with database value location
 
-POST http://<ip_address>:8080/eval_owner with json_body {"ref": "test/comeonnnnnnn", "address": "0xABCD...Z"}
+GET http://<ip_address>:8080/match_owner?ref=/db/path/to/match -> Match owner with database rule/function/owner location
 
-POST http://<ip_address>:8080/get with json_body {"op_list": [{"type": "GET_VALUE", "ref": "test/increase/first/level"}, {"type": "DEC_RULE", "ref": "test/decrease/first/level2"}]}
+POST http://<ip_address>:8080/eval_rule with json_body {"ref": "/db/path/to/eval", "value": "some value", "address": "0xABCD...Z", "timestamp": "1234567890"} -> Evaluate rule
 
-POST http://<ip_address>:8080/set_value with json_body {"ref": "test/comeonnnnnnn", "value": "testme"}
+POST http://<ip_address>:8080/eval_owner with json_body {"ref": "/db/path/to/eval", "permission": "write_rule", "address": "0xABCD...Z"} -> Evaluate owner
 
-POST http://<ip_address>:8080/inc_value with json_body {"ref": "test/increase/first/level", "value": 10}
+POST http://<ip_address>:8080/get with json_body {"op_list": [{"type": "GET_VALUE", "ref": "/db/path/to/fetch"}, {"type": "GET_RULE", "ref": "/db/path/to/fetch2"}]} -> Perform multiple get operations
 
-POST http://<ip_address>:8080/dec_value with json_body {"ref": "test/decrease/first/level", "value": 10}
+POST http://<ip_address>:8080/set_value with json_body {"ref": "/db/path/to/set", "value": "some value"} -> Set value
 
-POST http://<ip_address>:8080/set with json_body {"op_list": [{"type": "INC_VALUE", "ref": "test/increase/first/level", "value": 10}, {"type": "DEC_VALUE", "ref": "test/decrease/first/level2", "value": 20}]}
+POST http://<ip_address>:8080/inc_value with json_body {"ref": "/db/path/to/increase", "value": 10} -> Increase value
 
-POST http://<ip_address>:8080/batch with json_body {"tx_list": [{"operation": {"type": "SET_VALUE", "ref": "test/comeonnnnnnn", "value": "testme"}}, {"operation": {"type": "INC_VALUE", "ref": "test/b/u", "value": 10000}}]}
+POST http://<ip_address>:8080/dec_value with json_body {"ref": "/db/path/to/decrease", "value": 10} -> Decrease value
+
+POST http://<ip_address>:8080/set_rule with json_body {"ref": "/db/path/to/set", "value": "some rule"} -> Set rule
+
+POST http://<ip_address>:8080/set_function with json_body {"ref": "/db/path/to/set", "value": "some function"} -> Set function
+
+POST http://<ip_address>:8080/set with json_body {"op_list": [{"type": "SET_VALUE", "ref": "/db/path/to/set", "value": "some value}, {"type": "SET_RULE", "ref": "/db/path/to/set2", "value": "some rule"}]} -> Perform multiple set operations
+
+POST http://<ip_address>:8080/batch with json_body {"tx_list": [{"operation": {"type": "SET_VALUE", "ref": "/db/path/to/set", "value": "testme"}}, {"operation": {"type": "SET_RULE", "ref": "/db/path/to/set2", "value": "some rule"}}]} -> Perform multiple transactions
 
 ## Utility scripts
 

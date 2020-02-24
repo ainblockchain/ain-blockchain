@@ -86,8 +86,16 @@ describe("DB operations", () => {
 
     dbRules = {
       "some": {
+        "$var_path": {
+          ".write": "auth !== 'abcd'"
+        },
         "path": {
-          ".write": "auth === 'abcd'"
+          ".write": "auth === 'abcd'",
+          "deeper": {
+            "path": {
+              ".write": "auth === 'ijkl'"
+            }
+          }
         }
       }
     };
@@ -110,16 +118,36 @@ describe("DB operations", () => {
           ".owner": {
             "owners": {
               "*": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
-              },
-              "abcd": {
                 "branch_owner": false,
                 "write_function": true,
                 "write_owner": false,
                 "write_rule": true,
+              },
+              "abcd": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false,
+              }
+            }
+          },
+          "deeper": {
+            "path": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_function": true,
+                    "write_owner": false,
+                    "write_rule": true,
+                  },
+                  "ijkl": {
+                    "branch_owner": true,
+                    "write_function": false,
+                    "write_owner": true,
+                    "write_rule": false,
+                  }
+                }
               }
             }
           }
@@ -158,8 +186,14 @@ describe("DB operations", () => {
     })
 
     it("when retrieving existing rule config", () => {
-      assert.deepEqual(node.db.getRule("/test/test_rule/some/path"),
-                       { ".write": "auth === 'abcd'" });
+      assert.deepEqual(node.db.getRule("/test/test_rule/some/path"), {
+        ".write": "auth === 'abcd'",
+        "deeper": {
+          "path": {
+            ".write": "auth === 'ijkl'"
+          }
+        }
+      });
     })
   })
 
@@ -184,16 +218,36 @@ describe("DB operations", () => {
         ".owner": {
           "owners": {
             "*": {
-              "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            },
-            "abcd": {
               "branch_owner": false,
               "write_function": true,
               "write_owner": false,
               "write_rule": true,
+            },
+            "abcd": {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": true,
+              "write_rule": false,
+            }
+          }
+        },
+        "deeper": {
+          "path": {
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true,
+                },
+                "ijkl": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false,
+                }
+              }
             }
           }
         }
@@ -201,44 +255,250 @@ describe("DB operations", () => {
     })
   })
 
+  describe("matchRule operations", () => {
+    it("when matching existing variable path rule", () => {
+      assert.deepEqual(node.db.matchRule("/test/test_rule/some/var_path"), {
+        "closest_rule": {
+          "config": "auth !== 'abcd'",
+          "path": "/test/test_rule/some/$var_path"
+        },
+        "matched_rule_path": "/test/test_rule/some/$var_path",
+        "matched_value_path": "/test/test_rule/some/var_path",
+        "path_vars": {
+          "$var_path": "var_path"
+        },
+        "subtree_rules": []
+      });
+    })
+
+    it("when matching existing non-variable path rule", () => {
+      assert.deepEqual(node.db.matchRule("/test/test_rule/some/path"), {
+        "closest_rule": {
+          "config": "auth === 'abcd'",
+          "path": "/test/test_rule/some/path"
+        },
+        "matched_rule_path": "/test/test_rule/some/path",
+        "matched_value_path": "/test/test_rule/some/path",
+        "path_vars": {},
+        "subtree_rules": [
+          {
+            "config": "auth === 'ijkl'",
+            "path": "/deeper/path"
+          }
+        ]
+      });
+      assert.deepEqual(node.db.matchRule("/test/test_rule/some/path/deeper/path"), {
+        "closest_rule": {
+          "config": "auth === 'ijkl'",
+          "path": "/test/test_rule/some/path/deeper/path"
+        },
+        "matched_rule_path": "/test/test_rule/some/path/deeper/path",
+        "matched_value_path": "/test/test_rule/some/path/deeper/path",
+        "path_vars": {},
+        "subtree_rules": []
+      });
+    })
+
+    it("when matching existing closest non-variable path rule", () => {
+      assert.deepEqual(node.db.matchRule("/test/test_rule/some/path/deeper"), {
+        "closest_rule": {
+          "config": "auth === 'abcd'",
+          "path": "/test/test_rule/some/path"
+        },
+        "matched_rule_path": "/test/test_rule/some/path/deeper",
+        "matched_value_path": "/test/test_rule/some/path/deeper",
+        "path_vars": {},
+        "subtree_rules": [
+          {
+            "config": "auth === 'ijkl'",
+            "path": "/path"
+          }
+        ]
+      });
+    })
+  })
+
+  describe("matchOwner operations", () => {
+    it("when matching existing owner with matching address", () => {
+      assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path", 'write_owner', 'abcd'), {
+        "closest_owner": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": false,
+                "write_rule": true
+              },
+              "abcd": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false
+              }
+            }
+          },
+          "path": "/test/test_owner/some/path"
+        },
+        "matched_owner_path": "/test/test_owner/some/path"
+      });
+      assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path/deeper/path", 'write_owner', 'ijkl'), {
+        "closest_owner": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": false,
+                "write_rule": true
+              },
+              "ijkl": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false
+              }
+            }
+          },
+          "path": "/test/test_owner/some/path/deeper/path"
+        },
+        "matched_owner_path": "/test/test_owner/some/path/deeper/path"
+      });
+    })
+
+    it("when matching existing owner without matching address", () => {
+      assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path", 'write_owner', 'other'), {
+        "closest_owner": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": false,
+                "write_rule": true
+              },
+              "abcd": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false
+              }
+            }
+          },
+          "path": "/test/test_owner/some/path"
+        },
+        "matched_owner_path": "/test/test_owner/some/path"
+      });
+      assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path/deeper/path", 'write_owner', 'other'), {
+        "closest_owner": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": false,
+                "write_rule": true
+              },
+              "ijkl": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false
+              }
+            }
+          },
+          "path": "/test/test_owner/some/path/deeper/path"
+        },
+        "matched_owner_path": "/test/test_owner/some/path/deeper/path"
+      });
+    })
+
+    it("when matching closest owner", () => {
+      assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path/deeper", 'write_owner', 'abcd'), {
+        "closest_owner": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": false,
+                "write_rule": true
+              },
+              "abcd": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false
+              }
+            }
+          },
+          "path": "/test/test_owner/some/path"
+        },
+        "matched_owner_path": "/test/test_owner/some/path/deeper"
+      });
+    })
+  })
+
   describe("evalRule operations", () => {
-    it("when evaluating non-existing rule config", () => {
-      expect(node.db.evalRule("/test/test_rule/other/rule/path", 'value', 'abcd', Date.now()))
-          .to.equal(true);  // Evaluation result of the closest ancestor's rule config.
+    it("when evaluating existing variable path rule", () => {
+      expect(node.db.evalRule("/test/test_rule/some/var_path", 'value', 'abcd', Date.now()))
+        .to.equal(false);
+      expect(node.db.evalRule("/test/test_rule/some/var_path", 'value', 'other', Date.now()))
+        .to.equal(true);
     })
 
-    it("when evaluating existing rule config returning true", () => {
+    it("when evaluating existing non-variable path rule", () => {
       expect(node.db.evalRule("/test/test_rule/some/path", 'value', 'abcd', Date.now()))
-          .to.equal(true);
+        .to.equal(true);
+      expect(node.db.evalRule("/test/test_rule/some/path", 'value', 'other', Date.now()))
+        .to.equal(false);
+      expect(node.db.evalRule(
+          "/test/test_rule/some/path/deeper/path", 'value', 'ijkl', Date.now()))
+        .to.equal(true);
+      expect(node.db.evalRule("/test/test_rule/some/path/deeper/path", 'value', 'other', Date.now()))
+        .to.equal(false);
     })
 
-    it("when evaluating existing rule config returning false", () => {
-      expect(node.db.evalRule("/test/test_rule/some/path", 'value', 'efgh', Date.now()))
-          .to.equal(false);
+    it("when evaluating existing closest rule", () => {
+      expect(node.db.evalRule("/test/test_rule/some/path/deeper", 'value', 'abcd', Date.now()))
+        .to.equal(true);
+      expect(node.db.evalRule("/test/test_rule/some/path/deeper", 'value', 'other', Date.now()))
+        .to.equal(false);
     })
   })
 
   describe("evalOwner operations", () => {
-    it("when evaluating non-existing owner config", () => {
-      assert.deepEqual(node.db.evalOwner("/test/test_owner/other/owner/path", 'abcd'), {})
+    it("when evaluating existing owner with matching address", () => {
+      expect(node.db.evalOwner("/test/test_owner/some/path", 'write_owner', 'abcd'))
+        .to.equal(true);
+      expect(node.db.evalOwner("/test/test_owner/some/path", 'write_rule', 'abcd'))
+        .to.equal(false);
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper/path", 'write_owner', 'ijkl'))
+        .to.equal(true);
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper/path", 'write_rule', 'ijkl'))
+        .to.equal(false);
     })
 
-    it("when evaluating existing owner config with matching address", () => {
-      assert.deepEqual(node.db.evalOwner("/test/test_owner/some/path", 'abcd'), {
-        "branch_owner": false,
-        "write_function": true,
-        "write_owner": false,
-        "write_rule": true,
-      });
+    it("when evaluating existing owner without matching address", () => {
+      expect(node.db.evalOwner("/test/test_owner/some/path", 'write_owner', 'other'))
+        .to.equal(false);
+      expect(node.db.evalOwner("/test/test_owner/some/path", 'write_rule', 'other'))
+        .to.equal(true);
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper/path", 'write_owner', 'other'))
+        .to.equal(false);
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper/path", 'write_rule', 'other'))
+        .to.equal(true);
     })
 
-    it("when evaluating existing owner config without matching address", () => {
-      assert.deepEqual(node.db.evalOwner("/test/test_owner/some/path", 'efgh'), {
-        "branch_owner": true,
-        "write_function": true,
-        "write_owner": true,
-        "write_rule": true,
-      });
+    it("when evaluating closest owner", () => {
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper", 'write_owner', 'abcd'))
+        .to.equal(true);
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper", 'write_rule', 'abcd'))
+        .to.equal(false);
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper", 'write_owner', 'other'))
+        .to.equal(false);
+      expect(node.db.evalOwner("/test/test_owner/some/path/deeper", 'write_rule', 'other'))
+        .to.equal(true);
     })
   })
 
@@ -254,7 +514,7 @@ describe("DB operations", () => {
           ref: "/rule/other/path",
         },
         {
-          type: "GET_FUNC",
+          type: "GET_FUNCTION",
           ref: "/function/other/path",
         },
         {
@@ -262,17 +522,72 @@ describe("DB operations", () => {
           ref: "/owner/other/path",
         },
         {
+          type: "MATCH_RULE",
+          ref: "/test/test_rule/some/path/deeper",
+        },
+        {
+          type: "MATCH_OWNER",
+          ref: "/test/test_owner/some/path/deeper",
+        },
+        {
           type: "EVAL_RULE",
           ref: "/rule/other/path",
           value: "value",
-          address: "abcd"
+          address: "abcd",
+          timestamp: Date.now(),
         },
         {
           type: "EVAL_OWNER",
           ref: "/owner/other/path",
-          address: "abcd"
+          permission: "write_rule",
+          address: "abcd",
+          timestamp: Date.now(),
         },
-      ]), [null, null, null, null, false, {}]);
+      ]), [
+        null,
+        null,
+        null,
+        null,
+        {
+          "closest_rule": {
+            "config": "auth === 'abcd'",
+            "path": "/test/test_rule/some/path"
+          },
+          "matched_rule_path": "/test/test_rule/some/path/deeper",
+          "matched_value_path": "/test/test_rule/some/path/deeper",
+          "path_vars": {},
+          "subtree_rules": [
+            {
+              "config": "auth === 'ijkl'",
+              "path": "/path"
+            }
+          ]
+        },
+        {
+          "closest_owner": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true
+                },
+                "abcd": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false
+                }
+              }
+            },
+            "path": "/test/test_owner/some/path"
+          },
+          "matched_owner_path": "/test/test_owner/some/path/deeper"
+        },
+        false,
+        false
+      ]);
     })
 
     it("when retrieving existing value or rule or owner", () => {
@@ -286,7 +601,7 @@ describe("DB operations", () => {
           ref: "/test/test_rule/some/path",
         },
         {
-          type: "GET_FUNC",
+          type: "GET_FUNCTION",
           ref: "/test/test_function/some/path",
         },
         {
@@ -294,20 +609,36 @@ describe("DB operations", () => {
           ref: "/test/test_owner/some/path",
         },
         {
+          type: "MATCH_RULE",
+          ref: "/test/test_rule/some/path",
+        },
+        {
+          type: "MATCH_OWNER",
+          ref: "/test/test_owner/some/path",
+        },
+        {
           type: "EVAL_RULE",
           ref: "/test/test_rule/some/path",
           value: "value",
           address: "abcd",
+          timestamp: Date.now(),
         },
         {
           type: "EVAL_OWNER",
           ref: "/test/test_owner/some/path",
-          address: "abcd"
+          permission: "write_owner",
+          address: "abcd",
+          timestamp: Date.now(),
         },
       ]), [
         456,
         {
-          ".write": "auth === 'abcd'"
+          ".write": "auth === 'abcd'",
+          "deeper": {
+            "path": {
+              ".write": "auth === 'ijkl'"
+            }
+          }
         },
         {
           ".function": "some function config"
@@ -316,27 +647,79 @@ describe("DB operations", () => {
           ".owner": {
             "owners": {
               "*": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
-              },
-              "abcd": {
                 "branch_owner": false,
                 "write_function": true,
                 "write_owner": false,
                 "write_rule": true,
+              },
+              "abcd": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false,
+              }
+            }
+          },
+          "deeper": {
+            "path": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_function": true,
+                    "write_owner": false,
+                    "write_rule": true,
+                  },
+                  "ijkl": {
+                    "branch_owner": true,
+                    "write_function": false,
+                    "write_owner": true,
+                    "write_rule": false,
+                  }
+                }
               }
             }
           }
         },
-        true,
         {
-          "branch_owner": false,
-          "write_function": true,
-          "write_owner": false,
-          "write_rule": true,
-        }
+          "closest_rule": {
+            "config": "auth === 'abcd'",
+            "path": "/test/test_rule/some/path"
+          },
+          "matched_rule_path": "/test/test_rule/some/path",
+          "matched_value_path": "/test/test_rule/some/path",
+          "path_vars": {},
+          "subtree_rules": [
+            {
+              "config": "auth === 'ijkl'",
+              "path": "/deeper/path"
+            }
+          ]
+        },
+        {
+          "closest_owner": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true
+                },
+                "abcd": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false
+                }
+              }
+            },
+            "path": "/test/test_owner/some/path"
+          },
+          "matched_owner_path": "/test/test_owner/some/path"
+        },
+        true,
+        true,
       ]);
     })
   })
@@ -400,7 +783,7 @@ describe("DB operations", () => {
   describe("setOwner operations", () => {
     it("when overwriting existing owner config", () => {
       const ownerConfig = {".owner": "other owner config"};
-      expect(node.db.setOwner("/test/test_owner/some/path", ownerConfig)).to.equal(true)
+      expect(node.db.setOwner("/test/test_owner/some/path", ownerConfig, 'abcd')).to.equal(true)
       assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerConfig)
     })
   })
@@ -447,7 +830,7 @@ describe("DB operations", () => {
             ".owner": "other owner config"
           }
         }
-      ])).to.equal(true)
+      ], 'abcd')).to.equal(true)
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(node.db.getValue("test/increment/value")).to.equal(30)
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
@@ -546,7 +929,8 @@ describe("DB operations", () => {
             value: {
               ".owner": "other owner config"
             }
-          }
+          },
+          address: 'abcd'
         }
       ]), [ true, true, true, true, true ])
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
@@ -742,26 +1126,26 @@ describe("DB rule config", () => {
   it("only allows certain users to write certain info if balance is greater than 0", () => {
     expect(node2.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node2.account.address}/balance`), 0, null, null))
-        .to.equal(true)
+      .to.equal(true)
     expect(node2.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node2.account.address}/balance`), -1, null, null))
-        .to.equal(false)
+      .to.equal(false)
     expect(node1.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node1.account.address}/balance`), 1, null, null))
-        .to.equal(true)
-
+      .to.equal(true)
   })
 
   it("only allows certain users to write certain info if data exists", () => {
     expect(node1.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node1.account.address}/info`), "something", null, null))
-        .to.equal(true)
+      .to.equal(true)
     expect(node2.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node2.account.address}/info`), "something else", null,
         null)).to.equal(false)
     expect(node2.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node2.account.address}/new_info`), "something",
-        node2.account.address, null)).to.equal(true)
+        node2.account.address, null))
+      .to.equal(true)
   })
 
   it("apply the closest ancestor's rule config if not exists", () => {
@@ -770,7 +1154,8 @@ describe("DB rule config", () => {
         node1.account.address, null)).to.equal(true)
     expect(node2.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node2.account.address}/child/grandson`), "something",
-        node1.account.address, null)).to.equal(false)
+        node1.account.address, null))
+      .to.equal(false)
   })
 
   it("only allows certain users to write certain info if data at other locations exists", () => {
@@ -779,16 +1164,17 @@ describe("DB rule config", () => {
         null)).to.equal(true)
     expect(node1.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node1.account.address}/balance_info`), "something", null,
-        null)).to.equal(false)
+        null))
+      .to.equal(false)
   })
 
   it("validates old data and new data together", () => {
     expect(node1.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node1.account.address}/next_counter`), 11, null,  null))
-        .to.equal(true)
+      .to.equal(true)
     expect(node1.db.getPermissionForValue(
         ChainUtil.parsePath(`test/users/${node1.account.address}/next_counter`), 12, null, null))
-        .to.equal(false)
+      .to.equal(false)
   })
 
   it("can handle nested path variables", () => {
@@ -804,7 +1190,7 @@ describe("DB rule config", () => {
     expect(node1.db.getPermissionForValue(
         ChainUtil.parsePath('test/no_dup_key/aaa/bbb'), "some value", null, null)).to.equal(true)
     expect(node1.db.getPermissionForValue(
-        ChainUtil.parsePath('test/dup_key/aaa/bbb'), "some value", null, null)).to.equal(false)
+        ChainUtil.parsePath('test/dup_key/aaa/bbb'), "some value", null, null)).to.equal(true)
   })
 })
 
@@ -916,16 +1302,16 @@ describe("DB owner config", () => {
   it("branch_owner permission for known user with mixed config", () => {
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/true/branch'), 'known_user'))
-        .to.equal(true)
+      .to.equal(true)
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/false/true/true/branch'), 'known_user'))
-        .to.equal(false)
+      .to.equal(false)
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/branch'), 'known_user'))
-        .to.equal(true)
+      .to.equal(true)
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/branch'), 'known_user'))
-        .to.equal(true)
+      .to.equal(true)
   })
 
   it("write_owner permission for known user with mixed config", () => {
@@ -953,32 +1339,32 @@ describe("DB owner config", () => {
   it("write_rule permission on deeper path for known user with mixed config", () => {
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/true/deeper_path'), 'known_user'))
-        .to.equal(true)
+      .to.equal(true)
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/false/true/true/deeper_path'), 'known_user'))
-        .to.equal(true)
+      .to.equal(true)
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/deeper_path'), 'known_user'))
-        .to.equal(true)
+      .to.equal(true)
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/deeper_path'), 'known_user'))
-        .to.equal(false)
+      .to.equal(false)
   })
 
   // Unknown user
   it("branch_owner permission for unknown user with mixed config", () => {
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/true/branch'), 'unknown_user'))
-        .to.equal(false)
+      .to.equal(false)
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/false/true/true/branch'), 'unknown_user'))
-        .to.equal(true)
+      .to.equal(true)
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/branch'), 'unknown_user'))
-        .to.equal(false)
+      .to.equal(false)
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/branch'), 'unknown_user'))
-        .to.equal(false)
+      .to.equal(false)
   })
 
   it("write_owner permission for unknown user with mixed config", () => {
@@ -1014,15 +1400,15 @@ describe("DB owner config", () => {
   it("write_rule permission on deeper path for unknown user with mixed config", () => {
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/true/deeper_path'), 'unknown_user'))
-        .to.equal(false)
+      .to.equal(false)
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/false/true/true/deeper_path'), 'unknown_user'))
-        .to.equal(false)
+      .to.equal(false)
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/deeper_path'), 'unknown_user'))
-        .to.equal(false)
+      .to.equal(false)
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/deeper_path'), 'unknown_user'))
-        .to.equal(true)
+      .to.equal(true)
   })
 })

@@ -34,7 +34,7 @@ class Functions {
    * @param {Number} timestamp the time at which the transaction was created and signed
    */
   runBuiltInFunctions(parsedValuePath, value, timestamp, currentTime) {
-    const matches = this._matchFunctionPaths(parsedValuePath);
+    const matches = this.matchFunctionPaths(parsedValuePath);
     matches.forEach((elem) => {
       console.log(
         `  ==> Running built-in function '${elem.func.name}' with value '${value}', timestamp '${timestamp}', currentTime '${currentTime}' and params: ` +
@@ -59,7 +59,7 @@ class Functions {
   }
 
   // TODO(seo): Optimize function path matching (e.g. using Aho-Corasick-like algorithm).
-  _matchFunctionPaths(parsedValuePath) {
+  matchFunctionPaths(parsedValuePath) {
     let funcs = [];
     Object.keys(this.funcMap).forEach((path) => {
       const parsedFuncPath = ChainUtil.parsePath(path);

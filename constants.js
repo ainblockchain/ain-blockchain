@@ -115,9 +115,9 @@ const OwnerProperties = {
   BRANCH_OWNER: 'branch_owner',
   OWNER: '.owner',
   OWNERS: 'owners',
+  WRITE_FUNCTION: 'write_function',
   WRITE_OWNER: 'write_owner',
   WRITE_RULE: 'write_rule',
-  WRITE_FUNCTION: 'write_function',
 };
 
 /**
@@ -143,8 +143,10 @@ const FunctionProperties = {
 const ReadDbOperations = {
   GET_VALUE: 'GET_VALUE',
   GET_RULE: 'GET_RULE',
-  GET_FUNC: 'GET_FUNC',
+  GET_FUNCTION: 'GET_FUNCTION',
   GET_OWNER: 'GET_OWNER',
+  MATCH_RULE: 'MATCH_RULE',
+  MATCH_OWNER: 'MATCH_OWNER',
   EVAL_RULE: 'EVAL_RULE',
   EVAL_OWNER: 'EVAL_OWNER',
   GET: 'GET',

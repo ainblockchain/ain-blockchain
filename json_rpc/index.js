@@ -187,7 +187,7 @@ module.exports = function getMethods(
         case ReadDbOperations.GET_OWNER:
           done(null, addProtocolVersion({ result: p2pServer.node.db.getOwner(args.ref) }));
           return;
-        case ReadDbOperations.GET_FUNC:
+        case ReadDbOperations.GET_FUNCTION:
           done(null, addProtocolVersion({ result: p2pServer.node.db.getFunction(args.ref) }));
           return;
         case ReadDbOperations.GET:
@@ -198,15 +198,25 @@ module.exports = function getMethods(
       }
     },
 
+    ain_matchRule: function(args, done) {
+      const result = p2pServer.node.db.matchRule(args.ref);
+      done(null, addProtocolVersion({ result }));
+    },
+
+    ain_matchOwner: function(args, done) {
+      const result = p2pServer.node.db.matchOwner(args.ref);
+      done (null, addProtocolVersion({ result }));
+    },
+
     ain_evalRule: function(args, done) {
-      const permission = p2pServer.node.db.evalRule(
+      const result = p2pServer.node.db.evalRule(
           args.ref, args.value, args.address, args.timestamp || Date.now());
-      done(null, addProtocolVersion({ result: permission }));
+      done(null, addProtocolVersion({ result }));
     },
 
     ain_evalOwner: function(args, done) {
-      const permission = p2pServer.node.db.evalOwner(args.ref, args.address);
-      done (null, addProtocolVersion({ result: permission }));
+      const result = p2pServer.node.db.evalOwner(args.ref, args.permission, args.address);
+      done (null, addProtocolVersion({ result }));
     },
 
     // Account API
