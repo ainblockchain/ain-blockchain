@@ -59,6 +59,7 @@ const VotingStatus = {
  * Predefined database paths
  * @enum {string}
  */
+ // TODO (lia): Pick one convention: full-paths (e.g. /consensus/voting) or keys (e.g. token)
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
