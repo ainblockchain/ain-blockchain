@@ -113,7 +113,7 @@ class TransactionPool {
     return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0]: [];
   }
 
-  removeTimedOutTransactions(blockTimestamp) {
+  removeTimedOutTxsFromPool(blockTimestamp) {
     // Get timed-out transactions.
     const timedOutTxs = new Set();
     for (const address in this.transactions) {
@@ -129,13 +129,20 @@ class TransactionPool {
         return !timedOutTxs.has(tx.hash);
       });
     }
+    return timedOutTxs.size > 0;
+  }
+
+  removeTimedOutTxsFromTracker(blockTimestamp) {
     // Remove transactions from transactionTracker.
+    let removed = false;
     for (const hash in this.transactionTracker) {
       const txData = this.transactionTracker[hash];
       if (this.isTimedOutFromTracker(txData.timestamp, blockTimestamp)) {
         delete this.transactionTracker[hash];
+        removed = true;
       }
     }
+    return removed;
   }
 
   cleanUpForNewBlock(block) {
@@ -172,8 +179,10 @@ class TransactionPool {
       }
     }
 
-    this.removeTimedOutTransactions(block.timestamp);
-    this.rebuildPendingNonceTrackers();
+    this.removeTimedOutTxsFromTracker(block.timestamp);
+    if (this.removeTimedOutTxsFromPool(block.timestamp)) {
+      this.rebuildPendingNonceTrackers();
+    }
   }
 
   updateNonceTrackers(transactions) {
@@ -192,7 +201,7 @@ class TransactionPool {
   }
 
   rebuildPendingNonceTrackers() {
-    const newNonceTracker = {};
+    const newNonceTracker = JSON.parse(JSON.stringify(this.committedNonceTracker));
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
         if (tx.nonce >= 0 &&
