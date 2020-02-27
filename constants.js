@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const moment = require('moment');
 const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain/genesis_token.json');
 const GENESIS_ACCOUNTS = path.resolve(__dirname, 'blockchain/genesis_accounts.json');
 const GENESIS_OWNERS = path.resolve(__dirname, 'blockchain/genesis_owners.json');
@@ -17,8 +18,8 @@ const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
-const TRANSACTION_POOL_TIME_OUT_MS = 60 * 60 * 1000;  // 1 hour in ms
-const TRANSACTION_TRACKER_TIME_OUT_MS = 24 * 60 * 60 * 1000;  // 24 hours in ms
+const TRANSACTION_POOL_TIME_OUT_MS = moment.duration(1, 'hours').as('milliseconds');
+const TRANSACTION_TRACKER_TIME_OUT_MS = moment.duration(24, 'hours').as('milliseconds');
 // TODO (lia): Check network id in all messages
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 

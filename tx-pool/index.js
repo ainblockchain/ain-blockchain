@@ -51,9 +51,6 @@ class TransactionPool {
     if (lastBlockTimestamp < 0) {
       return false;
     }
-    if (!(typeof txTimestamp === 'number' && isFinite(txTimestamp))) {
-      return true;
-    }
     return lastBlockTimestamp >= txTimestamp + timeout;
   }
 
@@ -179,12 +176,16 @@ class TransactionPool {
     this.rebuildPendingNonceTrackers();
   }
 
-  updateCommittedNonceTracker(transactions) {
+  updateNonceTrackers(transactions) {
     transactions.forEach((tx) => {
       if (tx.nonce >= 0) {
         if (this.committedNonceTracker[tx.address] === undefined ||
             this.committedNonceTracker[tx.address] < tx.nonce) {
           this.committedNonceTracker[tx.address] = tx.nonce;
+        }
+        if (this.pendingNonceTracker[tx.address] === undefined ||
+            this.pendingNonceTracker[tx.address] < tx.nonce) {
+          this.pendingNonceTracker[tx.address] = tx.nonce;
         }
       }
     });

@@ -12,7 +12,7 @@ const os = require('os');
 const ainUtil = require('@ainblockchain/ain-util');
 const { MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths }
     = require('../constants');
-const { Block} = require('../blockchain/block');
+const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const VotingUtil = require('./voting-util');
 const { WriteDbOperations, DEBUG } = require('../constants');
@@ -276,9 +276,9 @@ class P2pServer {
                   }, BLOCK_CREATION_INTERVAL_MS);
                 }
               }
-              for (let i = 0; i < data.chainSubsection.length; i++) {
-                this.node.tp.cleanUpForNewBlock(data.chainSubsection[i]);
-              }
+              data.chainSubsection.forEach((block) => {
+                this.node.tp.cleanUpForNewBlock(block);
+              });
               this.node.reconstruct();
               // Continuously request the blockchain in subsections until
               // your local blockchain matches the height of the consensus blockchain.

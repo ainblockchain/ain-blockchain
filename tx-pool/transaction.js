@@ -1,5 +1,6 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const { WriteDbOperations, DEBUG } = require('../constants');
+const ChainUtil = require('../chain-util');
 
 // TODO(seo): Remove 'txWithSig.transaction ?' use cases.
 class Transaction {
@@ -80,7 +81,10 @@ class Transaction {
     const sanitized = [];
     if (Array.isArray(opList)) {
       opList.forEach((op) => {
-        const sanitizedOp = { ref: op.ref, value: op.value };
+        const sanitizedOp = {
+          ref: ChainUtil.stringOrEmpty(op.ref),
+          value: op.value
+        };
         if (op.type === WriteDbOperations.SET_VALUE || op.type === WriteDbOperations.INC_VALUE ||
             op.type === WriteDbOperations.DEC_VALUE || op.type === WriteDbOperations.SET_RULE ||
             op.type === WriteDbOperations.SET_FUNCTION || op.type === WriteDbOperations.SET_OWNER) {
@@ -100,13 +104,16 @@ class Transaction {
     switch(op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-      case WriteDbOperations.INC_VALUE:
-      case WriteDbOperations.DEC_VALUE:
       case WriteDbOperations.SET_RULE:
       case WriteDbOperations.SET_FUNCTION:
       case WriteDbOperations.SET_OWNER:
-        sanitized.ref = op.ref;
+        sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
         sanitized.value = op.value;
+        break;
+      case WriteDbOperations.INC_VALUE:
+      case WriteDbOperations.DEC_VALUE:
+        sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
+        sanitized.value = ChainUtil.numberOrZero(op.value);
         break;
       case WriteDbOperations.SET:
         sanitized.op_list = this.sanitizeSetOpList(op.op_list);
@@ -123,12 +130,12 @@ class Transaction {
    */
   static sanitizeTxData(txData) {
     const sanitized = {
-      nonce: txData.nonce,
-      timestamp: txData.timestamp,
+      nonce: ChainUtil.numberOrZero(txData.nonce),
+      timestamp: ChainUtil.numberOrZero(txData.timestamp),
       operation: Transaction.sanitizeOperation(txData.operation),
     };
     if (txData.parent_tx_hash !== undefined) {
-      sanitized.parent_tx_hash = txData.parent_tx_hash;
+      sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txData.parent_tx_hash);
     }
     return sanitized;
   }
