@@ -41,10 +41,10 @@ class ChainUtil {
   }
 
   static formatPath(parsedPath) {
-    if (!Array.isArray(parsedPath)) {
+    if (!Array.isArray(parsedPath) || !parsedPath.length) {
       return '/';
     }
-    return '/' + parsedPath.join('/');
+    return (parsedPath[0].startsWith('/') ? '' : '/') + parsedPath.join('/');
   }
 }
 
