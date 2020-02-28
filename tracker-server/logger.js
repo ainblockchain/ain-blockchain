@@ -2,6 +2,9 @@ const process = require('process');
 const winston = require('winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
+const { LoggingWinston } = require('@google-cloud/logging-winston');
+
+const stackDriverLogging = new LoggingWinston();
 
 const { combine, timestamp, label, printf } = winston.format
 const logFormat = printf(({ level, message, label, timestamp }) => {
@@ -54,7 +57,9 @@ const logger = new winston.createLogger({
         timestamp(),
         logFormat
       )
-    })
+    }),
+    // Add Stackdriver Logging
+    stackDriverLogging,
   ],
   exitOnError: false
 })
