@@ -1,12 +1,13 @@
-const {Block} = require('./block');
-const BlockFilePatterns = require('./block-file-patterns');
-const {BLOCKCHAINS_DIR} = require('../constants');
 const rimraf = require('rimraf');
 const path = require('path');
 const fs = require('fs');
 const glob = require('glob');
 const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
+const logger = require('../logger')
+const { Block } = require('./block');
+const BlockFilePatterns = require('./block-file-patterns');
+const { BLOCKCHAINS_DIR } = require('../constants');
 const CHAIN_SUBSECT_LENGTH = 20;
 
 class Blockchain {
@@ -21,33 +22,33 @@ class Blockchain {
   init(isFirstNode) {
     if (this.createBlockchainDir()) {
       if (isFirstNode) {
-        console.log("\n");
-        console.log("############################################################");
-        console.log("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
-        console.log("############################################################");
-        console.log("\n");
+        logger.info("\n");
+        logger.info("############################################################");
+        logger.info("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
+        logger.info("############################################################");
+        logger.info("\n");
         this.chain = [Block.genesis()];
         this.writeChain();
       } else {
-        console.log("\n");
-        console.log("#############################################################");
-        console.log("## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##");
-        console.log("#############################################################");
-        console.log("\n");
+        logger.info("\n");
+        logger.info("#############################################################");
+        logger.info("## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##");
+        logger.info("#############################################################");
+        logger.info("\n");
       }
     } else {
       if (isFirstNode) {
-        console.log("\n");
-        console.log("############################################################");
-        console.log("## Starting FIRST-NODE blockchain with EXISTING blocks... ##");
-        console.log("############################################################");
-        console.log("\n");
+        logger.info("\n");
+        logger.info("############################################################");
+        logger.info("## Starting FIRST-NODE blockchain with EXISTING blocks... ##");
+        logger.info("############################################################");
+        logger.info("\n");
       } else {
-        console.log("\n");
-        console.log("################################################################");
-        console.log("## Starting NON-FIRST-NODE blockchain with EXISTING blocks... ##");
-        console.log("################################################################");
-        console.log("\n");
+        logger.info("\n");
+        logger.info("################################################################");
+        logger.info("## Starting NON-FIRST-NODE blockchain with EXISTING blocks... ##");
+        logger.info("################################################################");
+        logger.info("\n");
       }
       let newChain = Blockchain.loadChain(this._blockchainDir());
       if (newChain) {
@@ -114,11 +115,11 @@ class Blockchain {
 
   addNewBlock(block) {
     if (!block) {
-      console.log(`[blockchain.addNewBlock] Block is null`);
+      logger.info(`[blockchain.addNewBlock] Block is null`);
       return false;
     }
     if (block.number != this.lastBlockNumber() + 1) {
-      console.log(`[blockchain.addNewBlock] Invalid blockchain number: ${block.number}`);
+      logger.info(`[blockchain.addNewBlock] Invalid blockchain number: ${block.number}`);
       return false;
     }
     if (!(block instanceof Block)) {
@@ -137,11 +138,11 @@ class Blockchain {
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
     if (firstBlock.hash !== Block.genesis().hash) {
-      console.log('First block is not the Genesis block');
+      logger.error('First block is not the Genesis block');
       return false;
     }
     if (!Block.validateHashes(firstBlock)) {
-      console.log('Genesis block is corrupted')
+      logger.error('Genesis block is corrupted')
       return false;
     }
     // TODO (lia): Check if the tx nonces are correct.
@@ -203,20 +204,20 @@ class Blockchain {
     */
   requestBlockchainSection(refBlock) {
     const refBlockNumber = refBlock ? refBlock.number : 0;
-    console.log(`Current last block number: ${this.lastBlockNumber()}, ` +
+    logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
         `Requester's last block number: ${refBlockNumber}`);
     const blockFiles =
         this.getBlockFiles(refBlockNumber, refBlockNumber + CHAIN_SUBSECT_LENGTH);
     if (blockFiles.length > 0 &&
         Block.loadBlock(blockFiles[blockFiles.length - 1]).number > refBlockNumber &&
         (refBlock && blockFiles[0].indexOf(Block.getFileName(refBlock)) < 0)) {
-      console.log(
+      logger.error(
           'Invalid blockchain request. Requesters last block does not belong to this blockchain');
       return;
     }
     const refBlockHash = refBlock ? refBlock.hash : null;
     if (refBlockHash === this.lastBlock().hash) {
-      console.log('Requesters blockchain is up to date with this blockchain');
+      logger.info('Requesters blockchain is up to date with this blockchain');
       return [ this.lastBlock() ];
     }
 
@@ -229,9 +230,9 @@ class Blockchain {
 
   merge(chainSubSection) {
     // Call to shift here is important as it removes the first element from the list !!
-    console.log(`Last block number before merge: ${this.lastBlockNumber()}`);
+    logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
     if (chainSubSection.length === 0) {
-      console.log('Empty chain sub section');
+      logger.info('Empty chain sub section');
       if (!this.syncedAfterStartup) {
         // Regard this situation as if you're synced.
         // TODO (lia): ask the tracker server for another peer.
@@ -240,11 +241,11 @@ class Blockchain {
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
-      console.log('Received chain is of lower block number than current last block number');
+      logger.info('Received chain is of lower block number than current last block number');
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {
-      console.log('Received chain is at the same block number');
+      logger.info('Received chain is at the same block number');
       if (!this.syncedAfterStartup) {
         // Regard this situation as if you're synced.
         // TODO (lia): ask the tracker server for another peer.
@@ -257,20 +258,20 @@ class Blockchain {
     if (lastBlockHash) {
       // Case 1: Not a cold start.
       if (lastBlockHash !== firstBlock.hash) {
-        console.log(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
+        logger.info(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
             `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
         return false;
       }
     } else {
       // Case 2: A cold start.
       if (firstBlock.last_hash !== '') {
-        console.log(`First block of hash ${firstBlock.hash.substring(0, 5)} ` +
+        logger.info(`First block of hash ${firstBlock.hash.substring(0, 5)} ` +
             `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
         return false;
       }
     }
     if (!Blockchain.isValidChainSubsection(chainSubSection)) {
-      console.log('Invalid chain subsection');
+      logger.error('Invalid chain subsection');
       return false;
     }
     for (let i = 0; i < chainSubSection.length; i++) {
@@ -280,11 +281,11 @@ class Blockchain {
       }
       const block = chainSubSection[i];
       if (!this.addNewBlock(block)) {
-        console.log('Failed to add block '+ block);
+        logger.error('Failed to add block '+ block);
         return false;
       }
     }
-    console.log(`Last block number after merge: ${this.lastBlockNumber()}`);
+    logger.info(`Last block number after merge: ${this.lastBlockNumber()}`);
     return true;
   }
 
@@ -297,10 +298,10 @@ class Blockchain {
     });
 
     if (Blockchain.isValidChain(newChain)) {
-      console.log(`Valid chain of size ${newChain.length}`);
+      logger.info(`Valid chain of size ${newChain.length}`);
       return newChain;
     }
-    console.log('Invalid chain');
+    logger.error('Invalid chain');
     rimraf.sync(chainPath + '/*');
     return null;
   }

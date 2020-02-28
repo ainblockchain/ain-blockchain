@@ -1,4 +1,5 @@
 const seedrandom = require('seedrandom');
+const logger = require('../logger');
 const { VotingStatus, PredefinedDbPaths, WriteDbOperations } = require('../constants');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
@@ -37,7 +38,7 @@ class VotingUtil {
     const total = Object.values(validatorsMinusProposer).reduce(function(a, b) {
       return a + b;
     }, 0);
-    console.log(`Total prevotes from validators : ${total}\n` +
+    logger.info(`Total prevotes from validators : ${total}\n` +
         `Received prevotes ${this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
     return (this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) > (total * 2 / 3) ||
         total === 0);
@@ -48,7 +49,7 @@ class VotingUtil {
     const stakes = this.getStakes(this.node.account.address);
     if (stakes) {
       this.setStatus(VotingStatus.PRE_VOTE);
-      console.log(
+      logger.info(
           `Current prevotes are ` +
           `${this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_VOTES)}`);
       const transaction = this.node.createTransaction({
@@ -66,7 +67,7 @@ class VotingUtil {
   }
 
   isCommit() {
-    console.log(`Checking status ${this.status}`);
+    logger.info(`Checking status ${this.status}`);
     return this.status !== VotingStatus.COMMITTED && this.checkPreCommits();
   }
 
@@ -96,7 +97,7 @@ class VotingUtil {
     }
     const stakes = this.getStakes(this.node.account.address);
     if (stakes) {
-      console.log(
+      logger.info(
           `Current precommits are ` +
           `${this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
       this.setStatus(VotingStatus.PRE_COMMIT);
@@ -122,7 +123,7 @@ class VotingUtil {
     const total = Object.values(validatorsMinusProposer).reduce(function(a, b) {
       return a + b;
     }, 0);
-    console.log(`Total pre_commits from validators : ${total}\n` +
+    logger.info(`Total pre_commits from validators : ${total}\n` +
         `Received pre_commits ` +
         `${this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS)}`);
     return (this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PRE_COMMITS) > (total * 2 / 3) ||
@@ -131,7 +132,7 @@ class VotingUtil {
 
 
   instantiate() {
-    console.log('Initialising voting !!');
+    logger.info('Initialising voting !!');
     // This method should only be called by the very first node on the network !!
     // This user should establish themselves as the first node on the network, instantiate
     // the first /consensus/voting entry t db and commit this to the blockchain so it will be
@@ -160,7 +161,7 @@ class VotingUtil {
         }
       });
     } else {
-      console.log(`Node should have staked by now but deposit was not made successfully.`)
+      logger.info(`Node should have staked by now but deposit was not made successfully.`)
       return null;
     }
   }
@@ -211,7 +212,7 @@ class VotingUtil {
   registerForNextRound(number) {
     const votingRound = this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND);
     if ((!votingRound && number !== 0) || (votingRound && votingRound.number !== number)) {
-      console.log(`[registerForNextRound] Invalid block number. ` +
+      logger.info(`[registerForNextRound] Invalid block number. ` +
           `Expected: ${number}, Actual: ${votingRound.number}`);
       return null;
     }
@@ -231,7 +232,7 @@ class VotingUtil {
   }
 
   setBlock(block, proposal) {
-    console.log(`Setting block ${block.hash.substring(0, 5)} with number ${block.number}`);
+    logger.info(`Setting block ${block.hash.substring(0, 5)} with number ${block.number}`);
     this.block = block;
     this.setStatus(VotingStatus.BLOCK_RECEIVED);
     // TODO (lia): fix lastVotes logic while fixing the rounding system
@@ -254,7 +255,7 @@ class VotingUtil {
     for (let i = 0; i < alphabeticallyOrderedStakeHolders.length; i++) {
       cumulativeStakeFromPotentialValidators += stakeHolders[alphabeticallyOrderedStakeHolders[i]];
       if (targetValue < cumulativeStakeFromPotentialValidators) {
-        console.log(`Proposer is ${alphabeticallyOrderedStakeHolders[i]}`);
+        logger.info(`Proposer is ${alphabeticallyOrderedStakeHolders[i]}`);
         return alphabeticallyOrderedStakeHolders[i];
       }
     }

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
+const logger = require('../logger');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const {GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, PredefinedDbPaths,
@@ -93,15 +94,15 @@ class Block {
 
   static validateHashes(block) {
     if (block.hash !== Block.hash(block)) {
-      console.log(`Block hash is incorrect for  block ${block.hash}`);
+      logger.info(`Block hash is incorrect for  block ${block.hash}`);
       return false;
     }
     if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
-      console.log(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
+      logger.info(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
-      console.log(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+      logger.info(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
     }
     return true;
@@ -110,7 +111,7 @@ class Block {
   static validateProposedBlock(block, blockchain) {
     if (!Block.validateHashes(block)) { return false; }
     if (block.number !== (blockchain.lastBlockNumber() + 1)) {
-      console.log(`Number is not correct for block ${block.hash}.
+      logger.error(`Number is not correct for block ${block.hash}.
                    Expected: ${(blockchain.lastBlockNumber() + 1)}
                    Actual: ${block.number}`);
       return false;
@@ -129,14 +130,14 @@ class Block {
         continue;
       }
       if (transaction.nonce != nonceTracker[transaction.address] + 1) {
-        console.log(`Invalid noncing for ${transaction.address}.
+        logger.error(`Invalid noncing for ${transaction.address}.
                      Expected ${nonceTracker[transaction.address] + 1}.
                      Received ${transaction.nonce}`);
         return false;
       }
       nonceTracker[transaction.address] = transaction.nonce;
     }
-    console.log(`Valid block of number ${block.number}`);
+    logger.info(`Valid block of number ${block.number}`);
     return true;
   }
 

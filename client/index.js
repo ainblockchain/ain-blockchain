@@ -2,10 +2,10 @@
 
 const process = require('process');
 const fs = require('fs');
-const moment = require('moment');
 const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
+const logger = require('../logger');
 const Node = require('../node');
 const P2pServer = require('../server');
 const { WriteDbOperations, PROTOCOL_VERSIONS } = require('../constants');
@@ -16,7 +16,7 @@ const MAX_BLOCKS = 20;
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
-  console.log(err);
+  logger.error(err);
 });
 
 const PORT = process.env.PORT || 8080;
@@ -30,25 +30,6 @@ if (!VERSION_LIST[CURRENT_PROTOCOL_VERSION]) {
 const minProtocolVersion =
     VERSION_LIST[CURRENT_PROTOCOL_VERSION].min || CURRENT_PROTOCOL_VERSION;
 const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_VERSION].max;
-
-// Initiate logging
-const LOG = process.env.LOG || false;
-
-if (LOG) {
-  const logDir = __dirname + '/' + 'logs';
-  if (!(fs.existsSync(logDir))) {
-    fs.mkdirSync(logDir);
-  }
-  const logFile =
-    fs.createWriteStream(logDir + '/' + PORT +'debug.log', {flags: 'a'});
-  const logStdout = process.stdout;
-
-  console.log = function(d) {
-    logFile.write(moment(new Date()).format(moment.HTML5_FMT.DATETIME_LOCAL_MS) +
-        '\t' + util.format(d) + '\n');
-    logStdout.write(util.format(d) + '\n');
-  };
-}
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
@@ -289,8 +270,8 @@ app.get('/get_address', (req, res, next) => {
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 app.listen(PORT, () => {
-  console.log(`App listening on port ${PORT}`);
-  console.log('Press Ctrl+C to quit.');
+  logger.info(`App listening on port ${PORT}`);
+  logger.info('Press Ctrl+C to quit.');
 });
 
 // Lets start this p2p server up so we listen for changes in either DATABASE

@@ -1,3 +1,4 @@
+const logger = require('../logger');
 const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
        DEBUG} = require('../constants');
 const ChainUtil = require('../chain-util');
@@ -151,7 +152,7 @@ class DB {
   incValue(valuePath, delta, address, timestamp) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
-      console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
+      logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return {code: 1, error_message: 'Not a number type: ' + valuePath};
@@ -163,7 +164,7 @@ class DB {
   decValue(valuePath, delta, address, timestamp) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
-      console.log(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
+      logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return {code: 1, error_message: 'Not a number type: ' + valuePath};
@@ -260,7 +261,7 @@ class DB {
       if (!operation) {
         const message = 'No operation';
         resultList.push({ code: 1, error_message: message });
-        console.log(message);
+        logger.info(message);
       } else {
         switch(operation.type) {
           case undefined:
@@ -276,7 +277,7 @@ class DB {
           default:
             const message = `Invalid operation type: ${operation.type}`;
             resultList.push({ code: 2, error_message: message });
-            console.log(message);
+            logger.info(message);
         }
       }
     });
@@ -354,11 +355,9 @@ class DB {
     }
     const result = this.executeOperation(tx.operation, tx.address, tx.timestamp);
     // TODO(minhyun): Support BATCH & SET.
-    //console.log(result);
     if (result && (tx.operation.type == WriteDbOperations.SET_VALUE
         || tx.operation.type == WriteDbOperations.INC_VALUE
         || tx.operation.type == WriteDbOperations.DEC_VALUE)) {
-      //console.log("trigger");
       this.func.triggerEvent(tx);
     }
     return result;
@@ -467,7 +466,7 @@ class DB {
       matched.matchedRulePath.unshift(varNodeName);
       if (matched.pathVars[varNodeName] !== undefined) {
         // This should not happen!
-        console.log('Duplicated path variables that should NOT happen!')
+        logger.error('Duplicated path variables that should NOT happen!')
       } else {
         matched.pathVars[varNodeName] = parsedValuePath[depth];
       }

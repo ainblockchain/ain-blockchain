@@ -1,4 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
+const logger = require('../logger');
 const { WriteDbOperations, DEBUG } = require('../constants');
 const ChainUtil = require('../chain-util');
 
@@ -9,7 +10,7 @@ class Transaction {
 
     const transaction = txWithSig.transaction ? txWithSig.transaction : txWithSig;
     if (!Transaction.hasRequiredFields(transaction)) {
-      console.log('Transaction must contain timestamp, operation and nonce fields: ' + JSON.stringify(transaction));
+      logger.info('Transaction must contain timestamp, operation and nonce fields: ' + JSON.stringify(transaction));
       return null;
     }
 
@@ -26,7 +27,7 @@ class Transaction {
         Transaction.getAddress(this.hash.slice(2), this.signature);
 
     if (DEBUG) {
-      console.log(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
+      logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
     }
   }
 
@@ -142,12 +143,12 @@ class Transaction {
 
   static verifyTransaction(transaction) {
     if (transaction.operation.type !== undefined && Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
-      console.log(`Invalid transaction type: ${transaction.operation.type}`);
+      logger.info(`Invalid transaction type: ${transaction.operation.type}`);
       return false;
     }
     // Workaround for skip_verif with custom address
     if (transaction.skip_verif) {
-      console.log('Skip verifying signature for transaction: ' + JSON.stringify(transaction, null, 2));
+      logger.info('Skip verifying signature for transaction: ' + JSON.stringify(transaction, null, 2));
       return true;
     }
     return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);
