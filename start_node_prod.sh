@@ -25,7 +25,6 @@ echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 
 export STAKE=250
 export HOSTING_ENV=gcp
-export LOG=true
 export DEBUG=false 
 
 nohup node client/index.js >/dev/null 2>&1 &
