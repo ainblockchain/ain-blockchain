@@ -24,26 +24,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
-    DEBUG: true,
+    P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5002, PORT: 9092, ACCOUNT_INDEX: 1, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
-    DEBUG: true,
+    P2P_PORT: 5002, PORT: 9092, ACCOUNT_INDEX: 1, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5003, PORT: 9093, ACCOUNT_INDEX: 2, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
-    DEBUG: true,
+    P2P_PORT: 5003, PORT: 9093, ACCOUNT_INDEX: 2, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5004, PORT: 9094, ACCOUNT_INDEX: 3, STAKE: 250, LOG: true, HOSTING_ENV: 'local',
-    DEBUG: true,
+    P2P_PORT: 5004, PORT: 9094, ACCOUNT_INDEX: 3, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -296,7 +292,6 @@ describe('Integration Tests', () => {
       const newServerProc = new Process(APP_SERVER, {
         P2P_PORT: 5005,
         PORT: 9095,
-        LOG: true,
         STAKE: 250,
         LOCAL: true,
         DEBUG: true,

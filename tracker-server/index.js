@@ -3,6 +3,7 @@ const geoip = require('geoip-lite');
 const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
+const logger = require('./logger');
 
 const P2P_PORT = 3001;
 const PORT = 5000;
@@ -12,7 +13,7 @@ const MASK = 'xxx';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
-  console.log(err);
+  logger.error(err);
 });
 
 function abbrAddr(address) {
@@ -38,20 +39,20 @@ function numLivePeers(address) {
 }
 
 function printNodesInfo() {
-  console.log(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()} at ${Date.now()})`);
+  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()} at ${Date.now()})`);
   const nodeList = Object.values(PEER_NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
     const diskAvailableMb = Math.floor(node.diskUsage.available / 1000000);
-    console.log(`    Node[${i}]: ${node.getNodeSummary()} ` +
+    logger.info(`    Node[${i}]: ${node.getNodeSummary()} ` +
         `(${node.timestamp}, ${node.lastBlockNumber}, ${diskAvailableMb}MB) ` +
         `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()})`);
     Object.keys(node.managedPeers).forEach((addr) => {
       const peerSummary = PEER_NODES[addr] ?
           PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
-      console.log(`      Managed peer: ${peerSummary}`);
+      logger.info(`      Managed peer: ${peerSummary}`);
     });
   }
 }
@@ -71,7 +72,7 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       const nodeInfo = JSON.parse(message);
-      console.log(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
+      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
           `${JSON.stringify(nodeInfo, null, 2)}`)
       if (PEER_NODES[nodeInfo.address]) {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
@@ -88,24 +89,24 @@ server.on('connection', (ws) => {
         newManagedPeerInfoList,
         numLivePeers: numLivePeers(node.address)
       };
-      console.log(`>> Message to node [${abbrAddr(node.address)}]: ` +
+      logger.info(`>> Message to node [${abbrAddr(node.address)}]: ` +
           `${JSON.stringify(msgToNode, null, 2)}`)
       ws.send(JSON.stringify(msgToNode));
       printNodesInfo();
     } catch (error) {
-      console.log(error.stack);
+      logger.error(error.stack);
     }
   });
 
   ws.on('close', (code) => {
-    console.log(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
+    logger.info(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
         `with code: ${code}`);
     PEER_NODES[node.address].isLive = false;
     printNodesInfo();
   });
 
   ws.on('error', (error) => {
-    console.log(`Error in communication with node [${abbrAddr(node.address)}]: ` +
+    logger.error(`Error in communication with node [${abbrAddr(node.address)}]: ` +
         `${JSON.stringify(error, null, 2)}`)
   });
 });
@@ -274,6 +275,6 @@ app.get('/peer_nodes', (req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`App listening on port ${PORT}`);
-  console.log('Press Ctrl+C to quit.');
+  logger.info(`App listening on port ${PORT}`);
+  logger.info('Press Ctrl+C to quit.');
 });

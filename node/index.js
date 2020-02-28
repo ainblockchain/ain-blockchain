@@ -1,4 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
+const logger = require('../logger');
 const { GenesisAccounts } = require('../constants');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
@@ -17,7 +18,7 @@ class Node {
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    console.log(`Creating new node with account: ${this.account.address}`);
+    logger.info(`Creating new node with account: ${this.account.address}`);
   }
 
   // For testing purpose only.
@@ -26,7 +27,7 @@ class Node {
   }
 
   init(isFirstNode) {
-    console.log('Initializing node..')
+    logger.info('Initializing node..')
     this.bc.init(isFirstNode);
     this.bc.setBackupDb(new DB());
     this.nonce = this.getNonce();
@@ -51,7 +52,7 @@ class Node {
         break;
       }
     }
-    console.log(`Setting nonce to ${nonce}`);
+    logger.info(`Setting nonce to ${nonce}`);
     return nonce;
   }
 
@@ -94,7 +95,7 @@ class Node {
   }
 
   reconstruct() {
-    console.log('Reconstructing database');
+    logger.info('Reconstructing database');
     this.db.setDbToSnapshot(this.bc.backupDb);
     this.executeChainOnDb();
     this.db.executeTransactionList(this.tp.getValidTransactions());

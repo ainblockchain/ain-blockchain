@@ -10,6 +10,7 @@ const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
 const ainUtil = require('@ainblockchain/ain-util');
+const logger = require('../logger');
 const { MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths }
     = require('../constants');
 const { Block } = require('../blockchain/block');
@@ -54,7 +55,7 @@ class P2pServer {
   listen() {
     const server = new Websocket.Server({port: P2P_PORT});
     server.on('connection', (socket) => this.setSocket(socket, null));
-    console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}\n`);
+    logger.info(`Listening for peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setIntervalForTrackerConnection();
   }
 
@@ -83,18 +84,18 @@ class P2pServer {
   }
 
   connectToTracker() {
-    console.log(`[TRACKER] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
+    logger.info(`[TRACKER] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
     this.getIpAddress()
     .then(() => {
       this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
       this.trackerWebSocket.on('open', () => {
-        console.log(`[TRACKER] Connected to tracker (${TRACKER_WS_ADDR})`);
+        logger.info(`[TRACKER] Connected to tracker (${TRACKER_WS_ADDR})`);
         this.clearIntervalForTrackerConnection();
         this.setTrackerEventHandlers();
         this.setIntervalForTrackerUpdate();
       });
       this.trackerWebSocket.on('error', (error) => {
-        console.log(`[TRACKER] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+        logger.info(`[TRACKER] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
             `${JSON.stringify(error, null, 2)}`)
       });
     });
@@ -112,7 +113,7 @@ class P2pServer {
           return res.data;
         })
         .catch((err) => {
-          console.log(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+          logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
           process.exit(0);
         });
       } else if (HOSTING_ENV === 'local') {
@@ -131,10 +132,10 @@ class P2pServer {
     this.trackerWebSocket.on('message', (message) => {
       try {
         const parsedMsg = JSON.parse(message);
-        console.log(`\n[TRACKER] << Message from tracker: ` +
+        logger.info(`\n[TRACKER] << Message from tracker: ` +
             `${JSON.stringify(parsedMsg, null, 2)}`)
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-          console.log(`[TRACKER] Updated managed peers info: ` +
+          logger.info(`[TRACKER] Updated managed peers info: ` +
               `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
         if (this.isStarting) {
@@ -148,12 +149,12 @@ class P2pServer {
           }
         }
       } catch (error) {
-        console.log(error.stack);
+        logger.error(error.stack);
       }
     });
 
     this.trackerWebSocket.on('close', (code) => {
-      console.log(`\n[TRACKER] Disconnected from tracker ${TRACKER_WS_ADDR} with code: ${code}`);
+      logger.info(`\n[TRACKER] Disconnected from tracker ${TRACKER_WS_ADDR} with code: ${code}`);
       this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
@@ -190,7 +191,7 @@ class P2pServer {
     if (diskUsage !== null) {
       updateToTracker.diskUsage = diskUsage;
     }
-    console.log(`\n[TRACKER] >> Update to tracker ${TRACKER_WS_ADDR}: ` +
+    logger.info(`\n[TRACKER] >> Update to tracker ${TRACKER_WS_ADDR}: ` +
         `${JSON.stringify(updateToTracker, null, 2)}`)
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
@@ -200,7 +201,7 @@ class P2pServer {
       return disk.checkSync(DISK_USAGE_PATH);
     }
     catch (err) {
-      console.log(err);
+      logger.error(err);
       return null;
     }
   }
@@ -209,15 +210,15 @@ class P2pServer {
     let updated = false;
     newManagedPeerInfoList.forEach((peerInfo) => {
       if (this.managedPeersInfo[peerInfo.address]) {
-        console.log(`[PEER] Node ${peerInfo.address} is already a managed peer. ` +
+        logger.info(`[PEER] Node ${peerInfo.address} is already a managed peer. ` +
             `Something is wrong.`)
       } else {
-        console.log(`[PEER] Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
+        logger.info(`[PEER] Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
         this.managedPeersInfo[peerInfo.address] = peerInfo;
         updated = true;
         const socket = new Websocket(peerInfo.url);
         socket.on('open', () => {
-          console.log(`[PEER] Connected to peer ${peerInfo.address} (${peerInfo.url}).`)
+          logger.info(`[PEER] Connected to peer ${peerInfo.address} (${peerInfo.url}).`)
           this.setSocket(socket, peerInfo.address);
         });
       }
@@ -247,13 +248,13 @@ class P2pServer {
         switch (data.type) {
           case MessageTypes.VOTING:
             if (DEBUG) {
-              console.log(`RECEIVING: ${JSON.stringify(data.votingAction.transaction)}`);
+              logger.debug(`RECEIVING: ${JSON.stringify(data.votingAction.transaction)}`);
             }
             this.executeVotingAction(data.votingAction);
             break;
           case MessageTypes.TRANSACTION:
             if (DEBUG) {
-              console.log(`RECEIVING: ${JSON.stringify(data.transaction)}`);
+              logger.debug(`RECEIVING: ${JSON.stringify(data.transaction)}`);
             }
             this.executeAndBroadcastTransaction(data.transaction);
             break;
@@ -271,7 +272,7 @@ class P2pServer {
                       this.node.reconstruct();
                       this.node.bc.syncedAfterStartup = true;
                     } catch (error) {
-                      console.log(`Error in starting:${error.stack}`);
+                      logger.error(`Error in starting:${error.stack}`);
                     }
                   }, BLOCK_CREATION_INTERVAL_MS);
                 }
@@ -301,22 +302,22 @@ class P2pServer {
             break;
         }
       } catch (error) {
-        console.log(error.stack);
+        logger.error(error.stack);
       }
     });
 
     socket.on('close', () => {
-      console.log(`\n[PEER] Disconnected from a peer: ${address || 'unknown'}`);
+      logger.info(`\n[PEER] Disconnected from a peer: ${address || 'unknown'}`);
       this.removeFromListIfExists(socket);
       if (address && this.managedPeersInfo[address]) {
         delete this.managedPeersInfo[address];
-        console.log(`[PEER] => Updated managed peers info: ` +
+        logger.info(`[PEER] => Updated managed peers info: ` +
             `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
       }
     });
 
     socket.on('error', (error) => {
-      console.log(`[PEER] Error in communication with peer ${address}: ` +
+      logger.error(`[PEER] Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
   }
@@ -355,7 +356,7 @@ class P2pServer {
 
   broadcastTransaction(transaction) {
     if (DEBUG) {
-      console.log(`SENDING: ${JSON.stringify(transaction)}`);
+      logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
     }
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -368,9 +369,9 @@ class P2pServer {
 
   broadcastBlock(blockHashTransaction) {
     if (DEBUG) {
-      console.log(`SENDING: ${JSON.stringify(blockHashTransaction)}`);
+      logger.debug(`SENDING: ${JSON.stringify(blockHashTransaction)}`);
     }
-    console.log(`Broadcasting new block ${this.votingUtil.block}`);
+    logger.info(`Broadcasting new block ${this.votingUtil.block}`);
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.VOTING,
@@ -386,7 +387,7 @@ class P2pServer {
 
   broadcastVotingAction(votingAction) {
     if (DEBUG) {
-      console.log(`SENDING: ${JSON.stringify(votingAction.transaction)}`);
+      logger.debug(`SENDING: ${JSON.stringify(votingAction.transaction)}`);
     }
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -408,25 +409,25 @@ class P2pServer {
     const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
-      console.log(`EXECUTING: ${JSON.stringify(transaction)}`);
+      logger.debug(`EXECUTING: ${JSON.stringify(transaction)}`);
     }
     if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
       if (DEBUG) {
-        console.log(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
+        logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
       }
-      console.log('Timed-out transaction');
+      logger.info('Timed-out transaction');
       return null;
     }
     if (this.node.tp.isNotEligibleTransaction(transaction)) {
       if (DEBUG) {
-        console.log(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
+        logger.debug(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
       }
-      console.log('Transaction already received');
+      logger.info('Transaction already received');
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
       if (DEBUG) {
-        console.log(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`)
+        logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`)
       }
       this.node.tp.addTransaction(transaction);
       return null;
@@ -435,7 +436,7 @@ class P2pServer {
     if (!this.checkForTransactionResultErrorCode(result)) {
       this.node.tp.addTransaction(transaction);
     } else if (DEBUG) {
-      console.log(
+      logger.debug(
           `FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
     return result;
@@ -475,7 +476,7 @@ class P2pServer {
 
   executeAndBroadcastVotingAction(votingAction) {
     if (DEBUG) {
-      console.log(
+      logger.debug(
           `RECEIVED VOTING ACTION ${votingAction.actionType} ` +
           `FROM USER ${votingAction.transaction.address}`)
     }
@@ -489,10 +490,10 @@ class P2pServer {
     }
     if (DEBUG) {
       if(this.checkForTransactionResultErrorCode(response)) {
-          console.log(`PREVIOUSLY EXECUTED VOTING ACTION ${votingAction.actionType} ` +
+          logger.debug(`PREVIOUSLY EXECUTED VOTING ACTION ${votingAction.actionType} ` +
               `FROM USER ${votingAction.transaction.address}`)
       } else {
-          console.log(`NEW VOTING ACTION ${votingAction.actionType} ` +
+          logger.debug(`NEW VOTING ACTION ${votingAction.actionType} ` +
               `FROM USER ${votingAction.transaction.address} ` +
               `WITH TRANSACTION INFO ${JSON.stringify(votingAction.transaction)}`)
       }
@@ -529,7 +530,7 @@ class P2pServer {
             && this.checkForTransactionResultErrorCode(
                 this.executeTransaction(proposedBlock.transactions[i]))) {
             if (DEBUG) {
-              console.log(
+              logger.debug(
                 `BLOCK ${proposedBlock.hash} ` +
                 `has invalid transaction ${proposedBlock.transactions[i]}`)
             }
@@ -543,13 +544,13 @@ class P2pServer {
             [VotingStatus.WAIT_FOR_BLOCK, VotingStatus.SYNCING].indexOf(
                 this.votingUtil.status) < 0) {
               if(DEBUG) {
-                console.log(`REJECTING BLOCK ${proposedBlock}`)
+                logger.debug(`REJECTING BLOCK ${proposedBlock}`)
               }
           break;
         }
         this.votingUtil.setBlock(proposedBlock, votingAction.transaction);
         if(DEBUG) {
-          console.log(`ACCEPTING BLOCK ${proposedBlock}`)
+          logger.debug(`ACCEPTING BLOCK ${proposedBlock}`)
         }
         if (this.votingUtil.isValidator()) {
           // TODO (lia): check for results?
@@ -598,7 +599,7 @@ class P2pServer {
         validators);
     const ref = PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH;
     const value = newBlock.hash;
-    console.log(`Proposing block with hash ${newBlock.hash} and number ${blockNumber}`);
+    logger.info(`Proposing block with hash ${newBlock.hash} and number ${blockNumber}`);
     const blockHashTransaction = this.node.createTransaction({
         operation: {
           type: WriteDbOperations.SET_VALUE,
@@ -610,7 +611,7 @@ class P2pServer {
     this.broadcastBlock(blockHashTransaction);
     if (!validators || !Object.keys(validators).length ||
     (Object.keys(validators).length === 1 && validators[this.node.account.address])) {
-      console.log('No other validators registered for this round');
+      logger.info('No other validators registered for this round');
       this.addBlockToChain();
       this.cleanupAfterVotingRound();
     }
@@ -619,7 +620,7 @@ class P2pServer {
   initiateChain() {
     this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, "initiateChain");
     const prevDeposit = this.votingUtil.getStakes();
-    console.log("previous Deposit = " + prevDeposit)
+    logger.info("previous Deposit = " + prevDeposit)
     if (!prevDeposit) {
       this.depositStakes();
     }
@@ -656,14 +657,14 @@ class P2pServer {
 
   cleanupAfterVotingRound() {
     if (this.votingInterval) {
-      console.log('Clearing interval after successful voting round');
+      logger.info('Clearing interval after successful voting round');
       clearInterval(this.votingInterval);
       this.votingInterval = null;
     }
     this.votingUtil.setStatus(VotingStatus.WAIT_FOR_BLOCK, "cleanupAfterVotingRound");
     if (ainUtil.areSameAddresses(this.node.account.address,
         this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_PROPOSER))) {
-      console.log(`Peer ${this.node.account.address} will start next round at ` +
+      logger.info(`Peer ${this.node.account.address} will start next round at ` +
           `block number ${this.node.bc.lastBlockNumber() + 1} in ` +
           `${BLOCK_CREATION_INTERVAL_MS}ms`);
       this.executeAndBroadcastTransaction(this.votingUtil.updateRecentProposers());
@@ -677,13 +678,13 @@ class P2pServer {
           actionType: VotingActionTypes.NEW_VOTING
         });
         if (this.checkForTransactionResultErrorCode(response)) {
-          console.log('Not designated proposer');
+          logger.info('Not designated proposer');
           return;
         }
-        console.log(`User ${this.node.account.address} is starting round of block number ` +
+        logger.info(`User ${this.node.account.address} is starting round of block number ` +
             `${this.node.bc.lastBlockNumber() + 1}`);
         if (this.votingUtil.needRestaking()) {
-          console.log('[cleanupAfterVotingRound] stake has expired');
+          logger.info('[cleanupAfterVotingRound] stake has expired');
           this.renewStakes();
         }
         this.executeAndBroadcastTransaction(this.votingUtil.registerForNextRound(
@@ -696,7 +697,7 @@ class P2pServer {
   }
 
   depositStakes() {
-    console.log(`Staking amount ${STAKE}`);
+    logger.info(`Staking amount ${STAKE}`);
     if (!STAKE) return;
     const stakeTx = this.votingUtil.createStakeTransaction(STAKE);
     this.executeAndBroadcastTransaction(stakeTx);
@@ -706,7 +707,7 @@ class P2pServer {
     // withdraw expired stakes and re-deposit
     // TODO (lia): use a command line flag to specify whether the node should
     // automatically re-stake?
-    console.log(`Re-staking`);
+    logger.info(`Re-staking`);
     const restakeTx = this.votingUtil.createStakeTransaction(0);
     this.executeAndBroadcastTransaction(restakeTx);
   }

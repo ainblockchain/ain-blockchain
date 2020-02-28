@@ -1,3 +1,4 @@
+const logger = require('../logger');
 const { DEBUG, TRANSACTION_POOL_TIME_OUT_MS, TRANSACTION_TRACKER_TIME_OUT_MS,
   TransactionStatus } = require('../constants');
 const Transaction = require('./transaction');
@@ -18,9 +19,9 @@ class TransactionPool {
     // TODO (lia): pull verification out to the very front
     // (closer to the communication layers where the node first receives transactions)
     if (!Transaction.verifyTransaction(tx)) {
-      console.log('Invalid transaction');
+      logger.info('Invalid transaction');
       if (DEBUG) {
-        console.log(`NOT ADDING: ${JSON.stringify(tx)}`);
+        logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
       }
       return false;
     }
@@ -42,7 +43,7 @@ class TransactionPool {
     }
 
     if (DEBUG) {
-      console.log(`ADDING: ${JSON.stringify(tx)}`);
+      logger.debug(`ADDING: ${JSON.stringify(tx)}`);
     }
     return true;
   }
@@ -104,7 +105,7 @@ class TransactionPool {
           newList.push(listToTakeValue.shift());
         } else {
           const invalidNoncedTransaction = listToTakeValue.shift();
-          console.log('Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction));
+          logger.info('Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction));
         }
       }
 

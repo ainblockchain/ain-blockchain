@@ -1,3 +1,4 @@
+const logger = require('../logger');
 const { PredefinedDbPaths, FunctionResultCode, DefaultValues } = require('../constants');
 const ChainUtil = require('../chain-util');
 const {FunctionProperties} = require('../constants')
@@ -36,7 +37,7 @@ class Functions {
   runBuiltInFunctions(parsedValuePath, value, timestamp, currentTime) {
     const matches = this.matchFunctionPaths(parsedValuePath);
     matches.forEach((elem) => {
-      console.log(
+      logger.info(
         `  ==> Running built-in function '${elem.func.name}' with value '${value}', timestamp '${timestamp}', currentTime '${currentTime}' and params: ` +
         JSON.stringify(elem.params));
       elem.func(value, { params: elem.params, timestamp, currentTime });
@@ -48,7 +49,7 @@ class Functions {
     const match = this.matchTriggerPaths(parsedValuePath);
     if (match && match.event_listener) {
       if (match.event_listener in EventListenerWhitelist) {
-        console.log(
+        logger.info(
           `  ==> Triggering function event'${match.event_listener}' with transaction '${transaction}'`)
         return axios.post(match.event_listener, {
           transaction: transaction,
