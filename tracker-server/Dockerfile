@@ -8,5 +8,5 @@ WORKDIR /app
 COPY package.json /app
 RUN npm install
 COPY . /app
-EXPOSE 3001
+EXPOSE 8080 5000
 CMD node index.js

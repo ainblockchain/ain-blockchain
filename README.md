@@ -181,7 +181,7 @@ docker pull ainblockchain/blockchain-database
 #### Run with Docker image
  
 ```
-docker run -e STAKE=250 -e ACCOUNT_INDEX=0 -e HOSTING_ENV="gcp" -e TRACKER_WS_ADDR="ws://<ip_address_of_tracker_server>:3001" --network="host" -d ainblockchain/blockchain-database:latest
+docker run -e STAKE=250 -e ACCOUNT_INDEX=0 -e HOSTING_ENV="gcp" -e TRACKER_WS_ADDR="ws://<ip_address_of_tracker_server>:5000" --network="host" -d ainblockchain/blockchain-database:latest
 ```
 
 
