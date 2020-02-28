@@ -4,7 +4,7 @@ const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 
-const stackDriverLogging = new LoggingWinston();
+const stackdriverLogging = new LoggingWinston();
 
 const PORT = process.env.PORT || 8080;
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || 0;
@@ -62,7 +62,7 @@ const logger = new winston.createLogger({
       )
     }),
     // Add Stackdriver Logging
-    stackDriverLogging,
+    stackdriverLogging,
   ],
   exitOnError: false
 })
