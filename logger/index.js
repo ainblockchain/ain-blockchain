@@ -14,7 +14,7 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 })
 
-const logDir = path.join(__dirname, '.', 'logs', PORT);
+const logDir = path.join(__dirname, '.', 'logs', String(PORT));
 const prefix = `node-${ACCOUNT_INDEX}`;
 
 const logger = new winston.createLogger({

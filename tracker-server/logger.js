@@ -1,4 +1,3 @@
-const process = require('process');
 const winston = require('winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
