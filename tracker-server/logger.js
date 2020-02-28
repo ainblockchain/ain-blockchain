@@ -3,7 +3,7 @@ const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 
-const stackdriverLogging = new LoggingWinston();
+const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
 
 const { combine, timestamp, label, printf } = winston.format
 const logFormat = printf(({ level, message, label, timestamp }) => {
@@ -13,8 +13,8 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
 const logDir = path.join(__dirname, '.', 'logs');
 const prefix = `tracker`;
 
-const logger = new winston.createLogger({
-  transports: [
+function getTransports() {
+  const transports = [
     new (winstonDaily)({
       name: 'daily-combined-log',
       level: 'info',
@@ -57,11 +57,18 @@ const logger = new winston.createLogger({
         logFormat
       )
     }),
+  ];
+  if (HOSTING_ENV === 'gcp') {
     // Add Stackdriver Logging
-    stackdriverLogging,
-  ],
+    transports.push(new LoggingWinston);
+  }
+  return transports;
+}
+
+const logger = new winston.createLogger({
+  transports: getTransports(),
   exitOnError: false
-})
+});
 
 module.exports = logger;
 
