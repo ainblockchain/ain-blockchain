@@ -1,4 +1,5 @@
-const {DEBUG, TransactionStatus} = require('../constants');
+const { DEBUG, TRANSACTION_POOL_TIME_OUT_MS, TRANSACTION_TRACKER_TIME_OUT_MS,
+  TransactionStatus } = require('../constants');
 const Transaction = require('./transaction');
 
 class TransactionPool {
@@ -12,46 +13,64 @@ class TransactionPool {
     this.transactionTracker = {};
   }
 
-  addTransaction(transaction) {
+  addTransaction(tx) {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
     // (closer to the communication layers where the node first receives transactions)
-    if (!Transaction.verifyTransaction(transaction)) {
+    if (!Transaction.verifyTransaction(tx)) {
       console.log('Invalid transaction');
       if (DEBUG) {
-        console.log(`NOT ADDING: ${JSON.stringify(transaction)}`);
+        console.log(`NOT ADDING: ${JSON.stringify(tx)}`);
       }
       return false;
     }
 
-    if (!(transaction.address in this.transactions)) {
-      this.transactions[transaction.address] = [];
+    if (!(tx.address in this.transactions)) {
+      this.transactions[tx.address] = [];
     }
-    this.transactions[transaction.address].push(transaction);
-    const status = TransactionStatus.POOL_STATUS;
-    const address = transaction.address;
-    const index = this.transactions[transaction.address].length - 1;
-    this.transactionTracker[transaction.hash] = { status, address, index };
-    if (transaction.nonce >= 0 && (!(address in this.pendingNonceTracker) ||
-        transaction.nonce > this.pendingNonceTracker[address])) {
-      this.pendingNonceTracker[address] = transaction.nonce;
+    this.transactions[tx.address].push(tx);
+    this.transactionTracker[tx.hash] = {
+      status: TransactionStatus.POOL_STATUS,
+      address: tx.address,
+      index: this.transactions[tx.address].length - 1,
+      timestamp: tx.timestamp,
+    };
+    if (tx.nonce >= 0 &&
+        (!(tx.address in this.pendingNonceTracker) ||
+            tx.nonce > this.pendingNonceTracker[tx.address])) {
+      this.pendingNonceTracker[tx.address] = tx.nonce;
     }
 
     if (DEBUG) {
-      console.log(`ADDING: ${JSON.stringify(transaction)}`);
+      console.log(`ADDING: ${JSON.stringify(tx)}`);
     }
     return true;
   }
 
-  isNotEligibleTransaction(transaction) {
-    return ((transaction.address in this.transactions) &&
-            (this.transactions[transaction.address].find((trans) => trans.hash === transaction.hash) !== undefined)) ||
-            (transaction.nonce >= 0 && transaction.nonce <= this.committedNonceTracker[transaction.address]) ||
-            (transaction.nonce < 0 && transaction.hash in this.transactionTracker);
+  isTimedOut(txTimestamp, lastBlockTimestamp, timeout) {
+    if (lastBlockTimestamp < 0) {
+      return false;
+    }
+    return lastBlockTimestamp >= txTimestamp + timeout;
+  }
+
+  isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_POOL_TIME_OUT_MS);
+  }
+
+  isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIME_OUT_MS);
+  }
+
+  isNotEligibleTransaction(tx) {
+    return ((tx.address in this.transactions) &&
+        (this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined)) ||
+        (tx.nonce >= 0 && tx.nonce <= this.committedNonceTracker[tx.address]) ||
+        (tx.nonce < 0 && tx.hash in this.transactionTracker);
   }
 
   getValidTransactions() {
-    // Transactions are first ordered by nonce in their individual lists by publicKey
+    // Transactions are first ordered by nonce in their individual lists by address
     const unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
     for (const address in unvalidatedTransactions) {
       // Order by noncing if transactions are nonced, else by timestamp
@@ -59,7 +78,8 @@ class TransactionPool {
             ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
                 (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
     }
-    // Secondly transaction are combined and ordered by timestamp, while still remaining ordered noncing from the initial sort by nonce
+    // Secondly transactions are combined and ordered by timestamp, while still remaining
+    // ordered noncing from the initial sort by nonce
     const orderedUnvalidatedTransactions = Object.values(unvalidatedTransactions);
     while (orderedUnvalidatedTransactions.length > 1) {
       const tempNonceTracker = JSON.parse(JSON.stringify(this.committedNonceTracker));
@@ -76,7 +96,8 @@ class TransactionPool {
         if (listToTakeValue[0].nonce === tempNonceTracker[listToTakeValue[0].address] + 1) {
           tempNonceTracker[listToTakeValue[0].address] = listToTakeValue[0].nonce;
           newList.push(listToTakeValue.shift());
-        } else if (!(listToTakeValue[0].address in tempNonceTracker) && listToTakeValue[0].nonce === 0) {
+        } else if (!(listToTakeValue[0].address in tempNonceTracker) &&
+            listToTakeValue[0].nonce === 0) {
           tempNonceTracker[listToTakeValue[0].address] = 0;
           newList.push(listToTakeValue.shift());
         } else if (listToTakeValue[0].nonce < 0) {
@@ -92,42 +113,80 @@ class TransactionPool {
     return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0]: [];
   }
 
-  removeCommitedTransactions(block) {
-    // Remove transactions of newly added block to blockchain from the current transaction pool
-    const transactionHashes = [];
-    let transaction;
-    for (let i = 0; i < block.transactions.length; i++) {
-      transaction = block.transactions[i];
-      if (transaction.nonce >= 0) {
-        // Update nonceTracker while extracting transaction hashes
-        this.committedNonceTracker[transaction.address] = transaction.nonce;
+  removeTimedOutTxsFromPool(blockTimestamp) {
+    // Get timed-out transactions.
+    const timedOutTxs = new Set();
+    for (const address in this.transactions) {
+      this.transactions[address].forEach((tx) => {
+        if (this.isTimedOutFromPool(tx.timestamp, blockTimestamp)) {
+          timedOutTxs.add(tx.hash);
+        }
+      });
+    }
+    // Remove transactions from the pool.
+    for (const address in this.transactions) {
+      this.transactions[address] = this.transactions[address].filter((tx) => {
+        return !timedOutTxs.has(tx.hash);
+      });
+    }
+    return timedOutTxs.size > 0;
+  }
+
+  removeTimedOutTxsFromTracker(blockTimestamp) {
+    // Remove transactions from transactionTracker.
+    let removed = false;
+    for (const hash in this.transactionTracker) {
+      const txData = this.transactionTracker[hash];
+      if (this.isTimedOutFromTracker(txData.timestamp, blockTimestamp)) {
+        delete this.transactionTracker[hash];
+        removed = true;
       }
-      const status = TransactionStatus.BLOCK_STATUS;
-      const number = block.number;
-      const index = i;
-      this.transactionTracker[transaction.hash] = { status, number, index };
-      transactionHashes.push(transaction.hash);
+    }
+    return removed;
+  }
+
+  cleanUpForNewBlock(block) {
+    // Get in-block transaction set.
+    const inBlockTxs = new Set();
+    for (let i = 0; i < block.transactions.length; i++) {
+      const tx = block.transactions[i];
+      // Update committed nonce tracker.
+      if (tx.nonce >= 0) {
+        this.committedNonceTracker[tx.address] = tx.nonce;
+      }
+      // Update transaction tracker.
+      this.transactionTracker[tx.hash] = {
+        status: TransactionStatus.BLOCK_STATUS,
+        number: block.number,
+        index: i,
+        timestamp: tx.timestamp,
+      };
+      inBlockTxs.add(tx.hash);
     }
 
     for (const address in this.transactions) {
-      this.transactions[address] = this.transactions[address].filter((transaction) => {
-        return transactionHashes.indexOf(transaction.hash) < 0
+      // Remove transactions from the pool.
+      this.transactions[address] = this.transactions[address].filter((tx) => {
+        return !inBlockTxs.has(tx.hash);
       });
-
       if (this.transactions[address].length === 0) {
         delete this.transactions[address];
       } else {
-        this.transactions[address].forEach((transaction) => {
-          this.transactionTracker[transaction.hash].index = this.transactions[address].indexOf(transaction);
+        // Update transaction index.
+        this.transactions[address].forEach((tx) => {
+          this.transactionTracker[tx.hash].index = this.transactions[address].indexOf(tx);
         });
       }
+    }
+
+    this.removeTimedOutTxsFromTracker(block.timestamp);
+    if (this.removeTimedOutTxsFromPool(block.timestamp)) {
+      this.rebuildPendingNonceTracker();
     }
   }
 
   updateNonceTrackers(transactions) {
-    let len = transactions.length;
-    for (let i = 0; i < len; i++) {
-      const tx = transactions[i];
+    transactions.forEach((tx) => {
       if (tx.nonce >= 0) {
         if (this.committedNonceTracker[tx.address] === undefined ||
             this.committedNonceTracker[tx.address] < tx.nonce) {
@@ -138,7 +197,28 @@ class TransactionPool {
           this.pendingNonceTracker[tx.address] = tx.nonce;
         }
       }
+    });
+  }
+
+  rebuildPendingNonceTracker() {
+    const newNonceTracker = JSON.parse(JSON.stringify(this.committedNonceTracker));
+    for (const address in this.transactions) {
+      this.transactions[address].forEach((tx) => {
+        if (tx.nonce >= 0 &&
+            (!(tx.address in newNonceTracker) || tx.nonce > newNonceTracker[tx.address])) {
+          newNonceTracker[tx.address] = tx.nonce;
+        }
+      });
     }
+    this.pendingNonceTracker = newNonceTracker;
+  }
+
+  getPoolSize() {
+    let size = 0;
+    for (const address in this.transactions) {
+      size += this.transactions[address].length;
+    }
+    return size;
   }
 }
 

@@ -1,5 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const {GenesisAccounts} = require('../constants');
+const { GenesisAccounts } = require('../constants');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const DB = require('../db');

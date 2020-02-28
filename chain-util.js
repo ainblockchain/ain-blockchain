@@ -30,6 +30,22 @@ class ChainUtil {
     return (typeof data === 'object' && data !== null && !Array.isArray(data));
   }
 
+  static isNumber(num) {
+    return typeof num === 'number' && isFinite(num);
+  }
+
+  static isString(value) {
+    return typeof value === 'string';
+  }
+
+  static numberOrZero(num) {
+    return ChainUtil.isNumber(num) ? num : 0;
+  }
+
+  static stringOrEmpty(str) {
+    return ChainUtil.isString(str) ? str : '';
+  }
+
   static parsePath(path) {
     if (!path) {
       return [];

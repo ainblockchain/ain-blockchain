@@ -104,6 +104,14 @@ class Blockchain {
     return lastBlock.number;
   }
 
+  lastBlockTimestamp() {
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return -1;
+    }
+    return lastBlock.timestamp;
+  }
+
   addNewBlock(block) {
     if (!block) {
       console.log(`[blockchain.addNewBlock] Block is null`);

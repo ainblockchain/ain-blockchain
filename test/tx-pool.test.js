@@ -108,7 +108,7 @@ describe('TransactionPool', () => {
       assert.deepEqual(sortedNonces4, [...Array(11).keys()]);
     });
 
-    it('removes transactions included in block', () => {
+    it('clean up for new block', () => {
       const number = 1;
       const lastBlock = Block.genesis();
       const block = Block.createBlock(lastBlock.hash, [], node.tp.getValidTransactions(),
@@ -125,7 +125,7 @@ describe('TransactionPool', () => {
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
-      node.tp.removeCommitedTransactions(block);
+      node.tp.cleanUpForNewBlock(block);
       assert.deepEqual(newTransactions, node.tp.transactions);
     });
   });

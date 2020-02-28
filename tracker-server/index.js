@@ -117,15 +117,12 @@ class PeerNode {
 
   reconstruct(nodeInfo) {
     this.isLive = true;
-    this.ip = nodeInfo.ip;
-    this.address = nodeInfo.address;
-    this.url = nodeInfo.url;
-    this.timestamp = nodeInfo.timestamp;
-    this.lastBlockNumber = nodeInfo.lastBlockNumber;
-    this.votingStatus = nodeInfo.votingStatus;
-    this.txStatus = nodeInfo.txStatus;
+
+    const infoToAdd = Object.assign({}, nodeInfo);
+    delete infoToAdd.managedPeersInfo;
+    Object.assign(this, infoToAdd);
+
     this.location = this.getNodeLocation();
-    this.diskUsage = nodeInfo.diskUsage;
     this.managedPeers = PeerNode.constructManagedPeers(nodeInfo);
     this.unmanagedPeers = PeerNode.constructUnmanagedPeers(nodeInfo.address);
 

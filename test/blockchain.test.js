@@ -67,7 +67,7 @@ describe('Blockchain', () => {
     beforeEach(() => {
       blocks = [];
 
-      for (let i = 0; i<1000; i++) {
+      for (let i = 0; i < 1000; i++) {
         // let i represent a fake block here
         node1.createTransaction({
           operation: {
@@ -84,7 +84,7 @@ describe('Blockchain', () => {
         }
         blocks.push(block);
         node1.bc.addNewBlock(block);
-        node1.tp.removeCommitedTransactions(block);
+        node1.tp.cleanUpForNewBlock(block);
       }
     });
 
