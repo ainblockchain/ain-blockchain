@@ -1,10 +1,8 @@
 const url = require('url');
 const Websocket = require('ws');
 const sleep = require('sleep');
-const P2P_PORT = process.env.P2P_PORT || 5001;
 const ip = require('ip');
 const publicIp = require('public-ip');
-const TRACKER_WS_ADDR = process.env.TRACKER_IP || 'ws://localhost:3001';
 const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
@@ -16,10 +14,9 @@ const { MessageTypes, VotingStatus, VotingActionTypes, STAKE, PredefinedDbPaths 
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const VotingUtil = require('./voting-util');
-const { WriteDbOperations, DEBUG } = require('../constants');
-// HOSTING_ENV is a variable used in extracting the ip address of the host machine,
-// of which value could be either 'local', 'default', or 'gcp'.
-const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
+const { DEBUG, P2P_PORT, TRACKER_WS_ADDR, HOSTING_ENV, WriteDbOperations }
+    = require('../constants');
+
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const BLOCK_CREATION_INTERVAL_MS = 6000;

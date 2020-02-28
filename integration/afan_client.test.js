@@ -13,31 +13,31 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 
 const ENV_VARIABLES = [
   {
-    P2P_PORT: 5001, PORT: 9091, ACCOUNT_INDEX: 0, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
+    STAKE: 250, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5002, PORT: 9092, ACCOUNT_INDEX: 1, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
+    STAKE: 250, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5003, PORT: 9093, ACCOUNT_INDEX: 2, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
+    STAKE: 250, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    P2P_PORT: 5004, PORT: 9094, ACCOUNT_INDEX: 3, STAKE: 250, HOSTING_ENV: 'local', DEBUG: true,
+    STAKE: 250, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
 ];
 
-const server1 = 'http://localhost:' + ENV_VARIABLES[0].PORT
-const server2 = 'http://localhost:' + ENV_VARIABLES[1].PORT
-const server3 = 'http://localhost:' + ENV_VARIABLES[2].PORT
-const server4 = 'http://localhost:' + ENV_VARIABLES[3].PORT
+const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX))
+const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
+const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
+const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {

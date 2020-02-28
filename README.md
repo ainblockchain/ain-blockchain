@@ -76,7 +76,7 @@ docker pull ainblockchain/tracker-server
 #### Run with Docker image
  
 ```
-docker run --network="host" -d ainblockchain/tracker-server:latest
+docker run -e HOSTING_ENV="gcp" --network="host" -d ainblockchain/tracker-server:latest
 ```
 
 ### Client API
@@ -103,11 +103,11 @@ npm install
 ##### Run Node server
 
 ```
-STAKE=250 P2P_PORT=5001 PORT=8081 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
-STAKE=250 P2P_PORT=5002 PORT=8082 ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false node client/index.js 
-STAKE=250 P2P_PORT=5003 PORT=8083 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index.js 
-STAKE=250 P2P_PORT=5004 PORT=8084 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
-STAKE=250 P2P_PORT=5005 PORT=8085 ACCOUNT_INDEX=4 HOSTING_ENV=local DEBUG=false node client/index.js 
+STAKE=250 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
+STAKE=250 ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false node client/index.js 
+STAKE=250 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index.js 
+STAKE=250 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
+STAKE=250 ACCOUNT_INDEX=4 HOSTING_ENV=local DEBUG=false node client/index.js 
 ```
 
 Before starting node jobs, remove existing blockchain files and logs if necessary:
@@ -181,7 +181,7 @@ docker pull ainblockchain/blockchain-database
 #### Run with Docker image
  
 ```
-docker run -e STAKE=250 -e TRACKER_IP="ws://<ip_address_of_tracker_server>:3001" --network="host" -d ainblockchain/blockchain-database:latest
+docker run -e STAKE=250 -e ACCOUNT_INDEX=0 -e HOSTING_ENV="gcp" -e TRACKER_WS_ADDR="ws://<ip_address_of_tracker_server>:3001" --network="host" -d ainblockchain/blockchain-database:latest
 ```
 
 

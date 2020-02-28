@@ -22,6 +22,20 @@ const TRANSACTION_POOL_TIME_OUT_MS = moment.duration(1, 'hours').as('millisecond
 const TRANSACTION_TRACKER_TIME_OUT_MS = moment.duration(24, 'hours').as('milliseconds');
 // TODO (lia): Check network id in all messages
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
+// HOSTING_ENV is a variable used in extracting the ip address of the host machine,
+// of which value could be either 'local', 'default', or 'gcp'.
+const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
+const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
+const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
+const PORT = getPortNumber(8080, 8081);
+const P2P_PORT = getPortNumber(5000, 5001);
+
+function getPortNumber(defaultValue, baseValue) {
+  if (HOSTING_ENV == 'local') {
+    return baseValue + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
+  }
+  return defaultValue;
+}
 
 /**
  * Message types for communication between nodes
@@ -217,6 +231,11 @@ module.exports = {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
   NETWORK_ID,
+  HOSTING_ENV,
+  ACCOUNT_INDEX,
+  PORT,
+  P2P_PORT,
+  TRACKER_WS_ADDR,
   MessageTypes,
   VotingStatus,
   VotingActionTypes,
