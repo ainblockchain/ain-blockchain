@@ -81,7 +81,7 @@ class VotingUtil {
   isSyncedWithNetwork() {
     // This does not currently take in to a count the situation where consensus is not reached.
     // Need to add logic to account for this situation
-    const sync = (VotingStatus.COMMITTED === this.status &&
+    const sync = ((this.status === VotingStatus.COMMITTED || this.status === VotingStatus.WAIT_FOR_BLOCK) && // Most of the time, status === 'wait_for_block'
         this.node.bc.lastBlockNumber() + 1 ===
             Number(this.node.db.getValue(PredefinedDbPaths.VOTING_ROUND_NUMBER)));
     if (!sync) {
