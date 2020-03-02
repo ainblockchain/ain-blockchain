@@ -1,13 +1,10 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
-const { GenesisAccounts } = require('../constants');
+const { PORT, ACCOUNT_INDEX, GenesisAccounts } = require('../constants');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
-
-const PORT = process.env.PORT || 8080;
-const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 
 class Node {
   constructor() {

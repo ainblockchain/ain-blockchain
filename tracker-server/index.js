@@ -5,8 +5,8 @@ const jayson = require('jayson');
 const _ = require('lodash');
 const logger = require('./logger');
 
-const P2P_PORT = 3001;
-const PORT = 5000;
+const P2P_PORT = 5000;
+const PORT = process.env.PORT || 8080;
 const MAX_NUM_PEERS = 2;
 const PEER_NODES = {};
 const MASK = 'xxx';

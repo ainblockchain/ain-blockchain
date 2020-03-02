@@ -8,9 +8,8 @@ const jayson = require('jayson');
 const logger = require('../logger');
 const Node = require('../node');
 const P2pServer = require('../server');
-const { WriteDbOperations, PROTOCOL_VERSIONS } = require('../constants');
+const { PORT, PROTOCOL_VERSIONS, WriteDbOperations } = require('../constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const util = require('util');
 
 const MAX_BLOCKS = 20;
 
@@ -19,7 +18,6 @@ process.on('uncaughtException', function (err) {
   logger.error(err);
 });
 
-const PORT = process.env.PORT || 8080;
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }

@@ -3,10 +3,7 @@ const winston = require('winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
-
-const PORT = process.env.PORT || 8080;
-const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || 0;
-const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
+const { PORT, ACCOUNT_INDEX, HOSTING_ENV } = require('../constants');
 
 const { combine, timestamp, label, printf } = winston.format
 const logFormat = printf(({ level, message, label, timestamp }) => {
