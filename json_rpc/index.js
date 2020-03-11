@@ -141,36 +141,36 @@ module.exports = function getMethods(
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          transaction = block.transactions[index];
+          transaction = Object.assign({}, block.transactions[index], { is_confirmed: true });
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
           const address = transactionInfo.address;
           const index = transactionInfo.index;
-          transaction = node.tp.transactions[address][index];
+          transaction = Object.assign({}, node.tp.transactions[address][index], { is_confirmed: false });
         }
         done(null, addProtocolVersion({ result: transaction }));
       }
     },
 
     ain_getTransactionByBlockHashAndIndex: function(args, done) {
-      let result;
-      if (!args.block_hash || !args.index) {
-        result = null;
-      } else {
+      let result = null;
+      if (args.block_hash && Number.isInteger(args.index)) {
         const index = Number(args.index);
         const block = node.bc.getBlockByHash(args.block_hash);
-        result = block.transactions.length > index && index >= 0 ? block.transactions[index] : null;
+        if (block.transactions.length > index && index >= 0) {
+          result = Object.assign({}, block.transactions[index], { is_confirmed: true });
+        }
       }
       done(null, addProtocolVersion({ result }));
     },
 
     ain_getTransactionByBlockNumberAndIndex: function(args, done) {
-      let result;
-      if (!args.block_number || !args.index) {
-        result = null;
-      } else {
+      let result = null;
+      if (Number.isInteger(args.block_number) && Number.isInteger(args.index)) {
         const index = Number(args.index);
         const block = node.bc.getBlockByNumber(args.block_number);
-        result = block.transactions.length > index && index >= 0 ? block.transactions[index] : null;
+        if (block.transactions.length > index && index >= 0) {
+          result = Object.assign({}, block.transactions[index], { is_confirmed: true });
+        }
       }
       done(null, addProtocolVersion({ result }));
     },
