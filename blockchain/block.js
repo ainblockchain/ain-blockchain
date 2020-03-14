@@ -4,8 +4,10 @@ const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
-const {GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, PredefinedDbPaths,
-       GenesisToken, GenesisAccounts} = require('../constants');
+const {
+  GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, GENESIS_FUNCTIONS,
+  ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts
+} = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -159,6 +161,22 @@ class Block {
       throw Error('Missing genesis rules file: ' + GENESIS_RULES);
     }
 
+    // Function configs operation
+    const functionConfigs = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
+    if (ADDITIONAL_FUNCTIONS) {
+      if (fs.existsSync(ADDITIONAL_FUNCTIONS.filePath)) {
+        const addFunctions = JSON.parse(fs.readFileSync(ADDITIONAL_FUNCTIONS.filePath));
+        ruleConfigs[ADDITIONAL_FUNCTIONS.dbPath] = addFunctions;
+      } else {
+        throw Error('Missing additional functions file: ' + ADDITIONAL_FUNCTIONS.filePath);
+      }
+    }
+    const functionsOp = {
+      type: 'SET_FUNCTION',
+      ref: '/',
+      value: functionConfigs
+    };
+
     // Rule configs operation
     const ruleConfigs = JSON.parse(fs.readFileSync(GENESIS_RULES));
     if (ADDITIONAL_RULES) {
@@ -200,7 +218,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, rulesOp, ownersOp ]
+        op_list: [ tokenOp, balanceOp, functionsOp, rulesOp, ownersOp ]
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);

@@ -1,0 +1,45 @@
+{
+  ".function": false,
+  "deposit": {
+    "$service_id": {
+      "$uid": {
+        "$deposit_id": {
+          "value": {
+            ".function": {
+              "function_type": "NATIVE",
+              "function_id": "_deposit"
+            }
+          }
+        }
+      }
+    }
+  },
+  "transfer": {
+    "$from": {
+      "$to": {
+        "$key": {
+          "value": {
+            ".function": {
+              "function_type": "NATIVE",
+              "function_id": "_transfer"
+            }
+          }
+        }
+      }
+    }
+  },
+  "withdraw":{
+    "$service_id": {
+      "$uid": {
+        "$withdraw_id": {
+          "value": {
+            ".function": {
+              "function_type": "NATIVE",
+              "function_id": "_withdraw"
+            }
+          }
+        }
+      }
+    }
+  }
+}

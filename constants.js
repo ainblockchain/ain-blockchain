@@ -13,6 +13,11 @@ const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
   dbPath: process.env.ADDITIONAL_RULES.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_RULES.split(':')[1])
 } : null;
+const GENESIS_FUNCTIONS = path.resolve(__dirname, 'blockchain/genesis_functions.json');
+const ADDITIONAL_FUNCTIONS = process.env.ADDITIONAL_FUNCTIONS ? {
+  dbPath: process.env.ADDITIONAL_FUNCTIONS.split(':')[0],
+  filePath: path.resolve(__dirname, process.env.ADDITIONAL_FUNCTIONS.split(':')[1])
+} : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
@@ -152,7 +157,20 @@ const RuleProperties = {
  * @enum {string}
  */
 const FunctionProperties = {
+  EVENT_LISTENER: 'event_listener',
   FUNCTION: '.function',
+  FUNCTION_ID: 'function_id',
+  FUNCTION_TYPE: 'function_type',
+  SERVICE_NAME: 'service_name',
+};
+
+/**
+ * Types of functions
+ * @enum {string}
+ */
+const FunctionTypes = {
+  NATIVE: 'NATIVE',
+  REST: 'REST',
 };
 
 /**
@@ -223,6 +241,8 @@ module.exports = {
   ADDITIONAL_OWNERS,
   GENESIS_RULES,
   ADDITIONAL_RULES,
+  GENESIS_FUNCTIONS,
+  ADDITIONAL_FUNCTIONS,
   BLOCKCHAINS_DIR,
   PROTOCOL_VERSIONS,
   STAKE,
