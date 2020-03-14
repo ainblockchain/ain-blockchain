@@ -2,7 +2,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 
 // NOTE(seo): To keep the blockchain deterministic as much as possibble over time,
 // we keep util functions here self-contained as much as possible.
-class BuiltInRuleUtil {
+class RuleUtil {
   isNumber(value) {
     return typeof value === 'number' && isFinite(value);
   }
@@ -45,4 +45,4 @@ class BuiltInRuleUtil {
   }
 }
 
-module.exports = BuiltInRuleUtil
+module.exports = RuleUtil

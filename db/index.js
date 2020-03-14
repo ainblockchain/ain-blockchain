@@ -4,7 +4,7 @@ const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, 
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const Functions = require('./functions');
-const BuiltInRuleUtil = require('./built-in-rule-util');
+const RuleUtil = require('./rule-util');
 
 class DB {
   constructor() {
@@ -576,7 +576,7 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-                    new BuiltInRuleUtil(), ...Object.values(pathVars));
+                    new RuleUtil(), ...Object.values(pathVars));
   }
 
   static hasOwnerConfig(ownerNode) {
