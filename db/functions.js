@@ -1,7 +1,8 @@
 const logger = require('../logger');
-const { PredefinedDbPaths, FunctionResultCode, DefaultValues } = require('../constants');
+const {
+  PredefinedDbPaths, FunctionProperties, FunctionResultCode, NativeFunctionIds, DefaultValues
+} = require('../constants');
 const ChainUtil = require('../chain-util');
-const {FunctionProperties} = require('../constants')
 const axios = require('axios')
 
 const FUNC_PARAM_PATTERN = /^{(.*)}$/;
@@ -25,6 +26,13 @@ class Functions {
       [FunctionPaths.DEPOSIT]: this._deposit.bind(this),
       [FunctionPaths.WITHDRAW]: this._withdraw.bind(this),
     };
+    /*
+    this.nativeFunctionMap = {
+      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
+      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
+      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
+    };
+    */
   }
 
   /**
@@ -93,8 +101,6 @@ class Functions {
   }
 
   matchTriggerPaths(parsedValuePath) {
-    let params = {};
-    let matched = true;
     let currentRef = this.db.getRefForReading([PredefinedDbPaths.FUNCTIONS_ROOT])
     if (!currentRef) {
       return null;

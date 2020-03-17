@@ -1,6 +1,8 @@
 const logger = require('../logger');
-const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
-       DEBUG} = require('../constants');
+const {
+  ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
+  FunctionProperties, DEBUG
+} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const Functions = require('./functions');
@@ -82,6 +84,11 @@ class DB {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
     return this.readDatabase(fullPath);
+  }
+
+  matchFunction(funcPath) {
+    const parsedPath = ChainUtil.parsePath(funcPath);
+    return this.convertFunctionMatch(this.matchFunctionForParsedPath(parsedPath));
   }
 
   matchRule(valuePath) {
@@ -423,6 +430,127 @@ class DB {
     return null;
   }
 
+  static hasFunctionConfig(funcNode) {
+    return funcNode && funcNode[FunctionProperties.FUNCTION] !== undefined;
+  }
+
+  static getFunctionConfig(funcNode) {
+    return DB.hasFunctionConfig(funcNode) ? funcNode[FunctionProperties.FUNCTION] : null;
+  }
+
+  // Does a DFS search to find most specific nodes matched in the function tree.
+  matchFunctionPathRecursive(parsedValuePath, depth, curFuncNode) {
+    // Maximum depth reached.
+    if (depth === parsedValuePath.length) {
+      return {
+        matchedValuePath: [],
+        matchedFunctionPath: [],
+        pathVars: {},
+        matchedFunctionNode: curFuncNode,
+      };
+    }
+    // 1) Try to match with non-variable child node.
+    const nextFuncNode = curFuncNode[parsedValuePath[depth]];
+    if (nextFuncNode !== undefined) {
+      const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
+      matched.matchedValuePath.unshift(parsedValuePath[depth]);
+      matched.matchedFunctionPath.unshift(parsedValuePath[depth]);
+      return matched;
+    }
+    // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
+    //    child node.
+    const varNodeName = DB.getVariableNodeName(curFuncNode);
+    if (varNodeName !== null) {
+      const nextFuncNode = curFuncNode[varNodeName];
+      const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
+      matched.matchedValuePath.unshift(parsedValuePath[depth]);
+      matched.matchedFunctionPath.unshift(varNodeName);
+      if (matched.pathVars[varNodeName] !== undefined) {
+        // This should not happen!
+        logger.error('Duplicated path variables that should NOT happen!')
+      } else {
+        matched.pathVars[varNodeName] = parsedValuePath[depth];
+      }
+      return matched;
+    }
+    // No match with child nodes.
+    return {
+      matchedValuePath: [],
+      matchedFunctionPath: [],
+      pathVars: {},
+      matchedFunctionNode: null,
+    };
+  }
+
+  matchFunctionPath(parsedValuePath) {
+    return this.matchFunctionPathRecursive(
+        parsedValuePath, 0, this.dbData[PredefinedDbPaths.FUNCTIONS_ROOT]);
+  }
+
+  getSubtreeFunctionsRecursive(depth, curFuncNode) {
+    const funcs = [];
+    if (depth !== 0 && DB.hasFunctionConfig(curFuncNode)) {
+      funcs.push({
+        path: [],
+        config: DB.getFunctionConfig(curFuncNode),
+      })
+    }
+    const varNodeName = DB.getVariableNodeName(curFuncNode);
+    // 1) Traverse non-variable child nodes.
+    for (const key in curFuncNode) {
+      const nextFuncNode = curFuncNode[key];
+      if (key !== varNodeName && ChainUtil.isDict(nextFuncNode)) {
+        const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
+        subtreeFuncs.forEach((entry) => {
+          entry.path.unshift(key);
+          funcs.push(entry);
+        });
+      }
+    }
+    // 2) Traverse variable child node if available.
+    if (varNodeName !== null) {
+      const nextFuncNode = curFuncNode[varNodeName];
+      const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
+      subtreeFuncs.forEach((entry) => {
+        entry.path.unshift(varNodeName);
+        funcs.push(entry);
+      });
+    }
+    return funcs;
+  }
+
+  getSubtreeFunctions(funcNode) {
+    return this.getSubtreeFunctionsRecursive(0, funcNode);
+  }
+
+  matchFunctionForParsedPath(parsedValuePath) {
+    const matched = this.matchFunctionPath(parsedValuePath);
+    const subtreeFunctions = this.getSubtreeFunctions(matched.matchedFunctionNode);
+    return {
+      matchedValuePath: matched.matchedValuePath,
+      matchedFunctionPath: matched.matchedFunctionPath,
+      pathVars: matched.pathVars,
+      subtreeFunctions,
+    }
+  }
+
+  convertPathAndConfig(pathAndConfig) {
+    return {
+      path: ChainUtil.formatPath(pathAndConfig.path),
+      config: pathAndConfig.config,
+    }
+  }
+
+  convertFunctionMatch(matched) {
+    const subtreeFunctions = matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
+    return {
+      matched_value_path: ChainUtil.formatPath(matched.matchedValuePath),
+      matched_function_path: ChainUtil.formatPath(matched.matchedFunctionPath),
+      path_vars: matched.pathVars,
+      subtree_functions: subtreeFunctions,
+    };
+  }
+
   static hasRuleConfig(ruleNode) {
     return ruleNode && ruleNode[RuleProperties.WRITE] !== undefined;
   }
@@ -540,13 +668,6 @@ class DB {
         config: DB.getRuleConfig(matched.closestConfigNode),
       },
       subtreeRules,
-    }
-  }
-
-  convertPathAndConfig(pathAndConfig) {
-    return {
-      path: ChainUtil.formatPath(pathAndConfig.path),
-      config: pathAndConfig.config,
     }
   }
 

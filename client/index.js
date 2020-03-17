@@ -78,6 +78,14 @@ app.get('/get_owner', (req, res, next) => {
     .end();
 });
 
+app.get('/match_function', (req, res, next) => {
+  const result = node.db.matchFunction(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/match_rule', (req, res, next) => {
   const result = node.db.matchRule(req.query.ref);
   res.status(200)

@@ -174,6 +174,16 @@ const FunctionTypes = {
 };
 
 /**
+ * IDs of native functions
+ * @enum {string}
+ */
+const NativeFunctionIds = {
+  DEPOSIT: '_deposit',
+  TRANSFER: '_transfer',
+  WITHDRAW: '_withdraw',
+};
+
+/**
  * Types of read database operations
  * @enum {string}
  */
@@ -263,9 +273,11 @@ module.exports = {
   OwnerProperties,
   RuleProperties,
   FunctionProperties,
+  FunctionTypes,
+  FunctionResultCode,
+  NativeFunctionIds,
   ReadDbOperations,
   WriteDbOperations,
-  FunctionResultCode,
   TransactionStatus,
   DefaultValues,
   GenesisToken,
