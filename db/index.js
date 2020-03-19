@@ -526,10 +526,19 @@ class DB {
   matchFunctionForParsedPath(parsedValuePath) {
     const matched = this.matchFunctionPath(parsedValuePath);
     const subtreeFunctions = this.getSubtreeFunctions(matched.matchedFunctionNode);
+    let matchedConfig = null;
+    if (matched.matchedFunctionPath.length === parsedValuePath.length &&
+        DB.hasFunctionConfig(matched.matchedFunctionNode)) {
+      matchedConfig = DB.getFunctionConfig(matched.matchedFunctionNode);
+    }
     return {
       matchedValuePath: matched.matchedValuePath,
       matchedFunctionPath: matched.matchedFunctionPath,
       pathVars: matched.pathVars,
+      matchedFunction: {
+        path: matched.matchedFunctionPath,
+        config: matchedConfig,
+      },
       subtreeFunctions,
     }
   }
@@ -544,9 +553,12 @@ class DB {
   convertFunctionMatch(matched) {
     const subtreeFunctions = matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
     return {
-      matched_value_path: ChainUtil.formatPath(matched.matchedValuePath),
-      matched_function_path: ChainUtil.formatPath(matched.matchedFunctionPath),
-      path_vars: matched.pathVars,
+      matched_path: {
+        value_path: ChainUtil.formatPath(matched.matchedValuePath),
+        function_path: ChainUtil.formatPath(matched.matchedFunctionPath),
+        path_vars: matched.pathVars,
+      },
+      matched_function: this.convertPathAndConfig(matched.matchedFunction),
       subtree_functions: subtreeFunctions,
     };
   }
@@ -674,9 +686,11 @@ class DB {
   convertRuleMatch(matched) {
     const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry));
     return {
-      matched_value_path: ChainUtil.formatPath(matched.matchedValuePath),
-      matched_rule_path: ChainUtil.formatPath(matched.matchedRulePath),
-      path_vars: matched.pathVars,
+      matched_path: {
+        value_path: ChainUtil.formatPath(matched.matchedValuePath),
+        rule_path: ChainUtil.formatPath(matched.matchedRulePath),
+        path_vars: matched.pathVars,
+      },
       closest_rule: this.convertPathAndConfig(matched.closestRule),
       subtree_rules: subtreeRules,
     };

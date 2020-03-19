@@ -170,7 +170,7 @@ const FunctionProperties = {
  */
 const FunctionTypes = {
   NATIVE: 'NATIVE',
-  REST: 'REST',
+  REST_API: 'REST_API',
 };
 
 /**

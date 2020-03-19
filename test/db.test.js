@@ -262,10 +262,12 @@ describe("DB operations", () => {
           "config": "auth !== 'abcd'",
           "path": "/test/test_rule/some/$var_path"
         },
-        "matched_rule_path": "/test/test_rule/some/$var_path",
-        "matched_value_path": "/test/test_rule/some/var_path",
-        "path_vars": {
-          "$var_path": "var_path"
+        "matched_path": {
+          "rule_path": "/test/test_rule/some/$var_path",
+          "value_path": "/test/test_rule/some/var_path",
+          "path_vars": {
+            "$var_path": "var_path"
+          },
         },
         "subtree_rules": []
       });
@@ -277,9 +279,11 @@ describe("DB operations", () => {
           "config": "auth === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
-        "matched_rule_path": "/test/test_rule/some/path",
-        "matched_value_path": "/test/test_rule/some/path",
-        "path_vars": {},
+        "matched_path": {
+          "rule_path": "/test/test_rule/some/path",
+          "value_path": "/test/test_rule/some/path",
+          "path_vars": {},
+        },
         "subtree_rules": [
           {
             "config": "auth === 'ijkl'",
@@ -292,9 +296,11 @@ describe("DB operations", () => {
           "config": "auth === 'ijkl'",
           "path": "/test/test_rule/some/path/deeper/path"
         },
-        "matched_rule_path": "/test/test_rule/some/path/deeper/path",
-        "matched_value_path": "/test/test_rule/some/path/deeper/path",
-        "path_vars": {},
+        "matched_path": {
+          "rule_path": "/test/test_rule/some/path/deeper/path",
+          "value_path": "/test/test_rule/some/path/deeper/path",
+          "path_vars": {},
+        },
         "subtree_rules": []
       });
     })
@@ -305,9 +311,11 @@ describe("DB operations", () => {
           "config": "auth === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
-        "matched_rule_path": "/test/test_rule/some/path/deeper",
-        "matched_value_path": "/test/test_rule/some/path/deeper",
-        "path_vars": {},
+        "matched_path": {
+          "rule_path": "/test/test_rule/some/path/deeper",
+          "value_path": "/test/test_rule/some/path/deeper",
+          "path_vars": {},
+        },
         "subtree_rules": [
           {
             "config": "auth === 'ijkl'",
@@ -553,9 +561,11 @@ describe("DB operations", () => {
             "config": "auth === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
-          "matched_rule_path": "/test/test_rule/some/path/deeper",
-          "matched_value_path": "/test/test_rule/some/path/deeper",
-          "path_vars": {},
+          "matched_path": {
+            "rule_path": "/test/test_rule/some/path/deeper",
+            "value_path": "/test/test_rule/some/path/deeper",
+            "path_vars": {},
+          },
           "subtree_rules": [
             {
               "config": "auth === 'ijkl'",
@@ -686,9 +696,11 @@ describe("DB operations", () => {
             "config": "auth === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
-          "matched_rule_path": "/test/test_rule/some/path",
-          "matched_value_path": "/test/test_rule/some/path",
-          "path_vars": {},
+          "matched_path": {
+            "rule_path": "/test/test_rule/some/path",
+            "value_path": "/test/test_rule/some/path",
+            "path_vars": {},
+          },
           "subtree_rules": [
             {
               "config": "auth === 'ijkl'",

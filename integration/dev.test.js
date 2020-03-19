@@ -232,9 +232,11 @@ describe('API Tests', () => {
           "config": "auth === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
-        "matched_rule_path": "/test/test_rule/some/path",
-        "matched_value_path": "/test/test_rule/some/path",
-        "path_vars": {},
+        "matched_path": {
+          "rule_path": "/test/test_rule/some/path",
+          "value_path": "/test/test_rule/some/path",
+          "path_vars": {},
+        },
         "subtree_rules": []
       }});
       return client.request('ain_matchRule', request)
@@ -244,9 +246,11 @@ describe('API Tests', () => {
             "config": "auth === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
-          "matched_rule_path": "/test/test_rule/some/path",
-          "matched_value_path": "/test/test_rule/some/path",
-          "path_vars": {},
+          "matched_path": {
+            "rule_path": "/test/test_rule/some/path",
+            "value_path": "/test/test_rule/some/path",
+            "path_vars": {},
+          },
           "subtree_rules": []
         });
       })
