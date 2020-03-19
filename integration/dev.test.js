@@ -228,30 +228,30 @@ describe('API Tests', () => {
       const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: {
-        "closest_rule": {
+        "matched_path": {
+          "target_path": "/test/test_rule/some/path",
+          "ref_path": "/test/test_rule/some/path",
+          "path_vars": {},
+        },
+        "matched_config": {
           "config": "auth === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
-        "matched_path": {
-          "rule_path": "/test/test_rule/some/path",
-          "value_path": "/test/test_rule/some/path",
-          "path_vars": {},
-        },
-        "subtree_rules": []
+        "subtree_configs": []
       }});
       return client.request('ain_matchRule', request)
       .then(res => {
         assert.deepEqual(res.result.result, {
-          "closest_rule": {
+          "matched_path": {
+            "target_path": "/test/test_rule/some/path",
+            "ref_path": "/test/test_rule/some/path",
+            "path_vars": {},
+          },
+          "matched_config": {
             "config": "auth === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
-          "matched_path": {
-            "rule_path": "/test/test_rule/some/path",
-            "value_path": "/test/test_rule/some/path",
-            "path_vars": {},
-          },
-          "subtree_rules": []
+          "subtree_configs": []
         });
       })
     })
@@ -270,7 +270,10 @@ describe('API Tests', () => {
       const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: {
-        "closest_owner": {
+        "matched_path": {
+          "target_path": "/test/test_owner/some/path"
+        },
+        "matched_config": {
           "config": {
             "owners": {
               "*": {
@@ -282,13 +285,15 @@ describe('API Tests', () => {
             }
           },
           "path": "/test/test_owner/some/path"
-        },
-        "matched_owner_path": "/test/test_owner/some/path"
+        }
       }});
       return client.request('ain_matchOwner', request)
       .then(res => {
         assert.deepEqual(res.result.result, {
-          "closest_owner": {
+          "matched_path": {
+            "target_path": "/test/test_owner/some/path"
+          },
+          "matched_config": {
             "config": {
               "owners": {
                 "*": {
@@ -300,8 +305,7 @@ describe('API Tests', () => {
               }
             },
             "path": "/test/test_owner/some/path"
-          },
-          "matched_owner_path": "/test/test_owner/some/path"
+          }
         });
       })
     })

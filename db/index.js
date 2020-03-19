@@ -554,12 +554,12 @@ class DB {
     const subtreeFunctions = matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
     return {
       matched_path: {
-        value_path: ChainUtil.formatPath(matched.matchedValuePath),
-        function_path: ChainUtil.formatPath(matched.matchedFunctionPath),
+        target_path: ChainUtil.formatPath(matched.matchedFunctionPath),
+        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
         path_vars: matched.pathVars,
       },
-      matched_function: this.convertPathAndConfig(matched.matchedFunction),
-      subtree_functions: subtreeFunctions,
+      matched_config: this.convertPathAndConfig(matched.matchedFunction),
+      subtree_configs: subtreeFunctions,
     };
   }
 
@@ -687,12 +687,12 @@ class DB {
     const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry));
     return {
       matched_path: {
-        value_path: ChainUtil.formatPath(matched.matchedValuePath),
-        rule_path: ChainUtil.formatPath(matched.matchedRulePath),
+        target_path: ChainUtil.formatPath(matched.matchedRulePath),
+        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
         path_vars: matched.pathVars,
       },
-      closest_rule: this.convertPathAndConfig(matched.closestRule),
-      subtree_rules: subtreeRules,
+      matched_config: this.convertPathAndConfig(matched.closestRule),
+      subtree_configs: subtreeRules,
     };
   }
 
@@ -766,8 +766,10 @@ class DB {
 
   convertOwnerMatch(matched) {
     return {
-      matched_owner_path: ChainUtil.formatPath(matched.matchedOwnerPath),
-      closest_owner: this.convertPathAndConfig(matched.closestOwner),
+      matched_path: {
+        target_path: ChainUtil.formatPath(matched.matchedOwnerPath),
+      },
+      matched_config: this.convertPathAndConfig(matched.closestOwner),
     };
   }
 

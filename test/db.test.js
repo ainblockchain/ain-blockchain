@@ -258,33 +258,33 @@ describe("DB operations", () => {
   describe("matchRule operations", () => {
     it("when matching existing variable path rule", () => {
       assert.deepEqual(node.db.matchRule("/test/test_rule/some/var_path"), {
-        "closest_rule": {
-          "config": "auth !== 'abcd'",
-          "path": "/test/test_rule/some/$var_path"
-        },
         "matched_path": {
-          "rule_path": "/test/test_rule/some/$var_path",
-          "value_path": "/test/test_rule/some/var_path",
+          "target_path": "/test/test_rule/some/$var_path",
+          "ref_path": "/test/test_rule/some/var_path",
           "path_vars": {
             "$var_path": "var_path"
           },
         },
-        "subtree_rules": []
+        "matched_config": {
+          "config": "auth !== 'abcd'",
+          "path": "/test/test_rule/some/$var_path"
+        },
+        "subtree_configs": []
       });
     })
 
     it("when matching existing non-variable path rule", () => {
       assert.deepEqual(node.db.matchRule("/test/test_rule/some/path"), {
-        "closest_rule": {
+        "matched_path": {
+          "target_path": "/test/test_rule/some/path",
+          "ref_path": "/test/test_rule/some/path",
+          "path_vars": {},
+        },
+        "matched_config": {
           "config": "auth === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
-        "matched_path": {
-          "rule_path": "/test/test_rule/some/path",
-          "value_path": "/test/test_rule/some/path",
-          "path_vars": {},
-        },
-        "subtree_rules": [
+        "subtree_configs": [
           {
             "config": "auth === 'ijkl'",
             "path": "/deeper/path"
@@ -292,31 +292,31 @@ describe("DB operations", () => {
         ]
       });
       assert.deepEqual(node.db.matchRule("/test/test_rule/some/path/deeper/path"), {
-        "closest_rule": {
+        "matched_path": {
+          "target_path": "/test/test_rule/some/path/deeper/path",
+          "ref_path": "/test/test_rule/some/path/deeper/path",
+          "path_vars": {},
+        },
+        "matched_config": {
           "config": "auth === 'ijkl'",
           "path": "/test/test_rule/some/path/deeper/path"
         },
-        "matched_path": {
-          "rule_path": "/test/test_rule/some/path/deeper/path",
-          "value_path": "/test/test_rule/some/path/deeper/path",
-          "path_vars": {},
-        },
-        "subtree_rules": []
+        "subtree_configs": []
       });
     })
 
     it("when matching existing closest non-variable path rule", () => {
       assert.deepEqual(node.db.matchRule("/test/test_rule/some/path/deeper"), {
-        "closest_rule": {
+        "matched_path": {
+          "target_path": "/test/test_rule/some/path/deeper",
+          "ref_path": "/test/test_rule/some/path/deeper",
+          "path_vars": {},
+        },
+        "matched_config": {
           "config": "auth === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
-        "matched_path": {
-          "rule_path": "/test/test_rule/some/path/deeper",
-          "value_path": "/test/test_rule/some/path/deeper",
-          "path_vars": {},
-        },
-        "subtree_rules": [
+        "subtree_configs": [
           {
             "config": "auth === 'ijkl'",
             "path": "/path"
@@ -329,7 +329,10 @@ describe("DB operations", () => {
   describe("matchOwner operations", () => {
     it("when matching existing owner with matching address", () => {
       assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path", 'write_owner', 'abcd'), {
-        "closest_owner": {
+        "matched_path": {
+          "target_path": "/test/test_owner/some/path"
+        },
+        "matched_config": {
           "config": {
             "owners": {
               "*": {
@@ -347,11 +350,13 @@ describe("DB operations", () => {
             }
           },
           "path": "/test/test_owner/some/path"
-        },
-        "matched_owner_path": "/test/test_owner/some/path"
+        }
       });
       assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path/deeper/path", 'write_owner', 'ijkl'), {
-        "closest_owner": {
+        "matched_path": {
+          "target_path": "/test/test_owner/some/path/deeper/path"
+        },
+        "matched_config": {
           "config": {
             "owners": {
               "*": {
@@ -369,14 +374,16 @@ describe("DB operations", () => {
             }
           },
           "path": "/test/test_owner/some/path/deeper/path"
-        },
-        "matched_owner_path": "/test/test_owner/some/path/deeper/path"
+        }
       });
     })
 
     it("when matching existing owner without matching address", () => {
       assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path", 'write_owner', 'other'), {
-        "closest_owner": {
+        "matched_path": {
+          "target_path": "/test/test_owner/some/path"
+        },
+        "matched_config": {
           "config": {
             "owners": {
               "*": {
@@ -394,11 +401,13 @@ describe("DB operations", () => {
             }
           },
           "path": "/test/test_owner/some/path"
-        },
-        "matched_owner_path": "/test/test_owner/some/path"
+        }
       });
       assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path/deeper/path", 'write_owner', 'other'), {
-        "closest_owner": {
+        "matched_path": {
+          "target_path": "/test/test_owner/some/path/deeper/path"
+        },
+        "matched_config": {
           "config": {
             "owners": {
               "*": {
@@ -416,14 +425,16 @@ describe("DB operations", () => {
             }
           },
           "path": "/test/test_owner/some/path/deeper/path"
-        },
-        "matched_owner_path": "/test/test_owner/some/path/deeper/path"
+        }
       });
     })
 
     it("when matching closest owner", () => {
       assert.deepEqual(node.db.matchOwner("/test/test_owner/some/path/deeper", 'write_owner', 'abcd'), {
-        "closest_owner": {
+        "matched_path": {
+          "target_path": "/test/test_owner/some/path/deeper"
+        },
+        "matched_config": {
           "config": {
             "owners": {
               "*": {
@@ -441,8 +452,7 @@ describe("DB operations", () => {
             }
           },
           "path": "/test/test_owner/some/path"
-        },
-        "matched_owner_path": "/test/test_owner/some/path/deeper"
+        }
       });
     })
   })
@@ -557,16 +567,16 @@ describe("DB operations", () => {
         null,
         null,
         {
-          "closest_rule": {
+          "matched_path": {
+            "target_path": "/test/test_rule/some/path/deeper",
+            "ref_path": "/test/test_rule/some/path/deeper",
+            "path_vars": {},
+          },
+          "matched_config": {
             "config": "auth === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
-          "matched_path": {
-            "rule_path": "/test/test_rule/some/path/deeper",
-            "value_path": "/test/test_rule/some/path/deeper",
-            "path_vars": {},
-          },
-          "subtree_rules": [
+          "subtree_configs": [
             {
               "config": "auth === 'ijkl'",
               "path": "/path"
@@ -574,7 +584,10 @@ describe("DB operations", () => {
           ]
         },
         {
-          "closest_owner": {
+          "matched_path": {
+            "target_path": "/test/test_owner/some/path/deeper"
+          },
+          "matched_config": {
             "config": {
               "owners": {
                 "*": {
@@ -592,8 +605,7 @@ describe("DB operations", () => {
               }
             },
             "path": "/test/test_owner/some/path"
-          },
-          "matched_owner_path": "/test/test_owner/some/path/deeper"
+          }
         },
         false,
         false
@@ -692,16 +704,16 @@ describe("DB operations", () => {
           }
         },
         {
-          "closest_rule": {
+          "matched_path": {
+            "target_path": "/test/test_rule/some/path",
+            "ref_path": "/test/test_rule/some/path",
+            "path_vars": {},
+          },
+          "matched_config": {
             "config": "auth === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
-          "matched_path": {
-            "rule_path": "/test/test_rule/some/path",
-            "value_path": "/test/test_rule/some/path",
-            "path_vars": {},
-          },
-          "subtree_rules": [
+          "subtree_configs": [
             {
               "config": "auth === 'ijkl'",
               "path": "/deeper/path"
@@ -709,7 +721,10 @@ describe("DB operations", () => {
           ]
         },
         {
-          "closest_owner": {
+          "matched_path": {
+            "target_path": "/test/test_owner/some/path"
+          },
+          "matched_config": {
             "config": {
               "owners": {
                 "*": {
@@ -727,8 +742,7 @@ describe("DB operations", () => {
               }
             },
             "path": "/test/test_owner/some/path"
-          },
-          "matched_owner_path": "/test/test_owner/some/path"
+          }
         },
         true,
         true,
