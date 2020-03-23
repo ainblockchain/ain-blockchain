@@ -54,16 +54,16 @@ app.get('/get_value', (req, res, next) => {
     .end();
 });
 
-app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref);
+app.get('/get_function', (req, res, next) => {
+  const result = node.db.getFunction(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
-app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref);
+app.get('/get_rule', (req, res, next) => {
+  const result = node.db.getRule(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -158,20 +158,20 @@ app.post('/dec_value', (req, res, next) => {
     .end();
 });
 
-app.post('/set_rule', (req, res, next) => {
+app.post('/set_function', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
+      createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})
     .end();
 });
 
-app.post('/set_function', (req, res, next) => {
+app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
+      createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result === true ? 0 : 1, result})

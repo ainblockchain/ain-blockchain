@@ -5,8 +5,9 @@ const expect = chai.expect;
 const assert = chai.assert;
 const Node = require('../node')
 const ChainUtil = require('../chain-util')
-const {GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, PredefinedDbPaths}
-    = require('../constants')
+const {
+  GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, GENESIS_FUNCTIONS, PredefinedDbPaths
+} = require('../constants')
 const {setDbForTesting} = require('./test-util')
 
 describe("DB initialization", () => {
@@ -51,6 +52,13 @@ describe("DB initialization", () => {
       assert.deepEqual(node.db.getRule("/"), rules);
     })
   })
+
+  describe("functions", () => {
+    it("loading functions properly on initialization", () => {
+      const rules = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
+      assert.deepEqual(node.db.getFunction("/"), rules);
+    })
+  })
 })
 
 describe("DB operations", () => {
@@ -84,6 +92,24 @@ describe("DB operations", () => {
     result = node.db.setValue("test", dbValues);
     console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
 
+    dbFuncs = {
+      "some": {
+        "$var_path": {
+          ".function": "some function config with var path"
+        },
+        "path": {
+          ".function": "some function config",
+          "deeper": {
+            "path": {
+              ".function": "some function config deeper"
+            }
+          }
+        },
+      }
+    };
+    result = node.db.setFunction("test/test_function", dbFuncs);
+    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
+
     dbRules = {
       "some": {
         "$var_path": {
@@ -101,16 +127,6 @@ describe("DB operations", () => {
     };
     result = node.db.setRule("test/test_rule", dbRules);
     console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
-
-    dbFuncs = {
-      "some": {
-        "path": {
-          ".function": "some function config"
-        },
-      }
-    };
-    result = node.db.setFunction("test/test_function", dbFuncs);
-    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
 
     dbOwners = {
       "some": {
@@ -180,9 +196,28 @@ describe("DB operations", () => {
     })
   })
 
+  describe("getFunction operations", () => {
+    it("when retrieving non-existing function config", () => {
+      expect(node.db.getFunction("/test/test_function/other/function/path")).to.equal(null);
+      expect(node.db.getFunction("/test/test_function/some/other_path")).to.equal(null);
+    })
+
+    it("when retrieving existing function config", () => {
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
+        ".function": "some function config",
+        "deeper": {
+          "path": {
+            ".function": "some function config deeper"
+          }
+        }
+      });
+    })
+  })
+
   describe("getRule operations", () => {
     it("when retrieving non-existing rule config", () => {
       expect(node.db.getRule("/test/test_rule/other/rule/path")).to.equal(null);
+      expect(node.db.getRule("/test/test_rule/some/other_path")).to.equal(null);
     })
 
     it("when retrieving existing rule config", () => {
@@ -194,17 +229,6 @@ describe("DB operations", () => {
           }
         }
       });
-    })
-  })
-
-  describe("getFunction operations", () => {
-    it("when retrieving non-existing function config", () => {
-      expect(node.db.getFunction("/test/test_function/other/function/path")).to.equal(null);
-    })
-
-    it("when retrieving existing function config", () => {
-      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"),
-          { ".function": "some function config" });
     })
   })
 
@@ -251,6 +275,77 @@ describe("DB operations", () => {
             }
           }
         }
+      });
+    })
+  })
+
+  describe("matchFunction operations", () => {
+    it("when matching existing variable path function", () => {
+      assert.deepEqual(node.db.matchFunction("/test/test_function/some/var_path"), {
+        "matched_path": {
+          "target_path": "/test/test_function/some/$var_path",
+          "ref_path": "/test/test_function/some/var_path",
+          "path_vars": {
+            "$var_path": "var_path"
+          },
+        },
+        "matched_config": {
+          "config": "some function config with var path",
+          "path": "/test/test_function/some/$var_path"
+        },
+        "subtree_configs": []
+      });
+    })
+
+    it("when matching existing non-variable path function", () => {
+      assert.deepEqual(node.db.matchFunction("/test/test_function/some/path"), {
+        "matched_path": {
+          "target_path": "/test/test_function/some/path",
+          "ref_path": "/test/test_function/some/path",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": "some function config",
+          "path": "/test/test_function/some/path"
+        },
+        "subtree_configs": [
+          {
+            "config": "some function config deeper",
+            "path": "/deeper/path"
+          }
+        ]
+      });
+      assert.deepEqual(node.db.matchFunction("/test/test_function/some/path/deeper/path"), {
+        "matched_path": {
+          "target_path": "/test/test_function/some/path/deeper/path",
+          "ref_path": "/test/test_function/some/path/deeper/path",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": "some function config deeper",
+          "path": "/test/test_function/some/path/deeper/path"
+        },
+        "subtree_configs": []
+      });
+    })
+
+    it("when NOT matching existing closest non-variable path function", () => {
+      assert.deepEqual(node.db.matchFunction("/test/test_function/some/path/deeper"), {
+        "matched_path": {
+          "target_path": "/test/test_function/some/path/deeper",
+          "ref_path": "/test/test_function/some/path/deeper",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": null,
+          "path": "/test/test_function/some/path/deeper"
+        },
+        "subtree_configs": [
+          {
+            "config": "some function config deeper",
+            "path": "/path"
+          }
+        ]
       });
     })
   })
@@ -540,6 +635,10 @@ describe("DB operations", () => {
           ref: "/owner/other/path",
         },
         {
+          type: "MATCH_FUNCTION",
+          ref: "/test/test_function/some/path/deeper",
+        },
+        {
           type: "MATCH_RULE",
           ref: "/test/test_rule/some/path/deeper",
         },
@@ -566,6 +665,23 @@ describe("DB operations", () => {
         null,
         null,
         null,
+        {
+          "matched_path": {
+            "target_path": "/test/test_function/some/path/deeper",
+            "ref_path": "/test/test_function/some/path/deeper",
+            "path_vars": {},
+          },
+          "matched_config": {
+            "config": null,
+            "path": "/test/test_function/some/path/deeper"
+          },
+          "subtree_configs": [
+            {
+              "config": "some function config deeper",
+              "path": "/path"
+            }
+          ]
+        },
         {
           "matched_path": {
             "target_path": "/test/test_rule/some/path/deeper",
@@ -631,6 +747,10 @@ describe("DB operations", () => {
           ref: "/test/test_owner/some/path",
         },
         {
+          type: "MATCH_FUNCTION",
+          ref: "/test/test_function/some/path",
+        },
+        {
           type: "MATCH_RULE",
           ref: "/test/test_rule/some/path",
         },
@@ -663,7 +783,12 @@ describe("DB operations", () => {
           }
         },
         {
-          ".function": "some function config"
+          ".function": "some function config",
+          "deeper": {
+            "path": {
+              ".function": "some function config deeper"
+            }
+        }
         },
         {
           ".owner": {
@@ -702,6 +827,23 @@ describe("DB operations", () => {
               }
             }
           }
+        },
+        {
+          "matched_path": {
+            "target_path": "/test/test_function/some/path",
+            "ref_path": "/test/test_function/some/path",
+            "path_vars": {},
+          },
+          "matched_config": {
+            "config": "some function config",
+            "path": "/test/test_function/some/path"
+          },
+          "subtree_configs": [
+            {
+              "config": "some function config deeper",
+              "path": "/deeper/path"
+            }
+          ]
         },
         {
           "matched_path": {
@@ -798,6 +940,14 @@ describe("DB operations", () => {
     })
   })
 
+  describe("setFunction operations", () => {
+    it("when overwriting existing function config", () => {
+      const functionConfig = {".function": "other function config"};
+      expect(node.db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), functionConfig)
+    })
+  })
+
   describe("setRule operations", () => {
     it("when overwriting existing rule config", () => {
       const ruleConfig = {".write": "other rule config"};
@@ -811,14 +961,6 @@ describe("DB operations", () => {
       const ownerConfig = {".owner": "other owner config"};
       expect(node.db.setOwner("/test/test_owner/some/path", ownerConfig, 'abcd')).to.equal(true)
       assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerConfig)
-    })
-  })
-
-  describe("setFunction operations", () => {
-    it("when overwriting existing function config", () => {
-      const functionConfig = {".function": "other function config"};
-      expect(node.db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
-      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), functionConfig)
     })
   })
 
@@ -843,6 +985,13 @@ describe("DB operations", () => {
           value: 10
         },
         {
+          type: "SET_FUNCTION",
+          ref: "/test/test_function/some/path",
+          value: {
+            ".function": "other function config"
+          }
+        },
+        {
           type: "SET_RULE",
           ref: "/test/test_rule/some/path",
           value: {
@@ -860,6 +1009,8 @@ describe("DB operations", () => {
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(node.db.getValue("test/increment/value")).to.equal(30)
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"),
+                       {".function": "other function config"});
       assert.deepEqual(node.db.getRule("/test/test_rule/some/path"),
                        {".write": "other rule config"});
       assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"),
@@ -941,6 +1092,15 @@ describe("DB operations", () => {
         },
         {
           operation: {
+            type: "SET_FUNCTION",
+            ref: "/test/test_function/some/path",
+            value: {
+              ".function": "other function config"
+            }
+          }
+        },
+        {
+          operation: {
             type: "SET_RULE",
             ref: "/test/test_rule/some/path",
             value: {
@@ -958,10 +1118,12 @@ describe("DB operations", () => {
           },
           address: 'abcd'
         }
-      ]), [ true, true, true, true, true ])
+      ]), [ true, true, true, true, true, true ])
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(node.db.getValue("test/increment/value")).to.equal(30)
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"),
+                       {".function": "other function config"});
       assert.deepEqual(node.db.getRule("/test/test_rule/some/path"),
                        {".write": "other rule config"});
       assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"),
@@ -1233,17 +1395,20 @@ describe("DB owner config", () => {
             "*": {
               "branch_owner": false,
               "write_owner": false,
-              "write_rule": false
+              "write_rule": false,
+              "write_function": false
             },
             "aaaa": {
               "branch_owner": false,
               "write_owner": false,
-              "write_rule": false
+              "write_rule": false,
+              "write_function": false
             },
             "known_user": {
               "branch_owner": true,
               "write_owner": true,
-              "write_rule": true
+              "write_rule": true,
+              "write_function": true
             }
           }
         }
@@ -1256,17 +1421,20 @@ describe("DB owner config", () => {
             "*": {
               "branch_owner": true,
               "write_owner": false,
-              "write_rule": false
+              "write_rule": false,
+              "write_function": false
             },
             "aaaa": {
               "branch_owner": true,
               "write_owner": false,
-              "write_rule": false
+              "write_rule": false,
+              "write_function": false
             },
             "known_user": {
               "branch_owner": false,
               "write_owner": true,
-              "write_rule": true
+              "write_rule": true,
+              "write_function": true
             }
           }
         }
@@ -1279,17 +1447,20 @@ describe("DB owner config", () => {
             "*": {
               "branch_owner": false,
               "write_owner": true,
-              "write_rule": false
+              "write_rule": false,
+              "write_function": false
             },
             "aaaa": {
               "branch_owner": false,
               "write_owner": true,
-              "write_rule": false
+              "write_rule": false,
+              "write_function": false
             },
             "known_user": {
               "branch_owner": true,
               "write_owner": false,
-              "write_rule": true
+              "write_rule": true,
+              "write_function": true
             }
           }
         }
@@ -1302,17 +1473,20 @@ describe("DB owner config", () => {
             "*": {
               "branch_owner": false,
               "write_owner": false,
-              "write_rule": true
+              "write_rule": true,
+              "write_function": true
             },
             "aaaa": {
               "branch_owner": false,
               "write_owner": false,
-              "write_rule": true
+              "write_rule": true,
+              "write_function": true
             },
             "known_user": {
               "branch_owner": true,
               "write_owner": true,
-              "write_rule": false
+              "write_rule": false,
+              "write_function": false
             }
           }
         }
@@ -1346,7 +1520,8 @@ describe("DB owner config", () => {
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/false/true/true'), 'known_user')).to.equal(true)
     expect(node.db.getPermissionForOwner(
-        ChainUtil.parsePath('/test/test_owner/mixed/true/false/true'), 'known_user')).to.equal(false)
+        ChainUtil.parsePath('/test/test_owner/mixed/true/false/true'),
+        'known_user')).to.equal(false)
     expect(node.db.getPermissionForOwner(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/false'), 'known_user')).to.equal(true)
   })
@@ -1359,7 +1534,8 @@ describe("DB owner config", () => {
     expect(node.db.getPermissionForRule(
         ChainUtil.parsePath('/test/test_owner/mixed/true/false/true'), 'known_user')).to.equal(true)
     expect(node.db.getPermissionForRule(
-        ChainUtil.parsePath('/test/test_owner/mixed/true/true/false'), 'known_user')).to.equal(false)
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/false'),
+        'known_user')).to.equal(false)
   })
 
   it("write_rule permission on deeper path for known user with mixed config", () => {
@@ -1373,6 +1549,33 @@ describe("DB owner config", () => {
         ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/deeper_path'), 'known_user'))
       .to.equal(true)
     expect(node.db.getPermissionForRule(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/deeper_path'), 'known_user'))
+      .to.equal(false)
+  })
+
+  it("write_function permission for known user with mixed config", () => {
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/true'), 'known_user')).to.equal(true)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/false/true/true'), 'known_user')).to.equal(true)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/false/true'), 'known_user')).to.equal(true)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/false'),
+        'known_user')).to.equal(false)
+  })
+
+  it("write_Function permission on deeper path for known user with mixed config", () => {
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/true/deeper_path'), 'known_user'))
+      .to.equal(true)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/false/true/true/deeper_path'), 'known_user'))
+      .to.equal(true)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/deeper_path'), 'known_user'))
+      .to.equal(true)
+    expect(node.db.getPermissionForFunction(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/deeper_path'), 'known_user'))
       .to.equal(false)
   })
@@ -1434,6 +1637,36 @@ describe("DB owner config", () => {
         ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/deeper_path'), 'unknown_user'))
       .to.equal(false)
     expect(node.db.getPermissionForRule(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/deeper_path'), 'unknown_user'))
+      .to.equal(true)
+  })
+
+  it("write_function permission for unknown user with mixed config", () => {
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/true'),
+        'unknown_user')).to.equal(false)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/false/true/true'),
+        'unknown_user')).to.equal(false)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/false/true'),
+        'unknown_user')).to.equal(false)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/false'),
+        'unknown_user')).to.equal(true)
+  })
+
+  it("write_function permission on deeper path for unknown user with mixed config", () => {
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/true/true/deeper_path'), 'unknown_user'))
+      .to.equal(false)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/false/true/true/deeper_path'), 'unknown_user'))
+      .to.equal(false)
+    expect(node.db.getPermissionForFunction(
+        ChainUtil.parsePath('/test/test_owner/mixed/true/false/true/deeper_path'), 'unknown_user'))
+      .to.equal(false)
+    expect(node.db.getPermissionForFunction(
         ChainUtil.parsePath('/test/test_owner/mixed/true/true/false/deeper_path'), 'unknown_user'))
       .to.equal(true)
   })

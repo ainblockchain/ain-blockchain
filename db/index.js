@@ -68,15 +68,15 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
-  getRule(rulePath) {
-    const parsedPath = ChainUtil.parsePath(rulePath);
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
-    return this.readDatabase(fullPath);
-  }
-
   getFunction(functionPath) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    return this.readDatabase(fullPath);
+  }
+
+  getRule(rulePath) {
+    const parsedPath = ChainUtil.parsePath(rulePath);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
     return this.readDatabase(fullPath);
   }
 
@@ -123,6 +123,8 @@ class DB {
         resultList.push(this.getFunction(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
+      } else if (item.type === ReadDbOperations.MATCH_FUNCTION) {
+        resultList.push(this.matchFunction(item.ref));
       } else if (item.type === ReadDbOperations.MATCH_RULE) {
         resultList.push(this.matchRule(item.ref));
       } else if (item.type === ReadDbOperations.MATCH_OWNER) {
@@ -180,6 +182,18 @@ class DB {
     return this.setValue(valuePath, valueAfter, address, timestamp);
   }
 
+  setFunction(functionPath, functionInfo, address, context) {
+    const parsedPath = ChainUtil.parsePath(functionPath);
+    if (!this.getPermissionForFunction(parsedPath, address)) {
+      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
+    }
+    const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
+        JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    this.writeDatabase(fullPath, functionInfoCopy);
+    return true;
+  }
+
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
   // TODO(seo): Add logic for deleting rule paths with only dangling points (w/o .write).
@@ -207,17 +221,6 @@ class DB {
     return true;
   }
 
-  setFunction(functionPath, functionInfo, address, context) {
-    const parsedPath = ChainUtil.parsePath(functionPath);
-    if (!this.getPermissionForFunction(parsedPath, address)) {
-      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
-    }
-    const functionInfoCopy = ChainUtil.isDict(functionInfo) ? JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    this.writeDatabase(fullPath, functionInfoCopy);
-    return true;
-  }
-
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   set(opList, address, timestamp, context) {
     let ret = true;
@@ -238,13 +241,13 @@ class DB {
         if (ret !== true) {
           break;
         }
-      } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, address, context);
+      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
+        ret = this.setFunction(op.ref, op.value, address, context);
         if (ret !== true) {
           break;
         }
-      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, address, context);
+      } else if (op.type === WriteDbOperations.SET_RULE) {
+        ret = this.setRule(op.ref, op.value, address, context);
         if (ret !== true) {
           break;
         }
@@ -275,8 +278,8 @@ class DB {
           case WriteDbOperations.SET_VALUE:
           case WriteDbOperations.INC_VALUE:
           case WriteDbOperations.DEC_VALUE:
-          case WriteDbOperations.SET_RULE:
           case WriteDbOperations.SET_FUNCTION:
+          case WriteDbOperations.SET_RULE:
           case WriteDbOperations.SET_OWNER:
           case WriteDbOperations.SET:
             const context = { transaction: tx };
