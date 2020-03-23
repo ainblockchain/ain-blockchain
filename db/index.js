@@ -419,12 +419,14 @@ class DB {
     }
   }
 
-  static getVariableNodeName(ruleNode) {
-    const keys = Object.keys(ruleNode);
-    for (let i = 0; i < keys.length; i++) {
-      if (keys[i].startsWith('$')) {
-        // It's assumed that there is at most one variable (i.e., with '$') child node.
-        return keys[i];
+  static getVariableNodeName(node) {
+    if (ChainUtil.isDict(node)) {
+      const keys = Object.keys(node);
+      for (let i = 0; i < keys.length; i++) {
+        if (keys[i].startsWith('$')) {
+          // It's assumed that there is at most one variable (i.e., with '$') child node.
+          return keys[i];
+        }
       }
     }
     return null;
