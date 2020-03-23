@@ -109,8 +109,8 @@ describe("DB operations", () => {
         },
       }
     };
-    result = node.db.setFunc("test/test_function", dbFuncs);
-    console.log(`Result of setFunc(): ${JSON.stringify(result, null, 2)}`);
+    result = node.db.setFunction("test/test_function", dbFuncs);
+    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
 
     dbOwners = {
       "some": {
@@ -814,10 +814,10 @@ describe("DB operations", () => {
     })
   })
 
-  describe("setFunc operations", () => {
+  describe("setFunction operations", () => {
     it("when overwriting existing function config", () => {
       const functionConfig = {".function": "other function config"};
-      expect(node.db.setFunc("/test/test_function/some/path", functionConfig)).to.equal(true)
+      expect(node.db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
       assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), functionConfig)
     })
   })

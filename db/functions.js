@@ -4,10 +4,12 @@ const {
   DefaultValues
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const axios = require('axios')
+const axios = require('axios');
 
-const EventListenerWhitelist = {'https://events.ainetwork.ai/trigger': true,
-  'http://localhost:3000/trigger': true}
+const EventListenerWhitelist = {
+  'https://events.ainetwork.ai/trigger': true,
+  'http://localhost:3000/trigger': true
+};
 
 /**
  * Built-in functions with function paths.
@@ -28,79 +30,49 @@ class Functions {
    * @param {Array} parsedValuePath parsed value path
    * @param {*} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
+   * @param {Number} currentTime current time
+   * @param {Number} context context
    */
-  runNativeFunctions(parsedValuePath, value, timestamp, currentTime) {
+  runFunctions(parsedValuePath, value, timestamp, currentTime, context) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionConfig = matched.matchedFunction.config;
     if (functionConfig) {
       if (functionConfig.function_type === FunctionTypes.NATIVE) {
         const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
         if (nativeFunction) {
-          const functionParams = this.convertPathVars2FunctionParams(matched.pathVars);
+          const params = Functions.convertPathVars2Params(matched.pathVars);
           logger.info(
-            `  ==> Running built-in function '${functionConfig.function_id}' with value '${value}', timestamp '${timestamp}', currentTime '${currentTime}' and params: ` +
-            JSON.stringify(functionParams));
-          nativeFunction(value, { params: functionParams, timestamp, currentTime });
+            `  ==> Running native function '${functionConfig.function_id}' ` +
+            `with value '${value}', timestamp '${timestamp}',
+            currentTime '${currentTime}' and params: ` + JSON.stringify(params));
+          nativeFunction(value, { params, timestamp, currentTime });
+        }
+      } else if (functionConfig.function_type === FunctionTypes.REST) {
+        if (functionConfig.event_listener &&
+            functionConfig.event_listener in EventListenerWhitelist) {
+          logger.info(
+            `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
+            `of '${functionConfig.event_listener}' ` +
+            `with transaction: ${JSON.stringify(context.transaction, null, 2)}`)
+          return axios.post(functionConfig.event_listener, {
+            transaction: context.transaction,
+            function: functionConfig
+          });
         }
       }
     }
+    return true;
   }
 
-  convertPathVars2FunctionParams(pathVars) {
-    const functionParams = {};
+  static convertPathVars2Params(pathVars) {
+    const params = {};
     if (ChainUtil.isDict(pathVars)) {
       Object.keys(pathVars).forEach((key) => {
         const paramName = key.slice(1);
-        functionParams[paramName] = pathVars[key];
+        params[paramName] = pathVars[key];
       });
     }
-    return functionParams;
-  }
-
-  triggerEvent(transaction) {
-    const parsedValuePath = ChainUtil.parsePath(transaction.operation.ref);
-    const match = this.matchTriggerPaths(parsedValuePath);
-    if (match && match.event_listener) {
-      if (match.event_listener in EventListenerWhitelist) {
-        logger.info(
-          `  ==> Triggering function event'${match.event_listener}' with transaction '${transaction}'`)
-        return axios.post(match.event_listener, {
-          transaction: transaction,
-          function: match
-        })
-      }
-    }
-  }
-
-  matchTriggerPaths(parsedValuePath) {
-    let currentRef = this.db.getRefForReading([PredefinedDbPaths.FUNCTIONS_ROOT])
-    if (!currentRef) {
-      return null;
-    }
-    for (let i = 0; i < parsedValuePath.length; i++) {
-      if (currentRef[parsedValuePath[i]]) {
-        currentRef = currentRef[parsedValuePath[i]]
-      } else {
-        // check for wildcards.
-        const keys = Object.keys(currentRef);
-        let found = false;
-        for (let j = 0; j < keys.length; j++) {
-          if (keys[j].startsWith('$')) {
-            currentRef = currentRef[keys[j]];
-            // TODO(minhyun): Support multiple match.
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          return null;
-        }
-      }
-    }
-    if (currentRef) {
-      return currentRef[FunctionProperties.FUNCTION]
-    }
-    return null;
+    return params;
   }
 
   // TODO(seo): Add adress validity check.
