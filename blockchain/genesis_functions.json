@@ -1,8 +1,8 @@
 {
   ".function": false,
   "deposit": {
-    "$service_id": {
-      "$uid": {
+    "$service": {
+      "$user_addr": {
         "$deposit_id": {
           "value": {
             ".function": {
@@ -29,8 +29,8 @@
     }
   },
   "withdraw":{
-    "$service_id": {
-      "$uid": {
+    "$service": {
+      "$user_addr": {
         "$withdraw_id": {
           "value": {
             ".function": {

@@ -140,7 +140,7 @@ class DB {
   // TODO(seo): Add logic for deleting rule paths with only dangling points.
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Define error code explicitly.
-  // TODO(seo): Consider making set operation and built-in-function run tightly bound, i.e., revert
+  // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
   // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
@@ -152,7 +152,7 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
-    this.func.runBuiltInFunctions(parsedPath, valueCopy, timestamp, Date.now());
+    this.func.runNativeFunctions(parsedPath, valueCopy, timestamp, Date.now());
     return true;
   }
 

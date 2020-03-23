@@ -1,19 +1,13 @@
 const logger = require('../logger');
 const {
-  PredefinedDbPaths, FunctionProperties, FunctionResultCode, NativeFunctionIds, DefaultValues
+  PredefinedDbPaths, FunctionProperties, FunctionTypes, FunctionResultCode, NativeFunctionIds,
+  DefaultValues
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const axios = require('axios')
 
-const FUNC_PARAM_PATTERN = /^{(.*)}$/;
 const EventListenerWhitelist = {'https://events.ainetwork.ai/trigger': true,
   'http://localhost:3000/trigger': true}
-
-const FunctionPaths = {
-  TRANSFER: `${PredefinedDbPaths.TRANSFER}/{from}/{to}/{key}/${PredefinedDbPaths.TRANSFER_VALUE}`,
-  DEPOSIT: `${PredefinedDbPaths.DEPOSIT}/{service}/{user}/{deposit_id}/${PredefinedDbPaths.DEPOSIT_VALUE}`,
-  WITHDRAW: `${PredefinedDbPaths.WITHDRAW}/{service}/{user}/{withdraw_id}/${PredefinedDbPaths.WITHDRAW_VALUE}`,
-};
 
 /**
  * Built-in functions with function paths.
@@ -21,18 +15,11 @@ const FunctionPaths = {
 class Functions {
   constructor(db) {
     this.db = db;
-    this.funcMap = {
-      [FunctionPaths.TRANSFER]: this._transfer.bind(this),
-      [FunctionPaths.DEPOSIT]: this._deposit.bind(this),
-      [FunctionPaths.WITHDRAW]: this._withdraw.bind(this),
-    };
-    /*
     this.nativeFunctionMap = {
       [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
       [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
     };
-    */
   }
 
   /**
@@ -42,14 +29,32 @@ class Functions {
    * @param {*} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
    */
-  runBuiltInFunctions(parsedValuePath, value, timestamp, currentTime) {
-    const matches = this.matchFunctionPaths(parsedValuePath);
-    matches.forEach((elem) => {
-      logger.info(
-        `  ==> Running built-in function '${elem.func.name}' with value '${value}', timestamp '${timestamp}', currentTime '${currentTime}' and params: ` +
-        JSON.stringify(elem.params));
-      elem.func(value, { params: elem.params, timestamp, currentTime });
-    })
+  runNativeFunctions(parsedValuePath, value, timestamp, currentTime) {
+    const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
+    const functionConfig = matched.matchedFunction.config;
+    if (functionConfig) {
+      if (functionConfig.function_type === FunctionTypes.NATIVE) {
+        const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
+        if (nativeFunction) {
+          const functionParams = this.convertPathVars2FunctionParams(matched.pathVars);
+          logger.info(
+            `  ==> Running built-in function '${functionConfig.function_id}' with value '${value}', timestamp '${timestamp}', currentTime '${currentTime}' and params: ` +
+            JSON.stringify(functionParams));
+          nativeFunction(value, { params: functionParams, timestamp, currentTime });
+        }
+      }
+    }
+  }
+
+  convertPathVars2FunctionParams(pathVars) {
+    const functionParams = {};
+    if (ChainUtil.isDict(pathVars)) {
+      Object.keys(pathVars).forEach((key) => {
+        const paramName = key.slice(1);
+        functionParams[paramName] = pathVars[key];
+      });
+    }
+    return functionParams;
   }
 
   triggerEvent(transaction) {
@@ -65,39 +70,6 @@ class Functions {
         })
       }
     }
-  }
-
-  // TODO(seo): Optimize function path matching (e.g. using Aho-Corasick-like algorithm).
-  matchFunctionPaths(parsedValuePath) {
-    let funcs = [];
-    Object.keys(this.funcMap).forEach((path) => {
-      const parsedFuncPath = ChainUtil.parsePath(path);
-      const result = Functions.matchPaths(parsedValuePath, parsedFuncPath);
-      if (result !== null) {
-        funcs.push({ func: this.funcMap[path], params: result.params })
-      }
-    });
-    return funcs;
-  }
-
-  static matchPaths(parsedValuePath, parsedFuncPath) {
-    if (parsedFuncPath.length === parsedValuePath.length) {
-      let params = {};
-      let matched = true;
-      for (let i = 0; i < parsedFuncPath.length; i++) {
-        if (parsedFuncPath[i].match(FUNC_PARAM_PATTERN)) {
-          const paramName = parsedFuncPath[i].replace(FUNC_PARAM_PATTERN, '$1');
-          params[paramName] = parsedValuePath[i];
-        } else if (parsedFuncPath[i] !== parsedValuePath[i]) {
-          matched = false;
-          break;
-        }
-      }
-      if (matched) {
-        return { params };
-      }
-    }
-    return null
   }
 
   matchTriggerPaths(parsedValuePath) {
@@ -150,7 +122,7 @@ class Functions {
 
   _deposit(value, context) {
     const service = context.params.service;
-    const user = context.params.user;
+    const user = context.params.user_addr;
     const depositId = context.params.deposit_id;
     const timestamp = context.timestamp;
     const currentTime = context.currentTime;
@@ -180,7 +152,7 @@ class Functions {
 
   _withdraw(value, context) {
     const service = context.params.service;
-    const user = context.params.user;
+    const user = context.params.user_addr;
     const withdrawId = context.params.withdraw_id;
     const timestamp = context.timestamp;
     const currentTime = context.currentTime;
@@ -222,10 +194,6 @@ class Functions {
   _getTransferResultPath(from, to, key) {
     return (
       `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_RESULT}`);
-  }
-
-  _getAllDepositsPath(service, user) {
-    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}`);
   }
 
   _getDepositLockupDurationPath(service) {

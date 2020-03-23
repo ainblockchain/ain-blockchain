@@ -1,6 +1,6 @@
 const {Command, flags} = require('@oclif/command');
 const ChainUtil = require('../../../chain-util');
-const Transaction = require('../../../db/transaction');
+const Transaction = require('../../../tx-pool/transaction');
 const fs = require('fs');
 const BN = require('bn.js');
 const sleep = require('system-sleep');
