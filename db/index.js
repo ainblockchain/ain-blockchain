@@ -451,29 +451,31 @@ class DB {
         matchedFunctionNode: curFuncNode,
       };
     }
-    // 1) Try to match with non-variable child node.
-    const nextFuncNode = curFuncNode[parsedValuePath[depth]];
-    if (nextFuncNode !== undefined) {
-      const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
-      matched.matchedValuePath.unshift(parsedValuePath[depth]);
-      matched.matchedFunctionPath.unshift(parsedValuePath[depth]);
-      return matched;
-    }
-    // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
-    //    child node.
-    const varNodeName = DB.getVariableNodeName(curFuncNode);
-    if (varNodeName !== null) {
-      const nextFuncNode = curFuncNode[varNodeName];
-      const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
-      matched.matchedValuePath.unshift(parsedValuePath[depth]);
-      matched.matchedFunctionPath.unshift(varNodeName);
-      if (matched.pathVars[varNodeName] !== undefined) {
-        // This should not happen!
-        logger.error('Duplicated path variables that should NOT happen!')
-      } else {
-        matched.pathVars[varNodeName] = parsedValuePath[depth];
+    if (curFuncNode) {
+      // 1) Try to match with non-variable child node.
+      const nextFuncNode = curFuncNode[parsedValuePath[depth]];
+      if (nextFuncNode !== undefined) {
+        const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedFunctionPath.unshift(parsedValuePath[depth]);
+        return matched;
       }
-      return matched;
+      // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
+      //    child node.
+      const varNodeName = DB.getVariableNodeName(curFuncNode);
+      if (varNodeName !== null) {
+        const nextFuncNode = curFuncNode[varNodeName];
+        const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedFunctionPath.unshift(varNodeName);
+        if (matched.pathVars[varNodeName] !== undefined) {
+          // This should not happen!
+          logger.error('Duplicated path variables that should NOT happen!')
+        } else {
+          matched.pathVars[varNodeName] = parsedValuePath[depth];
+        }
+        return matched;
+      }
     }
     // No match with child nodes.
     return {
@@ -586,37 +588,39 @@ class DB {
         closestConfigDepth: DB.hasRuleConfig(curRuleNode) ? depth : 0,
       };
     }
-    // 1) Try to match with non-variable child node.
-    const nextRuleNode = curRuleNode[parsedValuePath[depth]];
-    if (nextRuleNode !== undefined) {
-      const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
-      matched.matchedValuePath.unshift(parsedValuePath[depth]);
-      matched.matchedRulePath.unshift(parsedValuePath[depth]);
-      if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
-        matched.closestConfigNode = curRuleNode;
-        matched.closestConfigDepth = depth;
+    if (curRuleNode) {
+      // 1) Try to match with non-variable child node.
+      const nextRuleNode = curRuleNode[parsedValuePath[depth]];
+      if (nextRuleNode !== undefined) {
+        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedRulePath.unshift(parsedValuePath[depth]);
+        if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+          matched.closestConfigNode = curRuleNode;
+          matched.closestConfigDepth = depth;
+        }
+        return matched;
       }
-      return matched;
-    }
-    // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
-    //    child node.
-    const varNodeName = DB.getVariableNodeName(curRuleNode);
-    if (varNodeName !== null) {
-      const nextRuleNode = curRuleNode[varNodeName];
-      const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
-      matched.matchedValuePath.unshift(parsedValuePath[depth]);
-      matched.matchedRulePath.unshift(varNodeName);
-      if (matched.pathVars[varNodeName] !== undefined) {
-        // This should not happen!
-        logger.error('Duplicated path variables that should NOT happen!')
-      } else {
-        matched.pathVars[varNodeName] = parsedValuePath[depth];
+      // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
+      //    child node.
+      const varNodeName = DB.getVariableNodeName(curRuleNode);
+      if (varNodeName !== null) {
+        const nextRuleNode = curRuleNode[varNodeName];
+        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedRulePath.unshift(varNodeName);
+        if (matched.pathVars[varNodeName] !== undefined) {
+          // This should not happen!
+          logger.error('Duplicated path variables that should NOT happen!')
+        } else {
+          matched.pathVars[varNodeName] = parsedValuePath[depth];
+        }
+        if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+          matched.closestConfigNode = curRuleNode;
+          matched.closestConfigDepth = depth;
+        }
+        return matched;
       }
-      if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
-        matched.closestConfigNode = curRuleNode;
-        matched.closestConfigDepth = depth;
-      }
-      return matched;
     }
     // No match with child nodes.
     return {
@@ -733,14 +737,16 @@ class DB {
         closestConfigDepth: DB.hasOwnerConfig(curOwnerNode) ? depth : 0,
       };
     }
-    const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
-    if (nextOwnerNode !== undefined) {
-      const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
-      if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
-        matched.closestConfigNode = curOwnerNode;
-        matched.closestConfigDepth = depth;
+    if (curOwnerNode) {
+      const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
+      if (nextOwnerNode !== undefined) {
+        const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
+        if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
+          matched.closestConfigNode = curOwnerNode;
+          matched.closestConfigDepth = depth;
+        }
+        return matched;
       }
-      return matched;
     }
     // No match with child nodes.
     return {
