@@ -33,7 +33,9 @@ class Functions {
    * @param {Number} currentTime current time
    * @param {Number} context context
    */
-  runFunctions(parsedValuePath, value, timestamp, currentTime, context) {
+  // TODO(seo): Support multiple-functions per path.
+  // TODO(seo): Trigger subtree functions.
+  triggerFunctions(parsedValuePath, value, timestamp, currentTime, context) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionConfig = matched.matchedFunction.config;
     if (functionConfig) {
@@ -100,8 +102,10 @@ class Functions {
     const currentTime = context.currentTime;
     const resultPath = this._getDepositResultPath(service, user, depositId);
     const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
-    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
-    if (timestamp > currentTime) { // TODO (lia): move this check to when we first receive the transaction
+    this.db.writeDatabase(
+        this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
+    // TODO (lia): move this check to when we first receive the transaction
+    if (timestamp > currentTime) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           { code: FunctionResultCode.FAILURE });
       return;
@@ -132,7 +136,8 @@ class Functions {
     const userBalancePath = this._getBalancePath(user);
     const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
-    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
+    this.db.writeDatabase(
+        this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
     if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
       const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
       if (expireAt <= currentTime) {
@@ -154,7 +159,8 @@ class Functions {
     const fromBalance = this.db.getValue(fromPath);
     if (fromBalance < value) return false;
     const toBalance = this.db.getValue(toPath);
-    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(fromPath)), fromBalance - value);
+    this.db.writeDatabase(
+        this._getFullValuePath(ChainUtil.parsePath(fromPath)), fromBalance - value);
     this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toPath)), toBalance + value);
     return true;
   }

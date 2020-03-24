@@ -154,7 +154,7 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
-    this.func.runFunctions(parsedPath, valueCopy, timestamp, Date.now(), context);
+    this.func.triggerFunctions(parsedPath, valueCopy, timestamp, Date.now(), context);
     return true;
   }
 
@@ -179,10 +179,10 @@ class DB {
       return {code: 1, error_message: 'Not a number type: ' + valuePath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp);
+    return this.setValue(valuePath, valueAfter, address, timestamp, context);
   }
 
-  setFunction(functionPath, functionInfo, address, context) {
+  setFunction(functionPath, functionInfo, address) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     if (!this.getPermissionForFunction(parsedPath, address)) {
       return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
@@ -197,7 +197,7 @@ class DB {
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
   // TODO(seo): Add logic for deleting rule paths with only dangling points (w/o .write).
-  setRule(rulePath, rule, address, context) {
+  setRule(rulePath, rule, address) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address)) {
       return {code: 3, error_message: 'No write_rule permission on: ' + rulePath};
@@ -210,7 +210,7 @@ class DB {
 
   // TODO(seo): Add owner config sanitization logic.
   // TODO(seo): Add logic for deleting owner paths with only dangling points (w/o .owner).
-  setOwner(ownerPath, owner, address, context) {
+  setOwner(ownerPath, owner, address) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
       return {code: 4, error_message: 'No write_owner or branch_owner permission on: ' + ownerPath};
@@ -242,17 +242,17 @@ class DB {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, address, context);
+        ret = this.setFunction(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, address, context);
+        ret = this.setRule(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, address, context);
+        ret = this.setOwner(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
@@ -349,12 +349,12 @@ class DB {
         return this.incValue(operation.ref, operation.value, address, timestamp, context);
       case WriteDbOperations.DEC_VALUE:
         return this.decValue(operation.ref, operation.value, address, timestamp, context);
-      case WriteDbOperations.SET_RULE:
-        return this.setRule(operation.ref, operation.value, address, context);
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(operation.ref, operation.value, address, context);
+        return this.setFunction(operation.ref, operation.value, address);
+      case WriteDbOperations.SET_RULE:
+        return this.setRule(operation.ref, operation.value, address);
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(operation.ref, operation.value, address, context);
+        return this.setOwner(operation.ref, operation.value, address);
       case WriteDbOperations.SET:
         return this.set(operation.op_list, address, timestamp, context);
     }

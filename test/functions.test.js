@@ -7,7 +7,7 @@ const assert = chai.assert;
 const expect = chai.expect;
 
 describe("Functions", () => {
-  describe("runFunctions", () => {
+  describe("triggerFunctions", () => {
     let functions;
 
     beforeEach(() => {
@@ -38,7 +38,7 @@ describe("Functions", () => {
           "value": 1000
         }
       }
-      return functions.runFunctions(["test", "test_function", "some", "path"], null, null, null,
+      return functions.triggerFunctions(["test", "test_function", "some", "path"], null, null, null,
           {transaction}).then((response) => {
         expect(response.data.success).to.equal(true);
       });
