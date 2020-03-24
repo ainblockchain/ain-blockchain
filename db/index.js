@@ -1,10 +1,12 @@
 const logger = require('../logger');
-const {ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
-       DEBUG} = require('../constants');
+const {
+  ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
+  FunctionProperties, DEBUG
+} = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const Functions = require('./functions');
-const BuiltInRuleUtil = require('./built-in-rule-util');
+const RuleUtil = require('./rule-util');
 
 class DB {
   constructor() {
@@ -66,15 +68,15 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
-  getRule(rulePath) {
-    const parsedPath = ChainUtil.parsePath(rulePath);
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
-    return this.readDatabase(fullPath);
-  }
-
   getFunction(functionPath) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    return this.readDatabase(fullPath);
+  }
+
+  getRule(rulePath) {
+    const parsedPath = ChainUtil.parsePath(rulePath);
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
     return this.readDatabase(fullPath);
   }
 
@@ -82,6 +84,11 @@ class DB {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
     return this.readDatabase(fullPath);
+  }
+
+  matchFunction(funcPath) {
+    const parsedPath = ChainUtil.parsePath(funcPath);
+    return this.convertFunctionMatch(this.matchFunctionForParsedPath(parsedPath));
   }
 
   matchRule(valuePath) {
@@ -116,6 +123,8 @@ class DB {
         resultList.push(this.getFunction(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
+      } else if (item.type === ReadDbOperations.MATCH_FUNCTION) {
+        resultList.push(this.matchFunction(item.ref));
       } else if (item.type === ReadDbOperations.MATCH_RULE) {
         resultList.push(this.matchRule(item.ref));
       } else if (item.type === ReadDbOperations.MATCH_OWNER) {
@@ -133,11 +142,11 @@ class DB {
   // TODO(seo): Add logic for deleting rule paths with only dangling points.
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Define error code explicitly.
-  // TODO(seo): Consider making set operation and built-in-function run tightly bound, i.e., revert
+  // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
   // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
-  setValue(valuePath, value, address, timestamp) {
+  setValue(valuePath, value, address, timestamp, transaction) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
       return {code: 2, error_message: 'No .write permission on: ' + valuePath};
@@ -145,11 +154,11 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
-    this.func.runBuiltInFunctions(parsedPath, valueCopy, timestamp, Date.now());
+    this.func.triggerFunctions(parsedPath, valueCopy, timestamp, Date.now(), transaction);
     return true;
   }
 
-  incValue(valuePath, delta, address, timestamp) {
+  incValue(valuePath, delta, address, timestamp, transaction) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -158,10 +167,10 @@ class DB {
       return {code: 1, error_message: 'Not a number type: ' + valuePath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
   }
 
-  decValue(valuePath, delta, address, timestamp) {
+  decValue(valuePath, delta, address, timestamp, transaction) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -170,7 +179,19 @@ class DB {
       return {code: 1, error_message: 'Not a number type: ' + valuePath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
+  }
+
+  setFunction(functionPath, functionInfo, address) {
+    const parsedPath = ChainUtil.parsePath(functionPath);
+    if (!this.getPermissionForFunction(parsedPath, address)) {
+      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
+    }
+    const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
+        JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
+    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    this.writeDatabase(fullPath, functionInfoCopy);
+    return true;
   }
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
@@ -200,44 +221,33 @@ class DB {
     return true;
   }
 
-  setFunc(functionPath, functionInfo, address) {
-    const parsedPath = ChainUtil.parsePath(functionPath);
-    if (!this.getPermissionForFunction(parsedPath, address)) {
-      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
-    }
-    const functionInfoCopy = ChainUtil.isDict(functionInfo) ? JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    this.writeDatabase(fullPath, functionInfoCopy);
-    return true;
-  }
-
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
-  set(opList, address, timestamp) {
+  set(opList, address, timestamp, transaction) {
     let ret = true;
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, address, timestamp);
+        ret = this.setValue(op.ref, op.value, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, address, timestamp);
+        ret = this.incValue(op.ref, op.value, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, address, timestamp);
+        ret = this.decValue(op.ref, op.value, address, timestamp, transaction);
+        if (ret !== true) {
+          break;
+        }
+      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
+        ret = this.setFunction(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
         ret = this.setRule(op.ref, op.value, address);
-        if (ret !== true) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunc(op.ref, op.value, address);
         if (ret !== true) {
           break;
         }
@@ -268,11 +278,11 @@ class DB {
           case WriteDbOperations.SET_VALUE:
           case WriteDbOperations.INC_VALUE:
           case WriteDbOperations.DEC_VALUE:
-          case WriteDbOperations.SET_RULE:
           case WriteDbOperations.SET_FUNCTION:
+          case WriteDbOperations.SET_RULE:
           case WriteDbOperations.SET_OWNER:
           case WriteDbOperations.SET:
-            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp));
+            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
             break;
           default:
             const message = `Invalid operation type: ${operation.type}`;
@@ -326,26 +336,26 @@ class DB {
     this.dbData = JSON.parse(JSON.stringify(snapshot.dbData));
   }
 
-  executeOperation(operation, address, timestamp) {
+  executeOperation(operation, address, timestamp, transaction) {
     if (!operation) {
       return null;
     }
     switch (operation.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(operation.ref, operation.value, address, timestamp);
+        return this.setValue(operation.ref, operation.value, address, timestamp, transaction);
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(operation.ref, operation.value, address, timestamp);
+        return this.incValue(operation.ref, operation.value, address, timestamp, transaction);
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(operation.ref, operation.value, address, timestamp);
+        return this.decValue(operation.ref, operation.value, address, timestamp, transaction);
+      case WriteDbOperations.SET_FUNCTION:
+        return this.setFunction(operation.ref, operation.value, address);
       case WriteDbOperations.SET_RULE:
         return this.setRule(operation.ref, operation.value, address);
-      case WriteDbOperations.SET_FUNCTION:
-        return this.setFunc(operation.ref, operation.value, address);
       case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address);
       case WriteDbOperations.SET:
-        return this.set(operation.op_list, address, timestamp);
+        return this.set(operation.op_list, address, timestamp, transaction);
     }
   }
 
@@ -353,14 +363,7 @@ class DB {
     if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
-    const result = this.executeOperation(tx.operation, tx.address, tx.timestamp);
-    // TODO(minhyun): Support BATCH & SET.
-    if (result && (tx.operation.type == WriteDbOperations.SET_VALUE
-        || tx.operation.type == WriteDbOperations.INC_VALUE
-        || tx.operation.type == WriteDbOperations.DEC_VALUE)) {
-      this.func.triggerEvent(tx);
-    }
-    return result;
+    return this.executeOperation(tx.operation, tx.address, tx.timestamp, tx);
   }
 
   executeTransactionList(txList) {
@@ -412,15 +415,152 @@ class DB {
     }
   }
 
-  static getVariableNodeName(ruleNode) {
-    const keys = Object.keys(ruleNode);
-    for (let i = 0; i < keys.length; i++) {
-      if (keys[i].startsWith('$')) {
-        // It's assumed that there is at most one variable (i.e., with '$') child node.
-        return keys[i];
+  static getVariableNodeName(node) {
+    if (ChainUtil.isDict(node)) {
+      const keys = Object.keys(node);
+      for (let i = 0; i < keys.length; i++) {
+        if (keys[i].startsWith('$')) {
+          // It's assumed that there is at most one variable (i.e., with '$') child node.
+          return keys[i];
+        }
       }
     }
     return null;
+  }
+
+  static hasFunctionConfig(funcNode) {
+    return funcNode && funcNode[FunctionProperties.FUNCTION] !== undefined;
+  }
+
+  static getFunctionConfig(funcNode) {
+    return DB.hasFunctionConfig(funcNode) ? funcNode[FunctionProperties.FUNCTION] : null;
+  }
+
+  // Does a DFS search to find most specific nodes matched in the function tree.
+  matchFunctionPathRecursive(parsedValuePath, depth, curFuncNode) {
+    // Maximum depth reached.
+    if (depth === parsedValuePath.length) {
+      return {
+        matchedValuePath: [],
+        matchedFunctionPath: [],
+        pathVars: {},
+        matchedFunctionNode: curFuncNode,
+      };
+    }
+    if (curFuncNode) {
+      // 1) Try to match with non-variable child node.
+      const nextFuncNode = curFuncNode[parsedValuePath[depth]];
+      if (nextFuncNode !== undefined) {
+        const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedFunctionPath.unshift(parsedValuePath[depth]);
+        return matched;
+      }
+      // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
+      //    child node.
+      const varNodeName = DB.getVariableNodeName(curFuncNode);
+      if (varNodeName !== null) {
+        const nextFuncNode = curFuncNode[varNodeName];
+        const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedFunctionPath.unshift(varNodeName);
+        if (matched.pathVars[varNodeName] !== undefined) {
+          // This should not happen!
+          logger.error('Duplicated path variables that should NOT happen!')
+        } else {
+          matched.pathVars[varNodeName] = parsedValuePath[depth];
+        }
+        return matched;
+      }
+    }
+    // No match with child nodes.
+    return {
+      matchedValuePath: [],
+      matchedFunctionPath: [],
+      pathVars: {},
+      matchedFunctionNode: null,
+    };
+  }
+
+  matchFunctionPath(parsedValuePath) {
+    return this.matchFunctionPathRecursive(
+        parsedValuePath, 0, this.dbData[PredefinedDbPaths.FUNCTIONS_ROOT]);
+  }
+
+  getSubtreeFunctionsRecursive(depth, curFuncNode) {
+    const funcs = [];
+    if (depth !== 0 && DB.hasFunctionConfig(curFuncNode)) {
+      funcs.push({
+        path: [],
+        config: DB.getFunctionConfig(curFuncNode),
+      })
+    }
+    const varNodeName = DB.getVariableNodeName(curFuncNode);
+    // 1) Traverse non-variable child nodes.
+    for (const key in curFuncNode) {
+      const nextFuncNode = curFuncNode[key];
+      if (key !== varNodeName && ChainUtil.isDict(nextFuncNode)) {
+        const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
+        subtreeFuncs.forEach((entry) => {
+          entry.path.unshift(key);
+          funcs.push(entry);
+        });
+      }
+    }
+    // 2) Traverse variable child node if available.
+    if (varNodeName !== null) {
+      const nextFuncNode = curFuncNode[varNodeName];
+      const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
+      subtreeFuncs.forEach((entry) => {
+        entry.path.unshift(varNodeName);
+        funcs.push(entry);
+      });
+    }
+    return funcs;
+  }
+
+  getSubtreeFunctions(funcNode) {
+    return this.getSubtreeFunctionsRecursive(0, funcNode);
+  }
+
+  matchFunctionForParsedPath(parsedValuePath) {
+    const matched = this.matchFunctionPath(parsedValuePath);
+    const subtreeFunctions = this.getSubtreeFunctions(matched.matchedFunctionNode);
+    let matchedConfig = null;
+    if (matched.matchedFunctionPath.length === parsedValuePath.length &&
+        DB.hasFunctionConfig(matched.matchedFunctionNode)) {
+      matchedConfig = DB.getFunctionConfig(matched.matchedFunctionNode);
+    }
+    return {
+      matchedValuePath: matched.matchedValuePath,
+      matchedFunctionPath: matched.matchedFunctionPath,
+      pathVars: matched.pathVars,
+      matchedFunction: {
+        path: matched.matchedFunctionPath,
+        config: matchedConfig,
+      },
+      subtreeFunctions,
+    }
+  }
+
+  convertPathAndConfig(pathAndConfig) {
+    return {
+      path: ChainUtil.formatPath(pathAndConfig.path),
+      config: pathAndConfig.config,
+    }
+  }
+
+  convertFunctionMatch(matched) {
+    const subtreeFunctions = matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
+    return {
+      matched_path: {
+        target_path: ChainUtil.formatPath(matched.matchedFunctionPath),
+        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
+        path_vars: matched.pathVars,
+      },
+      matched_config: this.convertPathAndConfig(matched.matchedFunction),
+      subtree_configs: subtreeFunctions,
+    };
   }
 
   static hasRuleConfig(ruleNode) {
@@ -444,37 +584,39 @@ class DB {
         closestConfigDepth: DB.hasRuleConfig(curRuleNode) ? depth : 0,
       };
     }
-    // 1) Try to match with non-variable child node.
-    const nextRuleNode = curRuleNode[parsedValuePath[depth]];
-    if (nextRuleNode !== undefined) {
-      const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
-      matched.matchedValuePath.unshift(parsedValuePath[depth]);
-      matched.matchedRulePath.unshift(parsedValuePath[depth]);
-      if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
-        matched.closestConfigNode = curRuleNode;
-        matched.closestConfigDepth = depth;
+    if (curRuleNode) {
+      // 1) Try to match with non-variable child node.
+      const nextRuleNode = curRuleNode[parsedValuePath[depth]];
+      if (nextRuleNode !== undefined) {
+        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedRulePath.unshift(parsedValuePath[depth]);
+        if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+          matched.closestConfigNode = curRuleNode;
+          matched.closestConfigDepth = depth;
+        }
+        return matched;
       }
-      return matched;
-    }
-    // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
-    //    child node.
-    const varNodeName = DB.getVariableNodeName(curRuleNode);
-    if (varNodeName !== null) {
-      const nextRuleNode = curRuleNode[varNodeName];
-      const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
-      matched.matchedValuePath.unshift(parsedValuePath[depth]);
-      matched.matchedRulePath.unshift(varNodeName);
-      if (matched.pathVars[varNodeName] !== undefined) {
-        // This should not happen!
-        logger.error('Duplicated path variables that should NOT happen!')
-      } else {
-        matched.pathVars[varNodeName] = parsedValuePath[depth];
+      // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
+      //    child node.
+      const varNodeName = DB.getVariableNodeName(curRuleNode);
+      if (varNodeName !== null) {
+        const nextRuleNode = curRuleNode[varNodeName];
+        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+        matched.matchedValuePath.unshift(parsedValuePath[depth]);
+        matched.matchedRulePath.unshift(varNodeName);
+        if (matched.pathVars[varNodeName] !== undefined) {
+          // This should not happen!
+          logger.error('Duplicated path variables that should NOT happen!')
+        } else {
+          matched.pathVars[varNodeName] = parsedValuePath[depth];
+        }
+        if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+          matched.closestConfigNode = curRuleNode;
+          matched.closestConfigDepth = depth;
+        }
+        return matched;
       }
-      if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
-        matched.closestConfigNode = curRuleNode;
-        matched.closestConfigDepth = depth;
-      }
-      return matched;
     }
     // No match with child nodes.
     return {
@@ -543,21 +685,16 @@ class DB {
     }
   }
 
-  convertPathAndConfig(pathAndConfig) {
-    return {
-      path: ChainUtil.formatPath(pathAndConfig.path),
-      config: pathAndConfig.config,
-    }
-  }
-
   convertRuleMatch(matched) {
     const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry));
     return {
-      matched_value_path: ChainUtil.formatPath(matched.matchedValuePath),
-      matched_rule_path: ChainUtil.formatPath(matched.matchedRulePath),
-      path_vars: matched.pathVars,
-      closest_rule: this.convertPathAndConfig(matched.closestRule),
-      subtree_rules: subtreeRules,
+      matched_path: {
+        target_path: ChainUtil.formatPath(matched.matchedRulePath),
+        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
+        path_vars: matched.pathVars,
+      },
+      matched_config: this.convertPathAndConfig(matched.closestRule),
+      subtree_configs: subtreeRules,
     };
   }
 
@@ -576,7 +713,7 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-                    new BuiltInRuleUtil(), ...Object.values(pathVars));
+                    new RuleUtil(), ...Object.values(pathVars));
   }
 
   static hasOwnerConfig(ownerNode) {
@@ -596,14 +733,16 @@ class DB {
         closestConfigDepth: DB.hasOwnerConfig(curOwnerNode) ? depth : 0,
       };
     }
-    const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
-    if (nextOwnerNode !== undefined) {
-      const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
-      if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
-        matched.closestConfigNode = curOwnerNode;
-        matched.closestConfigDepth = depth;
+    if (curOwnerNode) {
+      const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
+      if (nextOwnerNode !== undefined) {
+        const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
+        if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
+          matched.closestConfigNode = curOwnerNode;
+          matched.closestConfigDepth = depth;
+        }
+        return matched;
       }
-      return matched;
     }
     // No match with child nodes.
     return {
@@ -631,8 +770,10 @@ class DB {
 
   convertOwnerMatch(matched) {
     return {
-      matched_owner_path: ChainUtil.formatPath(matched.matchedOwnerPath),
-      closest_owner: this.convertPathAndConfig(matched.closestOwner),
+      matched_path: {
+        target_path: ChainUtil.formatPath(matched.matchedOwnerPath),
+      },
+      matched_config: this.convertPathAndConfig(matched.closestOwner),
     };
   }
 

@@ -198,6 +198,11 @@ module.exports = function getMethods(
       }
     },
 
+    ain_matchFunction: function(args, done) {
+      const result = p2pServer.node.db.matchFunction(args.ref);
+      done(null, addProtocolVersion({ result }));
+    },
+
     ain_matchRule: function(args, done) {
       const result = p2pServer.node.db.matchRule(args.ref);
       done(null, addProtocolVersion({ result }));

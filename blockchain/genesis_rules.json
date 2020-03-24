@@ -16,8 +16,8 @@
       ".write": "(newData && util.isDict(newData) && util.length(newData) < 20) && (getValue('/consensus/voting/pre_commits') > getValue('/consensus/voting/threshold')) && (getValue('/consensus/voting/proposer') === auth)"
     },
     "stakes": {
-      "$uid": {
-        ".write": "auth === $uid"
+      "$user_addr": {
+        ".write": "auth === $user_addr"
       }
     },
     "voting": {
@@ -37,11 +37,11 @@
     }
   },
   "deposit": {
-    "$service_id": {
-      "$uid": {
+    "$service": {
+      "$user_addr": {
         "$deposit_id": {
           "value": {
-            ".write": "auth === $uid && !getValue('/deposit/' + $service_id + '/' + $uid + '/' + $deposit_id) && (util.length($uid) !== 42 || util.isCksumAddr($uid)) && util.isNumber(newData) && getValue('/accounts/' + $uid + '/balance') >= newData"
+            ".write": "auth === $user_addr && !getValue('/deposit/' + $service + '/' + $user_addr + '/' + $deposit_id) && (util.length($user_addr) !== 42 || util.isCksumAddr($user_addr)) && util.isNumber(newData) && getValue('/accounts/' + $user_addr + '/balance') >= newData"
           },
           "createdAt": {
             ".write": false
@@ -52,11 +52,11 @@
   },
   "deposit_accounts": {
     ".write": false,
-    "$service_id": {
+    "$service": {
       "config": {
-        ".write": "!getValue('/deposit_accounts/' + $service_id) || (getOwner('/deposit_accounts/' + $service_id) && getOwner('/deposit_accounts/' + $service_id).owners && getOwner('/deposit_accounts/' + $service_id).owners[auth])"
+        ".write": "!getValue('/deposit_accounts/' + $service) || (getOwner('/deposit_accounts/' + $service) && getOwner('/deposit_accounts/' + $service).owners && getOwner('/deposit_accounts/' + $service).owners[auth])"
       },
-      "$uid": {
+      "$user_addr": {
         ".write": false
       }
     },
@@ -78,11 +78,11 @@
     }
   },
   "withdraw":{
-    "$service_id": {
-      "$uid": {
+    "$service": {
+      "$user_addr": {
         "$withdraw_id": {
           "value": {
-            ".write": "auth === $uid && !getValue('/withdraw/' + $service_id + '/' + $uid + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service_id + '/' + $uid + '/value') >= newData"
+            ".write": "auth === $user_addr && !getValue('/withdraw/' + $service + '/' + $user_addr + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service + '/' + $user_addr + '/value') >= newData"
           },
           "createdAt": {
             ".write": false

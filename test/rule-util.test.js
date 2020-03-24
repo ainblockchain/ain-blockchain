@@ -1,10 +1,10 @@
-const BuiltInRuleUtil = require('../db/built-in-rule-util');
+const RuleUtil = require('../db/rule-util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
-describe("BuiltInRuleUtil", () => {
-  const util = new BuiltInRuleUtil;
+describe("RuleUtil", () => {
+  const util = new RuleUtil;
 
   describe("isNumber", () => {
     it("when invalid input", () => {

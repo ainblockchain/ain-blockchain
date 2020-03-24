@@ -13,6 +13,11 @@ const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
   dbPath: process.env.ADDITIONAL_RULES.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_RULES.split(':')[1])
 } : null;
+const GENESIS_FUNCTIONS = path.resolve(__dirname, 'blockchain/genesis_functions.json');
+const ADDITIONAL_FUNCTIONS = process.env.ADDITIONAL_FUNCTIONS ? {
+  dbPath: process.env.ADDITIONAL_FUNCTIONS.split(':')[0],
+  filePath: path.resolve(__dirname, process.env.ADDITIONAL_FUNCTIONS.split(':')[1])
+} : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
@@ -152,7 +157,30 @@ const RuleProperties = {
  * @enum {string}
  */
 const FunctionProperties = {
+  EVENT_LISTENER: 'event_listener',
   FUNCTION: '.function',
+  FUNCTION_ID: 'function_id',
+  FUNCTION_TYPE: 'function_type',
+  SERVICE_NAME: 'service_name',
+};
+
+/**
+ * Types of functions
+ * @enum {string}
+ */
+const FunctionTypes = {
+  NATIVE: 'NATIVE',
+  REST: 'REST',
+};
+
+/**
+ * IDs of native functions
+ * @enum {string}
+ */
+const NativeFunctionIds = {
+  DEPOSIT: '_deposit',
+  TRANSFER: '_transfer',
+  WITHDRAW: '_withdraw',
 };
 
 /**
@@ -161,9 +189,10 @@ const FunctionProperties = {
  */
 const ReadDbOperations = {
   GET_VALUE: 'GET_VALUE',
-  GET_RULE: 'GET_RULE',
   GET_FUNCTION: 'GET_FUNCTION',
+  GET_RULE: 'GET_RULE',
   GET_OWNER: 'GET_OWNER',
+  MATCH_FUNCTION: 'MATCH_FUNCTION',
   MATCH_RULE: 'MATCH_RULE',
   MATCH_OWNER: 'MATCH_OWNER',
   EVAL_RULE: 'EVAL_RULE',
@@ -179,8 +208,8 @@ const WriteDbOperations = {
   SET_VALUE: 'SET_VALUE',
   INC_VALUE: 'INC_VALUE',
   DEC_VALUE: 'DEC_VALUE',
-  SET_RULE: 'SET_RULE',
   SET_FUNCTION: 'SET_FUNCTION',
+  SET_RULE: 'SET_RULE',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
 };
@@ -223,6 +252,8 @@ module.exports = {
   ADDITIONAL_OWNERS,
   GENESIS_RULES,
   ADDITIONAL_RULES,
+  GENESIS_FUNCTIONS,
+  ADDITIONAL_FUNCTIONS,
   BLOCKCHAINS_DIR,
   PROTOCOL_VERSIONS,
   STAKE,
@@ -243,9 +274,11 @@ module.exports = {
   OwnerProperties,
   RuleProperties,
   FunctionProperties,
+  FunctionTypes,
+  FunctionResultCode,
+  NativeFunctionIds,
   ReadDbOperations,
   WriteDbOperations,
-  FunctionResultCode,
   TransactionStatus,
   DefaultValues,
   GenesisToken,

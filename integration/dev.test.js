@@ -132,15 +132,15 @@ describe('API Tests', () => {
         value: {}
       }
     });
-    syncRequest('POST', server2 + '/set_function', {
-      json: {
-        ref: '/test/test_function/some/path',
-        value: {}
-      }
-    });
     syncRequest('POST', server2 + '/set_rule', {
       json: {
         ref: '/test/test_rule/some/path',
+        value: {}
+      }
+    });
+    syncRequest('POST', server2 + '/set_function', {
+      json: {
+        ref: '/test/test_function/some/path',
         value: {}
       }
     });
@@ -161,21 +161,6 @@ describe('API Tests', () => {
     })
   })
 
-  describe('/get_rule', () => {
-    it('get_rule', () => {
-      sleep(200)
-      const body =
-          JSON.parse(syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
-            .body.toString('utf-8'));
-      assert.deepEqual(body, {
-        code: 0,
-        result: {
-          ".write": "auth === 'abcd'"
-        }
-      });
-    })
-  })
-
   describe('/get_function', () => {
     it('get_function', () => {
       sleep(200)
@@ -186,6 +171,21 @@ describe('API Tests', () => {
         code: 0,
         result: {
           ".function": "some function config"
+        }
+      });
+    })
+  })
+
+  describe('/get_rule', () => {
+    it('get_rule', () => {
+      sleep(200)
+      const body =
+          JSON.parse(syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
+            .body.toString('utf-8'));
+      assert.deepEqual(body, {
+        code: 0,
+        result: {
+          ".write": "auth === 'abcd'"
         }
       });
     })
@@ -215,6 +215,48 @@ describe('API Tests', () => {
     })
   })
 
+  describe('/match_function', () => {
+    let client;
+    before(() => {
+      client = jayson.client.http(server1 + '/json-rpc');
+    })
+
+    it('match_function', () => {
+      sleep(200)
+      const ref = "/test/test_function/some/path";
+      const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+      const body = JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
+        .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: {
+        "matched_path": {
+          "target_path": "/test/test_function/some/path",
+          "ref_path": "/test/test_function/some/path",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": "some function config",
+          "path": "/test/test_function/some/path"
+        },
+        "subtree_configs": []
+      }});
+      return client.request('ain_matchFunction', request)
+      .then(res => {
+        assert.deepEqual(res.result.result, {
+          "matched_path": {
+            "target_path": "/test/test_function/some/path",
+            "ref_path": "/test/test_function/some/path",
+            "path_vars": {},
+          },
+          "matched_config": {
+            "config": "some function config",
+            "path": "/test/test_function/some/path"
+          },
+          "subtree_configs": []
+        });
+      })
+    })
+  })
+
   describe('/match_rule', () => {
     let client;
     before(() => {
@@ -228,26 +270,30 @@ describe('API Tests', () => {
       const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: {
-        "closest_rule": {
+        "matched_path": {
+          "target_path": "/test/test_rule/some/path",
+          "ref_path": "/test/test_rule/some/path",
+          "path_vars": {},
+        },
+        "matched_config": {
           "config": "auth === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
-        "matched_rule_path": "/test/test_rule/some/path",
-        "matched_value_path": "/test/test_rule/some/path",
-        "path_vars": {},
-        "subtree_rules": []
+        "subtree_configs": []
       }});
       return client.request('ain_matchRule', request)
       .then(res => {
         assert.deepEqual(res.result.result, {
-          "closest_rule": {
+          "matched_path": {
+            "target_path": "/test/test_rule/some/path",
+            "ref_path": "/test/test_rule/some/path",
+            "path_vars": {},
+          },
+          "matched_config": {
             "config": "auth === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
-          "matched_rule_path": "/test/test_rule/some/path",
-          "matched_value_path": "/test/test_rule/some/path",
-          "path_vars": {},
-          "subtree_rules": []
+          "subtree_configs": []
         });
       })
     })
@@ -266,7 +312,10 @@ describe('API Tests', () => {
       const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: {
-        "closest_owner": {
+        "matched_path": {
+          "target_path": "/test/test_owner/some/path"
+        },
+        "matched_config": {
           "config": {
             "owners": {
               "*": {
@@ -278,13 +327,15 @@ describe('API Tests', () => {
             }
           },
           "path": "/test/test_owner/some/path"
-        },
-        "matched_owner_path": "/test/test_owner/some/path"
+        }
       }});
       return client.request('ain_matchOwner', request)
       .then(res => {
         assert.deepEqual(res.result.result, {
-          "closest_owner": {
+          "matched_path": {
+            "target_path": "/test/test_owner/some/path"
+          },
+          "matched_config": {
             "config": {
               "owners": {
                 "*": {
@@ -296,8 +347,7 @@ describe('API Tests', () => {
               }
             },
             "path": "/test/test_owner/some/path"
-          },
-          "matched_owner_path": "/test/test_owner/some/path"
+          }
         });
       })
     })
@@ -371,12 +421,12 @@ describe('API Tests', () => {
             ref: "/test/test",
           },
           {
-            type: 'GET_RULE',
-            ref: "/test/test_rule/some/path",
-          },
-          {
             type: 'GET_FUNCTION',
             ref: "/test/test_function/some/path",
+          },
+          {
+            type: 'GET_RULE',
+            ref: "/test/test_rule/some/path",
           },
           {
             type: 'GET_OWNER',
@@ -403,10 +453,10 @@ describe('API Tests', () => {
         result: [
           100,
           {
-            ".write": "auth === 'abcd'"
+            ".function": "some function config"
           },
           {
-            ".function": "some function config"
+            ".write": "auth === 'abcd'"
           },
           {
             ".owner": {
@@ -456,21 +506,6 @@ describe('API Tests', () => {
     })
   })
 
-  describe('/set_rule', () => {
-    it('set_rule', () => {
-      sleep(200)
-      const request = {
-        ref: "/test/test_rule/other/path",
-        value: {
-          ".write": "some other rule config"
-        }
-      };
-      const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
-        .body.toString('utf-8'));
-      assert.deepEqual(body, {code: 0, result: true});
-    })
-  })
-
   describe('/set_function', () => {
     it('set_function', () => {
       sleep(200)
@@ -481,6 +516,21 @@ describe('API Tests', () => {
         }
       };
       const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
+        .body.toString('utf-8'));
+      assert.deepEqual(body, {code: 0, result: true});
+    })
+  })
+
+  describe('/set_rule', () => {
+    it('set_rule', () => {
+      sleep(200)
+      const request = {
+        ref: "/test/test_rule/other/path",
+        value: {
+          ".write": "some other rule config"
+        }
+      };
+      const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
         .body.toString('utf-8'));
       assert.deepEqual(body, {code: 0, result: true});
     })
@@ -521,17 +571,17 @@ describe('API Tests', () => {
             value: 10
           },
           {
-            type: 'SET_RULE',
-            ref: "/test/test_rule/other2/path",
-            value: {
-              ".write": "some other2 rule config"
-            }
-          },
-          {
             type: 'SET_FUNCTION',
             ref: "/test/test_function/other2/path",
             value: {
               ".function": "some other2 function config"
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: "/test/test_rule/other2/path",
+            value: {
+              ".write": "some other2 rule config"
             }
           },
           {
@@ -576,19 +626,19 @@ describe('API Tests', () => {
           },
           {
             operation: {
-              type: 'SET_RULE',
-              ref: "/test/test_rule/other3/path",
+              type: 'SET_FUNCTION',
+              ref: "/test/test_function/other3/path",
               value: {
-                ".write": "some other3 rule config"
+                ".function": "some other3 function config"
               }
             }
           },
           {
             operation: {
-              type: 'SET_FUNCTION',
-              ref: "/test/test_function/other3/path",
+              type: 'SET_RULE',
+              ref: "/test/test_rule/other3/path",
               value: {
-                ".function": "some other3 function config"
+                ".write": "some other3 rule config"
               }
             }
           },
@@ -624,17 +674,17 @@ describe('API Tests', () => {
                   value: 5
                 },
                 {
-                  type: 'SET_RULE',
-                  ref: "/test/test_rule/other4/path",
-                  value: {
-                    ".write": "some other4 rule config"
-                  }
-                },
-                {
                   type: 'SET_FUNCTION',
                   ref: "/test/test_function/other4/path",
                   value: {
                     ".function": "some other4 function config"
+                  }
+                },
+                {
+                  type: 'SET_RULE',
+                  ref: "/test/test_rule/other4/path",
+                  value: {
+                    ".write": "some other4 rule config"
                   }
                 },
                 {
