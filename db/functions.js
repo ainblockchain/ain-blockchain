@@ -28,14 +28,14 @@ class Functions {
    * Runs functions of function paths matched with given database path.
    *
    * @param {Array} parsedValuePath parsed value path
-   * @param {*} value value set on the database path
+   * @param {Object} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
    * @param {Number} currentTime current time
-   * @param {Number} context context
+   * @param {Object} transaction transaction
    */
   // TODO(seo): Support multiple-functions per path.
   // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, timestamp, currentTime, context) {
+  triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionConfig = matched.matchedFunction.config;
     if (functionConfig) {
@@ -55,9 +55,9 @@ class Functions {
           logger.info(
             `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
             `of '${functionConfig.event_listener}' ` +
-            `with transaction: ${JSON.stringify(context.transaction, null, 2)}`)
+            `with transaction: ${JSON.stringify(transaction, null, 2)}`)
           return axios.post(functionConfig.event_listener, {
-            transaction: context.transaction,
+            transaction,
             function: functionConfig
           });
         }

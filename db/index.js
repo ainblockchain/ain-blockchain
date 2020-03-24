@@ -146,7 +146,7 @@ class DB {
   //            the former if the latter fails.
   // TODO(seo): Consider adding array to object transforming (see
   //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
-  setValue(valuePath, value, address, timestamp, context) {
+  setValue(valuePath, value, address, timestamp, transaction) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
       return {code: 2, error_message: 'No .write permission on: ' + valuePath};
@@ -154,11 +154,11 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
-    this.func.triggerFunctions(parsedPath, valueCopy, timestamp, Date.now(), context);
+    this.func.triggerFunctions(parsedPath, valueCopy, timestamp, Date.now(), transaction);
     return true;
   }
 
-  incValue(valuePath, delta, address, timestamp, context) {
+  incValue(valuePath, delta, address, timestamp, transaction) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -167,10 +167,10 @@ class DB {
       return {code: 1, error_message: 'Not a number type: ' + valuePath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, context);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
   }
 
-  decValue(valuePath, delta, address, timestamp, context) {
+  decValue(valuePath, delta, address, timestamp, transaction) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -179,7 +179,7 @@ class DB {
       return {code: 1, error_message: 'Not a number type: ' + valuePath};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, context);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
   }
 
   setFunction(functionPath, functionInfo, address) {
@@ -222,22 +222,22 @@ class DB {
   }
 
   // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
-  set(opList, address, timestamp, context) {
+  set(opList, address, timestamp, transaction) {
     let ret = true;
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, address, timestamp, context);
+        ret = this.setValue(op.ref, op.value, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, address, timestamp, context);
+        ret = this.incValue(op.ref, op.value, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, address, timestamp, context);
+        ret = this.decValue(op.ref, op.value, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
@@ -282,8 +282,7 @@ class DB {
           case WriteDbOperations.SET_RULE:
           case WriteDbOperations.SET_OWNER:
           case WriteDbOperations.SET:
-            const context = { transaction: tx };
-            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, context));
+            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
             break;
           default:
             const message = `Invalid operation type: ${operation.type}`;
@@ -337,18 +336,18 @@ class DB {
     this.dbData = JSON.parse(JSON.stringify(snapshot.dbData));
   }
 
-  executeOperation(operation, address, timestamp, context) {
+  executeOperation(operation, address, timestamp, transaction) {
     if (!operation) {
       return null;
     }
     switch (operation.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(operation.ref, operation.value, address, timestamp, context);
+        return this.setValue(operation.ref, operation.value, address, timestamp, transaction);
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(operation.ref, operation.value, address, timestamp, context);
+        return this.incValue(operation.ref, operation.value, address, timestamp, transaction);
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(operation.ref, operation.value, address, timestamp, context);
+        return this.decValue(operation.ref, operation.value, address, timestamp, transaction);
       case WriteDbOperations.SET_FUNCTION:
         return this.setFunction(operation.ref, operation.value, address);
       case WriteDbOperations.SET_RULE:
@@ -356,7 +355,7 @@ class DB {
       case WriteDbOperations.SET_OWNER:
         return this.setOwner(operation.ref, operation.value, address);
       case WriteDbOperations.SET:
-        return this.set(operation.op_list, address, timestamp, context);
+        return this.set(operation.op_list, address, timestamp, transaction);
     }
   }
 
@@ -364,8 +363,7 @@ class DB {
     if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
-    const context = { transaction: tx };
-    return this.executeOperation(tx.operation, tx.address, tx.timestamp, context);
+    return this.executeOperation(tx.operation, tx.address, tx.timestamp, tx);
   }
 
   executeTransactionList(txList) {
