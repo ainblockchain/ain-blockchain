@@ -8,13 +8,16 @@ const MAX_RECENT_PROPOSERS = 20;
 class VotingUtil {
   constructor(node) {
     this.node = node;
+    this.status = null;
+    this.statusChangedBlockNumber = null;
+    this.setter = '';
     this.setStatus(VotingStatus.START_UP);
     this.block = null;
     this.lastVotes = [];
     this.votes = [];
   }
 
-  setStatus(status, setter = "") {
+  setStatus(status, setter = '') {
     this.status = status;
     this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
     this.setter = setter;

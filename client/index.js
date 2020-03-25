@@ -8,7 +8,7 @@ const jayson = require('jayson');
 const logger = require('../logger');
 const Node = require('../node');
 const P2pServer = require('../server');
-const { PORT, PROTOCOL_VERSIONS, WriteDbOperations } = require('../constants');
+const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, VotingStatus } = require('../constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
@@ -40,9 +40,12 @@ const jsonRpcMethods = require('../json_rpc')(
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
+  const votingStatus = p2pServer.votingUtil.status;
+  const message = (votingStatus && votingStatus != VotingStatus.START_UP) ?
+      'Welcome to AIN Blockchain Node' : 'AIN Blockchain Node is NOT ready yet';
   res.status(200)
     .set('Content-Type', 'text/plain')
-    .send('Welcome to AIN Blockchain Node')
+    .send(message)
     .end();
 });
 
