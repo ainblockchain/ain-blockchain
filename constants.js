@@ -50,39 +50,14 @@ const MessageTypes = {
   TRANSACTION: 'transaction',
   CHAIN_SUBSECTION: 'chain_subsection',
   CHAIN_SUBSECTION_REQUEST: 'chain_subsection_request',
-  VOTING: 'voting',
-};
-
-/**
- * Voting types which can trigger
- * @enum {string}
- */
-const VotingActionTypes = {
-  NEW_VOTING: 'new_voting',
-  PROPOSED_BLOCK: 'proposed_block',
-  PRE_VOTE: 'pre_vote',
-  PRE_COMMIT: 'pre_commit',
-};
-
-/**
- * Vote states that nodes can be in when reaching consensus on blocks
- * @enum {string}
- */
-const VotingStatus = {
-  WAIT_FOR_BLOCK: 'wait_for_block',
-  BLOCK_RECEIVED: 'block_received',
-  PRE_VOTE: 'pre_vote',
-  PRE_COMMIT: 'pre_commit',
-  COMMITTED: 'committed',
-  SYNCING: 'syncing',
-  START_UP: 'start_up',
+  CONSENSUS: 'consensus'
 };
 
 /**
  * Predefined database paths
  * @enum {string}
  */
- // TODO (lia): Pick one convention: full-paths (e.g. /consensus/voting) or keys (e.g. token)
+ // TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -90,17 +65,7 @@ const PredefinedDbPaths = {
   FUNCTIONS_ROOT: 'functions',
   VALUES_ROOT: 'values',
   // Consensus
-  RECENT_PROPOSERS: '/consensus/recent_proposers',
-  VOTING_ROUND: '/consensus/voting',
-  VOTING_ROUND_VALIDATORS: '/consensus/voting/validators',
-  VOTING_ROUND_PROPOSER: '/consensus/voting/proposer',
-  VOTING_ROUND_PRE_COMMITS: '/consensus/voting/pre_commits',
-  VOTING_ROUND_PRE_VOTES: '/consensus/voting/pre_votes',
-  VOTING_ROUND_THRESHOLD: '/consensus/voting/threshold',
-  VOTING_ROUND_NUMBER: '/consensus/voting/number',
-  STAKEHOLDER: '/consensus/stakes',
-  VOTING_ROUND_BLOCK_HASH: '/consensus/voting/block_hash',
-  VOTING_NEXT_ROUND_VALIDATORS: '/consensus/voting/next_round_validators',
+  CONSENSUS: 'consensus',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -268,8 +233,6 @@ module.exports = {
   P2P_PORT,
   TRACKER_WS_ADDR,
   MessageTypes,
-  VotingStatus,
-  VotingActionTypes,
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
