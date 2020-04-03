@@ -9,6 +9,13 @@ const ConsensusMessageTypes = {
   PROPOSE: 'propose',
 };
 
+const ConsensusStatus = {
+  STARTING: 0,
+  INITIALIZED: 1,
+  RUNNING: 2,
+  STOPPED: 3
+}
+
 class Ref {
   base() {
     return '/consensus/number';
@@ -42,5 +49,6 @@ class Ref {
 module.exports = {
   ConsensusMessageTypes,
   ConsensusConsts,
+  ConsensusStatus,
   ConsensusRef: new Ref(),
 }
