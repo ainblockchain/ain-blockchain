@@ -9,10 +9,10 @@ const disk = require('diskusage');
 const os = require('os');
 const logger = require('../logger');
 const Consensus = require('../consensus');
-const { MessageTypes } = require('../constants');
+const { ConsensusStatus } = require('../consensus/constants');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
-const { DEBUG, P2P_PORT, TRACKER_WS_ADDR, HOSTING_ENV } = require('../constants');
+const { DEBUG, P2P_PORT, TRACKER_WS_ADDR, HOSTING_ENV, MessageTypes } = require('../constants');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -240,8 +240,8 @@ class P2pServer {
         switch (data.type) {
           case MessageTypes.CONSENSUS:
             logger.debug(`Receiving a consensus message: ${JSON.stringify(data.message)}`);
-            if (this.node.bc.syncedAfterStartup && this.consensus.initialized) {
-              this.consensus.ee.emit('msg', data.message);
+            if (this.node.bc.syncedAfterStartup) {
+              this.consensus.handleConsensusMessage(data.message);
             } else {
               logger.info(`\nNeeds syncing...\n`);
             }
@@ -274,14 +274,14 @@ class P2pServer {
                   logger.info(`Node is now synced!`);
                   this.node.bc.syncedAfterStartup = true;
                 }
-                if (!this.consensus.initialized) {
+                if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init();
                 }
               } else {
                 // There's more blocks to receive
                 logger.debug(`Wait, there's more...`);
               }
-              if (this.consensus.initialized) {
+              if (this.consensus.status === ConsensusStatus.INITIALIZED || this.consensus.status === ConsensusStatus.RUNNING) {
                 this.consensus.updateToState();
               }
               // Continuously request the blockchain in subsections until
@@ -290,7 +290,7 @@ class P2pServer {
             } else {
               // XXX: Could be that I'm on a wrong chain.
               // TODO(lia): Detect a fork and choose the longest chain?
-              logger.info(`\nFailed to merge incoming chain subsection.\nMy consensus state:` + JSON.stringify(this.consensus.state, null, 2));
+              logger.info("Failed to merge incoming chain subsection.");
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION_REQUEST:

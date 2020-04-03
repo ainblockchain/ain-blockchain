@@ -1,19 +1,19 @@
-const EventEmitter = require('events');
 const seedrandom = require('seedrandom');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const { Block } = require('../blockchain/block');
 const ChainUtil = require('../chain-util');
 const PushId = require('../db/push-id');
-const { MessageTypes, STAKE, WriteDbOperations, PredefinedDbPaths} = require('../constants');
-const { ConsensusMessageTypes, ConsensusConsts, ConsensusRef } = require('./constants');
+const { MessageTypes, STAKE, WriteDbOperations, PredefinedDbPaths}
+  = require('../constants');
+const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusRef }
+  = require('./constants');
 
 class Consensus {
   constructor(server, node) {
     this.server = server;
     this.node = node;
-    this.initialized = false;
-    this.ee = new EventEmitter();
+    this.status = ConsensusStatus.STARTING;
     this.timeoutId = null;
     this.timeoutInfo = null;
     this.state = {
@@ -26,6 +26,7 @@ class Consensus {
   init() {
     let currentStake;
     this.state.number = this.node.bc.lastBlockNumber() + 1;
+    this.status = ConsensusStatus.INITIALIZED;
     if (this.state.number === 1) {
       logger.debug("[Consensus:init] this.state.number = 1");
       currentStake = this.getValidConsensusDeposit(this.node.account.address);
@@ -39,31 +40,20 @@ class Consensus {
         this.stake(STAKE);
       } else {
         logger.info(`[Consensus:init] Exiting consensus initialization: Node doesn't have any stakes`);
-        this.initialized = true;
         return;
       }
     }
     this.start();
-    this.initialized = true;
     logger.info(`[Consensus:init] Initialized to number ${this.state.number} and round ${this.state.round}`);
   }
 
   start() {
-    this.ee.on('msg', (msg) => {
-      this.handleConsensusMessage(msg);
-    });
-
-    this.ee.on('quit', () => {
-      this.stop();
-    });
-
+    this.status = ConsensusStatus.RUNNING;
     this.updateToState();
   }
 
   stop() {
-    this.ee.off('msg');
-    this.ee.off('quit');
-    
+    this.status = ConsensusStatus.STOPPED;
     if (this.timeoutInfo) {
       clearTimeout(this.timeoutInfo);
       this.timeoutInfo = null;
@@ -103,6 +93,9 @@ class Consensus {
 
   // Currently the only type of consensus messages is proposal: { value: Block, type = 'PROPOSE' }
   handleConsensusMessage(msg) {
+    if (this.status !== ConsensusStatus.RUNNING) {
+      return;
+    }
     if (msg.type !== ConsensusMessageTypes.PROPOSE) {
       logger.error(`[Consensus:handleConsensusMessage] Invalid message type: ${msg.type}`);
       return;
@@ -147,7 +140,7 @@ class Consensus {
   tryToPropose() {
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
       logger.debug(`[Consensus:tryToPropose] I'm the proposer`);
-      this.ee.emit('msg', { value: this.createProposalBlock(), type: ConsensusMessageTypes.PROPOSE });
+      this.handleConsensusMessage({ value: this.createProposalBlock(), type: ConsensusMessageTypes.PROPOSE });
     } else {
       logger.debug(`[Consensus:tryToPropose] Not my turn`);
     }
