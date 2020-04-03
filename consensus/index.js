@@ -4,7 +4,7 @@ const logger = require('../logger');
 const { Block } = require('../blockchain/block');
 const ChainUtil = require('../chain-util');
 const PushId = require('../db/push-id');
-const { MessageTypes, STAKE, WriteDbOperations, PredefinedDbPaths}
+const { MessageTypes, STAKE, WriteDbOperations, PredefinedDbPaths }
   = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusRef }
   = require('./constants');
