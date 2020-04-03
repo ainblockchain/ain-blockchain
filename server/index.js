@@ -16,7 +16,6 @@ const { DEBUG, P2P_PORT, TRACKER_WS_ADDR, HOSTING_ENV, MessageTypes } = require(
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const BLOCK_CREATION_INTERVAL_MS = 6000;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
