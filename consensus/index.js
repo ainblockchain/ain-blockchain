@@ -184,7 +184,7 @@ class Consensus {
             proposeTx,
             {
               type: WriteDbOperations.SET_VALUE,
-              ref: ConsensusRef.propose(blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB),
+              ref: ConsensusRef.baseForNumber(blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB),
               value: null
             }
           ]
