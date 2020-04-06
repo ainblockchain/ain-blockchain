@@ -287,7 +287,7 @@ class P2pServer {
               // your local blockchain matches the height of the consensus blockchain.
               this.requestChainSubsection(this.node.bc.lastBlock());
             } else {
-              // XXX: Could be that I'm on a wrong chain.
+              // FIXME: Could be that I'm on a wrong chain.
               // TODO(lia): Detect a fork and choose the longest chain?
               logger.info("Failed to merge incoming chain subsection.");
             }

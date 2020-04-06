@@ -255,7 +255,7 @@ module.exports = function getMethods(
 
     ain_isValidator: function(args, done) {
       // TODO (lia): update this function after revamping consensus staking
-      // XXX: may need to deprecate or modify this logic for the new consensus
+      // FIXME: may need to deprecate or modify this logic for the new consensus
       const deposit = p2pServer.node.db.getValue(
           `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
       const stakeValid = deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;

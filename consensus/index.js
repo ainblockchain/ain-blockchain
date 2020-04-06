@@ -61,7 +61,7 @@ class Consensus {
       clearTimeout(this.timeoutInfo);
       this.timeoutInfo = null;
     }
-    // XXX: reset consensus state?
+    // FIXME: reset consensus state?
   }
 
   updateToState() {
@@ -247,7 +247,7 @@ class Consensus {
   }
 
   getValidatorsAtNumber(number) {
-    // XXX: Is there a better way?
+    // FIXME: Is there a better way?
     if (number === 1) {
       return STAKE > 0 ? { [this.node.account.address]:  STAKE } : {};
     }
