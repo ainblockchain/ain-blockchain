@@ -27,24 +27,27 @@ class Consensus {
     let currentStake;
     this.state.number = this.node.bc.lastBlockNumber() + 1;
     this.status = ConsensusStatus.INITIALIZED;
-    if (this.state.number === 1) {
-      logger.debug("[Consensus:init] this.state.number = 1");
-      currentStake = this.getValidConsensusDeposit(this.node.account.address);
-    } else {
-      logger.debug("[Consensus:init] this.state.number = " + this.state.number);
-      currentStake = this.getStakeAtNumber(this.state.number, this.node.account.address);
-    }
-    logger.info("[Consensus:init] Current stake: " + currentStake);
-    if (!currentStake) {
-      if (STAKE && STAKE > 0) {
-        this.stake(STAKE);
+    try {
+      if (this.state.number === 1) {
+        logger.debug("[Consensus:init] this.state.number = 1");
+        currentStake = this.getValidConsensusDeposit(this.node.account.address);
       } else {
-        logger.info(`[Consensus:init] Exiting consensus initialization: Node doesn't have any stakes`);
-        return;
+        logger.debug("[Consensus:init] this.state.number = " + this.state.number);
+        currentStake = this.getStakeAtNumber(this.state.number, this.node.account.address);
       }
+      logger.info("[Consensus:init] Current stake: " + currentStake);
+      if (!currentStake) {
+        if (STAKE && STAKE > 0) {
+          this.stake(STAKE);
+        } else {
+          logger.info(`[Consensus:init] Exiting consensus initialization: Node doesn't have any stakes`);
+        }
+      }
+      this.start();
+      logger.info(`[Consensus:init] Initialized to number ${this.state.number} and round ${this.state.round}`);
+    } catch(e) {
+      this.status = ConsensusStatus.STARTING;
     }
-    this.start();
-    logger.info(`[Consensus:init] Initialized to number ${this.state.number} and round ${this.state.round}`);
   }
 
   start() {
@@ -73,7 +76,7 @@ class Consensus {
     this.state.proposer = this.selectProposer();
     // To avoid call stack exceeded errors
     setTimeout(() => {
-      this.tryToPropose();
+      this.tryPropose();
     }, ConsensusConsts.TRANSITION_TIMEOUT_MS);
   }
 
@@ -88,7 +91,7 @@ class Consensus {
     this.state.round += 1;
     this.state.proposer = this.selectProposer();
     logger.info(`[Consensus:handleTimeout] Changed: ${number}/${this.state.round}/${this.state.proposer}`);
-    this.tryToPropose();
+    this.tryPropose();
   }
 
   // Currently the only type of consensus messages is proposal: { value: Block, type = 'PROPOSE' }
@@ -137,21 +140,22 @@ class Consensus {
     }, durationMs);
   }
 
-  tryToPropose() {
+  tryPropose() {
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
-      logger.debug(`[Consensus:tryToPropose] I'm the proposer`);
+      logger.debug(`[Consensus:tryPropose] I'm the proposer`);
       this.handleConsensusMessage({ value: this.createProposalBlock(), type: ConsensusMessageTypes.PROPOSE });
     } else {
-      logger.debug(`[Consensus:tryToPropose] Not my turn`);
+      logger.debug(`[Consensus:tryPropose] Not my turn`);
     }
     this.scheduleTimeout({ number: this.state.number, round: this.state.round }, ConsensusConsts.PROPOSAL_TIMEOUT_MS);
   }
 
   createProposalBlock() {
-    const blockNumber = this.state.number; // Should be equal to lastBlockNumber + 1
+    const lastBlock = this.node.bc.lastBlock();
+    const blockNumber = this.state.number; // Should be equal to lastBlock.number + 1
     const transactions = this.node.tp.getValidTransactions();
     const proposer = this.node.account.address;
-    const validators = this.getValidatorsAtNumber(blockNumber);
+    const validators = this.getValidatorsVotedFor(lastBlock.number, lastBlock.hash);
     if (blockNumber === 1) {
       validators[proposer] = this.getValidConsensusDeposit(proposer);
     }
@@ -159,19 +163,34 @@ class Consensus {
     // This should be part of the proposals, but to reduce complexity, we're including it in transactions for now
     // TODO(lia): Make proposals SET_VALUE transactions and include it in last_votes of the next block
     // TODO(lia): Include block_hash in the proposal tx's value
-    const consensusUpdateTx = this.node.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: ConsensusRef.baseForNumber(blockNumber % ConsensusConsts.MAX_CONSENSUS_STATE_DB),
-        value: {
-          number: blockNumber,
-          validators,
-          total_at_stake: totalAtStake,
-          proposer,
-          next_round_validators: this.getEligibleValidators()
-        }
+    let consensusUpdateTx;
+    const proposeTx = {
+      type: WriteDbOperations.SET_VALUE,
+      ref: ConsensusRef.propose(blockNumber),
+      value: {
+        number: blockNumber,
+        validators,
+        total_at_stake: totalAtStake,
+        proposer
       }
-    }, false);
+    }
+    if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
+      consensusUpdateTx = this.node.createTransaction({ operation: proposeTx }, false);
+    } else {
+      consensusUpdateTx= this.node.createTransaction({
+        operation: {
+          type: WriteDbOperations.SET,
+          op_list: [
+            proposeTx,
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: ConsensusRef.propose(blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB),
+              value: null
+            }
+          ]
+        }
+      }, false);
+    }
     transactions.push(consensusUpdateTx);
     // FIXME: This should be fixed with the proposal revamp
     this.server.executeTransaction(consensusUpdateTx, MessageTypes.TRANSACTION);
@@ -195,6 +214,7 @@ class Consensus {
       logger.info(`[Consensus:commit] Committing a block of number ${block.number} and hash ${block.hash}`);
       this.node.tp.cleanUpForNewBlock(block);
       this.node.reconstruct();
+      this.tryRegister(block);
       this.updateToState();
     } else {
       logger.error("[Consensus:commit] Failed to commit a block:" + JSON.stringify(this.state.proposedBlock, null, 2));
@@ -231,8 +251,28 @@ class Consensus {
     if (number === 1) {
       return STAKE > 0 ? { [this.node.account.address]:  STAKE } : {};
     }
-    const storedAt = (number - 1) % ConsensusConsts.MAX_CONSENSUS_STATE_DB;
-    return this.node.db.getValue(ConsensusRef.nextRoundValidators(storedAt));
+    const block = this.node.bc.getBlockByNumber(number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ?
+        number - 1 : number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
+    if (!block) {
+      logger.error(`[Consensus:getValidatorsAtNumber] No past block of number ` +
+          `${number - ConsensusConsts.MAX_CONSENSUS_STATE_DB} for validators reference`);
+      return null;
+    }
+    return block.validators;
+  }
+
+  getValidatorsVotedFor(number, hash) {
+    if (number === 0) {
+      return STAKE > 0 ? { [this.node.account.address]:  STAKE } : {};
+    }
+    const registration = this.node.db.getValue(ConsensusRef.register(number));
+    logger.debug(`[getValidatorsVotedFor] registration (${number}, ${hash}): ${JSON.stringify(registration, null, 2)}`);
+    const addresses = Object.keys(registration).filter((addr) => { return registration[addr].block_hash === hash });
+    const validators = {};
+    addresses.forEach(addr => {
+      validators[addr] = registration[addr].stake;
+    });
+    return validators;
   }
 
   getValidConsensusDeposit(address) {
@@ -246,28 +286,51 @@ class Consensus {
     return 0;
   }
 
-  getStakeAtNumber(currentNum, address) {
-    if (currentNum <= 1) return 0;
-    const storedAt = (currentNum - 1) % ConsensusConsts.MAX_CONSENSUS_STATE_DB;
-    const ref = ChainUtil.formatPath([ConsensusRef.nextRoundValidators(storedAt), address]);
-    return this.node.db.getValue(ref) || 0;
+  getStakeAtNumber(number, address) {
+    if (number <= 1) return 0;
+    const block = this.node.bc.getBlockByNumber(number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ?
+        number - 1 : number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
+    if (!block) {
+      logger.error(`[Consensus:getStakeAtNumber] No past block of number ` +
+          `${number - ConsensusConsts.MAX_CONSENSUS_STATE_DB} for validators reference`);
+      throw Error('No past validator reference block available.');
+    }
+    return block.validators[address] ? block.validators[address] : 0;
   }
-  
-  getEligibleValidators() {
-    const allDeposits = this.node.db.getValue(PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS);
-    logger.debug(`\n[Consensus:getEligibleValidators] allDeposits: ${JSON.stringify(allDeposits)}\n`);
-    if (!allDeposits) {
-      return null;
+
+  tryRegister(block) {
+    const myAddr = this.node.account.address;
+    const myStake = this.getValidConsensusDeposit(myAddr);
+    if (myStake > 0) {
+      const registerTx = this.node.createTransaction({
+        operation: {
+          type: WriteDbOperations.SET,
+          op_list: [
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: ChainUtil.formatPath([
+                ConsensusRef.register(block.number),
+                myAddr,
+                'block_hash'
+              ]),
+              value: block.hash
+            },
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: ChainUtil.formatPath([
+                ConsensusRef.register(block.number),
+                myAddr,
+                'stake'
+              ]),
+              value: myStake
+            }
+          ]
+        }
+      }, false);
+      return this.server.executeAndBroadcastTransaction(registerTx, MessageTypes.TRANSACTION);
+    } else {
+      return;
     }
-    const validators = {};
-    for (let addr of Object.keys(allDeposits)) {
-      const deposit = allDeposits[addr];
-      if (deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS) {
-        validators[addr] = deposit.value;
-      }
-    }
-    logger.debug(`\n[Consensus:getEligibleValidators] validators: ${JSON.stringify(validators)}\n`);
-    return validators;
   }
 
   stake(amount) {

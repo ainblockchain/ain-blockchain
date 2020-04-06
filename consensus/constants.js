@@ -1,8 +1,8 @@
 const ConsensusConsts = {
   DAY_MS: 86400000,
   PROPOSAL_TIMEOUT_MS: 10000,
-  TRANSITION_TIMEOUT_MS: 100,
-  MAX_CONSENSUS_STATE_DB: 10
+  TRANSITION_TIMEOUT_MS: 5000,
+  MAX_CONSENSUS_STATE_DB: 1000 // TODO(lia): decrease to 10 and update rule-util for /consensus/number/{number}/propose
 }
 
 const ConsensusMessageTypes = {
@@ -25,24 +25,24 @@ class Ref {
     return `${this.base()}/${number}`;
   }
 
-  blockHash(number) {
-    return `${this.baseForNumber(number)}/block_hash`;
-  }
-
-  validators(number) {
-    return `${this.baseForNumber(number)}/validators`;
-  }
-
-  nextRoundValidators(number) {
-    return `${this.baseForNumber(number)}/next_round_validators`;
+  propose(number) {
+    return `${this.baseForNumber(number)}/propose/`;
   }
 
   proposer(number) {
-    return `${this.baseForNumber(number)}/proposer`;
+    return `${this.propose(number)}/proposer`;
+  }
+
+  validators(number) {
+    return `${this.propose(number)}/validators`;
   }
   
   totalAtStake(number) {
-    return `${this.baseForNumber(number)}/total_at_stake`;
+    return `${this.propose(number)}/total_at_stake`;
+  }
+
+  register(number) {
+    return `${this.baseForNumber(number)}/register`;
   }
 }
 

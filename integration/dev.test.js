@@ -1184,7 +1184,8 @@ describe('API Tests', () => {
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
         const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${withdrawPath}/2/value`,
-          value: depositAmount
+          value: depositAmount,
+          is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: true});
         waitForNewBlocks(server2);
@@ -1208,7 +1209,8 @@ describe('API Tests', () => {
             `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPath + '/3/value',
-          value: newDepositAmount
+          value: newDepositAmount,
+          is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: true});
         waitForNewBlocks(server2);
