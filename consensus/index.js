@@ -179,7 +179,7 @@ class Consensus {
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
       consensusUpdateTx = this.node.createTransaction({ operation: proposeTx }, false);
     } else {
-      consensusUpdateTx= this.node.createTransaction({
+      consensusUpdateTx = this.node.createTransaction({
         operation: {
           type: WriteDbOperations.SET,
           op_list: [
@@ -251,7 +251,7 @@ class Consensus {
   getValidatorsAtNumber(number) {
     // FIXME: Is there a better way?
     if (number === 1) {
-      return STAKE > 0 ? { [this.node.account.address]:  STAKE } : {};
+      return STAKE > 0 ? { [this.node.account.address] :  STAKE } : {};
     }
     const block = this.node.bc.getBlockByNumber(number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ?
         number - 1 : number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
@@ -265,7 +265,8 @@ class Consensus {
 
   getValidatorsVotedFor(number, hash) {
     if (number === 0) {
-      return STAKE > 0 ? { [this.node.account.address]:  STAKE } : {};
+      const myAddr = this.node.account.address;
+      return STAKE > 0 ? { [myAddr] :  this.getValidConsensusDeposit(myAddr) } : {};
     }
     const registration = this.node.db.getValue(ConsensusRef.register(number));
     logger.debug(`[getValidatorsVotedFor] registration (${number}, ${hash}): ${JSON.stringify(registration, null, 2)}`);
