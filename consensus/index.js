@@ -114,6 +114,8 @@ class Consensus {
       logger.debug(`[Consensus:handleConsensusMessage] Invalid number: Expected: ${this.state.number}, Actual: ${msg.value.number}`);
       if (msg.value.number > this.state.number) {
         // I might be falling behind. Try to catch up
+        logger.info(`[Consensus:handleConsensusMessage] Trying to sync. Current last block is ${JSON.stringify(this.node.bc.lastBlock())}`);
+        this.node.bc.syncedAfterStartup = false;
         this.server.requestChainSubsection(this.node.bc.lastBlock());
       }
       return;
