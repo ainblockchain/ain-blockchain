@@ -13,7 +13,10 @@ class Consensus {
   constructor(server, node) {
     this.server = server;
     this.node = node;
-    this.status = ConsensusStatus.STARTING;
+    this.status = null;
+    this.statusChangedBlockNumber = null;
+    this.setter = '';
+    this.setStatus(ConsensusStatus.STARTING);
     this.timeoutId = null;
     this.timeoutInfo = null;
     this.state = {
@@ -29,7 +32,7 @@ class Consensus {
   init() {
     let currentStake;
     this.state.number = this.node.bc.lastBlockNumber() + 1;
-    this.status = ConsensusStatus.INITIALIZED;
+    this.setStatus(ConsensusStatus.INITIALIZED, 'init');
     try {
       if (this.state.number === 1) {
         logger.debug("[Consensus:init] this.state.number = 1");
@@ -49,17 +52,23 @@ class Consensus {
       this.start();
       logger.info(`[Consensus:init] Initialized to number ${this.state.number} and round ${this.state.round}`);
     } catch(e) {
-      this.status = ConsensusStatus.STARTING;
+      this.setStatus(ConsensusStatus.STARTING, 'init');
     }
   }
 
+  setStatus(status, setter = '') {
+    this.status = status;
+    this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
+    this.setter = setter;
+  }
+
   start() {
-    this.status = ConsensusStatus.RUNNING;
+    this.setStatus(ConsensusStatus.RUNNING, 'start');
     this.updateToState();
   }
 
   stop() {
-    this.status = ConsensusStatus.STOPPED;
+    this.setStatus(ConsensusStatus.STOPPED, 'stop');
     if (this.timeoutInfo) {
       clearTimeout(this.timeoutInfo);
       this.timeoutInfo = null;
