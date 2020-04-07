@@ -304,36 +304,35 @@ class Consensus {
   tryRegister(block) {
     const myAddr = this.node.account.address;
     const myStake = this.getValidConsensusDeposit(myAddr);
-    if (myStake > 0) {
-      const registerTx = this.node.createTransaction({
-        operation: {
-          type: WriteDbOperations.SET,
-          op_list: [
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: ChainUtil.formatPath([
-                ConsensusRef.register(block.number),
-                myAddr,
-                'block_hash'
-              ]),
-              value: block.hash
-            },
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: ChainUtil.formatPath([
-                ConsensusRef.register(block.number),
-                myAddr,
-                'stake'
-              ]),
-              value: myStake
-            }
-          ]
-        }
-      }, false);
-      return this.server.executeAndBroadcastTransaction(registerTx, MessageTypes.TRANSACTION);
-    } else {
+    if (myStake === 0) {
       return;
     }
+    const registerTx = this.node.createTransaction({
+      operation: {
+        type: WriteDbOperations.SET,
+        op_list: [
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: ChainUtil.formatPath([
+              ConsensusRef.register(block.number),
+              myAddr,
+              'block_hash'
+            ]),
+            value: block.hash
+          },
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: ChainUtil.formatPath([
+              ConsensusRef.register(block.number),
+              myAddr,
+              'stake'
+            ]),
+            value: myStake
+          }
+        ]
+      }
+    }, false);
+    return this.server.executeAndBroadcastTransaction(registerTx, MessageTypes.TRANSACTION);
   }
 
   stake(amount) {
