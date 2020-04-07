@@ -24,19 +24,19 @@ cd ..
 node tracker-server/index.js
 ```
 
-#### Prod (GCP)
+#### Prod or Dev (GCP)
 
 ##### Deploy code (in common with Node server)
 
 ```
 gcloud init
 
-sh deploy_prod.sh <SEASON> <YOUR_GCP_USER_NAME>
+sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME>
 ```
 
 For example,
 ```
-sh deploy_prod.sh spring seo
+sh deploy_gcp.sh spring seo
 ```
 
 ##### Set up Ubuntu machine (if it's on a new VM)
@@ -55,7 +55,7 @@ sh setup_tracker_gcp.sh
 
 In the project root, run:
 ```
-sh start_tracker_prod.sh
+sh start_tracker_gcp.sh
 ```
 
 ### How to run with Docker
@@ -124,19 +124,19 @@ npm run test_smoke
 npm run test_integration
 ```
 
-#### Prod (GCP)
+#### Prod or Dev (GCP)
 
 ##### Deploy code (in common with Tracker server) 
 
 ```
 gcloud init
 
-sh deploy_prod.sh <SEASON> <YOUR_GCP_USER_NAME>
+sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME>
 ```
 
 For example,
 ```
-sh deploy_prod.sh spring seo
+sh deploy_gcp.sh spring seo
 ```
 
 ##### Set up Ubuntu machine (if it's on a new VM)
@@ -155,13 +155,13 @@ sh setup_node_gcp.sh
 
 In the project root, run:
 ```
-sh start_node_prod.sh <SEASON> <SERVER_INDEX>
+sh start_node_gcp.sh {dev|spring|summer} <SERVER_INDEX>
 ```
 
 For example,
 
 ```
-sh start_node_prod.sh spring 0
+sh start_node_gcp.sh spring 0
 ```
 
 ### How to run with Docker

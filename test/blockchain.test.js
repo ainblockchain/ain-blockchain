@@ -1,11 +1,11 @@
 const Blockchain = require('../blockchain/');
-const {Block} = require('../blockchain/block');
+const { Block } = require('../blockchain/block');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
 const Node = require('../node');
-const {setDbForTesting} = require('./test-util')
+const { setDbForTesting, getTransaction } = require('./test-util')
 
 describe('Blockchain', () => {
   let node1, node2;
@@ -30,11 +30,11 @@ describe('Blockchain', () => {
   */
 
   it('adds new block', () => {
-    const data = 'foo';
+    const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
-    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, node1.bc.lastBlockNumber() + 1,
+    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], node1.bc.lastBlockNumber() + 1,
         node1.account.address, []));
-    expect(node1.bc.chain[node1.bc.chain.length -1].transactions).to.equal(data);
+    assert.deepEqual(node1.bc.chain[node1.bc.chain.length -1].transactions[0], tx);
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
@@ -48,14 +48,14 @@ describe('Blockchain', () => {
   */
 
   it('invalidates chain with corrupt genesis block', () => {
-    node2.bc.chain[0].transactions = ':(';
-    expect(Blockchain.isValidChain(node2.bc.chain)).to.equal(false);
+    node1.bc.chain[0].transactions = ':(';
+    expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
   });
 
   it('invalidates corrupt chain', () => {
-    const data = 'foo';
+    const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
-    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], data, node1.bc.lastBlockNumber() + 1,
+    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], node1.bc.lastBlockNumber() + 1,
         node1.account.address, []));
     node1.bc.chain[node1.bc.lastBlockNumber()].transactions = ':(';
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
@@ -89,7 +89,7 @@ describe('Blockchain', () => {
     });
 
     it(' can sync on startup', () => {
-      while (node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
+      while (!node1.bc.lastBlock() || !node2.bc.lastBlock() || node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
         const blockSection = node1.bc.requestBlockchainSection(node2.bc.lastBlock());
         if (blockSection) {
           node2.bc.merge(blockSection);

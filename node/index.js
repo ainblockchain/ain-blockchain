@@ -12,6 +12,7 @@ class Node {
     this.tp = new TransactionPool();
     this.db = new DB();
     this.nonce = null;
+    this.initialized = false;
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
@@ -29,6 +30,7 @@ class Node {
     this.bc.setBackupDb(new DB());
     this.nonce = this.getNonce();
     this.reconstruct();
+    this.initialized = true;
   }
 
   getNonce() {
@@ -91,8 +93,17 @@ class Node {
     return Transaction.newTransaction(this.account.private_key, txData);
   }
 
+  addNewBlock(block) {
+    if (this.bc.addNewBlock(block)) {
+      this.tp.cleanUpForNewBlock(block);
+      this.reconstruct();
+      return true;
+    }
+    return false;
+  }
+
   reconstruct() {
-    logger.info('Reconstructing database');
+    logger.info(`Reconstructing database (Current chain length: ${this.bc.chain.length})`);
     this.db.setDbToSnapshot(this.bc.backupDb);
     this.executeChainOnDb();
     this.db.executeTransactionList(this.tp.getValidTransactions());
