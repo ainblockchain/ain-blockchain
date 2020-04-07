@@ -6,7 +6,7 @@ const ChainUtil = require('../chain-util');
 const PushId = require('../db/push-id');
 const { MessageTypes, STAKE, WriteDbOperations, PredefinedDbPaths }
   = require('../constants');
-const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusRef }
+const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 
 class Consensus {
@@ -180,7 +180,12 @@ class Consensus {
     let consensusUpdateTx;
     const proposeTx = {
       type: WriteDbOperations.SET_VALUE,
-      ref: ConsensusRef.propose(blockNumber),
+      ref: ChainUtil.formatPath([
+        ConsensusDbPaths.CONSENSUS,
+        ConsensusDbPaths.NUMBER,
+        blockNumber,
+        ConsensusDbPaths.PROPOSE
+      ]),
       value: {
         number: blockNumber,
         validators,
@@ -198,7 +203,11 @@ class Consensus {
             proposeTx,
             {
               type: WriteDbOperations.SET_VALUE,
-              ref: ConsensusRef.baseForNumber(blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB),
+              ref: ChainUtil.formatPath([
+                ConsensusDbPaths.CONSENSUS,
+                ConsensusDbPaths.NUMBER,
+                blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
+              ]),
               value: null
             }
           ]
@@ -278,7 +287,13 @@ class Consensus {
       const myAddr = this.node.account.address;
       return STAKE > 0 ? { [myAddr] :  this.getValidConsensusDeposit(myAddr) } : {};
     }
-    const registration = this.node.db.getValue(ConsensusRef.register(number));
+    const registerRef = ChainUtil.formatPath([
+      ConsensusDbPaths.CONSENSUS,
+      ConsensusDbPaths.NUMBER,
+      number,
+      ConsensusDbPaths.REGISTER
+    ]);
+    const registration = this.node.db.getValue(registerRef);
     logger.debug(`[getValidatorsVotedFor] registration (${number}, ${hash}): ${JSON.stringify(registration, null, 2)}`);
     const addresses = Object.keys(registration).filter((addr) => { return registration[addr].block_hash === hash });
     const validators = {};
@@ -324,18 +339,24 @@ class Consensus {
           {
             type: WriteDbOperations.SET_VALUE,
             ref: ChainUtil.formatPath([
-              ConsensusRef.register(block.number),
+              ConsensusDbPaths.CONSENSUS,
+              ConsensusDbPaths.NUMBER,
+              block.number,
+              ConsensusDbPaths.REGISTER,
               myAddr,
-              'block_hash'
+              ConsensusDbPaths.BLOCK_HASH
             ]),
             value: block.hash
           },
           {
             type: WriteDbOperations.SET_VALUE,
             ref: ChainUtil.formatPath([
-              ConsensusRef.register(block.number),
+              ConsensusDbPaths.CONSENSUS,
+              ConsensusDbPaths.NUMBER,
+              block.number,
+              ConsensusDbPaths.REGISTER,
               myAddr,
-              'stake'
+              ConsensusDbPaths.STAKE
             ]),
             value: myStake
           }

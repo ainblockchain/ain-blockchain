@@ -16,39 +16,21 @@ const ConsensusStatus = {
   STOPPED: 3
 }
 
-class Ref {
-  base() {
-    return '/consensus/number';
-  }
-
-  baseForNumber(number) {
-    return `${this.base()}/${number}`;
-  }
-
-  propose(number) {
-    return `${this.baseForNumber(number)}/propose/`;
-  }
-
-  proposer(number) {
-    return `${this.propose(number)}/proposer`;
-  }
-
-  validators(number) {
-    return `${this.propose(number)}/validators`;
-  }
-  
-  totalAtStake(number) {
-    return `${this.propose(number)}/total_at_stake`;
-  }
-
-  register(number) {
-    return `${this.baseForNumber(number)}/register`;
-  }
+const ConsensusDbPaths = {
+  CONSENSUS: 'consensus',
+  NUMBER: 'number',
+  PROPOSE: 'propose',
+  PROPOSER: 'proposer',
+  VALIDATORS: 'validators',
+  TOTAL_AT_STAKE: 'total_at_stake',
+  REGISTER: 'register',
+  BLOCK_HASH: 'block_hash',
+  STAKE: 'stake'
 }
 
 module.exports = {
   ConsensusMessageTypes,
   ConsensusConsts,
   ConsensusStatus,
-  ConsensusRef: new Ref(),
+  ConsensusDbPaths
 }
