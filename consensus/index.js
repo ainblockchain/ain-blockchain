@@ -18,7 +18,10 @@ class Consensus {
     this.timeoutInfo = null;
     this.state = {
       number: 0,
-      round: 0,  // To use in creating a seed for the prng (proposer selection)
+      // Round is increased by 1 whenever there's a timeout and is appended to the lastBlockHash.
+      // The combined string becomes the seed for the pseudo-random number generator which is used
+      // to select a next proposer.
+      round: 0,
       proposer: null
     }
   }
