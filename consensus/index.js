@@ -148,14 +148,14 @@ class Consensus {
   tryPropose() {
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
       logger.debug(`[Consensus:tryPropose] I'm the proposer`);
-      this.handleConsensusMessage({ value: this.createProposalBlock(), type: ConsensusMessageTypes.PROPOSE });
+      this.handleConsensusMessage({ value: this.createBlockProposal(), type: ConsensusMessageTypes.PROPOSE });
     } else {
       logger.debug(`[Consensus:tryPropose] Not my turn`);
     }
     this.scheduleTimeout({ number: this.state.number, round: this.state.round }, ConsensusConsts.PROPOSAL_TIMEOUT_MS);
   }
 
-  createProposalBlock() {
+  createBlockProposal() {
     const lastBlock = this.node.bc.lastBlock();
     const blockNumber = this.state.number; // Should be equal to lastBlock.number + 1
     const transactions = this.node.tp.getValidTransactions();
