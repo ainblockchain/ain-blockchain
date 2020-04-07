@@ -7,6 +7,7 @@ fi
 
 if [ "$1" = 'spring' ] || [ "$1" = 'summer' ]; then
     SEASON="$1-"
+# TODO(lia): Change dev instance names to start with 'dev-' and update this script
 elif [ "$1" = 'dev' ]; then
     SEASON=""
 else
