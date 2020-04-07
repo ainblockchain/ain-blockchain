@@ -43,7 +43,7 @@ class Consensus {
         if (STAKE && STAKE > 0) {
           this.stake(STAKE);
         } else {
-          logger.info(`[Consensus:init] Exiting consensus initialization: Node doesn't have any stakes`);
+          logger.info(`[Consensus:init] Node doesn't have any stakes. Initialized as a non-validator.`);
         }
       }
       this.start();
@@ -69,7 +69,7 @@ class Consensus {
 
   updateToState() {
     if (this.state.number > this.node.bc.lastBlockNumber() + 1) {
-      logger.debug(`[Consensus:updateToState] Nothing to update`);
+      logger.error(`[Consensus:updateToState] Failed to update to state (${this.state.number}/${this.node.bc.lastBlockNumber()})`);
       return;
     }
     logger.info(`[Consensus:updateToState] Current: ${this.state.number}/${this.state.round}`);
