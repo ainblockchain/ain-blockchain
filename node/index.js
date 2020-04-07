@@ -93,6 +93,15 @@ class Node {
     return Transaction.newTransaction(this.account.private_key, txData);
   }
 
+  addNewBlock(block) {
+    if (this.bc.addNewBlock(block)) {
+      this.tp.cleanUpForNewBlock(block);
+      this.reconstruct();
+      return true;
+    }
+    return false;
+  }
+
   reconstruct() {
     logger.info(`Reconstructing database (Current chain length: ${this.bc.chain.length})`);
     this.db.setDbToSnapshot(this.bc.backupDb);

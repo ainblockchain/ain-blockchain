@@ -221,10 +221,8 @@ class Consensus {
 
   commit(block) {
     // TODO(lia): Use fianlized state snapshot to verify the block first, and update the finalized state
-    if (this.node.bc.addNewBlock(block)) {
+    if (this.node.addNewBlock(block)) {
       logger.info(`[Consensus:commit] Committing a block of number ${block.number} and hash ${block.hash}`);
-      this.node.tp.cleanUpForNewBlock(block);
-      this.node.reconstruct();
       this.tryRegister(block);
       this.updateToState();
     } else {
