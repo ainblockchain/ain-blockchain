@@ -161,9 +161,6 @@ class Consensus {
     const transactions = this.node.tp.getValidTransactions();
     const proposer = this.node.account.address;
     const validators = this.getValidatorsVotedFor(lastBlock.number, lastBlock.hash);
-    if (blockNumber === 1) {
-      validators[proposer] = this.getValidConsensusDeposit(proposer);
-    }
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
     // This should be part of the proposals, but to reduce complexity, we're including it in transactions for now
     // TODO(lia): Make proposals SET_VALUE transactions and include it in last_votes of the next block
