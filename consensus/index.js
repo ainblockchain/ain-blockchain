@@ -227,6 +227,10 @@ class Consensus {
       logger.error(`[Consensus:checkProposal] Proposed block didn't pass the basic checks`);
       return false;
     }
+    if (block.proposer !== this.state.proposer) {
+      logger.error(`[Consensus:checkProposal] Not the right proposer (${block.proposer}/${this.state.proposer})`);
+      return false;
+    }
     logger.debug(`[Consensus:checkProposal] Proposed block passed the basic checks`);
     return true;
   }
