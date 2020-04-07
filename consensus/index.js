@@ -167,6 +167,7 @@ class Consensus {
     this.scheduleTimeout({ number: this.state.number, round: this.state.round }, ConsensusConsts.PROPOSAL_TIMEOUT_MS);
   }
 
+  // TODO(lia): Sign and verify the proposals
   createBlockProposal() {
     const lastBlock = this.node.bc.lastBlock();
     const blockNumber = this.state.number; // Should be equal to lastBlock.number + 1
