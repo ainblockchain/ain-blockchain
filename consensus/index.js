@@ -254,7 +254,9 @@ class Consensus {
       logger.debug(`[Consensus:selectProposer] Failed to select a proposer: no validators given.`);
       return null;
     }
-    const seed = this.node.bc.lastBlock().hash + this.state.round;
+    const seedBlock = this.state.number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ?
+        this.node.bc.lastBlock() : this.node.bc.getBlockByNumber(this.state.number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
+    const seed = seedBlock.hash + this.state.round;
     const alphabeticallyOrderedValidators = Object.keys(validators).sort();
     const totalAtStake = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
     const randomNumGenerator = seedrandom(seed);
@@ -277,11 +279,10 @@ class Consensus {
     if (number === 1) {
       return STAKE > 0 ? { [this.node.account.address] :  STAKE } : {};
     }
-    const block = this.node.bc.getBlockByNumber(number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ?
-        number - 1 : number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
+    const block = this.node.bc.lastBlock();
     if (!block) {
       logger.error(`[Consensus:getValidatorsAtNumber] No past block of number ` +
-          `${number - ConsensusConsts.MAX_CONSENSUS_STATE_DB} for validators reference`);
+          `${number - 1} for validators reference`);
       return null;
     }
     return block.validators;
@@ -300,6 +301,10 @@ class Consensus {
     ]);
     const registration = this.node.db.getValue(registerRef);
     logger.debug(`[getValidatorsVotedFor] registration (${number}, ${hash}): ${JSON.stringify(registration, null, 2)}`);
+    if (!registration) {
+      logger.error(`[Consensus:getValidatorsVotedFor] No validators registered`);
+      throw Error('No validators registered');
+    }
     const addresses = Object.keys(registration).filter((addr) => { return registration[addr].block_hash === hash });
     const validators = {};
     addresses.forEach(addr => {
@@ -321,11 +326,10 @@ class Consensus {
 
   getStakeAtNumber(number, address) {
     if (number <= 1) return 0;
-    const block = this.node.bc.getBlockByNumber(number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ?
-        number - 1 : number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
+    const block = this.node.bc.getBlockByNumber(number - 1);
     if (!block) {
       logger.error(`[Consensus:getStakeAtNumber] No past block of number ` +
-          `${number - ConsensusConsts.MAX_CONSENSUS_STATE_DB} for validators reference`);
+          `${number - 1} for validators reference`);
       throw Error('No past validator reference block available.');
     }
     return block.validators[address] ? block.validators[address] : 0;
@@ -339,33 +343,18 @@ class Consensus {
     }
     const registerTx = this.node.createTransaction({
       operation: {
-        type: WriteDbOperations.SET,
-        op_list: [
-          {
-            type: WriteDbOperations.SET_VALUE,
-            ref: ChainUtil.formatPath([
-              ConsensusDbPaths.CONSENSUS,
-              ConsensusDbPaths.NUMBER,
-              block.number,
-              ConsensusDbPaths.REGISTER,
-              myAddr,
-              ConsensusDbPaths.BLOCK_HASH
-            ]),
-            value: block.hash
-          },
-          {
-            type: WriteDbOperations.SET_VALUE,
-            ref: ChainUtil.formatPath([
-              ConsensusDbPaths.CONSENSUS,
-              ConsensusDbPaths.NUMBER,
-              block.number,
-              ConsensusDbPaths.REGISTER,
-              myAddr,
-              ConsensusDbPaths.STAKE
-            ]),
-            value: myStake
-          }
-        ]
+        type: WriteDbOperations.SET_VALUE,
+        ref: ChainUtil.formatPath([
+          ConsensusDbPaths.CONSENSUS,
+          ConsensusDbPaths.NUMBER,
+          block.number,
+          ConsensusDbPaths.REGISTER,
+          myAddr
+        ]),
+        value: {
+          [ConsensusDbPaths.BLOCK_HASH]: block.hash,
+          [ConsensusDbPaths.STAKE]: myStake
+        }
       }
     }, false);
     return this.server.executeAndBroadcastTransaction(registerTx, MessageTypes.TRANSACTION);
