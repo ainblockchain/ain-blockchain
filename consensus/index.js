@@ -254,6 +254,7 @@ class Consensus {
       logger.debug(`[Consensus:selectProposer] Failed to select a proposer: no validators given.`);
       return null;
     }
+    // TODO(lia): find a better random seeding mechanism
     const seedBlock = this.state.number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ?
         this.node.bc.lastBlock() : this.node.bc.getBlockByNumber(this.state.number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
     const seed = seedBlock.hash + this.state.round;
