@@ -66,7 +66,30 @@ function setTimer(ws, timeSec) {
 
 // A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
 // TODO(seo): Sign messages to nodes.
-const server = new WebSocketServer({port: P2P_PORT});
+const server = new WebSocketServer({
+  port: P2P_PORT,
+  // Enables server-side compression. For option details, see
+  // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
+  perMessageDeflate: {
+    zlibDeflateOptions: {
+      // See zlib defaults.
+      chunkSize: 1024,
+      memLevel: 7,
+      level: 3
+    },
+    zlibInflateOptions: {
+      chunkSize: 10 * 1024
+    },
+    // Other options settable:
+    clientNoContextTakeover: true, // Defaults to negotiated value.
+    serverNoContextTakeover: true, // Defaults to negotiated value.
+    serverMaxWindowBits: 10, // Defaults to negotiated value.
+    // Below options specified as default values.
+    concurrencyLimit: 10, // Limits zlib concurrency for perf.
+    threshold: 1024 // Size (in bytes) below which messages
+    // should not be compressed.
+  }
+});
 server.on('connection', (ws) => {
   let node = null;
   ws.on('message', (message) => {
