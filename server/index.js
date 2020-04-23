@@ -50,7 +50,29 @@ class P2pServer {
   }
 
   listen() {
-    const server = new Websocket.Server({port: P2P_PORT});
+    const server = new Websocket.Server({
+      port: P2P_PORT,
+      // Enables server-side compression. For option details, see
+      // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
+      perMessageDeflate: {
+        zlibDeflateOptions: {
+          // See zlib defaults.
+          chunkSize: 1024,
+          memLevel: 7,
+          level: 3
+        },
+        zlibInflateOptions: {
+          chunkSize: 10 * 1024
+        },
+        // Other options settable:
+        clientNoContextTakeover: true, // Defaults to negotiated value.
+        serverNoContextTakeover: true, // Defaults to negotiated value.
+        serverMaxWindowBits: 10, // Defaults to negotiated value.
+        // Below options specified as default values.
+        concurrencyLimit: 10, // Limits zlib concurrency for perf.
+        threshold: 1024 // Size (in bytes) below which messages should not be compressed.
+      }
+    });
     server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`Listening for peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setIntervalForTrackerConnection();
@@ -330,20 +352,20 @@ class P2pServer {
 
   sendChainSubsection(socket, chainSubsection, number) {
     socket.send(JSON.stringify({
-        type: MessageTypes.CHAIN_SUBSECTION,
-        chainSubsection,
-        number,
-        protoVer: CURRENT_PROTOCOL_VERSION
-      }));
+      type: MessageTypes.CHAIN_SUBSECTION,
+      chainSubsection,
+      number,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    }));
   }
 
   requestChainSubsection(lastBlock) {
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
-          type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
-          lastBlock,
-          protoVer: CURRENT_PROTOCOL_VERSION
-        }));
+        type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
+        lastBlock,
+        protoVer: CURRENT_PROTOCOL_VERSION
+      }));
     });
   }
 
@@ -357,10 +379,10 @@ class P2pServer {
     }
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
-          type: MessageTypes.TRANSACTION,
-          transaction,
-          protoVer: CURRENT_PROTOCOL_VERSION
-        }));
+        type: MessageTypes.TRANSACTION,
+        transaction,
+        protoVer: CURRENT_PROTOCOL_VERSION
+      }));
     });
   }
 
