@@ -1,7 +1,7 @@
 const ConsensusConsts = {
   DAY_MS: 86400000,
   PROPOSAL_TIMEOUT_MS: 10000,
-  TRANSITION_TIMEOUT_MS: 5000,
+  TRANSITION_TIMEOUT_MS: 7000,
   MAX_CONSENSUS_STATE_DB: 1000 // TODO(lia): decrease to 10 and update rule-util for /consensus/number/{number}/propose
 }
 
