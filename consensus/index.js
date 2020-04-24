@@ -100,7 +100,7 @@ class Consensus {
       return;
     }
     logger.info(`[Consensus:handleTimeout] Current: ${this.state.number}/${this.state.round}/${this.state.proposer}\n`);
-    this.state.round += 1;
+    this.state.round = round + 1;
     this.state.proposer = this.selectProposer();
     logger.info(`[Consensus:handleTimeout] Changed: ${number}/${this.state.round}/${this.state.proposer}`);
     this.tryPropose();
@@ -160,11 +160,12 @@ class Consensus {
   tryPropose() {
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
       logger.debug(`[Consensus:tryPropose] I'm the proposer`);
+      this.scheduleTimeout({ number: this.state.number, round: this.state.round }, ConsensusConsts.PROPOSAL_TIMEOUT_MS);
       this.handleConsensusMessage({ value: this.createBlockProposal(), type: ConsensusMessageTypes.PROPOSE });
     } else {
       logger.debug(`[Consensus:tryPropose] Not my turn`);
+      this.scheduleTimeout({ number: this.state.number, round: this.state.round }, ConsensusConsts.PROPOSAL_TIMEOUT_MS);
     }
-    this.scheduleTimeout({ number: this.state.number, round: this.state.round }, ConsensusConsts.PROPOSAL_TIMEOUT_MS);
   }
 
   // TODO(lia): Sign and verify the proposals
