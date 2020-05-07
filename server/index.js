@@ -19,6 +19,7 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
+const P2P_PREFIX = '[P2P]';
 
 // A util function for testing/debugging.
 function setTimer(ws, timeSec) {
@@ -69,7 +70,7 @@ class P2pServer {
       }
     });
     server.on('connection', (socket) => this.setSocket(socket, null));
-    logger.info(`Listening for peer-to-peer connections on: ${P2P_PORT}\n`);
+    logger.info(`${P2P_PREFIX} Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setIntervalForTrackerConnection();
   }
 
@@ -98,19 +99,19 @@ class P2pServer {
   }
 
   connectToTracker() {
-    logger.info(`[TRACKER] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
+    logger.info(`${P2P_PREFIX} Reconnecting to tracker (${TRACKER_WS_ADDR})`);
     this.getIpAddress()
     .then(() => {
       this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
       this.trackerWebSocket.on('open', () => {
-        logger.info(`[TRACKER] Connected to tracker (${TRACKER_WS_ADDR})`);
+        logger.info(`${P2P_PREFIX} Connected to tracker (${TRACKER_WS_ADDR})`);
         this.clearIntervalForTrackerConnection();
         this.setTrackerEventHandlers();
         this.setIntervalForTrackerUpdate();
       });
       this.trackerWebSocket.on('error', (error) => {
-        logger.info(`[TRACKER] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
-            `${JSON.stringify(error, null, 2)}`)
+        logger.error(`${P2P_PREFIX} Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+                     `${JSON.stringify(error, null, 2)}`);
       });
     });
   }
@@ -146,11 +147,11 @@ class P2pServer {
     this.trackerWebSocket.on('message', (message) => {
       try {
         const parsedMsg = JSON.parse(message);
-        logger.info(`\n[TRACKER] << Message from tracker: ` +
-            `${JSON.stringify(parsedMsg, null, 2)}`)
+        logger.info(`\n${P2P_PREFIX} << Message from tracker: ` +
+                    `${JSON.stringify(parsedMsg, null, 2)}`)
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-          logger.info(`[TRACKER] Updated managed peers info: ` +
-              `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+          logger.info(`${P2P_PREFIX} Updated managed peers info: ` +
+                      `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
         if (this.isStarting) {
           this.isStarting = false;
@@ -169,7 +170,7 @@ class P2pServer {
     });
 
     this.trackerWebSocket.on('close', (code) => {
-      logger.info(`\n[TRACKER] Disconnected from tracker ${TRACKER_WS_ADDR} with code: ${code}`);
+      logger.info(`\n${P2P_PREFIX} Disconnected from tracker ${TRACKER_WS_ADDR} with code: ${code}`);
       this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
@@ -204,8 +205,8 @@ class P2pServer {
     if (diskUsage !== null) {
       updateToTracker.diskUsage = diskUsage;
     }
-    logger.info(`\n[TRACKER] >> Update to tracker ${TRACKER_WS_ADDR}: ` +
-        `${JSON.stringify(updateToTracker, null, 2)}`)
+    logger.info(`\n${P2P_PREFIX} >> Update to tracker ${TRACKER_WS_ADDR}: ` +
+                `${JSON.stringify(updateToTracker, null, 2)}`)
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
 
