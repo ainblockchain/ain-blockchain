@@ -55,6 +55,34 @@ class DB {
       const refKey = fullPath[fullPath.length - 1];
       this.getRefForWriting(pathToKey)[refKey] = value;
     }
+    if (DB.isEmptyDbNode(value)) {
+      this.removeEmptyTerminals(fullPath);
+    }
+  }
+
+  static isEmptyDbNode(dbNode) {
+    return dbNode === null || dbNode === undefined ||
+        (ChainUtil.isDict(dbNode) && Object.keys(dbNode).length === 0);
+  }
+
+  removeEmptyTerminalsRecursive(fullPath, depth, curDbNode) {
+    if (depth < fullPath.length - 1) {
+      const nextDbNode = curDbNode[fullPath[depth]];
+      if (nextDbNode === undefined) {
+        logger.error(`Unavailable path in the database: ${ChainUtil.formatPath(fullPath)}`);
+      } else {
+        this.removeEmptyTerminalsRecursive(fullPath, depth + 1, nextDbNode);
+      }
+    }
+    for (const child in curDbNode) {
+      if (DB.isEmptyDbNode(curDbNode[child])) {
+        delete curDbNode[child];
+      }
+    }
+  }
+
+  removeEmptyTerminals(fullPath) {
+    return this.removeEmptyTerminalsRecursive(fullPath, 0, this.dbData);
   }
 
   readDatabase(fullPath) {
