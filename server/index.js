@@ -254,8 +254,7 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.CONSENSUS:
-            logger.debug(`[${P2P_PREFIX}] Receiving a consensus message: 
-                          ${JSON.stringify(data.message)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
             if (this.node.bc.syncedAfterStartup) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
@@ -264,8 +263,7 @@ class P2pServer {
             break;
           case MessageTypes.TRANSACTION:
             if (DEBUG) {
-              logger.debug(`[${P2P_PREFIX}] Receiving a transaction: 
-                            ${JSON.stringify(data.transaction)}`);
+              logger.debug(`[${P2P_PREFIX}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
             }
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
               logger.debug(`[${P2P_PREFIX}] Already have the transaction in my tx tracker`);
@@ -312,8 +310,7 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION_REQUEST:
-            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: 
-                          ${JSON.stringify(data.lastBlock)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -439,8 +436,7 @@ class P2pServer {
     }
     if (this.node.bc.syncedAfterStartup === false) {
       if (DEBUG) {
-        logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. 
-                      WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`)
+        logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`);
       }
       this.node.tp.addTransaction(transaction);
       return null;
@@ -449,8 +445,7 @@ class P2pServer {
     if (!this.checkForTransactionResultErrorCode(result)) {
       this.node.tp.addTransaction(transaction);
     } else if (DEBUG) {
-      logger.debug(`[${P2P_PREFIX}]FAILED TRANSACTION: 
-                    ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
+      logger.debug(`[${P2P_PREFIX}]FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
 
     return result;

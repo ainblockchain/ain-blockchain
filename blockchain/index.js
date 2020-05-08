@@ -213,8 +213,7 @@ class Blockchain {
     if (blockFiles.length > 0 &&
         Block.loadBlock(blockFiles[blockFiles.length - 1]).number > refBlockNumber &&
         (refBlock && blockFiles[0].indexOf(Block.getFileName(refBlock)) < 0)) {
-      logger.error(`[${LOG_PREFIX}] Invalid blockchain request. 
-                    Requesters last block does not belong to this blockchain`);
+      logger.error(`[${LOG_PREFIX}] Invalid blockchain request. Requesters last block does not belong to this blockchain`);
       return;
     }
 
@@ -245,8 +244,7 @@ class Blockchain {
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
-      logger.info(`[${LOG_PREFIX}] Received chain is of lower block number than 
-                   current last block number`);
+      logger.info(`[${LOG_PREFIX}] Received chain is of lower block number than current last block number`);
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {

@@ -53,6 +53,7 @@ class Node {
         break;
       }
     }
+
     logger.info(`[${NODE_PREFIX}] Setting nonce to ${nonce}`);
     return nonce;
   }

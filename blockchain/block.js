@@ -101,13 +101,11 @@ class Block {
       return false;
     }
     if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
-      logger.error(`[${LOG_PREFIX}] Transactions or transactions_hash is incorrect
-                    for block ${block.hash}`);
+      logger.error(`[${LOG_PREFIX}] Transactions or transactions_hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
-      logger.error(`[${LOG_PREFIX}] Last votes or last_votes_hash is incorrect
-                    for block ${block.hash}`);
+      logger.error(`[${LOG_PREFIX}] Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
     }
     logger.info(`[${LOG_PREFIX}] Hash check successfully done`);
@@ -119,9 +117,9 @@ class Block {
       return false;
     }
     if (block.number !== (blockchain.lastBlockNumber() + 1)) {
-      logger.error(`[${LOG_PREFIX}] Number is not correct for block ${block.hash} 
-                    Expected: ${(blockchain.lastBlockNumber() + 1)}
-                    Actual: ${block.number}`);
+      logger.error(`[${LOG_PREFIX}] Number is not correct for block ${block.hash} ` +
+                   `Expected: ${(blockchain.lastBlockNumber() + 1)} ` +
+                   `Actual: ${block.number}`);
       return false;
     }
     // TODO (lia): check the contents of block.last_votes if they indeed voted for
@@ -138,9 +136,9 @@ class Block {
         continue;
       }
       if (transaction.nonce != nonceTracker[transaction.address] + 1) {
-        logger.error(`[${LOG_PREFIX}] Invalid noncing for ${transaction.address} 
-                      Expected ${nonceTracker[transaction.address] + 1}.
-                      Received ${transaction.nonce}`);
+        logger.error(`[${LOG_PREFIX}] Invalid noncing for ${transaction.address} ` +
+                     `Expected ${nonceTracker[transaction.address] + 1} ` +
+                     `Received ${transaction.nonce}`);
         return false;
       }
       nonceTracker[transaction.address] = transaction.nonce;

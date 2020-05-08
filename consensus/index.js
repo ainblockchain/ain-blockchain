@@ -8,7 +8,7 @@ const { MessageTypes, STAKE, WriteDbOperations, PredefinedDbPaths } = require('.
 const { ConsensusMessageTypes, ConsensusConsts,
         ConsensusStatus, ConsensusDbPaths } = require('./constants');
 
-const LOG_PREFIX = CONSENSUS;
+const LOG_PREFIX = 'CONSENSUS';
 
 class Consensus {
   constructor(server, node) {
@@ -52,13 +52,11 @@ class Consensus {
         if (STAKE && STAKE > 0) {
           this.stake(STAKE);
         } else {
-          logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Node doesn't have any stakes. 
-                       Initialized as a non-validator.`);
+          logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Node doesn't have any stakes. Initialized as a non-validator.`);
         }
       }
       this.start();
-      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Initialized to number ${this.state.number} and 
-                   round ${this.state.round}`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Initialized to number ${this.state.number} and round ${this.state.round}`);
     } catch(e) {
       this.setStatus(ConsensusStatus.STARTING, 'init');
     }
@@ -88,8 +86,7 @@ class Consensus {
     const LOG_SUFFIX = 'updateToState';
 
     if (this.state.number > this.node.bc.lastBlockNumber() + 1) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to update to state 
-                    (${this.state.number}/${this.node.bc.lastBlockNumber()})`);
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to update to state (${this.state.number}/${this.node.bc.lastBlockNumber()})`);
       return;
     }
 
@@ -111,16 +108,13 @@ class Consensus {
     const { number, round } = timeoutInfo;
 
     if (number !== this.state.number || round < this.state.round) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Ignoring timeout because we're ahead 
-                    (${this.state.number}/${this.state.round}) vs (${number}/${round})`);
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Ignoring timeout because we're ahead (${this.state.number}/${this.state.round}) vs (${number}/${round})`);
       return;
     }
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] 
-                 Current: ${this.state.number}/${this.state.round}/${this.state.proposer}\n`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current: ${this.state.number}/${this.state.round}/${this.state.proposer}\n`);
     this.state.round = round + 1;
     this.state.proposer = this.selectProposer();
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] 
-                 Changed: ${number}/${this.state.round}/${this.state.proposer}`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Changed: ${number}/${this.state.round}/${this.state.proposer}`);
     this.tryPropose();
   }
 
@@ -140,22 +134,19 @@ class Consensus {
       return;
     }
     if (msg.value.number !== this.state.number) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid number: Expected: ${this.state.number}, 
-                    Actual: ${msg.value.number}`);
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid number: Expected: ${this.state.number}, Actual: ${msg.value.number}`);
       if (msg.value.number > this.state.number) {
         // I might be falling behind. Try to catch up
         // TODO(lia): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to sync. 
-                     Current last block is ${JSON.stringify(this.node.bc.lastBlock())}`);
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to sync. Current last block is ${JSON.stringify(this.node.bc.lastBlock())}`);
         this.node.bc.syncedAfterStartup = false;
         this.server.requestChainSubsection(this.node.bc.lastBlock());
       }
       return;
     }
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus state: ${this.state.number}/${this.state.round},
-                 Blockchain state: ${this.node.bc.lastBlockNumber()}, Message: ${msg.value.number}`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus state: ${this.state.number}/${this.state.round}, Blockchain state: ${this.node.bc.lastBlockNumber()}, Message: ${msg.value.number}`);
     if (this.checkProposal(msg.value)) {
       this.commit(msg.value);
       this.server.broadcastConsensusMessage(msg);
@@ -278,13 +269,11 @@ class Consensus {
     const LOG_SUFFIX = 'commit';
 
     if (this.node.addNewBlock(block)) {
-      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Committing a block of number ${block.number} 
-                   and hash ${block.hash}`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Committing a block of number ${block.number} and hash ${block.hash}`);
       this.tryRegister(block);
       this.updateToState();
     } else {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to commit a block: ` +
-                    JSON.stringify(this.state.proposedBlock, null, 2));
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to commit a block: ` + JSON.stringify(this.state.proposedBlock, null, 2));
     }
   }
 
@@ -315,8 +304,7 @@ class Consensus {
         return alphabeticallyOrderedValidators[i];
       }
     }
-    logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to get the proposer.
-                  \nvalidators: ${alphabeticallyOrderedValidators}\n` +
+    logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to get the proposer.\nvalidators: ${alphabeticallyOrderedValidators}\n` +
                   `totalAtStake: ${totalAtStake}\nseed: ${seed}\ntargetValue: ${targetValue}`);
 
     return null;
@@ -353,8 +341,7 @@ class Consensus {
     ]);
     const registration = this.node.db.getValue(registerRef);
 
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] registration (${number}, ${hash}): 
-                  ${JSON.stringify(registration, null, 2)}`);
+    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] registration (${number}, ${hash}): ${JSON.stringify(registration, null, 2)}`);
     if (!registration) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No validators registered`);
       throw Error('No validators registered');
@@ -390,7 +377,7 @@ class Consensus {
 
     if (!block) {
       logger.error(`[${LOG_PREFIX}:getStakeAtNumber] No past block of number ` +
-          `${number - 1} for validators reference`);
+                   `${number - 1} for validators reference`);
       throw Error('No past validator reference block available.');
     }
 
