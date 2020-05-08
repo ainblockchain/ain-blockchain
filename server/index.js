@@ -1,6 +1,5 @@
 const url = require('url');
 const Websocket = require('ws');
-const sleep = require('sleep');
 const ip = require('ip');
 const publicIp = require('public-ip');
 const axios = require('axios');
@@ -19,14 +18,7 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
-const P2P_PREFIX = '[P2P]';
-
-// A util function for testing/debugging.
-function setTimer(ws, timeSec) {
-  setTimeout(() => {
-    ws.close();
-  }, timeSec * 1000);
-}
+const P2P_PREFIX = 'P2P';
 
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(seo): Sign messages to tracker or peer.
@@ -37,7 +29,7 @@ class P2pServer {
     this.trackerWebSocket = null;
     this.interval = null;
     this.node = node;
-    this.managedPeersInfo = {}
+    this.managedPeersInfo = {};
     this.sockets = [];
     this.consensus = new Consensus(this, node);
     this.waitInBlocks = 4;
@@ -70,7 +62,7 @@ class P2pServer {
       }
     });
     server.on('connection', (socket) => this.setSocket(socket, null));
-    logger.info(`${P2P_PREFIX} Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
+    logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setIntervalForTrackerConnection();
   }
 
@@ -99,18 +91,18 @@ class P2pServer {
   }
 
   connectToTracker() {
-    logger.info(`${P2P_PREFIX} Reconnecting to tracker (${TRACKER_WS_ADDR})`);
+    logger.info(`[${P2P_PREFIX}] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
     this.getIpAddress()
     .then(() => {
       this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
       this.trackerWebSocket.on('open', () => {
-        logger.info(`${P2P_PREFIX} Connected to tracker (${TRACKER_WS_ADDR})`);
+        logger.info(`[${P2P_PREFIX}] Connected to tracker (${TRACKER_WS_ADDR})`);
         this.clearIntervalForTrackerConnection();
         this.setTrackerEventHandlers();
         this.setIntervalForTrackerUpdate();
       });
       this.trackerWebSocket.on('error', (error) => {
-        logger.error(`${P2P_PREFIX} Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+        logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
                      `${JSON.stringify(error, null, 2)}`);
       });
     });
@@ -128,7 +120,7 @@ class P2pServer {
           return res.data;
         })
         .catch((err) => {
-          logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+          logger.error(`[${P2P_PREFIX}] Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
           process.exit(0);
         });
       } else if (HOSTING_ENV === 'local') {
@@ -147,10 +139,10 @@ class P2pServer {
     this.trackerWebSocket.on('message', (message) => {
       try {
         const parsedMsg = JSON.parse(message);
-        logger.info(`\n${P2P_PREFIX} << Message from tracker: ` +
+        logger.info(`\n$[${P2P_PREFIX}] << Message from [TRACKER]: ` +
                     `${JSON.stringify(parsedMsg, null, 2)}`)
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-          logger.info(`${P2P_PREFIX} Updated managed peers info: ` +
+          logger.info(`[${P2P_PREFIX}] Updated managed peers info: ` +
                       `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
         if (this.isStarting) {
@@ -165,12 +157,12 @@ class P2pServer {
           }
         }
       } catch (error) {
-        logger.error(error.stack);
+        logger.error(`[${P2P_PREFIX}] ` + error.stack);
       }
     });
 
     this.trackerWebSocket.on('close', (code) => {
-      logger.info(`\n${P2P_PREFIX} Disconnected from tracker ${TRACKER_WS_ADDR} with code: ${code}`);
+      logger.info(`\n[${P2P_PREFIX}] Disconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
       this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
@@ -205,7 +197,7 @@ class P2pServer {
     if (diskUsage !== null) {
       updateToTracker.diskUsage = diskUsage;
     }
-    logger.info(`\n${P2P_PREFIX} >> Update to tracker ${TRACKER_WS_ADDR}: ` +
+    logger.info(`\n[${P2P_PREFIX}] >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
                 `${JSON.stringify(updateToTracker, null, 2)}`)
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
@@ -215,7 +207,7 @@ class P2pServer {
       return disk.checkSync(DISK_USAGE_PATH);
     }
     catch (err) {
-      logger.error(err);
+      logger.error(`[${P2P_PREFIX}] ` + err);
       return null;
     }
   }
@@ -224,19 +216,20 @@ class P2pServer {
     let updated = false;
     newManagedPeerInfoList.forEach((peerInfo) => {
       if (this.managedPeersInfo[peerInfo.address]) {
-        logger.info(`[PEER] Node ${peerInfo.address} is already a managed peer. ` +
-            `Something is wrong.`)
+        logger.info(`[${P2P_PREFIX}] Node ${peerInfo.address} is already a managed peer. ` +
+                    `Something is wrong.`)
       } else {
-        logger.info(`[PEER] Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
+        logger.info(`[${P2P_PREFIX}] Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
         this.managedPeersInfo[peerInfo.address] = peerInfo;
         updated = true;
         const socket = new Websocket(peerInfo.url);
         socket.on('open', () => {
-          logger.info(`[PEER] Connected to peer ${peerInfo.address} (${peerInfo.url}).`)
+          logger.info(`[${P2P_PREFIX}] Connected to peer ${peerInfo.address} (${peerInfo.url}).`)
           this.setSocket(socket, peerInfo.address);
         });
       }
     });
+
     return updated;
   }
 
@@ -261,19 +254,21 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.CONSENSUS:
-            logger.debug(`Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a consensus message: 
+                          ${JSON.stringify(data.message)}`);
             if (this.node.bc.syncedAfterStartup) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
-              logger.info(`\nNeeds syncing...\n`);
+              logger.info(`\n[${P2P_PREFIX}] Needs syncing...\n`);
             }
             break;
           case MessageTypes.TRANSACTION:
             if (DEBUG) {
-              logger.debug(`Receiving a transaction: ${JSON.stringify(data.transaction)}`);
+              logger.debug(`[${P2P_PREFIX}] Receiving a transaction: 
+                            ${JSON.stringify(data.transaction)}`);
             }
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
-              logger.debug("Already have the transaction in my tx tracker");
+              logger.debug(`[${P2P_PREFIX}] Already have the transaction in my tx tracker`);
               break;
             } else if (this.node.initialized) {
               this.executeAndBroadcastTransaction(data.transaction, MessageTypes.TRANSACTION);
@@ -282,7 +277,8 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION:
-            logger.debug(`Receiving a chain subsection: ${JSON.stringify(data.chainSubsection)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection: 
+                          ${JSON.stringify(data.chainSubsection)}`);
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
             if (this.node.bc.merge(data.chainSubsection)) {
@@ -293,7 +289,7 @@ class P2pServer {
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
                 if (!this.node.bc.syncedAfterStartup) {
-                  logger.info(`Node is now synced!`);
+                  logger.info(`[${P2P_PREFIX}] Node is now synced!`);
                   this.node.bc.syncedAfterStartup = true;
                 }
                 if (this.consensus.status === ConsensusStatus.STARTING) {
@@ -301,7 +297,7 @@ class P2pServer {
                 }
               } else {
                 // There's more blocks to receive
-                logger.debug(`Wait, there's more...`);
+                logger.debug(`[${P2P_PREFIX}] Wait, there's more...`);
               }
               if (this.consensus.status === ConsensusStatus.INITIALIZED || this.consensus.status === ConsensusStatus.RUNNING) {
                 this.consensus.updateToState();
@@ -312,11 +308,12 @@ class P2pServer {
             } else {
               // FIXME: Could be that I'm on a wrong chain.
               // TODO(lia): Detect a fork and choose the longest chain?
-              logger.info("Failed to merge incoming chain subsection.");
+              logger.info(`[${P2P_PREFIX}] Failed to merge incoming chain subsection`);
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION_REQUEST:
-            logger.debug(`Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: 
+                          ${JSON.stringify(data.lastBlock)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -332,32 +329,35 @@ class P2pServer {
             break;
         }
       } catch (error) {
-        logger.error(error.stack);
+        logger.error(`[${P2P_PREFIX}] ` + error.stack);
       }
     });
 
     socket.on('close', () => {
-      logger.info(`\n[PEER] Disconnected from a peer: ${address || 'unknown'}`);
+      logger.info(`\n[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
       this.removeFromListIfExists(socket);
+
       if (address && this.managedPeersInfo[address]) {
         delete this.managedPeersInfo[address];
-        logger.info(`[PEER] => Updated managed peers info: ` +
-            `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+        logger.info(`[${P2P_PREFIX}] => Updated managed peers info: ` +
+                    `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
       }
     });
 
     socket.on('error', (error) => {
-      logger.error(`[PEER] Error in communication with peer ${address}: ` +
-          `${JSON.stringify(error, null, 2)}`);
+      logger.error(`[${P2P_PREFIX}] Error in communication with peer ${address}: ` +
+                   `${JSON.stringify(error, null, 2)}`);
     });
   }
 
   removeFromListIfExists(entry) {
     const index = this.sockets.indexOf(entry);
+
     if (index >= 0) {
       this.sockets.splice(index, 1);
       return true;
     }
+
     return false;
   }
 
@@ -386,7 +386,7 @@ class P2pServer {
 
   broadcastTransaction(transaction) {
     if (DEBUG) {
-      logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
+      logger.debug(`[${P2P_PREFIX}] SENDING: ${JSON.stringify(transaction)}`);
     }
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -399,7 +399,7 @@ class P2pServer {
 
   broadcastConsensusMessage(msg) {
     if (DEBUG) {
-      logger.debug(`SENDING: ${JSON.stringify(msg)}`);
+      logger.debug(`[${P2P_PREFIX}] SENDING: ${JSON.stringify(msg)}`);
     }
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -421,25 +421,26 @@ class P2pServer {
     const transaction = transactionWithSig instanceof Transaction ?
         transactionWithSig : new Transaction(transactionWithSig);
     if (DEBUG) {
-      logger.debug(`EXECUTING: ${JSON.stringify(transaction)}`);
+      logger.debug(`[${P2P_PREFIX}] EXECUTING: ${JSON.stringify(transaction)}`);
     }
     if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
       if (DEBUG) {
-        logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
+        logger.debug(`[${P2P_PREFIX}] TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
       }
-      logger.info('Timed-out transaction');
+      logger.info(`[${P2P_PREFIX}] Timed-out transaction`);
       return null;
     }
     if (this.node.tp.isNotEligibleTransaction(transaction)) {
       if (DEBUG) {
-        logger.debug(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
+        logger.debug(`[${P2P_PREFIX}] ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
       }
-      logger.info('Transaction already received');
+      logger.info(`[${P2P_PREFIX}] Transaction already received`);
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
       if (DEBUG) {
-        logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`)
+        logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. 
+                      WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`)
       }
       this.node.tp.addTransaction(transaction);
       return null;
@@ -448,9 +449,10 @@ class P2pServer {
     if (!this.checkForTransactionResultErrorCode(result)) {
       this.node.tp.addTransaction(transaction);
     } else if (DEBUG) {
-      logger.debug(
-          `FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
+      logger.debug(`[${P2P_PREFIX}]FAILED TRANSACTION: 
+                    ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
+
     return result;
   }
 
@@ -474,15 +476,18 @@ class P2pServer {
       if (txListSucceeded.length > 0) {
         this.broadcastTransaction({ tx_list: txListSucceeded });
       }
+
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction ?
-          transactionWithSig : new Transaction(transactionWithSig);
+      const transaction = transactionWithSig instanceof Transaction ? transactionWithSig
+                                                                    : new Transaction(transactionWithSig);
       const response = this.executeTransaction(transaction);
-      logger.debug(`\nTX RESPONSE: ` + JSON.stringify(response))
+      logger.debug(`\n[${P2P_PREFIX}] TX RESPONSE: ` + JSON.stringify(response));
+
       if (!this.checkForTransactionResultErrorCode(response)) {
         this.broadcastTransaction(transaction);
       }
+
       return response;
     }
   }

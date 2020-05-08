@@ -12,6 +12,8 @@ const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 
+const LOG_PREFIX = 'BLOCK';
+
 class Block {
   constructor(lastHash, lastVotes, transactions, number, timestamp, proposer, validators) {
     this.last_votes = lastVotes;
@@ -44,19 +46,19 @@ class Block {
 
   toString() {
     return `Block -
-        hash:              ${ChainUtil.shortenHash(this.hash)}
-        last_hash:         ${ChainUtil.shortenHash(this.last_hash)}
-        last_votes_hash:   ${ChainUtil.shortenHash(this.last_votes_hash)}
-        transactions_hash: ${ChainUtil.shortenHash(this.transactions_hash)}
-        number:            ${this.number}
-        timestamp:         ${this.timestamp}
-        proposer:          ${this.proposer}
-        validators:        ${this.validators}
-        size:              ${this.size}
-        last_votes len:    ${this.last_votes.length}
-        transactions len:  ${this.transactions.length}
-        last_votes:        ${stringify(this.last_votes)}
-        transactions:      ${stringify(this.transactions)}`;
+            hash:              ${ChainUtil.shortenHash(this.hash)}
+            last_hash:         ${ChainUtil.shortenHash(this.last_hash)}
+            last_votes_hash:   ${ChainUtil.shortenHash(this.last_votes_hash)}
+            transactions_hash: ${ChainUtil.shortenHash(this.transactions_hash)}
+            number:            ${this.number}
+            timestamp:         ${this.timestamp}
+            proposer:          ${this.proposer}
+            validators:        ${this.validators}
+            size:              ${this.size}
+            last_votes len:    ${this.last_votes.length}
+            transactions len:  ${this.transactions.length}
+            last_votes:        ${stringify(this.last_votes)}
+            transactions:      ${stringify(this.transactions)}`;
   }
 
   static hash(block) {
@@ -65,8 +67,7 @@ class Block {
   }
 
   static createBlock(lastHash, lastVotes, transactions, number, proposer, validators) {
-    return new Block(lastHash, lastVotes, transactions, number, Date.now(),
-        proposer, validators);
+    return new Block(lastHash, lastVotes, transactions, number, Date.now(), proposer, validators);
   }
 
   static getFileName(block) {
@@ -96,26 +97,31 @@ class Block {
 
   static validateHashes(block) {
     if (block.hash !== Block.hash(block)) {
-      logger.info(`Block hash is incorrect for  block ${block.hash}`);
+      logger.error(`[${LOG_PREFIX}] Block hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
-      logger.info(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
+      logger.error(`[${LOG_PREFIX}] Transactions or transactions_hash is incorrect
+                    for block ${block.hash}`);
       return false;
     }
     if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
-      logger.info(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+      logger.error(`[${LOG_PREFIX}] Last votes or last_votes_hash is incorrect
+                    for block ${block.hash}`);
       return false;
     }
+    logger.info(`[${LOG_PREFIX}] Hash check successfully done`);
     return true;
   }
 
   static validateProposedBlock(block, blockchain) {
-    if (!Block.validateHashes(block)) { return false; }
+    if (!Block.validateHashes(block)) {
+      return false;
+    }
     if (block.number !== (blockchain.lastBlockNumber() + 1)) {
-      logger.error(`Number is not correct for block ${block.hash}.
-                   Expected: ${(blockchain.lastBlockNumber() + 1)}
-                   Actual: ${block.number}`);
+      logger.error(`[${LOG_PREFIX}] Number is not correct for block ${block.hash} 
+                    Expected: ${(blockchain.lastBlockNumber() + 1)}
+                    Actual: ${block.number}`);
       return false;
     }
     // TODO (lia): check the contents of block.last_votes if they indeed voted for
@@ -132,14 +138,15 @@ class Block {
         continue;
       }
       if (transaction.nonce != nonceTracker[transaction.address] + 1) {
-        logger.error(`Invalid noncing for ${transaction.address}.
-                     Expected ${nonceTracker[transaction.address] + 1}.
-                     Received ${transaction.nonce}`);
+        logger.error(`[${LOG_PREFIX}] Invalid noncing for ${transaction.address} 
+                      Expected ${nonceTracker[transaction.address] + 1}.
+                      Received ${transaction.nonce}`);
         return false;
       }
       nonceTracker[transaction.address] = transaction.nonce;
     }
-    logger.info(`Valid block of number ${block.number}`);
+
+    logger.info(`[${LOG_PREFIX}] Valid block of number ${block.number}`);
     return true;
   }
 

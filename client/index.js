@@ -13,11 +13,11 @@ const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
-const CLIENT_PREFIX = '[CLIENT]';
+const CLIENT_PREFIX = 'CLIENT';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
-  logger.error(err);
+  logger.error(`[${CLIENT_PREFIX}]` + err);
 });
 
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
@@ -281,8 +281,8 @@ app.get('/get_address', (req, res, next) => {
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 app.listen(PORT, () => {
-  logger.info(`${CLIENT_PREFIX} App listening on port ${PORT}`);
-  logger.info(`${CLIENT_PREFIX} Press Ctrl+C to quit.`);
+  logger.info(`[${CLIENT_PREFIX}] App listening on port ${PORT}`);
+  logger.info(`[${CLIENT_PREFIX}] Press Ctrl+C to quit.`);
 });
 
 // Lets start this p2p server up so we listen for changes in either DATABASE

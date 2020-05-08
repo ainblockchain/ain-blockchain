@@ -6,7 +6,7 @@ const TransactionPool = require('../tx-pool');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
-const NODE_PREFIX = '[NODE]';
+const NODE_PREFIX = 'NODE';
 
 class Node {
   constructor() {
@@ -18,7 +18,7 @@ class Node {
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    logger.info(`${NODE_PREFIX} Initializing a new node with account: ${this.account.address}`);
+    logger.info(`[${NODE_PREFIX}] Initializing a new node with account: ${this.account.address}`);
   }
 
   // For testing purpose only.
@@ -27,7 +27,7 @@ class Node {
   }
 
   init(isFirstNode) {
-    logger.info(`${NODE_PREFIX} Initializing node..`);
+    logger.info(`[${NODE_PREFIX}] Initializing node..`);
     this.bc.init(isFirstNode);
     this.bc.setBackupDb(new DB());
     this.nonce = this.getNonce();
@@ -53,7 +53,7 @@ class Node {
         break;
       }
     }
-    logger.info(`${NODE_PREFIX} Setting nonce to ${nonce}`);
+    logger.info(`[${NODE_PREFIX}] Setting nonce to ${nonce}`);
     return nonce;
   }
 
@@ -105,13 +105,14 @@ class Node {
   }
 
   reconstruct() {
-    logger.info(`${NODE_PREFIX} Reconstructing database (Current chain length: ${this.bc.chain.length})`);
+    logger.info(`[${NODE_PREFIX}] Reconstructing database (Current chain length: ${this.bc.chain.length})`);
     this.db.setDbToSnapshot(this.bc.backupDb);
     this.executeChainOnDb();
     this.db.executeTransactionList(this.tp.getValidTransactions());
   }
 
   executeChainOnDb() {
+    logger.info(`[${NODE_PREFIX}] Executing database`);
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       this.db.executeTransactionList(transactions);

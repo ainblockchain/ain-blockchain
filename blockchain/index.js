@@ -10,6 +10,8 @@ const BlockFilePatterns = require('./block-file-patterns');
 const { BLOCKCHAINS_DIR } = require('../constants');
 const CHAIN_SUBSECT_LENGTH = 20;
 
+const LOG_PREFIX = 'BLOCKCHAIN';
+
 class Blockchain {
   constructor(blockchainDir) {
     this.chain = [];
@@ -67,7 +69,7 @@ class Blockchain {
   getBlockByHash(hash) {
     if (!hash) return null;
     const blockFileName =
-        glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
+      glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
     return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
   }
 
@@ -115,11 +117,11 @@ class Blockchain {
 
   addNewBlock(block) {
     if (!block) {
-      logger.info(`[blockchain.addNewBlock] Block is null`);
+      logger.info(`[${LOG_PREFIX}.addNewBlock] Block is null`);
       return false;
     }
     if (block.number != this.lastBlockNumber() + 1) {
-      logger.info(`[blockchain.addNewBlock] Invalid blockchain number: ${block.number}`);
+      logger.info(`[${LOG_PREFIX}.addNewBlock] Invalid blockchain number: ${block.number}`);
       return false;
     }
     if (!(block instanceof Block)) {
@@ -134,15 +136,14 @@ class Blockchain {
     return true;
   }
 
-
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
     if (firstBlock.hash !== Block.genesis().hash) {
-      logger.error('First block is not the Genesis block');
+      logger.error(`[${LOG_PREFIX}] First block is not the Genesis block`);
       return false;
     }
     if (!Block.validateHashes(firstBlock)) {
-      logger.error('Genesis block is corrupted')
+      logger.error(`[${LOG_PREFIX}] Genesis block is corrupted`);
       return false;
     }
     // TODO (lia): Check if the tx nonces are correct.
@@ -204,35 +205,38 @@ class Blockchain {
     */
   requestBlockchainSection(refBlock) {
     const refBlockNumber = refBlock ? refBlock.number : 0;
-    logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
-        `Requester's last block number: ${refBlockNumber}`);
-    const blockFiles =
-        this.getBlockFiles(refBlockNumber, refBlockNumber + CHAIN_SUBSECT_LENGTH);
+    logger.info(`[${LOG_PREFIX}] Current last block number: ${this.lastBlockNumber()}, ` +
+                `[${LOG_PREFIX}] Requester's last block number: ${refBlockNumber}`);
+
+    const blockFiles = this.getBlockFiles(refBlockNumber, refBlockNumber + CHAIN_SUBSECT_LENGTH);
+
     if (blockFiles.length > 0 &&
         Block.loadBlock(blockFiles[blockFiles.length - 1]).number > refBlockNumber &&
         (refBlock && blockFiles[0].indexOf(Block.getFileName(refBlock)) < 0)) {
-      logger.error(
-          'Invalid blockchain request. Requesters last block does not belong to this blockchain');
+      logger.error(`[${LOG_PREFIX}] Invalid blockchain request. 
+                    Requesters last block does not belong to this blockchain`);
       return;
     }
+
     const refBlockHash = refBlock ? refBlock.hash : null;
     if (refBlockHash === this.lastBlock().hash) {
-      logger.info('Requesters blockchain is up to date with this blockchain');
-      return [ this.lastBlock() ];
+      logger.info(`[${LOG_PREFIX}] Requesters blockchain is up to date with this blockchain`);
+      return [this.lastBlock()];
     }
 
     const chainSubSection = [];
     blockFiles.forEach((blockFile) => {
       chainSubSection.push(Block.loadBlock(blockFile));
     });
-    return chainSubSection.length > 0 ? chainSubSection: null;
+
+    return chainSubSection.length > 0 ? chainSubSection : null;
   }
 
   merge(chainSubSection) {
     // Call to shift here is important as it removes the first element from the list !!
-    logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
+    logger.info(`[${LOG_PREFIX}] Last block number before merge: ${this.lastBlockNumber()}`);
     if (chainSubSection.length === 0) {
-      logger.info('Empty chain sub section');
+      logger.info(`[${LOG_PREFIX}] Empty chain sub section`);
       if (!this.syncedAfterStartup) {
         // Regard this situation as if you're synced.
         // TODO (lia): ask the tracker server for another peer.
@@ -241,11 +245,12 @@ class Blockchain {
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
-      logger.info('Received chain is of lower block number than current last block number');
+      logger.info(`[${LOG_PREFIX}] Received chain is of lower block number than 
+                   current last block number`);
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {
-      logger.info('Received chain is at the same block number');
+      logger.info(`[${LOG_PREFIX}] Received chain is at the same block number`);
       if (!this.syncedAfterStartup) {
         // Regard this situation as if you're synced.
         // TODO (lia): ask the tracker server for another peer.
@@ -253,25 +258,27 @@ class Blockchain {
       }
       return false;
     }
+
     const firstBlock = Block.parse(chainSubSection[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
+
     if (lastBlockHash) {
       // Case 1: Not a cold start.
       if (lastBlockHash !== firstBlock.hash) {
-        logger.info(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
-            `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
+        logger.info(`[${LOG_PREFIX}] The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
+                    `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
         return false;
       }
     } else {
       // Case 2: A cold start.
       if (firstBlock.last_hash !== '') {
-        logger.info(`First block of hash ${firstBlock.hash.substring(0, 5)} ` +
-            `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
+        logger.info(`[${LOG_PREFIX}] First block of hash ${firstBlock.hash.substring(0, 5)} ` +
+                    `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
         return false;
       }
     }
     if (!Blockchain.isValidChainSubsection(chainSubSection)) {
-      logger.error('Invalid chain subsection');
+      logger.error(`[${LOG_PREFIX}] Invalid chain subsection`);
       return false;
     }
     for (let i = 0; i < chainSubSection.length; i++) {
@@ -281,11 +288,12 @@ class Blockchain {
       }
       const block = chainSubSection[i];
       if (!this.addNewBlock(block)) {
-        logger.error('Failed to add block '+ block);
+        logger.error(`[${LOG_PREFIX}] Failed to add block ` + block);
         return false;
       }
     }
-    logger.info(`Last block number after merge: ${this.lastBlockNumber()}`);
+
+    logger.info(`[${LOG_PREFIX}] Last block number after merge: ${this.lastBlockNumber()}`);
     return true;
   }
 
@@ -298,10 +306,10 @@ class Blockchain {
     });
 
     if (Blockchain.isValidChain(newChain)) {
-      logger.info(`Valid chain of size ${newChain.length}`);
+      logger.info(`[${LOG_PREFIX}] Valid chain of size ${newChain.length}`);
       return newChain;
     }
-    logger.error('Invalid chain');
+    logger.error(`[${LOG_PREFIX}] Invalid chain`);
     rimraf.sync(chainPath + '/*');
     return null;
   }
@@ -314,7 +322,7 @@ class Blockchain {
   getBlockFiles(from, to) {
     // Here we use (to - 1) so files can be queried like normal array index querying.
     return glob.sync(BlockFilePatterns.getBlockFilesInRange(
-        this._blockchainDir(), from, to)).sort(naturalSort());
+      this._blockchainDir(), from, to)).sort(naturalSort());
   }
 
   getChainSection(from, to) {
