@@ -171,7 +171,7 @@ describe("DB operations", () => {
     };
     result = node.db.setOwner("test/test_owner", dbOwners);
     console.log(`Result of setOwner(): ${JSON.stringify(result, null, 2)}`);
-  })
+  });
 
   afterEach(() => {
     rimraf.sync(node.bc._blockchainDir());
@@ -1262,6 +1262,234 @@ describe("DB operations", () => {
         },
         true])
       expect(node.db.getValue("test/ai/foo")).to.equal("bar")
+    })
+  })
+
+  describe("remove empty terminals (garbage collection)", () => {
+    beforeEach(() => {
+      emptyValues = {
+        "terminal_1a": null,
+        "terminal_1b": {},
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1a": {
+          "node_2": {
+            "terminal_3": null,
+            "node_3": "a value"
+          }
+        },
+        "node_1b": {
+          "terminal_2": null,
+        }
+      };
+      const valueResult = node.db.setValue("/test/empty_values/node_0", emptyValues);
+      console.log(`Result of setValue(): ${JSON.stringify(valueResult, null, 2)}`);
+
+      emptyRules = {
+        "terminal_1a": null,
+        "terminal_1b": {},
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1a": {
+          "node_2": {
+            "terminal_3": null,
+            "node_3": {
+              ".write": "some rule"
+            }
+          }
+        },
+        "node_1b": {
+          "terminal_2": null,
+        }
+      };
+      const ruleResult = node.db.setRule("/test/empty_rules/node_0", emptyRules);
+      console.log(`Result of setRule(): ${JSON.stringify(ruleResult, null, 2)}`);
+
+      emptyOwners = {
+        "terminal_1a": null,
+        "terminal_1b": {},
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1a": {
+          "node_2": {
+            "terminal_3": null,
+            "node_3": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "node_1b": {
+          "terminal_2": null,
+        }
+      };
+      const ownerResult = node.db.setOwner("/test/empty_owners/node_0", emptyOwners);
+      console.log(`Result of setOwner(): ${JSON.stringify(ownerResult, null, 2)}`);
+    });
+
+    afterEach(() => {
+      const valueResult = node.db.setValue("/test/empty_values/node_0", null);
+      console.log(`Result of setValue(): ${JSON.stringify(valueResult, null, 2)}`);
+
+      const ruleResult = node.db.setRule("/test/empty_rules/node_0", null);
+      console.log(`Result of setRule(): ${JSON.stringify(ruleResult, null, 2)}`);
+
+      const ownerResult = node.db.setRule("/test/empty_owners/node_0", null);
+      console.log(`Result of setOwner(): ${JSON.stringify(ownerResult, null, 2)}`);
+    });
+
+    it("when setValue() with non-empty value", () => {
+      expect(node.db.setValue(
+          "/test/empty_values/node_0/node_1a/node_2/node_3", "another value")).to.equal(true)
+      assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
+        "terminal_1a": null,
+        "terminal_1b": {},
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1a": {
+          "node_2": {
+            "terminal_3": null,
+            "node_3": "another value"
+          }
+        },
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
+    })
+
+    it("when setValue() with 'null' value", () => {
+      expect(node.db.setValue(
+          "/test/empty_values/node_0/node_1a/node_2/node_3", null)).to.equal(true)
+      assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
+    })
+
+    it("when setValue() with 'undefined' value", () => {
+      expect(node.db.setValue(
+          "/test/empty_values/node_0/node_1a/node_2/node_3", undefined)).to.equal(true)
+      assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
+    })
+
+    it("when setValue() with '{}' value", () => {
+      expect(node.db.setValue(
+          "/test/empty_values/node_0/node_1a/node_2/node_3", {})).to.equal(true)
+      assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
+    })
+
+    it("when setRule() with non-empty rule", () => {
+      expect(node.db.setRule(
+          "/test/empty_rules/node_0/node_1a/node_2/node_3", {
+            ".write": "some other rule"
+          })).to.equal(true)
+      assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
+        "terminal_1a": null,
+        "terminal_1b": {},
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1a": {
+          "node_2": {
+            "terminal_3": null,
+            "node_3": {
+              ".write": "some other rule"
+            }
+          }
+        },
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
+    })
+
+    it("when setRule() with 'null' rule", () => {
+      expect(node.db.setRule(
+          "/test/empty_rules/node_0/node_1a/node_2/node_3", null)).to.equal(true)
+      assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
+    })
+
+    it("when setOwner() with non-empty owner", () => {
+      expect(node.db.setOwner(
+          "/test/empty_owners/node_0/node_1a/node_2/node_3", {
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_owner": true,
+                  "write_rule": false,
+                  "write_function": false
+                }
+              }
+            }
+          })).to.equal(true)
+      assert.deepEqual(node.db.getOwner("/test/empty_owners/node_0"), {
+        "terminal_1a": null,
+        "terminal_1b": {},
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1a": {
+          "node_2": {
+            "terminal_3": null,
+            "node_3": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_owner": true,
+                    "write_rule": false,
+                    "write_function": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
+    })
+
+    it("when setOwner() with 'null' owner", () => {
+      expect(node.db.setOwner(
+          "/test/empty_owners/node_0/node_1a/node_2/node_3", null)).to.equal(true)
+      assert.deepEqual(node.db.getOwner("/test/empty_owners/node_0"), {
+        "terminal_1c": "",
+        "terminal_1d": [],
+        "node_1b": {
+          "terminal_2": null,
+        }
+      })
     })
   })
 })

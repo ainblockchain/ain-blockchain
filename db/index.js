@@ -167,7 +167,6 @@ class DB {
     return resultList;
   }
 
-  // TODO(seo): Add logic for deleting rule paths with only dangling points.
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
@@ -224,7 +223,6 @@ class DB {
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
-  // TODO(seo): Add logic for deleting rule paths with only dangling points (w/o .write).
   setRule(rulePath, rule, address) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address)) {
@@ -237,7 +235,6 @@ class DB {
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  // TODO(seo): Add logic for deleting owner paths with only dangling points (w/o .owner).
   setOwner(ownerPath, owner, address) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
