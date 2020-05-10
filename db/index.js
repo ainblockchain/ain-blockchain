@@ -56,7 +56,7 @@ class DB {
       this.getRefForWriting(pathToKey)[refKey] = value;
     }
     if (DB.isEmptyNode(value)) {
-      this.removeEmptyTerminals(fullPath);
+      this.removeEmptyNodes(fullPath);
     }
   }
 
@@ -65,13 +65,13 @@ class DB {
         (ChainUtil.isDict(dbNode) && Object.keys(dbNode).length === 0);
   }
 
-  removeEmptyTerminalsRecursive(fullPath, depth, curDbNode) {
+  removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
     if (depth < fullPath.length - 1) {
       const nextDbNode = curDbNode[fullPath[depth]];
       if (nextDbNode === undefined) {
         logger.error(`Unavailable path in the database: ${ChainUtil.formatPath(fullPath)}`);
       } else {
-        this.removeEmptyTerminalsRecursive(fullPath, depth + 1, nextDbNode);
+        this.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
       }
     }
     for (const child in curDbNode) {
@@ -81,8 +81,8 @@ class DB {
     }
   }
 
-  removeEmptyTerminals(fullPath) {
-    return this.removeEmptyTerminalsRecursive(fullPath, 0, this.dbData);
+  removeEmptyNodes(fullPath) {
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbData);
   }
 
   readDatabase(fullPath) {
