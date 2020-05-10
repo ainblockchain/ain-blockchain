@@ -55,12 +55,12 @@ class DB {
       const refKey = fullPath[fullPath.length - 1];
       this.getRefForWriting(pathToKey)[refKey] = value;
     }
-    if (DB.isEmptyDbNode(value)) {
+    if (DB.isEmptyNode(value)) {
       this.removeEmptyTerminals(fullPath);
     }
   }
 
-  static isEmptyDbNode(dbNode) {
+  static isEmptyNode(dbNode) {
     return dbNode === null || dbNode === undefined ||
         (ChainUtil.isDict(dbNode) && Object.keys(dbNode).length === 0);
   }
@@ -75,7 +75,7 @@ class DB {
       }
     }
     for (const child in curDbNode) {
-      if (DB.isEmptyDbNode(curDbNode[child])) {
+      if (DB.isEmptyNode(curDbNode[child])) {
         delete curDbNode[child];
       }
     }

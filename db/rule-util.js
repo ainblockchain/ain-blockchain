@@ -19,6 +19,11 @@ class RuleUtil {
     return (typeof value === 'object' && value !== null && !Array.isArray(value));
   }
 
+  isEmptyNode(node) {
+    return node === null || node === undefined ||
+        (this.isDict(node) && Object.keys(node).length === 0);
+  }
+
   keys(value) {
     if (this.isDict(value)) {
       return Object.keys(value);

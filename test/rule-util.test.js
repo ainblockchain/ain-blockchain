@@ -91,6 +91,27 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isEmptyNode", () => {
+    it("when invalid input", () => {
+      expect(util.isEmptyNode(0)).to.equal(false);
+      expect(util.isEmptyNode(10)).to.equal(false);
+      expect(util.isEmptyNode(Infinity)).to.equal(false);
+      expect(util.isEmptyNode(NaN)).to.equal(false);
+      expect(util.isEmptyNode('')).to.equal(false);
+      expect(util.isEmptyNode('abc')).to.equal(false);
+      expect(util.isEmptyNode('0')).to.equal(false);
+      expect(util.isEmptyNode([])).to.equal(false);
+      expect(util.isEmptyNode([10])).to.equal(false);
+      expect(util.isEmptyNode({a: 'A'})).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isEmptyNode(null)).to.equal(true);
+      expect(util.isEmptyNode(undefined)).to.equal(true);
+      expect(util.isEmptyNode({})).to.equal(true);
+    })
+  })
+
   describe("keys", () => {
     it("when invalid input", () => {
       assert.deepEqual(util.keys(0), []);
