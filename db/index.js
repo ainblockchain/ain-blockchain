@@ -68,7 +68,7 @@ class DB {
   removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
     if (depth < fullPath.length - 1) {
       const nextDbNode = curDbNode[fullPath[depth]];
-      if (nextDbNode === undefined) {
+      if (!ChainUtil.isDict(nextDbNode)) {
         logger.error(`Unavailable path in the database: ${ChainUtil.formatPath(fullPath)}`);
       } else {
         this.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
