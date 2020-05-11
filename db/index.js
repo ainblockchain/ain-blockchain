@@ -55,6 +55,34 @@ class DB {
       const refKey = fullPath[fullPath.length - 1];
       this.getRefForWriting(pathToKey)[refKey] = value;
     }
+    if (DB.isEmptyNode(value)) {
+      this.removeEmptyNodes(fullPath);
+    }
+  }
+
+  static isEmptyNode(dbNode) {
+    return dbNode === null || dbNode === undefined ||
+        (ChainUtil.isDict(dbNode) && Object.keys(dbNode).length === 0);
+  }
+
+  removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
+    if (depth < fullPath.length - 1) {
+      const nextDbNode = curDbNode[fullPath[depth]];
+      if (!ChainUtil.isDict(nextDbNode)) {
+        logger.error(`Unavailable path in the database: ${ChainUtil.formatPath(fullPath)}`);
+      } else {
+        this.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
+      }
+    }
+    for (const child in curDbNode) {
+      if (DB.isEmptyNode(curDbNode[child])) {
+        delete curDbNode[child];
+      }
+    }
+  }
+
+  removeEmptyNodes(fullPath) {
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbData);
   }
 
   readDatabase(fullPath) {
@@ -139,7 +167,6 @@ class DB {
     return resultList;
   }
 
-  // TODO(seo): Add logic for deleting rule paths with only dangling points.
   // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
@@ -196,7 +223,6 @@ class DB {
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
-  // TODO(seo): Add logic for deleting rule paths with only dangling points (w/o .write).
   setRule(rulePath, rule, address) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address)) {
@@ -209,7 +235,6 @@ class DB {
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  // TODO(seo): Add logic for deleting owner paths with only dangling points (w/o .owner).
   setOwner(ownerPath, owner, address) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
