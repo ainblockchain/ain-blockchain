@@ -1,0 +1,42 @@
+{"op_list": [
+  {
+    "type": "SET_OWNER",
+    "ref": "/apps/chatbots/common/message",
+    "value": {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "SET_RULE",
+    "ref": "/apps/chatbots/common/message/$key",
+    "value": {
+      ".write": true
+    }
+  },
+  {
+    "type": "SET_FUNCTION",
+    "ref": "/apps/chatbots/common/message/$key",
+    "value": {
+      ".function": {
+        "function_type": "REST",
+        "event_listener": "https://events.ainetwork.ai/trigger",
+        "service_name": "https://ainize.ai",
+        "function_id": "liayoo-ainjs"
+      }
+    }
+  },
+  {
+    "type": "SET_VALUE",
+    "ref": "/apps/chatbots/common/message/1",
+    "value": "Hi"
+  }]
+}

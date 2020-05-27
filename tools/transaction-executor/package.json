@@ -1,0 +1,41 @@
+{
+  "name": "transaction-executor",
+  "version": "0.0.0",
+  "author": "chris",
+  "bin": {
+    "transaction-executor": "./bin/run"
+  },
+  "bugs": "https://github.com///issues",
+  "dependencies": {
+    "@oclif/command": "^1.5.18",
+    "@oclif/config": "^1.13.2",
+    "@oclif/plugin-help": "^2.2.0",
+    "bn.js": "^5.0.0",
+    "line-reader": "^0.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0",
+    "eslint-config-oclif": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "files": [
+    "/bin",
+    "/src"
+  ],
+  "homepage": "https://github.com//",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "src/index.js",
+  "oclif": {
+    "bin": "transaction-executor"
+  },
+  "repository": "/",
+  "scripts": {
+    "posttest": "eslint .",
+    "test": "echo NO TESTS"
+  }
+}

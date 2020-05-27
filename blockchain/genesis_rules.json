@@ -1,0 +1,84 @@
+{
+  ".write": false,
+  "accounts": {
+    ".write": true
+  },
+  "afan": {
+    ".write": true
+  },
+  "apps": {
+    "chatbots": {
+      ".write": true
+    }
+  },
+  "consensus": {
+    "number": {
+      "$number": {
+        ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
+        "propose": {
+          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth && Number($number) === newData.number && (newData.number === 1 || getValue('/consensus/number/' + (newData.number - 1) + '/propose/validators/' + auth) > 0)"
+        },
+        "register": {
+          "$user_addr": {
+            ".write": "auth === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/deposit_accounts/consensus/' + $user_addr + '/value') >= newData.stake && !getValue('/consensus/number/' + (Number($number) + 1) + '/propose')"
+          }
+        }
+      }
+    }
+  },
+  "deposit": {
+    "$service": {
+      "$user_addr": {
+        "$deposit_id": {
+          "value": {
+            ".write": "auth === $user_addr && !getValue('/deposit/' + $service + '/' + $user_addr + '/' + $deposit_id) && (util.length($user_addr) !== 42 || util.isCksumAddr($user_addr)) && util.isNumber(newData) && getValue('/accounts/' + $user_addr + '/balance') >= newData"
+          },
+          "createdAt": {
+            ".write": false
+          }
+        }
+      }
+    }
+  },
+  "deposit_accounts": {
+    ".write": false,
+    "$service": {
+      "config": {
+        ".write": "!getValue('/deposit_accounts/' + $service) || (getOwner('/deposit_accounts/' + $service) && getOwner('/deposit_accounts/' + $service).owners && getOwner('/deposit_accounts/' + $service).owners[auth])"
+      },
+      "$user_addr": {
+        ".write": false
+      }
+    },
+    "consensus": {
+      "config": {
+        ".write": false
+      }
+    }
+  },
+  "transfer": {
+    "$from": {
+      "$to": {
+        "$key": {
+          "value": {
+            ".write": "auth === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 42 || util.isCksumAddr($from)) && (util.length($to) !== 42 || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue('accounts/' + $from + '/balance') >= newData"
+          }
+        }
+      }
+    }
+  },
+  "withdraw":{
+    "$service": {
+      "$user_addr": {
+        "$withdraw_id": {
+          "value": {
+            ".write": "auth === $user_addr && !getValue('/withdraw/' + $service + '/' + $user_addr + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service + '/' + $user_addr + '/value') >= newData"
+          },
+          "createdAt": {
+            ".write": false
+          }
+        }
+      }
+    }
+  }
+}
