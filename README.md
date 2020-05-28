@@ -246,7 +246,7 @@ POST http://<ip_address>:8080/set_function with json_body {"ref": "/db/path/to/s
 
 GET http://<ip_address>:8080/match_rule with json_body {"ref": "/db/path/to/match"}
 
-### Match function
+#### Match function
 
 GET http://<ip_address>:8080/match_function with json_body {"ref": "/db/path/to/match"}
 
