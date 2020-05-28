@@ -8,7 +8,7 @@ import random
 import copy
 from time import sleep
 ####### PLEASE SET THESE VALUES BEFORE RUNNING TOOL ###########
-TOOL_LOCATION = '/home/chris/workspace/blockchain-database/tools/transaction-executor/bin/run'
+TOOL_LOCATION = '/path/to/ain-blockchain/tools/transaction-executor/bin/run'
 SERVER = 'http://localhost:8080'
 TRANSFER_AMOUNT = 5
 ###############################################################
