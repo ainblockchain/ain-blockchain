@@ -62,7 +62,7 @@ docker pull ainblockchain/tracker-server
 docker run -e HOSTING_ENV="gcp" --network="host" -d ainblockchain/tracker-server:latest
 ```
 
-### Client API
+### Client APIs for development and debugging
 
 #### Tracker health check
 
@@ -156,7 +156,7 @@ docker exec -it <container_id> /bin/bash
 cat logger/logs/8080/<log_file>
 ```
 
-### Client API
+### Client APIs for development and debugging
 
 #### Node health check
 
@@ -206,6 +206,10 @@ GET http://<ip_address>:8080/get_owner?ref=/db/path/to/fetch
 
 GET http://<ip_address>:8080/match_rule?ref=/db/path/to/match
 
+#### Match function with database value location
+
+GET http://<ip_address>:8080/match_function?ref=/db/path/to/match
+
 #### Match owner with database rule/function/owner location
 
 GET http://<ip_address>:8080/match_owner?ref=/db/path/to/match
@@ -236,19 +240,15 @@ POST http://<ip_address>:8080/dec_value with json_body {"ref": "/db/path/to/decr
 
 #### Set rule
 
-POST http://<ip_address>:8080/set_rule with json_body {"ref": "/db/path/to/set", "value": "some rule"}
+POST http://<ip_address>:8080/set_rule with json_body {"ref": "/db/path/to/set", "value": "some rule config"}
 
 #### Set function
 
-POST http://<ip_address>:8080/set_function with json_body {"ref": "/db/path/to/set", "value": "some function"}
+POST http://<ip_address>:8080/set_function with json_body {"ref": "/db/path/to/set", "value": "some function config"}
 
-#### Match rule
+#### Set owner
 
-GET http://<ip_address>:8080/match_rule with json_body {"ref": "/db/path/to/match"}
-
-#### Match function
-
-GET http://<ip_address>:8080/match_function with json_body {"ref": "/db/path/to/match"}
+POST http://<ip_address>:8080/set_owner with json_body {"ref": "/db/path/to/set", "value": "some owner config"}
 
 #### Perform multiple set operations
 
