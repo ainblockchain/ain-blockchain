@@ -1,13 +1,13 @@
 {
-  "name": "blockchain-database",
-  "description": "memory server + blockchain",
+  "name": "ain-blockchain",
+  "description": "AI Network Blockchain",
   "version": "0.1.0",
   "private": true,
-  "license": "Apache-2.0",
-  "author": "dev@comcom.ai",
+  "license": "MIT",
+  "author": "dev@ainetwork.ai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/GoogleCloudPlatform/nodejs-docs-samples.git"
+    "url": "https://github.com/ainblockchain/ain-blockchain"
   },
   "engines": {
     "node": ">=8"
