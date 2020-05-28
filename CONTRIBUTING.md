@@ -2,12 +2,12 @@
 
 Please make sure your contributions adhere to our coding guidelines:
 * Code must adhere to the official Javascript [formatting](https://google.github.io/styleguide/jsguide.html#formatting) guidelines.
-* Code must be documented adhering to the official  [JSDoc](https://google.github.io/styleguide/jsguide.html#jsdoc) guidelines.
+* Code must be documented adhering to the official [JSDoc](https://google.github.io/styleguide/jsguide.html#jsdoc) guidelines.
 * Pull requests need to be based on and opened against the `master` branch.
 
 ### Report a bug
 
-* Open an issue on the this repository.
+* Open an issue on this repository.
 
 ### Propose a feature
 
