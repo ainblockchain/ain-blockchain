@@ -242,6 +242,14 @@ POST http://<ip_address>:8080/set_rule with json_body {"ref": "/db/path/to/set",
 
 POST http://<ip_address>:8080/set_function with json_body {"ref": "/db/path/to/set", "value": "some function"}
 
+#### Match rule
+
+GET http://<ip_address>:8080/match_rule with json_body {"ref": "/db/path/to/match"}
+
+### Match function
+
+GET http://<ip_address>:8080/match_function with json_body {"ref": "/db/path/to/match"}
+
 #### Perform multiple set operations
 
 POST http://<ip_address>:8080/set with json_body {"op_list": [{"type": "SET_VALUE", "ref": "/db/path/to/set", "value": "some value}, {"type": "SET_RULE", "ref": "/db/path/to/set2", "value": "some rule"}]}
