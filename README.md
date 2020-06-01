@@ -46,6 +46,7 @@ cd ain-blockchain/
 sh start_tracker_gcp.sh
 ```
 
+<!--
 ### Running with Docker
 
 - Build Docker image
@@ -61,6 +62,7 @@ docker pull ainblockchain/tracker-server
 ```
 docker run -e HOSTING_ENV="gcp" --network="host" -d ainblockchain/tracker-server:latest
 ```
+-->
 
 ### Client APIs for development and debugging
 
@@ -127,6 +129,7 @@ sh setup_node_gcp.sh
 sh start_node_gcp.sh {dev|spring|summer} <SERVER_INDEX>
 ```
 
+<!--
 ### Running with Docker
 
 - Build Docker image
@@ -155,6 +158,7 @@ cd blockchain/blockchains/8080/
 docker exec -it <container_id> /bin/bash
 cat logger/logs/8080/<log_file>
 ```
+-->
 
 ### Client APIs for development and debugging
 
