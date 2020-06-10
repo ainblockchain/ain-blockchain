@@ -280,10 +280,12 @@ app.get('/get_address', (req, res, next) => {
 
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`[${CLIENT_PREFIX}] App listening on port ${PORT}`);
   logger.info(`[${CLIENT_PREFIX}] Press Ctrl+C to quit.`);
 });
+
+server.keepAliveTimeout = 620000;
 
 // Lets start this p2p server up so we listen for changes in either DATABASE
 // or NUMBER OF SERVERS
