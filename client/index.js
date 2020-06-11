@@ -286,6 +286,7 @@ const server = app.listen(PORT, () => {
 });
 
 server.keepAliveTimeout = 620000;
+server.headersTimeout = 630000;
 
 // Lets start this p2p server up so we listen for changes in either DATABASE
 // or NUMBER OF SERVERS
