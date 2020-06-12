@@ -285,8 +285,8 @@ const server = app.listen(PORT, () => {
   logger.info(`[${CLIENT_PREFIX}] Press Ctrl+C to quit.`);
 });
 
-server.keepAliveTimeout = 620000;
-server.headersTimeout = 630000;
+server.keepAliveTimeout = 620 * 1000; // 620 seconds
+server.headersTimeout = 630 * 1000; // 630 seconds
 
 // Lets start this p2p server up so we listen for changes in either DATABASE
 // or NUMBER OF SERVERS
