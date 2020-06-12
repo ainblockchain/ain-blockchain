@@ -297,7 +297,10 @@ app.get('/peer_nodes', (req, res, next) => {
     .end();
 });
 
-app.listen(PORT, () => {
+const trackerServer = app.listen(PORT, () => {
   logger.info(`App listening on port ${PORT}`);
   logger.info('Press Ctrl+C to quit.');
 });
+
+trackerServer.keepAliveTimeout = 620000;
+trackerServer.headersTimeout = 630000;
