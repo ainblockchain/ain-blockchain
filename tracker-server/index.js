@@ -302,5 +302,5 @@ const trackerServer = app.listen(PORT, () => {
   logger.info('Press Ctrl+C to quit.');
 });
 
-trackerServer.keepAliveTimeout = 620000;
-trackerServer.headersTimeout = 630000;
+trackerServer.keepAliveTimeout = 620 * 1000; // 620 seconds
+trackerServer.headersTimeout = 630 * 1000; // 630 seconds
