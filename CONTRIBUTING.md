@@ -3,7 +3,9 @@
 Please make sure your contributions adhere to our coding guidelines:
 * Code must adhere to the official Javascript [formatting](https://google.github.io/styleguide/jsguide.html#formatting) guidelines.
 * Code must be documented adhering to the official [JSDoc](https://google.github.io/styleguide/jsguide.html#jsdoc) guidelines.
-* Pull requests need to be based on and opened against the `master` branch.
+* Gitflow is basically derived from [Vincent Driessen's article](https://nvie.com/posts/a-successful-git-branching-model/).
+* Pull requests need to be based on and opened against the `develop` branch.
+* `hotfix` branches can be exceptionally opened and directly merged into `master` branch.
 
 ### Report a bug
 
