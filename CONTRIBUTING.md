@@ -7,12 +7,13 @@ Please make sure your contributions adhere to our coding guidelines:
 * Pull requests need to be based on and opened against the `develop` branch.
 * `hotfix` branches can be exceptionally opened and directly merged into `master` branch.
 
-### Report a bug
+### Deal with a bug
 
-* Open an issue on this repository.
+* Open an **Issue** on this repository. Please refer to templates/ISSUE_TEMPLATE.md.
+* Send a **Pull Request**. Please refer to templates/PULL_REQUEST_TEMPLATE.md.
 
 ### Propose a feature
 
-* Open an issue with a detailed description of your proposed feature, the motivation for it and alternatives considered. Please note we may close the issue or ask you to create a pull-request if it's not something we see as sufficiently high priority.
+* Open an issue(please refer to templates/ISSUE_TEMPLATE.md) with a detailed description of your proposed feature, the motivation for it and alternatives considered. Please note we may close the issue or ask you to create a pull-request if it's not something we see as sufficiently high priority.
 
 Thanks!
