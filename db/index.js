@@ -283,7 +283,7 @@ class DB {
         }
       } else {
         // Invalid Operation
-        return {code: 5, error_message: 'Invalid opeartionn type: ' + op.type};
+        return {code: 5, error_message: 'Invalid opeartion type: ' + op.type};
       }
     }
     return ret;
@@ -392,9 +392,15 @@ class DB {
   }
 
   executeTransactionList(txList) {
-    txList.forEach((tx) => {
-      this.executeTransaction(tx);
-    });
+    for (const tx of txList) {
+      const res = this.executeTransaction(tx);
+      if (ChainUtil.transactionFailed(res)) {
+        // FIXME: remove the failed transaction from tx pool?
+        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}\nresult: ${JSON.stringify(res)}`);
+        return false;
+      }
+    }
+    return true;
   }
 
   addPathToValue(value, matchedValuePath, closestConfigDepth) {
@@ -826,6 +832,13 @@ class DB {
   checkPermission(config, address, permission) {
     const permissions = this.getOwnerPermissions(config, address);
     return !!(permissions && permissions[permission] === true);
+  }
+
+  static removeEmpty(obj) {
+    Object.entries(obj).forEach(([key, val]) => {
+      if (val && typeof val === 'object') DB.removeEmpty(val);
+      else if (val == null) delete obj[key];
+    });
   }
 }
 
