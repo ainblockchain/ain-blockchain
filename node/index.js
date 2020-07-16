@@ -28,11 +28,14 @@ class Node {
 
   init(isFirstNode) {
     logger.info(`[${NODE_PREFIX}] Initializing node..`);
-    this.bc.init(isFirstNode);
+    const lastBlockWithoutProposal = this.bc.init(isFirstNode);
     this.bc.setBackupDb(new DB());
     this.nonce = this.getNonce();
-    this.reconstruct();
+    this.executeChainOnBackupDb();
+    this.db.setDbToSnapshot(this.bc.backupDb);
+    this.db.executeTransactionList(this.tp.getValidTransactions());
     this.initialized = true;
+    return lastBlockWithoutProposal;
   }
 
   getNonce() {
@@ -99,26 +102,26 @@ class Node {
   addNewBlock(block) {
     if (this.bc.addNewBlock(block)) {
       this.tp.cleanUpForNewBlock(block);
-      this.reconstruct();
+      DB.removeEmpty(this.bc.backupDb.dbData);
+      this.db.setDbToSnapshot(this.bc.backupDb);
+      this.tp.updateNonceTrackers(block.transactions);
       return true;
     }
     return false;
   }
 
-  reconstruct() {
-    logger.info(`[${NODE_PREFIX}] Reconstructing database (Current chain length: ${this.bc.chain.length})`);
-    this.db.setDbToSnapshot(this.bc.backupDb);
-    this.executeChainOnDb();
-    this.db.executeTransactionList(this.tp.getValidTransactions());
-  }
-
-  executeChainOnDb() {
-    logger.info(`[${NODE_PREFIX}] Executing database`);
+  executeChainOnBackupDb() {
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
-      this.db.executeTransactionList(transactions);
+      if (!this.bc.backupDb.executeTransactionList(block.last_votes)) {
+        logger.error(`[node:executeChainOnBackupDb] Failed to execute last_votes`)
+      }
+      if (!this.bc.backupDb.executeTransactionList(transactions)) {
+        logger.error(`[node:executeChainOnBackupDb] Failed to execute transactions`)
+      }
       this.tp.updateNonceTrackers(transactions);
     });
+    DB.removeEmpty(this.bc.backupDb.dbData);
   }
 }
 

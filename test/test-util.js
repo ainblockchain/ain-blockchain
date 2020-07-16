@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require("fs")
 const Transaction = require('../tx-pool/transaction');
+const { Block } = require('../blockchain/block');
 
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
@@ -29,7 +30,14 @@ function getTransaction(node, txData) {
   return Transaction.newTransaction(node.account.private_key, txData);
 }
 
+function addBlock(node, txs, votes, validators) {
+  const lastBlock = node.bc.lastBlock();
+  node.addNewBlock(Block.createBlock(lastBlock.hash, votes, txs, lastBlock.number + 1,
+    lastBlock.epoch + 1, node.account.address, validators));
+}
+
 module.exports = {
   setDbForTesting,
-  getTransaction
+  getTransaction,
+  addBlock
 };

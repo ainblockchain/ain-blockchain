@@ -99,11 +99,12 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       const nodeInfo = JSON.parse(message);
-      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
-          `${JSON.stringify(nodeInfo, null, 2)}`)
       if (PEER_NODES[nodeInfo.address]) {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
         node.assignRandomPeers();
+        delete nodeInfo.consensusStatus.blockPool;
+        logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
+            `${JSON.stringify(nodeInfo, null, 2)}`)
       } else {
         node = new PeerNode(nodeInfo);
         node.assignRandomPeers();

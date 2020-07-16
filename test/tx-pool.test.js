@@ -112,7 +112,7 @@ describe('TransactionPool', () => {
       const number = 1;
       const lastBlock = Block.genesis();
       const block = Block.createBlock(lastBlock.hash, [], node.tp.getValidTransactions(),
-          number, node.account.address, []);
+          number, lastBlock.epoch + 1, node.account.address, []);
       const newTransactions = {};
       newTransactions[node.account.address] = [];
       for (let i = 0; i < 10; i++) {
