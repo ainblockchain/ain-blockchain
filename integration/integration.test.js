@@ -16,6 +16,7 @@ const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
 const { BLOCKCHAINS_DIR, PredefinedDbPaths } = require('../constants');
+const { ConsensusConsts } = require('../consensus/constants');
 const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
@@ -400,11 +401,7 @@ describe('Integration Tests', () => {
         }
       });
 
-      // NOTE(seo): Flaky test case, rarely fails.
-      // TODO(lia): Update this test case after consensus is complete
-      /*
       it('blocks have correct validators and voting data', () => {
-        let threshold = 2 / 3; // TODO (lia): define this as a constant in genesis.
         for (let i = 0; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
           waitForNewBlocks();
@@ -413,40 +410,33 @@ describe('Integration Tests', () => {
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
               .body.toString('utf-8')).result.result;
           const len = blocks.length;
-          // The genesis and the following blocks are exceptions
-          // (validators and next_round_validators are set 'arbitrarily')
-          for (let j = 2; j < len; j++) {
-            let preVotes = 0;
-            let preCommits = 0;
-            const validatorsMinusProposer = Object.assign({}, blocks[j - 1].validators);
-            delete validatorsMinusProposer[blocks[j - 1].proposer];
-            let totalStakedAmount = Object.values(validatorsMinusProposer)
-                .reduce((a, b) => { return a + b; }, 0);
-            let majority = Math.floor(totalStakedAmount * threshold);
+          for (let j = 1; j < len; j++) {
+            let voteSum = 0;
+            const validators = Object.assign({}, blocks[j - 1].validators);
+            let totalStakedAmount = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+            let majority = Math.floor(totalStakedAmount * ConsensusConsts.MAJORITY);
             for (let k = 0; k < blocks[j].last_votes.length; k++) {
-              const last_vote = blocks[j].last_votes[k];
-              if (!blocks[j - 1].validators[last_vote.address]) {
-                console.log(blocks[j -1])
-                console.log(`Votes for block ${j -1} had validator ${last_vote.address} ` +
-                    `which was not in designated validators list ` +
-                    `${JSON.stringify(blocks[j - 1].validators)}`)
-                assert.fail(`Invalid validator is validating block ${last_vote.address}`);
+              const vote = blocks[j].last_votes[k];
+              // if (!blocks[j - 1].validators[vote.address]) {
+              //   console.log(blocks[j -1]);
+              //   console.log(`Votes for block ${j - 1} had validator ${vote.address} ` +
+              //       `which was not in designated validators list: ${JSON.stringify(blocks[j - 1].validators, null, 2)}` +
+              //       `${JSON.stringify(blocks[j - 1].validators)}`);
+              //   assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
+              // }
+              if (vote.operation.value.block_hash !== blocks[j - 1].hash) {
+                assert.fail('Invalid vote included in last_votes');
               }
-              if (last_vote.operation.ref === PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH) {
-                continue;
-              } else if (last_vote.operation.ref === PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) {
-                preVotes += last_vote.operation.value;
-              } else if (preVotes <= majority) {
-                // TODO (lia): fix this issue. sometimes it fails this check.
-                assert.fail('PreCommits were made before PreVotes reached threshold');
-              } else {
-                preCommits += last_vote.operation.value;
+              if (blocks[j - 1].validators[vote.address]) {
+                voteSum += vote.operation.value.stake;
               }
+            }
+            if (voteSum < majority) {
+              assert.fail(`Insufficient votes received (${voteSum} / ${majority})`);
             }
           }
         }
       });
-      */
 
       it('blocks have valid hashes', () => {
         const hashString = (str) => {
@@ -458,6 +448,7 @@ describe('Integration Tests', () => {
             last_votes_hash: block.last_votes_hash,
             transactions_hash: block.transactions_hash,
             number: block.number,
+            epoch: block.epoch,
             timestamp: block.timestamp,
             proposer: block.proposer,
             validators: block.validators,
@@ -475,7 +466,7 @@ describe('Integration Tests', () => {
           for (let j = 0; j < len; j++) {
             const block = blocks[j];
             if (block.hash !== hashBlock(block)) {
-              assert.fail(`Block hash is incorrect for  block ${block.hash}`);
+              assert.fail(`Block hash is incorrect for block ${JSON.stringify(block, null, 2)}\n(hash: ${hashBlock(block)}, node ${i})`);
             }
             if (block.transactions_hash !== hashString(stringify(block.transactions))) {
               assert.fail(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
@@ -689,7 +680,7 @@ describe('Integration Tests', () => {
           Promise.all(promises).then(resAfterCommit => {
             const committedNonceAfterCommit = resAfterCommit[0].result.result;
             const pendingNonceAfterCommit = resAfterCommit[1].result.result;
-            expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast + 1);
+            expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast);
             expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
             resolve();
           });

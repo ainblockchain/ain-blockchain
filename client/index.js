@@ -276,7 +276,27 @@ app.get('/get_address', (req, res, next) => {
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
-})
+});
+
+app.get('/get_raw_consensus_state', (req, res) => {
+  const result = {};
+  result['consensus'] = p2pServer.consensus.state;
+  if (p2pServer.consensus.blockPool) {
+    const blockPool = p2pServer.consensus.blockPool;
+    result['block_pool'] = {
+      hashToBlockInfo: blockPool.hashToBlockInfo,
+      hashToState: Array.from(blockPool.hashToState.keys()),
+      hashToNextBlockSet: Object.keys(blockPool.hashToNextBlockSet),
+      epochToBlock: Object.keys(blockPool.epochToBlock),
+      numberToBlock: Object.keys(blockPool.numberToBlock),
+      longestNotarizedChainTips: blockPool.longestNotarizedChainTips
+    }
+  }
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
 
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server

@@ -1,7 +1,8 @@
 const logger = require('../logger');
 const { DEBUG, TRANSACTION_POOL_TIME_OUT_MS, TRANSACTION_TRACKER_TIME_OUT_MS,
-  TransactionStatus } = require('../constants');
+  TransactionStatus, WriteDbOperations } = require('../constants');
 const Transaction = require('./transaction');
+const _ = require('lodash');
 
 class TransactionPool {
   constructor() {
@@ -70,14 +71,38 @@ class TransactionPool {
         (tx.nonce < 0 && tx.hash in this.transactionTracker);
   }
 
-  getValidTransactions() {
+  getValidTransactions(excludeBlockList) {
+    let excludeTransactions = [];
+    if (excludeBlockList && excludeBlockList.length) {
+      excludeBlockList.forEach((block) => {
+        excludeTransactions = excludeTransactions.concat(block.last_votes);
+        excludeTransactions = excludeTransactions.concat(block.transactions);
+      })
+    }
+    let unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
     // Transactions are first ordered by nonce in their individual lists by address
-    const unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
     for (const address in unvalidatedTransactions) {
-      // Order by noncing if transactions are nonced, else by timestamp
-      unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0) ?
-            ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
-                (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
+      let tempFilteredTransactions = _.differenceWith(
+          unvalidatedTransactions[address], 
+          excludeTransactions, 
+          (a, b) => { return a.hash === b.hash; }
+        );
+      tempFilteredTransactions = tempFilteredTransactions.filter(tx => {
+        const ref = _.get(tx, 'operation.ref');
+        const innerRef = tx.operation.op_list ? tx.operation.op_list[0].ref : undefined;
+        const type = _.get(tx, 'operation.type');
+        return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
+            (ref && !ref.startsWith('/consensus/number')) || (innerRef && !innerRef.startsWith('/consensus/number'));
+      });
+      if (!tempFilteredTransactions.length) {
+        delete unvalidatedTransactions[address];
+      } else {
+        unvalidatedTransactions[address] = tempFilteredTransactions;
+        // Order by noncing if transactions are nonced, else by timestamp
+        unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0) ?
+              ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
+                  (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
+      }
     }
     // Secondly transactions are combined and ordered by timestamp, while still remaining
     // ordered noncing from the initial sort by nonce

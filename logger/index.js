@@ -17,7 +17,8 @@ function getTransports() {
   const transports = [
     new (winstonDaily)({
       name: 'daily-combined-log',
-      level: 'info',
+      // level: 'info',
+      level: 'debug',
       filename: `${logDir}/${prefix}-combined-%DATE%.log`,
       handleExceptions: true,
       json: false,
