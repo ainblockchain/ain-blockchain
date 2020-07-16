@@ -76,6 +76,22 @@ class ChainUtil {
     }
     return (parsedPath[0].startsWith('/') ? '' : '/') + parsedPath.join('/');
   }
+
+  static transactionFailed(response) {
+    if (Array.isArray(response)) {
+      response.forEach(res => {
+        if (ChainUtil.checkForTransactionErrorCode(res)) {
+          return true;
+        }
+      });
+      return false;
+    }
+    return ChainUtil.checkForTransactionErrorCode(response);
+  }
+
+  static checkForTransactionErrorCode(response) {
+    return response === null || (response.code !== undefined && response.code !== 0);
+  }
 }
 
 module.exports = ChainUtil;
