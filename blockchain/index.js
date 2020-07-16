@@ -6,20 +6,22 @@ const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const logger = require('../logger')
 const { Block } = require('./block');
+const DB = require('../db');
 const BlockFilePatterns = require('./block-file-patterns');
 const { BLOCKCHAINS_DIR } = require('../constants');
 const CHAIN_SUBSECT_LENGTH = 20;
 
 class Blockchain {
   constructor(blockchainDir) {
+    // Finalized chain
     this.chain = [];
     this.blockchainDir = blockchainDir;
     this.backupDb = null;
-    this._proposedBlock = null;
     this.syncedAfterStartup = false;
   }
 
   init(isFirstNode) {
+    let lastBlockWithoutProposal;
     if (this.createBlockchainDir()) {
       if (isFirstNode) {
         logger.info("\n");
@@ -52,9 +54,13 @@ class Blockchain {
       }
       let newChain = Blockchain.loadChain(this._blockchainDir());
       if (newChain) {
+        lastBlockWithoutProposal = newChain.pop();
+        const path = this.pathToBlock(lastBlockWithoutProposal);
+        fs.unlinkSync(path);
         this.chain = newChain;
       }
     }
+    return lastBlockWithoutProposal;
   }
 
   /**
@@ -68,7 +74,12 @@ class Blockchain {
     if (!hash) return null;
     const blockFileName =
         glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
-    return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
+    if (blockFileName === undefined) {
+      const found = this.chain.filter(block => block.hash === hash);
+      return found.length ? found[0] : null;
+    } else {
+      return Block.loadBlock(blockFileName);
+    }
   }
 
   /**
@@ -80,7 +91,12 @@ class Blockchain {
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
-    return blockFileName === undefined ? null : Block.loadBlock(blockFileName);
+    if (blockFileName === undefined) {
+      const found = this.chain.filter(block => block.number === number);
+      return found.length ? found[0] : null;
+    } else {
+      return Block.loadBlock(blockFileName);
+    }
   }
 
   setBackupDb(backupDb) {
@@ -113,27 +129,31 @@ class Blockchain {
     return lastBlock.timestamp;
   }
 
-  addNewBlock(block) {
-    if (!block) {
-      logger.info(`[blockchain.addNewBlock] Block is null`);
+  addNewBlock(newBlock) {
+    if (!newBlock) {
+      logger.error(`[blockchain.addNewBlock] Block is null`);
       return false;
     }
-    if (block.number != this.lastBlockNumber() + 1) {
-      logger.info(`[blockchain.addNewBlock] Invalid blockchain number: ${block.number}`);
+    if (newBlock.number != this.lastBlockNumber() + 1) {
+      logger.error(`[blockchain.addNewBlock] Invalid blockchain number: ${newBlock.number}`);
       return false;
     }
-    if (!(block instanceof Block)) {
-      block = Block.parse(block);
+    if (!(newBlock instanceof Block)) {
+      newBlock = Block.parse(newBlock);
     }
-    this.chain.push(block);
-    while (this.chain.length > 10) {
-      const block = this.chain.shift();
-      this.backupDb.executeTransactionList(block.transactions);
+    const block = this.chain.shift();
+    this.chain.push(newBlock);
+    if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
+      logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(block, null, 2)}`);
+      return false;
+    }
+    if (!this.backupDb.executeTransactionList(newBlock.transactions)) {
+      logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(block, null, 2)}`);
+      return false;
     }
     this.writeChain();
     return true;
   }
-
 
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
@@ -225,7 +245,7 @@ class Blockchain {
     blockFiles.forEach((blockFile) => {
       chainSubSection.push(Block.loadBlock(blockFile));
     });
-    return chainSubSection.length > 0 ? chainSubSection: null;
+    return chainSubSection.length > 0 ? chainSubSection : [];
   }
 
   merge(chainSubSection) {
@@ -255,9 +275,11 @@ class Blockchain {
     }
     const firstBlock = Block.parse(chainSubSection[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
+    const overlap = lastBlockHash ? chainSubSection.filter(block => block.number === this.lastBlockNumber()) : null;
+    const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.
-      if (lastBlockHash !== firstBlock.hash) {
+      if (overlappingBlock && overlappingBlock.hash !== lastBlockHash) {
         logger.info(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
             `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
         return false;
@@ -280,11 +302,15 @@ class Blockchain {
         continue;
       }
       const block = chainSubSection[i];
+      if (block.number <= this.lastBlockNumber()) {
+        continue;
+      }
       if (!this.addNewBlock(block)) {
         logger.error('Failed to add block '+ block);
         return false;
       }
     }
+    DB.removeEmpty(this.backupDb.dbData);
     logger.info(`Last block number after merge: ${this.lastBlockNumber()}`);
     return true;
   }

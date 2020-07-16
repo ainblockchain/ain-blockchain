@@ -10,7 +10,7 @@ if [ "$1" = 'spring' ]; then
 elif [ "$1" = 'summer' ]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000  # summer-tracker-ip
 elif [ "$1" = 'dev' ]; then
-    export TRACKER_WS_ADDR=ws://35.221.229.80:5000  # dev-tracker-ip
+    export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
 else
     echo "Invalid season argument: $1"
     exit

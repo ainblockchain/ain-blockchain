@@ -1,19 +1,19 @@
 const ConsensusConsts = {
+  MAJORITY: 2 / 3,
   DAY_MS: 86400000,
-  PROPOSAL_TIMEOUT_MS: 10000,
-  TRANSITION_TIMEOUT_MS: 7000,
-  MAX_CONSENSUS_STATE_DB: 1000 // TODO(lia): decrease to 10 and update rule-util for /consensus/number/{number}/propose
+  EPOCH_MS: 1000,
+  MAX_CONSENSUS_STATE_DB: 1000
 }
 
 const ConsensusMessageTypes = {
   PROPOSE: 'propose',
+  VOTE: 'vote'
 };
 
 const ConsensusStatus = {
   STARTING: 0,
-  INITIALIZED: 1,
-  RUNNING: 2,
-  STOPPED: 3
+  RUNNING: 1,
+  STOPPED: 2
 }
 
 const ConsensusDbPaths = {
@@ -23,7 +23,7 @@ const ConsensusDbPaths = {
   PROPOSER: 'proposer',
   VALIDATORS: 'validators',
   TOTAL_AT_STAKE: 'total_at_stake',
-  REGISTER: 'register',
+  VOTE: 'vote',
   BLOCK_HASH: 'block_hash',
   STAKE: 'stake'
 }

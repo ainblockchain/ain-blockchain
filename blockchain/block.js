@@ -13,7 +13,7 @@ const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 
 class Block {
-  constructor(lastHash, lastVotes, transactions, number, timestamp, proposer, validators) {
+  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, proposer, validators) {
     this.last_votes = lastVotes;
     this.transactions = transactions;
     // Block's header
@@ -21,6 +21,7 @@ class Block {
     this.last_votes_hash = ChainUtil.hashString(stringify(lastVotes));
     this.transactions_hash = ChainUtil.hashString(stringify(transactions));
     this.number = number;
+    this.epoch = epoch;
     this.timestamp = timestamp;
     this.proposer = proposer;
     this.validators = validators;
@@ -35,6 +36,7 @@ class Block {
       last_votes_hash: this.last_votes_hash,
       transactions_hash: this.transactions_hash,
       number: this.number,
+      epoch: this.epoch,
       timestamp: this.timestamp,
       proposer: this.proposer,
       validators: this.validators,
@@ -49,6 +51,7 @@ class Block {
         last_votes_hash:   ${ChainUtil.shortenHash(this.last_votes_hash)}
         transactions_hash: ${ChainUtil.shortenHash(this.transactions_hash)}
         number:            ${this.number}
+        epoch:             ${this.epoch}
         timestamp:         ${this.timestamp}
         proposer:          ${this.proposer}
         validators:        ${this.validators}
@@ -64,8 +67,9 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, proposer, validators) {
-    return new Block(lastHash, lastVotes, transactions, number, Date.now(),
+  static createBlock(lastHash, lastVotes, transactions, number, epoch, proposer, validators) {
+    // TODO(lia): Use ntp instead of Date.now() here?
+    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(),
         proposer, validators);
   }
 
@@ -83,15 +87,15 @@ class Block {
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo['last_hash'], blockInfo['last_votes'],
-        blockInfo['transactions'], blockInfo['number'], blockInfo['timestamp'],
-        blockInfo['proposer'], blockInfo['validators']);
+        blockInfo['transactions'], blockInfo['number'], blockInfo['epoch'],
+        blockInfo['timestamp'], blockInfo['proposer'], blockInfo['validators']);
   }
 
   static hasRequiredFields(block) {
     return (block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined &&
-        block.timestamp !== undefined && block.proposer !== undefined &&
-        block.validators !== undefined);
+        block.epoch !== undefined &&  block.timestamp !== undefined &&
+        block.proposer !== undefined && block.validators !== undefined);
   }
 
   static validateHashes(block) {
@@ -110,16 +114,8 @@ class Block {
     return true;
   }
 
-  static validateProposedBlock(block, blockchain) {
+  static validateProposedBlock(block) {
     if (!Block.validateHashes(block)) { return false; }
-    if (block.number !== (blockchain.lastBlockNumber() + 1)) {
-      logger.error(`Number is not correct for block ${block.hash}.
-                   Expected: ${(blockchain.lastBlockNumber() + 1)}
-                   Actual: ${block.number}`);
-      return false;
-    }
-    // TODO (lia): check the contents of block.last_votes if they indeed voted for
-    // the previous block.
     const nonceTracker = {};
     let transaction;
     for (let i=0; i<block.transactions.length; i++) {
@@ -281,9 +277,10 @@ class Block {
     const lastVotes = [];
     const transactions = Block.getGenesisBlockData();
     const number = 0;
+    const epoch = 0;
     const proposer = ownerAccount.address;
-    const validators = [];
-    return new this(lastHash, lastVotes, transactions, number, timestamp,
+    const validators = {};
+    return new this(lastHash, lastVotes, transactions, number, epoch, timestamp,
         proposer, validators);
   }
 }
