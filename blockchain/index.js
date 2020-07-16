@@ -248,8 +248,7 @@ class Blockchain {
     blockFiles.forEach((blockFile) => {
       chainSubSection.push(Block.loadBlock(blockFile));
     });
-
-    return chainSubSection.length > 0 ? chainSubSection : null;
+    return chainSubSection.length > 0 ? chainSubSection : [];
   }
 
   merge(chainSubSection) {
