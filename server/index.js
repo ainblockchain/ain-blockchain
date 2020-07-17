@@ -200,8 +200,10 @@ class P2pServer {
     if (diskUsage !== null) {
       updateToTracker.diskUsage = diskUsage;
     }
-    logger.info(`\n[${P2P_PREFIX}] >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
-                `${JSON.stringify(updateToTracker, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`\n[${P2P_PREFIX}] >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
+                   `${JSON.stringify(updateToTracker, null, 2)}`);
+    }
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
 

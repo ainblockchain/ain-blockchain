@@ -1,7 +1,7 @@
 const get = require('lodash/get');
 const logger = require('../logger');
 const { ConsensusConsts } = require('./constants');
-const { STAKE, WriteDbOperations } = require('../constants');
+const { DEBUG, STAKE, WriteDbOperations } = require('../constants');
 const LOG_PREFIX = 'BLOCKPOOL';
 
 class BlockPool {
@@ -68,7 +68,9 @@ class BlockPool {
       return;
     }
     const longestChains = this.getLongestNotarizedChainList();
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] longestChains: ${JSON.stringify(longestChains, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] longestChains: ${JSON.stringify(longestChains, null, 2)}`);
+    }
     this.longestNotarizedChainTips = longestChains.reduce((a, b) => { a.push(b[b.length - 1].hash); return a; }, []);
   }
 
@@ -84,7 +86,9 @@ class BlockPool {
       chain.unshift(withInfo ? currBlockWithInfo : currBlockWithInfo.block);
       currBlockWithInfo = this.hashToBlockInfo[currBlockWithInfo.block.last_hash];
     }
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] currBlockWithInfo: ${JSON.stringify(currBlockWithInfo, null, 2)}\nfinalizedBlock: ${JSON.stringify(finalizedBlock, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] currBlockWithInfo: ${JSON.stringify(currBlockWithInfo, null, 2)}\nfinalizedBlock: ${JSON.stringify(finalizedBlock, null, 2)}`);
+    }
     if (!currBlockWithInfo || !currBlockWithInfo.block) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Block info is missing`);
       return [];
@@ -102,7 +106,9 @@ class BlockPool {
     const lastFinalized = fromBlock ? fromBlock
         : lastBlockNumber < 1 ? { block: this.node.bc.lastBlock(), notarized: true }
             : this.hashToBlockInfo[this.node.bc.lastBlock().hash];
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastFinalized: ${JSON.stringify(lastFinalized, null, 2)}`);
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastFinalized: ${JSON.stringify(lastFinalized, null, 2)}`);
+    }
     const chainList = [];
     this.dfsLongest(lastFinalized, [], chainList, withInfo);
     return chainList;
@@ -123,12 +129,16 @@ class BlockPool {
         withInfo ? chainList[0][chainList[0].length - 1].block.number
             : chainList[0][chainList[0].length - 1].number : 0;
     if (blockNumber > longestNumber) {
-      // logger.debug(`[blockPool:dfsLongest] New longest chain found: ${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
+      if (DEBUG) {
+        logger.debug(`[blockPool:dfsLongest] New longest chain found: ${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
+      }
       chainList.length = 0;
       chainList.push([...currentChain]);
       longestNumber = blockNumber;
     } else if (blockNumber === longestNumber) {
-      // logger.debug(`[blockPool:dfsLongest] Another longest chain found: ${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
+      if (DEBUG) {
+        logger.debug(`[blockPool:dfsLongest] Another longest chain found: ${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
+      }
       chainList.push([...currentChain]);
     }
     if (!nextBlockSet || !nextBlockSet.size) {
@@ -140,7 +150,9 @@ class BlockPool {
       this.dfsLongest(this.hashToBlockInfo[val], currentChain, chainList, withInfo);
     }
     currentChain.pop();
-    // logger.debug(`[blockPool:dfsLongest] returning currentChain: ${JSON.stringify(newLongestChain, null, 2)}`);
+    if (DEBUG) {
+      logger.debug(`[blockPool:dfsLongest] returning currentChain: ${JSON.stringify(newLongestChain, null, 2)}`);
+    }
   }
 
   // A finalizable chain (extension of current finalized chain):
@@ -161,12 +173,16 @@ class BlockPool {
     const nextBlockSet = this.hashToNextBlockSet[currentNode.block.hash];
     if (!nextBlockSet || !nextBlockSet.size) {
       if (BlockPool.endsWithThreeConsecutiveEpochs(currentChain)) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No next blocks but found a finalizable chain`);
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No next blocks but found a finalizable chain`);
+        }
         const chainCopy = [...currentChain];
         currentChain.pop();
         return chainCopy;
       }
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No next blocks.. returning empty array`);
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No next blocks.. returning empty array`);
+      }
       currentChain.pop();
       return [...currentChain];
     }
@@ -200,7 +216,9 @@ class BlockPool {
   getNotarizedBlockByHash(hash) {
     const LOG_SUFFIX = 'getNotarizedBlockByHash';
     const blockInfo = this.hashToBlockInfo[hash];
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] blockInfo: ${JSON.stringify(blockInfo, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] blockInfo: ${JSON.stringify(blockInfo, null, 2)}`);
+    }
     return blockInfo && blockInfo.block && blockInfo.notarized ? blockInfo.block : null;
   }
 
@@ -218,7 +236,7 @@ class BlockPool {
         logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] multiple blocks proposed for epoch ${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
         return false;
       }
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] multiple blocks proposed for epoch ${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] multiple blocks proposed for epoch ${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
       // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
     }
     // Update hashToBlockInfo
@@ -240,9 +258,9 @@ class BlockPool {
         });
         this.tryUpdateNotarized(blockHash);
       }
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] block added to the block pool`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] block added to the block pool`);
     } else {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] block already in the block pool`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] block already in the block pool`);
     }
 
     this.epochToBlock[block.epoch] = blockHash;
@@ -273,7 +291,9 @@ class BlockPool {
     const LOG_SUFFIX = 'addSeenVote';
     const blockHash = get(voteTx, 'operation.value.block_hash');
     const stake = get(voteTx, 'operation.value.stake');
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voteTx: ${JSON.stringify(voteTx, null, 2)}, blockHash: ${blockHash}, stake: ${stake}`);
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voteTx: ${JSON.stringify(voteTx, null, 2)}, blockHash: ${blockHash}, stake: ${stake}`);
+    }
     if (!this.hashToBlockInfo[blockHash]) {
       this.hashToBlockInfo[blockHash] = {};
     }
@@ -281,7 +301,7 @@ class BlockPool {
       this.hashToBlockInfo[blockHash].votes = [];
     }
     if (this.hashToBlockInfo[blockHash].votes.filter(v => v.hash === voteTx.hash).length) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] we've already seen this vote`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] we've already seen this vote`);
       return;
     }
     if (this.hashToBlockInfo[blockHash].tallied === undefined) {
@@ -292,12 +312,14 @@ class BlockPool {
     // To know this, we need the block itself.
     const block = this.hashToBlockInfo[blockHash].block;
     if (currentEpoch && block && block.epoch < currentEpoch) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Possibly a stale vote (${block.epoch} / ${currentEpoch})`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Possibly a stale vote (${block.epoch} / ${currentEpoch})`);
       // FIXME
     }
     const voter = voteTx.address;
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voted block: ${JSON.stringify(block, null, 2)}`)
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] ${block && block.validators[voter] === stake}`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voted block: ${JSON.stringify(block, null, 2)}`);
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] ${block && block.validators[voter] === stake}`);
+    }
     if (stake > 0 && block && block.validators[voter] === stake) {
       this.hashToBlockInfo[blockHash].tallied += stake;
       this.tryUpdateNotarized(blockHash);
@@ -320,7 +342,7 @@ class BlockPool {
     }
     const totalAtStake = prevBlock.number === 0 ? STAKE : Object.values(prevBlock.validators).reduce((a, b) => { return a + b; }, 0);
     if (currentBlockInfo.tallied && currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] block ${currentBlockInfo.block.hash} is notarized!`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] block ${currentBlockInfo.block.hash} is notarized!`);
       this.hashToBlockInfo[blockHash].notarized = true;
       this.updateLongestNotarizedChains(this.hashToBlockInfo[blockHash]);
     }
