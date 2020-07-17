@@ -7,7 +7,7 @@ const BlockPool = require('./block-pool');
 const DB = require('../db');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { MessageTypes, STAKE, HOSTING_ENV, WriteDbOperations, PredefinedDbPaths }
+const { DEBUG, MessageTypes, STAKE, HOSTING_ENV, WriteDbOperations, PredefinedDbPaths }
   = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
@@ -61,7 +61,7 @@ class Consensus {
       this.startEpochTransition();
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Initialized to number ${finalizedNumber} and epoch ${this.state.epoch}`);
     } catch (e) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: e`);
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: ${e}`);
       this.setStatus(ConsensusStatus.STARTING, 'init');
     }
   }
@@ -97,11 +97,17 @@ class Consensus {
       let currentTime = Date.now();
       const absEpoch = Math.floor((currentTime - this.startingTime) / ConsensusConsts.EPOCH_MS);
       if (this.state.epoch + 1 < absEpoch) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch is too low: ${this.state.epoch} / ${absEpoch}`);
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch is too low: ${this.state.epoch} / ${absEpoch}`);
+        }
       } else if (this.state.epoch + 1 > absEpoch) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch is too high: ${this.state.epoch} / ${absEpoch}`);
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch is too high: ${this.state.epoch} / ${absEpoch}`);
+        }
       }
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Updating epoch at ${currentTime}: ${this.state.epoch} => ${absEpoch}`);
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Updating epoch at ${currentTime}: ${this.state.epoch} => ${absEpoch}`);
+      }
       // re-adjust and update epoch
       this.state.epoch = absEpoch;
       if (this.state.epoch > 1) {
@@ -111,6 +117,7 @@ class Consensus {
     }, ConsensusConsts.EPOCH_MS);
   }
 
+  // FIXME(minsu): it never calls -> deal with ctrl+c and call stop()
   stop() {
     this.setStatus(ConsensusStatus.STOPPED, 'stop');
     if (this.epochInterval) {
@@ -150,7 +157,9 @@ class Consensus {
     const LOG_SUFFIX = 'handleConsensusMessage';
 
     if (this.status !== ConsensusStatus.RUNNING) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus status (${this.status}) is not RUNNING (${ConsensusStatus.RUNNING})`);
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus status (${this.status}) is not RUNNING (${ConsensusStatus.RUNNING})`);
+      }
       return;
     }
     if (msg.type !== ConsensusMessageTypes.PROPOSE && msg.type !== ConsensusMessageTypes.VOTE) {
@@ -161,9 +170,10 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid message value: ${msg.value}`);
       return;
     }
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] ` +
-        `Consensus state - finalized number: ${this.node.bc.lastBlockNumber()} / epoch: ${this.state.epoch}\n` +
-        `Message: ${JSON.stringify(msg.value, null, 2)}`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus state - finalized number: ${this.node.bc.lastBlockNumber()} / epoch: ${this.state.epoch}\n`);
+    if (DEBUG) {
+      logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
+    }
     if (msg.type === ConsensusMessageTypes.PROPOSE) {
       const lastNotarizedBlock = this.getLastNotarizedBlock();
         const { proposalBlock, proposalTx } = msg.value;
@@ -190,7 +200,9 @@ class Consensus {
     } else {
       if (!Consensus.isValidConsensusTx(msg.value) || 
           ChainUtil.transactionFailed(this.server.executeTransaction(msg.value))) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting tx execution failed`);
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting tx execution failed`);
+        }
         return;
       }
       this.server.broadcastConsensusMessage(msg);
@@ -217,18 +229,24 @@ class Consensus {
         this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
     const tempState = new DB();
     tempState.dbData = JSON.parse(JSON.stringify(prevState.dbData));
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Created a temp state for tx checks`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Created a temp state for tx checks`);
+    }
     transactions.forEach(tx => {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Checking transaction ${JSON.stringify(tx, null, 2)}`)
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Checking transaction ${JSON.stringify(tx, null, 2)}`);
+      }
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] transaction result: success!`)
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] transaction result: success!`);
         validTransactions.push(tx);
       } else {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] transaction result: failed..`)
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] transaction result: failed..`);
       }
     })
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
+    }
     const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
     if (lastBlockInfo && lastBlockInfo.proposal) {
       lastVotes.unshift(lastBlockInfo.proposal);
@@ -312,9 +330,13 @@ class Consensus {
     const { proposer, number, epoch, last_hash } = proposalBlock;
     if (number <= this.node.bc.lastBlockNumber()) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] There already is a finalized block of the number`);
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] corresponding block info: ${JSON.stringify(this.blockPool.hashToBlockInfo[proposalBlock.hash], null, 2)}`);
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] corresponding block info: ${JSON.stringify(this.blockPool.hashToBlockInfo[proposalBlock.hash], null, 2)}`);
+      }
       if (!this.blockPool.hasSeenBlock(proposalBlock)) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Adding the proposal to the blockPool for later use`);
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Adding the proposal to the blockPool for later use`);
+        }
         this.blockPool.addSeenBlock(proposalBlock, proposalTx);
       }
       return false;
@@ -323,9 +345,13 @@ class Consensus {
     // those can notarize the prevBlock (verify, execute and add the missing votes)
     let prevBlockInfo = number === 1 ? this.node.bc.getBlockByNumber(0) : this.blockPool.hashToBlockInfo[last_hash];
     const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] prevBlockInfo: ${JSON.stringify(prevBlockInfo, null, 2)}`);
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] prevBlockInfo: ${JSON.stringify(prevBlockInfo, null, 2)}`);
+    }
     if (number !== 1 && (!prevBlockInfo || !prevBlockInfo.block)) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No notarized block at number ${number - 1} with hash ${last_hash}`);
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No notarized block at number ${number - 1} with hash ${last_hash}`);
+      }
       return;
     }
     if (number !== 1 && !prevBlockInfo.notarized) {
@@ -337,7 +363,9 @@ class Consensus {
           // TODO(lia): do more checks on the prevBlockProposal
           this.blockPool.addSeenBlock(prevBlockInfo.block, prevBlockProposal);
         } else {
-          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Prev block is missing its proposal`);
+          if (DEBUG) {
+            logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Prev block is missing its proposal`);
+          }
           return false;
         }
       }
@@ -356,19 +384,19 @@ class Consensus {
         if (voteTx.hash === prevBlockProposal.hash) return;
         if (!Consensus.isValidConsensusTx(voteTx) || 
             ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
-          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting tx execution for prev block failed`);
+          logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting tx execution for prev block failed`);
           // return;
         }
         this.blockPool.addSeenVote(voteTx);
       });
       prevBlockInfo = this.blockPool.hashToBlockInfo[last_hash];
       if (!prevBlockInfo.notarized) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Block's last_votes don't correctly notarize its previous block of number ${number - 1} with hash ${last_hash}`);
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Block's last_votes don't correctly notarize its previous block of number ${number - 1} with hash ${last_hash}`);
         return false;
       }
     }
     if (prevBlock.epoch >= epoch) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Previous block's epoch (${prevBlock.epoch}) is greater than or equal to incoming block's (${epoch})`);
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Previous block's epoch (${prevBlock.epoch}) is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
     if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
@@ -427,26 +455,26 @@ class Consensus {
   tryPropose() {
     const LOG_SUFFIX = 'tryPropose';
     if (this.votedForEpoch(this.state.epoch)) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already voted for ${this.blockPool.epochToBlock[this.state.epoch]} at epoch ${this.state.epoch} but trying to propose at the same epoch`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already voted for ${this.blockPool.epochToBlock[this.state.epoch]} at epoch ${this.state.epoch} but trying to propose at the same epoch`);
       return;
     }
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] I'm the proposer`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] I'm the proposer`);
       this.handleConsensusMessage({ value: this.createProposal(), type: ConsensusMessageTypes.PROPOSE });
     } else {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Not my turn`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Not my turn`);
     }
   }
 
   tryVote(proposalBlock) {
     const LOG_SUFFIX = 'tryVote';
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to vote for ${proposalBlock.number} / ${proposalBlock.epoch} / ${proposalBlock.hash}`)
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to vote for ${proposalBlock.number} / ${proposalBlock.epoch} / ${proposalBlock.hash}`)
     if (this.votedForEpoch(proposalBlock.epoch)) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already voted for epoch ${proposalBlock.epoch}`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already voted for epoch ${proposalBlock.epoch}`);
       return;
     }
     if (proposalBlock.epoch < this.state.epoch) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Possibly a stale proposal (${proposalBlock.epoch} / ${this.state.epoch})`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Possibly a stale proposal (${proposalBlock.epoch} / ${this.state.epoch})`);
       // FIXME
     }
     this.vote(proposalBlock);
@@ -484,9 +512,13 @@ class Consensus {
   tryFinalize() {
     const LOG_SUFFIX = 'tryFinalize';
     let finalizableChain = this.blockPool.getFinalizableChain();
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] finalizableChain: ${JSON.stringify(finalizableChain, null, 2)}`);
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] finalizableChain: ${JSON.stringify(finalizableChain, null, 2)}`);
+    }
     if (!finalizableChain || !finalizableChain.length) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No notarized chain with 3 consecutive epochs yet`);
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No notarized chain with 3 consecutive epochs yet`);
+      }
       return;
     }
     // Discard the last block (but save it for a future finalization)
@@ -511,9 +543,11 @@ class Consensus {
     if (!blockList || !blockList.length) return;
     let lastVerifiedBlock;
     blockList.forEach(blockInfo => {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Adding notarized chain's block: ${JSON.stringify(blockInfo, null, 2)}`);
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Adding notarized chain's block: ${JSON.stringify(blockInfo, null, 2)}`);
+      }
       let lastNotarizedBlock = this.getLastNotarizedBlock();
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current lastNotarizedBlock: ${lastNotarizedBlock.number} / ${lastNotarizedBlock.epoch}`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current lastNotarizedBlock: ${lastNotarizedBlock.number} / ${lastNotarizedBlock.epoch}`);
       if (!blockInfo.block || !blockInfo.proposal || blockInfo.block.number < lastNotarizedBlock.number) {
         return;
       }
@@ -532,7 +566,7 @@ class Consensus {
     this.tryFinalize();
     // Try voting for the last block
     if (lastVerifiedBlock) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting for the last verified block: ${lastVerifiedBlock.number} / ${lastVerifiedBlock.epoch}`);
+      logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting for the last verified block: ${lastVerifiedBlock.number} / ${lastVerifiedBlock.epoch}`);
       this.tryVote(lastVerifiedBlock);
     }
   }
@@ -546,7 +580,9 @@ class Consensus {
   getLastNotarizedBlock() {
     const LOG_SUFFIX = 'getLastNotarizedBlock';
     let candidate = this.node.bc.lastBlock();
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] longestNotarizedChainTips: ${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] longestNotarizedChainTips: ${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)}`);
+    }
     this.blockPool.longestNotarizedChainTips.forEach(chainTip => {
       const block = _.get(this.blockPool.hashToBlockInfo[chainTip], 'block');
       if (!block) return;
@@ -589,7 +625,9 @@ class Consensus {
     while (chain.length) {
       // apply last_votes and transactions
       const block = chain.shift();
-      logger.debug(`[[${LOG_PREFIX}:${LOG_SUFFIX}] applying block ${JSON.stringify(block)}`);
+      if (DEBUG) {
+        logger.debug(`[[${LOG_PREFIX}:${LOG_SUFFIX}] applying block ${JSON.stringify(block)}`);
+      }
       snapshot.executeTransactionList(block.last_votes);
       snapshot.executeTransactionList(block.transactions);
     }
@@ -604,7 +642,9 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No validators voted`);
       throw Error('No validators voted');
     }
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] current epoch: ${this.state.epoch}\nblock hash: ${blockHash}\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] current epoch: ${this.state.epoch}\nblock hash: ${blockHash}\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`);
+    }
     const validators = {};
     blockInfo.votes.forEach(vote => {
       validators[vote.address] = _.get(vote, 'operation.value.stake');
@@ -638,7 +678,7 @@ class Consensus {
   stake(amount) {
     const LOG_SUFFIX = 'stake';
     if (!amount || amount <= 0) {
-      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid staking amount received: ${amount}`);
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid staking amount received: ${amount}`);
       return null;
     }
 
@@ -663,7 +703,7 @@ class Consensus {
 
   setStatus(status, setter = '') {
     const LOG_SUFFIX = 'setStatus';
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] setting consensus status from ${this.status} to ${status} (setter = ${setter})`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] setting consensus status from ${this.status} to ${status} (setter = ${setter})`);
     this.status = status;
     this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
     this.setter = setter;
@@ -671,7 +711,9 @@ class Consensus {
 
   static selectProposer(seed, validators) {
     const LOG_SUFFIX = 'selectProposer';
-    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
+    if (DEBUG) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
+    }
     const alphabeticallyOrderedValidators = Object.keys(validators).sort();
     const totalAtStake = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
     const randomNumGenerator = seedrandom(seed);
@@ -680,7 +722,7 @@ class Consensus {
     for (let i = 0; i < alphabeticallyOrderedValidators.length; i++) {
       cumulative += validators[alphabeticallyOrderedValidators[i]];
       if (cumulative > targetValue) {
-        logger.debug(`Proposer is ${alphabeticallyOrderedValidators[i]}`);
+        logger.info(`Proposer is ${alphabeticallyOrderedValidators[i]}`);
         return alphabeticallyOrderedValidators[i];
       }
     }
