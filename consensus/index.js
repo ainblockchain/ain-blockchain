@@ -117,6 +117,7 @@ class Consensus {
     }, ConsensusConsts.EPOCH_MS);
   }
 
+  // FIXME(minsu): it never calls -> deal with ctrl+c and call stop()
   stop() {
     this.setStatus(ConsensusStatus.STOPPED, 'stop');
     if (this.epochInterval) {
@@ -169,9 +170,10 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid message value: ${msg.value}`);
       return;
     }
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] ` +
-        `Consensus state - finalized number: ${this.node.bc.lastBlockNumber()} / epoch: ${this.state.epoch}\n` +
-        `Message: ${JSON.stringify(msg.value, null, 2)}`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus state - finalized number: ${this.node.bc.lastBlockNumber()} / epoch: ${this.state.epoch}\n`);
+    if (DEBUG) {
+      logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
+    }
     if (msg.type === ConsensusMessageTypes.PROPOSE) {
       const lastNotarizedBlock = this.getLastNotarizedBlock();
         const { proposalBlock, proposalTx } = msg.value;
