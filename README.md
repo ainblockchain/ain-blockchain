@@ -17,7 +17,7 @@ NOTE: Tracker Server must be started first before starting any blockchain node i
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/tracker-server/
-npm install
+yarn install
 cd ..
 ```
 - Run Tracker server
@@ -86,7 +86,7 @@ Operates a single peer node instance of the AIN blockchain. A single blockchain 
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/
-npm install
+yarn install
 ```
 - Run blockchain nodes
 ```
@@ -99,14 +99,6 @@ STAKE=250 ACCOUNT_INDEX=4 HOSTING_ENV=local DEBUG=false node client/index.js
 Before starting node jobs, remove existing blockchain files and logs if necessary:
 ```
 rm -rf blockchain/blockchains logger/logs
-```
-
-### How to run tests
-
-```
-npm run test_unit
-npm run test_smoke
-npm run test_integration
 ```
 
 #### On Google Coud Platform (GCP)
@@ -159,6 +151,14 @@ docker exec -it <container_id> /bin/bash
 cat logger/logs/8080/<log_file>
 ```
 -->
+
+### How to run tests
+
+```
+npm run test_unit
+npm run test_smoke
+npm run test_integration
+```
 
 ### Client APIs for development and debugging
 
