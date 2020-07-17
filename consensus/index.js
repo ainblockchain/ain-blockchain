@@ -61,7 +61,7 @@ class Consensus {
       this.startEpochTransition();
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Initialized to number ${finalizedNumber} and epoch ${this.state.epoch}`);
     } catch (e) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: e`);
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: ${e}`);
       this.setStatus(ConsensusStatus.STARTING, 'init');
     }
   }
