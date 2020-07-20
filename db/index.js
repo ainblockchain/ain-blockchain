@@ -5,12 +5,14 @@ const {
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
+const StateNode = require('./state-node');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
   constructor() {
     this.dbDataLegacy = {};
+    this.dbData = new StateNode();
     this.initDbDataLegacy();
     this.func = new Functions(this);
   }
