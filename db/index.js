@@ -10,12 +10,12 @@ const RuleUtil = require('./rule-util');
 
 class DB {
   constructor() {
-    this.dbData = {};
-    this.initDbData();
+    this.dbDataLegacy = {};
+    this.initDbDataLegacy();
     this.func = new Functions(this);
   }
 
-  initDbData() {
+  initDbDataLegacy() {
     // Initialize DB owners.
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
@@ -47,9 +47,9 @@ class DB {
 
   writeDatabase(fullPath, value) {
     if (fullPath.length === 0) {
-      this.dbData = value;
+      this.dbDataLegacy = value;
     } else if (fullPath.length === 1) {
-      this.dbData[fullPath[0]] = value;
+      this.dbDataLegacy[fullPath[0]] = value;
     } else {
       const pathToKey = fullPath.slice().splice(0, fullPath.length - 1);
       const refKey = fullPath[fullPath.length - 1];
@@ -82,7 +82,7 @@ class DB {
   }
 
   removeEmptyNodes(fullPath) {
-    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbData);
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbDataLegacy);
   }
 
   readDatabase(fullPath) {
@@ -332,7 +332,7 @@ class DB {
    * Returns reference to the input path for reading if exists, otherwise null.
    */
   getRefForReading(fullPath) {
-    let subData = this.dbData;
+    let subData = this.dbDataLegacy;
     for (let i = 0; i < fullPath.length; i++) {
       const key = fullPath[i];
       if (!ChainUtil.isDict(subData) || !(key in subData)) {
@@ -347,7 +347,7 @@ class DB {
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
   getRefForWriting(fullPath) {
-    let subData = this.dbData;
+    let subData = this.dbDataLegacy;
     fullPath.forEach((key) => {
       if (!(key in subData) || !ChainUtil.isDict(subData[key])) {
         subData[key] = {};
@@ -358,7 +358,7 @@ class DB {
   }
 
   setDbToSnapshot(snapshot) {
-    this.dbData = JSON.parse(JSON.stringify(snapshot.dbData));
+    this.dbDataLegacy = JSON.parse(JSON.stringify(snapshot.dbData));
   }
 
   executeOperation(operation, address, timestamp, transaction) {
@@ -509,7 +509,7 @@ class DB {
 
   matchFunctionPath(parsedValuePath) {
     return this.matchFunctionPathRecursive(
-        parsedValuePath, 0, this.dbData[PredefinedDbPaths.FUNCTIONS_ROOT]);
+        parsedValuePath, 0, this.dbDataLegacy[PredefinedDbPaths.FUNCTIONS_ROOT]);
   }
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
@@ -658,7 +658,7 @@ class DB {
 
   matchRulePath(parsedValuePath) {
     return this.matchRulePathRecursive(
-        parsedValuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
+        parsedValuePath, 0, this.dbDataLegacy[PredefinedDbPaths.RULES_ROOT]);
   }
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
@@ -783,7 +783,7 @@ class DB {
 
   matchOwnerPath(parsedRefPath) {
     return this.matchOwnerPathRecursive(
-        parsedRefPath, 0, this.dbData[PredefinedDbPaths.OWNERS_ROOT]);
+        parsedRefPath, 0, this.dbDataLegacy[PredefinedDbPaths.OWNERS_ROOT]);
   }
 
   matchOwnerForParsedPath(parsedRefPath) {
