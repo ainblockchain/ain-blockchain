@@ -233,9 +233,9 @@ class Blockchain {
 
     const blockFiles = this.getBlockFiles(nextBlockNumber, nextBlockNumber + CHAIN_SUBSECT_LENGTH);
 
+    // Check; non-empty blockFiles && (non-empty refBlock && newblocks[0].last_hash = curblock.hash)
     if (blockFiles.length > 0 &&
-        Block.loadBlock(blockFiles[blockFiles.length - 1]).number > nextBlockNumber &&
-        (!!(refBlock) && blockFiles[0].includes(Block.getFileName(refBlock)))) {
+        (!!(refBlock) && Block.loadBlock(blockFiles[0]).last_hash !== refBlock.hash)) {
       logger.error(`[${LOG_PREFIX}] Invalid blockchain request. Requesters last block does not belong to this blockchain`);
       return;
     }
