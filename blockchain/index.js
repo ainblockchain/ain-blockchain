@@ -225,15 +225,17 @@ class Blockchain {
     *                CHAIN_SUBSECT_LENGTH
     */
   requestBlockchainSection(refBlock) {
-    const refBlockNumber = refBlock ? refBlock.number : 0;
+    const refBlockNumber = refBlock ? refBlock.number : -1;
+    const nextBlockNumber = refBlockNumber + 1;
+
     logger.info(`[${LOG_PREFIX}] Current last block number: ${this.lastBlockNumber()}, ` +
                 `[${LOG_PREFIX}] Requester's last block number: ${refBlockNumber}`);
 
-    const blockFiles = this.getBlockFiles(refBlockNumber, refBlockNumber + CHAIN_SUBSECT_LENGTH);
+    const blockFiles = this.getBlockFiles(nextBlockNumber, nextBlockNumber + CHAIN_SUBSECT_LENGTH);
 
     if (blockFiles.length > 0 &&
-        Block.loadBlock(blockFiles[blockFiles.length - 1]).number > refBlockNumber &&
-        (refBlock && blockFiles[0].indexOf(Block.getFileName(refBlock)) < 0)) {
+        Block.loadBlock(blockFiles[blockFiles.length - 1]).number > nextBlockNumber &&
+        (!!(refBlock) && blockFiles[0].includes(Block.getFileName(refBlock)))) {
       logger.error(`[${LOG_PREFIX}] Invalid blockchain request. Requesters last block does not belong to this blockchain`);
       return;
     }
@@ -301,11 +303,8 @@ class Blockchain {
       return false;
     }
     for (let i = 0; i < chainSubSection.length; i++) {
-      // Skip the first block if it's not a cold start (i.e., starting from genesis block).
-      if (lastBlockHash && i === 0) {
-        continue;
-      }
       const block = chainSubSection[i];
+
       if (block.number <= this.lastBlockNumber()) {
         continue;
       }
