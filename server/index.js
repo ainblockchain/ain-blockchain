@@ -270,7 +270,9 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.CONSENSUS:
-            logger.debug(`[${P2P_PREFIX}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            if (DEBUG) {
+              logger.debug(`[${P2P_PREFIX}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            }
             if (this.node.bc.syncedAfterStartup) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
@@ -291,7 +293,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION:
-            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection: ${JSON.stringify(data.chainSubsection, null, 2)}`);
+            if (DEBUG) {
+              logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection: ${JSON.stringify(data.chainSubsection, null, 2)}`);
+            }
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
             if (data.number <= this.node.bc.lastBlockNumber()) {
@@ -312,7 +316,7 @@ class P2pServer {
                 }
               } else {
                 // There's more blocks to receive
-                logger.debug(`[${P2P_PREFIX}] Wait, there's more...`);
+                logger.info(`[${P2P_PREFIX}] Wait, there's more...`);
               }
               if (this.consensus.isRunning()) {
                 // FIXME: add new last block to blockPool and updateLongestNotarizedChains?
@@ -340,7 +344,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION_REQUEST:
-            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
+            if (DEBUG) {
+              logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
+            }
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -348,10 +354,12 @@ class P2pServer {
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSubsection = this.node.bc.requestBlockchainSection(
-                data.lastBlock ? Block.parse(data.lastBlock) : null);
+                !!(data.lastBlock) ? Block.parse(data.lastBlock) : null);
             if (chainSubsection) {
               const catchUpInfo = this.consensus.isRunning() ? this.consensus.getCatchUpInfo() : [];
-              logger.debug(`Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)} along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
+              if (DEBUG) {
+                logger.debug(`Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)} along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
+              }
               this.sendChainSubsection(
                 socket,
                 chainSubsection,
