@@ -151,7 +151,7 @@ class BlockPool {
     }
     currentChain.pop();
     if (DEBUG) {
-      logger.debug(`[blockPool:dfsLongest] returning currentChain: ${JSON.stringify(newLongestChain, null, 2)}`);
+      logger.debug(`[blockPool:dfsLongest] returning.. currentChain: ${JSON.stringify(currentChain, null, 2)}`);
     }
   }
 
