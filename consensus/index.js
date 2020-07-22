@@ -181,6 +181,12 @@ class Consensus {
         logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposal is missing required fields: ${msg.value}`);
         return;
       }
+      if (this.node.tp.transactionTracker[proposalTx.hash]) {
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already have the proposal in my tx tracker`);
+        }
+        return;
+      }
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
         logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to sync. Current last block: ${JSON.stringify(lastNotarizedBlock, null, 2)}`);
         // I might be falling behind. Try to catch up.
@@ -198,6 +204,12 @@ class Consensus {
         this.tryVote(proposalBlock);
       }
     } else {
+      if (this.node.tp.transactionTracker[msg.value.hash]) {
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already have the vote in my tx tracker`);
+        }
+        return;
+      }
       if (!Consensus.isValidConsensusTx(msg.value) || 
           ChainUtil.transactionFailed(this.server.executeTransaction(msg.value))) {
         if (DEBUG) {
