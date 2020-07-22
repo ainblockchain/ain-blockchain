@@ -314,7 +314,7 @@ class Blockchain {
       }
     }
     DB.removeEmpty(this.backupDb.dbData);
-    logger.info(`Last block number after merge: ${this.lastBlockNumber()}`);
+    logger.info(`[${LOG_PREFIX}] Last block number after merge: ${this.lastBlockNumber()}`);
     return true;
   }
 
