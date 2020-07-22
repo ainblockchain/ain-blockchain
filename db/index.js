@@ -360,7 +360,7 @@ class DB {
   }
 
   setDbToSnapshot(snapshot) {
-    this.dbDataLegacy = JSON.parse(JSON.stringify(snapshot.dbData));
+    this.dbDataLegacy = JSON.parse(JSON.stringify(snapshot.dbDataLegacy));
   }
 
   executeOperation(operation, address, timestamp, transaction) {
