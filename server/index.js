@@ -28,7 +28,7 @@ class P2pServer {
     this.isStarting = true;
     this.ipAddress = null;
     this.trackerWebSocket = null;
-    this.interval = null;
+    this.server = null;
     this.node = node;
     this.managedPeersInfo = {};
     this.sockets = [];
@@ -39,7 +39,7 @@ class P2pServer {
   }
 
   listen() {
-    const server = new Websocket.Server({
+    this.server = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
       // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
@@ -62,9 +62,18 @@ class P2pServer {
         threshold: 1024 // Size (in bytes) below which messages should not be compressed.
       }
     });
-    server.on('connection', (socket) => this.setSocket(socket, null));
+    this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setIntervalForTrackerConnection();
+  }
+
+  stop() {
+    logger.info(`[${P2P_PREFIX}] Clear intervals.`);
+    this.clearIntervalForTrackerConnection();
+    this.clearIntervalForTrackerUpdate();
+    this.consensus.stop();
+    logger.info(`[${P2P_PREFIX}] Close server.`);
+    this.server.close(_ => { });
   }
 
   setIntervalForTrackerConnection() {

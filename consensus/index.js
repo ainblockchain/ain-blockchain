@@ -117,8 +117,8 @@ class Consensus {
     }, ConsensusConsts.EPOCH_MS);
   }
 
-  // FIXME(minsu): it never calls -> deal with ctrl+c and call stop()
   stop() {
+    logger.info(`[${LOG_PREFIX}] Stop epochInterval.`);
     this.setStatus(ConsensusStatus.STOPPED, 'stop');
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
