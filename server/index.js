@@ -336,7 +336,7 @@ class P2pServer {
               logger.info(`[${P2P_PREFIX}] Failed to merge incoming chain subsection.`);
               // FIXME: Could be that I'm on a wrong chain.
               if (data.number <= this.node.bc.lastBlockNumber()) {
-                logger.info(`[${P2P_PREFIX}] I am a leader(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
+                logger.info(`[${P2P_PREFIX}] I am ahead(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
                 if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init(this.node.bc.lastBlock());
                   if (this.consensus.isRunning()) {
