@@ -288,6 +288,10 @@ class P2pServer {
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
             if (data.number <= this.node.bc.lastBlockNumber()) {
+              if (data.number === this.node.bc.lastBlockNumber() &&
+                  this.consensus.status === ConsensusStatus.STARTING) {
+                    this.consensus.init(this.node.bc.lastBlock());
+              }
               return;
             }
             if (this.node.bc.merge(data.chainSubsection)) {
@@ -318,9 +322,10 @@ class P2pServer {
                 this.requestChainSubsection(this.node.bc.lastBlock());
               }
             } else {
+              logger.info(`[${P2P_PREFIX}] Failed to merge incoming chain subsection.`);
               // FIXME: Could be that I'm on a wrong chain.
               if (data.number <= this.node.bc.lastBlockNumber()) {
-                logger.info(`[${P2P_PREFIX}] Failed to merge incoming chain subsection.`);
+                logger.info(`[${P2P_PREFIX}] I am a leader(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
                 if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init(this.node.bc.lastBlock());
                   if (this.consensus.isRunning()) {
@@ -328,6 +333,7 @@ class P2pServer {
                   }
                 }
               } else {
+                logger.info(`[${P2P_PREFIX}] I have left behind(${data.number} < ${this.node.bc.lastBlockNumber()}).`);
                 this.requestChainSubsection(this.node.bc.lastBlock());
               }
             }
@@ -339,12 +345,12 @@ class P2pServer {
             if (this.node.bc.chain.length === 0) {
               return;
             }
-            // Send a chunk of 20 blocks from  your blockchain to the requester.
+            // Send a chunk of 20 blocks from your blockchain to the requester.
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSubsection = this.node.bc.requestBlockchainSection(
-                !!(data.lastBlock) ? Block.parse(data.lastBlock) : null);
-            if (chainSubsection) {
+                !!data.lastBlock ? Block.parse(data.lastBlock) : null);
+            if (!!chainSubsection) {
               const catchUpInfo = this.consensus.isRunning() ? this.consensus.getCatchUpInfo() : [];
               if (DEBUG) {
                 logger.debug(`Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)} along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
@@ -356,7 +362,7 @@ class P2pServer {
                 catchUpInfo
               );
             } else {
-              logger.debug(`No chainSubsection to send`)
+              logger.info(`[${P2P_PREFIX}] No chainSubsection to send`);
             }
             break;
         }
