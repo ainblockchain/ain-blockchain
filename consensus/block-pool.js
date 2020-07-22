@@ -370,10 +370,12 @@ class BlockPool {
         delete this.hashToNextBlockSet[blockHash];
         this.hashToState.delete(blockHash);
       }
-    })
-    const epochsToRemove = Object.keys(this.epochToBlock).filter(key => key < lastBlock.epoch);
-    epochsToRemove.forEach(epoch => {
-      delete this.epochToBlock[epoch];
+    });
+    Object.keys(this.numberToBlock).forEach(key => {
+      if (key < number) delete this.numberToBlock[key];
+    });
+    Object.keys(this.epochToBlock).forEach(key => {
+      if (key < lastBlock.epoch) delete this.epochToBlock[key];
     });
     this.updateLongestNotarizedChains();
   }
