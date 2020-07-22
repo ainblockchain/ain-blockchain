@@ -50,4 +50,4 @@ class RuleUtil {
   }
 }
 
-module.exports = RuleUtil
+module.exports = RuleUtil;

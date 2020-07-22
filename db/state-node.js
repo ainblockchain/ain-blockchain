@@ -8,6 +8,17 @@ class StateNode {
     this.value = null;
   }
 
+  static create(childMap, value) {
+    const node = new StateNode();
+    node.childMap = new Map(childMap);
+    node.value = value;
+    return node;
+  }
+
+  makeCopy() {
+    return StateNode.create(this.childMap, this.value);
+  }
+
   setValue(value) {
     this.value = value;
   }
