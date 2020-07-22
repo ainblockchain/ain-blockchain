@@ -484,7 +484,6 @@ class P2pServer {
       return null;
     }
     const result = this.node.db.executeTransaction(transaction);
-    // const result = this.node.bc.pendingDb.executeTransaction(transaction);
     if (!ChainUtil.transactionFailed(result)) {
       this.node.tp.addTransaction(transaction);
     } else if (DEBUG) {
