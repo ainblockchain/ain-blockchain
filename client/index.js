@@ -20,6 +20,12 @@ process.on('uncaughtException', function (err) {
   logger.error(`[${CLIENT_PREFIX}]` + err);
 });
 
+process.on('SIGINT', _ => {
+  logger.info("Stopping the blockchain client....");
+  p2pServer.stop();
+  process.exit();
+});
+
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
