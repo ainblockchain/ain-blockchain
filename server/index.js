@@ -28,7 +28,7 @@ class P2pServer {
     this.isStarting = true;
     this.ipAddress = null;
     this.trackerWebSocket = null;
-    this.interval = null;
+    this.server = null;
     this.node = node;
     this.managedPeersInfo = {};
     this.sockets = [];
@@ -39,7 +39,7 @@ class P2pServer {
   }
 
   listen() {
-    const server = new Websocket.Server({
+    this.server = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
       // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
@@ -62,9 +62,20 @@ class P2pServer {
         threshold: 1024 // Size (in bytes) below which messages should not be compressed.
       }
     });
-    server.on('connection', (socket) => this.setSocket(socket, null));
+    this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setIntervalForTrackerConnection();
+  }
+
+  stop() {
+    logger.info(`[${P2P_PREFIX}] Stop consensus interval.`);
+    this.consensus.stop();
+    logger.info(`[${P2P_PREFIX}] Disconnect from connected peers.`);
+    this.disconnectFromPeers();
+    logger.info(`[${P2P_PREFIX}] Disconnect from tracker server.`);
+    this.disconnectFromTracker();
+    logger.info(`[${P2P_PREFIX}] Close server.`);
+    this.server.close(_ => { });
   }
 
   setIntervalForTrackerConnection() {
@@ -107,6 +118,10 @@ class P2pServer {
                      `${JSON.stringify(error, null, 2)}`);
       });
     });
+  }
+
+  disconnectFromTracker() {
+    this.trackerWebSocket.close();
   }
 
   getIpAddress() {
@@ -236,6 +251,12 @@ class P2pServer {
     });
 
     return updated;
+  }
+
+  disconnectFromPeers() {
+    for (const socket of this.sockets) {
+      socket.close();
+    }
   }
 
   setSocket(socket, address) {
@@ -371,8 +392,9 @@ class P2pServer {
       }
     });
 
+    // TODO(minsu): Deal with handling/recording a peer status when connection closes.
     socket.on('close', () => {
-      logger.info(`\n[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
+      logger.info(`[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
       this.removeFromListIfExists(socket);
 
       if (address && this.managedPeersInfo[address]) {
