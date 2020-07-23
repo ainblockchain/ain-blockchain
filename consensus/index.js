@@ -99,11 +99,15 @@ class Consensus {
       let currentTime = Date.now();
       if (this.state.epoch % 100 === 0) {
         // adjust time
-        const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
-        if (DEBUG) {
-          logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
+        try {
+          const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
+          if (DEBUG) {
+            logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
+          }
+          this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
+        } catch (e) {
+          logger.error(`ntpsync error: ${e}`);
         }
-        this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
       }
       currentTime -= this.timeAdjustment;
       const absEpoch = Math.floor((currentTime - this.startingTime) / ConsensusConsts.EPOCH_MS);
