@@ -124,7 +124,7 @@ server.on('connection', (ws) => {
 
   ws.on('close', (code) => {
     logger.info(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
-        `with code: ${code}`);
+                `with code: ${code}`);
     PEER_NODES[node.address].isLive = false;
     printNodesInfo();
   });

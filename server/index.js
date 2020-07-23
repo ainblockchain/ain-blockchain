@@ -68,10 +68,12 @@ class P2pServer {
   }
 
   stop() {
-    logger.info(`[${P2P_PREFIX}] Clear intervals.`);
-    this.clearIntervalForTrackerConnection();
-    this.clearIntervalForTrackerUpdate();
+    logger.info(`[${P2P_PREFIX}] Stop consensus interval.`);
     this.consensus.stop();
+    logger.info(`[${P2P_PREFIX}] Disconnect from connected peers.`);
+    this.disconnectFromPeers();
+    logger.info(`[${P2P_PREFIX}] Disconnect from tracker server.`);
+    this.disconnectFromTracker();
     logger.info(`[${P2P_PREFIX}] Close server.`);
     this.server.close(_ => { });
   }
@@ -116,6 +118,10 @@ class P2pServer {
                      `${JSON.stringify(error, null, 2)}`);
       });
     });
+  }
+
+  disconnectFromTracker() {
+    this.trackerWebSocket.close();
   }
 
   getIpAddress() {
@@ -245,6 +251,12 @@ class P2pServer {
     });
 
     return updated;
+  }
+
+  disconnectFromPeers() {
+    for (const socket of this.sockets) {
+      socket.close();
+    }
   }
 
   setSocket(socket, address) {
@@ -381,7 +393,7 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      logger.info(`\n[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
+      logger.info(`[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
       this.removeFromListIfExists(socket);
 
       if (address && this.managedPeersInfo[address]) {
