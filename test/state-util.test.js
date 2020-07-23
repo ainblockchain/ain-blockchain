@@ -1,7 +1,9 @@
 const {
   isValidStateObject,
   convertToStateTree,
-  convertFromStateTree
+  convertFromStateTree,
+  deleteStateTree,
+  makeCopyOfStateTree,
 } = require('../db/state-util');
 const chai = require('chai');
 const expect = chai.expect;
@@ -15,16 +17,13 @@ describe("state-util", () => {
       expect(isValidStateObject([1, 2, 3])).to.equal(false);
       expect(isValidStateObject(['a', 'b', 'c'])).to.equal(false);
       expect(isValidStateObject({
-        str: "str",
-        number: 10,
-        null: null,
         undef: undefined 
       })).to.equal(false);
       expect(isValidStateObject({
-        str: "str",
-        number: 10,
-        null: null,
         array: []
+      })).to.equal(false);
+      expect(isValidStateObject({
+        array: ['a', 'b']
       })).to.equal(false);
     })
 
@@ -34,41 +33,114 @@ describe("state-util", () => {
       expect(isValidStateObject(null)).to.equal(true);
       expect(isValidStateObject({})).to.equal(true);
       expect(isValidStateObject({
-        str: "str",
+        bool: false,
         number: 10,
+        str: 'str',
+        empty_str: '',
         null: null,
+        empty_obj: {},
         subobj1: {
-          str: "str2",
+          bool: true,
           number: 20,
+          str: 'str2',
+          empty_str: '',
           null: null,
+          empty_obj: {},
         },
         subobj2: {
-          str: "str3",
+          bool: true,
           number: -10,
+          str: 'str3',
+          empty_str: '',
           null: null,
+          empty_obj: {},
+        }
+      })).to.equal(true);
+      expect(isValidStateObject({
+        "owners": {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true
+              }
+            }
+          }
+        },
+        "rules": {
+          ".write": true
         }
       })).to.equal(true);
     })
   })
 
-  describe("convert", () => {
+  describe("convertToStateTree / convertFromStateTree", () => {
     it("when valid input", () => {
+      expect(convertFromStateTree(convertToStateTree(true))).to.equal(true);
+      expect(convertFromStateTree(convertToStateTree(false))).to.equal(false);
+      expect(convertFromStateTree(convertToStateTree(10))).to.equal(10);
+      expect(convertFromStateTree(convertToStateTree('str'))).to.equal('str');
+      expect(convertFromStateTree(convertToStateTree(null))).to.equal(null);
       const stateObj = {
-        str: "str",
+        bool: false,
         number: 10,
+        str: 'str',
+        empty_str: '',
         null: null,
+        empty_obj: null,
         subobj1: {
-          str: "str2",
+          bool: true,
           number: 20,
+          str: 'str2',
+          empty_str: '',
           null: null,
+          empty_obj: null,
         },
         subobj2: {
-          str: "str3",
+          bool: true,
           number: -10,
+          str: 'str3',
+          empty_str: '',
           null: null,
+          empty_obj: null,
         }
       };
       assert.deepEqual(convertFromStateTree(convertToStateTree(stateObj)), stateObj);
+    })
+  })
+
+  describe("makeCopyOfStateTree", () => {
+    it("when valid input", () => {
+      const stateObj = {
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        empty_obj: null,
+        subobj1: {
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          empty_obj: null,
+        },
+        subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          empty_obj: null,
+        }
+      };
+      const root = convertToStateTree(stateObj);
+      const copy = makeCopyOfStateTree(root);
+      deleteStateTree(root);
+      assert.deepEqual(convertFromStateTree(copy), stateObj);
     })
   })
 })

@@ -6,18 +6,23 @@ const {
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
+const {
+  isValidStateObject,
+  convertToStateTree,
+  convertFromStateTree,
+  makeCopyOfStateTree,
+} = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
   constructor() {
-    this.dbDataLegacy = {};
-    this.dbData = new StateNode();
-    this.initDbDataLegacy();
+    this.dbRoot = new StateNode();
+    this.initDbData();
     this.func = new Functions(this);
   }
 
-  initDbDataLegacy() {
+  initDbData() {
     // Initialize DB owners.
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
@@ -47,49 +52,93 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
-  writeDatabase(fullPath, value) {
-    if (fullPath.length === 0) {
-      this.dbDataLegacy = value;
-    } else if (fullPath.length === 1) {
-      this.dbDataLegacy[fullPath[0]] = value;
-    } else {
-      const pathToKey = fullPath.slice().splice(0, fullPath.length - 1);
-      const refKey = fullPath[fullPath.length - 1];
-      this.getRefForWriting(pathToKey)[refKey] = value;
+  /**
+   * Returns reference to the input path for reading if exists, otherwise null.
+   */
+  getRefForReading(fullPath) {
+    let node = this.dbRoot;
+    for (let i = 0; i < fullPath.length; i++) {
+      const label = fullPath[i];
+      if (node.hasChild(label)) {
+        node = node.getChild(label);
+      } else {
+        return null;
+      }
     }
-    if (DB.isEmptyNode(value)) {
+    return node;
+  }
+
+  /**
+   * Returns reference to the input path for writing if exists, otherwise creates path.
+   */
+  getRefForWriting(fullPath) {
+    let node = this.dbRoot;
+    for (let i = 0; i < fullPath.length; i++) {
+      const label = fullPath[i];
+      if (node.hasChild(label)) {
+        node = node.getChild(label);
+        if (node.getIsLeaf()) {
+          node.resetValue();
+        }
+      } else {
+        const child = new StateNode();
+        node.setChild(label, child);
+        node = child;
+      }
+    }
+    return node;
+  }
+
+  writeDatabase(fullPath, value) {
+    // TODO(seo): Apply write value validation logic.
+    /*
+    if (!isValidStateObject(value)) {
+      // TODO(seo): Handle this case properly.
+      return null;
+    }
+    */
+    const valueTree = convertToStateTree(value);
+    if (fullPath.length === 0) {
+      this.dbRoot = valueTree;
+    } else {
+      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
+      const label = fullPath[fullPath.length - 1];
+      const parent = this.getRefForWriting(pathToParent);
+      parent.setChild(label, valueTree);
+    }
+    if (DB.isEmptyNode(valueTree)) {
       this.removeEmptyNodes(fullPath);
     }
   }
 
   static isEmptyNode(dbNode) {
-    return dbNode === null || dbNode === undefined ||
-        (ChainUtil.isDict(dbNode) && Object.keys(dbNode).length === 0);
+    return dbNode.getIsLeaf() && dbNode.getValue() === null;
   }
 
   removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
     if (depth < fullPath.length - 1) {
-      const nextDbNode = curDbNode[fullPath[depth]];
-      if (!ChainUtil.isDict(nextDbNode)) {
+      const nextDbNode = curDbNode.getChild(fullPath[depth]);
+      if (nextDbNode === null) {
         logger.error(`Unavailable path in the database: ${ChainUtil.formatPath(fullPath)}`);
       } else {
         this.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
       }
     }
-    for (const child in curDbNode) {
-      if (DB.isEmptyNode(curDbNode[child])) {
-        delete curDbNode[child];
+    for (const label of curDbNode.getChildLabels()) {
+      const childNode = curDbNode.getChild(label);
+      if (DB.isEmptyNode(childNode)) {
+        curDbNode.deleteChild(label);
       }
     }
   }
 
   removeEmptyNodes(fullPath) {
-    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbDataLegacy);
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbRoot);
   }
 
   readDatabase(fullPath) {
-    const result = this.getRefForReading(fullPath);
-    return result !== undefined ? JSON.parse(JSON.stringify(result)) : null;
+    const node = this.getRefForReading(fullPath);
+    return convertFromStateTree(node);
   }
 
   getValue(valuePath) {
@@ -330,37 +379,8 @@ class DB {
     return fullPath;
   }
 
-  /**
-   * Returns reference to the input path for reading if exists, otherwise null.
-   */
-  getRefForReading(fullPath) {
-    let subData = this.dbDataLegacy;
-    for (let i = 0; i < fullPath.length; i++) {
-      const key = fullPath[i];
-      if (!ChainUtil.isDict(subData) || !(key in subData)) {
-        return null;
-      }
-      subData = subData[key];
-    }
-    return subData;
-  }
-
-  /**
-   * Returns reference to the input path for writing if exists, otherwise creates path.
-   */
-  getRefForWriting(fullPath) {
-    let subData = this.dbDataLegacy;
-    fullPath.forEach((key) => {
-      if (!(key in subData) || !ChainUtil.isDict(subData[key])) {
-        subData[key] = {};
-      }
-      subData = subData[key];
-    });
-    return subData;
-  }
-
   setDbToSnapshot(snapshot) {
-    this.dbDataLegacy = JSON.parse(JSON.stringify(snapshot.dbDataLegacy));
+    this.dbRoot = makeCopyOfStateTree(snapshot.dbRoot);
   }
 
   executeOperation(operation, address, timestamp, transaction) {
@@ -442,25 +462,32 @@ class DB {
     }
   }
 
-  static getVariableNodeName(node) {
-    if (ChainUtil.isDict(node)) {
-      const keys = Object.keys(node);
-      for (let i = 0; i < keys.length; i++) {
-        if (keys[i].startsWith('$')) {
+  static getVariableLabel(node) {
+    if (!node.getIsLeaf()) {
+      for (const label of node.getChildLabels()) {
+        if (label.startsWith('$')) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
-          return keys[i];
+          return label;
         }
       }
     }
     return null;
   }
 
+  static hasConfig(node, label) {
+    return node && node.hasChild(label);
+  }
+
+  static getConfig(node, label) {
+    return DB.hasConfig(node, label) ? convertFromStateTree(node.getChild(label)) : null;
+  }
+
   static hasFunctionConfig(funcNode) {
-    return funcNode && funcNode[FunctionProperties.FUNCTION] !== undefined;
+    return DB.hasConfig(funcNode, FunctionProperties.FUNCTION);
   }
 
   static getFunctionConfig(funcNode) {
-    return DB.hasFunctionConfig(funcNode) ? funcNode[FunctionProperties.FUNCTION] : null;
+    return DB.getConfig(funcNode, FunctionProperties.FUNCTION);
   }
 
   // Does a DFS search to find most specific nodes matched in the function tree.
@@ -476,8 +503,8 @@ class DB {
     }
     if (curFuncNode) {
       // 1) Try to match with non-variable child node.
-      const nextFuncNode = curFuncNode[parsedValuePath[depth]];
-      if (nextFuncNode !== undefined) {
+      const nextFuncNode = curFuncNode.getChild(parsedValuePath[depth]);
+      if (nextFuncNode !== null) {
         const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
         matched.matchedFunctionPath.unshift(parsedValuePath[depth]);
@@ -485,17 +512,17 @@ class DB {
       }
       // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
       //    child node.
-      const varNodeName = DB.getVariableNodeName(curFuncNode);
-      if (varNodeName !== null) {
-        const nextFuncNode = curFuncNode[varNodeName];
+      const varLabel = DB.getVariableLabel(curFuncNode);
+      if (varLabel !== null) {
+        const nextFuncNode = curFuncNode.getChild(varLabel);
         const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
-        matched.matchedFunctionPath.unshift(varNodeName);
-        if (matched.pathVars[varNodeName] !== undefined) {
+        matched.matchedFunctionPath.unshift(varLabel);
+        if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
           logger.error('Duplicated path variables that should NOT happen!')
         } else {
-          matched.pathVars[varNodeName] = parsedValuePath[depth];
+          matched.pathVars[varLabel] = parsedValuePath[depth];
         }
         return matched;
       }
@@ -511,7 +538,7 @@ class DB {
 
   matchFunctionPath(parsedValuePath) {
     return this.matchFunctionPathRecursive(
-        parsedValuePath, 0, this.dbDataLegacy[PredefinedDbPaths.FUNCTIONS_ROOT]);
+        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
   }
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
@@ -522,25 +549,25 @@ class DB {
         config: DB.getFunctionConfig(curFuncNode),
       })
     }
-    if (ChainUtil.isDict(curFuncNode)) {
-      const varNodeName = DB.getVariableNodeName(curFuncNode);
+    if (curFuncNode && !curFuncNode.getIsLeaf()) {
+      const varLabel = DB.getVariableLabel(curFuncNode);
       // 1) Traverse non-variable child nodes.
-      for (const key in curFuncNode) {
-        const nextFuncNode = curFuncNode[key];
-        if (key !== varNodeName) {
+      for (const label of curFuncNode.getChildLabels()) {
+        const nextFuncNode = curFuncNode.getChild(label);
+        if (label !== varLabel) {
           const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
           subtreeFuncs.forEach((entry) => {
-            entry.path.unshift(key);
+            entry.path.unshift(label);
             funcs.push(entry);
           });
         }
       }
       // 2) Traverse variable child node if available.
-      if (varNodeName !== null) {
-        const nextFuncNode = curFuncNode[varNodeName];
+      if (varLabel !== null) {
+        const nextFuncNode = curFuncNode.getChild(varLabel);
         const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
         subtreeFuncs.forEach((entry) => {
-          entry.path.unshift(varNodeName);
+          entry.path.unshift(varLabel);
           funcs.push(entry);
         });
       }
@@ -580,7 +607,8 @@ class DB {
   }
 
   convertFunctionMatch(matched) {
-    const subtreeFunctions = matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
+    const subtreeFunctions =
+        matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(matched.matchedFunctionPath),
@@ -593,11 +621,11 @@ class DB {
   }
 
   static hasRuleConfig(ruleNode) {
-    return ruleNode && ruleNode[RuleProperties.WRITE] !== undefined;
+    return DB.hasConfig(ruleNode, RuleProperties.WRITE);
   }
 
   static getRuleConfig(ruleNode) {
-    return DB.hasRuleConfig(ruleNode) ? ruleNode[RuleProperties.WRITE] : null;
+    return DB.getConfig(ruleNode, RuleProperties.WRITE);
   }
 
   // Does a DFS search to find most specific nodes matched in the rule tree.
@@ -615,8 +643,8 @@ class DB {
     }
     if (curRuleNode) {
       // 1) Try to match with non-variable child node.
-      const nextRuleNode = curRuleNode[parsedValuePath[depth]];
-      if (nextRuleNode !== undefined) {
+      const nextRuleNode = curRuleNode.getChild(parsedValuePath[depth]);
+      if (nextRuleNode !== null) {
         const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
         matched.matchedRulePath.unshift(parsedValuePath[depth]);
@@ -628,17 +656,17 @@ class DB {
       }
       // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
       //    child node.
-      const varNodeName = DB.getVariableNodeName(curRuleNode);
-      if (varNodeName !== null) {
-        const nextRuleNode = curRuleNode[varNodeName];
+      const varLabel = DB.getVariableLabel(curRuleNode);
+      if (varLabel !== null) {
+        const nextRuleNode = curRuleNode.getChild(varLabel);
         const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
-        matched.matchedRulePath.unshift(varNodeName);
-        if (matched.pathVars[varNodeName] !== undefined) {
+        matched.matchedRulePath.unshift(varLabel);
+        if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
           logger.error('Duplicated path variables that should NOT happen!')
         } else {
-          matched.pathVars[varNodeName] = parsedValuePath[depth];
+          matched.pathVars[varLabel] = parsedValuePath[depth];
         }
         if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
           matched.closestConfigNode = curRuleNode;
@@ -660,7 +688,7 @@ class DB {
 
   matchRulePath(parsedValuePath) {
     return this.matchRulePathRecursive(
-        parsedValuePath, 0, this.dbDataLegacy[PredefinedDbPaths.RULES_ROOT]);
+        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.RULES_ROOT));
   }
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
@@ -671,25 +699,25 @@ class DB {
         config: DB.getRuleConfig(curRuleNode),
       })
     }
-    if (ChainUtil.isDict(curRuleNode)) {
-      const varNodeName = DB.getVariableNodeName(curRuleNode);
+    if (curRuleNode && !curRuleNode.getIsLeaf()) {
+      const varLabel = DB.getVariableLabel(curRuleNode);
       // 1) Traverse non-variable child nodes.
-      for (const key in curRuleNode) {
-        const nextRuleNode = curRuleNode[key];
-        if (key !== varNodeName) {
+      for (const label of curRuleNode.getChildLabels()) {
+        const nextRuleNode = curRuleNode.getChild(label);
+        if (label !== varLabel) {
           const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
           subtreeRules.forEach((entry) => {
-            entry.path.unshift(key);
+            entry.path.unshift(label);
             rules.push(entry);
           });
         }
       }
       // 2) Traverse variable child node if available.
-      if (varNodeName !== null) {
-        const nextRuleNode = curRuleNode[varNodeName];
+      if (varLabel !== null) {
+        const nextRuleNode = curRuleNode.getChild(varLabel);
         const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
         subtreeRules.forEach((entry) => {
-          entry.path.unshift(varNodeName);
+          entry.path.unshift(varLabel);
           rules.push(entry);
         });
       }
@@ -748,11 +776,11 @@ class DB {
   }
 
   static hasOwnerConfig(ownerNode) {
-    return ownerNode && ownerNode[OwnerProperties.OWNER] !== undefined;
+    return DB.hasConfig(ownerNode, OwnerProperties.OWNER);
   }
 
   static getOwnerConfig(ownerNode) {
-    return DB.hasOwnerConfig(ownerNode) ? ownerNode[OwnerProperties.OWNER] : null;
+    return DB.getConfig(ownerNode, OwnerProperties.OWNER);
   }
 
   matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {
@@ -765,8 +793,8 @@ class DB {
       };
     }
     if (curOwnerNode) {
-      const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
-      if (nextOwnerNode !== undefined) {
+      const nextOwnerNode = curOwnerNode.getChild(parsedRefPath[depth]);
+      if (nextOwnerNode !== null) {
         const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
         if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
           matched.closestConfigNode = curOwnerNode;
@@ -785,7 +813,7 @@ class DB {
 
   matchOwnerPath(parsedRefPath) {
     return this.matchOwnerPathRecursive(
-        parsedRefPath, 0, this.dbDataLegacy[PredefinedDbPaths.OWNERS_ROOT]);
+        parsedRefPath, 0, this.dbRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
   matchOwnerForParsedPath(parsedRefPath) {
