@@ -3,46 +3,74 @@ const ChainUtil = require('../chain-util');
 
 function isValidStateObject(obj) {
   if (ChainUtil.isDict(obj)) {
-    for (const childKey in obj) {
-      const childValue = obj[childKey];
-      const isValidChild = isValidStateObject(childValue);
+    for (const key in obj) {
+      const childObj = obj[key];
+      const isValidChild = isValidStateObject(childObj);
       if (!isValidChild) {
         return false;
       }
     }
     return true;
   } else {
-    return ChainUtil.isNumber(obj) || ChainUtil.isString(obj) || obj === null;
+    return ChainUtil.isBool(obj) || ChainUtil.isNumber(obj) || ChainUtil.isString(obj) ||
+        obj === null;
   }
 }
 
 function convertToStateTree(obj) {
-  const state = new StateNode();
+  const node = new StateNode();
   if (ChainUtil.isDict(obj)) {
-    for (const childKey in obj) {
-      const childValue = obj[childKey];
-      state.setChild(childKey, convertToStateTree(childValue));
+    if (ChainUtil.isEmptyNode(obj)) {
+      node.setIsLeaf(true);
+    } else {
+      for (const key in obj) {
+        const childObj = obj[key];
+        node.setChild(key, convertToStateTree(childObj));
+      }
     }
   } else {
-    state.setValue(obj);
+    node.setValue(obj);
   }
-  return state;
+  return node;
 }
 
 function convertFromStateTree(root) {
-  if (root.isLeafNode()) {
+  if (root === null) {
+    return null;
+  }
+  if (root.getIsLeaf()) {
     return root.getValue();
   }
   const obj = {};
   for (const label of root.getChildLabels()) {
-    const node = root.getChild(label);
-    obj[label] = convertFromStateTree(node);
+    const childNode = root.getChild(label);
+    obj[label] = convertFromStateTree(childNode);
   }
   return obj;
+}
+
+function deleteStateTree(root) {
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    root.deleteChild(label);
+    deleteStateTree(childNode);
+  }
+  delete root;
+}
+
+function makeCopyOfStateTree(root) {
+  const copy = root.makeCopy();
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    copy.setChild(label, makeCopyOfStateTree(childNode));
+  }
+  return copy;
 }
 
 module.exports = {
   isValidStateObject,
   convertToStateTree,
   convertFromStateTree,
+  deleteStateTree,
+  makeCopyOfStateTree,
 }

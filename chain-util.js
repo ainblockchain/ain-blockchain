@@ -28,6 +28,10 @@ class ChainUtil {
     return keyPair;
   }
 
+  static isBool(value) {
+    return ruleUtil.isBool(value);
+  }
+
   static isNumber(value) {
     return ruleUtil.isNumber(value);
   }
@@ -42,6 +46,10 @@ class ChainUtil {
 
   static isDict(value) {
     return ruleUtil.isDict(value);
+  }
+
+  static isEmptyNode(value) {
+    return ruleUtil.isEmptyNode(value);
   }
 
   static numberOrZero(num) {
