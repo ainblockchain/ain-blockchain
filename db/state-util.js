@@ -2,15 +2,25 @@ const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 
 function isValidStateObject(obj) {
-  // TODO(seo): Implement this.
-  return true;
+  if (ChainUtil.isDict(obj)) {
+    for (const childKey in obj) {
+      const childValue = obj[childKey];
+      const isValidChild = isValidStateObject(childValue);
+      if (!isValidChild) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return ChainUtil.isNumber(obj) || ChainUtil.isString(obj) || obj === null;
+  }
 }
 
 function convertToStateTree(obj) {
   const state = new StateNode();
   if (ChainUtil.isDict(obj)) {
     for (const childKey in obj) {
-      const childValue = obj[child];
+      const childValue = obj[childKey];
       state.setChild(childKey, convertToStateTree(childValue));
     }
   } else {

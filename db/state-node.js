@@ -62,7 +62,7 @@ class StateNode {
   }
 
   getNumChild() {
-    return this.childMap.size();
+    return this.childMap.size;
   }
 
   isLeafNode() {
