@@ -1,6 +1,7 @@
 const seedrandom = require('seedrandom');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const ntpsync = require('ntpsync');
 const logger = require('../logger');
 const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
@@ -23,6 +24,7 @@ class Consensus {
     this.setStatus(ConsensusStatus.STARTING);
     this.epochInterval = null;
     this.startingTime = 0;
+    this.timeAdjustment = 0;
     this.state = {
       // epoch increases by 1 every EPOCH_MS, and at each epoch a new proposer is pseudo-randomly selected.
       epoch: 1,
@@ -92,9 +94,22 @@ class Consensus {
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
     }
-    this.epochInterval = setInterval(() => {
+    this.epochInterval = setInterval(async () => {
       this.tryFinalize();
       let currentTime = Date.now();
+      if (this.state.epoch % 100 === 0) {
+        // adjust time
+        try {
+          const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
+          if (DEBUG) {
+            logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
+          }
+          this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
+        } catch (e) {
+          logger.error(`ntpsync error: ${e}`);
+        }
+      }
+      currentTime -= this.timeAdjustment;
       const absEpoch = Math.floor((currentTime - this.startingTime) / ConsensusConsts.EPOCH_MS);
       if (this.state.epoch + 1 < absEpoch) {
         if (DEBUG) {
@@ -181,6 +196,12 @@ class Consensus {
         logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposal is missing required fields: ${msg.value}`);
         return;
       }
+      if (this.node.tp.transactionTracker[proposalTx.hash]) {
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already have the proposal in my tx tracker`);
+        }
+        return;
+      }
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
         logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to sync. Current last block: ${JSON.stringify(lastNotarizedBlock, null, 2)}`);
         // I might be falling behind. Try to catch up.
@@ -198,6 +219,12 @@ class Consensus {
         this.tryVote(proposalBlock);
       }
     } else {
+      if (this.node.tp.transactionTracker[msg.value.hash]) {
+        if (DEBUG) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already have the vote in my tx tracker`);
+        }
+        return;
+      }
       if (!Consensus.isValidConsensusTx(msg.value) || 
           ChainUtil.transactionFailed(this.server.executeTransaction(msg.value))) {
         if (DEBUG) {
@@ -357,7 +384,10 @@ class Consensus {
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
-      if (!prevBlockProposal) return false;
+      if (!prevBlockProposal) {
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposal block is missing its prev block's proposal in last_votes`);
+        return false;
+      }
       if (!prevBlockInfo.proposal) {
         if (number === this.node.bc.lastBlockNumber() + 1) {
           // TODO(lia): do more checks on the prevBlockProposal
@@ -391,7 +421,7 @@ class Consensus {
       });
       prevBlockInfo = this.blockPool.hashToBlockInfo[last_hash];
       if (!prevBlockInfo.notarized) {
-        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Block's last_votes don't correctly notarize its previous block of number ${number - 1} with hash ${last_hash}`);
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Block's last_votes don't correctly notarize its previous block of number ${number - 1} with hash ${last_hash}:\n${JSON.stringify(this.blockPool.hashToBlockInfo[last_hash], null, 2)}`);
         return false;
       }
     }
