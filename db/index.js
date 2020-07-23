@@ -520,26 +520,28 @@ class DB {
         config: DB.getFunctionConfig(curFuncNode),
       })
     }
-    const varNodeName = DB.getVariableNodeName(curFuncNode);
-    // 1) Traverse non-variable child nodes.
-    for (const key in curFuncNode) {
-      const nextFuncNode = curFuncNode[key];
-      if (key !== varNodeName && ChainUtil.isDict(nextFuncNode)) {
+    if (ChainUtil.isDict(curFuncNode)) {
+      const varNodeName = DB.getVariableNodeName(curFuncNode);
+      // 1) Traverse non-variable child nodes.
+      for (const key in curFuncNode) {
+        const nextFuncNode = curFuncNode[key];
+        if (key !== varNodeName) {
+          const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
+          subtreeFuncs.forEach((entry) => {
+            entry.path.unshift(key);
+            funcs.push(entry);
+          });
+        }
+      }
+      // 2) Traverse variable child node if available.
+      if (varNodeName !== null) {
+        const nextFuncNode = curFuncNode[varNodeName];
         const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
         subtreeFuncs.forEach((entry) => {
-          entry.path.unshift(key);
+          entry.path.unshift(varNodeName);
           funcs.push(entry);
         });
       }
-    }
-    // 2) Traverse variable child node if available.
-    if (varNodeName !== null) {
-      const nextFuncNode = curFuncNode[varNodeName];
-      const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
-      subtreeFuncs.forEach((entry) => {
-        entry.path.unshift(varNodeName);
-        funcs.push(entry);
-      });
     }
     return funcs;
   }
@@ -667,26 +669,28 @@ class DB {
         config: DB.getRuleConfig(curRuleNode),
       })
     }
-    const varNodeName = DB.getVariableNodeName(curRuleNode);
-    // 1) Traverse non-variable child nodes.
-    for (const key in curRuleNode) {
-      const nextRuleNode = curRuleNode[key];
-      if (key !== varNodeName && ChainUtil.isDict(nextRuleNode)) {
+    if (ChainUtil.isDict(curRuleNode)) {
+      const varNodeName = DB.getVariableNodeName(curRuleNode);
+      // 1) Traverse non-variable child nodes.
+      for (const key in curRuleNode) {
+        const nextRuleNode = curRuleNode[key];
+        if (key !== varNodeName) {
+          const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
+          subtreeRules.forEach((entry) => {
+            entry.path.unshift(key);
+            rules.push(entry);
+          });
+        }
+      }
+      // 2) Traverse variable child node if available.
+      if (varNodeName !== null) {
+        const nextRuleNode = curRuleNode[varNodeName];
         const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
         subtreeRules.forEach((entry) => {
-          entry.path.unshift(key);
+          entry.path.unshift(varNodeName);
           rules.push(entry);
         });
       }
-    }
-    // 2) Traverse variable child node if available.
-    if (varNodeName !== null) {
-      const nextRuleNode = curRuleNode[varNodeName];
-      const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
-      subtreeRules.forEach((entry) => {
-        entry.path.unshift(varNodeName);
-        rules.push(entry);
-      });
     }
     return rules;
   }
