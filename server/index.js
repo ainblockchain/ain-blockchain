@@ -403,6 +403,7 @@ class P2pServer {
       }
     });
 
+    // TODO(minsu): Deal with handling/recording a peer status when connection closes.
     socket.on('close', () => {
       logger.info(`[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
       this.removeFromListIfExists(socket);
