@@ -21,9 +21,7 @@ process.on('uncaughtException', function (err) {
 });
 
 process.on('SIGINT', _ => {
-  logger.info("############################################################");
-  logger.info("##          Stopping the blockchain client....            ##");
-  logger.info("############################################################");
+  logger.info("Stopping the blockchain client....");
   p2pServer.stop();
   process.exit();
 });
