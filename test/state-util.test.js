@@ -39,7 +39,7 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/array'});
     })
 
-    it("when invalid input with deep depth", () => {
+    it("when invalid input with deeper path", () => {
       assert.deepEqual(isValidJsObjectForStates({
         internal1: {
           internal2a: {
