@@ -18,6 +18,7 @@ const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
+const HEARTBEAT_INTERVAL_MS = 6 * 10000;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 const P2P_PREFIX = 'P2P';
 
@@ -33,6 +34,7 @@ class P2pServer {
     this.managedPeersInfo = {};
     this.sockets = [];
     this.consensus = new Consensus(this, node);
+    this.isAlive = true;
     this.waitInBlocks = 4;
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
@@ -263,6 +265,7 @@ class P2pServer {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.node.bc.lastBlock());
+    this.heartbeat();
   }
 
   setPeerEventHandlers(socket, address) {
@@ -415,6 +418,8 @@ class P2pServer {
       }
     });
 
+    socket.on('pong', _ => { this.isAlive = true; });
+
     socket.on('error', (error) => {
       logger.error(`[${P2P_PREFIX}] Error in communication with peer ${address}: ` +
                    `${JSON.stringify(error, null, 2)}`);
@@ -555,6 +560,14 @@ class P2pServer {
 
       return response;
     }
+  }
+
+  heartbeat() {
+    this.heartbeat = setInterval(() => {
+      for (const socket of this.sockets) {
+        socket.ping();
+      }
+    }, HEARTBEAT_INTERVAL_MS);
   }
 }
 

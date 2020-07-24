@@ -50,7 +50,8 @@ const MessageTypes = {
   TRANSACTION: 'transaction',
   CHAIN_SUBSECTION: 'chain_subsection',
   CHAIN_SUBSECTION_REQUEST: 'chain_subsection_request',
-  CONSENSUS: 'consensus'
+  CONSENSUS: 'consensus',
+  HEARTBEAT: 'heartbeat'
 };
 
 /**
