@@ -197,6 +197,8 @@ class P2pServer {
     if (diskUsage !== null) {
       updateToTracker.diskUsage = diskUsage;
     }
+    const memoryUsage = this.getMemoryUsage();
+    updateToTracker.memoryUsage = memoryUsage;
     logger.info(`\n[${P2P_PREFIX}] >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
                 `${JSON.stringify(updateToTracker, null, 2)}`)
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
@@ -210,6 +212,17 @@ class P2pServer {
       logger.error(`[${P2P_PREFIX}] ` + err);
       return null;
     }
+  }
+
+  getMemoryUsage() {
+    const free = os.freemem();
+    const total = os.totalmem();
+    const usage = total - free;
+    return {
+      free,
+      usage,
+      total,
+    };
   }
 
   connectToPeers(newManagedPeerInfoList) {
