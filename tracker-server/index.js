@@ -46,8 +46,9 @@ function printNodesInfo() {
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
     const diskAvailableMb = Math.floor(node.diskUsage.available / 1000000);
+    const memoryFreeMb = Math.round(node.memoryUsage.free / 1024 / 1024);
     logger.info(`    Node[${i}]: ${node.getNodeSummary()} ` +
-        `(${node.timestamp}, ${node.lastBlockNumber}, ${diskAvailableMb}MB) ` +
+        `(${node.timestamp}, ${node.lastBlockNumber}, ${diskAvailableMb}MB), Memory:${memoryFreeMb}MB, ` +
         `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()})`);
     Object.keys(node.managedPeers).forEach((addr) => {
       const peerSummary = PEER_NODES[addr] ?
