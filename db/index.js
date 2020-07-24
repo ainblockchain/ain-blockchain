@@ -7,9 +7,9 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {
-  isValidStateObject,
-  convertToStateTree,
-  convertFromStateTree,
+  isValidJsObjectForState,
+  jsObjectToStateTree,
+  stateTreeToJsObject,
   makeCopyOfStateTree,
 } = require('./state-util');
 const Functions = require('./functions');
@@ -92,12 +92,12 @@ class DB {
   writeDatabase(fullPath, value) {
     // TODO(seo): Apply write value validation logic.
     /*
-    if (!isValidStateObject(value)) {
+    if (!isValidJsObjectForState(value)) {
       // TODO(seo): Handle this case properly.
       return null;
     }
     */
-    const valueTree = convertToStateTree(value);
+    const valueTree = jsObjectToStateTree(value);
     if (fullPath.length === 0) {
       this.dbRoot = valueTree;
     } else {
@@ -138,7 +138,7 @@ class DB {
 
   readDatabase(fullPath) {
     const node = this.getRefForReading(fullPath);
-    return convertFromStateTree(node);
+    return stateTreeToJsObject(node);
   }
 
   getValue(valuePath) {
@@ -479,7 +479,7 @@ class DB {
   }
 
   static getConfig(node, label) {
-    return DB.hasConfig(node, label) ? convertFromStateTree(node.getChild(label)) : null;
+    return DB.hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
   }
 
   static hasFunctionConfig(funcNode) {

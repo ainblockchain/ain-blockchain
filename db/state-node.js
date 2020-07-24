@@ -68,19 +68,11 @@ class StateNode {
   }
 
   getChildLabels() {
-    const labels = [];
-    for (let [key, value] of this.childMap) {
-      labels.push(key);
-    }
-    return labels;
+    return [ ...this.childMap.keys() ];
   }
 
   getChildNodes() {
-    const nodes = [];
-    for (let [key, value] of this.childMap) {
-      nodes.push(value);
-    }
-    return nodes;
+    return [ ...this.childMap.values() ];
   }
 
   getNumChild() {

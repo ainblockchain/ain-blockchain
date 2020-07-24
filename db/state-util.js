@@ -1,14 +1,14 @@
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 
-function isValidStateObject(obj) {
+function isValidJsObjectForState(obj) {
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmptyNode(obj)) {
       return false;
     }
     for (const key in obj) {
       const childObj = obj[key];
-      const isValidChild = isValidStateObject(childObj);
+      const isValidChild = isValidJsObjectForState(childObj);
       if (!isValidChild) {
         return false;
       }
@@ -20,7 +20,7 @@ function isValidStateObject(obj) {
   }
 }
 
-function convertToStateTree(obj) {
+function jsObjectToStateTree(obj) {
   const node = new StateNode();
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmptyNode(obj)) {
@@ -28,7 +28,7 @@ function convertToStateTree(obj) {
     } else {
       for (const key in obj) {
         const childObj = obj[key];
-        node.setChild(key, convertToStateTree(childObj));
+        node.setChild(key, jsObjectToStateTree(childObj));
       }
     }
   } else {
@@ -37,7 +37,7 @@ function convertToStateTree(obj) {
   return node;
 }
 
-function convertFromStateTree(root) {
+function stateTreeToJsObject(root) {
   if (root === null) {
     return null;
   }
@@ -47,7 +47,7 @@ function convertFromStateTree(root) {
   const obj = {};
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    obj[label] = convertFromStateTree(childNode);
+    obj[label] = stateTreeToJsObject(childNode);
   }
   return obj;
 }
@@ -71,9 +71,9 @@ function makeCopyOfStateTree(root) {
 }
 
 module.exports = {
-  isValidStateObject,
-  convertToStateTree,
-  convertFromStateTree,
+  isValidJsObjectForState,
+  jsObjectToStateTree,
+  stateTreeToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
 }
