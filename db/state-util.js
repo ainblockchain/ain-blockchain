@@ -1,23 +1,31 @@
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 
-function isValidJsObjectForState(obj) {
+function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmptyNode(obj)) {
       return false;
     }
     for (const key in obj) {
       const childObj = obj[key];
-      const isValidChild = isValidJsObjectForState(childObj);
+      path.push(key);
+      const isValidChild = isValidJsObjectForStatesRecursive(childObj, path);
       if (!isValidChild) {
         return false;
       }
+      path.pop();
     }
     return true;
   } else {
     return ChainUtil.isBool(obj) || ChainUtil.isNumber(obj) || ChainUtil.isString(obj) ||
         obj === null;
   }
+}
+
+function isValidJsObjectForStates(obj) {
+  const path = [];
+  const isValid = isValidJsObjectForStatesRecursive(obj, path);
+  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
 function jsObjectToStateTree(obj) {
@@ -71,7 +79,7 @@ function makeCopyOfStateTree(root) {
 }
 
 module.exports = {
-  isValidJsObjectForState,
+  isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
   deleteStateTree,
