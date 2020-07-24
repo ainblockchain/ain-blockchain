@@ -1,3 +1,5 @@
+const RuleUtil = require('./db/rule-util');
+const ruleUtil = new RuleUtil();
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const ainUtil = require('@ainblockchain/ain-util');
@@ -26,16 +28,28 @@ class ChainUtil {
     return keyPair;
   }
 
-  static isDict(data) {
-    return (typeof data === 'object' && data !== null && !Array.isArray(data));
+  static isBool(value) {
+    return ruleUtil.isBool(value);
   }
 
-  static isNumber(num) {
-    return typeof num === 'number' && isFinite(num);
+  static isNumber(value) {
+    return ruleUtil.isNumber(value);
   }
 
   static isString(value) {
-    return typeof value === 'string';
+    return ruleUtil.isString(value);
+  }
+
+  static isArray(value) {
+    return ruleUtil.isString(value);
+  }
+
+  static isDict(value) {
+    return ruleUtil.isDict(value);
+  }
+
+  static isEmptyNode(value) {
+    return ruleUtil.isEmptyNode(value);
   }
 
   static numberOrZero(num) {
