@@ -6,8 +6,34 @@ const assert = chai.assert;
 describe("RuleUtil", () => {
   const util = new RuleUtil;
 
+  describe("isBool", () => {
+    it("when invalid input", () => {
+      expect(util.isBool(0)).to.equal(false);
+      expect(util.isBool(10)).to.equal(false);
+      expect(util.isBool(-1)).to.equal(false);
+      expect(util.isBool(15.5)).to.equal(false);
+      expect(util.isBool(null)).to.equal(false);
+      expect(util.isBool(undefined)).to.equal(false);
+      expect(util.isBool(Infinity)).to.equal(false);
+      expect(util.isBool(NaN)).to.equal(false);
+      expect(util.isBool('')).to.equal(false);
+      expect(util.isBool('abc')).to.equal(false);
+      expect(util.isBool({})).to.equal(false);
+      expect(util.isBool({a: 'A'})).to.equal(false);
+      expect(util.isBool([])).to.equal(false);
+      expect(util.isBool([10])).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isBool(true)).to.equal(true);
+      expect(util.isBool(false)).to.equal(true);
+    })
+  })
+
   describe("isNumber", () => {
     it("when invalid input", () => {
+      expect(util.isNumber(true)).to.equal(false);
+      expect(util.isNumber(false)).to.equal(false);
       expect(util.isNumber(null)).to.equal(false);
       expect(util.isNumber(undefined)).to.equal(false);
       expect(util.isNumber(Infinity)).to.equal(false);
@@ -30,6 +56,8 @@ describe("RuleUtil", () => {
 
   describe("isString", () => {
     it("when invalid input", () => {
+      expect(util.isString(true)).to.equal(false);
+      expect(util.isString(false)).to.equal(false);
       expect(util.isString(0)).to.equal(false);
       expect(util.isString(10)).to.equal(false);
       expect(util.isString(null)).to.equal(false);
@@ -51,6 +79,8 @@ describe("RuleUtil", () => {
 
   describe("isArray", () => {
     it("when invalid input", () => {
+      expect(util.isArray(true)).to.equal(false);
+      expect(util.isArray(false)).to.equal(false);
       expect(util.isArray(0)).to.equal(false);
       expect(util.isArray(10)).to.equal(false);
       expect(util.isArray(null)).to.equal(false);
@@ -72,6 +102,8 @@ describe("RuleUtil", () => {
 
   describe("isDict", () => {
     it("when invalid input", () => {
+      expect(util.isDict(true)).to.equal(false);
+      expect(util.isDict(false)).to.equal(false);
       expect(util.isDict(0)).to.equal(false);
       expect(util.isDict(10)).to.equal(false);
       expect(util.isDict(null)).to.equal(false);
@@ -93,6 +125,8 @@ describe("RuleUtil", () => {
 
   describe("isEmptyNode", () => {
     it("when invalid input", () => {
+      expect(util.isEmptyNode(true)).to.equal(false);
+      expect(util.isEmptyNode(false)).to.equal(false);
       expect(util.isEmptyNode(0)).to.equal(false);
       expect(util.isEmptyNode(10)).to.equal(false);
       expect(util.isEmptyNode(Infinity)).to.equal(false);
@@ -114,6 +148,8 @@ describe("RuleUtil", () => {
 
   describe("keys", () => {
     it("when invalid input", () => {
+      assert.deepEqual(util.keys(true), []);
+      assert.deepEqual(util.keys(false), []);
       assert.deepEqual(util.keys(0), []);
       assert.deepEqual(util.keys(10), []);
       assert.deepEqual(util.keys(null), []);
@@ -137,6 +173,8 @@ describe("RuleUtil", () => {
 
   describe("length", () => {
     it("when invalid input", () => {
+      expect(util.length(true)).to.equal(0);
+      expect(util.length(false)).to.equal(0);
       expect(util.length(0)).to.equal(0);
       expect(util.length(10)).to.equal(0);
       expect(util.length(null)).to.equal(0);
@@ -160,6 +198,8 @@ describe("RuleUtil", () => {
 
   describe("isValAddr", () => {
     it("when non-string input", () => {
+      expect(util.isValAddr(true)).to.equal(false);
+      expect(util.isValAddr(false)).to.equal(false);
       expect(util.isValAddr(0)).to.equal(false);
       expect(util.isValAddr(10)).to.equal(false);
       expect(util.isValAddr(null)).to.equal(false);
