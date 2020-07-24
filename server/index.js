@@ -306,15 +306,20 @@ class P2pServer {
             if (DEBUG) {
               logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection: ${JSON.stringify(data.chainSubsection, null, 2)}`);
             }
-            // Check if chain subsection is valid and can be
-            // merged ontop of your local blockchain
             if (data.number <= this.node.bc.lastBlockNumber()) {
-              if (data.number === this.node.bc.lastBlockNumber() &&
-                  this.consensus.status === ConsensusStatus.STARTING) {
-                    this.consensus.init(this.node.bc.lastBlock());
+              if (this.consensus.status === ConsensusStatus.STARTING) {
+                if (!data.chainSubsection && !data.catchUpInfo) {
+                  this.consensus.init(this.node.bc.lastBlock());
+                }
+                if (data.number === this.node.bc.lastBlockNumber()) {
+                  this.consensus.init(this.node.bc.lastBlock());
+                }
               }
               return;
             }
+
+            // Check if chain subsection is valid and can be
+            // merged ontop of your local blockchain
             if (this.node.bc.merge(data.chainSubsection)) {
               data.chainSubsection.forEach((block) => {
                 this.node.tp.cleanUpForNewBlock(block);
@@ -384,6 +389,12 @@ class P2pServer {
               );
             } else {
               logger.info(`[${P2P_PREFIX}] No chainSubsection to send`);
+              this.sendChainSubsection(
+                socket,
+                null,
+                this.node.bc.lastBlockNumber(),
+                null
+              );
             }
             break;
         }
