@@ -13,6 +13,7 @@ describe("state-util", () => {
   describe("isValidStateObject", () => {
     it("when invalid input", () => {
       expect(isValidStateObject(undefined)).to.equal(false);
+      expect(isValidStateObject({})).to.equal(false);
       expect(isValidStateObject([])).to.equal(false);
       expect(isValidStateObject([1, 2, 3])).to.equal(false);
       expect(isValidStateObject(['a', 'b', 'c'])).to.equal(false);
@@ -20,10 +21,16 @@ describe("state-util", () => {
         undef: undefined 
       })).to.equal(false);
       expect(isValidStateObject({
+        empty_obj: {}
+      })).to.equal(false);
+      expect(isValidStateObject({
         array: []
       })).to.equal(false);
       expect(isValidStateObject({
-        array: ['a', 'b']
+        array: [1, 2, 3]
+      })).to.equal(false);
+      expect(isValidStateObject({
+        array: ['a', 'b', 'c']
       })).to.equal(false);
     })
 
@@ -31,21 +38,18 @@ describe("state-util", () => {
       expect(isValidStateObject(10)).to.equal(true);
       expect(isValidStateObject("str")).to.equal(true);
       expect(isValidStateObject(null)).to.equal(true);
-      expect(isValidStateObject({})).to.equal(true);
       expect(isValidStateObject({
         bool: false,
         number: 10,
         str: 'str',
         empty_str: '',
         null: null,
-        empty_obj: {},
         subobj1: {
           bool: true,
           number: 20,
           str: 'str2',
           empty_str: '',
           null: null,
-          empty_obj: {},
         },
         subobj2: {
           bool: true,
@@ -53,7 +57,6 @@ describe("state-util", () => {
           str: 'str3',
           empty_str: '',
           null: null,
-          empty_obj: {},
         }
       })).to.equal(true);
       expect(isValidStateObject({
@@ -89,6 +92,34 @@ describe("state-util", () => {
         str: 'str',
         empty_str: '',
         null: null,
+        undef: undefined,
+        empty_obj: {},
+        subobj1: {
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        },
+        subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        }
+      };
+      assert.deepEqual(convertFromStateTree(convertToStateTree(stateObj)), {
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
         empty_obj: null,
         subobj1: {
           bool: true,
@@ -96,6 +127,7 @@ describe("state-util", () => {
           str: 'str2',
           empty_str: '',
           null: null,
+          undef: undefined,
           empty_obj: null,
         },
         subobj2: {
@@ -104,10 +136,10 @@ describe("state-util", () => {
           str: 'str3',
           empty_str: '',
           null: null,
+          undef: undefined,
           empty_obj: null,
         }
-      };
-      assert.deepEqual(convertFromStateTree(convertToStateTree(stateObj)), stateObj);
+      });
     })
   })
 
@@ -119,6 +151,37 @@ describe("state-util", () => {
         str: 'str',
         empty_str: '',
         null: null,
+        undef: undefined,
+        empty_obj: {},
+        subobj1: {
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        },
+        subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        }
+      };
+      const root = convertToStateTree(stateObj);
+      const copy = makeCopyOfStateTree(root);
+      deleteStateTree(root);
+      assert.deepEqual(convertFromStateTree(copy), {
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
         empty_obj: null,
         subobj1: {
           bool: true,
@@ -126,6 +189,7 @@ describe("state-util", () => {
           str: 'str2',
           empty_str: '',
           null: null,
+          undef: undefined,
           empty_obj: null,
         },
         subobj2: {
@@ -134,13 +198,10 @@ describe("state-util", () => {
           str: 'str3',
           empty_str: '',
           null: null,
+          undef: undefined,
           empty_obj: null,
         }
-      };
-      const root = convertToStateTree(stateObj);
-      const copy = makeCopyOfStateTree(root);
-      deleteStateTree(root);
-      assert.deepEqual(convertFromStateTree(copy), stateObj);
+      });
     })
   })
 })
