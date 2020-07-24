@@ -86,6 +86,22 @@ class StateNode {
   setProofHash() {
     // TODO(minsu): Implement this.
   }
+
+  addVersion() {
+    // TODO(lia): Implement this.
+  }
+
+  hasVersion() {
+    // TODO(lia): Implement this.
+  }
+
+  deleteVersion() {
+    // TODO(lia): Implement this.
+  }
+
+  resetVersion() {
+    // TODO(lia): Implement this.
+  }
 }
 
 module.exports = StateNode;
