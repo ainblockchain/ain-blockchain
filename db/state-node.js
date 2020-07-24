@@ -99,7 +99,11 @@ class StateNode {
     // TODO(lia): Implement this.
   }
 
-  resetVersion() {
+  getVersions() {
+    // TODO(lia): Implement this.
+  }
+
+  resetVersions() {
     // TODO(lia): Implement this.
   }
 }
