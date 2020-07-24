@@ -8,7 +8,6 @@ const {
   GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, GENESIS_FUNCTIONS, PredefinedDbPaths
 } = require('../constants')
 const {setDbForTesting} = require('./test-util');
-const { convertFromStateTree } = require("../db/state-util");
 
 describe("DB initialization", () => {
   let node;

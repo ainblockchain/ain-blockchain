@@ -1,7 +1,7 @@
 const {
-  isValidStateObject,
-  convertToStateTree,
-  convertFromStateTree,
+  isValidJsObjectForState,
+  jsObjectToStateTree,
+  stateTreeToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
 } = require('../db/state-util');
@@ -10,35 +10,35 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 describe("state-util", () => {
-  describe("isValidStateObject", () => {
+  describe("isValidJsObjectForState", () => {
     it("when invalid input", () => {
-      expect(isValidStateObject(undefined)).to.equal(false);
-      expect(isValidStateObject({})).to.equal(false);
-      expect(isValidStateObject([])).to.equal(false);
-      expect(isValidStateObject([1, 2, 3])).to.equal(false);
-      expect(isValidStateObject(['a', 'b', 'c'])).to.equal(false);
-      expect(isValidStateObject({
+      expect(isValidJsObjectForState(undefined)).to.equal(false);
+      expect(isValidJsObjectForState({})).to.equal(false);
+      expect(isValidJsObjectForState([])).to.equal(false);
+      expect(isValidJsObjectForState([1, 2, 3])).to.equal(false);
+      expect(isValidJsObjectForState(['a', 'b', 'c'])).to.equal(false);
+      expect(isValidJsObjectForState({
         undef: undefined 
       })).to.equal(false);
-      expect(isValidStateObject({
+      expect(isValidJsObjectForState({
         empty_obj: {}
       })).to.equal(false);
-      expect(isValidStateObject({
+      expect(isValidJsObjectForState({
         array: []
       })).to.equal(false);
-      expect(isValidStateObject({
+      expect(isValidJsObjectForState({
         array: [1, 2, 3]
       })).to.equal(false);
-      expect(isValidStateObject({
+      expect(isValidJsObjectForState({
         array: ['a', 'b', 'c']
       })).to.equal(false);
     })
 
     it("when valid input", () => {
-      expect(isValidStateObject(10)).to.equal(true);
-      expect(isValidStateObject("str")).to.equal(true);
-      expect(isValidStateObject(null)).to.equal(true);
-      expect(isValidStateObject({
+      expect(isValidJsObjectForState(10)).to.equal(true);
+      expect(isValidJsObjectForState("str")).to.equal(true);
+      expect(isValidJsObjectForState(null)).to.equal(true);
+      expect(isValidJsObjectForState({
         bool: false,
         number: 10,
         str: 'str',
@@ -59,7 +59,7 @@ describe("state-util", () => {
           null: null,
         }
       })).to.equal(true);
-      expect(isValidStateObject({
+      expect(isValidJsObjectForState({
         "owners": {
           ".owner": {
             "owners": {
@@ -79,13 +79,13 @@ describe("state-util", () => {
     })
   })
 
-  describe("convertToStateTree / convertFromStateTree", () => {
+  describe("jsObjectToStateTree / stateTreeToJsObject", () => {
     it("when valid input", () => {
-      expect(convertFromStateTree(convertToStateTree(true))).to.equal(true);
-      expect(convertFromStateTree(convertToStateTree(false))).to.equal(false);
-      expect(convertFromStateTree(convertToStateTree(10))).to.equal(10);
-      expect(convertFromStateTree(convertToStateTree('str'))).to.equal('str');
-      expect(convertFromStateTree(convertToStateTree(null))).to.equal(null);
+      expect(stateTreeToJsObject(jsObjectToStateTree(true))).to.equal(true);
+      expect(stateTreeToJsObject(jsObjectToStateTree(false))).to.equal(false);
+      expect(stateTreeToJsObject(jsObjectToStateTree(10))).to.equal(10);
+      expect(stateTreeToJsObject(jsObjectToStateTree('str'))).to.equal('str');
+      expect(stateTreeToJsObject(jsObjectToStateTree(null))).to.equal(null);
       const stateObj = {
         bool: false,
         number: 10,
@@ -113,7 +113,7 @@ describe("state-util", () => {
           empty_obj: {},
         }
       };
-      assert.deepEqual(convertFromStateTree(convertToStateTree(stateObj)), {
+      assert.deepEqual(stateTreeToJsObject(jsObjectToStateTree(stateObj)), {
         bool: false,
         number: 10,
         str: 'str',
@@ -172,10 +172,10 @@ describe("state-util", () => {
           empty_obj: {},
         }
       };
-      const root = convertToStateTree(stateObj);
+      const root = jsObjectToStateTree(stateObj);
       const copy = makeCopyOfStateTree(root);
       deleteStateTree(root);
-      assert.deepEqual(convertFromStateTree(copy), {
+      assert.deepEqual(stateTreeToJsObject(copy), {
         bool: false,
         number: 10,
         str: 'str',
