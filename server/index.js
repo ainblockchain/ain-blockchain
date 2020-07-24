@@ -88,7 +88,7 @@ class P2pServer {
   }
 
   clearIntervalForTrackerConnection() {
-    clearInterval(this.intervalConnection)
+    clearInterval(this.intervalConnection);
     this.intervalConnection = null;
   }
 
@@ -100,7 +100,7 @@ class P2pServer {
   }
 
   clearIntervalForTrackerUpdate() {
-    clearInterval(this.intervalUpdate)
+    clearInterval(this.intervalUpdate);
     this.intervalUpdate = null;
   }
 
@@ -267,6 +267,8 @@ class P2pServer {
   }
 
   disconnectFromPeers() {
+    clearInterval(this.intervalHeartbeat);
+
     for (const socket of this.sockets) {
       socket.close();
     }
@@ -414,6 +416,9 @@ class P2pServer {
               );
             }
             break;
+            case MessageTypes.HEARTBEAT:
+              // TODO(minsu): heartbeat
+              break;
         }
       } catch (error) {
         logger.error(`[${P2P_PREFIX}] ` + error.stack);
@@ -432,7 +437,10 @@ class P2pServer {
       }
     });
 
-    socket.on('pong', _ => { this.isAlive = true; });
+    socket.on('pong', _ => {
+      this.isAlive = true;
+      // TODO(minsu): add pong message back thru socket.send();
+    });
 
     socket.on('error', (error) => {
       logger.error(`[${P2P_PREFIX}] Error in communication with peer ${address}: ` +
@@ -577,7 +585,7 @@ class P2pServer {
   }
 
   heartbeat() {
-    this.heartbeat = setInterval(() => {
+    this.intervalHeartbeat = setInterval(() => {
       for (const socket of this.sockets) {
         socket.ping();
       }
