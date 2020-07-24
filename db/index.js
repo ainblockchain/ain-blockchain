@@ -7,7 +7,7 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {
-  isValidJsObjectForState,
+  isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
   makeCopyOfStateTree,
@@ -90,13 +90,6 @@ class DB {
   }
 
   writeDatabase(fullPath, value) {
-    // TODO(seo): Apply write value validation logic.
-    /*
-    if (!isValidJsObjectForState(value)) {
-      // TODO(seo): Handle this case properly.
-      return null;
-    }
-    */
     const valueTree = jsObjectToStateTree(value);
     if (fullPath.length === 0) {
       this.dbRoot = valueTree;
@@ -222,12 +215,14 @@ class DB {
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
-  // TODO(seo): Consider adding array to object transforming (see
-  //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
   setValue(valuePath, value, address, timestamp, transaction) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(value);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
-      return {code: 2, error_message: 'No .write permission on: ' + valuePath};
+      return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
@@ -242,7 +237,7 @@ class DB {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: 'Not a number type: ' + valuePath};
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
@@ -254,16 +249,20 @@ class DB {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: 'Not a number type: ' + valuePath};
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
   }
 
   setFunction(functionPath, functionInfo, address) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(functionInfo);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(functionPath);
     if (!this.getPermissionForFunction(parsedPath, address)) {
-      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
+      return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
     }
     const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
         JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
@@ -275,9 +274,13 @@ class DB {
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
   setRule(rulePath, rule, address) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(rule);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address)) {
-      return {code: 3, error_message: 'No write_rule permission on: ' + rulePath};
+      return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
     }
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
@@ -287,9 +290,13 @@ class DB {
 
   // TODO(seo): Add owner config sanitization logic.
   setOwner(ownerPath, owner, address) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(owner);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
-      return {code: 4, error_message: 'No write_owner or branch_owner permission on: ' + ownerPath};
+      return {code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}`};
     }
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -334,7 +341,7 @@ class DB {
         }
       } else {
         // Invalid Operation
-        return {code: 5, error_message: 'Invalid opeartionn type: ' + op.type};
+        return {code: 5, error_message: `Invalid opeartionn type: ${op.type}`};
       }
     }
     return ret;
