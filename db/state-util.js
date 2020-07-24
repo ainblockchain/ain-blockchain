@@ -3,6 +3,9 @@ const ChainUtil = require('../chain-util');
 
 function isValidStateObject(obj) {
   if (ChainUtil.isDict(obj)) {
+    if (ChainUtil.isEmptyNode(obj)) {
+      return false;
+    }
     for (const key in obj) {
       const childObj = obj[key];
       const isValidChild = isValidStateObject(childObj);
