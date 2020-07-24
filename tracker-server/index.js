@@ -9,11 +9,24 @@ const P2P_PORT = 5000;
 const PORT = process.env.PORT || 8080;
 const MAX_NUM_PEERS = 2;
 const PEER_NODES = {};
+const WS_LIST = [];
 const MASK = 'xxx';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
   logger.error(err);
+});
+
+process.on('SIGINT', _ => {
+  logger.info("Stopping tracking server....");
+  logger.info("Gracefully close websokets....");
+  for (const ws of WS_LIST) {
+    ws.close();
+  }
+  logger.info("Gracefully close websoket server....");
+  server.close(_ => {
+    process.exit(0);
+  });
 });
 
 function abbrAddr(address) {
@@ -100,6 +113,7 @@ const server = new WebSocketServer({
   }
 });
 server.on('connection', (ws) => {
+  WS_LIST.push(ws);
   let node = null;
   ws.on('message', (message) => {
     try {
