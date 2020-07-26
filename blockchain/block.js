@@ -8,6 +8,7 @@ const {
   GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, GENESIS_FUNCTIONS,
   ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts
 } = require('../constants');
+const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -159,6 +160,20 @@ class Block {
       throw Error('Missing genesis rules file: ' + GENESIS_RULES);
     }
 
+    // Consensus (whitelisting) operation
+    // TODO(lia): increase this list to 10
+    const whitelistOp = {
+      type: 'SET_VALUE',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
+      value: {
+        '0x00ADEc28B6a845a085e03591bE7550dd68673C1C': 250,
+        '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204': 250,
+        '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00': 250,
+        '0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A': 250,
+        '0x04A456C92A880cd59D7145C457475515a6f6E0f2': 250
+      }
+    };
+
     // Function configs operation
     const functionConfigs = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
     if (ADDITIONAL_FUNCTIONS) {
@@ -216,7 +231,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, functionsOp, rulesOp, ownersOp ]
+        op_list: [ tokenOp, balanceOp, whitelistOp, functionsOp, rulesOp, ownersOp ]
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
@@ -282,6 +297,9 @@ class Block {
     const epoch = 0;
     const proposer = ownerAccount.address;
     const validators = {};
+    for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+      validators[GenesisAccounts.others[i].address] = 250;
+    }
     return new this(lastHash, lastVotes, transactions, number, epoch, timestamp,
         proposer, validators);
   }
