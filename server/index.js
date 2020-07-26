@@ -166,7 +166,7 @@ class P2pServer {
           if (parsedMsg.numLivePeers === 0) {
             const lastBlockWithoutProposal = this.node.init(true);
             this.node.bc.syncedAfterStartup = true;
-            this.consensus.init(lastBlockWithoutProposal);
+            this.consensus.init(lastBlockWithoutProposal, true);
           } else {
             // Consensus will be initialized after syncing with peers
             this.node.init(false);
@@ -319,11 +319,12 @@ class P2pServer {
             }
             if (data.number <= this.node.bc.lastBlockNumber()) {
               if (this.consensus.status === ConsensusStatus.STARTING) {
-                if (!data.chainSubsection && !data.catchUpInfo) {
+                if (!data.chainSubsection && !data.catchUpInfo || data.number === this.node.bc.lastBlockNumber()) {
+                  this.node.bc.syncedAfterStartup = true;
                   this.consensus.init(this.node.bc.lastBlock());
-                }
-                if (data.number === this.node.bc.lastBlockNumber()) {
-                  this.consensus.init(this.node.bc.lastBlock());
+                  if (this.consensus.isRunning()) {
+                    this.consensus.catchUp(data.catchUpInfo);
+                  }
                 }
               }
               return;

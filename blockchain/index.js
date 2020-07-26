@@ -39,6 +39,8 @@ class Blockchain {
         logger.info("## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##");
         logger.info("#############################################################");
         logger.info("\n");
+        this.chain = [Block.genesis()];
+        this.writeChain();
       }
     } else {
       if (isFirstNode) {
