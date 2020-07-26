@@ -6,6 +6,7 @@ const logger = require('../logger');
 const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
 const DB = require('../db');
+const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
 const { DEBUG, STAKE, WriteDbOperations, PredefinedDbPaths } = require('../constants');
@@ -198,7 +199,6 @@ class Consensus {
       }
       if (Consensus.isValidConsensusTx(proposalTx) && this.checkProposal(proposalBlock, proposalTx)) {
         this.server.broadcastConsensusMessage(msg);
-        this.server.executeTransaction(proposalTx);
         this.tryVote(proposalBlock);
       }
     } else {
@@ -208,15 +208,9 @@ class Consensus {
         }
         return;
       }
-      if (!Consensus.isValidConsensusTx(msg.value) || 
-          ChainUtil.transactionFailed(this.server.executeTransaction(msg.value))) {
-        if (DEBUG) {
-          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting tx execution failed`);
-        }
-        return;
+      if (Consensus.isValidConsensusTx(msg.value) && this.checkVote(msg.value)) {
+        this.server.broadcastConsensusMessage(msg);
       }
-      this.server.broadcastConsensusMessage(msg);
-      this.blockPool.addSeenVote(msg.value, this.state.epoch);
     }
   }
 
@@ -379,6 +373,7 @@ class Consensus {
         }
       }
     }
+    const tempState = new DB();
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
@@ -406,8 +401,7 @@ class Consensus {
           return false;
         }
       }
-      const tempState = new DB();
-      tempState.dbData = JSON.parse(JSON.stringify(prevState.dbData));
+      tempState.setDbToSnapshot(prevState);
       proposalBlock.last_votes.forEach(voteTx => {
         if (voteTx.hash === prevBlockProposal.hash) return;
         if (!Consensus.isValidConsensusTx(voteTx) || 
@@ -425,13 +419,6 @@ class Consensus {
     }
     if (prevBlock.epoch >= epoch) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Previous block's epoch (${prevBlock.epoch}) is greater than or equal to incoming block's (${epoch})`);
-      return false;
-    }
-    if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Block is not extending one of the longest notarized chains (${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
-      return false;
-    }
-    if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;
     }
     let seedBlock = number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ? prevBlock
@@ -460,7 +447,7 @@ class Consensus {
       }
     }
     const newState = new DB();
-    newState.dbData = JSON.parse(JSON.stringify(prevState.dbData));
+    newState.setDbToSnapshot(prevState);
     if (!newState.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute last votes`);
       return false;
@@ -469,8 +456,43 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute transactions`);
       return false;
     }
+    tempState.setDbToSnapshot(prevState);
+    if (ChainUtil.transactionFailed(tempState.executeTransaction(proposalTx))) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute the proposal tx`);
+      return false;
+    }
+    this.node.tp.addTransaction(new Transaction(proposalTx));
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
+    if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
+      return false;
+    }
+    if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Block is not extending one of the longest notarized chains (${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
+      return false;
+    }
     logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] proposal verified`);
+    return true;
+  }
+
+  checkVote(vote) {
+    const LOG_SUFFIX = 'checkVote';
+    const blockHash = vote.operation.value.block_hash;
+    const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
+    const block = blockInfo && blockInfo.block ? blockInfo.block
+        : blockHash === this.node.bc.lastBlock().hash ? this.node.bc.backupDb
+            : null;
+    if (!block) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Cannot verify the vote without the block it's voting for: ${blockHash} / ${JSON.stringify(blockInfo, null, 2)}`);
+      // FIXME: ask for the block from peers
+      return false;
+    }
+    const tempState = this.getStateSnapshot(block);
+    if (ChainUtil.transactionFailed(tempState.executeTransaction(vote))) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute the voting tx`);
+      return false;
+    }
+    this.node.tp.addTransaction(new Transaction(vote));
+    this.blockPool.addSeenVote(vote, this.state.epoch);
     return true;
   }
 
@@ -645,9 +667,9 @@ class Consensus {
     }
     const snapshot = new DB();
     if (this.blockPool.hashToState.has(blockHash)) {
-      snapshot.dbData = this.blockPool.hashToState.get(blockHash);
+      snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
     } else if (blockHash === lastFinalizedHash) {
-      snapshot.dbData = this.node.bc.backupDb;
+      snapshot.setDbToSnapshot(this.node.bc.backupDb);
     }
     while (chain.length) {
       // apply last_votes and transactions
