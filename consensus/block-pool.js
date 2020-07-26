@@ -340,7 +340,7 @@ class BlockPool {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Prev block is unavailable`);
       return;
     }
-    const totalAtStake = prevBlock.number === 0 ? STAKE : Object.values(prevBlock.validators).reduce((a, b) => { return a + b; }, 0);
+    const totalAtStake = Object.values(prevBlock.validators).reduce((a, b) => { return a + b; }, 0);
     if (currentBlockInfo.tallied && currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] block ${currentBlockInfo.block.hash} is notarized!`);
       this.hashToBlockInfo[blockHash].notarized = true;

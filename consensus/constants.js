@@ -2,7 +2,8 @@ const ConsensusConsts = {
   MAJORITY: 2 / 3,
   DAY_MS: 86400000,
   EPOCH_MS: 1000,
-  MAX_CONSENSUS_STATE_DB: 1000
+  MAX_CONSENSUS_STATE_DB: 1000,
+  INITIAL_NUM_VALIDATORS: 5
 }
 
 const ConsensusMessageTypes = {
@@ -18,6 +19,7 @@ const ConsensusStatus = {
 
 const ConsensusDbPaths = {
   CONSENSUS: 'consensus',
+  WHITELIST: 'whitelist',
   NUMBER: 'number',
   PROPOSE: 'propose',
   PROPOSER: 'proposer',
