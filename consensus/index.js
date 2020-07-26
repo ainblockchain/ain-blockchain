@@ -362,13 +362,14 @@ class Consensus {
     // check that the transactions from block #1 amount to +2/3 deposits of initially whitelisted validators
     if (number === 1) {
       const majority = ConsensusConsts.MAJORITY * Object.values(validators).reduce((a, b) => { return a + b; }, 0);
-      const deposits = Consensus.filterDepositTxs(proposalBlock.transactions);
-      if (deposits < majority) {
-        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] We don't have enough deposits yet`)
+      const depositTxs = Consensus.filterDepositTxs(proposalBlock.transactions);
+      const depositSum = depositTxs.reduce((a, b) => { return a + b.operation.value; }, 0);
+      if (depositSum < majority) {
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] We don't have enough deposits yet`)
         return false;
       }
       // TODO(lia): make sure each validator staked only once at this point
-      for (const depositTx of deposits) {
+      for (const depositTx of depositTxs) {
         const expectedStake = validators[depositTx.address];
         const actualStake = _.get(depositTx, 'operation.value');
         if (actualStake < expectedStake) {
