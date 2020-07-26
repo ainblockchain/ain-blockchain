@@ -30,7 +30,7 @@
           "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
             "branch_owner": true,
             "write_function": true,
-            "write_owner": false,
+            "write_owner": true,
             "write_rule": true
           }
         }
