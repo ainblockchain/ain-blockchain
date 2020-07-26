@@ -359,12 +359,24 @@ class Consensus {
       return;
     }
     const validators = prevBlock.validators;
-    const majority = ConsensusConsts.MAJORITY * Object.values(validators).reduce((a, b) => { return a + b; }, 0);
-    const deposits = Consensus.filterDepositTxs(proposalBlock.transactions);
     // check that the transactions from block #1 amount to +2/3 deposits of initially whitelisted validators
-    if (number === 1 && deposits < majority) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] We don't have enough deposits yet`)
-      return false;
+    if (number === 1) {
+      const majority = ConsensusConsts.MAJORITY * Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+      const deposits = Consensus.filterDepositTxs(proposalBlock.transactions);
+      if (deposits < majority) {
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] We don't have enough deposits yet`)
+        return false;
+      }
+      // TODO(lia): make sure each validator staked only once at this point
+      for (const depositTx of deposits) {
+        const expectedStake = validators[depositTx.address];
+        const actualStake = _.get(depositTx, 'operation.value');
+        if (actualStake < expectedStake) {
+          logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Validator ${depositTx.address} didn't stake enough. ` +
+              `Expected: ${expectedStake} / Actual: ${actualStake}`);
+          return false;
+        }
+      }
     }
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
