@@ -8,8 +8,7 @@ const BlockPool = require('./block-pool');
 const DB = require('../db');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, MessageTypes, STAKE, HOSTING_ENV, WriteDbOperations, PredefinedDbPaths }
-  = require('../constants');
+const { DEBUG, STAKE, WriteDbOperations, PredefinedDbPaths } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const LOG_PREFIX = 'CONSENSUS';
@@ -32,10 +31,9 @@ class Consensus {
     }
   }
 
-  init(lastBlockWithoutProposal) {
+  init(lastBlockWithoutProposal, isFirstNode = false) {
     const LOG_SUFFIX = 'init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
-    const isFirstNode = finalizedNumber === 0;
     try {
       const currentStake = this.getValidConsensusDeposit(this.node.account.address);
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current stake: ${currentStake}`);
@@ -70,19 +68,8 @@ class Consensus {
 
   startEpochTransition() {
     const LOG_SUFFIX = 'startEpochTransition';
-    if (this.node.bc.lastBlockNumber() === 0) { // First node here. Create block #1 and kick off the epoch counting
-      this.state.proposer = this.node.account.address;
-      const proposal = this.createProposal();
-      this.startingTime = proposal.proposalBlock.timestamp;
-      this.handleConsensusMessage({ value: proposal, type: ConsensusMessageTypes.PROPOSE });
-    } else {
-      const blockNumberOne = this.node.bc.getBlockByNumber(1);
-      if (!blockNumberOne) {
-        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No block of number 1 exists`);
-        process.exit(1);
-      }
-      this.startingTime = blockNumberOne.timestamp;
-    }
+    const genesisBlock = Block.genesis();
+    this.startingTime = genesisBlock.timestamp;
     this.state.epoch = Math.ceil((Date.now() - this.startingTime) / ConsensusConsts.EPOCH_MS);
     logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch initialized to ${this.state.epoch}`);
 
@@ -155,12 +142,8 @@ class Consensus {
     if (!seedBlock) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Empty seedBlock (${this.state.epoch} / ${lastNotarizedBlock.hash})`);
     }
-    let validators;
-    if (nextNumber === 1) {
-      validators = STAKE > 0 ? { [this.node.account.address] :  STAKE } : {};
-    } else {
-      validators = lastNotarizedBlock.validators;
-    }
+
+    const validators = this.node.bc.lastBlockNumber() < 4 ? lastNotarizedBlock.validators : this.getWhitelist();
     const seed = seedBlock.hash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
   }
@@ -215,7 +198,7 @@ class Consensus {
       }
       if (Consensus.isValidConsensusTx(proposalTx) && this.checkProposal(proposalBlock, proposalTx)) {
         this.server.broadcastConsensusMessage(msg);
-        this.node.db.executeTransaction(proposalTx);
+        this.server.executeTransaction(proposalTx);
         this.tryVote(proposalBlock);
       }
     } else {
@@ -279,14 +262,8 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
     const myAddr = this.node.account.address;
-    let validators;
-    if (lastBlock.number === 0) {
-      if (!STAKE) throw Error('First node must stake some AIN');
-      validators = {[myAddr]: STAKE};
-    } else {
-      validators = this.getValidatorsVotedFor(lastBlock.hash);
-    }
-    if (!validators || !(Object.keys(validators).length)) throw Error('No validators voted')
+    const validators = this.node.bc.lastBlockNumber() < 4 ? lastBlock.validators : this.getWhitelist();
+    if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch, myAddr, validators);
 
@@ -381,6 +358,14 @@ class Consensus {
       }
       return;
     }
+    const validators = prevBlock.validators;
+    const majority = ConsensusConsts.MAJORITY * Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+    const deposits = Consensus.filterDepositTxs(proposalBlock.transactions);
+    // check that the transactions from block #1 amount to +2/3 deposits of initially whitelisted validators
+    if (number === 1 && deposits < majority) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] We don't have enough deposits yet`)
+      return false;
+    }
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
@@ -444,12 +429,6 @@ class Consensus {
       return false;
     }
     const seed = seedBlock.hash + epoch;
-    let validators;
-    if (number === 1) {
-      validators = STAKE > 0 ? { [this.node.account.address]:  STAKE } : {};
-    } else {
-      validators = prevBlock.validators;
-    }
     const expectedProposer = Consensus.selectProposer(seed, validators);
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`);
@@ -490,7 +469,11 @@ class Consensus {
     }
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] I'm the proposer`);
-      this.handleConsensusMessage({ value: this.createProposal(), type: ConsensusMessageTypes.PROPOSE });
+      try {
+        this.handleConsensusMessage({ value: this.createProposal(), type: ConsensusMessageTypes.PROPOSE });
+      } catch (e) {
+        logger.error(`Error while creating a proposal: ${e}`);
+      }
     } else {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Not my turn`);
     }
@@ -512,9 +495,10 @@ class Consensus {
 
   vote(block) {
     const myAddr = this.node.account.address;
-    const myStake = block.number < 3 && block.proposer === myAddr ?
-        STAKE : this.getValidConsensusDeposit(myAddr);
-    if (myStake === 0) {
+    // Need at least 3 blocks after the genesis block to have the deposit reflected in the state
+    const myStake = block.number < 4 && block.validators[myAddr] ?
+        block.validators[myAddr] : this.getWhitelist()[myAddr];
+    if (!myStake) {
       return;
     }
     const voteTx = this.node.createTransaction({
@@ -683,6 +667,13 @@ class Consensus {
     return validators;
   }
 
+  getWhitelist() {
+    return this.node.db.getValue(ChainUtil.formatPath([
+      ConsensusDbPaths.CONSENSUS,
+      ConsensusDbPaths.WHITELIST
+    ])) || {};
+  }
+
   getValidConsensusDeposit(address) {
     const deposit = this.node.db.getValue(ChainUtil.formatPath([
       PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
@@ -778,6 +769,11 @@ class Consensus {
     } else {
       return false;
     }
+  }
+
+  static filterDepositTxs(txs) {
+    return txs.filter((tx) => _.get(tx, 'operation.ref').startsWith(PredefinedDbPaths.DEPOSIT_CONSENSUS) &&
+        _.get(tx, 'operation.type') === WriteDbOperations.SET_VALUE);
   }
 }
 
