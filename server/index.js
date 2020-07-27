@@ -310,7 +310,7 @@ class P2pServer {
               if (this.consensus.status === ConsensusStatus.STARTING) {
                 if (!data.chainSubsection && !data.catchUpInfo || data.number === this.node.bc.lastBlockNumber()) {
                   this.node.bc.syncedAfterStartup = true;
-                  this.consensus.init(this.node.bc.lastBlock());
+                  this.consensus.init();
                   if (this.consensus.isRunning()) {
                     this.consensus.catchUp(data.catchUpInfo);
                   }
@@ -322,8 +322,10 @@ class P2pServer {
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
             if (this.node.bc.merge(data.chainSubsection)) {
+              this.node.db.setDbToSnapshot(this.node.bc.backupDb);
               data.chainSubsection.forEach((block) => {
                 this.node.tp.cleanUpForNewBlock(block);
+                this.node.tp.updateNonceTrackers(block.transactions);
               });
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
@@ -332,7 +334,7 @@ class P2pServer {
                   this.node.bc.syncedAfterStartup = true;
                 }
                 if (this.consensus.status === ConsensusStatus.STARTING) {
-                  this.consensus.init(this.node.bc.lastBlock());
+                  this.consensus.init();
                 }
               } else {
                 // There's more blocks to receive
@@ -354,13 +356,13 @@ class P2pServer {
               if (data.number <= this.node.bc.lastBlockNumber()) {
                 logger.info(`[${P2P_PREFIX}] I am ahead(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
                 if (this.consensus.status === ConsensusStatus.STARTING) {
-                  this.consensus.init(this.node.bc.lastBlock());
+                  this.consensus.init();
                   if (this.consensus.isRunning()) {
                     this.consensus.catchUp(data.catchUpInfo);
                   }
                 }
               } else {
-                logger.info(`[${P2P_PREFIX}] I have left behind(${data.number} < ${this.node.bc.lastBlockNumber()}).`);
+                logger.info(`[${P2P_PREFIX}] I am behind (${data.number} < ${this.node.bc.lastBlockNumber()}).`);
                 this.requestChainSubsection(this.node.bc.lastBlock());
               }
             }
