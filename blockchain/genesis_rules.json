@@ -24,9 +24,6 @@
           }
         }
       }
-    },
-    "whitelist": {
-      ".write": "auth === '0xAAAf6f50A0304F12119D218b94bea8082642515B'"
     }
   },
   "deposit": {
