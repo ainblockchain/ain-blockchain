@@ -258,7 +258,7 @@ class Blockchain {
   merge(chainSubSection) {
     // Call to shift here is important as it removes the first element from the list !!
     logger.info(`[${LOG_PREFIX}] Last block number before merge: ${this.lastBlockNumber()}`);
-    if (chainSubSection.length === 0) {
+    if (!chainSubSection || chainSubSection.length === 0) {
       logger.info(`[${LOG_PREFIX}] Empty chain sub section`);
       if (!this.syncedAfterStartup) {
         // Regard this situation as if you're synced.
