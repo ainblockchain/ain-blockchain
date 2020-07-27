@@ -1,5 +1,5 @@
 const {
-  isValidJsObjectForState,
+  isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
   deleteStateTree,
@@ -10,35 +10,67 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 describe("state-util", () => {
-  describe("isValidJsObjectForState", () => {
+  describe("isValidJsObjectForStates", () => {
     it("when invalid input", () => {
-      expect(isValidJsObjectForState(undefined)).to.equal(false);
-      expect(isValidJsObjectForState({})).to.equal(false);
-      expect(isValidJsObjectForState([])).to.equal(false);
-      expect(isValidJsObjectForState([1, 2, 3])).to.equal(false);
-      expect(isValidJsObjectForState(['a', 'b', 'c'])).to.equal(false);
-      expect(isValidJsObjectForState({
+      assert.deepEqual(isValidJsObjectForStates(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidJsObjectForStates(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates({
         undef: undefined 
-      })).to.equal(false);
-      expect(isValidJsObjectForState({
+      }), {isValid: false, invalidPath: '/undef'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
         empty_obj: {}
-      })).to.equal(false);
-      expect(isValidJsObjectForState({
+      }), {isValid: false, invalidPath: '/empty_obj'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
         array: []
-      })).to.equal(false);
-      expect(isValidJsObjectForState({
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
         array: [1, 2, 3]
-      })).to.equal(false);
-      expect(isValidJsObjectForState({
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
         array: ['a', 'b', 'c']
-      })).to.equal(false);
+      }), {isValid: false, invalidPath: '/array'});
+    })
+
+    it("when invalid input with deeper path", () => {
+      assert.deepEqual(isValidJsObjectForStates({
+        internal1: {
+          internal2a: {
+            internal3a: {
+              str: 'str'
+            }
+          },
+          internal2b: {
+            internal3b: {
+              undef: undefined 
+            }
+          },
+          internal2c: {
+            internal3c: {
+              empty_obj: {}
+            }
+          },
+          internal2d: {
+            internal3d: {
+              array: []
+            }
+          },
+        }
+      }), {isValid: false, invalidPath: '/internal1/internal2b/internal3b/undef'});
     })
 
     it("when valid input", () => {
-      expect(isValidJsObjectForState(10)).to.equal(true);
-      expect(isValidJsObjectForState("str")).to.equal(true);
-      expect(isValidJsObjectForState(null)).to.equal(true);
-      expect(isValidJsObjectForState({
+      assert.deepEqual(isValidJsObjectForStates(10), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidJsObjectForStates("str"), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidJsObjectForStates(null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidJsObjectForStates({
         bool: false,
         number: 10,
         str: 'str',
@@ -58,8 +90,8 @@ describe("state-util", () => {
           empty_str: '',
           null: null,
         }
-      })).to.equal(true);
-      expect(isValidJsObjectForState({
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidJsObjectForStates({
         "owners": {
           ".owner": {
             "owners": {
@@ -75,7 +107,7 @@ describe("state-util", () => {
         "rules": {
           ".write": true
         }
-      })).to.equal(true);
+      }), {isValid: true, invalidPath: ''});
     })
   })
 
