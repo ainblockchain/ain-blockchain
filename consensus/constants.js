@@ -3,7 +3,8 @@ const ConsensusConsts = {
   DAY_MS: 86400000,
   EPOCH_MS: 1000,
   MAX_CONSENSUS_STATE_DB: 1000,
-  INITIAL_NUM_VALIDATORS: 5
+  INITIAL_NUM_VALIDATORS: 5,
+  INITIAL_STAKE: 250
 }
 
 const ConsensusMessageTypes = {
