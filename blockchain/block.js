@@ -162,7 +162,7 @@ class Block {
 
     // Consensus (whitelisting) operation
     // TODO(lia): increase this list to 10
-    const whitelistOp = {
+    const whitelistValOp = {
       type: 'SET_VALUE',
       ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
       value: {
@@ -224,6 +224,29 @@ class Block {
       ref: '/',
       value: ownerConfigs
     };
+    const whitelistRuleOp = {
+      type: 'SET_RULE',
+      ref: '/consensus/whitelist',
+      value: `auth === '${ownerAccount.address}'`
+    }
+    const whitelistOwnerOp = {
+      type: 'SET_OWNER',
+      ref: '/consensus/whitelist',
+      value: {
+        [ownerAccount.address]: {
+          "branch_owner": true,
+          "write_function": true,
+          "write_owner": true,
+          "write_rule": true
+        },
+        "*": {
+          "branch_owner": false,
+          "write_function": false,
+          "write_owner": false,
+          "write_rule": false
+        }
+      }
+    }
 
     // Transaction
     const firstTxData = {
@@ -231,7 +254,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, whitelistOp, functionsOp, rulesOp, ownersOp ]
+        op_list: [ tokenOp, balanceOp, whitelistValOp, functionsOp, rulesOp, ownersOp, whitelistRuleOp, whitelistOwnerOp ]
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
