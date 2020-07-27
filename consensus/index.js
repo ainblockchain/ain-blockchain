@@ -9,7 +9,7 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, STAKE, WriteDbOperations, PredefinedDbPaths } = require('../constants');
+const { DEBUG, STAKE, WriteDbOperations, PredefinedDbPaths, HOSTING_ENV } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const LOG_PREFIX = 'CONSENSUS';
@@ -85,7 +85,7 @@ class Consensus {
     this.epochInterval = setInterval(async () => {
       this.tryFinalize();
       let currentTime = Date.now();
-      if (this.state.epoch % 100 === 0) {
+      if (this.state.epoch % 100 === 0 && HOSTING_ENV === 'gcp') {
         // adjust time
         try {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
