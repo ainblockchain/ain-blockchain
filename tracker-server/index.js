@@ -45,7 +45,7 @@ function printNodesInfo() {
   });
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
-    const diskAvailableMb = Math.floor(node.diskUsage.available / 1000000);
+    const diskAvailableMb = Math.floor(node.diskUsage.available / 1024 / 1024);
     const memoryFreeMb = Math.round(node.memoryUsage.free / 1024 / 1024);
     logger.info(`    Node[${i}]: ${node.getNodeSummary()} ` +
         `LastBlock: ${node.lastBlock.number}, ` +
