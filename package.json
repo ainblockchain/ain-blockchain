@@ -22,7 +22,7 @@
     "loadtest": "sh loadtest/load_tester.sh"
   },
   "dependencies": {
-    "@ainblockchain/ain-util": "^1.1.3",
+    "@ainblockchain/ain-util": "^1.1.5",
     "@google-cloud/logging-winston": "^3.0.5",
     "ajv": "^5.5.2",
     "axios": "^0.19.2",
