@@ -463,6 +463,7 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(new Transaction(proposalTx));
+    newState.lastBlockNumber += 1;
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;
