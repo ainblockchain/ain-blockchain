@@ -12,7 +12,7 @@ class Node {
   constructor() {
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool();
-    this.db = new DB(this.bc);
+    this.db = new DB(this.bc, null);
     this.nonce = null;
     this.initialized = false;
     // TODO(lia): Add account importing functionality.
@@ -29,7 +29,7 @@ class Node {
   init(isFirstNode) {
     logger.info(`[${NODE_PREFIX}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.bc.setBackupDb(new DB(this.bc));
+    this.bc.setBackupDb(new DB(this.bc, null));
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
     this.db.setDbToSnapshot(this.bc.backupDb);
