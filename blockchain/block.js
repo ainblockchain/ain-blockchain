@@ -315,7 +315,7 @@ class Block {
     const proposer = ownerAccount.address;
     const validators = {};
     for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
-      validators[GenesisAccounts.others[i].address] = 250;
+      validators[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
     }
     return new this(lastHash, lastVotes, transactions, number, epoch, timestamp,
         proposer, validators);
