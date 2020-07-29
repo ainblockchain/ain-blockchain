@@ -220,12 +220,12 @@ class Block {
     };
     const whitelistRuleOp = {
       type: 'SET_RULE',
-      ref: '/consensus/whitelist',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
       value: `auth === '${ownerAccount.address}'`
     }
     const whitelistOwnerOp = {
       type: 'SET_OWNER',
-      ref: '/consensus/whitelist',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
       value: {
         [ownerAccount.address]: {
           "branch_owner": true,
