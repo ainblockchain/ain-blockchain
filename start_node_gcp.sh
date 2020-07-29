@@ -11,6 +11,8 @@ elif [ "$1" = 'summer' ]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000  # summer-tracker-ip
 elif [ "$1" = 'dev' ]; then
     export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
+elif [ "$1" = 'staging' ]; then
+    export TRACKER_WS_ADDR=ws://35.221.150.73:5000 # staging-tracker-ip
 else
     echo "Invalid season argument: $1"
     exit
@@ -27,6 +29,6 @@ echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 
 export STAKE=250
 export HOSTING_ENV=gcp
-export DEBUG=false 
+export DEBUG=false
 
 nohup node client/index.js >/dev/null 2>&1 &
