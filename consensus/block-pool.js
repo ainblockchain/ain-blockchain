@@ -1,7 +1,7 @@
 const get = require('lodash/get');
 const logger = require('../logger');
 const { ConsensusConsts } = require('./constants');
-const { DEBUG, STAKE, WriteDbOperations } = require('../constants');
+const { DEBUG, WriteDbOperations } = require('../constants');
 const LOG_PREFIX = 'BLOCKPOOL';
 
 class BlockPool {

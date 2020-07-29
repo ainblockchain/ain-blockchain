@@ -26,22 +26,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    STAKE: 250, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -332,7 +332,7 @@ describe('Integration Tests', () => {
       const accountIndex = 4;
       const newServer = 'http://localhost:' + String(8081 + Number(accountIndex))
       const newServerProc = new Process(APP_SERVER, {
-        STAKE: 250, ACCOUNT_INDEX: accountIndex, HOSTING_ENV: 'local', DEBUG: true,
+        ACCOUNT_INDEX: accountIndex, HOSTING_ENV: 'local', DEBUG: true,
         ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
       });
