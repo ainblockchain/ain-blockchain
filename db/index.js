@@ -16,15 +16,12 @@ const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor() {
+  constructor(bc, blockNumberSnapshot) {
     this.dbRoot = new StateNode();
     this.initDbData();
     this.func = new Functions(this);
-    if (typeof chainOrBlockNumber === 'number') {
-      this.lastBlockNumber = chainOrBlockNumber;
-    } else {
-      this.bc = chainOrBlockNumber;
-    }
+    this.bc = bc;
+    this.blockNumberSnapshot = blockNumberSnapshot;
   }
 
   initDbData() {
@@ -790,7 +787,7 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-                    new RuleUtil(), this.bc !== undefined ? this.bc.lastBlockNumber() : this.lastBlockNumber,
+                    new RuleUtil(), !!this.bc && this.bc.lastBlockNumber ? this.bc.lastBlockNumber() : this.blockNumberSnapshot,
                     ...Object.values(pathVars));
   }
 
