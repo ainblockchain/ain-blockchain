@@ -746,8 +746,15 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-                    new RuleUtil(), !!this.bc && this.bc.lastBlockNumber ? this.bc.lastBlockNumber() : this.blockNumberSnapshot,
-                    ...Object.values(pathVars));
+                    new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+  }
+
+  lastBlockNumber() {
+    if (!!this.bc && !!this.bc.lastBlockNumber) {
+      return this.bc.lastBlockNumber();
+    } else {
+      return this.blockNumberSnapshot;
+    }
   }
 
   static hasOwnerConfig(ownerNode) {
