@@ -791,11 +791,7 @@ class DB {
   }
 
   lastBlockNumber() {
-    if (!!this.bc && !!this.bc.lastBlockNumber) {
-      return this.bc.lastBlockNumber();
-    } else {
-      return this.blockNumberSnapshot;
-    }
+    return !!this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
   }
 
   static hasOwnerConfig(ownerNode) {
