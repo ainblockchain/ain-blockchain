@@ -231,7 +231,7 @@ class Consensus {
     const validTransactions = [];
     const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
-    const tempState = new DB();
+    const tempState = new DB(lastBlock.number - 1);
     tempState.dbData = JSON.parse(JSON.stringify(prevState.dbData));
     if (DEBUG) {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Created a temp state for tx checks`);
@@ -373,7 +373,7 @@ class Consensus {
         }
       }
     }
-    const tempState = new DB();
+    const tempState = new DB(prevBlock.number - 1);
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
@@ -446,7 +446,7 @@ class Consensus {
         return false;
       }
     }
-    const newState = new DB();
+    const newState = new DB(prevBlock.number);
     newState.setDbToSnapshot(prevState);
     if (!newState.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute last votes`);
@@ -665,7 +665,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
-    const snapshot = new DB();
+    const snapshot = new DB((chain.length ? chain[0].number : block.number) - 1);
     if (this.blockPool.hashToState.has(blockHash)) {
       snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
     } else if (blockHash === lastFinalizedHash) {
