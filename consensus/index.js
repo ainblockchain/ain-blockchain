@@ -86,8 +86,7 @@ class Consensus {
     this.epochInterval = setInterval(async () => {
       this.tryFinalize();
       let currentTime = Date.now();
-      // Using ntpsync concurrently with multiple local processes causes an error
-      if (this.state.epoch % 100 === 0 && HOSTING_ENV === 'gcp') {
+      if (this.state.epoch % 100 === 0) {
         // adjust time
         try {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
