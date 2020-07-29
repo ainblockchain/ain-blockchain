@@ -809,8 +809,11 @@ class Consensus {
   }
 
   static filterDepositTxs(txs) {
-    return txs.filter((tx) => _.get(tx, 'operation.ref').startsWith(PredefinedDbPaths.DEPOSIT_CONSENSUS) &&
-        _.get(tx, 'operation.type') === WriteDbOperations.SET_VALUE);
+    return txs.filter((tx) => {
+      const ref = _.get(tx, 'operation.ref');
+      return ref && ref.startsWith(PredefinedDbPaths.DEPOSIT_CONSENSUS) &&
+        _.get(tx, 'operation.type') === WriteDbOperations.SET_VALUE;
+    });
   }
 }
 
