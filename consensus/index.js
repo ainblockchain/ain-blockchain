@@ -144,8 +144,8 @@ class Consensus {
     if (!seedBlock) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Empty seedBlock (${this.state.epoch} / ${lastNotarizedBlock.hash})`);
     }
-
-    const validators = this.node.bc.lastBlockNumber() < 4 ? lastNotarizedBlock.validators : this.getWhitelist();
+    // Need the block#1 to be finalized to have the deposits reflected in the state
+    const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators : this.getWhitelist();
     const seed = seedBlock.hash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
   }
@@ -257,7 +257,8 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
     const myAddr = this.node.account.address;
-    const validators = this.node.bc.lastBlockNumber() < 4 ? lastBlock.validators : this.getWhitelist();
+    // Need the block#1 to be finalized to have the deposits reflected in the state
+    const validators = this.node.bc.lastBlockNumber() < 1 ? lastBlock.validators : this.getWhitelist();
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch, myAddr, validators);
@@ -532,8 +533,8 @@ class Consensus {
 
   vote(block) {
     const myAddr = this.node.account.address;
-    // Need at least 3 blocks after the genesis block to have the deposit reflected in the state
-    const myStake = block.number < 4 && block.validators[myAddr] ?
+    // Need the block#1 to be finalized to have the deposits reflected in the state
+    const myStake = this.node.bc.lastBlockNumber() < 1 ?
         block.validators[myAddr] : this.getWhitelist()[myAddr];
     if (!myStake) {
       return;
