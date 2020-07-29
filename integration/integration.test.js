@@ -254,7 +254,6 @@ describe('Integration Tests', () => {
       console.log(`Starting server[${i}]...`);
       proc.start();
       sleep(2000);
-      waitForNewBlocks(SERVERS[i]);
       const address =
           JSON.parse(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
@@ -410,24 +409,25 @@ describe('Integration Tests', () => {
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
               .body.toString('utf-8')).result.result;
           const len = blocks.length;
-          for (let j = 1; j < len; j++) {
+          for (let j = 2; j < len; j++) { // voting starts with block#1 (included in block#2's last_votes)
             let voteSum = 0;
             const validators = Object.assign({}, blocks[j - 1].validators);
             let totalStakedAmount = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
             let majority = Math.floor(totalStakedAmount * ConsensusConsts.MAJORITY);
             for (let k = 0; k < blocks[j].last_votes.length; k++) {
               const vote = blocks[j].last_votes[k];
-              // if (!blocks[j - 1].validators[vote.address]) {
-              //   console.log(blocks[j -1]);
-              //   console.log(`Votes for block ${j - 1} had validator ${vote.address} ` +
-              //       `which was not in designated validators list: ${JSON.stringify(blocks[j - 1].validators, null, 2)}` +
-              //       `${JSON.stringify(blocks[j - 1].validators)}`);
-              //   assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
-              // }
+              if (!blocks[j - 1].validators[vote.address]) {
+                console.log(blocks[j -1]);
+                console.log(`Votes for block ${j - 1} had validator ${vote.address} ` +
+                    `which was not in designated validators list: ${JSON.stringify(blocks[j - 1].validators, null, 2)}` +
+                    `${JSON.stringify(blocks[j - 1].validators)}`);
+                assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
+              }
               if (vote.operation.value.block_hash !== blocks[j - 1].hash) {
                 assert.fail('Invalid vote included in last_votes');
               }
-              if (blocks[j - 1].validators[vote.address]) {
+              if (vote.operation.type === 'SET_VALUE' && vote.operation.value.stake &&
+                  blocks[j - 1].validators[vote.address]) {
                 voteSum += vote.operation.value.stake;
               }
             }
@@ -533,7 +533,7 @@ describe('Integration Tests', () => {
 
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-        db = new DB();
+        db = new DB(null, 0);
         sentOperations.forEach((op) => {
           const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
           db.executeTransaction({ operation });
@@ -690,7 +690,7 @@ describe('Integration Tests', () => {
       it('and can be stopped and restarted', () => {
         console.log(`Shutting down server[0]...`);
         SERVER_PROCS[0].kill();
-        waitForNewBlocks(SERVERS[1], 2);
+        sleep(10000);
         console.log(`Starting server[0]...`);
         SERVER_PROCS[0].start();
         sleep(10000);
