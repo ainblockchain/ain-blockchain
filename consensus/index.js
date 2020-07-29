@@ -9,7 +9,7 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, STAKE, WriteDbOperations, PredefinedDbPaths, HOSTING_ENV } = require('../constants');
+const { DEBUG, WriteDbOperations, PredefinedDbPaths, HOSTING_ENV, GenesisWhitelist } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const LOG_PREFIX = 'CONSENSUS';
@@ -36,11 +36,12 @@ class Consensus {
     const LOG_SUFFIX = 'init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
     try {
-      const currentStake = this.getValidConsensusDeposit(this.node.account.address);
+      const myAddr = this.node.account.address;
+      const currentStake = this.getValidConsensusDeposit(myAddr);
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current stake: ${currentStake}`);
       if (!currentStake) {
-        if (STAKE && STAKE > 0) {
-          const stakeTx = this.stake(STAKE);
+        if (GenesisWhitelist && GenesisWhitelist[myAddr] > 0) {
+          const stakeTx = this.stake(GenesisWhitelist[myAddr]);
           if (isFirstNode) {
             // Add the transaction to the pool so it gets included in the block #1
             this.node.tp.addTransaction(stakeTx);
