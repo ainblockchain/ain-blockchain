@@ -63,16 +63,12 @@ describe('aFan Client Test', () => {
     sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
     sleep(2000);
-    waitForNewBlocks(server1);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1]);
     sleep(2000);
-    waitForNewBlocks(server2);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2]);
     sleep(2000);
-    waitForNewBlocks(server3);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3]);
     sleep(2000);
-    waitForNewBlocks(server4);
   });
 
   after(() => {
