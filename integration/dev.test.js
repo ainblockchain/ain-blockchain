@@ -17,22 +17,22 @@ const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number';
 
 const ENV_VARIABLES = [
   {
-    STAKE: 250, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
