@@ -4,7 +4,8 @@ const ConsensusConsts = {
   EPOCH_MS: 1000,
   MAX_CONSENSUS_STATE_DB: 1000,
   INITIAL_NUM_VALIDATORS: 5,
-  INITIAL_STAKE: 250
+  INITIAL_STAKE: 250,
+  HEALTH_THRESHOLD_EPOCH: 600 // 600 epochs = 10 minutes
 }
 
 const ConsensusMessageTypes = {
