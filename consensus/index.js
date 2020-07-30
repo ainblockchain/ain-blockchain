@@ -768,6 +768,58 @@ class Consensus {
     this.setter = setter;
   }
 
+  /**
+   * Dumps the raw consensus and block pool's states
+   * {
+   *   consensus: {
+   *     epoch,
+   *     proposer
+   *   },
+   *   block_pool: {
+   *     hashToBlockInfo, 
+   *     hashToState,
+   *     hashToNextBlockSet,
+   *     epochToBlock,
+   *     numberToBlock,
+   *     longestNotarizedChainTips
+   *   }
+   * }
+   */
+  getRawState() {
+    const result = {};
+    result['consensus'] = this.state;
+    if (this.blockPool) {
+      result['block_pool'] = {
+        hashToBlockInfo: this.blockPool.hashToBlockInfo,
+        hashToState: Array.from(this.blockPool.hashToState.keys()),
+        hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet),
+        epochToBlock: Object.keys(this.blockPool.epochToBlock),
+        numberToBlock: Object.keys(this.blockPool.numberToBlock),
+        longestNotarizedChainTips: this.blockPool.longestNotarizedChainTips
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the basic status of consensus to see if block is being produced
+   * {
+   *   health
+   *   status
+   *   epoch
+   * }
+   */
+  getState() {
+    const lastFinalizedBlock = this.node.bc.lastBlock();
+    let health;
+    if (!lastFinalizedBlock) {
+      health = false;
+    } else {
+      health = (this.state.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
+    }
+    return { health, status: this.status, epoch: this.state.epoch };
+  }
+
   static selectProposer(seed, validators) {
     const LOG_SUFFIX = 'selectProposer';
     if (DEBUG) {
