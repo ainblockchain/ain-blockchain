@@ -286,12 +286,12 @@ module.exports = function getMethods(
 
     net_consensusState: function(args, done) {
       const result = p2pServer.consensus.getState();
-      done(null, addProtocolVersion( result ));
+      done(null, addProtocolVersion({ result }));
     },
 
     net_rawConsensusState: function(args, done) {
       const result = p2pServer.consensus.getRawState();
-      done(null, addProtocolVersion( result ));
+      done(null, addProtocolVersion({ result }));
     }
   };
 };
