@@ -204,7 +204,7 @@ class P2pServer {
         timestamp: this.node.bc.lastBlockTimestamp(),
       },
       consensusStatus: {
-        status: this.consensus.state,
+        consensus: this.consensus.getState(),
         blockPool: this.consensus.blockPool ? this.consensus.blockPool.hashToBlockInfo : {},
         longestNotarizedChainTips: this.consensus.blockPool ? this.consensus.blockPool.longestNotarizedChainTips : []
       },
