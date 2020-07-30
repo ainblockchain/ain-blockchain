@@ -787,7 +787,7 @@ class Consensus {
    */
   getRawState() {
     const result = {};
-    result['consensus'] = this.state;
+    result['consensus'] = Object.assign({}, this.state, { status: this.status });
     if (this.blockPool) {
       result['block_pool'] = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
@@ -802,7 +802,7 @@ class Consensus {
   }
 
   /**
-   * Returns the basic status of consensus to see if block is being produced
+   * Returns the basic status of consensus to see if blocks are being produced
    * {
    *   health
    *   status
