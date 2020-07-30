@@ -285,19 +285,15 @@ app.get('/get_address', (req, res, next) => {
 });
 
 app.get('/get_raw_consensus_state', (req, res) => {
-  const result = {};
-  result['consensus'] = p2pServer.consensus.state;
-  if (p2pServer.consensus.blockPool) {
-    const blockPool = p2pServer.consensus.blockPool;
-    result['block_pool'] = {
-      hashToBlockInfo: blockPool.hashToBlockInfo,
-      hashToState: Array.from(blockPool.hashToState.keys()),
-      hashToNextBlockSet: Object.keys(blockPool.hashToNextBlockSet),
-      epochToBlock: Object.keys(blockPool.epochToBlock),
-      numberToBlock: Object.keys(blockPool.numberToBlock),
-      longestNotarizedChainTips: blockPool.longestNotarizedChainTips
-    }
-  }
+  const result = p2pServer.consensus.getRawState();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/get_consensus_state', (req, res) => {
+  const result = p2pServer.consensus.getState();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
