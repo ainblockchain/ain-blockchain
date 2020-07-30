@@ -18,7 +18,7 @@ const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
-const HEARTBEAT_INTERVAL_MS = 6 * 10000;
+const HEARTBEAT_INTERVAL_MS = 1000;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 const P2P_PREFIX = 'P2P';
 
@@ -67,6 +67,8 @@ class P2pServer {
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setIntervalForTrackerConnection();
+    // XXX(minsu): it won't run before updating p2p network.
+    // this.heartbeat();
   }
 
   stop() {
@@ -248,7 +250,7 @@ class P2pServer {
   connectToPeers(newManagedPeerInfoList) {
     let updated = false;
     newManagedPeerInfoList.forEach((peerInfo) => {
-      if (this.managedPeersInfo[peerInfo.address]) {
+      if (!!this.managedPeersInfo[peerInfo.address]) {
         logger.info(`[${P2P_PREFIX}] Node ${peerInfo.address} is already a managed peer. ` +
                     `Something is wrong.`)
       } else {
@@ -257,7 +259,7 @@ class P2pServer {
         updated = true;
         const socket = new Websocket(peerInfo.url);
         socket.on('open', () => {
-          logger.info(`[${P2P_PREFIX}] Connected to peer ${peerInfo.address} (${peerInfo.url}).`)
+          logger.info(`[${P2P_PREFIX}] Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
           this.setSocket(socket, peerInfo.address);
         });
       }
@@ -267,8 +269,6 @@ class P2pServer {
   }
 
   disconnectFromPeers() {
-    clearInterval(this.intervalHeartbeat);
-
     for (const socket of this.sockets) {
       socket.close();
     }
@@ -278,7 +278,6 @@ class P2pServer {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.node.bc.lastBlock());
-    this.heartbeat();
   }
 
   setPeerEventHandlers(socket, address) {
@@ -416,9 +415,6 @@ class P2pServer {
               );
             }
             break;
-            case MessageTypes.HEARTBEAT:
-              // TODO(minsu): heartbeat
-              break;
         }
       } catch (error) {
         logger.error(`[${P2P_PREFIX}] ` + error.stack);
@@ -428,6 +424,7 @@ class P2pServer {
     // TODO(minsu): Deal with handling/recording a peer status when connection closes.
     socket.on('close', () => {
       logger.info(`[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
+      this.clearIntervalHeartbeat(address);
       this.removeFromListIfExists(socket);
 
       if (address && this.managedPeersInfo[address]) {
@@ -438,8 +435,7 @@ class P2pServer {
     });
 
     socket.on('pong', _ => {
-      this.isAlive = true;
-      // TODO(minsu): add pong message back thru socket.send();
+      logger.info(`[${P2P_PREFIX}] peer(${address}) is alive.`);
     });
 
     socket.on('error', (error) => {
@@ -584,12 +580,19 @@ class P2pServer {
     }
   }
 
+  // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
   heartbeat() {
+    logger.info(`[${P2P_PREFIX}] Start heartbeat`);
     this.intervalHeartbeat = setInterval(() => {
-      for (const socket of this.sockets) {
-        socket.ping();
-      }
+      this.server.clients.forEach(ws => {
+        ws.ping();
+      });
     }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  clearIntervalHeartbeat(address) {
+    clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
+    this.managedPeersInfo[address].intervalHeartbeat = null;
   }
 }
 
