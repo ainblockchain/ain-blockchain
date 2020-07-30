@@ -9,10 +9,12 @@ const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor() {
+  constructor(bc, blockNumberSnapshot) {
     this.dbData = {};
     this.initDbData();
     this.func = new Functions(this);
+    this.bc = bc;
+    this.blockNumberSnapshot = blockNumberSnapshot;
   }
 
   initDbData() {
@@ -731,7 +733,7 @@ class DB {
 
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-                        'getFunction', 'getOwner', 'util', ...Object.keys(pathVars),
+                        'getFunction', 'getOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
@@ -744,7 +746,11 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-                    new RuleUtil(), ...Object.values(pathVars));
+                    new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+  }
+
+  lastBlockNumber() {
+    return !!this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
   }
 
   static hasOwnerConfig(ownerNode) {

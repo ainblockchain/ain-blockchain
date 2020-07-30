@@ -6,8 +6,9 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const {
   GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, GENESIS_FUNCTIONS,
-  ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts
+  ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts, GenesisWhitelist
 } = require('../constants');
+const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -159,6 +160,14 @@ class Block {
       throw Error('Missing genesis rules file: ' + GENESIS_RULES);
     }
 
+    // Consensus (whitelisting) operation
+    // TODO(lia): increase this list to 10
+    const whitelistValOp = {
+      type: 'SET_VALUE',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
+      value: GenesisWhitelist
+    };
+
     // Function configs operation
     const functionConfigs = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
     if (ADDITIONAL_FUNCTIONS) {
@@ -209,6 +218,29 @@ class Block {
       ref: '/',
       value: ownerConfigs
     };
+    const whitelistRuleOp = {
+      type: 'SET_RULE',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
+      value: `auth === '${ownerAccount.address}'`
+    }
+    const whitelistOwnerOp = {
+      type: 'SET_OWNER',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
+      value: {
+        [ownerAccount.address]: {
+          "branch_owner": true,
+          "write_function": true,
+          "write_owner": true,
+          "write_rule": true
+        },
+        "*": {
+          "branch_owner": false,
+          "write_function": false,
+          "write_owner": false,
+          "write_rule": false
+        }
+      }
+    }
 
     // Transaction
     const firstTxData = {
@@ -216,7 +248,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, functionsOp, rulesOp, ownersOp ]
+        op_list: [ tokenOp, balanceOp, whitelistValOp, functionsOp, rulesOp, ownersOp, whitelistRuleOp, whitelistOwnerOp ]
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
@@ -282,6 +314,9 @@ class Block {
     const epoch = 0;
     const proposer = ownerAccount.address;
     const validators = {};
+    for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+      validators[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
+    }
     return new this(lastHash, lastVotes, transactions, number, epoch, timestamp,
         proposer, validators);
   }
