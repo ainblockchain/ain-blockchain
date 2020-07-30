@@ -11,7 +11,7 @@ describe("Functions", () => {
     let functions;
 
     beforeEach(() => {
-      const db = new DB();
+      const db = new DB(null, 0);
       const functionConfig = {
         ".function": {
           "function_type": "REST",
