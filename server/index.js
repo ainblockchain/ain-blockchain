@@ -34,7 +34,8 @@ class P2pServer {
     this.managedPeersInfo = {};
     this.sockets = [];
     this.consensus = new Consensus(this, node);
-    this.isAlive = true;
+    // XXX(minsu): The comment out will be revoked when next heartbeat updates.
+    // this.isAlive = true;
     this.waitInBlocks = 4;
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
@@ -410,7 +411,8 @@ class P2pServer {
     // TODO(minsu): Deal with handling/recording a peer status when connection closes.
     socket.on('close', () => {
       logger.info(`[${P2P_PREFIX}] Disconnected from a peer: ${address || 'unknown'}`);
-      this.clearIntervalHeartbeat(address);
+      // XXX(minsu): This will be revoked when next updates.
+      // this.clearIntervalHeartbeat(address);
       this.removeFromListIfExists(socket);
 
       if (address && this.managedPeersInfo[address]) {
