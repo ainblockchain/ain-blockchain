@@ -3,6 +3,7 @@ const ruleUtil = new RuleUtil();
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
@@ -32,8 +33,12 @@ class ChainUtil {
     return ruleUtil.isBool(value);
   }
 
-  static isNumber(value) {
-    return ruleUtil.isNumber(value);
+  static isNonEmptyObject(data) {
+    return !!data && ruleUtil.isDict(data) && !_.isEmpty(block);
+  }
+
+  static isNumber(num) {
+    return ruleUtil.isNumber(num);
   }
 
   static isString(value) {
