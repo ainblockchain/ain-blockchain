@@ -1,6 +1,7 @@
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
@@ -28,6 +29,10 @@ class ChainUtil {
 
   static isDict(data) {
     return (typeof data === 'object' && data !== null && !Array.isArray(data));
+  }
+
+  static isNonEmptyObject(data) {
+    return !!data && ChainUtil.isDict(data) && !_.isEmpty(block);
   }
 
   static isNumber(num) {

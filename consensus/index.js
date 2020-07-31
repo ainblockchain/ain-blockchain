@@ -9,6 +9,7 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
+const ChainValidator = require('../chain-validator');
 const { DEBUG, WriteDbOperations, PredefinedDbPaths, HOSTING_ENV, GenesisWhitelist } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
@@ -166,7 +167,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid message type: ${msg.type}`);
       return;
     }
-    if (!msg.value) {
+    if (!ChainUtil.isNonEmptyObject(msg.value)) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid message value: ${msg.value}`);
       return;
     }
