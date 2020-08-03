@@ -102,7 +102,6 @@ class Node {
   addNewBlock(block) {
     if (this.bc.addNewBlock(block)) {
       this.tp.cleanUpForNewBlock(block);
-      DB.removeEmpty(this.bc.backupDb.dbData);
       this.db.setDbToSnapshot(this.bc.backupDb);
       this.tp.updateNonceTrackers(block.transactions);
       return true;
@@ -121,7 +120,6 @@ class Node {
       }
       this.tp.updateNonceTrackers(transactions);
     });
-    DB.removeEmpty(this.bc.backupDb.dbData);
   }
 }
 
