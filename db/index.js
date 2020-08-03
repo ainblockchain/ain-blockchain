@@ -839,13 +839,6 @@ class DB {
     const permissions = this.getOwnerPermissions(config, address);
     return !!(permissions && permissions[permission] === true);
   }
-
-  static removeEmpty(obj) {
-    Object.entries(obj).forEach(([key, val]) => {
-      if (val && typeof val === 'object') DB.removeEmpty(val);
-      else if (val == null) delete obj[key];
-    });
-  }
 }
 
 module.exports = DB;
