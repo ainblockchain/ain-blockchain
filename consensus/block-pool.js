@@ -246,8 +246,6 @@ class BlockPool {
       this.hashToBlockInfo[blockHash] = {};
     }
     const blockInfo = this.hashToBlockInfo[blockHash];
-    console.log('addSeenBlock')
-    console.log(blockInfo);
     if (!ChainUtil.isNonEmptyObject(blockInfo.block)) {
       this.hashToBlockInfo[blockHash].block = block;
       this.hashToBlockInfo[blockHash].proposal = proposalTx;
