@@ -490,9 +490,12 @@ class Consensus {
     const LOG_SUFFIX = 'checkVote';
     const blockHash = vote.operation.value.block_hash;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
-    const block = blockInfo && blockInfo.block ? blockInfo.block
-        : blockHash === this.node.bc.lastBlock().hash ? this.node.bc.backupDb
-            : null;
+    let block;
+    if (blockInfo && blockInfo.block) {
+      block = blockInfo.block
+    } else if (blockHash === this.node.bc.lastBlock().hash) {
+      block = this.node.bc.lastBlock();
+    }
     if (!block) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Cannot verify the vote without the block it's voting for: ${blockHash} / ${JSON.stringify(blockInfo, null, 2)}`);
       // FIXME: ask for the block from peers
