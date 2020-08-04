@@ -9,7 +9,7 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, WriteDbOperations, PredefinedDbPaths, HOSTING_ENV, GenesisWhitelist } = require('../constants');
+const { DEBUG, WriteDbOperations, PredefinedDbPaths, MessageTypes } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const LOG_PREFIX = 'CONSENSUS';
@@ -35,20 +35,25 @@ class Consensus {
   init(lastBlockWithoutProposal, isFirstNode = false) {
     const LOG_SUFFIX = 'init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
+    const genesisBlock = this.node.bc.getBlockByNumber(0);
+    if (!genesisBlock) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: gensis block is not found`);
+      return;
+    }
+    this.genesisHash = genesisBlock.hash;
     try {
       const myAddr = this.node.account.address;
       const currentStake = this.getValidConsensusDeposit(myAddr);
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current stake: ${currentStake}`);
       if (!currentStake) {
-        if (GenesisWhitelist && GenesisWhitelist[myAddr] > 0) {
-          const stakeTx = this.stake(GenesisWhitelist[myAddr]);
+        const whitelist = this.getWhitelist();
+        if (whitelist && whitelist[myAddr] > 0) {
+          const stakeTx = this.stake(whitelist[myAddr]);
           if (isFirstNode) {
             // Add the transaction to the pool so it gets included in the block #1
             this.node.tp.addTransaction(stakeTx);
           } else {
-            // this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
-            this.node.tp.addTransaction(stakeTx);
-            this.server.broadcastTransaction(stakeTx);
+            this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
           }
         } else {
           if (isFirstNode) {
@@ -137,17 +142,12 @@ class Consensus {
     if (!lastNotarizedBlock) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Empty lastNotarizedBlock (${this.state.epoch})`);
     }
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastNotarizedBlock: ${lastNotarizedBlock.number} / ${lastNotarizedBlock.hash}`);
-    const nextNumber = lastNotarizedBlock.number + 1;
-    const seedBlock = nextNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ? lastNotarizedBlock
-        : this.node.bc.getBlockByNumber(nextNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
-    if (!seedBlock) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Empty seedBlock (${this.state.epoch} / ${lastNotarizedBlock.hash})`);
-    }
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators : this.getWhitelist();
-    const seed = seedBlock.hash + this.state.epoch;
+    // FIXME(lia): make the seeds more secure and unpredictable
+    const seed = '' + this.genesisHash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
+    logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
   // Types of consensus messages:
@@ -427,14 +427,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Previous block's epoch (${prevBlock.epoch}) is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
-    let seedBlock = number <= ConsensusConsts.MAX_CONSENSUS_STATE_DB ? prevBlock
-        : this.node.bc.getBlockByNumber(number - ConsensusConsts.MAX_CONSENSUS_STATE_DB);
-    if (!seedBlock) {
-      // FIXME: what to do if finalization doesn't happen within MAX_CONSENSUS_STATE_DB blocks?
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No (${number} - ${ConsensusConsts.MAX_CONSENSUS_STATE_DB})th block to calculate the seed from`);
-      return false;
-    }
-    const seed = seedBlock.hash + epoch;
+    const seed = '' + this.genesisHash + epoch;
     const expectedProposer = Consensus.selectProposer(seed, validators);
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`);
@@ -799,7 +792,12 @@ class Consensus {
       result['block_pool'] = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
         hashToState: Array.from(this.blockPool.hashToState.keys()),
-        hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet),
+        hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
+          .reduce((acc, curr) => {
+              return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
+            },
+            {}
+          ),
         epochToBlock: Object.keys(this.blockPool.epochToBlock),
         numberToBlock: Object.keys(this.blockPool.numberToBlock),
         longestNotarizedChainTips: this.blockPool.longestNotarizedChainTips
