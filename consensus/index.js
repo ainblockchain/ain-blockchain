@@ -171,7 +171,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid message value: ${msg.value}`);
       return;
     }
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus state - finalized number: ${this.node.bc.lastBlockNumber()} / epoch: ${this.state.epoch}\n`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Consensus state - finalized number: ${this.node.bc.lastBlockNumber()} / epoch: ${this.state.epoch}`);
     if (DEBUG) {
       logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
     }
@@ -189,13 +189,14 @@ class Consensus {
         return;
       }
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to sync. Current last block: ${JSON.stringify(lastNotarizedBlock, null, 2)}`);
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to sync. Current last block number: ` +
+            `${lastNotarizedBlock.number}, proposal block number ${proposalBlock.number}`);
         // I might be falling behind. Try to catch up.
         // FIXME(lia): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
         // this.node.bc.syncedAfterStartup = false;
-        
+
         this.server.requestChainSubsection(this.node.bc.lastBlock());
         return;
       }
@@ -253,12 +254,12 @@ class Consensus {
     if (DEBUG) {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     }
-    // const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
-    // if (lastBlockInfo && lastBlockInfo.proposal) {
-    //   lastVotes.unshift(lastBlockInfo.proposal);
-    let lastVotes = [];
-    if (!!lastBlockInfo.block.last_votes) {
-      lastVotes = [...lastBlockInfo.block.last_votes];
+    // FIXME(minsu or lia): When I am behind and a newly coming node is ahead of me, then I cannot
+    // get lastBlockInfo from the block-pool. So that, it is not able to create a proper block
+    // proposal and also cannot pass checkProposal() where checking prevBlockInfo.notarized.
+    const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
+    if (lastBlockInfo && lastBlockInfo.proposal) {
+      lastVotes.unshift(lastBlockInfo.proposal);
     }
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
@@ -309,8 +310,6 @@ class Consensus {
         }
       }, false);
     }
-    console.log('createProposal');
-    console.log(proposalBlock);
     return { proposalBlock, proposalTx };
   }
 
@@ -382,9 +381,6 @@ class Consensus {
       }
     }
     const tempState = new DB(null, prevBlock.number - 1);
-    console.log('checkProposal');
-    console.log(prevBlockInfo);
-    console.log(proposalBlock);
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
