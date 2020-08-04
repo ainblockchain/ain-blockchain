@@ -9,7 +9,7 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, WriteDbOperations, PredefinedDbPaths, HOSTING_ENV, GenesisWhitelist } = require('../constants');
+const { DEBUG, WriteDbOperations, PredefinedDbPaths } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const LOG_PREFIX = 'CONSENSUS';
@@ -35,13 +35,20 @@ class Consensus {
   init(lastBlockWithoutProposal, isFirstNode = false) {
     const LOG_SUFFIX = 'init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
+    const genesisBlock = this.node.bc.getBlockByNumber(0);
+    if (!genesisBlock) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: gensis block is not found`);
+      return;
+    }
+    this.genesisHash = genesisBlock.hash;
     try {
       const myAddr = this.node.account.address;
       const currentStake = this.getValidConsensusDeposit(myAddr);
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current stake: ${currentStake}`);
       if (!currentStake) {
-        if (GenesisWhitelist && GenesisWhitelist[myAddr] > 0) {
-          const stakeTx = this.stake(GenesisWhitelist[myAddr]);
+        const whitelist = this.getWhitelist();
+        if (whitelist && whitelist[myAddr] > 0) {
+          const stakeTx = this.stake(whitelist[myAddr]);
           if (isFirstNode) {
             // Add the transaction to the pool so it gets included in the block #1
             this.node.tp.addTransaction(stakeTx);
@@ -799,7 +806,12 @@ class Consensus {
       result['block_pool'] = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
         hashToState: Array.from(this.blockPool.hashToState.keys()),
-        hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet),
+        hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
+          .reduce((acc, curr) => {
+                return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
+            },
+            {}
+          ),
         epochToBlock: Object.keys(this.blockPool.epochToBlock),
         numberToBlock: Object.keys(this.blockPool.numberToBlock),
         longestNotarizedChainTips: this.blockPool.longestNotarizedChainTips
