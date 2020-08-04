@@ -383,14 +383,15 @@ class BlockPool {
   static filterProposal(votes) {
     if (!votes) return null;
     const proposalSuffix = 'propose';
-    return votes.filter(tx => {
+    const proposal = votes.filter(tx => {
       if (tx.operation.type === WriteDbOperations.SET_VALUE) {
         return tx.operation.ref.endsWith(proposalSuffix);
       } else if (tx.operation.type === WriteDbOperations.SET) {
         return tx.operation.op_list[0].ref.endsWith(proposalSuffix);
       }
       return false;
-    })[0];
+    });
+    return proposal.length ? proposal[0] : null;
   }
 
   static getBlockNumberFromTx(tx) {
