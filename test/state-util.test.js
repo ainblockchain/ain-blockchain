@@ -100,16 +100,16 @@ describe("state-util", () => {
           isValidPathForStates([{a: 'A'}]), {isValid: false, invalidPath: '/{"a":"A"}'});
       assert.deepEqual(isValidPathForStates([[]]), {isValid: false, invalidPath: '/[]'});
       assert.deepEqual(isValidPathForStates([['a']]), {isValid: false, invalidPath: '/["a"]'});
-      assert.deepEqual(isValidPathForStates(['a', '/']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '.']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '$']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '#']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '!']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '{']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '}']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '[']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', ']']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '/']), {isValid: false, invalidPath: '/a//'});
+      assert.deepEqual(isValidPathForStates(['a', '.']), {isValid: false, invalidPath: '/a/.'});
+      assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: false, invalidPath: '/a/*'});
+      assert.deepEqual(isValidPathForStates(['a', '$']), {isValid: false, invalidPath: '/a/$'});
+      assert.deepEqual(isValidPathForStates(['a', '#']), {isValid: false, invalidPath: '/a/#'});
+      assert.deepEqual(isValidPathForStates(['a', '!']), {isValid: false, invalidPath: '/a/!'});
+      assert.deepEqual(isValidPathForStates(['a', '{']), {isValid: false, invalidPath: '/a/{'});
+      assert.deepEqual(isValidPathForStates(['a', '}']), {isValid: false, invalidPath: '/a/}'});
+      assert.deepEqual(isValidPathForStates(['a', '[']), {isValid: false, invalidPath: '/a/['});
+      assert.deepEqual(isValidPathForStates(['a', ']']), {isValid: false, invalidPath: '/a/]'});
     })
 
     it("when valid input", () => {
