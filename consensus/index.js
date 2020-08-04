@@ -166,7 +166,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid message type: ${msg.type}`);
       return;
     }
-    if (!ChainUtil.isNonEmptyObject(msg.value)) {
+    if (ChainUtil.isEmptyNode(msg.value)) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid message value: ${msg.value}`);
       return;
     }
