@@ -794,7 +794,7 @@ class Consensus {
         hashToState: Array.from(this.blockPool.hashToState.keys()),
         hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
           .reduce((acc, curr) => {
-                return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
+              return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
             },
             {}
           ),
