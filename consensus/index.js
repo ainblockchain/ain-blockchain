@@ -253,9 +253,12 @@ class Consensus {
     if (DEBUG) {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     }
-    const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
-    if (lastBlockInfo && lastBlockInfo.proposal) {
-      lastVotes.unshift(lastBlockInfo.proposal);
+    // const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
+    // if (lastBlockInfo && lastBlockInfo.proposal) {
+    //   lastVotes.unshift(lastBlockInfo.proposal);
+    let lastVotes = [];
+    if (!!lastBlockInfo.block.last_votes) {
+      lastVotes = [...lastBlockInfo.block.last_votes];
     }
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
@@ -306,6 +309,8 @@ class Consensus {
         }
       }, false);
     }
+    console.log('createProposal');
+    console.log(proposalBlock);
     return { proposalBlock, proposalTx };
   }
 
@@ -377,6 +382,9 @@ class Consensus {
       }
     }
     const tempState = new DB(null, prevBlock.number - 1);
+    console.log('checkProposal');
+    console.log(prevBlockInfo);
+    console.log(proposalBlock);
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);

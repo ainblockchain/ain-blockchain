@@ -396,7 +396,7 @@ class P2pServer {
             const chainSubsection = this.node.bc.requestBlockchainSection(
                 !!data.lastBlock ? Block.parse(data.lastBlock) : null);
             if (!!chainSubsection) {
-              const catchUpInfo = this.consensus.isRunning() ? this.consensus.getCatchUpInfo() : [];
+              const catchUpInfo = this.consensus.getCatchUpInfo();
               if (DEBUG) {
                 logger.debug(`Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)} along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
               }
