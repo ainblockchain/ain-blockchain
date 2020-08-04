@@ -32,7 +32,7 @@ class ChainUtil {
   }
 
   static isNonEmptyObject(data) {
-    return !!data && ChainUtil.isDict(data) && !_.isEmpty(block);
+    return !!data && ChainUtil.isDict(data) && !_.isEmpty(data);
   }
 
   static isNumber(num) {
