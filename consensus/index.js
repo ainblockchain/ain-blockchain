@@ -9,7 +9,7 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, WriteDbOperations, PredefinedDbPaths } = require('../constants');
+const { DEBUG, WriteDbOperations, PredefinedDbPaths, MessageTypes } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const LOG_PREFIX = 'CONSENSUS';
@@ -53,9 +53,7 @@ class Consensus {
             // Add the transaction to the pool so it gets included in the block #1
             this.node.tp.addTransaction(stakeTx);
           } else {
-            // this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
-            this.node.tp.addTransaction(stakeTx);
-            this.server.broadcastTransaction(stakeTx);
+            this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
           }
         } else {
           if (isFirstNode) {
