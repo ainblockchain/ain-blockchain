@@ -248,7 +248,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, whitelistValOp, functionsOp, rulesOp, ownersOp, whitelistRuleOp, whitelistOwnerOp ]
+        op_list: [ tokenOp, balanceOp, whitelistValOp, functionsOp, rulesOp, whitelistRuleOp, ownersOp, whitelistOwnerOp ]
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
