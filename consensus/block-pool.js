@@ -2,6 +2,7 @@ const get = require('lodash/get');
 const logger = require('../logger');
 const { ConsensusConsts } = require('./constants');
 const { DEBUG, WriteDbOperations } = require('../constants');
+const ChainUtil = require('../chain-util');
 const LOG_PREFIX = 'BLOCKPOOL';
 
 class BlockPool {
@@ -245,7 +246,7 @@ class BlockPool {
       this.hashToBlockInfo[blockHash] = {};
     }
     const blockInfo = this.hashToBlockInfo[blockHash];
-    if (!blockInfo.block) {
+    if (!ChainUtil.isNonEmptyObject(blockInfo.block)) {
       this.hashToBlockInfo[blockHash].block = block;
       this.hashToBlockInfo[blockHash].proposal = proposalTx;
       // We might have received some votes before the block itself

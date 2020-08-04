@@ -227,7 +227,7 @@ class Blockchain {
     *                CHAIN_SUBSECT_LENGTH
     */
   requestBlockchainSection(refBlock) {
-    const refBlockNumber = refBlock ? refBlock.number : -1;
+    const refBlockNumber = !!refBlock ? refBlock.number : -1;
     const nextBlockNumber = refBlockNumber + 1;
 
     logger.info(`[${LOG_PREFIX}] Current last block number: ${this.lastBlockNumber()}, ` +
