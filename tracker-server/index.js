@@ -9,11 +9,24 @@ const P2P_PORT = 5000;
 const PORT = process.env.PORT || 8080;
 const MAX_NUM_PEERS = 2;
 const PEER_NODES = {};
+const WS_LIST = [];
 const MASK = 'xxx';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
   logger.error(err);
+});
+
+process.on('SIGINT', _ => {
+  logger.info("Stopping tracking server....");
+  logger.info("Gracefully close websokets....");
+  for (const ws of WS_LIST) {
+    ws.close();
+  }
+  logger.info("Gracefully close websoket server....");
+  server.close(_ => {
+    process.exit(0);
+  });
 });
 
 function abbrAddr(address) {
@@ -68,6 +81,11 @@ function setTimer(ws, timeSec) {
   }, timeSec * 1000);
 }
 
+function jsonReplacer(key, val) {
+  if (key === 'blockPool') return undefined;
+  else return val;
+}
+
 // A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
 // TODO(seo): Sign messages to nodes.
 const server = new WebSocketServer({
@@ -95,15 +113,16 @@ const server = new WebSocketServer({
   }
 });
 server.on('connection', (ws) => {
+  WS_LIST.push(ws);
   let node = null;
   ws.on('message', (message) => {
     try {
       const nodeInfo = JSON.parse(message);
-      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
-          `${JSON.stringify(nodeInfo, null, 2)}`)
       if (PEER_NODES[nodeInfo.address]) {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
         node.assignRandomPeers();
+        logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
+            `${JSON.stringify(nodeInfo, jsonReplacer, 2)}`)
       } else {
         node = new PeerNode(nodeInfo);
         node.assignRandomPeers();

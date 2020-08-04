@@ -20,6 +20,12 @@ process.on('uncaughtException', function (err) {
   logger.error(`[${CLIENT_PREFIX}]` + err);
 });
 
+process.on('SIGINT', _ => {
+  logger.info("Stopping the blockchain client....");
+  p2pServer.stop();
+  process.exit();
+});
+
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
@@ -276,7 +282,23 @@ app.get('/get_address', (req, res, next) => {
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
-})
+});
+
+app.get('/get_raw_consensus_state', (req, res) => {
+  const result = p2pServer.consensus.getRawState();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/get_consensus_state', (req, res) => {
+  const result = p2pServer.consensus.getState();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
 
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server

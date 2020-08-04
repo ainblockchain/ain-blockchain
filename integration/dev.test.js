@@ -17,22 +17,22 @@ const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number';
 
 const ENV_VARIABLES = [
   {
-    STAKE: 250, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -152,16 +152,12 @@ describe('API Tests', () => {
     sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
     sleep(2000);
-    waitForNewBlocks(server1);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1]);
     sleep(2000);
-    waitForNewBlocks(server2);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2]);
     sleep(2000);
-    waitForNewBlocks(server3);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3]);
     sleep(2000);
-    waitForNewBlocks(server4);
   });
 
   after(() => {

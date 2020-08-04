@@ -27,7 +27,6 @@ fi
 export ACCOUNT_INDEX="$2"
 echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 
-export STAKE=250
 export HOSTING_ENV=gcp
 export DEBUG=false
 
