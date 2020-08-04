@@ -145,7 +145,7 @@ class Consensus {
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators : this.getWhitelist();
     // FIXME(lia): make the seeds more secure and unpredictable
-    const seed = this.genesisHash + this.state.epoch;
+    const seed = '' + this.genesisHash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
@@ -423,7 +423,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Previous block's epoch (${prevBlock.epoch}) is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
-    const seed = this.genesisHash + epoch;
+    const seed = '' + this.genesisHash + epoch;
     const expectedProposer = Consensus.selectProposer(seed, validators);
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`);
