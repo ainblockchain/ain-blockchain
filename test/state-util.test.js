@@ -1,4 +1,6 @@
 const {
+  hasReservedChar,
+  isValidPathForStates,
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
@@ -10,6 +12,113 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 describe("state-util", () => {
+  describe("hasReservedChar", () => {
+    it("when non-string input", () => {
+      expect(hasReservedChar(null)).to.equal(false);
+      expect(hasReservedChar(undefined)).to.equal(false);
+      expect(hasReservedChar(true)).to.equal(false);
+      expect(hasReservedChar(false)).to.equal(false);
+      expect(hasReservedChar(0)).to.equal(false);
+      expect(hasReservedChar([])).to.equal(false);
+      expect(hasReservedChar({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(hasReservedChar('')).to.equal(false);
+      expect(hasReservedChar('abc')).to.equal(false);
+      expect(hasReservedChar('ABC')).to.equal(false);
+      expect(hasReservedChar('0')).to.equal(false);
+      expect(hasReservedChar('true')).to.equal(false);
+      expect(hasReservedChar('\u2000\u2E00')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(hasReservedChar('/')).to.equal(true);
+      expect(hasReservedChar('/abc')).to.equal(true);
+      expect(hasReservedChar('a/bc')).to.equal(true);
+      expect(hasReservedChar('abc/')).to.equal(true);
+      expect(hasReservedChar('\u2000/\u2E00')).to.equal(true);
+      expect(hasReservedChar('.')).to.equal(true);
+      expect(hasReservedChar('*')).to.equal(true);
+      expect(hasReservedChar('$')).to.equal(true);
+      expect(hasReservedChar('#')).to.equal(true);
+      expect(hasReservedChar('!')).to.equal(true);
+      expect(hasReservedChar('{')).to.equal(true);
+      expect(hasReservedChar('}')).to.equal(true);
+      expect(hasReservedChar('[')).to.equal(true);
+      expect(hasReservedChar(']')).to.equal(true);
+      expect(hasReservedChar('\x00')).to.equal(true);
+      expect(hasReservedChar('\x01')).to.equal(true);
+      expect(hasReservedChar('\x02')).to.equal(true);
+      expect(hasReservedChar('\x03')).to.equal(true);
+      expect(hasReservedChar('\x04')).to.equal(true);
+      expect(hasReservedChar('\x05')).to.equal(true);
+      expect(hasReservedChar('\x06')).to.equal(true);
+      expect(hasReservedChar('\x07')).to.equal(true);
+      expect(hasReservedChar('\x08')).to.equal(true);
+      expect(hasReservedChar('\x09')).to.equal(true);
+      expect(hasReservedChar('\x0A')).to.equal(true);
+      expect(hasReservedChar('\x0B')).to.equal(true);
+      expect(hasReservedChar('\x0C')).to.equal(true);
+      expect(hasReservedChar('\x0D')).to.equal(true);
+      expect(hasReservedChar('\x0E')).to.equal(true);
+      expect(hasReservedChar('\x0F')).to.equal(true);
+      expect(hasReservedChar('\x10')).to.equal(true);
+      expect(hasReservedChar('\x11')).to.equal(true);
+      expect(hasReservedChar('\x12')).to.equal(true);
+      expect(hasReservedChar('\x13')).to.equal(true);
+      expect(hasReservedChar('\x14')).to.equal(true);
+      expect(hasReservedChar('\x15')).to.equal(true);
+      expect(hasReservedChar('\x16')).to.equal(true);
+      expect(hasReservedChar('\x17')).to.equal(true);
+      expect(hasReservedChar('\x18')).to.equal(true);
+      expect(hasReservedChar('\x19')).to.equal(true);
+      expect(hasReservedChar('\x1A')).to.equal(true);
+      expect(hasReservedChar('\x1B')).to.equal(true);
+      expect(hasReservedChar('\x1C')).to.equal(true);
+      expect(hasReservedChar('\x1D')).to.equal(true);
+      expect(hasReservedChar('\x1E')).to.equal(true);
+      expect(hasReservedChar('\x1F')).to.equal(true);
+      expect(hasReservedChar('\x7F')).to.equal(true);
+    })
+  })
+
+  describe("isValidPathForStates", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidPathForStates([null]), {isValid: false, invalidPath: '/null'});
+      assert.deepEqual(
+          isValidPathForStates([undefined]), {isValid: false, invalidPath: '/undefined'});
+      assert.deepEqual(isValidPathForStates([Infinity]), {isValid: false, invalidPath: '/null'});
+      assert.deepEqual(isValidPathForStates([NaN]), {isValid: false, invalidPath: '/null'});
+      assert.deepEqual(isValidPathForStates([true]), {isValid: false, invalidPath: '/true'});
+      assert.deepEqual(isValidPathForStates([false]), {isValid: false, invalidPath: '/false'});
+      assert.deepEqual(isValidPathForStates([0]), {isValid: false, invalidPath: '/0'});
+      assert.deepEqual(isValidPathForStates(['']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidPathForStates(['', '', '']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidPathForStates([{}]), {isValid: false, invalidPath: '/{}'});
+      assert.deepEqual(
+          isValidPathForStates([{a: 'A'}]), {isValid: false, invalidPath: '/{"a":"A"}'});
+      assert.deepEqual(isValidPathForStates([[]]), {isValid: false, invalidPath: '/[]'});
+      assert.deepEqual(isValidPathForStates([['a']]), {isValid: false, invalidPath: '/["a"]'});
+      assert.deepEqual(isValidPathForStates(['a', '/']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '.']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '$']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '#']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '!']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '{']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '}']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '[']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', ']']), {isValid: true, invalidPath: ''});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidPathForStates(['a', 'b', 'c']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+          isValidPathForStates(['0', 'true', 'false']), {isValid: true, invalidPath: ''});
+    })
+  })
+
   describe("isValidJsObjectForStates", () => {
     it("when invalid input", () => {
       assert.deepEqual(isValidJsObjectForStates(undefined), {isValid: false, invalidPath: '/'});
