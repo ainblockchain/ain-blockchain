@@ -234,7 +234,7 @@ class Consensus {
     const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
     const tempState = new DB(null, lastBlock.number - 1);
-    tempState.dbData = JSON.parse(JSON.stringify(prevState.dbData));
+    tempState.setDbToSnapshot(prevState);
     if (DEBUG) {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Created a temp state for tx checks`);
     }
