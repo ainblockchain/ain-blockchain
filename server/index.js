@@ -222,8 +222,10 @@ class P2pServer {
     }
     const memoryUsage = this.getMemoryUsage();
     updateToTracker.memoryUsage = memoryUsage;
-    logger.info(`\n[${P2P_PREFIX}] >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
-                `${JSON.stringify(updateToTracker, null, 2)}`)
+    if (DEBUG) {
+      logger.debug(`\n[${P2P_PREFIX}] >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
+                   `${JSON.stringify(updateToTracker, null, 2)}`);
+    }
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
 
@@ -545,7 +547,7 @@ class P2pServer {
     if (!ChainUtil.transactionFailed(result)) {
       this.node.tp.addTransaction(transaction);
     } else if (DEBUG) {
-      logger.debug(`[${P2P_PREFIX}]FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
+      logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
 
     return result;

@@ -102,6 +102,14 @@ rm -rf blockchain/blockchains logger/logs
 ```
 The default size of the validator whitelist is 5. Set NUM_VALIDATORS environment variable when running the first node if you'd like to run different number of validator nodes than 5.
 
+### How to run tests
+
+```
+npm run test_unit
+npm run test_smoke
+npm run test_integration
+```
+
 #### On Google Coud Platform (GCP)
 
 - Deploy code (in common with Tracker server) 
