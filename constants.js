@@ -18,9 +18,9 @@ const ADDITIONAL_FUNCTIONS = process.env.ADDITIONAL_FUNCTIONS ? {
   dbPath: process.env.ADDITIONAL_FUNCTIONS.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_FUNCTIONS.split(':')[1])
 } : null;
+const {ConsensusConsts} = require('./consensus/constants');
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
-const STAKE = process.env.STAKE ? Number(process.env.STAKE) : null;
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
 const TRANSACTION_POOL_TIME_OUT_MS = moment.duration(1, 'hours').as('milliseconds');
@@ -50,7 +50,8 @@ const MessageTypes = {
   TRANSACTION: 'transaction',
   CHAIN_SUBSECTION: 'chain_subsection',
   CHAIN_SUBSECTION_REQUEST: 'chain_subsection_request',
-  CONSENSUS: 'consensus'
+  CONSENSUS: 'consensus',
+  HEARTBEAT: 'heartbeat'
 };
 
 /**
@@ -212,6 +213,11 @@ const GenesisToken = fs.existsSync(GENESIS_TOKEN) ?
 const GenesisAccounts = fs.existsSync(GENESIS_ACCOUNTS) ?
     JSON.parse(fs.readFileSync(GENESIS_ACCOUNTS)) : null;
 
+const GenesisWhitelist = {};
+for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+  GenesisWhitelist[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
+}
+
 module.exports = {
   GENESIS_OWNERS,
   ADDITIONAL_OWNERS,
@@ -221,7 +227,6 @@ module.exports = {
   ADDITIONAL_FUNCTIONS,
   BLOCKCHAINS_DIR,
   PROTOCOL_VERSIONS,
-  STAKE,
   DEBUG,
   MAX_TX_BYTES,
   TRANSACTION_POOL_TIME_OUT_MS,
@@ -245,5 +250,6 @@ module.exports = {
   TransactionStatus,
   DefaultValues,
   GenesisToken,
-  GenesisAccounts
+  GenesisAccounts,
+  GenesisWhitelist
 };

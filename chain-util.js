@@ -3,6 +3,7 @@ const ruleUtil = new RuleUtil();
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
@@ -32,8 +33,8 @@ class ChainUtil {
     return ruleUtil.isBool(value);
   }
 
-  static isNumber(value) {
-    return ruleUtil.isNumber(value);
+  static isNumber(num) {
+    return ruleUtil.isNumber(num);
   }
 
   static isString(value) {
@@ -75,6 +76,22 @@ class ChainUtil {
       return '/';
     }
     return (parsedPath[0].startsWith('/') ? '' : '/') + parsedPath.join('/');
+  }
+
+  static transactionFailed(response) {
+    if (Array.isArray(response)) {
+      response.forEach(res => {
+        if (ChainUtil.checkForTransactionErrorCode(res)) {
+          return true;
+        }
+      });
+      return false;
+    }
+    return ChainUtil.checkForTransactionErrorCode(response);
+  }
+
+  static checkForTransactionErrorCode(response) {
+    return response === null || (response.code !== undefined && response.code !== 0);
   }
 }
 

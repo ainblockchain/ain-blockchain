@@ -16,11 +16,11 @@
       "$number": {
         ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
         "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth && Number($number) === newData.number && (newData.number === 1 || getValue('/consensus/number/' + (newData.number - 1) + '/propose/validators/' + auth) > 0)"
+          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth) > 0 && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') > 0)"
         },
-        "register": {
+        "vote": {
           "$user_addr": {
-            ".write": "auth === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/deposit_accounts/consensus/' + $user_addr + '/value') >= newData.stake && !getValue('/consensus/number/' + (Number($number) + 1) + '/propose')"
+            ".write": "auth === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth) >= newData.stake && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') > 0)"
           }
         }
       }

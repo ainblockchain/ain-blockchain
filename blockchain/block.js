@@ -6,8 +6,9 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const {
   GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, GENESIS_FUNCTIONS,
-  ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts
+  ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts, GenesisWhitelist
 } = require('../constants');
+const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -15,7 +16,7 @@ const sizeof = require('object-sizeof');
 const LOG_PREFIX = 'BLOCK';
 
 class Block {
-  constructor(lastHash, lastVotes, transactions, number, timestamp, proposer, validators) {
+  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, proposer, validators) {
     this.last_votes = lastVotes;
     this.transactions = transactions;
     // Block's header
@@ -23,6 +24,7 @@ class Block {
     this.last_votes_hash = ChainUtil.hashString(stringify(lastVotes));
     this.transactions_hash = ChainUtil.hashString(stringify(transactions));
     this.number = number;
+    this.epoch = epoch;
     this.timestamp = timestamp;
     this.proposer = proposer;
     this.validators = validators;
@@ -37,6 +39,7 @@ class Block {
       last_votes_hash: this.last_votes_hash,
       transactions_hash: this.transactions_hash,
       number: this.number,
+      epoch: this.epoch,
       timestamp: this.timestamp,
       proposer: this.proposer,
       validators: this.validators,
@@ -51,6 +54,7 @@ class Block {
             last_votes_hash:   ${ChainUtil.shortenHash(this.last_votes_hash)}
             transactions_hash: ${ChainUtil.shortenHash(this.transactions_hash)}
             number:            ${this.number}
+            epoch:             ${this.epoch}
             timestamp:         ${this.timestamp}
             proposer:          ${this.proposer}
             validators:        ${this.validators}
@@ -66,8 +70,8 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, proposer, validators) {
-    return new Block(lastHash, lastVotes, transactions, number, Date.now(), proposer, validators);
+  static createBlock(lastHash, lastVotes, transactions, number, epoch, proposer, validators) {
+    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), proposer, validators);
   }
 
   static getFileName(block) {
@@ -84,15 +88,15 @@ class Block {
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo['last_hash'], blockInfo['last_votes'],
-        blockInfo['transactions'], blockInfo['number'], blockInfo['timestamp'],
-        blockInfo['proposer'], blockInfo['validators']);
+        blockInfo['transactions'], blockInfo['number'], blockInfo['epoch'],
+        blockInfo['timestamp'], blockInfo['proposer'], blockInfo['validators']);
   }
 
   static hasRequiredFields(block) {
     return (block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined &&
-        block.timestamp !== undefined && block.proposer !== undefined &&
-        block.validators !== undefined);
+        block.epoch !== undefined &&  block.timestamp !== undefined &&
+        block.proposer !== undefined && block.validators !== undefined);
   }
 
   static validateHashes(block) {
@@ -112,18 +116,8 @@ class Block {
     return true;
   }
 
-  static validateProposedBlock(block, blockchain) {
-    if (!Block.validateHashes(block)) {
-      return false;
-    }
-    if (block.number !== (blockchain.lastBlockNumber() + 1)) {
-      logger.error(`[${LOG_PREFIX}] Number is not correct for block ${block.hash} ` +
-                   `Expected: ${(blockchain.lastBlockNumber() + 1)} ` +
-                   `Actual: ${block.number}`);
-      return false;
-    }
-    // TODO (lia): check the contents of block.last_votes if they indeed voted for
-    // the previous block.
+  static validateProposedBlock(block) {
+    if (!Block.validateHashes(block)) return false;
     const nonceTracker = {};
     let transaction;
     for (let i=0; i<block.transactions.length; i++) {
@@ -165,6 +159,14 @@ class Block {
     if (!fs.existsSync(GENESIS_RULES)) {
       throw Error('Missing genesis rules file: ' + GENESIS_RULES);
     }
+
+    // Consensus (whitelisting) operation
+    // TODO(lia): increase this list to 10
+    const whitelistValOp = {
+      type: 'SET_VALUE',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
+      value: GenesisWhitelist
+    };
 
     // Function configs operation
     const functionConfigs = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
@@ -216,6 +218,29 @@ class Block {
       ref: '/',
       value: ownerConfigs
     };
+    const whitelistRuleOp = {
+      type: 'SET_RULE',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
+      value: `auth === '${ownerAccount.address}'`
+    }
+    const whitelistOwnerOp = {
+      type: 'SET_OWNER',
+      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
+      value: {
+        [ownerAccount.address]: {
+          "branch_owner": true,
+          "write_function": true,
+          "write_owner": true,
+          "write_rule": true
+        },
+        "*": {
+          "branch_owner": false,
+          "write_function": false,
+          "write_owner": false,
+          "write_rule": false
+        }
+      }
+    }
 
     // Transaction
     const firstTxData = {
@@ -223,7 +248,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, functionsOp, rulesOp, ownersOp ]
+        op_list: [ tokenOp, balanceOp, whitelistValOp, functionsOp, rulesOp, whitelistRuleOp, ownersOp, whitelistOwnerOp ]
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
@@ -286,9 +311,13 @@ class Block {
     const lastVotes = [];
     const transactions = Block.getGenesisBlockData();
     const number = 0;
+    const epoch = 0;
     const proposer = ownerAccount.address;
-    const validators = [];
-    return new this(lastHash, lastVotes, transactions, number, timestamp,
+    const validators = {};
+    for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+      validators[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
+    }
+    return new this(lastHash, lastVotes, transactions, number, epoch, timestamp,
         proposer, validators);
   }
 }
