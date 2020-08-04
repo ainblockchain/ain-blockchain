@@ -33,14 +33,6 @@ class ChainUtil {
     return ruleUtil.isBool(value);
   }
 
-  static isNonEmptyObject(data) {
-    return !!data && ruleUtil.isDict(data) && !_.isEmpty(block);
-  }
-
-  static isNonEmptyObject(data) {
-    return !!data && ChainUtil.isDict(data) && !_.isEmpty(data);
-  }
-
   static isNumber(num) {
     return ruleUtil.isNumber(num);
   }
