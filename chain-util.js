@@ -65,7 +65,6 @@ class ChainUtil {
     if (!path) {
       return [];
     }
-    path = path.replace(/^"(.*)"$/, '$1');
     return path.split('/').filter((node) => {
       return !!node;
     });

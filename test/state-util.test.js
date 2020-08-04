@@ -110,6 +110,12 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates(['a', '}']), {isValid: false, invalidPath: '/a/}'});
       assert.deepEqual(isValidPathForStates(['a', '[']), {isValid: false, invalidPath: '/a/['});
       assert.deepEqual(isValidPathForStates(['a', ']']), {isValid: false, invalidPath: '/a/]'});
+      assert.deepEqual(
+          isValidPathForStates(['a', '\x00']), {isValid: false, invalidPath: '/a/\x00'});
+      assert.deepEqual(
+          isValidPathForStates(['a', '\x1F']), {isValid: false, invalidPath: '/a/\x1F'});
+      assert.deepEqual(
+          isValidPathForStates(['a', '\x7F']), {isValid: false, invalidPath: '/a/\x7F'});
     })
 
     it("when valid input", () => {
