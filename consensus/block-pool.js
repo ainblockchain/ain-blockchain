@@ -334,9 +334,17 @@ class BlockPool {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current block is unavailable`);
       return;
     }
+    const lastBlockNumber = currentBlockInfo.block.number - 1;
     const lastHash = currentBlockInfo.block.last_hash;
-    // use lastFinalizedBlock instead ?
-    const prevBlock = get(this.hashToBlockInfo[lastHash], 'block') || this.node.bc.getBlockByHash(lastHash);
+    const lastFinalizedBlock = this.node.bc.lastBlock();
+    let prevBlock;
+    if (lastBlockNumber === lastFinalizedBlock.number) {
+      prevBlock = lastFinalizedBlock;
+    } else if (lastBlockNumber > lastFinalizedBlock.number) {
+      prevBlock = get(this.hashToBlockInfo[lastHash], 'block');
+    } else {
+      prevBlock = this.node.bc.getBlockByHash(lastHash);
+    }
     if (!prevBlock) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Prev block is unavailable`);
       return;
