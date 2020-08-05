@@ -41,6 +41,7 @@ function jsObjectToStateTree(obj) {
     }
   } else {
     node.setValue(obj);
+    node.setProofHash(obj);
   }
   return node;
 }

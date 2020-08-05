@@ -93,6 +93,7 @@ class DB {
 
   writeDatabase(fullPath, value) {
     const valueTree = jsObjectToStateTree(value);
+    console.log(fullPath, valueTree);
     if (fullPath.length === 0) {
       this.dbRoot = valueTree;
     } else {
