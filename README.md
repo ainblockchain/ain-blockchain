@@ -76,7 +76,7 @@ GET http://<ip_address>:5000/peer_nodes
 
 ## Node 
 
-Operates a single peer node instance of the AIN blockchain. A single blockchain node instance processes incoming transaction requests and maintains a local copy of the entire blockchain. The blockchain node first queries the tracker-server for ip addresses of other peers, and then syncs its local blockchain to the network consensus blockchain. If the blockchain specifies a "STAKE" argument on startup, it will then begin to take part in the forging/validating process for new blocks.
+Operates a single peer node instance of the AIN blockchain. A single blockchain node instance processes incoming transaction requests and maintains a local copy of the entire blockchain. The blockchain node first queries the tracker-server for ip addresses of other peers, and then syncs its local blockchain to the network consensus blockchain. If a node is included in the whitelist and has staked appropriate amount of AIN, it will then take part in the consensus protocol.
 
 ### Running without Docker
 
@@ -90,15 +90,24 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-STAKE=250 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
-STAKE=250 ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false node client/index.js 
-STAKE=250 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index.js 
-STAKE=250 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
-STAKE=250 ACCOUNT_INDEX=4 HOSTING_ENV=local DEBUG=false node client/index.js 
+ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
+ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false node client/index.js 
+ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index.js 
+ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
+ACCOUNT_INDEX=4 HOSTING_ENV=local DEBUG=false node client/index.js 
 ```
 Before starting node jobs, remove existing blockchain files and logs if necessary:
 ```
 rm -rf blockchain/blockchains logger/logs
+```
+The default size of the validator whitelist is 5. Set NUM_VALIDATORS environment variable when running the first node if you'd like to run different number of validator nodes than 5.
+
+### How to run tests
+
+```
+npm run test_unit
+npm run test_smoke
+npm run test_integration
 ```
 
 #### On Google Coud Platform (GCP)
@@ -134,7 +143,7 @@ docker pull ainblockchain/blockchain-database
 ```
 - Run with Docker image
 ```
-docker run -e STAKE=250 -e ACCOUNT_INDEX=0 -e HOSTING_ENV="gcp" -e TRACKER_WS_ADDR="ws://<ip_address_of_tracker_server>:5000" --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INDEX=0 -e HOSTING_ENV="gcp" -e TRACKER_WS_ADDR="ws://<ip_address_of_tracker_server>:5000" --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 
 #### Enter Docker container and inspect blockchain files

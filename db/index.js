@@ -5,14 +5,23 @@ const {
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
+const StateNode = require('./state-node');
+const {
+  isValidJsObjectForStates,
+  jsObjectToStateTree,
+  stateTreeToJsObject,
+  makeCopyOfStateTree,
+} = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor() {
-    this.dbData = {};
+  constructor(bc, blockNumberSnapshot) {
+    this.dbRoot = new StateNode();
     this.initDbData();
     this.func = new Functions(this);
+    this.bc = bc;
+    this.blockNumberSnapshot = blockNumberSnapshot;
   }
 
   initDbData() {
@@ -45,49 +54,86 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
-  writeDatabase(fullPath, value) {
-    if (fullPath.length === 0) {
-      this.dbData = value;
-    } else if (fullPath.length === 1) {
-      this.dbData[fullPath[0]] = value;
-    } else {
-      const pathToKey = fullPath.slice().splice(0, fullPath.length - 1);
-      const refKey = fullPath[fullPath.length - 1];
-      this.getRefForWriting(pathToKey)[refKey] = value;
+  /**
+   * Returns reference to the input path for reading if exists, otherwise null.
+   */
+  getRefForReading(fullPath) {
+    let node = this.dbRoot;
+    for (let i = 0; i < fullPath.length; i++) {
+      const label = fullPath[i];
+      if (node.hasChild(label)) {
+        node = node.getChild(label);
+      } else {
+        return null;
+      }
     }
-    if (DB.isEmptyNode(value)) {
+    return node;
+  }
+
+  /**
+   * Returns reference to the input path for writing if exists, otherwise creates path.
+   */
+  getRefForWriting(fullPath) {
+    let node = this.dbRoot;
+    for (let i = 0; i < fullPath.length; i++) {
+      const label = fullPath[i];
+      if (node.hasChild(label)) {
+        node = node.getChild(label);
+        if (node.getIsLeaf()) {
+          node.resetValue();
+        }
+      } else {
+        const child = new StateNode();
+        node.setChild(label, child);
+        node = child;
+      }
+    }
+    return node;
+  }
+
+  writeDatabase(fullPath, value) {
+    const valueTree = jsObjectToStateTree(value);
+    if (fullPath.length === 0) {
+      this.dbRoot = valueTree;
+    } else {
+      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
+      const label = fullPath[fullPath.length - 1];
+      const parent = this.getRefForWriting(pathToParent);
+      parent.setChild(label, valueTree);
+    }
+    if (DB.isEmptyNode(valueTree)) {
       this.removeEmptyNodes(fullPath);
     }
   }
 
   static isEmptyNode(dbNode) {
-    return dbNode === null || dbNode === undefined ||
-        (ChainUtil.isDict(dbNode) && Object.keys(dbNode).length === 0);
+    return dbNode.getIsLeaf() && dbNode.getValue() === null;
   }
 
   removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
     if (depth < fullPath.length - 1) {
-      const nextDbNode = curDbNode[fullPath[depth]];
-      if (!ChainUtil.isDict(nextDbNode)) {
+      const nextDbNode = curDbNode.getChild(fullPath[depth]);
+      if (nextDbNode === null) {
         logger.error(`Unavailable path in the database: ${ChainUtil.formatPath(fullPath)}`);
       } else {
         this.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
       }
     }
-    for (const child in curDbNode) {
-      if (DB.isEmptyNode(curDbNode[child])) {
-        delete curDbNode[child];
+    for (const label of curDbNode.getChildLabels()) {
+      const childNode = curDbNode.getChild(label);
+      if (DB.isEmptyNode(childNode)) {
+        curDbNode.deleteChild(label);
       }
     }
   }
 
   removeEmptyNodes(fullPath) {
-    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbData);
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbRoot);
   }
 
   readDatabase(fullPath) {
-    const result = this.getRefForReading(fullPath);
-    return result !== undefined ? JSON.parse(JSON.stringify(result)) : null;
+    const node = this.getRefForReading(fullPath);
+    return stateTreeToJsObject(node);
   }
 
   getValue(valuePath) {
@@ -171,12 +217,14 @@ class DB {
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
-  // TODO(seo): Consider adding array to object transforming (see
-  //            https://firebase.googleblog.com/2014/04/best-practices-arrays-in-firebase.html).
   setValue(valuePath, value, address, timestamp, transaction) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(value);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(valuePath);
     if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
-      return {code: 2, error_message: 'No .write permission on: ' + valuePath};
+      return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
@@ -191,7 +239,7 @@ class DB {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: 'Not a number type: ' + valuePath};
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
@@ -203,16 +251,20 @@ class DB {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: 'Not a number type: ' + valuePath};
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
   }
 
   setFunction(functionPath, functionInfo, address) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(functionInfo);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(functionPath);
     if (!this.getPermissionForFunction(parsedPath, address)) {
-      return {code: 3, error_message: 'No write_function permission on: ' + functionPath};
+      return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
     }
     const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
         JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
@@ -224,9 +276,13 @@ class DB {
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
   setRule(rulePath, rule, address) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(rule);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(rulePath);
     if (!this.getPermissionForRule(parsedPath, address)) {
-      return {code: 3, error_message: 'No write_rule permission on: ' + rulePath};
+      return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
     }
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
@@ -236,9 +292,13 @@ class DB {
 
   // TODO(seo): Add owner config sanitization logic.
   setOwner(ownerPath, owner, address) {
+    const {isValid, invalidPath} = isValidJsObjectForStates(owner);
+    if (!isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     if (!this.getPermissionForOwner(parsedPath, address)) {
-      return {code: 4, error_message: 'No write_owner or branch_owner permission on: ' + ownerPath};
+      return {code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}`};
     }
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -283,7 +343,7 @@ class DB {
         }
       } else {
         // Invalid Operation
-        return {code: 5, error_message: 'Invalid opeartionn type: ' + op.type};
+        return {code: 5, error_message: `Invalid opeartionn type: ${op.type}`};
       }
     }
     return ret;
@@ -328,37 +388,8 @@ class DB {
     return fullPath;
   }
 
-  /**
-   * Returns reference to the input path for reading if exists, otherwise null.
-   */
-  getRefForReading(fullPath) {
-    let subData = this.dbData;
-    for (let i = 0; i < fullPath.length; i++) {
-      const key = fullPath[i];
-      if (!ChainUtil.isDict(subData) || !(key in subData)) {
-        return null;
-      }
-      subData = subData[key];
-    }
-    return subData;
-  }
-
-  /**
-   * Returns reference to the input path for writing if exists, otherwise creates path.
-   */
-  getRefForWriting(fullPath) {
-    let subData = this.dbData;
-    fullPath.forEach((key) => {
-      if (!(key in subData) || !ChainUtil.isDict(subData[key])) {
-        subData[key] = {};
-      }
-      subData = subData[key];
-    });
-    return subData;
-  }
-
   setDbToSnapshot(snapshot) {
-    this.dbData = JSON.parse(JSON.stringify(snapshot.dbData));
+    this.dbRoot = makeCopyOfStateTree(snapshot.dbRoot);
   }
 
   executeOperation(operation, address, timestamp, transaction) {
@@ -392,9 +423,15 @@ class DB {
   }
 
   executeTransactionList(txList) {
-    txList.forEach((tx) => {
-      this.executeTransaction(tx);
-    });
+    for (const tx of txList) {
+      const res = this.executeTransaction(tx);
+      if (ChainUtil.transactionFailed(res)) {
+        // FIXME: remove the failed transaction from tx pool?
+        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}\nresult: ${JSON.stringify(res)}`);
+        return false;
+      }
+    }
+    return true;
   }
 
   addPathToValue(value, matchedValuePath, closestConfigDepth) {
@@ -440,25 +477,32 @@ class DB {
     }
   }
 
-  static getVariableNodeName(node) {
-    if (ChainUtil.isDict(node)) {
-      const keys = Object.keys(node);
-      for (let i = 0; i < keys.length; i++) {
-        if (keys[i].startsWith('$')) {
+  static getVariableLabel(node) {
+    if (!node.getIsLeaf()) {
+      for (const label of node.getChildLabels()) {
+        if (label.startsWith('$')) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
-          return keys[i];
+          return label;
         }
       }
     }
     return null;
   }
 
+  static hasConfig(node, label) {
+    return node && node.hasChild(label);
+  }
+
+  static getConfig(node, label) {
+    return DB.hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
+  }
+
   static hasFunctionConfig(funcNode) {
-    return funcNode && funcNode[FunctionProperties.FUNCTION] !== undefined;
+    return DB.hasConfig(funcNode, FunctionProperties.FUNCTION);
   }
 
   static getFunctionConfig(funcNode) {
-    return DB.hasFunctionConfig(funcNode) ? funcNode[FunctionProperties.FUNCTION] : null;
+    return DB.getConfig(funcNode, FunctionProperties.FUNCTION);
   }
 
   // Does a DFS search to find most specific nodes matched in the function tree.
@@ -474,8 +518,8 @@ class DB {
     }
     if (curFuncNode) {
       // 1) Try to match with non-variable child node.
-      const nextFuncNode = curFuncNode[parsedValuePath[depth]];
-      if (nextFuncNode !== undefined) {
+      const nextFuncNode = curFuncNode.getChild(parsedValuePath[depth]);
+      if (nextFuncNode !== null) {
         const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
         matched.matchedFunctionPath.unshift(parsedValuePath[depth]);
@@ -483,17 +527,17 @@ class DB {
       }
       // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
       //    child node.
-      const varNodeName = DB.getVariableNodeName(curFuncNode);
-      if (varNodeName !== null) {
-        const nextFuncNode = curFuncNode[varNodeName];
+      const varLabel = DB.getVariableLabel(curFuncNode);
+      if (varLabel !== null) {
+        const nextFuncNode = curFuncNode.getChild(varLabel);
         const matched = this.matchFunctionPathRecursive(parsedValuePath, depth + 1, nextFuncNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
-        matched.matchedFunctionPath.unshift(varNodeName);
-        if (matched.pathVars[varNodeName] !== undefined) {
+        matched.matchedFunctionPath.unshift(varLabel);
+        if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
           logger.error('Duplicated path variables that should NOT happen!')
         } else {
-          matched.pathVars[varNodeName] = parsedValuePath[depth];
+          matched.pathVars[varLabel] = parsedValuePath[depth];
         }
         return matched;
       }
@@ -509,7 +553,7 @@ class DB {
 
   matchFunctionPath(parsedValuePath) {
     return this.matchFunctionPathRecursive(
-        parsedValuePath, 0, this.dbData[PredefinedDbPaths.FUNCTIONS_ROOT]);
+        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
   }
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
@@ -520,26 +564,28 @@ class DB {
         config: DB.getFunctionConfig(curFuncNode),
       })
     }
-    const varNodeName = DB.getVariableNodeName(curFuncNode);
-    // 1) Traverse non-variable child nodes.
-    for (const key in curFuncNode) {
-      const nextFuncNode = curFuncNode[key];
-      if (key !== varNodeName && ChainUtil.isDict(nextFuncNode)) {
+    if (curFuncNode && !curFuncNode.getIsLeaf()) {
+      const varLabel = DB.getVariableLabel(curFuncNode);
+      // 1) Traverse non-variable child nodes.
+      for (const label of curFuncNode.getChildLabels()) {
+        const nextFuncNode = curFuncNode.getChild(label);
+        if (label !== varLabel) {
+          const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
+          subtreeFuncs.forEach((entry) => {
+            entry.path.unshift(label);
+            funcs.push(entry);
+          });
+        }
+      }
+      // 2) Traverse variable child node if available.
+      if (varLabel !== null) {
+        const nextFuncNode = curFuncNode.getChild(varLabel);
         const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
         subtreeFuncs.forEach((entry) => {
-          entry.path.unshift(key);
+          entry.path.unshift(varLabel);
           funcs.push(entry);
         });
       }
-    }
-    // 2) Traverse variable child node if available.
-    if (varNodeName !== null) {
-      const nextFuncNode = curFuncNode[varNodeName];
-      const subtreeFuncs = this.getSubtreeFunctionsRecursive(depth + 1, nextFuncNode);
-      subtreeFuncs.forEach((entry) => {
-        entry.path.unshift(varNodeName);
-        funcs.push(entry);
-      });
     }
     return funcs;
   }
@@ -576,7 +622,8 @@ class DB {
   }
 
   convertFunctionMatch(matched) {
-    const subtreeFunctions = matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
+    const subtreeFunctions =
+        matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(matched.matchedFunctionPath),
@@ -589,11 +636,11 @@ class DB {
   }
 
   static hasRuleConfig(ruleNode) {
-    return ruleNode && ruleNode[RuleProperties.WRITE] !== undefined;
+    return DB.hasConfig(ruleNode, RuleProperties.WRITE);
   }
 
   static getRuleConfig(ruleNode) {
-    return DB.hasRuleConfig(ruleNode) ? ruleNode[RuleProperties.WRITE] : null;
+    return DB.getConfig(ruleNode, RuleProperties.WRITE);
   }
 
   // Does a DFS search to find most specific nodes matched in the rule tree.
@@ -611,8 +658,8 @@ class DB {
     }
     if (curRuleNode) {
       // 1) Try to match with non-variable child node.
-      const nextRuleNode = curRuleNode[parsedValuePath[depth]];
-      if (nextRuleNode !== undefined) {
+      const nextRuleNode = curRuleNode.getChild(parsedValuePath[depth]);
+      if (nextRuleNode !== null) {
         const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
         matched.matchedRulePath.unshift(parsedValuePath[depth]);
@@ -624,17 +671,17 @@ class DB {
       }
       // 2) If no non-variable child node is matched, try to match with variable (i.e., with '$')
       //    child node.
-      const varNodeName = DB.getVariableNodeName(curRuleNode);
-      if (varNodeName !== null) {
-        const nextRuleNode = curRuleNode[varNodeName];
+      const varLabel = DB.getVariableLabel(curRuleNode);
+      if (varLabel !== null) {
+        const nextRuleNode = curRuleNode.getChild(varLabel);
         const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
-        matched.matchedRulePath.unshift(varNodeName);
-        if (matched.pathVars[varNodeName] !== undefined) {
+        matched.matchedRulePath.unshift(varLabel);
+        if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
           logger.error('Duplicated path variables that should NOT happen!')
         } else {
-          matched.pathVars[varNodeName] = parsedValuePath[depth];
+          matched.pathVars[varLabel] = parsedValuePath[depth];
         }
         if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
           matched.closestConfigNode = curRuleNode;
@@ -656,7 +703,7 @@ class DB {
 
   matchRulePath(parsedValuePath) {
     return this.matchRulePathRecursive(
-        parsedValuePath, 0, this.dbData[PredefinedDbPaths.RULES_ROOT]);
+        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.RULES_ROOT));
   }
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
@@ -667,26 +714,28 @@ class DB {
         config: DB.getRuleConfig(curRuleNode),
       })
     }
-    const varNodeName = DB.getVariableNodeName(curRuleNode);
-    // 1) Traverse non-variable child nodes.
-    for (const key in curRuleNode) {
-      const nextRuleNode = curRuleNode[key];
-      if (key !== varNodeName && ChainUtil.isDict(nextRuleNode)) {
+    if (curRuleNode && !curRuleNode.getIsLeaf()) {
+      const varLabel = DB.getVariableLabel(curRuleNode);
+      // 1) Traverse non-variable child nodes.
+      for (const label of curRuleNode.getChildLabels()) {
+        const nextRuleNode = curRuleNode.getChild(label);
+        if (label !== varLabel) {
+          const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
+          subtreeRules.forEach((entry) => {
+            entry.path.unshift(label);
+            rules.push(entry);
+          });
+        }
+      }
+      // 2) Traverse variable child node if available.
+      if (varLabel !== null) {
+        const nextRuleNode = curRuleNode.getChild(varLabel);
         const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
         subtreeRules.forEach((entry) => {
-          entry.path.unshift(key);
+          entry.path.unshift(varLabel);
           rules.push(entry);
         });
       }
-    }
-    // 2) Traverse variable child node if available.
-    if (varNodeName !== null) {
-      const nextRuleNode = curRuleNode[varNodeName];
-      const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
-      subtreeRules.forEach((entry) => {
-        entry.path.unshift(varNodeName);
-        rules.push(entry);
-      });
     }
     return rules;
   }
@@ -725,7 +774,7 @@ class DB {
 
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-                        'getFunction', 'getOwner', 'util', ...Object.keys(pathVars),
+                        'getFunction', 'getOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
@@ -738,15 +787,19 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-                    new RuleUtil(), ...Object.values(pathVars));
+                    new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+  }
+
+  lastBlockNumber() {
+    return !!this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
   }
 
   static hasOwnerConfig(ownerNode) {
-    return ownerNode && ownerNode[OwnerProperties.OWNER] !== undefined;
+    return DB.hasConfig(ownerNode, OwnerProperties.OWNER);
   }
 
   static getOwnerConfig(ownerNode) {
-    return DB.hasOwnerConfig(ownerNode) ? ownerNode[OwnerProperties.OWNER] : null;
+    return DB.getConfig(ownerNode, OwnerProperties.OWNER);
   }
 
   matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {
@@ -759,8 +812,8 @@ class DB {
       };
     }
     if (curOwnerNode) {
-      const nextOwnerNode = curOwnerNode[parsedRefPath[depth]];
-      if (nextOwnerNode !== undefined) {
+      const nextOwnerNode = curOwnerNode.getChild(parsedRefPath[depth]);
+      if (nextOwnerNode !== null) {
         const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
         if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
           matched.closestConfigNode = curOwnerNode;
@@ -779,7 +832,7 @@ class DB {
 
   matchOwnerPath(parsedRefPath) {
     return this.matchOwnerPathRecursive(
-        parsedRefPath, 0, this.dbData[PredefinedDbPaths.OWNERS_ROOT]);
+        parsedRefPath, 0, this.dbRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
   matchOwnerForParsedPath(parsedRefPath) {

@@ -5,7 +5,7 @@ if [ "$#" -lt 2 ]; then
     exit
 fi
 
-if [ "$1" = 'spring' ] || [ "$1" = 'summer' ] || [ "$1" = 'dev' ]; then
+if [ "$1" = 'spring' ] || [ "$1" = 'summer' ] || [ "$1" = 'dev' ] || [ "$1" = 'staging' ]; then
     SEASON="$1"
 else
     echo "Invalid project/season argument: $1"
