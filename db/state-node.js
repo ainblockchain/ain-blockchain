@@ -1,3 +1,5 @@
+const ChainUtil = require('../chain-util');
+
 class StateNode {
   constructor() {
     this.isLeaf = false;
@@ -5,6 +7,7 @@ class StateNode {
     this.childMap = new Map();
     // Used for leaf nodes only.
     this.value = null;
+    this.proof = null;
   }
 
   static create(isLeaf, childMap, value) {
@@ -83,8 +86,8 @@ class StateNode {
     // TODO(minsu): Implement this.
   }
 
-  setProofHash() {
-    // TODO(minsu): Implement this.
+  setProofHash(value) {
+    this.proof = ChainUtil.hashString(JSON.stringify(value));
   }
 
   addVersion() {
