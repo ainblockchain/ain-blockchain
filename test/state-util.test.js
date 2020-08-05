@@ -47,6 +47,9 @@ describe("state-util", () => {
       expect(hasReservedChar('}')).to.equal(true);
       expect(hasReservedChar('[')).to.equal(true);
       expect(hasReservedChar(']')).to.equal(true);
+      expect(hasReservedChar("'")).to.equal(true);
+      expect(hasReservedChar('"')).to.equal(true);
+      expect(hasReservedChar('`')).to.equal(true);
       expect(hasReservedChar('\x00')).to.equal(true);
       expect(hasReservedChar('\x01')).to.equal(true);
       expect(hasReservedChar('\x02')).to.equal(true);
