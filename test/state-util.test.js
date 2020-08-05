@@ -42,7 +42,6 @@ describe("state-util", () => {
       expect(hasReservedChar('*')).to.equal(true);
       expect(hasReservedChar('$')).to.equal(true);
       expect(hasReservedChar('#')).to.equal(true);
-      expect(hasReservedChar('!')).to.equal(true);
       expect(hasReservedChar('{')).to.equal(true);
       expect(hasReservedChar('}')).to.equal(true);
       expect(hasReservedChar('[')).to.equal(true);
@@ -105,7 +104,6 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: false, invalidPath: '/a/*'});
       assert.deepEqual(isValidPathForStates(['a', '$']), {isValid: false, invalidPath: '/a/$'});
       assert.deepEqual(isValidPathForStates(['a', '#']), {isValid: false, invalidPath: '/a/#'});
-      assert.deepEqual(isValidPathForStates(['a', '!']), {isValid: false, invalidPath: '/a/!'});
       assert.deepEqual(isValidPathForStates(['a', '{']), {isValid: false, invalidPath: '/a/{'});
       assert.deepEqual(isValidPathForStates(['a', '}']), {isValid: false, invalidPath: '/a/}'});
       assert.deepEqual(isValidPathForStates(['a', '[']), {isValid: false, invalidPath: '/a/['});

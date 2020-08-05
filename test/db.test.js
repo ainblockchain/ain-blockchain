@@ -928,10 +928,6 @@ describe("DB operations", () => {
         "code": 7,
         "error_message": "Invalid path: /test/new/unchartered/nested/#"
       });
-      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/!", 12345), {
-        "code": 7,
-        "error_message": "Invalid path: /test/new/unchartered/nested/!"
-      });
       assert.deepEqual(node.db.setValue("test/new/unchartered/nested/{", 12345), {
         "code": 7,
         "error_message": "Invalid path: /test/new/unchartered/nested/{"
