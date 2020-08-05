@@ -899,7 +899,7 @@ describe("DB operations", () => {
 
     it("when creating new path in database", () => {
       const newValue = 12345
-      node.db.setValue("test/new/unchartered/nested/path", newValue)
+      expect(node.db.setValue("test/new/unchartered/nested/path", newValue)).to.equal(true)
       expect(node.db.getValue("test/new/unchartered/nested/path")).to.equal(newValue)
     })
 
@@ -909,6 +909,53 @@ describe("DB operations", () => {
         "error_message": "Invalid object for states: /array"
       });
       expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
+    })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/.", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/."
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/*", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/*"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/$", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/$"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/#", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/#"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/{", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/{"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/}", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/}"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/[", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/["
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/]", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/]"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x00", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/\x00"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x1F", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/\x1F"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x7F", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/\x7F"
+      });
     })
   })
 
@@ -970,6 +1017,13 @@ describe("DB operations", () => {
       });
       expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
     })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setRule("/test/test_function/some/path/.", "some function config"), {
+        "code": 7,
+        "error_message": "Invalid path: /test/test_function/some/path/."
+      });
+    })
   })
 
   describe("setRule operations", () => {
@@ -986,6 +1040,13 @@ describe("DB operations", () => {
       });
       expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
     })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setRule("/test/test_rule/some/path/.", "some rule config"), {
+        "code": 7,
+        "error_message": "Invalid path: /test/test_rule/some/path/."
+      });
+    })
   })
 
   describe("setOwner operations", () => {
@@ -1001,6 +1062,13 @@ describe("DB operations", () => {
         "error_message": "Invalid object for states: /array"
       });
       expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
+    })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setRule("/test/test_owner/some/path/.", "some owner config"), {
+        "code": 7,
+        "error_message": "Invalid path: /test/test_owner/some/path/."
+      });
     })
   })
 
