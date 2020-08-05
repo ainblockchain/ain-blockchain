@@ -2,7 +2,7 @@ const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 
 function hasReservedChar(label) {
-  const pathReservedRegex = /[\/\.\*\$#!\{\}\[\]'"`\x00-\x1F\x7F]/gm;
+  const pathReservedRegex = /[\/\.\*\$#!\{\}\[\]\x00-\x1F\x7F]/gm;
   return ChainUtil.isString(label) ? pathReservedRegex.test(label) : false;
 }
 
