@@ -7,7 +7,7 @@ const Node = require('../node')
 const {
   GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, GENESIS_FUNCTIONS, PredefinedDbPaths
 } = require('../constants')
-const {setDbForTesting} = require('./test-util')
+const {setDbForTesting} = require('./test-util');
 
 describe("DB initialization", () => {
   let node;
@@ -81,7 +81,6 @@ describe("DB operations", () => {
       "decrement": {
         "value": 20,
       },
-      "blockchain": [1,2,3,4],
       "nested": {
         "far": {
           "down": 456
@@ -903,12 +902,25 @@ describe("DB operations", () => {
       node.db.setValue("test/new/unchartered/nested/path", newValue)
       expect(node.db.getValue("test/new/unchartered/nested/path")).to.equal(newValue)
     })
+
+    it("when writing invalid object", () => {
+      assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {array: []}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /array"
+      });
+      expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
+    })
   })
 
   describe("incValue operations", () => {
     it("when increasing value successfully", () => {
       expect(node.db.incValue("test/increment/value", 10)).to.equal(true)
       expect(node.db.getValue("test/increment/value")).to.equal(30)
+    })
+
+    it("returning error code and leaving value unchanged if delta is not numerical", () => {
+      expect(node.db.incValue("test/increment/value", '10').code).to.equal(1)
+      expect(node.db.getValue("test/increment/value")).to.equal(20)
     })
 
     it("returning error code and leaving value unchanged if path is not numerical", () => {
@@ -928,6 +940,11 @@ describe("DB operations", () => {
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
     })
 
+    it("returning error code and leaving value unchanged if delta is not numerical", () => {
+      expect(node.db.decValue("test/decrement/value", '10').code).to.equal(1)
+      expect(node.db.getValue("test/decrement/value")).to.equal(20)
+    })
+
     it("returning error code and leaving value unchanged if path is not numerical", () => {
       expect(node.db.decValue("test/ai/foo", 10).code).to.equal(1)
       expect(node.db.getValue("test/ai/foo")).to.equal("bar")
@@ -945,6 +962,14 @@ describe("DB operations", () => {
       expect(node.db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
       assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), functionConfig)
     })
+
+    it("when writing invalid object", () => {
+      assert.deepEqual(node.db.setFunction("/test/test_function/some/path2", {array: []}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /array"
+      });
+      expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
+    })
   })
 
   describe("setRule operations", () => {
@@ -953,6 +978,14 @@ describe("DB operations", () => {
       expect(node.db.setRule("/test/test_rule/some/path", ruleConfig)).to.equal(true)
       assert.deepEqual(node.db.getRule("/test/test_rule/some/path"), ruleConfig)
     })
+
+    it("when writing invalid object", () => {
+      assert.deepEqual(node.db.setRule("/test/test_rule/some/path2", {array: []}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /array"
+      });
+      expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
+    })
   })
 
   describe("setOwner operations", () => {
@@ -960,6 +993,14 @@ describe("DB operations", () => {
       const ownerConfig = {".owner": "other owner config"};
       expect(node.db.setOwner("/test/test_owner/some/path", ownerConfig, 'abcd')).to.equal(true)
       assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerConfig)
+    })
+
+    it("when writing invalid object", () => {
+      assert.deepEqual(node.db.setOwner("/test/test_owner/some/path2", {array: []}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /array"
+      });
+      expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
     })
   })
 
@@ -1223,7 +1264,7 @@ describe("DB operations", () => {
         true,
         {
           "code": 1,
-          "error_message": "Not a number type: test/ai/foo"
+          "error_message": "Not a number type: bar or 10"
         },
         true])
       expect(node.db.getValue("test/ai/foo")).to.equal("bar")
@@ -1258,7 +1299,7 @@ describe("DB operations", () => {
         true,
         {
           "code": 1,
-          "error_message": "Not a number type: test/ai/foo"
+          "error_message": "Not a number type: bar or 10"
         },
         true])
       expect(node.db.getValue("test/ai/foo")).to.equal("bar")
@@ -1269,9 +1310,8 @@ describe("DB operations", () => {
     beforeEach(() => {
       emptyValues = {
         "terminal_1a": null,
-        "terminal_1b": {},
+        "terminal_1b": null,
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1a": {
           "node_2": {
             "terminal_3": null,
@@ -1287,9 +1327,8 @@ describe("DB operations", () => {
 
       emptyRules = {
         "terminal_1a": null,
-        "terminal_1b": {},
+        "terminal_1b": null,
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1a": {
           "node_2": {
             "terminal_3": null,
@@ -1307,9 +1346,8 @@ describe("DB operations", () => {
 
       emptyOwners = {
         "terminal_1a": null,
-        "terminal_1b": {},
+        "terminal_1b": null,
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1a": {
           "node_2": {
             "terminal_3": null,
@@ -1351,9 +1389,8 @@ describe("DB operations", () => {
           "/test/empty_values/node_0/node_1a/node_2/node_3", "another value")).to.equal(true)
       assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
         "terminal_1a": null,
-        "terminal_1b": {},
+        "terminal_1b": null,
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1a": {
           "node_2": {
             "terminal_3": null,
@@ -1371,31 +1408,6 @@ describe("DB operations", () => {
           "/test/empty_values/node_0/node_1a/node_2/node_3", null)).to.equal(true)
       assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
         "terminal_1c": "",
-        "terminal_1d": [],
-        "node_1b": {
-          "terminal_2": null,
-        }
-      })
-    })
-
-    it("when setValue() with 'undefined' value", () => {
-      expect(node.db.setValue(
-          "/test/empty_values/node_0/node_1a/node_2/node_3", undefined)).to.equal(true)
-      assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
-        "terminal_1c": "",
-        "terminal_1d": [],
-        "node_1b": {
-          "terminal_2": null,
-        }
-      })
-    })
-
-    it("when setValue() with '{}' value", () => {
-      expect(node.db.setValue(
-          "/test/empty_values/node_0/node_1a/node_2/node_3", {})).to.equal(true)
-      assert.deepEqual(node.db.getValue("/test/empty_values/node_0"), {
-        "terminal_1c": "",
-        "terminal_1d": [],
         "node_1b": {
           "terminal_2": null,
         }
@@ -1409,9 +1421,8 @@ describe("DB operations", () => {
           })).to.equal(true)
       assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
         "terminal_1a": null,
-        "terminal_1b": {},
+        "terminal_1b": null,
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1a": {
           "node_2": {
             "terminal_3": null,
@@ -1431,7 +1442,6 @@ describe("DB operations", () => {
           "/test/empty_rules/node_0/node_1a/node_2/node_3", null)).to.equal(true)
       assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1b": {
           "terminal_2": null,
         }
@@ -1454,9 +1464,8 @@ describe("DB operations", () => {
           })).to.equal(true)
       assert.deepEqual(node.db.getOwner("/test/empty_owners/node_0"), {
         "terminal_1a": null,
-        "terminal_1b": {},
+        "terminal_1b": null,
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1a": {
           "node_2": {
             "terminal_3": null,
@@ -1485,7 +1494,6 @@ describe("DB operations", () => {
           "/test/empty_owners/node_0/node_1a/node_2/node_3", null)).to.equal(true)
       assert.deepEqual(node.db.getOwner("/test/empty_owners/node_0"), {
         "terminal_1c": "",
-        "terminal_1d": [],
         "node_1b": {
           "terminal_2": null,
         }

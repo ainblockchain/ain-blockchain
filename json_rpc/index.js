@@ -282,6 +282,16 @@ module.exports = function getMethods(
 
     net_getNetworkId: function(args, done) {
       done(null, addProtocolVersion({ result: NETWORK_ID }));
+    },
+
+    net_consensusState: function(args, done) {
+      const result = p2pServer.consensus.getState();
+      done(null, addProtocolVersion({ result }));
+    },
+
+    net_rawConsensusState: function(args, done) {
+      const result = p2pServer.consensus.getRawState();
+      done(null, addProtocolVersion({ result }));
     }
   };
 };

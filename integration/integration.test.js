@@ -16,6 +16,7 @@ const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
 const { BLOCKCHAINS_DIR, PredefinedDbPaths } = require('../constants');
+const { ConsensusConsts } = require('../consensus/constants');
 const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
@@ -25,22 +26,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    STAKE: 250, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    STAKE: 250, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -253,7 +254,6 @@ describe('Integration Tests', () => {
       console.log(`Starting server[${i}]...`);
       proc.start();
       sleep(2000);
-      waitForNewBlocks(SERVERS[i]);
       const address =
           JSON.parse(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
@@ -331,7 +331,7 @@ describe('Integration Tests', () => {
       const accountIndex = 4;
       const newServer = 'http://localhost:' + String(8081 + Number(accountIndex))
       const newServerProc = new Process(APP_SERVER, {
-        STAKE: 250, ACCOUNT_INDEX: accountIndex, HOSTING_ENV: 'local', DEBUG: true,
+        ACCOUNT_INDEX: accountIndex, HOSTING_ENV: 'local', DEBUG: true,
         ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
       });
@@ -400,11 +400,7 @@ describe('Integration Tests', () => {
         }
       });
 
-      // NOTE(seo): Flaky test case, rarely fails.
-      // TODO(lia): Update this test case after consensus is complete
-      /*
       it('blocks have correct validators and voting data', () => {
-        let threshold = 2 / 3; // TODO (lia): define this as a constant in genesis.
         for (let i = 0; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
           waitForNewBlocks();
@@ -413,40 +409,34 @@ describe('Integration Tests', () => {
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
               .body.toString('utf-8')).result.result;
           const len = blocks.length;
-          // The genesis and the following blocks are exceptions
-          // (validators and next_round_validators are set 'arbitrarily')
-          for (let j = 2; j < len; j++) {
-            let preVotes = 0;
-            let preCommits = 0;
-            const validatorsMinusProposer = Object.assign({}, blocks[j - 1].validators);
-            delete validatorsMinusProposer[blocks[j - 1].proposer];
-            let totalStakedAmount = Object.values(validatorsMinusProposer)
-                .reduce((a, b) => { return a + b; }, 0);
-            let majority = Math.floor(totalStakedAmount * threshold);
+          for (let j = 2; j < len; j++) { // voting starts with block#1 (included in block#2's last_votes)
+            let voteSum = 0;
+            const validators = Object.assign({}, blocks[j - 1].validators);
+            let totalStakedAmount = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+            let majority = Math.floor(totalStakedAmount * ConsensusConsts.MAJORITY);
             for (let k = 0; k < blocks[j].last_votes.length; k++) {
-              const last_vote = blocks[j].last_votes[k];
-              if (!blocks[j - 1].validators[last_vote.address]) {
-                console.log(blocks[j -1])
-                console.log(`Votes for block ${j -1} had validator ${last_vote.address} ` +
-                    `which was not in designated validators list ` +
-                    `${JSON.stringify(blocks[j - 1].validators)}`)
-                assert.fail(`Invalid validator is validating block ${last_vote.address}`);
+              const vote = blocks[j].last_votes[k];
+              if (!blocks[j - 1].validators[vote.address]) {
+                console.log(blocks[j -1]);
+                console.log(`Votes for block ${j - 1} had validator ${vote.address} ` +
+                    `which was not in designated validators list: ${JSON.stringify(blocks[j - 1].validators, null, 2)}` +
+                    `${JSON.stringify(blocks[j - 1].validators)}`);
+                assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
               }
-              if (last_vote.operation.ref === PredefinedDbPaths.VOTING_ROUND_BLOCK_HASH) {
-                continue;
-              } else if (last_vote.operation.ref === PredefinedDbPaths.VOTING_ROUND_PRE_VOTES) {
-                preVotes += last_vote.operation.value;
-              } else if (preVotes <= majority) {
-                // TODO (lia): fix this issue. sometimes it fails this check.
-                assert.fail('PreCommits were made before PreVotes reached threshold');
-              } else {
-                preCommits += last_vote.operation.value;
+              if (vote.operation.value.block_hash !== blocks[j - 1].hash) {
+                assert.fail('Invalid vote included in last_votes');
               }
+              if (vote.operation.type === 'SET_VALUE' && vote.operation.value.stake &&
+                  blocks[j - 1].validators[vote.address]) {
+                voteSum += vote.operation.value.stake;
+              }
+            }
+            if (voteSum < majority) {
+              assert.fail(`Insufficient votes received (${voteSum} / ${majority})`);
             }
           }
         }
       });
-      */
 
       it('blocks have valid hashes', () => {
         const hashString = (str) => {
@@ -458,6 +448,7 @@ describe('Integration Tests', () => {
             last_votes_hash: block.last_votes_hash,
             transactions_hash: block.transactions_hash,
             number: block.number,
+            epoch: block.epoch,
             timestamp: block.timestamp,
             proposer: block.proposer,
             validators: block.validators,
@@ -475,7 +466,7 @@ describe('Integration Tests', () => {
           for (let j = 0; j < len; j++) {
             const block = blocks[j];
             if (block.hash !== hashBlock(block)) {
-              assert.fail(`Block hash is incorrect for  block ${block.hash}`);
+              assert.fail(`Block hash is incorrect for block ${JSON.stringify(block, null, 2)}\n(hash: ${hashBlock(block)}, node ${i})`);
             }
             if (block.transactions_hash !== hashString(stringify(block.transactions))) {
               assert.fail(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
@@ -542,7 +533,7 @@ describe('Integration Tests', () => {
 
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-        db = new DB();
+        db = new DB(null, 0);
         sentOperations.forEach((op) => {
           const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
           db.executeTransaction({ operation });
@@ -689,7 +680,7 @@ describe('Integration Tests', () => {
           Promise.all(promises).then(resAfterCommit => {
             const committedNonceAfterCommit = resAfterCommit[0].result.result;
             const pendingNonceAfterCommit = resAfterCommit[1].result.result;
-            expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast + 1);
+            expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast);
             expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
             resolve();
           });
@@ -699,7 +690,7 @@ describe('Integration Tests', () => {
       it('and can be stopped and restarted', () => {
         console.log(`Shutting down server[0]...`);
         SERVER_PROCS[0].kill();
-        waitForNewBlocks(SERVERS[1], 2);
+        sleep(10000);
         console.log(`Starting server[0]...`);
         SERVER_PROCS[0].start();
         sleep(10000);
