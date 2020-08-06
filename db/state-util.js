@@ -1,6 +1,29 @@
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 
+function hasReservedChar(label) {
+  const pathReservedRegex = /[\/\.\*\$#\{\}\[\]\x00-\x1F\x7F]/gm;
+  return ChainUtil.isString(label) ? pathReservedRegex.test(label) : false;
+}
+
+function isValidPathForStates(fullPath) {
+  let isValid = true;
+  const path = [];
+  for (const label of fullPath) {
+    path.push(label);
+    if (ChainUtil.isString(label)) {
+      if (label === '' || hasReservedChar(label)) {
+        isValid = false;
+        break;
+      }
+    } else {
+      isValid = false;
+      break;
+    }
+  }
+  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+}
+
 function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmptyNode(obj)) {
@@ -79,6 +102,8 @@ function makeCopyOfStateTree(root) {
 }
 
 module.exports = {
+  hasReservedChar,
+  isValidPathForStates,
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
