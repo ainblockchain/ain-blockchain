@@ -1,14 +1,16 @@
-const Node = require('../node');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
-const assert = chai.assert;
+const { BLOCKCHAINS_DIR } = require('../constants');
+const Node = require('../node');
 const { setDbForTesting, getTransaction, addBlock } = require('./test-util')
 
 describe("Consensus", () => {
   let node1, node2;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node1 = new Node();
     setDbForTesting(node1, 0);
     node2 = new Node();
@@ -16,8 +18,7 @@ describe("Consensus", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(node1.bc._blockchainDir());
-    rimraf.sync(node2.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   it("Non-staked nodes cannot vote", () => {

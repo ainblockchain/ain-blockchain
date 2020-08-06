@@ -26,22 +26,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -243,6 +243,7 @@ describe('Integration Tests', () => {
   before(() => {
     console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
+
     const promises = [];
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, {});
@@ -281,6 +282,7 @@ describe('Integration Tests', () => {
     }
     console.log('Shutting down tracker server...');
     trackerProc.kill();
+
     console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
   });

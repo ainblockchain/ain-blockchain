@@ -161,7 +161,7 @@ class Blockchain {
 
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
-    if (firstBlock.hash !== Block.genesis().hash) {
+    if (!firstBlock || firstBlock.hash !== Block.genesis().hash) {
       logger.error(`[${LOG_PREFIX}] First block is not the Genesis block`);
       return false;
     }
