@@ -82,15 +82,27 @@ function makeCopyOfStateTree(root) {
 function setProofHashForStateTree(valueTree) {
   if (!valueTree.getIsLeaf()) {
     const concatArray = [];
-
     valueTree.childMap.forEach((value, label) => {
       concatArray.push(label);
-      concatArray.push(value.proof);
+      concatArray.push(value.getProofHash());
       setProofHashForStateTree(value);
     });
 
     valueTree.setProofHash(concatArray.join(''));
   }
+}
+
+function updateProofHashForPath(path, valueTree, idx) {
+  if (path.length === idx) return;
+  updateProofHashForPath(path, valueTree.getChild(path[idx]), idx + 1);
+
+  const concatArray = [];
+  valueTree.childMap.forEach((value, label) => {
+    concatArray.push(label);
+    concatArray.push(value.getProofHash());
+  });
+
+  valueTree.setProofHash(concatArray.join(''));
 }
 
 module.exports = {
@@ -100,4 +112,5 @@ module.exports = {
   deleteStateTree,
   makeCopyOfStateTree,
   setProofHashForStateTree,
+  updateProofHashForPath,
 }

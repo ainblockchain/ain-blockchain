@@ -83,7 +83,7 @@ class StateNode {
   }
 
   getProofHash() {
-    // TODO(minsu): Implement this.
+    return this.proof;
   }
 
   setProofHash(value) {
