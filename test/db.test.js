@@ -5,9 +5,18 @@ const expect = chai.expect;
 const assert = chai.assert;
 const Node = require('../node')
 const {
-  GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, GENESIS_FUNCTIONS, PredefinedDbPaths
+  GenesisToken,
+  GenesisAccounts,
+  GENESIS_OWNERS,
+  GENESIS_RULES,
+  GENESIS_FUNCTIONS,
+  PredefinedDbPaths,
 } = require('../constants')
-const {setDbForTesting} = require('./test-util');
+const {
+  setDbForTesting,
+  addConsensusOwners,
+  addConsensusRules,
+} = require('./test-util');
 
 describe("DB initialization", () => {
   let node;
@@ -41,6 +50,7 @@ describe("DB initialization", () => {
   describe("owners", () => {
     it("loading owners properly on initialization", () => {
       const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
+      addConsensusOwners(owners);
       assert.deepEqual(node.db.getOwner("/"), owners);
     })
   })
@@ -48,6 +58,7 @@ describe("DB initialization", () => {
   describe("rules", () => {
     it("loading rules properly on initialization", () => {
       const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
+      addConsensusRules(rules);
       assert.deepEqual(node.db.getRule("/"), rules);
     })
   })
