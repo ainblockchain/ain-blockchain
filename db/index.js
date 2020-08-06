@@ -11,6 +11,7 @@ const {
   jsObjectToStateTree,
   stateTreeToJsObject,
   makeCopyOfStateTree,
+  setProofHashForStateTree,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -93,7 +94,6 @@ class DB {
 
   writeDatabase(fullPath, value) {
     const valueTree = jsObjectToStateTree(value);
-    console.log(fullPath, valueTree);
     if (fullPath.length === 0) {
       this.dbRoot = valueTree;
     } else {
@@ -105,6 +105,7 @@ class DB {
     if (DB.isEmptyNode(valueTree)) {
       this.removeEmptyNodes(fullPath);
     }
+    setProofHashForStateTree(valueTree);
   }
 
   static isEmptyNode(dbNode) {

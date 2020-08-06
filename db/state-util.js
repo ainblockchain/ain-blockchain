@@ -79,10 +79,25 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
+function setProofHashForStateTree(valueTree) {
+  if (!valueTree.getIsLeaf()) {
+    const concatArray = [];
+
+    valueTree.childMap.forEach((value, label) => {
+      concatArray.push(label);
+      concatArray.push(value.proof);
+      setProofHashForStateTree(value);
+    });
+
+    valueTree.setProofHash(concatArray.join(''));
+  }
+}
+
 module.exports = {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
+  setProofHashForStateTree,
 }
