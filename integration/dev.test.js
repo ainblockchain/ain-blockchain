@@ -11,28 +11,33 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const {BLOCKCHAINS_DIR, FunctionResultCode, MAX_TX_BYTES, GenesisAccounts} = require('../constants')
+const {
+  BLOCKCHAINS_DIR,
+  FunctionResultCode,
+  MAX_TX_BYTES,
+  GenesisAccounts
+} = require('../constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number';
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -148,6 +153,8 @@ describe('API Tests', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(() => {
+    rimraf.sync(BLOCKCHAINS_DIR)
+
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
@@ -166,6 +173,7 @@ describe('API Tests', () => {
     server2_proc.kill()
     server3_proc.kill()
     server4_proc.kill()
+
     rimraf.sync(BLOCKCHAINS_DIR)
   });
 

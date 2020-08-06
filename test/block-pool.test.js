@@ -1,23 +1,25 @@
-const Consensus = require('../consensus/');
-const BlockPool = require('../consensus/block-pool');
-const Node = require('../node');
-const { Block } = require('../blockchain/block');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
+const { BLOCKCHAINS_DIR } = require('../constants');
+const BlockPool = require('../consensus/block-pool');
+const Node = require('../node');
+const { Block } = require('../blockchain/block');
 const { setDbForTesting, getTransaction } = require('./test-util')
 
 describe("BlockPool", () => {
   let node1;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node1 = new Node();
-    setDbForTesting(node1, 0);
+    setDbForTesting(node1, 0, true);
   });
 
   afterEach(() => {
-    rimraf.sync(node1.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   function createAndAddBlock(node, blockPool, lastBlock, number, epoch) {
