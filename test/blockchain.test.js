@@ -1,9 +1,10 @@
-const Blockchain = require('../blockchain/');
-const { Block } = require('../blockchain/block');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
+const { BLOCKCHAINS_DIR } = require('../constants');
+const Blockchain = require('../blockchain/');
+const { Block } = require('../blockchain/block');
 const Node = require('../node');
 const { setDbForTesting, getTransaction } = require('./test-util')
 
@@ -11,6 +12,8 @@ describe('Blockchain', () => {
   let node1, node2;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node1 = new Node();
     setDbForTesting(node1, 0);
     node2 = new Node();
@@ -18,8 +21,7 @@ describe('Blockchain', () => {
   });
 
   afterEach(() => {
-    rimraf.sync(node1.bc._blockchainDir());
-    rimraf.sync(node2.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)

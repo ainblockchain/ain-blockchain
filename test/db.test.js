@@ -5,6 +5,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const Node = require('../node')
 const {
+  BLOCKCHAINS_DIR,
   GenesisToken,
   GenesisAccounts,
   GENESIS_OWNERS,
@@ -22,12 +23,14 @@ describe("DB initialization", () => {
   let node;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node = new Node();
     setDbForTesting(node, 0, true);
   })
 
   afterEach(() => {
-    rimraf.sync(node.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   describe("token", () => {
@@ -76,6 +79,8 @@ describe("DB operations", () => {
 
   beforeEach(() => {
     let result;
+
+    rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new Node();
     setDbForTesting(node);
@@ -184,7 +189,7 @@ describe("DB operations", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(node.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   describe("getValue operations", () => {
@@ -1585,6 +1590,8 @@ describe("DB rule config", () => {
   let node1, node2, dbValues;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node1 = new Node();
     setDbForTesting(node1, 0);
     node2 = new Node();
@@ -1621,8 +1628,7 @@ describe("DB rule config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(node1.bc._blockchainDir());
-    rimraf.sync(node2.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
@@ -1685,6 +1691,8 @@ describe("DB owner config", () => {
   let node;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node = new Node();
     setDbForTesting(node, 0);
     node.db.setOwner("test/test_owner/mixed/true/true/true",
@@ -1794,7 +1802,7 @@ describe("DB owner config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(node.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   // Known user

@@ -104,7 +104,7 @@ class Block {
   }
 
   static hasRequiredFields(block) {
-    return (block.last_hash !== undefined && block.last_votes !== undefined &&
+    return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined &&
         block.epoch !== undefined &&  block.timestamp !== undefined &&
         block.proposer !== undefined && block.validators !== undefined);
