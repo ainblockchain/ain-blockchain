@@ -2,6 +2,8 @@ const path = require('path');
 const fs = require("fs")
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
+const { GenesisAccounts } = require('../constants');
+const { ConsensusDbPaths } = require('../consensus/constants');
 
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
@@ -36,8 +38,28 @@ function addBlock(node, txs, votes, validators) {
     lastBlock.epoch + 1, node.account.address, validators));
 }
 
+function addConsensusOwners(owners) {
+  const ownerAddress = GenesisAccounts.owner.address;
+  if (!owners[ConsensusDbPaths.CONSENSUS]) {
+    owners[ConsensusDbPaths.CONSENSUS] = {};
+  }
+  owners[ConsensusDbPaths.CONSENSUS][ConsensusDbPaths.WHITELIST]
+      = Block.getConsensusOwner(ownerAddress);
+}
+
+function addConsensusRules(rules) {
+  const ownerAddress = GenesisAccounts.owner.address;
+  if (!rules[ConsensusDbPaths.CONSENSUS]) {
+    rules[ConsensusDbPaths.CONSENSUS] = {};
+  }
+  rules[ConsensusDbPaths.CONSENSUS][ConsensusDbPaths.WHITELIST]
+      = Block.getConsensusRule(ownerAddress);
+}
+
 module.exports = {
   setDbForTesting,
   getTransaction,
-  addBlock
+  addBlock,
+  addConsensusOwners,
+  addConsensusRules,
 };

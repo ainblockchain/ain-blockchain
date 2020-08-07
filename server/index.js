@@ -281,6 +281,10 @@ class P2pServer {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.node.bc.lastBlock());
+    if (this.consensus.stakeTx) {
+      this.broadcastTransaction(this.consensus.stakeTx);
+      this.consensus.stakeTx = null;
+    }
   }
 
   setPeerEventHandlers(socket, address) {

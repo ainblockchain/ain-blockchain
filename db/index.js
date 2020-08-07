@@ -7,6 +7,7 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {
+  isValidPathForStates,
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
@@ -234,11 +235,15 @@ class DB {
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
   setValue(valuePath, value, address, timestamp, transaction) {
-    const {isValid, invalidPath} = isValidJsObjectForStates(value);
-    if (!isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    const isValidObj = isValidJsObjectForStates(value);
+    if (!isValidObj.isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(valuePath);
+    const isValidPath = isValidPathForStates(parsedPath);
+    if (!isValidPath.isValid) {
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+    }
     if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
       return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
@@ -274,11 +279,15 @@ class DB {
   }
 
   setFunction(functionPath, functionInfo, address) {
-    const {isValid, invalidPath} = isValidJsObjectForStates(functionInfo);
-    if (!isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    const isValidObj = isValidJsObjectForStates(functionInfo);
+    if (!isValidObj.isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(functionPath);
+    const isValidPath = isValidPathForStates(parsedPath);
+    if (!isValidPath.isValid) {
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+    }
     if (!this.getPermissionForFunction(parsedPath, address)) {
       return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
     }
@@ -292,11 +301,15 @@ class DB {
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
   setRule(rulePath, rule, address) {
-    const {isValid, invalidPath} = isValidJsObjectForStates(rule);
-    if (!isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    const isValidObj = isValidJsObjectForStates(rule);
+    if (!isValidObj.isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(rulePath);
+    const isValidPath = isValidPathForStates(parsedPath);
+    if (!isValidPath.isValid) {
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+    }
     if (!this.getPermissionForRule(parsedPath, address)) {
       return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
     }
@@ -308,11 +321,15 @@ class DB {
 
   // TODO(seo): Add owner config sanitization logic.
   setOwner(ownerPath, owner, address) {
-    const {isValid, invalidPath} = isValidJsObjectForStates(owner);
-    if (!isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${invalidPath}`};
+    const isValidObj = isValidJsObjectForStates(owner);
+    if (!isValidObj.isValid) {
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
+    const isValidPath = isValidPathForStates(parsedPath);
+    if (!isValidPath.isValid) {
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+    }
     if (!this.getPermissionForOwner(parsedPath, address)) {
       return {code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}`};
     }

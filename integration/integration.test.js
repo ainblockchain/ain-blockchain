@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const spawn = require('child_process').spawn;
@@ -15,7 +16,7 @@ const stringify = require('fast-json-stable-stringify');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
-const { BLOCKCHAINS_DIR, PredefinedDbPaths } = require('../constants');
+const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
@@ -26,22 +27,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -77,11 +78,8 @@ RANDOM_OPERATION = [
   ['set_value', {ref: 'test/comeon/nnnnnn', value: 'through'}],
   ['set_value', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
   ['set_value', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
-  ['set_value', {ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}],
-  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}],
   ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
   ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
-  ['set_value', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
   ['set_value', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
   ['inc_value', {ref: 'test/balance/user1', value: 10}],
   ['inc_value', {ref: 'test/balance/user1', value: 20}],
@@ -121,16 +119,12 @@ RANDOM_OPERATION = [
       value: {'new': 'path'}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep',
       value: {'place': {'next': 1, 'level': 'down'}}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/heliii',
-      value: {'range': [1, 2, 3, 1, 4, 5]}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: {'range': [1, 4, 5], 'another': [234]}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: 'very nested'}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: {1: 2, 3: 4, 5: 6}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/new/final/path',
-      value: {'neste': [1, 2, 3, 4, 5]}}}]}],
 ];
 
 class Process {
@@ -243,6 +237,7 @@ describe('Integration Tests', () => {
   before(() => {
     console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
+
     const promises = [];
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, {});
@@ -281,6 +276,7 @@ describe('Integration Tests', () => {
     }
     console.log('Shutting down tracker server...');
     trackerProc.kill();
+
     console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
   });
@@ -498,29 +494,51 @@ describe('Integration Tests', () => {
     });
 
     describe('and built in functions', () => {
+      let balance1Before, balance2Before;
       beforeEach(() => {
-        syncRequest('POST', server1 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${nodeAddressList[0]}/balance`, value: 100}});
-        syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${nodeAddressList[1]}/balance`, value: 0}});
+        balance1Before = JSON.parse(syncRequest('GET',
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
+            .body.toString('utf-8')).result;
+        balance2Before = JSON.parse(syncRequest('GET',
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
+            .body.toString('utf-8')).result;
         sleep(200);
       });
 
       it('facilitate transfer between accounts', () => {
-        sendTransactions(sentOperations);
         waitForNewBlocks();
+        const transferRef = `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`;
         syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
-          ref: `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`, value: 10
+          ref: transferRef, value: 10
         }});
-        sleep(500);
+        // Make sure the transaction is included in the chain
+        let tries = 0;
+        let txHash;
+        while (true) {
+          const txPool = JSON.parse(syncRequest('GET', server1 + '/tx_pool').body.toString('utf-8')).result;
+          const txTracker = JSON.parse(syncRequest('GET', server1 + '/tx_tracker').body.toString('utf-8')).result;
+          const tx = txPool[nodeAddressList[0]]
+            .filter(tx => _.get(tx, 'operation.ref') === transferRef && 
+              _.get(tx, 'operation.value') === 10)[0];
+          if (tx || txHash) {
+            if (!txHash) txHash = tx.hash;
+            const txStatus = _.get(txTracker, `${txHash}.status`)
+            if (txStatus === TransactionStatus.BLOCK_STATUS) {
+              break;
+            }
+          }
+          tries++;
+          console.log(tries)
+          sleep(1000);
+        }
         const balance1 = JSON.parse(syncRequest('GET',
             server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
             .body.toString('utf-8')).result;
         const balance2 = JSON.parse(syncRequest('GET',
             server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
             .body.toString('utf-8')).result;
-        expect(balance1).to.equal(90);
-        expect(balance2).to.equal(10);
+        expect(balance1).to.equal(balance1Before - 10);
+        expect(balance2).to.equal(balance2Before + 10);
       });
     });
 
@@ -623,6 +641,7 @@ describe('Integration Tests', () => {
       });
       */
 
+      // FIXME(lia): this test case is flaky.
       it('maintaining correct order', () => {
         for (let i = 1; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);

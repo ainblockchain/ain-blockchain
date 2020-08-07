@@ -5,10 +5,21 @@ const logger = require('../logger');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const {
-  GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, GENESIS_FUNCTIONS,
-  ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts, GenesisWhitelist
+  GENESIS_OWNERS,
+  ADDITIONAL_OWNERS,
+  GENESIS_RULES,
+  ADDITIONAL_RULES,
+  GENESIS_FUNCTIONS,
+  ADDITIONAL_FUNCTIONS,
+  PredefinedDbPaths,
+  GenesisToken,
+  GenesisAccounts,
+  GenesisWhitelist,
 } = require('../constants');
-const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
+const {
+  ConsensusDbPaths,
+  ConsensusConsts
+} = require('../consensus/constants');
 const BlockFilePatterns = require('./block-file-patterns');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
@@ -93,7 +104,7 @@ class Block {
   }
 
   static hasRequiredFields(block) {
-    return (block.last_hash !== undefined && block.last_votes !== undefined &&
+    return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined &&
         block.epoch !== undefined &&  block.timestamp !== undefined &&
         block.proposer !== undefined && block.validators !== undefined);
@@ -140,6 +151,31 @@ class Block {
 
     logger.info(`[${LOG_PREFIX}] Valid block of number ${block.number}`);
     return true;
+  }
+
+  static getConsensusRule(ownerAddress) {
+    return `auth === '${ownerAddress}'`;
+  }
+
+  static getConsensusOwner(ownerAddress) {
+    return {
+      ".owner": {
+        "owners": {
+          [ownerAddress]: {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true
+          },
+          "*": {
+            "branch_owner": false,
+            "write_function": false,
+            "write_owner": false,
+            "write_rule": false
+          }
+        }
+      }
+    };
   }
 
   static getDbSetupTransaction(ownerAccount, timestamp, keyBuffer) {
@@ -221,25 +257,12 @@ class Block {
     const whitelistRuleOp = {
       type: 'SET_RULE',
       ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
-      value: `auth === '${ownerAccount.address}'`
+      value: Block.getConsensusRule(ownerAccount.address)
     }
     const whitelistOwnerOp = {
       type: 'SET_OWNER',
       ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
-      value: {
-        [ownerAccount.address]: {
-          "branch_owner": true,
-          "write_function": true,
-          "write_owner": true,
-          "write_rule": true
-        },
-        "*": {
-          "branch_owner": false,
-          "write_function": false,
-          "write_owner": false,
-          "write_rule": false
-        }
-      }
+      value: Block.getConsensusOwner(ownerAccount.address)
     }
 
     // Transaction
