@@ -1973,13 +1973,13 @@ describe("DB Proof", () => {
       setProofHashForStateTree(level1Node);
 
       assert.deepEqual(fooNode.getProofHash(),
-          '0xb355309a9c845f01596e8e26aab0536bcf499a1ebfd29c829f9cb12a224f91e1');
+          '0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4');
       assert.deepEqual(bazNode.getProofHash(),
-          '0x7456c0990c88a02f2dcaab8f9aa499cc4844dc4d59b3aa3718f777557fa02c86');
+          '0x283b9d5be5633ffe44d0f70fc4f4a2a03a67a64e5a7fb79b9570af09eef44b4d');
       assert.deepEqual(level2Node.getProofHash(),
-          '0x7a2707bf1cb5b8a9984b7b17a3d791804b4aaaeac915d9a53429575204e885e2');
+          '0x67aecef89bc7f8c074202ba6e1c954f5f9359d4317b21a8948096483731797c0');
       assert.deepEqual(level1Node.getProofHash(),
-          '0x1bf3262beb711c2b5f47cf726692709b3b77a8f23ff75c775663674bb4ad340b');
+          '0xdf13329c56c3e54bf44c7d271c45d22a64f6216230177800dcd5dd201eab2f91');
       assert.deepEqual(level0Node.getProofHash(), null);
       assert.deepEqual(stateTree.getProofHash(), null);
     })
@@ -1989,17 +1989,17 @@ describe("DB Proof", () => {
       updateProofHashForPath(stateTree);
 
       assert.deepEqual(fooNode.getProofHash(),
-          '0xb355309a9c845f01596e8e26aab0536bcf499a1ebfd29c829f9cb12a224f91e1');
+          '0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4');
       assert.deepEqual(bazNode.getProofHash(),
-          '0x7456c0990c88a02f2dcaab8f9aa499cc4844dc4d59b3aa3718f777557fa02c86');
+          '0x283b9d5be5633ffe44d0f70fc4f4a2a03a67a64e5a7fb79b9570af09eef44b4d');
       assert.deepEqual(level2Node.getProofHash(),
-          '0x7a2707bf1cb5b8a9984b7b17a3d791804b4aaaeac915d9a53429575204e885e2');
+          '0x67aecef89bc7f8c074202ba6e1c954f5f9359d4317b21a8948096483731797c0');
       assert.deepEqual(level1Node.getProofHash(),
-          '0x1bf3262beb711c2b5f47cf726692709b3b77a8f23ff75c775663674bb4ad340b');
+          '0xdf13329c56c3e54bf44c7d271c45d22a64f6216230177800dcd5dd201eab2f91');
       assert.deepEqual(level0Node.getProofHash(),
-          '0x72c91ee62afd7e780735ec2b535d93356e54c7599e78c658949f38587aa60ddc');
+          '0x57ac306e4f9cbfa9f8ed2aefb2230ea11ea8d6dcb092f67964b6acd7ae192184');
       assert.deepEqual(stateTree.getProofHash(),
-          '0x6f64798aeb2f78302f64702e55894dfe46ac9b1e42d8e03135bb4a8a8081c195');
+          '0x971e1e30f31ceefd32ea0a70acde7ab6e3c1efcfe724f8b03a1137bb45bc5cb0');
     })
 
     it("compares two trees with different methods", () => {
