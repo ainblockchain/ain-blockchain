@@ -138,8 +138,8 @@ class DB {
   }
 
   updateProofHashForPathRecursive(path, valueTree, idx) {
-    if (path.length === idx) return;
     const child = valueTree.getChild(path[idx]);
+    if (path.length === idx || !child) return;
     this.updateProofHashForPathRecursive(path, child, idx + 1);
     updateProofHashForPath(valueTree);
   }
