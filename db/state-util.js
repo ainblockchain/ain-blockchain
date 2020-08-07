@@ -88,17 +88,11 @@ function setProofHashForStateTree(valueTree) {
       concatArray.push(label);
       concatArray.push(value.getProofHash());
     });
-
-    console.log(HASH_DELIMITER)
-    console.log(concatArray.join(HASH_DELIMITER))
     valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
   }
 }
 
-function updateProofHashForPath(path, valueTree, idx) {
-  if (path.length === idx) return;
-  updateProofHashForPath(path, valueTree.getChild(path[idx]), idx + 1);
-
+function updateProofHashForPath(valueTree) {
   const concatArray = [];
   valueTree.childMap.forEach((value, label) => {
     concatArray.push(label);
