@@ -73,7 +73,6 @@ class ChainUtil {
     if (!path) {
       return [];
     }
-    path = path.replace(/^"(.*)"$/, '$1');
     return path.split('/').filter((node) => {
       return !!node;
     });
@@ -83,7 +82,15 @@ class ChainUtil {
     if (!Array.isArray(parsedPath) || !parsedPath.length) {
       return '/';
     }
-    return (parsedPath[0].startsWith('/') ? '' : '/') + parsedPath.join('/');
+    let formatted = '';
+    for (const label of parsedPath) {
+      if (ChainUtil.isString(label)) {
+        formatted += '/' + label;
+      } else {
+        formatted += '/' + JSON.stringify(label);
+      }
+    }
+    return (formatted.startsWith('/') ? '' : '/') + formatted;
   }
 
   static transactionFailed(response) {

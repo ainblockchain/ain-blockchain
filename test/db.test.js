@@ -5,9 +5,19 @@ const expect = chai.expect;
 const assert = chai.assert;
 const Node = require('../node')
 const {
-  GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, GENESIS_FUNCTIONS, PredefinedDbPaths
+  BLOCKCHAINS_DIR,
+  GenesisToken,
+  GenesisAccounts,
+  GENESIS_OWNERS,
+  GENESIS_RULES,
+  GENESIS_FUNCTIONS,
+  PredefinedDbPaths,
 } = require('../constants')
-const {setDbForTesting} = require('./test-util');
+const {
+  setDbForTesting,
+  addConsensusOwners,
+  addConsensusRules,
+} = require('./test-util');
 const {
   jsObjectToStateTree,
   setProofHashForStateTree,
@@ -18,12 +28,14 @@ describe("DB initialization", () => {
   let node;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node = new Node();
     setDbForTesting(node, 0, true);
   })
 
   afterEach(() => {
-    rimraf.sync(node.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   describe("token", () => {
@@ -46,6 +58,7 @@ describe("DB initialization", () => {
   describe("owners", () => {
     it("loading owners properly on initialization", () => {
       const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
+      addConsensusOwners(owners);
       assert.deepEqual(node.db.getOwner("/"), owners);
     })
   })
@@ -53,6 +66,7 @@ describe("DB initialization", () => {
   describe("rules", () => {
     it("loading rules properly on initialization", () => {
       const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
+      addConsensusRules(rules);
       assert.deepEqual(node.db.getRule("/"), rules);
     })
   })
@@ -70,6 +84,8 @@ describe("DB operations", () => {
 
   beforeEach(() => {
     let result;
+
+    rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new Node();
     setDbForTesting(node);
@@ -178,7 +194,7 @@ describe("DB operations", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(node.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   describe("getValue operations", () => {
@@ -904,7 +920,7 @@ describe("DB operations", () => {
 
     it("when creating new path in database", () => {
       const newValue = 12345
-      node.db.setValue("test/new/unchartered/nested/path", newValue)
+      expect(node.db.setValue("test/new/unchartered/nested/path", newValue)).to.equal(true)
       expect(node.db.getValue("test/new/unchartered/nested/path")).to.equal(newValue)
     })
 
@@ -914,6 +930,53 @@ describe("DB operations", () => {
         "error_message": "Invalid object for states: /array"
       });
       expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
+    })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/.", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/."
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/*", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/*"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/$", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/$"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/#", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/#"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/{", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/{"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/}", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/}"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/[", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/["
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/]", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/]"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x00", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/\x00"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x1F", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/\x1F"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x7F", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/\x7F"
+      });
     })
   })
 
@@ -975,6 +1038,13 @@ describe("DB operations", () => {
       });
       expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
     })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setRule("/test/test_function/some/path/.", "some function config"), {
+        "code": 7,
+        "error_message": "Invalid path: /test/test_function/some/path/."
+      });
+    })
   })
 
   describe("setRule operations", () => {
@@ -991,6 +1061,13 @@ describe("DB operations", () => {
       });
       expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
     })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setRule("/test/test_rule/some/path/.", "some rule config"), {
+        "code": 7,
+        "error_message": "Invalid path: /test/test_rule/some/path/."
+      });
+    })
   })
 
   describe("setOwner operations", () => {
@@ -1006,6 +1083,13 @@ describe("DB operations", () => {
         "error_message": "Invalid object for states: /array"
       });
       expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
+    })
+
+    it("when writing with invalid path", () => {
+      assert.deepEqual(node.db.setRule("/test/test_owner/some/path/.", "some owner config"), {
+        "code": 7,
+        "error_message": "Invalid path: /test/test_owner/some/path/."
+      });
     })
   })
 
@@ -1511,6 +1595,8 @@ describe("DB rule config", () => {
   let node1, node2, dbValues;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node1 = new Node();
     setDbForTesting(node1, 0);
     node2 = new Node();
@@ -1547,8 +1633,7 @@ describe("DB rule config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(node1.bc._blockchainDir());
-    rimraf.sync(node2.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
@@ -1611,6 +1696,8 @@ describe("DB owner config", () => {
   let node;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node = new Node();
     setDbForTesting(node, 0);
     node.db.setOwner("test/test_owner/mixed/true/true/true",
@@ -1720,7 +1807,7 @@ describe("DB owner config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(node.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   // Known user

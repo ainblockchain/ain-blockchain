@@ -1,9 +1,10 @@
-const Blockchain = require('../blockchain/');
-const { Block } = require('../blockchain/block');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
+const { BLOCKCHAINS_DIR } = require('../constants');
+const Blockchain = require('../blockchain/');
+const { Block } = require('../blockchain/block');
 const Node = require('../node');
 const { setDbForTesting, getTransaction } = require('./test-util')
 
@@ -11,6 +12,8 @@ describe('Blockchain', () => {
   let node1, node2;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node1 = new Node();
     setDbForTesting(node1, 0);
     node2 = new Node();
@@ -18,8 +21,7 @@ describe('Blockchain', () => {
   });
 
   afterEach(() => {
-    rimraf.sync(node1.bc._blockchainDir());
-    rimraf.sync(node2.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
@@ -32,8 +34,8 @@ describe('Blockchain', () => {
   it('adds new block', () => {
     const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
-    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
-        lastBlock.epoch + 1, node1.account.address, []));
+    node1.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
+        lastBlock.epoch + 1, node1.account.address, {}));
     assert.deepEqual(node1.bc.chain[node1.bc.chain.length -1].transactions[0], tx);
   });
 
@@ -55,9 +57,9 @@ describe('Blockchain', () => {
   it('invalidates corrupt chain', () => {
     const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
-    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
-        lastBlock.epoch + 1, node1.account.address, []));
-    node1.bc.chain[node1.bc.lastBlockNumber()].transactions = ':(';
+    node1.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
+        lastBlock.epoch + 1, node1.account.address, {}));
+    node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
   });
 
@@ -83,8 +85,7 @@ describe('Blockchain', () => {
           blockHash = block.hash;
         }
         blocks.push(block);
-        node1.bc.addNewBlock(block);
-        node1.tp.cleanUpForNewBlock(block);
+        node1.addNewBlock(block);
       }
     });
 

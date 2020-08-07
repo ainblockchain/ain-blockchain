@@ -90,12 +90,12 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
-ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false node client/index.js 
-ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index.js 
-ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
-ACCOUNT_INDEX=4 HOSTING_ENV=local DEBUG=false node client/index.js 
+NUM_VALIDATORS=4 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
+NUM_VALIDATORS=4 ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false node client/index.js 
+NUM_VALIDATORS=4 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index.js 
+NUM_VALIDATORS=4 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
 ```
+The environment variable `NUM_VALIDATORS` has default value `5`.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
 ```
 rm -rf blockchain/blockchains logger/logs
