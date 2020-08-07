@@ -1961,10 +1961,8 @@ describe("DB Proof", () => {
       level2Node = level1Node.childMap.get('level2');
       fooNode = level2Node.childMap.get('foo');
       bazNode = level2Node.childMap.get('baz');
-      assert.deepEqual(fooNode.getProofHash(),
-          '0xb355309a9c845f01596e8e26aab0536bcf499a1ebfd29c829f9cb12a224f91e1');
-      assert.deepEqual(bazNode.getProofHash(),
-          '0x7456c0990c88a02f2dcaab8f9aa499cc4844dc4d59b3aa3718f777557fa02c86');
+      assert.deepEqual(fooNode.getProofHash(), null);
+      assert.deepEqual(bazNode.getProofHash(), null);
       assert.deepEqual(level2Node.getProofHash(), null);
       assert.deepEqual(level1Node.getProofHash(), null);
       assert.deepEqual(level0Node.getProofHash(), null);
