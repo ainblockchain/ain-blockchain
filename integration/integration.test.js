@@ -77,11 +77,8 @@ RANDOM_OPERATION = [
   ['set_value', {ref: 'test/comeon/nnnnnn', value: 'through'}],
   ['set_value', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
   ['set_value', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
-  ['set_value', {ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}],
-  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}],
   ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
   ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
-  ['set_value', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
   ['set_value', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
   ['inc_value', {ref: 'test/balance/user1', value: 10}],
   ['inc_value', {ref: 'test/balance/user1', value: 20}],
@@ -121,16 +118,12 @@ RANDOM_OPERATION = [
       value: {'new': 'path'}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep',
       value: {'place': {'next': 1, 'level': 'down'}}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/heliii',
-      value: {'range': [1, 2, 3, 1, 4, 5]}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: {'range': [1, 4, 5], 'another': [234]}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: 'very nested'}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: {1: 2, 3: 4, 5: 6}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/new/final/path',
-      value: {'neste': [1, 2, 3, 4, 5]}}}]}],
 ];
 
 class Process {
