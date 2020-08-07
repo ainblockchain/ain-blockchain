@@ -145,17 +145,20 @@ class Blockchain {
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
-    const block = this.chain.shift();
     this.chain.push(newBlock);
     if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
-      logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(block, null, 2)}`);
+      logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     if (!this.backupDb.executeTransactionList(newBlock.transactions)) {
-      logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(block, null, 2)}`);
+      logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     this.writeChain();
+    // Keep up to latest 20 blocks
+    while (this.chain.length > 20) {
+      this.chain.shift();
+    }
     return true;
   }
 
