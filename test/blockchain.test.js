@@ -34,8 +34,8 @@ describe('Blockchain', () => {
   it('adds new block', () => {
     const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
-    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
-        lastBlock.epoch + 1, node1.account.address, []));
+    node1.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
+        lastBlock.epoch + 1, node1.account.address, {}));
     assert.deepEqual(node1.bc.chain[node1.bc.chain.length -1].transactions[0], tx);
   });
 
@@ -57,9 +57,9 @@ describe('Blockchain', () => {
   it('invalidates corrupt chain', () => {
     const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
-    node1.bc.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
-        lastBlock.epoch + 1, node1.account.address, []));
-    node1.bc.chain[node1.bc.lastBlockNumber()].transactions = ':(';
+    node1.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
+        lastBlock.epoch + 1, node1.account.address, {}));
+    node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
   });
 
@@ -85,8 +85,7 @@ describe('Blockchain', () => {
           blockHash = block.hash;
         }
         blocks.push(block);
-        node1.bc.addNewBlock(block);
-        node1.tp.cleanUpForNewBlock(block);
+        node1.addNewBlock(block);
       }
     });
 
