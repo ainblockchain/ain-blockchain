@@ -61,6 +61,14 @@ class ChainUtil {
     return ChainUtil.isString(str) ? str : '';
   }
 
+  static toString(value) {
+    if (ChainUtil.isBool(value)) return value.toString();
+    else if (ChainUtil.isNumber(value)) return value.toString();
+    else if (ChainUtil.isString(value)) return value;
+    else if (ChainUtil.isArray(value)) return JSON.stringify(value);
+    else if (ChainUtil.isDict(value)) return JSON.stringify(value);
+  }
+
   static parsePath(path) {
     if (!path) {
       return [];

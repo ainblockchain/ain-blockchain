@@ -87,7 +87,7 @@ class StateNode {
   }
 
   setProofHash(value) {
-    this.proof = ChainUtil.hashString(JSON.stringify(value));
+    this.proof = ChainUtil.hashString(ChainUtil.toString(value));
   }
 
   addVersion() {
