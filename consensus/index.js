@@ -668,7 +668,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
-    const snapshot = new DB(null, (chain.length ? chain[0].number : block.number) - 1);
+    const snapshot = new DB(null, (chain.length ? chain[0].number : block.number));
     if (this.blockPool.hashToState.has(blockHash)) {
       snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
     } else if (blockHash === lastFinalizedHash) {
@@ -682,6 +682,7 @@ class Consensus {
       }
       snapshot.executeTransactionList(block.last_votes);
       snapshot.executeTransactionList(block.transactions);
+      snapshot.blockNumberSnapshot = block.number;
     }
     return snapshot;
   }
