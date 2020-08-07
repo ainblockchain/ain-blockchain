@@ -8,6 +8,11 @@ const {
   GenesisToken, GenesisAccounts, GENESIS_OWNERS, GENESIS_RULES, GENESIS_FUNCTIONS, PredefinedDbPaths
 } = require('../constants')
 const {setDbForTesting} = require('./test-util');
+const {
+  jsObjectToStateTree,
+  setProofHashForStateTree,
+  updateProofHashForPath
+} = require('../db/state-util');
 
 describe("DB initialization", () => {
   let node;
@@ -1850,5 +1855,72 @@ describe("DB owner config", () => {
         'unknown_user')).to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
         'unknown_user')).to.equal(true)
+  })
+})
+
+describe("DB Proof", () => {
+  let jsObject, copyTree, stateTree, level0Node, level1Node, level2Node, fooNode, bazNode;
+
+  beforeEach(() => {
+    jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+    jsCopy = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+  })
+
+  describe("Set proof hash thru given stateTree", () => {
+    it("generates StateTree based on the given jsObject", () => {
+      stateTree = jsObjectToStateTree(jsObject);
+      level0Node = stateTree.childMap.get('level0');
+      level1Node = level0Node.childMap.get('level1');
+      level2Node = level1Node.childMap.get('level2');
+      fooNode = level2Node.childMap.get('foo');
+      bazNode = level2Node.childMap.get('baz');
+      assert.deepEqual(fooNode.getProofHash(),
+          '0xb355309a9c845f01596e8e26aab0536bcf499a1ebfd29c829f9cb12a224f91e1');
+      assert.deepEqual(bazNode.getProofHash(),
+          '0x7456c0990c88a02f2dcaab8f9aa499cc4844dc4d59b3aa3718f777557fa02c86');
+      assert.deepEqual(level2Node.getProofHash(), null);
+      assert.deepEqual(level1Node.getProofHash(), null);
+      assert.deepEqual(level0Node.getProofHash(), null);
+      assert.deepEqual(stateTree.getProofHash(), null);
+    })
+
+    it("generates proofs based on the given stateTree", () => {
+      setProofHashForStateTree(level1Node);
+
+      assert.deepEqual(fooNode.getProofHash(),
+          '0xb355309a9c845f01596e8e26aab0536bcf499a1ebfd29c829f9cb12a224f91e1');
+      assert.deepEqual(bazNode.getProofHash(),
+          '0x7456c0990c88a02f2dcaab8f9aa499cc4844dc4d59b3aa3718f777557fa02c86');
+      assert.deepEqual(level2Node.getProofHash(),
+          '0x7a2707bf1cb5b8a9984b7b17a3d791804b4aaaeac915d9a53429575204e885e2');
+      assert.deepEqual(level1Node.getProofHash(),
+          '0x1bf3262beb711c2b5f47cf726692709b3b77a8f23ff75c775663674bb4ad340b');
+      assert.deepEqual(level0Node.getProofHash(), null);
+      assert.deepEqual(stateTree.getProofHash(), null);
+    })
+
+    it("updates proofs up to the root", () => {
+      updateProofHashForPath(level0Node);
+      updateProofHashForPath(stateTree);
+
+      assert.deepEqual(fooNode.getProofHash(),
+          '0xb355309a9c845f01596e8e26aab0536bcf499a1ebfd29c829f9cb12a224f91e1');
+      assert.deepEqual(bazNode.getProofHash(),
+          '0x7456c0990c88a02f2dcaab8f9aa499cc4844dc4d59b3aa3718f777557fa02c86');
+      assert.deepEqual(level2Node.getProofHash(),
+          '0x7a2707bf1cb5b8a9984b7b17a3d791804b4aaaeac915d9a53429575204e885e2');
+      assert.deepEqual(level1Node.getProofHash(),
+          '0x1bf3262beb711c2b5f47cf726692709b3b77a8f23ff75c775663674bb4ad340b');
+      assert.deepEqual(level0Node.getProofHash(),
+          '0x72c91ee62afd7e780735ec2b535d93356e54c7599e78c658949f38587aa60ddc');
+      assert.deepEqual(stateTree.getProofHash(),
+          '0x6f64798aeb2f78302f64702e55894dfe46ac9b1e42d8e03135bb4a8a8081c195');
+    })
+
+    it("compares two trees with different methods", () => {
+      copyTree = jsObjectToStateTree(jsCopy);
+      setProofHashForStateTree(copyTree);
+      assert.deepEqual(stateTree.getProofHash(), copyTree.getProofHash());
+    })
   })
 })

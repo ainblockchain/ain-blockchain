@@ -81,15 +81,15 @@ function makeCopyOfStateTree(root) {
 }
 
 function setProofHashForStateTree(valueTree) {
-  const concatArray = [];
-  valueTree.childMap.forEach((value, label) => {
-    if (!valueTree.getIsLeaf()) {
+  if (!valueTree.getIsLeaf()) {
+    const concatArray = [];
+    valueTree.childMap.forEach((value, label) => {
       setProofHashForStateTree(value);
       concatArray.push(label);
       concatArray.push(value.getProofHash());
-    }
-  });
-  valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
+    });
+    valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
+  }
 }
 
 function updateProofHashForPath(valueTree) {
