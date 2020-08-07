@@ -83,9 +83,9 @@ function setProofHashForStateTree(valueTree) {
   if (!valueTree.getIsLeaf()) {
     const concatArray = [];
     valueTree.childMap.forEach((value, label) => {
+      setProofHashForStateTree(value);
       concatArray.push(label);
       concatArray.push(value.getProofHash());
-      setProofHashForStateTree(value);
     });
 
     valueTree.setProofHash(concatArray.join(''));
