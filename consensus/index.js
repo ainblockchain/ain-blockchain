@@ -869,7 +869,7 @@ class Consensus {
   static filterDepositTxs(txs) {
     return txs.filter((tx) => {
       const ref = _.get(tx, 'operation.ref');
-      return ref && ref.startsWith(PredefinedDbPaths.DEPOSIT_CONSENSUS) &&
+      return ref && ref.startsWith(`/${PredefinedDbPaths.DEPOSIT_CONSENSUS}`) &&
         _.get(tx, 'operation.type') === WriteDbOperations.SET_VALUE;
     });
   }
