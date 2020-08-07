@@ -52,6 +52,8 @@ class Consensus {
           if (isFirstNode) {
             // Add the transaction to the pool so it gets included in the block #1
             this.node.tp.addTransaction(stakeTx);
+            // Broadcast this tx once it's connected to other nodes
+            this.stakeTx = stakeTx;
           } else {
             this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
           }
