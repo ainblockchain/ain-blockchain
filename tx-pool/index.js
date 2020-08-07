@@ -131,6 +131,8 @@ class TransactionPool {
         } else {
           const invalidNoncedTransaction = listToTakeValue.shift();
           logger.info('Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction));
+          _.remove(this.transactions[invalidNoncedTransaction.address], (tx) => tx.hash === invalidNoncedTransaction.hash);
+          delete this.transactionTracker[invalidNoncedTransaction.hash];
         }
       }
 
