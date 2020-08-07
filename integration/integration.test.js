@@ -641,6 +641,7 @@ describe('Integration Tests', () => {
       });
       */
 
+      // FIXME(lia): this test case is flaky.
       it('maintaining correct order', () => {
         for (let i = 1; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
