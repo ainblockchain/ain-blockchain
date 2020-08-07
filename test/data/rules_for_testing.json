@@ -1,8 +1,10 @@
 {
   ".write": true,
   "ai": {
+    ".write": true
   },
   "comcom": {
+    ".write": true
   },
   "consensus": {
     "number": {
@@ -21,6 +23,7 @@
   },
   "billing_keys": {
     "update_billing": {
+      ".write": true
     }
   },
   "nested":{
