@@ -65,7 +65,6 @@ function jsObjectToStateTree(obj) {
     }
   } else {
     node.setValue(obj);
-    node.setProofHash(obj);
   }
   return node;
 }
@@ -112,6 +111,8 @@ function setProofHashForStateTree(valueTree) {
       concatArray.push(value.getProofHash());
     });
     valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
+  } else {
+    valueTree.setProofHash(valueTree.value);
   }
 }
 
