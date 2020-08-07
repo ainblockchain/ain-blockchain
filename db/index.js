@@ -108,7 +108,7 @@ class DB {
     } else {
       setProofHashForStateTree(valueTree);
     }
-    updateProofHashForPath(pathToParent, this.dbRoot, 0);
+    this.updateProofHash(pathToParent);
   }
 
   static isEmptyNode(dbNode) {
@@ -134,6 +134,16 @@ class DB {
 
   removeEmptyNodes(fullPath) {
     return this.removeEmptyNodesRecursive(fullPath, 0, this.dbRoot);
+  }
+
+  updateProofHashForPathRecursive(path, valueTree, idx) {
+    if (path.length === idx) return;
+    this.updateProofHashForPathRecursive(path, valueTree.getChild(path[idx]), idx + 1);
+    updateProofHashForPath(valueTree);
+  }
+
+  updateProofHash(fullPath) {
+    return this.updateProofHashForPathRecursive(fullPath, this.dbRoot, 0);
   }
 
   readDatabase(fullPath) {
