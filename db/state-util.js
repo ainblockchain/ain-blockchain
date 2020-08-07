@@ -1,5 +1,6 @@
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
+const { HASH_DELIMITER } = require('../constants');
 
 function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
@@ -88,7 +89,9 @@ function setProofHashForStateTree(valueTree) {
       concatArray.push(value.getProofHash());
     });
 
-    valueTree.setProofHash(concatArray.join(''));
+    console.log(HASH_DELIMITER)
+    console.log(concatArray.join(HASH_DELIMITER))
+    valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
   }
 }
 
@@ -102,7 +105,7 @@ function updateProofHashForPath(path, valueTree, idx) {
     concatArray.push(value.getProofHash());
   });
 
-  valueTree.setProofHash(concatArray.join(''));
+  valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
 }
 
 module.exports = {
