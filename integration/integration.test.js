@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const spawn = require('child_process').spawn;
@@ -15,7 +16,7 @@ const stringify = require('fast-json-stable-stringify');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
-const { BLOCKCHAINS_DIR, PredefinedDbPaths } = require('../constants');
+const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
@@ -493,29 +494,51 @@ describe('Integration Tests', () => {
     });
 
     describe('and built in functions', () => {
+      let balance1Before, balance2Before;
       beforeEach(() => {
-        syncRequest('POST', server1 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${nodeAddressList[0]}/balance`, value: 100}});
-        syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${nodeAddressList[1]}/balance`, value: 0}});
+        balance1Before = JSON.parse(syncRequest('GET',
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
+            .body.toString('utf-8')).result;
+        balance2Before = JSON.parse(syncRequest('GET',
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
+            .body.toString('utf-8')).result;
         sleep(200);
       });
 
       it('facilitate transfer between accounts', () => {
-        sendTransactions(sentOperations);
         waitForNewBlocks();
+        const transferRef = `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`;
         syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
-          ref: `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`, value: 10
+          ref: transferRef, value: 10
         }});
-        sleep(500);
+        // Make sure the transaction is included in the chain
+        let tries = 0;
+        let txHash;
+        while (true) {
+          const txPool = JSON.parse(syncRequest('GET', server1 + '/tx_pool').body.toString('utf-8')).result;
+          const txTracker = JSON.parse(syncRequest('GET', server1 + '/tx_tracker').body.toString('utf-8')).result;
+          const tx = txPool[nodeAddressList[0]]
+            .filter(tx => _.get(tx, 'operation.ref') === transferRef && 
+              _.get(tx, 'operation.value') === 10)[0];
+          if (tx || txHash) {
+            if (!txHash) txHash = tx.hash;
+            const txStatus = _.get(txTracker, `${txHash}.status`)
+            if (txStatus === TransactionStatus.BLOCK_STATUS) {
+              break;
+            }
+          }
+          tries++;
+          console.log(tries)
+          sleep(1000);
+        }
         const balance1 = JSON.parse(syncRequest('GET',
             server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
             .body.toString('utf-8')).result;
         const balance2 = JSON.parse(syncRequest('GET',
             server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
             .body.toString('utf-8')).result;
-        expect(balance1).to.equal(90);
-        expect(balance2).to.equal(10);
+        expect(balance1).to.equal(balance1Before - 10);
+        expect(balance2).to.equal(balance2Before + 10);
       });
     });
 
