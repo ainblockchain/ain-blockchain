@@ -52,6 +52,8 @@ class Consensus {
           if (isFirstNode) {
             // Add the transaction to the pool so it gets included in the block #1
             this.node.tp.addTransaction(stakeTx);
+            // Broadcast this tx once it's connected to other nodes
+            this.stakeTx = stakeTx;
           } else {
             this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
           }
@@ -668,7 +670,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
-    const snapshot = new DB(null, (chain.length ? chain[0].number : block.number) - 1);
+    const snapshot = new DB(null, (chain.length ? chain[0].number : block.number));
     if (this.blockPool.hashToState.has(blockHash)) {
       snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
     } else if (blockHash === lastFinalizedHash) {
@@ -682,6 +684,7 @@ class Consensus {
       }
       snapshot.executeTransactionList(block.last_votes);
       snapshot.executeTransactionList(block.transactions);
+      snapshot.blockNumberSnapshot = block.number;
     }
     return snapshot;
   }
@@ -869,7 +872,7 @@ class Consensus {
   static filterDepositTxs(txs) {
     return txs.filter((tx) => {
       const ref = _.get(tx, 'operation.ref');
-      return ref && ref.startsWith(PredefinedDbPaths.DEPOSIT_CONSENSUS) &&
+      return ref && ref.startsWith(`/${PredefinedDbPaths.DEPOSIT_CONSENSUS}`) &&
         _.get(tx, 'operation.type') === WriteDbOperations.SET_VALUE;
     });
   }

@@ -79,21 +79,21 @@ const PredefinedDbPaths = {
   TRANSFER_VALUE: 'value',
   TRANSFER_RESULT: 'result',
   // Deposit & Withdraw
-  DEPOSIT: '/deposit',
-  DEPOSIT_ACCOUNTS: '/deposit_accounts',
+  DEPOSIT: 'deposit',
+  DEPOSIT_ACCOUNTS: 'deposit_accounts',
   DEPOSIT_CONFIG: 'config',
   DEPOSIT_CREATED_AT: 'created_at',
   DEPOSIT_EXPIRE_AT: 'expire_at',
   DEPOSIT_LOCKUP_DURATION: 'lockup_duration',
   DEPOSIT_RESULT: 'result',
   DEPOSIT_VALUE: 'value',
-  WITHDRAW: '/withdraw',
+  WITHDRAW: 'withdraw',
   WITHDRAW_CREATED_AT: 'created_at',
   WITHDRAW_RESULT: 'result',
   WITHDRAW_VALUE: 'value',
-  DEPOSIT_ACCOUNTS_CONSENSUS: '/deposit_accounts/consensus',
-  DEPOSIT_CONSENSUS: '/deposit/consensus',
-  WITHDRAW_CONSENSUS: '/withdraw/consensus'
+  DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
+  DEPOSIT_CONSENSUS: 'deposit/consensus',
+  WITHDRAW_CONSENSUS: 'withdraw/consensus'
 };
 
 /**
