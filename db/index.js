@@ -13,7 +13,7 @@ const {
   stateTreeToJsObject,
   makeCopyOfStateTree,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHash
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -96,11 +96,11 @@ class DB {
 
   writeDatabase(fullPath, value) {
     const valueTree = jsObjectToStateTree(value);
-    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       this.dbRoot = valueTree;
     } else {
       const label = fullPath[fullPath.length - 1];
+      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
       const parent = this.getRefForWriting(pathToParent);
       parent.setChild(label, valueTree);
     }
@@ -109,7 +109,7 @@ class DB {
     } else {
       setProofHashForStateTree(valueTree);
     }
-    this.updateProofHash(pathToParent);
+    updateProofHash(fullPath, this.dbRoot);
   }
 
   static isEmptyNode(dbNode) {
@@ -135,17 +135,6 @@ class DB {
 
   removeEmptyNodes(fullPath) {
     return this.removeEmptyNodesRecursive(fullPath, 0, this.dbRoot);
-  }
-
-  updateProofHashForPathRecursive(path, valueTree, idx) {
-    const child = valueTree.getChild(path[idx]);
-    if (path.length === idx || !child) return;
-    this.updateProofHashForPathRecursive(path, child, idx + 1);
-    updateProofHashForPath(valueTree);
-  }
-
-  updateProofHash(pathToParent) {
-    return this.updateProofHashForPathRecursive(pathToParent, this.dbRoot, 0);
   }
 
   readDatabase(fullPath) {

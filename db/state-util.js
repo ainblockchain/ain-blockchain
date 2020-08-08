@@ -125,6 +125,17 @@ function updateProofHashForPath(valueTree) {
   valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
 }
 
+function updateProofHashForPathRecursive(path, valueTree, idx) {
+  const child = valueTree.getChild(path[idx]);
+  if (path.length === idx || !child) return;
+  updateProofHashForPathRecursive(path, child, idx + 1);
+  updateProofHashForPath(valueTree);
+}
+
+function updateProofHash(fullPath, root) {
+  return updateProofHashForPathRecursive(fullPath, root, 0);
+}
+
 module.exports = {
   hasReservedChar,
   isValidPathForStates,
@@ -134,5 +145,5 @@ module.exports = {
   deleteStateTree,
   makeCopyOfStateTree,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHash,
 }
