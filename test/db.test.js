@@ -1958,7 +1958,7 @@ describe("DB Proof", () => {
     level2Node = level1Node.childMap.get('level2');
     fooNode = level2Node.childMap.get('foo');
     bazNode = level2Node.childMap.get('baz');
-  })
+  });
 
   describe("Set proof hash thru given stateTree", () => {
     it("generates StateTree based on the given jsObject", () => {
@@ -1968,7 +1968,7 @@ describe("DB Proof", () => {
       assert.deepEqual(level1Node.getProofHash(), null);
       assert.deepEqual(level0Node.getProofHash(), null);
       assert.deepEqual(stateTree.getProofHash(), null);
-    })
+    });
 
     it("generates proofs based on the given stateTree", () => {
       setProofHashForStateTree(level1Node);
@@ -1983,7 +1983,7 @@ describe("DB Proof", () => {
           '0xdf13329c56c3e54bf44c7d271c45d22a64f6216230177800dcd5dd201eab2f91');
       assert.deepEqual(level0Node.getProofHash(), null);
       assert.deepEqual(stateTree.getProofHash(), null);
-    })
+    });
 
     it("updates proofs up to the root", () => {
       setProofHashForStateTree(level1Node);
@@ -2002,7 +2002,7 @@ describe("DB Proof", () => {
           '0x57ac306e4f9cbfa9f8ed2aefb2230ea11ea8d6dcb092f67964b6acd7ae192184');
       assert.deepEqual(stateTree.getProofHash(),
           '0x971e1e30f31ceefd32ea0a70acde7ab6e3c1efcfe724f8b03a1137bb45bc5cb0');
-    })
+    });
 
     it("compares two trees with different methods", () => {
       setProofHashForStateTree(level1Node);
@@ -2011,6 +2011,40 @@ describe("DB Proof", () => {
       setProofHashForStateTree(copyTree);
 
       assert.deepEqual(stateTree.getProofHash(), copyTree.getProofHash());
-    })
-  })
-})
+    });
+  });
+});
+
+describe("Test Writedatabase with proof", () => {
+  let node, jsObject;
+
+  beforeEach(() => {
+    let result;
+
+    rimraf.sync(BLOCKCHAINS_DIR);
+
+    node = new Node();
+    setDbForTesting(node);
+
+    jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+    result = node.db.setValue("test", jsObject);
+    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+  });
+
+  afterEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+  });
+
+  describe("Check proof", () => {
+    it("checks jsObject is correctly set", () => {
+      assert.deepEqual(node.db.getValue("test"), jsObject);
+    });
+
+    it("checks proof hash of /values/test", () => {
+      assert.deepEqual(node.db.dbRoot.childMap.get('values').childMap.get('test').getProofHash(),
+          '0x971e1e30f31ceefd32ea0a70acde7ab6e3c1efcfe724f8b03a1137bb45bc5cb0');
+    });
+
+    // TODO(minsu): update setValue changes case.
+  });
+});
