@@ -1950,17 +1950,18 @@ describe("DB Proof", () => {
 
   beforeEach(() => {
     jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
-    jsCopy = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+    jsCopy = JSON.parse(JSON.stringify(jsObject));
+    stateTree = jsObjectToStateTree(jsObject);
+    copyTree = jsObjectToStateTree(jsCopy);
+    level0Node = stateTree.childMap.get('level0');
+    level1Node = level0Node.childMap.get('level1');
+    level2Node = level1Node.childMap.get('level2');
+    fooNode = level2Node.childMap.get('foo');
+    bazNode = level2Node.childMap.get('baz');
   })
 
   describe("Set proof hash thru given stateTree", () => {
     it("generates StateTree based on the given jsObject", () => {
-      stateTree = jsObjectToStateTree(jsObject);
-      level0Node = stateTree.childMap.get('level0');
-      level1Node = level0Node.childMap.get('level1');
-      level2Node = level1Node.childMap.get('level2');
-      fooNode = level2Node.childMap.get('foo');
-      bazNode = level2Node.childMap.get('baz');
       assert.deepEqual(fooNode.getProofHash(), null);
       assert.deepEqual(bazNode.getProofHash(), null);
       assert.deepEqual(level2Node.getProofHash(), null);
@@ -1985,6 +1986,7 @@ describe("DB Proof", () => {
     })
 
     it("updates proofs up to the root", () => {
+      setProofHashForStateTree(level1Node);
       updateProofHashForPath(level0Node);
       updateProofHashForPath(stateTree);
 
@@ -2003,8 +2005,11 @@ describe("DB Proof", () => {
     })
 
     it("compares two trees with different methods", () => {
-      copyTree = jsObjectToStateTree(jsCopy);
+      setProofHashForStateTree(level1Node);
+      updateProofHashForPath(level0Node);
+      updateProofHashForPath(stateTree);
       setProofHashForStateTree(copyTree);
+
       assert.deepEqual(stateTree.getProofHash(), copyTree.getProofHash());
     })
   })
