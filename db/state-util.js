@@ -102,6 +102,10 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
+function buildProofhashOfStateNode(stringValue) {
+  return ChainUtil.hashString(stringValue);
+}
+
 function setProofHashForStateTree(valueTree) {
   if (!valueTree.getIsLeaf()) {
     const concatArray = [];
@@ -111,29 +115,32 @@ function setProofHashForStateTree(valueTree) {
       concatArray.push(label);
       concatArray.push(child.getProofHash());
     });
-    valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
+    const stringValue = ChainUtil.toString(concatArray.join(HASH_DELIMITER));
+    valueTree.setProofHash(buildProofhashOfStateNode(stringValue));
   } else {
-    valueTree.setProofHash(valueTree.value);
+    const hash = buildProofhashOfStateNode(ChainUtil.toString(valueTree.getValue()));
+    valueTree.setProofHash(hash);
   }
 }
 
-function updateProofHashForPath(valueTree) {
+function updateProofHashOfStateNode(valueTree) {
   const concatArray = [];
   valueTree.getChildLabels().forEach(label=> {
     concatArray.push(label);
     concatArray.push(valueTree.getChild(label).getProofHash());
   });
-  valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
+  const stringValue = ChainUtil.toString(concatArray.join(HASH_DELIMITER));
+  valueTree.setProofHash(buildProofhashOfStateNode(stringValue));
 }
 
 function updateProofHashForPathRecursive(path, valueTree, idx) {
   const child = valueTree.getChild(path[idx]);
   if (path.length === idx || !child) return;
   updateProofHashForPathRecursive(path, child, idx + 1);
-  updateProofHashForPath(valueTree);
+  updateProofHashOfStateNode(valueTree);
 }
 
-function updateProofHash(fullPath, root) {
+function updateProofHashForPath(fullPath, root) {
   return updateProofHashForPathRecursive(fullPath, root, 0);
 }
 
@@ -145,6 +152,7 @@ module.exports = {
   stateTreeToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
+  buildProofhashOfStateNode,
   setProofHashForStateTree,
-  updateProofHash,
+  updateProofHashForPath,
 }
