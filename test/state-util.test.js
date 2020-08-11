@@ -6,7 +6,11 @@ const {
   stateTreeToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
+  buildProofhashOfStateNode,
+  setProofHashForStateTree,
+  updateProofHashForPath,
 } = require('../db/state-util');
+const ChainUtil = require('../chain-util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -350,3 +354,75 @@ describe("state-util", () => {
     })
   })
 })
+
+describe("DB Proof", () => {
+  let jsObject, copyTree, stateTree, level0Node, level1Node, level2Node, fooNode, bazNode;
+
+  beforeEach(() => {
+    jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+    jsCopy = JSON.parse(JSON.stringify(jsObject));
+    stateTree = jsObjectToStateTree(jsObject);
+    copyTree = jsObjectToStateTree(jsCopy);
+    level0Node = stateTree.getChild('level0');
+    level1Node = level0Node.getChild('level1');
+    level2Node = level1Node.getChild('level2');
+    fooNode = level2Node.getChild('foo');
+    bazNode = level2Node.getChild('baz');
+  });
+
+  describe("Set proof hash thru given stateTree", () => {
+    it("generates StateTree based on the given jsObject", () => {
+      assert.deepEqual(fooNode.getProofHash(), null);
+      assert.deepEqual(bazNode.getProofHash(), null);
+      assert.deepEqual(level2Node.getProofHash(), null);
+      assert.deepEqual(level1Node.getProofHash(), null);
+      assert.deepEqual(level0Node.getProofHash(), null);
+      assert.deepEqual(stateTree.getProofHash(), null);
+    });
+
+    it("generates proofs based on the given stateTree", () => {
+      setProofHashForStateTree(level1Node);
+      const fooNodeHash = buildProofhashOfStateNode(ChainUtil.toString(fooNode.getValue()));
+      const bazNodeHash = buildProofhashOfStateNode(ChainUtil.toString(bazNode.getValue()));
+      const concatLevel2Children = level2Node.getChildLabels().map(label => {
+        return `${label}#${level2Node.getChild(label).getProofHash()}`
+      }, '').join('#');
+      const level2NodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatLevel2Children));
+      const concatLevel1Children = level1Node.getChildLabels().map(label => {
+        return `${label}#${level1Node.getChild(label).getProofHash()}`
+      }, '').join('#');
+      const level1NodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatLevel1Children));
+      assert.deepEqual(fooNode.getProofHash(), fooNodeHash);
+      assert.deepEqual(bazNode.getProofHash(), bazNodeHash);
+      assert.deepEqual(level2Node.getProofHash(), level2NodeHash);
+      assert.deepEqual(level1Node.getProofHash(), level1NodeHash);
+      assert.deepEqual(level0Node.getProofHash(), null);
+      assert.deepEqual(stateTree.getProofHash(), null);
+    });
+
+    it("updates proofs up to the root", () => {
+      setProofHashForStateTree(level1Node);
+      updateProofHashForPath(['level0', 'level1'], stateTree);
+      const concatLevel0Children = level0Node.getChildLabels().map(label => {
+        return `${label}#${level0Node.getChild(label).getProofHash()}`
+      }, '').join('#');
+      const level0NodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatLevel0Children));
+      const concatRootChildren = stateTree.getChildLabels().map(label => {
+        return `${label}#${stateTree.getChild(label).getProofHash()}`
+      }, '').join('#');
+      const rootNodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatRootChildren));
+
+
+      assert.deepEqual(level0Node.getProofHash(), level0NodeHash);
+      assert.deepEqual(stateTree.getProofHash(), rootNodeHash);
+    });
+
+    it("compares two trees with different methods", () => {
+      setProofHashForStateTree(level1Node);
+      updateProofHashForPath(['level0', 'level1'], stateTree);
+      setProofHashForStateTree(copyTree);
+
+      assert.deepEqual(stateTree.getProofHash(), copyTree.getProofHash());
+    });
+  });
+});

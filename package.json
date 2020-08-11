@@ -20,7 +20,8 @@
     "test_integration": "find ./integration -name '*integration.test.js' | sort | grep -v 'node_modules' |  xargs mocha --timeout 160000 -R  spec",
     "test_smoke": "find ./integration -name '*.test.js' | grep -v integration.test | sort | grep -v 'node_modules' |  xargs mocha --timeout 160000 -R  spec",
     "loadtest": "sh loadtest/load_tester.sh",
-    "test_db": "mocha ./test/db.test.js"
+    "test_db": "mocha ./test/db.test.js",
+    "test_state_util": "mocha ./test/state-util.test.js"
   },
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.5",
