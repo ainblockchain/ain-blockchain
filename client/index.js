@@ -145,7 +145,7 @@ app.post('/set_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -155,7 +155,7 @@ app.post('/inc_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -165,7 +165,7 @@ app.post('/dec_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -175,7 +175,7 @@ app.post('/set_function', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -185,7 +185,7 @@ app.post('/set_rule', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -195,7 +195,7 @@ app.post('/set_owner', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -205,7 +205,7 @@ app.post('/set', (req, res, next) => {
   const result = createTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -355,7 +355,10 @@ function createBatchTxData(input) {
 
 function createTransaction(txData, isNoncedTransaction) {
   const transaction = node.createTransaction(txData, isNoncedTransaction);
-  return p2pServer.executeAndBroadcastTransaction(transaction);
+  return {
+    tx_hash: transaction.hash,
+    result: p2pServer.executeAndBroadcastTransaction(transaction)
+  };
 }
 
 function checkIfTransactionShouldBeNonced(input) {

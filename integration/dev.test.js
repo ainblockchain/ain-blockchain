@@ -15,7 +15,8 @@ const {
   BLOCKCHAINS_DIR,
   FunctionResultCode,
   MAX_TX_BYTES,
-  GenesisAccounts
+  GenesisAccounts,
+  TransactionStatus
 } = require('../constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number';
@@ -64,89 +65,93 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-waitForNewBlocks = (server, numNewBlocks = 1) => {
-  const initialLastBlockNumber =
-      JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-        .body.toString('utf-8'))['result'];
-  let updatedLastBlockNumber = initialLastBlockNumber;
-  console.log(`Initial last block number: ${initialLastBlockNumber}`)
-  while (updatedLastBlockNumber < initialLastBlockNumber + numNewBlocks) {
-    sleep(1000);
-    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-      .body.toString('utf-8'))['result'];
-  }
-  console.log(`Updated last block number: ${updatedLastBlockNumber}`)
+waitUntilTxFinalized = (txHash) => {
+  // return new Promise((resolve) => {
+    while (true) {
+      const txTracker = JSON.parse(syncRequest('GET', server2 + '/tx_tracker').body.toString('utf-8')).result;
+      const txStatus = _.get(txTracker, `${txHash}.status`)
+      if (txStatus === TransactionStatus.BLOCK_STATUS) {
+        break;
+      }
+      sleep(1000);
+    }
+  //   resolve();
+  // });
 }
 
 setUp = () => {
-  syncRequest('POST', server2 + '/set_value', {
+  let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
-      ref: 'test/test',
-      value: 100
-    }
-  });
-  syncRequest('POST', server2 + '/set_rule', {
-    json: {
-      ref: '/test/test_rule/some/path',
-      value: {
-        ".write": "auth === 'abcd'"
-      }
-    }
-  });
-  syncRequest('POST', server2 + '/set_function', {
-    json: {
-      ref: '/test/test_function/some/path',
-      value: {
-        ".function": "some function config"
-      }
-    }
-  });
-  syncRequest('POST', server2 + '/set_owner', {
-    json: {
-      ref: '/test/test_owner/some/path',
-      value: {
-        ".owner": {
-          "owners": {
-            "*": {
-              "branch_owner": false,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": false,
+      op_list: [
+        {
+          type: 'SET_VALUE',
+          ref: 'test/test',
+          value: 100
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_rule/some/path',
+          value: {
+            ".write": "auth === 'abcd'"
+          }
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function/some/path',
+          value: {
+            ".function": "some function config"
+          }
+        },
+        {
+          type: 'SET_OWNER',
+          ref: '/test/test_owner/some/path',
+          value: {
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": false,
+                }
+              }
             }
           }
         }
-      }
+      ]
     }
-  });
-  waitForNewBlocks(server2);
+  }).body.toString('utf-8')).result;
+  waitUntilTxFinalized(res.tx_hash);
 }
 
 cleanUp = () => {
-  syncRequest('POST', server2 + '/set_owner', {
+  let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
-      ref: '/test/test_owner/some/path',
-      value: {}
+      op_list: [
+        {
+          type: 'SET_OWNER',
+          ref: '/test/test_owner/some/path',
+          value: null
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_rule/some/path',
+          value: null
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function/some/path',
+          value: null
+        },
+        {
+          type: 'SET_VALUE',
+          ref: 'test/test',
+          value: null
+        }
+      ]
     }
-  });
-  syncRequest('POST', server2 + '/set_rule', {
-    json: {
-      ref: '/test/test_rule/some/path',
-      value: {}
-    }
-  });
-  syncRequest('POST', server2 + '/set_function', {
-    json: {
-      ref: '/test/test_function/some/path',
-      value: {}
-    }
-  });
-  syncRequest('POST', server2 + '/set_value', {
-    json: {
-      ref: '/test',
-      value: {}
-    }
-  });
-  waitForNewBlocks(server2);
+  }).body.toString('utf-8')).result;
+  waitUntilTxFinalized(res.tx_hash);
 }
 
 describe('API Tests', () => {
@@ -564,7 +569,8 @@ describe('API Tests', () => {
         const request = {ref: 'test/value', value: "something"};
         const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
       })
     })
 
@@ -573,7 +579,8 @@ describe('API Tests', () => {
         const request = {ref: "test/test", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
       })
     })
 
@@ -582,7 +589,8 @@ describe('API Tests', () => {
         const request = {ref: "test/test", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
       })
     })
 
@@ -596,7 +604,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
           .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
       })
     })
 
@@ -610,7 +619,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
           .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
       })
     })
 
@@ -624,7 +634,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
           .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
       })
     })
 
@@ -672,7 +683,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
           .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
       })
     })
 
@@ -778,18 +790,16 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
-        assert.deepEqual(body, {
-          code: 0,
-          result: [
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-          ]
-        });
+        assert.equal(body.code, 0);
+        assert.deepEqual(body.result.result, [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+        ]);
       })
     })
 
@@ -864,16 +874,14 @@ describe('API Tests', () => {
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;
       depositBalancePath = `/accounts/${depositActor}/balance`;
-      syncRequest('POST', server1+'/set_value',
-                  {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}});
-      syncRequest('POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}});
-      syncRequest('POST', server1+'/set_value',
-                  {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}});
-      waitForNewBlocks(server1);
-    })
-
-    beforeEach(() => {
-      waitForNewBlocks(server1);
+      let res = JSON.parse(syncRequest('POST', server1+'/set_value',
+                  {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
+      waitUntilTxFinalized(res.tx_hash);
+      res = JSON.parse(syncRequest('POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
+      waitUntilTxFinalized(res.tx_hash);
+      res = JSON.parse(syncRequest('POST', server1+'/set_value',
+                  {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}}).body.toString('utf-8')).result;
+      waitUntilTxFinalized(res.tx_hash);
     })
 
     describe('_transfer', () => {
@@ -886,8 +894,9 @@ describe('API Tests', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
-        waitForNewBlocks(server2);
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
+        waitUntilTxFinalized(body.result.tx_hash);
         const fromAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = JSON.parse(syncRequest('GET',
@@ -910,7 +919,6 @@ describe('API Tests', () => {
           value: fromBeforeBalance + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        waitForNewBlocks(server2);
         const fromAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = JSON.parse(syncRequest('GET',
@@ -929,7 +937,6 @@ describe('API Tests', () => {
           value: transferAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        waitForNewBlocks(server2);
         const fromAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = JSON.parse(syncRequest('GET',
@@ -1023,6 +1030,7 @@ describe('API Tests', () => {
           ]
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(0);
+        waitUntilTxFinalized(body.result.tx_hash);
       })
 
       it('deposit', () => {
@@ -1032,8 +1040,9 @@ describe('API Tests', () => {
           ref: depositPath + '/1/value',
           value: depositAmount
         }}).body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
-        waitForNewBlocks(server2);
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
+        waitUntilTxFinalized(body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1059,7 +1068,6 @@ describe('API Tests', () => {
           value: beforeBalance + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        waitForNewBlocks(server2);
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
@@ -1076,7 +1084,6 @@ describe('API Tests', () => {
           value: depositAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        waitForNewBlocks(server2);
         const depositRequest = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1088,8 +1095,9 @@ describe('API Tests', () => {
       // TODO (lia): update test code after fixing timestamp verification logic.
       it('deposit with invalid timestamp', () => {
         const account = ainUtil.createAccount();
-        syncRequest('POST', server2+'/set_value',
-                    {json: {ref: `/accounts/${account.address}/balance`, value: 1000}});
+        const res = JSON.parse(syncRequest('POST', server2+'/set_value',
+                    {json: {ref: `/accounts/${account.address}/balance`, value: 1000}}).body.toString('utf-8')).result;
+        waitUntilTxFinalized(res.tx_hash);
         const transaction = {
           operation: {
             type: 'SET_VALUE',
@@ -1101,6 +1109,7 @@ describe('API Tests', () => {
         }
         const signature =
             ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+        
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature,
           protoVer: CURRENT_PROTOCOL_VERSION })
@@ -1151,7 +1160,6 @@ describe('API Tests', () => {
           value: depositAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        waitForNewBlocks(server2);
         const withdrawRequest = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${withdrawPath}/1`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1174,7 +1182,6 @@ describe('API Tests', () => {
           value: beforeDepositAccountValue + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        waitForNewBlocks(server2);
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
@@ -1191,8 +1198,9 @@ describe('API Tests', () => {
           value: depositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
-        waitForNewBlocks(server2);
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
+        waitUntilTxFinalized(body.result.tx_hash);
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
@@ -1216,8 +1224,9 @@ describe('API Tests', () => {
           value: newDepositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
-        waitForNewBlocks(server2);
+        assert.equal(body.code, 0);
+        assert.equal(body.result.result, true);
+        waitUntilTxFinalized(body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
