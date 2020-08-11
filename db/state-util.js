@@ -108,15 +108,10 @@ function buildProofhashOfStateNode(stringValue) {
 
 function setProofHashForStateTree(valueTree) {
   if (!valueTree.getIsLeaf()) {
-    const concatArray = [];
     valueTree.getChildLabels().forEach(label => {
-      const child = valueTree.getChild(label);
-      setProofHashForStateTree(child);
-      concatArray.push(label);
-      concatArray.push(child.getProofHash());
+      setProofHashForStateTree(valueTree.getChild(label));
     });
-    const stringValue = ChainUtil.toString(concatArray.join(HASH_DELIMITER));
-    valueTree.setProofHash(buildProofhashOfStateNode(stringValue));
+    updateProofHashOfStateNode(valueTree);
   } else {
     const hash = buildProofhashOfStateNode(ChainUtil.toString(valueTree.getValue()));
     valueTree.setProofHash(hash);
