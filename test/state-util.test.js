@@ -8,8 +8,10 @@ const {
   makeCopyOfStateTree,
   buildProofhashOfStateNode,
   setProofHashForStateTree,
+  buildProofHashPreimage,
   updateProofHashForPath,
 } = require('../db/state-util');
+const { HASH_DELIMITER } = require('../constants');
 const ChainUtil = require('../chain-util');
 const chai = require('chai');
 const expect = chai.expect;
@@ -384,14 +386,10 @@ describe("DB Proof", () => {
       setProofHashForStateTree(level1Node);
       const fooNodeHash = buildProofhashOfStateNode(ChainUtil.toString(fooNode.getValue()));
       const bazNodeHash = buildProofhashOfStateNode(ChainUtil.toString(bazNode.getValue()));
-      const concatLevel2Children = level2Node.getChildLabels().map(label => {
-        return `${label}#${level2Node.getChild(label).getProofHash()}`
-      }, '').join('#');
-      const level2NodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatLevel2Children));
-      const concatLevel1Children = level1Node.getChildLabels().map(label => {
-        return `${label}#${level1Node.getChild(label).getProofHash()}`
-      }, '').join('#');
-      const level1NodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatLevel1Children));
+      const level2NodePreimage = buildProofHashPreimage(level2Node);
+      const level2NodeHash = buildProofhashOfStateNode(ChainUtil.toString(level2NodePreimage));
+      const level1NodePreimage = buildProofHashPreimage(level1Node);
+      const level1NodeHash = buildProofhashOfStateNode(ChainUtil.toString(level1NodePreimage));
       assert.deepEqual(fooNode.getProofHash(), fooNodeHash);
       assert.deepEqual(bazNode.getProofHash(), bazNodeHash);
       assert.deepEqual(level2Node.getProofHash(), level2NodeHash);
@@ -403,16 +401,10 @@ describe("DB Proof", () => {
     it("updates proofs up to the root", () => {
       setProofHashForStateTree(level1Node);
       updateProofHashForPath(['level0', 'level1'], stateTree);
-      const concatLevel0Children = level0Node.getChildLabels().map(label => {
-        return `${label}#${level0Node.getChild(label).getProofHash()}`
-      }, '').join('#');
-      const level0NodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatLevel0Children));
-      const concatRootChildren = stateTree.getChildLabels().map(label => {
-        return `${label}#${stateTree.getChild(label).getProofHash()}`
-      }, '').join('#');
-      const rootNodeHash = buildProofhashOfStateNode(ChainUtil.toString(concatRootChildren));
-
-
+      const level0NodePreimage = buildProofHashPreimage(level0Node);
+      const level0NodeHash = buildProofhashOfStateNode(ChainUtil.toString(level0NodePreimage));
+      const rootNodePreimage = buildProofHashPreimage(stateTree);
+      const rootNodeHash = buildProofhashOfStateNode(ChainUtil.toString(rootNodePreimage));
       assert.deepEqual(level0Node.getProofHash(), level0NodeHash);
       assert.deepEqual(stateTree.getProofHash(), rootNodeHash);
     });

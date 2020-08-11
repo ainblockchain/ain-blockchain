@@ -19,7 +19,8 @@ const {
   addConsensusRules,
 } = require('./test-util');
 const {
-  buildProofhashOfStateNode
+  buildProofhashOfStateNode,
+  buildProofHashPreimage
 } = require('../db/state-util');
 const ChainUtil = require('../chain-util');
 
@@ -1971,20 +1972,16 @@ describe("Test Writedatabase with proof", () => {
 
     it("checks proof hash of /values/test", () => {
       const testNode = node.db.getRefForReading(['values', 'test']);
-      const testNodeChildren = testNode.getChildLabels().map(label => {
-        return `${label}#${testNode.getChild(label).getProofHash()}`
-      }, '').join('#');
-      const testNodeHash = buildProofhashOfStateNode(ChainUtil.toString(testNodeChildren));
+      const testNodePreimage = buildProofHashPreimage(testNode);
+      const testNodeHash = buildProofhashOfStateNode(ChainUtil.toString(testNodePreimage));
       assert.deepEqual(testNode.getProofHash(), testNodeHash);
     });
 
     it("checks newly setup proof hash", () => {
       node.db.setValue("test/level0/level1/level2", { aaa: 'bbb' });
       const testNode = node.db.getRefForReading(['values', 'test']);
-      const testNodeChildren = testNode.getChildLabels().map(label => {
-        return `${label}#${testNode.getChild(label).getProofHash()}`
-      }, '').join('#');
-      const testNodeHash = buildProofhashOfStateNode(ChainUtil.toString(testNodeChildren));
+      const testNodePreimage = buildProofHashPreimage(testNode);
+      const testNodeHash = buildProofhashOfStateNode(ChainUtil.toString(testNodePreimage));
       assert.deepEqual(testNode.getProofHash(), testNodeHash);
     });
   });

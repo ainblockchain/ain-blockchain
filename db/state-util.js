@@ -123,14 +123,15 @@ function setProofHashForStateTree(valueTree) {
   }
 }
 
+function buildProofHashPreimage(valueTree) {
+  return valueTree.getChildLabels().map(label => {
+    return `${label}#${valueTree.getChild(label).getProofHash()}`;
+  }, '').join(HASH_DELIMITER);
+}
+
 function updateProofHashOfStateNode(valueTree) {
-  const concatArray = [];
-  valueTree.getChildLabels().forEach(label=> {
-    concatArray.push(label);
-    concatArray.push(valueTree.getChild(label).getProofHash());
-  });
-  const stringValue = ChainUtil.toString(concatArray.join(HASH_DELIMITER));
-  valueTree.setProofHash(buildProofhashOfStateNode(stringValue));
+  const preimage = buildProofHashPreimage(valueTree);
+  valueTree.setProofHash(buildProofhashOfStateNode(ChainUtil.toString(preimage)));
 }
 
 function updateProofHashForPathRecursive(path, valueTree, idx) {
@@ -154,5 +155,6 @@ module.exports = {
   makeCopyOfStateTree,
   buildProofhashOfStateNode,
   setProofHashForStateTree,
+  buildProofHashPreimage,
   updateProofHashForPath,
 }
