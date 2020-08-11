@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const rimraf = require('rimraf');
@@ -5,7 +6,7 @@ const sleep = require('system-sleep');
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
-const { BLOCKCHAINS_DIR } = require('../constants');
+const { BLOCKCHAINS_DIR, TransactionStatus } = require('../constants');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -83,18 +84,19 @@ describe('aFan Client Test', () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  waitForNewBlocks = (server, numNewBlocks = 1) => {
-    const initialLastBlockNumber =
-        JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-          .body.toString('utf-8'))['result'];
-    let updatedLastBlockNumber = initialLastBlockNumber;
-    console.log(`Initial last block number: ${initialLastBlockNumber}`)
-    while (updatedLastBlockNumber < initialLastBlockNumber + numNewBlocks) {
-      sleep(1000);
-      updatedLastBlockNumber = JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-        .body.toString('utf-8'))['result'];
-    }
-    console.log(`Updated last block number: ${updatedLastBlockNumber}`)
+  waitUntilTxFinalized = (txHash) => {
+    // return new Promise(resolve => {
+      while (true) {
+        const txTracker = JSON.parse(syncRequest('GET', server3 + '/tx_tracker').body.toString('utf-8')).result;
+        const txStatus = _.get(txTracker, `${txHash}.status`)
+        if (txStatus === TransactionStatus.BLOCK_STATUS) {
+          console.log("tx finalized:", txHash);
+          break;
+        }
+        sleep(1000);
+      }
+    //   resolve();
+    // });
   }
 
   set_value = (ref, value) => {
@@ -112,25 +114,20 @@ describe('aFan Client Test', () => {
                            server3 + `/get_value?ref=${ref}`).body.toString('utf-8')));
   };
 
-  beforeEach(() => {
-    return set_value('afan', {})
-      .then(() => waitForNewBlocks(server1));
-  });
-
-  afterEach(() => {
-    return set_value('afan', {})
-      .then(() => waitForNewBlocks(server1));
-  });
-
   describe('tx_invest', () => {
+    beforeEach(() => {
+      return set_value('afan', null)
+      .then((res) => waitUntilTxFinalized(res.result.tx_hash));
+    });
+
     it('send_one', () => {
       const afanClient = new AfanClient(server1);
 
       return set_value('/afan/balance/uid0', 10)
         .then(() => set_value('/afan/balance/uid1', 10))
-        .then(() => sleep(500))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => afanClient.tx_invest('uid0', 'uid1', 1))
-        .then(() => waitForNewBlocks(server1, 2))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => get_value('/afan'))
         .then((res) => {
           const expected = require('./data/tx_invest_send_one_result.js');
@@ -140,12 +137,20 @@ describe('aFan Client Test', () => {
   });
 
   describe('crushOnPost', () => {
+    beforeEach(() => {
+      return set_value('afan', null)
+      .then((res) => waitUntilTxFinalized(res.result.tx_hash));
+    });
+
     it('no fan', () => {
       const afanClient = new AfanClient(server1);
 
-      return set_value('/afan/balance/uid0', 10).then(() => set_value('/afan/balance/uid1', 10))
+      return set_value('/afan/balance/uid0', 10)
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
+        .then(() => set_value('/afan/balance/uid1', 10))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 1))
-        .then(() => waitForNewBlocks(server1, 2))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => get_value('/afan'))
         .then((res) => {
           const expected = require('./data/tx_crushOnPost_no_fan_result.js');
@@ -157,11 +162,15 @@ describe('aFan Client Test', () => {
       const afanClient = new AfanClient(server2);
       sleep(200);
       return set_value('/afan/balance/uid0', 30)
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => set_value('/afan/balance/uid1', 10))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => set_value('/afan/investors/uid1/uid2', 3))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => set_value('/afan/investors/uid1/uid3', 7))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
-        .then(() => waitForNewBlocks(server2, 2))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => get_value('/afan'))
         .then((res) => {
           const expected = require('./data/tx_crushOnPost_two_fans_result.js');
@@ -171,11 +180,19 @@ describe('aFan Client Test', () => {
   });
 
   describe('crushOnReply', () => {
+    beforeEach(() => {
+      return set_value('afan', null)
+      .then((res) => waitUntilTxFinalized(res.result.tx_hash));
+    });
+
     it('no fan', () => {
       const afanClient = new AfanClient(server3);
-      return set_value('/afan/balance/uid0', 10).then(() => set_value('/afan/balance/uid1', 10))
+      return set_value('/afan/balance/uid0', 10)
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
+        .then(() => set_value('/afan/balance/uid1', 10))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
-        .then(() => waitForNewBlocks(server3, 2))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => get_value('/afan'))
         .then((res) => {
           const expected = require('./data/tx_crushOnReply_no_fan_result.js');
@@ -187,12 +204,17 @@ describe('aFan Client Test', () => {
       const afanClient = new AfanClient(server4);
 
       return set_value('/afan/balance/uid0', 20)
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => set_value('/afan/balance/uid1', 10))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => set_value('/afan/investors/uid1/uid2', 3))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => set_value('/afan/investors/uid1/uid3', 2))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => set_value('/afan/investors/uid1/uid4', 1))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
-        .then(() => waitForNewBlocks(server4, 2))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => get_value('/afan'))
         .then((res) => {
           const expected = require('./data/tx_crushOnReply_three_fans_result.js');
@@ -202,6 +224,11 @@ describe('aFan Client Test', () => {
   });
 
   describe('ad', () => {
+    beforeEach(() => {
+      return set_value('afan', null)
+      .then((res) => waitUntilTxFinalized(res.result.tx_hash));
+    });
+    
     it('ad propose', () => {
       const afanClient = new AfanClient(server2);
       const op_list = [
@@ -217,8 +244,9 @@ describe('aFan Client Test', () => {
         },
       ];
       return set(op_list)
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
-        .then(() => waitForNewBlocks(server2, 2))
+        .then((res) => waitUntilTxFinalized(res.result.tx_hash))
         .then(() => get_value('/afan'))
         .then((res) => {
           const expected = require('./data/tx_adpropose_result.js');
@@ -226,4 +254,4 @@ describe('aFan Client Test', () => {
         });
     });
   });
-});
+})
