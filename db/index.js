@@ -13,7 +13,7 @@ const {
   stateTreeToJsObject,
   makeCopyOfStateTree,
   setProofHashForStateTree,
-  updateProofHash
+  updateProofHashForPath
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -109,7 +109,7 @@ class DB {
     } else {
       setProofHashForStateTree(valueTree);
     }
-    updateProofHash(fullPath, this.dbRoot);
+    updateProofHashForPath(fullPath, this.dbRoot);
   }
 
   static isEmptyNode(dbNode) {

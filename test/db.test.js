@@ -21,7 +21,7 @@ const {
 const {
   jsObjectToStateTree,
   setProofHashForStateTree,
-  updateProofHash
+  updateProofHashForPath
 } = require('../db/state-util');
 
 describe("DB initialization", () => {
@@ -1953,11 +1953,11 @@ describe("DB Proof", () => {
     jsCopy = JSON.parse(JSON.stringify(jsObject));
     stateTree = jsObjectToStateTree(jsObject);
     copyTree = jsObjectToStateTree(jsCopy);
-    level0Node = stateTree.childMap.get('level0');
-    level1Node = level0Node.childMap.get('level1');
-    level2Node = level1Node.childMap.get('level2');
-    fooNode = level2Node.childMap.get('foo');
-    bazNode = level2Node.childMap.get('baz');
+    level0Node = stateTree.getChild('level0');
+    level1Node = level0Node.getChild('level1');
+    level2Node = level1Node.getChild('level2');
+    fooNode = level2Node.getChild('foo');
+    bazNode = level2Node.getChild('baz');
   });
 
   describe("Set proof hash thru given stateTree", () => {
@@ -1987,7 +1987,7 @@ describe("DB Proof", () => {
 
     it("updates proofs up to the root", () => {
       setProofHashForStateTree(level1Node);
-      updateProofHash(['level0', 'level1'], stateTree);
+      updateProofHashForPath(['level0', 'level1'], stateTree);
 
       assert.deepEqual(fooNode.getProofHash(),
           '0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4');
@@ -2005,7 +2005,7 @@ describe("DB Proof", () => {
 
     it("compares two trees with different methods", () => {
       setProofHashForStateTree(level1Node);
-      updateProofHash(['level0', 'level1'], stateTree);
+      updateProofHashForPath(['level0', 'level1'], stateTree);
       setProofHashForStateTree(copyTree);
 
       assert.deepEqual(stateTree.getProofHash(), copyTree.getProofHash());
@@ -2039,13 +2039,13 @@ describe("Test Writedatabase with proof", () => {
     });
 
     it("checks proof hash of /values/test", () => {
-      assert.deepEqual(node.db.dbRoot.childMap.get('values').childMap.get('test').getProofHash(),
+      assert.deepEqual(node.db.dbRoot.getChild('values').getChild('test').getProofHash(),
           '0x971e1e30f31ceefd32ea0a70acde7ab6e3c1efcfe724f8b03a1137bb45bc5cb0');
     });
 
     it("checks newly setup proof hash", () => {
       node.db.setValue("test/level0/level1/level2", { aaa: 'bbb' });
-      assert.deepEqual(node.db.dbRoot.childMap.get('values').childMap.get('test').getProofHash(),
+      assert.deepEqual(node.db.dbRoot.getChild('values').getChild('test').getProofHash(),
           '0x0aaf45c6adc3fa6c8c204f52ee7f6aa376717dfd8f55ce7b57f4a97c714b2a63');
     });
   });
