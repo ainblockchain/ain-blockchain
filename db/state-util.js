@@ -105,10 +105,11 @@ function makeCopyOfStateTree(root) {
 function setProofHashForStateTree(valueTree) {
   if (!valueTree.getIsLeaf()) {
     const concatArray = [];
-    valueTree.childMap.forEach((value, label) => {
-      setProofHashForStateTree(value);
+    valueTree.getChildLabels().forEach(label => {
+      const child = valueTree.getChild(label);
+      setProofHashForStateTree(child);
       concatArray.push(label);
-      concatArray.push(value.getProofHash());
+      concatArray.push(child.getProofHash());
     });
     valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
   } else {
@@ -118,9 +119,9 @@ function setProofHashForStateTree(valueTree) {
 
 function updateProofHashForPath(valueTree) {
   const concatArray = [];
-  valueTree.childMap.forEach((value, label) => {
+  valueTree.getChildLabels().forEach(label=> {
     concatArray.push(label);
-    concatArray.push(value.getProofHash());
+    concatArray.push(valueTree.getChild(label).getProofHash());
   });
   valueTree.setProofHash(concatArray.join(HASH_DELIMITER));
 }
