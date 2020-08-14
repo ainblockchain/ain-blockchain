@@ -111,17 +111,18 @@ function setProofHashForStateTree(valueTree) {
     valueTree.getChildLabels().forEach(label => {
       setProofHashForStateTree(valueTree.getChild(label));
     });
-    updateProofHashOfStateNode(valueTree);
-  } else {
-    const hash = buildProofHashOfStateNode(ChainUtil.toString(valueTree.getValue()));
-    valueTree.setProofHash(hash);
   }
+  updateProofHashOfStateNode(valueTree);
 }
 
-function buildProofHashPreimage(valueTree) {
-  return valueTree.getChildLabels().map(label => {
-    return `${label}${HASH_DELIMITER}${valueTree.getChild(label).getProofHash()}`;
-  }, '').join(HASH_DELIMITER);
+function buildProofHashPreimage(stateTree) {
+  if (!stateTree.getIsLeaf()) {
+    return stateTree.getChildLabels().map(label => {
+      return `${label}${HASH_DELIMITER}${stateTree.getChild(label).getProofHash()}`;
+    }, '').join(HASH_DELIMITER);
+  } else {
+    return stateTree.getValue();
+  }
 }
 
 function updateProofHashOfStateNode(valueTree) {
