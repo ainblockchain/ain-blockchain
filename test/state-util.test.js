@@ -6,7 +6,7 @@ const {
   stateTreeToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
-  buildProofhashOfStateNode,
+  buildProofHashOfStateNode,
   setProofHashForStateTree,
   buildProofHashPreimage,
   updateProofHashForPath,
@@ -384,12 +384,12 @@ describe("DB Proof", () => {
 
     it("generates proofs based on the given stateTree", () => {
       setProofHashForStateTree(level1Node);
-      const fooNodeHash = buildProofhashOfStateNode(ChainUtil.toString(fooNode.getValue()));
-      const bazNodeHash = buildProofhashOfStateNode(ChainUtil.toString(bazNode.getValue()));
+      const fooNodeHash = buildProofHashOfStateNode(ChainUtil.toString(fooNode.getValue()));
+      const bazNodeHash = buildProofHashOfStateNode(ChainUtil.toString(bazNode.getValue()));
       const level2NodePreimage = buildProofHashPreimage(level2Node);
-      const level2NodeHash = buildProofhashOfStateNode(ChainUtil.toString(level2NodePreimage));
+      const level2NodeHash = buildProofHashOfStateNode(ChainUtil.toString(level2NodePreimage));
       const level1NodePreimage = buildProofHashPreimage(level1Node);
-      const level1NodeHash = buildProofhashOfStateNode(ChainUtil.toString(level1NodePreimage));
+      const level1NodeHash = buildProofHashOfStateNode(ChainUtil.toString(level1NodePreimage));
       assert.deepEqual(fooNode.getProofHash(), fooNodeHash);
       assert.deepEqual(bazNode.getProofHash(), bazNodeHash);
       assert.deepEqual(level2Node.getProofHash(), level2NodeHash);
@@ -402,9 +402,9 @@ describe("DB Proof", () => {
       setProofHashForStateTree(level1Node);
       updateProofHashForPath(['level0', 'level1'], stateTree);
       const level0NodePreimage = buildProofHashPreimage(level0Node);
-      const level0NodeHash = buildProofhashOfStateNode(ChainUtil.toString(level0NodePreimage));
+      const level0NodeHash = buildProofHashOfStateNode(ChainUtil.toString(level0NodePreimage));
       const rootNodePreimage = buildProofHashPreimage(stateTree);
-      const rootNodeHash = buildProofhashOfStateNode(ChainUtil.toString(rootNodePreimage));
+      const rootNodeHash = buildProofHashOfStateNode(ChainUtil.toString(rootNodePreimage));
       assert.deepEqual(level0Node.getProofHash(), level0NodeHash);
       assert.deepEqual(stateTree.getProofHash(), rootNodeHash);
     });
