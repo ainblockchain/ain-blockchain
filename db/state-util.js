@@ -115,18 +115,15 @@ function setProofHashForStateTree(valueTree) {
   updateProofHashOfStateNode(valueTree);
 }
 
-function buildProofHashPreimage(stateTree) {
-  if (!stateTree.getIsLeaf()) {
-    return stateTree.getChildLabels().map(label => {
-      return `${label}${HASH_DELIMITER}${stateTree.getChild(label).getProofHash()}`;
+function updateProofHashOfStateNode(valueTree) {
+  let preimage;
+  if (!valueTree.getIsLeaf()) {
+    preimage = valueTree.getChildLabels().map(label => {
+      return `${label}${HASH_DELIMITER}${valueTree.getChild(label).getProofHash()}`;
     }, '').join(HASH_DELIMITER);
   } else {
-    return stateTree.getValue();
+    preimage = valueTree.getValue();
   }
-}
-
-function updateProofHashOfStateNode(valueTree) {
-  const preimage = buildProofHashPreimage(valueTree);
   valueTree.setProofHash(buildProofHashOfStateNode(ChainUtil.toString(preimage)));
 }
 
@@ -151,6 +148,5 @@ module.exports = {
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
   setProofHashForStateTree,
-  buildProofHashPreimage,
   updateProofHashForPath,
 }
