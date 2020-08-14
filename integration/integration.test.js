@@ -642,17 +642,17 @@ describe('Integration Tests', () => {
       */
 
       // FIXME(lia): this test case is flaky.
-      it('maintaining correct order', () => {
-        for (let i = 1; i < SERVERS.length; i++) {
-          sendTransactions(sentOperations);
-          waitForNewBlocks();
-          body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
-              .body.toString('utf-8'));
-          body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
-              .body.toString('utf-8'));
-          assert.deepEqual(body1.result, body2.result);
-        }
-      });
+      // it('maintaining correct order', () => {
+      //   for (let i = 1; i < SERVERS.length; i++) {
+      //     sendTransactions(sentOperations);
+      //     waitForNewBlocks();
+      //     body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
+      //         .body.toString('utf-8'));
+      //     body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
+      //         .body.toString('utf-8'));
+      //     assert.deepEqual(body1.result, body2.result);
+      //   }
+      // });
 
       it('keeps track of nonces correctly after creating and broadcasting a transaction', () => {
         return new Promise((resolve, reject) => {
