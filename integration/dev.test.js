@@ -48,6 +48,7 @@ const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCO
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
+const servers = [ server1, server2, server3, server4 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -66,17 +67,18 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 waitUntilTxFinalized = (txHash) => {
-  // return new Promise((resolve) => {
-    while (true) {
-      const txTracker = JSON.parse(syncRequest('GET', server2 + '/tx_tracker').body.toString('utf-8')).result;
-      const txStatus = _.get(txTracker, `${txHash}.status`)
+  const unchecked = new Set(servers);
+  while (true) {
+    if (!unchecked.size) return;
+    unchecked.forEach(server => {
+      const txTracker = JSON.parse(syncRequest('GET', server + '/tx_tracker').body.toString('utf-8')).result;
+      const txStatus = _.get(txTracker, `${txHash}.status`);
       if (txStatus === TransactionStatus.BLOCK_STATUS) {
-        break;
+        unchecked.delete(server);
       }
-      sleep(1000);
-    }
-  //   resolve();
-  // });
+    });
+    sleep(1000);
+  }
 }
 
 setUp = () => {
