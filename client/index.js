@@ -8,7 +8,7 @@ const jayson = require('jayson');
 const logger = require('../logger');
 const Node = require('../node');
 const P2pServer = require('../server');
-const { PORT, PROTOCOL_VERSIONS, WriteDbOperations } = require('../constants');
+const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus } = require('../constants');
 const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -270,6 +270,26 @@ app.get('/committed_nonce_tracker', (req, res, next) => {
 
 app.get('/pending_nonce_tracker', (req, res, next) => {
   const result = node.tp.pendingNonceTracker;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/get_transaction', (req, res, next) => {
+  const transactionInfo = node.tp.transactionTracker[req.query.hash];
+  let result = {};
+  if (transactionInfo) {
+    if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+      const block = node.bc.getBlockByNumber(transactionInfo.number);
+      const index = transactionInfo.index;
+      Object.assign(result, block.transactions[index], { is_confirmed: true });
+    } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+      const address = transactionInfo.address;
+      const index = transactionInfo.index;
+      Object.assign(result, node.tp.transactions[address][index], { is_confirmed: false });
+    }
+  }
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
