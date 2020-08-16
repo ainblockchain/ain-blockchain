@@ -1,9 +1,12 @@
 const path = require('path');
-const fs = require("fs")
+const fs = require("fs");
+const syncRequest = require('sync-request');
+const sleep = require('system-sleep');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const { GenesisAccounts } = require('../constants');
 const { ConsensusDbPaths } = require('../consensus/constants');
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
@@ -56,10 +59,30 @@ function addConsensusRules(rules) {
       = Block.getConsensusRule(ownerAddress);
 }
 
+function waitUntilTxFinalized(servers, txHash) {
+  const unchecked = new Set(servers);
+  while (true) {
+    if (!unchecked.size) return;
+    unchecked.forEach(server => {
+      const txStatus = JSON.parse(
+        syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
+        .body
+        .toString('utf-8')
+      )
+      .result;
+      if (txStatus && txStatus.is_confirmed === true) {
+        unchecked.delete(server);
+      }
+    });
+    sleep(1000);
+  }
+}
+
 module.exports = {
   setDbForTesting,
   getTransaction,
   addBlock,
   addConsensusOwners,
   addConsensusRules,
+  waitUntilTxFinalized
 };
