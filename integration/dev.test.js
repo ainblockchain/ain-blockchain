@@ -15,11 +15,10 @@ const {
   BLOCKCHAINS_DIR,
   FunctionResultCode,
   MAX_TX_BYTES,
-  GenesisAccounts,
-  TransactionStatus
+  GenesisAccounts
 } = require('../constants');
+const { waitUntilTxFinalized } = require('../test/test-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number';
 
 const ENV_VARIABLES = [
   {
@@ -66,21 +65,6 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-waitUntilTxFinalized = (txHash) => {
-  const unchecked = new Set(servers);
-  while (true) {
-    if (!unchecked.size) return;
-    unchecked.forEach(server => {
-      const txTracker = JSON.parse(syncRequest('GET', server + '/tx_tracker').body.toString('utf-8')).result;
-      const txStatus = _.get(txTracker, `${txHash}.status`);
-      if (txStatus === TransactionStatus.BLOCK_STATUS) {
-        unchecked.delete(server);
-      }
-    });
-    sleep(1000);
-  }
-}
-
 setUp = () => {
   let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
@@ -123,7 +107,7 @@ setUp = () => {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(res.tx_hash);
+  waitUntilTxFinalized(servers, res.tx_hash);
 }
 
 cleanUp = () => {
@@ -153,7 +137,7 @@ cleanUp = () => {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(res.tx_hash);
+  waitUntilTxFinalized(servers, res.tx_hash);
 }
 
 describe('API Tests', () => {
@@ -878,12 +862,12 @@ describe('API Tests', () => {
       depositBalancePath = `/accounts/${depositActor}/balance`;
       let res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(res.tx_hash);
+      waitUntilTxFinalized(servers, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(res.tx_hash);
+      waitUntilTxFinalized(servers, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(res.tx_hash);
+      waitUntilTxFinalized(servers, res.tx_hash);
     })
 
     describe('_transfer', () => {
@@ -898,7 +882,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(body.result.tx_hash);
+        waitUntilTxFinalized(servers, body.result.tx_hash);
         const fromAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = JSON.parse(syncRequest('GET',
@@ -1032,7 +1016,7 @@ describe('API Tests', () => {
           ]
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(0);
-        waitUntilTxFinalized(body.result.tx_hash);
+        waitUntilTxFinalized(servers, body.result.tx_hash);
       })
 
       it('deposit', () => {
@@ -1044,7 +1028,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(body.result.tx_hash);
+        waitUntilTxFinalized(servers, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1099,7 +1083,7 @@ describe('API Tests', () => {
         const account = ainUtil.createAccount();
         const res = JSON.parse(syncRequest('POST', server2+'/set_value',
                     {json: {ref: `/accounts/${account.address}/balance`, value: 1000}}).body.toString('utf-8')).result;
-        waitUntilTxFinalized(res.tx_hash);
+        waitUntilTxFinalized(servers, res.tx_hash);
         const transaction = {
           operation: {
             type: 'SET_VALUE',
@@ -1202,7 +1186,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(body.result.tx_hash);
+        waitUntilTxFinalized(servers, body.result.tx_hash);
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
@@ -1228,7 +1212,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(body.result.tx_hash);
+        waitUntilTxFinalized(servers, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
