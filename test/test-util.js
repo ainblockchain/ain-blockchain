@@ -6,7 +6,6 @@ const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const { GenesisAccounts } = require('../constants');
 const { ConsensusDbPaths } = require('../consensus/constants');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
