@@ -8,7 +8,7 @@ const jayson = require('jayson');
 const logger = require('../logger');
 const Node = require('../node');
 const P2pServer = require('../server');
-const { PORT, PROTOCOL_VERSIONS, WriteDbOperations } = require('../constants');
+const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus } = require('../constants');
 const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -145,7 +145,7 @@ app.post('/set_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -155,7 +155,7 @@ app.post('/inc_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -165,7 +165,7 @@ app.post('/dec_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -175,7 +175,7 @@ app.post('/set_function', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -185,7 +185,7 @@ app.post('/set_rule', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -195,7 +195,7 @@ app.post('/set_owner', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -205,7 +205,7 @@ app.post('/set', (req, res, next) => {
   const result = createTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -270,6 +270,26 @@ app.get('/committed_nonce_tracker', (req, res, next) => {
 
 app.get('/pending_nonce_tracker', (req, res, next) => {
   const result = node.tp.pendingNonceTracker;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/get_transaction', (req, res, next) => {
+  const transactionInfo = node.tp.transactionTracker[req.query.hash];
+  let result = {};
+  if (transactionInfo) {
+    if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+      const block = node.bc.getBlockByNumber(transactionInfo.number);
+      const index = transactionInfo.index;
+      Object.assign(result, block.transactions[index], { is_confirmed: true });
+    } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+      const address = transactionInfo.address;
+      const index = transactionInfo.index;
+      Object.assign(result, node.tp.transactions[address][index], { is_confirmed: false });
+    }
+  }
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -355,7 +375,10 @@ function createBatchTxData(input) {
 
 function createTransaction(txData, isNoncedTransaction) {
   const transaction = node.createTransaction(txData, isNoncedTransaction);
-  return p2pServer.executeAndBroadcastTransaction(transaction);
+  return {
+    tx_hash: transaction.hash,
+    result: p2pServer.executeAndBroadcastTransaction(transaction)
+  };
 }
 
 function checkIfTransactionShouldBeNonced(input) {

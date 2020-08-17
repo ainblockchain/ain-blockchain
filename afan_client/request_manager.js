@@ -19,18 +19,18 @@ class RequestManager {
 
     return rp(options)
         .then(function(parsedBody) {
-          console.log(parsedBody);
-          // POST succeeded...
+          // POST succeeded
+          return parsedBody;
         })
         .catch(function(err) {
+          // POST failed
           console.log(err);
-          // POST failed...
         });
   }
 
   getRef(ref) {
     const options = {
-      uri: this.endpoint + `/get_value?ref="${this.root}/${ref}"`,
+      uri: this.endpoint + `/get_value?ref=${this.root}/${ref}`,
       json: true,
     };
     return rp(options);
