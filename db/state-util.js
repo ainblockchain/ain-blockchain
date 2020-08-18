@@ -128,11 +128,15 @@ function updateProofHashOfStateNode(stateNode) {
   stateNode.setProofHash(proof);
 }
 
-function updateProofHashForPathRecursive(path, valueTree, idx) {
-  const child = valueTree.getChild(path[idx]);
-  if (path.length === idx || !child) return;
-  updateProofHashForPathRecursive(path, child, idx + 1);
-  updateProofHashOfStateNode(valueTree);
+function updateProofHashForPathRecursive(path, stateTree, idx) {
+  if (idx < 0 || idx >= path.length) {
+    return;
+  }
+  const child = stateTree.getChild(path[idx]);
+  if (child != null) {
+    updateProofHashForPathRecursive(path, child, idx + 1);
+  }
+  updateProofHashOfStateNode(stateTree);
 }
 
 function updateProofHashForPath(fullPath, root) {
