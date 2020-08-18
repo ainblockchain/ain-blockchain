@@ -2,8 +2,23 @@ const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 
 function hasReservedChar(label) {
-  const pathReservedRegex = /[\/\.\*\$#\{\}\[\]\x00-\x1F\x7F]/gm;
-  return ChainUtil.isString(label) ? pathReservedRegex.test(label) : false;
+  const reservedCharRegex = /[\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]/gm;
+  return ChainUtil.isString(label) ? reservedCharRegex.test(label) : false;
+}
+
+function hasAllowedPattern(label) {
+  const wildCardPatternRegex = /^\*$/gm;
+  const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]+$/gm;
+  return ChainUtil.isString(label) ?
+      (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
+}
+
+function isValidStateLabel(label) {
+  if (!ChainUtil.isString(label) || label === '' ||
+      hasReservedChar(label) && !hasAllowedPattern(label)) {
+    return false;
+  }
+  return true;
 }
 
 function isValidPathForStates(fullPath) {
@@ -11,12 +26,7 @@ function isValidPathForStates(fullPath) {
   const path = [];
   for (const label of fullPath) {
     path.push(label);
-    if (ChainUtil.isString(label)) {
-      if (label === '' || hasReservedChar(label)) {
-        isValid = false;
-        break;
-      }
-    } else {
+    if (!isValidStateLabel(label)) {
       isValid = false;
       break;
     }
@@ -30,8 +40,11 @@ function isValidJsObjectForStatesRecursive(obj, path) {
       return false;
     }
     for (const key in obj) {
-      const childObj = obj[key];
       path.push(key);
+      if (!isValidStateLabel(key)) {
+        return false;
+      }
+      const childObj = obj[key];
       const isValidChild = isValidJsObjectForStatesRecursive(childObj, path);
       if (!isValidChild) {
         return false;
@@ -103,6 +116,8 @@ function makeCopyOfStateTree(root) {
 
 module.exports = {
   hasReservedChar,
+  hasAllowedPattern,
+  isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
   jsObjectToStateTree,

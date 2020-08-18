@@ -1,5 +1,7 @@
 const {
   hasReservedChar,
+  hasAllowedPattern,
+  isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
   jsObjectToStateTree,
@@ -82,6 +84,67 @@ describe("state-util", () => {
     })
   })
 
+  describe("hasAllowedPattern", () => {
+    it("when non-string input", () => {
+      expect(hasAllowedPattern(null)).to.equal(false);
+      expect(hasAllowedPattern(undefined)).to.equal(false);
+      expect(hasAllowedPattern(true)).to.equal(false);
+      expect(hasAllowedPattern(false)).to.equal(false);
+      expect(hasAllowedPattern(0)).to.equal(false);
+      expect(hasAllowedPattern([])).to.equal(false);
+      expect(hasAllowedPattern({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(hasAllowedPattern('.')).to.equal(false);
+      expect(hasAllowedPattern('$')).to.equal(false);
+      expect(hasAllowedPattern('./')).to.equal(false);
+      expect(hasAllowedPattern('$/')).to.equal(false);
+      expect(hasAllowedPattern('a.')).to.equal(false);
+      expect(hasAllowedPattern('a$')).to.equal(false);
+      expect(hasAllowedPattern('a.b')).to.equal(false);
+      expect(hasAllowedPattern('a$b')).to.equal(false);
+      expect(hasAllowedPattern('..')).to.equal(false);
+      expect(hasAllowedPattern('$$')).to.equal(false);
+      expect(hasAllowedPattern('.$')).to.equal(false);
+      expect(hasAllowedPattern('$.')).to.equal(false);
+      expect(hasAllowedPattern('*a')).to.equal(false);
+      expect(hasAllowedPattern('a*')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(hasAllowedPattern('.a')).to.equal(true);
+      expect(hasAllowedPattern('$a')).to.equal(true);
+      expect(hasAllowedPattern('*')).to.equal(true);
+    })
+  })
+
+  describe("isValidStateLabel", () => {
+    it("when non-string input", () => {
+      expect(isValidStateLabel(null)).to.equal(false);
+      expect(isValidStateLabel(undefined)).to.equal(false);
+      expect(isValidStateLabel(true)).to.equal(false);
+      expect(isValidStateLabel(false)).to.equal(false);
+      expect(isValidStateLabel(0)).to.equal(false);
+      expect(isValidStateLabel([])).to.equal(false);
+      expect(isValidStateLabel({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(isValidStateLabel('')).to.equal(false);
+      expect(isValidStateLabel('.')).to.equal(false);
+      expect(isValidStateLabel('$')).to.equal(false);
+      expect(isValidStateLabel('/')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(isValidStateLabel('a')).to.equal(true);
+      expect(isValidStateLabel('.a')).to.equal(true);
+      expect(isValidStateLabel('$a')).to.equal(true);
+      expect(isValidStateLabel('*')).to.equal(true);
+    })
+  })
+
   describe("isValidPathForStates", () => {
     it("when invalid input", () => {
       assert.deepEqual(isValidPathForStates([null]), {isValid: false, invalidPath: '/null'});
@@ -101,8 +164,9 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates([['a']]), {isValid: false, invalidPath: '/["a"]'});
       assert.deepEqual(isValidPathForStates(['a', '/']), {isValid: false, invalidPath: '/a//'});
       assert.deepEqual(isValidPathForStates(['a', '.']), {isValid: false, invalidPath: '/a/.'});
-      assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: false, invalidPath: '/a/*'});
       assert.deepEqual(isValidPathForStates(['a', '$']), {isValid: false, invalidPath: '/a/$'});
+      assert.deepEqual(isValidPathForStates(['a', '*b']), {isValid: false, invalidPath: '/a/*b'});
+      assert.deepEqual(isValidPathForStates(['a', 'b*']), {isValid: false, invalidPath: '/a/b*'});
       assert.deepEqual(isValidPathForStates(['a', '#']), {isValid: false, invalidPath: '/a/#'});
       assert.deepEqual(isValidPathForStates(['a', '{']), {isValid: false, invalidPath: '/a/{'});
       assert.deepEqual(isValidPathForStates(['a', '}']), {isValid: false, invalidPath: '/a/}'});
@@ -120,6 +184,9 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates(['a', 'b', 'c']), {isValid: true, invalidPath: ''});
       assert.deepEqual(
           isValidPathForStates(['0', 'true', 'false']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '.b']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '$b']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
     })
   })
 
@@ -150,6 +217,30 @@ describe("state-util", () => {
         isValidJsObjectForStates({
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          'a': {
+            '.': 'x'
+          }
+      }), {isValid: false, invalidPath: '/a/.'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          'a': {
+            '$': 'x'
+          }
+      }), {isValid: false, invalidPath: '/a/$'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          'a': {
+            '*b': 'x'
+          }
+      }), {isValid: false, invalidPath: '/a/*b'});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          'a': {
+            'b*': 'x'
+          }
+      }), {isValid: false, invalidPath: '/a/b*'});
     })
 
     it("when invalid input with deeper path", () => {
@@ -220,6 +311,24 @@ describe("state-util", () => {
         "rules": {
           ".write": true
         }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          'a': {
+            '.b': 'x'
+          }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          'a': {
+            '$b': 'x'
+          }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          'a': {
+            '*': 'x'
+          }
       }), {isValid: true, invalidPath: ''});
     })
   })
