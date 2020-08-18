@@ -366,8 +366,8 @@ describe("state-util: a part of state Proof", () => {
       const bazNode = level2Node.getChild('baz');
       const fooHash = ChainUtil.hashString(jsObject.level2.foo);
       const bazHash = ChainUtil.hashString(jsObject.level2.baz);
-      expect(buildProofHashOfStateNode(fooNode.getValue())).to.equal(fooHash);
-      expect(buildProofHashOfStateNode(bazNode.getValue())).to.equal(bazHash);
+      expect(buildProofHashOfStateNode(fooNode)).to.equal(fooHash);
+      expect(buildProofHashOfStateNode(bazNode)).to.equal(bazHash);
       fooNode.setProofHash(fooHash);
       bazNode.setProofHash(bazHash);
       const childLabels = level2Node.getChildLabels();
@@ -375,7 +375,7 @@ describe("state-util: a part of state Proof", () => {
           + `${HASH_DELIMITER}`
           + `${childLabels[1]}${HASH_DELIMITER}${bazHash}`;
       const level2Hash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      expect(buildProofHashOfStateNode(preimage)).to.equal(level2Hash);
+      expect(buildProofHashOfStateNode(level2Node)).to.equal(level2Hash);
     });
   });
 

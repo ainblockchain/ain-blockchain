@@ -102,29 +102,30 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
-function buildProofHashOfStateNode(stringValue) {
-  return ChainUtil.hashString(stringValue);
+function buildProofHashOfStateNode(StateNode) {
+  let preimage;
+  if (StateNode.getIsLeaf()) {
+    preimage = StateNode.getValue();
+  } else {
+    preimage = StateNode.getChildLabels().map(label => {
+      return `${label}${HASH_DELIMITER}${StateNode.getChild(label).getProofHash()}`;
+    }, '').join(HASH_DELIMITER);
+  }
+  return ChainUtil.hashString(ChainUtil.toString(preimage));
 }
 
-function setProofHashForStateTree(valueTree) {
-  if (!valueTree.getIsLeaf()) {
-    valueTree.getChildLabels().forEach(label => {
-      setProofHashForStateTree(valueTree.getChild(label));
+function setProofHashForStateTree(stateTree) {
+  if (!stateTree.getIsLeaf()) {
+    stateTree.getChildNodes().forEach(node => {
+      setProofHashForStateTree(node);
     });
   }
-  updateProofHashOfStateNode(valueTree);
+  updateProofHashOfStateNode(stateTree);
 }
 
-function updateProofHashOfStateNode(valueTree) {
-  let preimage;
-  if (!valueTree.getIsLeaf()) {
-    preimage = valueTree.getChildLabels().map(label => {
-      return `${label}${HASH_DELIMITER}${valueTree.getChild(label).getProofHash()}`;
-    }, '').join(HASH_DELIMITER);
-  } else {
-    preimage = valueTree.getValue();
-  }
-  valueTree.setProofHash(buildProofHashOfStateNode(ChainUtil.toString(preimage)));
+function updateProofHashOfStateNode(stateNode) {
+  const proof = buildProofHashOfStateNode(stateNode);
+  stateNode.setProofHash(proof);
 }
 
 function updateProofHashForPathRecursive(path, valueTree, idx) {
