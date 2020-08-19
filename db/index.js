@@ -94,20 +94,20 @@ class DB {
     return node;
   }
 
-  writeDatabase(fullPath, value) {
-    const valueTree = jsObjectToStateTree(value);
+  writeDatabase(fullPath, stateObj) {
+    const stateTree = jsObjectToStateTree(stateObj);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
-      this.dbRoot = valueTree;
+      this.dbRoot = stateTree;
     } else {
       const label = fullPath[fullPath.length - 1];
       const parent = this.getRefForWriting(pathToParent);
-      parent.setChild(label, valueTree);
+      parent.setChild(label, stateTree);
     }
-    if (DB.isEmptyNode(valueTree)) {
+    if (DB.isEmptyNode(stateTree)) {
       this.removeEmptyNodes(fullPath);
     } else {
-      setProofHashForStateTree(valueTree);
+      setProofHashForStateTree(stateTree);
     }
     updateProofHashForPath(pathToParent, this.dbRoot);
   }
@@ -138,8 +138,8 @@ class DB {
   }
 
   readDatabase(fullPath) {
-    const node = this.getRefForReading(fullPath);
-    return stateTreeToJsObject(node);
+    const stateNode = this.getRefForReading(fullPath);
+    return stateTreeToJsObject(stateNode);
   }
 
   getValue(valuePath) {
@@ -219,7 +219,6 @@ class DB {
     return resultList;
   }
 
-  // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
