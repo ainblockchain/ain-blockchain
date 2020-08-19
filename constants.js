@@ -1,19 +1,21 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
-const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain/genesis_token.json');
-const GENESIS_ACCOUNTS = path.resolve(__dirname, 'blockchain/genesis_accounts.json');
-const GENESIS_OWNERS = path.resolve(__dirname, 'blockchain/genesis_owners.json');
+
+const GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR || 'blockchain';
+const GENESIS_TOKEN = path.resolve(__dirname, GENESIS_CONFIGS_DIR, 'genesis_token.json');
+const GENESIS_ACCOUNTS = path.resolve(__dirname, GENESIS_CONFIGS_DIR, 'genesis_accounts.json');
+const GENESIS_OWNERS = path.resolve(__dirname, GENESIS_CONFIGS_DIR, 'genesis_owners.json');
 const ADDITIONAL_OWNERS = process.env.ADDITIONAL_OWNERS ? {
   dbPath: process.env.ADDITIONAL_OWNERS.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_OWNERS.split(':')[1])
 } : null;
-const GENESIS_RULES = path.resolve(__dirname, 'blockchain/genesis_rules.json');
+const GENESIS_RULES = path.resolve(__dirname, GENESIS_CONFIGS_DIR, 'genesis_rules.json');
 const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
   dbPath: process.env.ADDITIONAL_RULES.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_RULES.split(':')[1])
 } : null;
-const GENESIS_FUNCTIONS = path.resolve(__dirname, 'blockchain/genesis_functions.json');
+const GENESIS_FUNCTIONS = path.resolve(__dirname, GENESIS_CONFIGS_DIR, 'genesis_functions.json');
 const ADDITIONAL_FUNCTIONS = process.env.ADDITIONAL_FUNCTIONS ? {
   dbPath: process.env.ADDITIONAL_FUNCTIONS.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_FUNCTIONS.split(':')[1])
