@@ -12,6 +12,8 @@ const {
   jsObjectToStateTree,
   stateTreeToJsObject,
   makeCopyOfStateTree,
+  setProofHashForStateTree,
+  updateProofHashForPath
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -94,17 +96,20 @@ class DB {
 
   writeDatabase(fullPath, stateObj) {
     const stateTree = jsObjectToStateTree(stateObj);
+    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       this.dbRoot = stateTree;
     } else {
-      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
       const label = fullPath[fullPath.length - 1];
       const parent = this.getRefForWriting(pathToParent);
       parent.setChild(label, stateTree);
     }
     if (DB.isEmptyNode(stateTree)) {
       this.removeEmptyNodes(fullPath);
+    } else {
+      setProofHashForStateTree(stateTree);
     }
+    updateProofHashForPath(pathToParent, this.dbRoot);
   }
 
   static isEmptyNode(dbNode) {

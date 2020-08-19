@@ -18,6 +18,10 @@ const {
   addConsensusOwners,
   addConsensusRules,
 } = require('./test-util');
+const {
+  HASH_DELIMITER
+} = require('../constants');
+const ChainUtil = require('../chain-util');
 
 describe("DB initialization", () => {
   let node;
@@ -2005,3 +2009,49 @@ describe("DB owner config", () => {
         'unknown_user')).to.equal(true)
   })
 })
+
+describe("Test Writedatabase with proof", () => {
+  let node, jsObject;
+
+  beforeEach(() => {
+    let result;
+
+    rimraf.sync(BLOCKCHAINS_DIR);
+
+    node = new Node();
+    setDbForTesting(node);
+
+    jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+    result = node.db.setValue("test", jsObject);
+    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+  });
+
+  afterEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+  });
+
+  describe("Check proof", () => {
+    it("checks jsObject is correctly set", () => {
+      assert.deepEqual(node.db.getValue("test"), jsObject);
+    });
+
+    it("checks proof hash of /values/test", () => {
+      const testNode = node.db.getRefForReading(['values', 'test']);
+      const childLabels = testNode.getChildLabels();
+      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
+          + `${testNode.getChild(childLabels[0]).getProofHash()}`;
+      const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+      assert.deepEqual(testNode.getProofHash(), rootHash);
+    });
+
+    it("checks newly setup proof hash", () => {
+      node.db.setValue("test/level0/level1/level2", { aaa: 'bbb' });
+      const testNode = node.db.getRefForReading(['values', 'test']);
+      const childLabels = testNode.getChildLabels();
+      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
+          + `${testNode.getChild(childLabels[0]).getProofHash()}`;
+      const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+      assert.deepEqual(testNode.getProofHash(), rootHash);
+    });
+  });
+});
