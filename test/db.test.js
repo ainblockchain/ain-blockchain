@@ -929,6 +929,30 @@ describe("DB operations", () => {
         "error_message": "Invalid object for states: /array"
       });
       expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
+
+      assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'.': 'x'}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /."
+      });
+      expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
+
+      assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'$': 'x'}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /$"
+      });
+      expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
+
+      assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'*a': 'x'}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /*a"
+      });
+      expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
+
+      assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'a*': 'x'}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /a*"
+      });
+      expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
     })
 
     it("when writing with invalid path", () => {
@@ -936,13 +960,17 @@ describe("DB operations", () => {
         "code": 7,
         "error_message": "Invalid path: /test/new/unchartered/nested/."
       });
-      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/*", 12345), {
-        "code": 7,
-        "error_message": "Invalid path: /test/new/unchartered/nested/*"
-      });
       assert.deepEqual(node.db.setValue("test/new/unchartered/nested/$", 12345), {
         "code": 7,
         "error_message": "Invalid path: /test/new/unchartered/nested/$"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/a*", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/a*"
+      });
+      assert.deepEqual(node.db.setValue("test/new/unchartered/nested/*a", 12345), {
+        "code": 7,
+        "error_message": "Invalid path: /test/new/unchartered/nested/*a"
       });
       assert.deepEqual(node.db.setValue("test/new/unchartered/nested/#", 12345), {
         "code": 7,
@@ -1024,16 +1052,30 @@ describe("DB operations", () => {
   })
 
   describe("setFunction operations", () => {
-    it("when overwriting existing function config", () => {
+    it("when overwriting existing function config with simple path", () => {
       const functionConfig = {".function": "other function config"};
       expect(node.db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
       assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), functionConfig)
+    })
+
+    it("when writing with variable path", () => {
+      const functionConfig = {".function": "other function config"};
+      expect(node.db.setFunction("/test/test_function/some/$variable/path", functionConfig))
+          .to.equal(true)
+      assert.deepEqual(
+          node.db.getFunction("/test/test_function/some/$variable/path"), functionConfig)
     })
 
     it("when writing invalid object", () => {
       assert.deepEqual(node.db.setFunction("/test/test_function/some/path2", {array: []}), {
         "code": 6,
         "error_message": "Invalid object for states: /array"
+      });
+      expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
+
+      assert.deepEqual(node.db.setFunction("/test/test_function/some/path2", {'.': 'x'}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /."
       });
       expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
     })
@@ -1047,16 +1089,28 @@ describe("DB operations", () => {
   })
 
   describe("setRule operations", () => {
-    it("when overwriting existing rule config", () => {
+    it("when overwriting existing rule config with simple path", () => {
       const ruleConfig = {".write": "other rule config"};
       expect(node.db.setRule("/test/test_rule/some/path", ruleConfig)).to.equal(true)
       assert.deepEqual(node.db.getRule("/test/test_rule/some/path"), ruleConfig)
+    })
+
+    it("when writing with variable path", () => {
+      const ruleConfig = {".write": "other rule config"};
+      expect(node.db.setRule("/test/test_rule/some/$variable/path", ruleConfig)).to.equal(true)
+      assert.deepEqual(node.db.getRule("/test/test_rule/some/$variable/path"), ruleConfig)
     })
 
     it("when writing invalid object", () => {
       assert.deepEqual(node.db.setRule("/test/test_rule/some/path2", {array: []}), {
         "code": 6,
         "error_message": "Invalid object for states: /array"
+      });
+      expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
+
+      assert.deepEqual(node.db.setRule("/test/test_rule/some/path2", {'.': 'x'}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /."
       });
       expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
     })
@@ -1080,6 +1134,12 @@ describe("DB operations", () => {
       assert.deepEqual(node.db.setOwner("/test/test_owner/some/path2", {array: []}), {
         "code": 6,
         "error_message": "Invalid object for states: /array"
+      });
+      expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
+
+      assert.deepEqual(node.db.setOwner("/test/test_owner/some/path2", {'.': 'x'}), {
+        "code": 6,
+        "error_message": "Invalid object for states: /."
       });
       expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
     })
@@ -1594,6 +1654,8 @@ describe("DB rule config", () => {
   let node1, node2, dbValues;
 
   beforeEach(() => {
+    let result;
+
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node1 = new Node();
@@ -1603,7 +1665,9 @@ describe("DB rule config", () => {
     dbValues = {
       "comcom": "unreadable value",
       "unspecified": {
-        "test/nested": "readable"
+        "test": {
+          "nested": "readable"
+        }
       },
       "ai" : "readable",
       "billing_keys": {
@@ -1627,8 +1691,10 @@ describe("DB rule config", () => {
     dbValues["second_users"][node2.account.address][node2.account.address] = "i can write";
     dbValues["second_users"][node1.account.address]["something_else"] = "i can write";
 
-    node1.db.setValue("test", dbValues);
-    node2.db.setValue("test", dbValues);
+    result = node1.db.setValue("test", dbValues);
+    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    result = node2.db.setValue("test", dbValues);
+    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
   })
 
   afterEach(() => {
