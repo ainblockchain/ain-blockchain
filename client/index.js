@@ -90,7 +90,7 @@ app.get('/get_owner', (req, res, next) => {
 });
 
 /**
- * Returns a proof for the full path to a state node.
+ * Returns a proof of the state node in the given full database path.
  */
 app.get('/get_proof', (req, res, next) => {
   const result = node.db.getProof(req.query.ref);
