@@ -359,23 +359,46 @@ describe("state-util", () => {
 describe("state-util: a part of state Proof", () => {
   describe("buildProofHashOfStateNode", () => {
     it("generates a proof hash of state nodes", () => {
-      const jsObject = { level2: { foo: 'bar', baz: 'caz' } };
+      const jsObject = {
+        level0: {
+          bool: true,
+          number: '100',
+          str: 'foo'
+        }
+      };
       const stateTree = jsObjectToStateTree(jsObject);
-      const level2Node = stateTree.getChild('level2');
-      const fooNode = level2Node.getChild('foo');
-      const bazNode = level2Node.getChild('baz');
-      const fooHash = ChainUtil.hashString(jsObject.level2.foo);
-      const bazHash = ChainUtil.hashString(jsObject.level2.baz);
-      expect(buildProofHashOfStateNode(fooNode)).to.equal(fooHash);
-      expect(buildProofHashOfStateNode(bazNode)).to.equal(bazHash);
-      fooNode.setProofHash(fooHash);
-      bazNode.setProofHash(bazHash);
-      const childLabels = level2Node.getChildLabels();
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}${fooHash}`
-          + `${HASH_DELIMITER}`
-          + `${childLabels[1]}${HASH_DELIMITER}${bazHash}`;
-      const level2Hash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      expect(buildProofHashOfStateNode(level2Node)).to.equal(level2Hash);
+      const level0Node = stateTree.getChild('level0');
+      const boolNode = level0Node.getChild('bool');
+      const numberNode = level0Node.getChild('number');
+      const strNode = level0Node.getChild('str');
+      const boolHash = ChainUtil.hashString(ChainUtil.toString(jsObject.level0.bool));
+      const numberHash = ChainUtil.hashString(ChainUtil.toString(jsObject.level0.number));
+      const strHash = ChainUtil.hashString(ChainUtil.toString(jsObject.level0.str));
+      const builtBoolHash = buildProofHashOfStateNode(boolNode);
+      const builtNumberHash = buildProofHashOfStateNode(numberNode);
+      const builtStrHash = buildProofHashOfStateNode(strNode);
+      expect(builtBoolHash).to.equal(boolHash);
+      expect(builtNumberHash).to.equal(numberHash);
+      expect(builtStrHash).to.equal(strHash);
+      boolNode.setProofHash(builtBoolHash);
+      numberNode.setProofHash(builtNumberHash);
+      strNode.setProofHash(builtStrHash);
+      expect(builtBoolHash).to.equal(boolNode.getProofHash());
+      expect(builtNumberHash).to.equal(numberNode.getProofHash());
+      expect(builtStrHash).to.equal(strNode.getProofHash());
+      const level0Hash = buildProofHashOfStateNode(level0Node);
+      level0Node.setProofHash(level0Hash);
+      expect(level0Hash).to.equal(level0Node.getProofHash());
+    });
+    it("tests none leaf node case", () => {
+      const jsObject = {
+        leaf: 'non-leaf'
+      }
+      const stateTree = jsObjectToStateTree(jsObject);
+      const leafNode = stateTree.getChild('leaf');
+      leafNode.setIsLeaf(true);
+      const nonLeafHash = ChainUtil.hashString(ChainUtil.toString(jsObject.leaf));
+      expect(buildProofHashOfStateNode(leafNode)).to.equal(nonLeafHash);
     });
   });
 
@@ -394,17 +417,23 @@ describe("state-util: a part of state Proof", () => {
 
   describe("updateProofHashForPath", () => {
     it("updates proof hashes to the root", () => {
-      const jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+      const jsObject = {
+        level0: {
+          level1: {
+            level2: {
+              foo: 'bar',
+              baz: 'caz'
+            }
+          }
+        }
+      };
       const stateTree = jsObjectToStateTree(jsObject);
-      const level0Node = stateTree.getChild(stateTree.getChildLabels()[0]);
-      const level1Node = level0Node.getChild(level0Node.getChildLabels()[0]);
+      const level0Node = stateTree.getChild('level0');
+      const level1Node = level0Node.getChild('level1');
       setProofHashForStateTree(level1Node);
       updateProofHashForPath(['level0', 'level1'], stateTree);
-      const childLabels = stateTree.getChildLabels();
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${stateTree.getChild(childLabels[0]).getProofHash()}`;
-      const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      expect(stateTree.getProofHash()).to.equal(rootHash);
+      expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
+      expect(stateTree.getProofHash()).to.equal(buildProofHashOfStateNode(stateTree));
     });
   });
 });
