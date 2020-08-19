@@ -101,6 +101,10 @@ Before starting node jobs, remove existing blockchain files and logs if necessar
 rm -rf blockchain/blockchains logger/logs
 ```
 The default size of the validator whitelist is 5. Set NUM_VALIDATORS environment variable when running the first node if you'd like to run different number of validator nodes than 5.
+The genesis configs directory used is `blockchain` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
+```
+GENESIS_CONFIGS_DIR=blockchain/afan_shard NUM_VALIDATORS=1 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
+```
 
 ### How to run tests
 
