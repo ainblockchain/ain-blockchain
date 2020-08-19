@@ -1,5 +1,4 @@
 {
-  ".function": false,
   "deposit": {
     "$service": {
       "$user_addr": {
