@@ -129,7 +129,7 @@ function updateProofHashOfStateNode(stateNode) {
 }
 
 function updateProofHashForPathRecursive(path, stateTree, idx) {
-  if (idx < 0 || idx >= path.length) {
+  if (idx < 0 || idx > path.length) {
     return;
   }
   const child = stateTree.getChild(path[idx]);
