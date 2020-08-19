@@ -89,6 +89,17 @@ app.get('/get_owner', (req, res, next) => {
     .end();
 });
 
+/**
+ * Returns a proof for the full path to a state node.
+ */
+app.get('/get_proof', (req, res, next) => {
+  const result = node.db.getProof(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/match_function', (req, res, next) => {
   const result = node.db.matchFunction(req.query.ref);
   res.status(200)

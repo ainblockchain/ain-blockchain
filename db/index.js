@@ -161,6 +161,18 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
+  /**
+   * Returns proof for a state node.
+   * 
+   * @param {*} dbPath full path to a database state node.
+   */
+  getProof(dbPath) {
+    const fullPath = ChainUtil.parsePath(dbPath);
+    // TODO(minsu): Validate the first label.
+    // TODO(minsu): Implement this.
+    return {};
+  }
+
   matchFunction(funcPath) {
     const parsedPath = ChainUtil.parsePath(funcPath);
     return this.convertFunctionMatch(this.matchFunctionForParsedPath(parsedPath));
@@ -198,6 +210,8 @@ class DB {
         resultList.push(this.getFunction(item.ref));
       } else if (item.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(item.ref));
+      } else if (item.type === ReadDbOperations.GET_PROOF) {
+        resultList.push(this.getProof(item.ref));
       } else if (item.type === ReadDbOperations.MATCH_FUNCTION) {
         resultList.push(this.matchFunction(item.ref));
       } else if (item.type === ReadDbOperations.MATCH_RULE) {
