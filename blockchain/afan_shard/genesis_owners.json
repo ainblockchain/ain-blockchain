@@ -15,10 +15,24 @@
     ".owner": {
       "owners": {
         "*": {
-          "branch_owner": true,
+          "branch_owner": false,
           "write_function": true,
           "write_owner": true,
           "write_rule": true
+        }
+      }
+    }
+  },
+  "sharding": {
+    "config": {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": false,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true
+          }
         }
       }
     }
@@ -28,7 +42,7 @@
       ".owner": {
         "owners": {
           "*": {
-            "branch_owner": true,
+            "branch_owner": false,
             "write_function": true,
             "write_owner": true,
             "write_rule": true

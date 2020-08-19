@@ -1,0 +1,6 @@
+{
+  "sharding_protocol": "POA",
+  "sharding_path": "/apps/afan",
+  "parent_chain_poc": "node.ainetwork.ai",
+  "reporting_period": 5
+}

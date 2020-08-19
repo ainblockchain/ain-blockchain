@@ -20,7 +20,7 @@ const ADDITIONAL_FUNCTIONS = process.env.ADDITIONAL_FUNCTIONS ? {
   dbPath: process.env.ADDITIONAL_FUNCTIONS.split(':')[0],
   filePath: path.resolve(__dirname, process.env.ADDITIONAL_FUNCTIONS.split(':')[1])
 } : null;
-const {ConsensusConsts} = require('./consensus/constants');
+const GENESIS_SHARDING = path.resolve(__dirname, GENESIS_CONFIGS_DIR, 'genesis_sharding.json');
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
@@ -96,7 +96,10 @@ const PredefinedDbPaths = {
   WITHDRAW_VALUE: 'value',
   DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
   DEPOSIT_CONSENSUS: 'deposit/consensus',
-  WITHDRAW_CONSENSUS: 'withdraw/consensus'
+  WITHDRAW_CONSENSUS: 'withdraw/consensus',
+  // Sharding
+  SHARDING: 'sharding',
+  SHARDING_CONFIG: 'config',
 };
 
 /**
@@ -150,6 +153,28 @@ const NativeFunctionIds = {
   DEPOSIT: '_deposit',
   TRANSFER: '_transfer',
   WITHDRAW: '_withdraw',
+};
+
+/**
+ * Properties of sharding configs
+ * @enum {string}
+ */
+const ShardingProperties = {
+  PARENT_CHAIN_POC: 'parent_chain_poc',
+  REPORTING_PERIOD: 'reporting_period',
+  SHARD_OWNER: 'shard_owner',
+  SHARD_REPORTER: 'shard_reporter',
+  SHARDING_PATH: 'sharding_path',
+  SHARDING_PROTOCOL: 'sharding_protocol',
+};
+
+/**
+ * Sharding protocols
+ * @enum {string}
+ */
+const ShardingProtocols = {
+  NONE: 'NONE',
+  POA: 'POA',
 };
 
 /**
@@ -217,11 +242,6 @@ const GenesisToken = fs.existsSync(GENESIS_TOKEN) ?
 const GenesisAccounts = fs.existsSync(GENESIS_ACCOUNTS) ?
     JSON.parse(fs.readFileSync(GENESIS_ACCOUNTS)) : null;
 
-const GenesisWhitelist = {};
-for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
-  GenesisWhitelist[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
-}
-
 module.exports = {
   GENESIS_OWNERS,
   ADDITIONAL_OWNERS,
@@ -229,6 +249,7 @@ module.exports = {
   ADDITIONAL_RULES,
   GENESIS_FUNCTIONS,
   ADDITIONAL_FUNCTIONS,
+  GENESIS_SHARDING,
   BLOCKCHAINS_DIR,
   PROTOCOL_VERSIONS,
   DEBUG,
@@ -249,6 +270,8 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   NativeFunctionIds,
+  ShardingProperties,
+  ShardingProtocols,
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
