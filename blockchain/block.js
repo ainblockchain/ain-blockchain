@@ -11,10 +11,12 @@ const {
   ADDITIONAL_RULES,
   GENESIS_FUNCTIONS,
   ADDITIONAL_FUNCTIONS,
+  GENESIS_SHARDING,
   PredefinedDbPaths,
   GenesisToken,
   GenesisAccounts,
-  GenesisWhitelist,
+  ShardingProperties,
+  ShardingProtocols,
 } = require('../constants');
 const {
   ConsensusDbPaths,
@@ -153,8 +155,102 @@ class Block {
     return true;
   }
 
+  static getShardingConfig() {
+    if (!fs.existsSync(GENESIS_SHARDING)) {
+      throw Error('Missing genesis sharding config file: ' + GENESIS_SHARDING);
+    }
+    const config = JSON.parse(fs.readFileSync(GENESIS_SHARDING));
+    if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
+      config[ShardingProperties.SHARD_OWNER] = GenesisAccounts.owner.address;
+      config[ShardingProperties.SHARD_REPORTER] = GenesisAccounts.others[0].address;
+    }
+    return config;
+  }
+
+  // TODO(lia): Increase this list to 10.
+  static getConsensusWhitelist() {
+    const whitelist = {};
+    for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+      whitelist[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
+    }
+    return whitelist;
+  }
+
+  static getFunctions() {
+    if (!fs.existsSync(GENESIS_FUNCTIONS)) {
+      throw Error('Missing genesis functions config file: ' + GENESIS_FUNCTIONS);
+    }
+    const functions = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
+    if (ADDITIONAL_FUNCTIONS) {
+      if (fs.existsSync(ADDITIONAL_FUNCTIONS.filePath)) {
+        const addFunctions = JSON.parse(fs.readFileSync(ADDITIONAL_FUNCTIONS.filePath));
+        functions[ADDITIONAL_FUNCTIONS.dbPath] = addFunctions;
+      } else {
+        throw Error('Missing additional functions config file: ' + ADDITIONAL_FUNCTIONS.filePath);
+      }
+    }
+    return functions;
+  }
+
+  static getRules() {
+    if (!fs.existsSync(GENESIS_RULES)) {
+      throw Error('Missing genesis rules config file: ' + GENESIS_RULES);
+    }
+    const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
+    if (ADDITIONAL_RULES) {
+      if (fs.existsSync(ADDITIONAL_RULES.filePath)) {
+        const addRules = JSON.parse(fs.readFileSync(ADDITIONAL_RULES.filePath));
+        rules[ADDITIONAL_RULES.dbPath] = addRules;
+      } else {
+        throw Error('Missing additional rules config file: ' + ADDITIONAL_RULES.filePath);
+      }
+    }
+    return rules;
+  }
+
+  static getShardingRule(ownerAddress) {
+    return `auth === '${ownerAddress}'`;
+  }
+
   static getConsensusRule(ownerAddress) {
     return `auth === '${ownerAddress}'`;
+  }
+
+  static getOwners() {
+    if (!fs.existsSync(GENESIS_OWNERS)) {
+      throw Error('Missing genesis owners config file: ' + GENESIS_OWNERS);
+    }
+    const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
+    if (ADDITIONAL_OWNERS) {
+      if (fs.existsSync(ADDITIONAL_OWNERS.filePath)) {
+        const addOwners = JSON.parse(fs.readFileSync(ADDITIONAL_OWNERS.filePath));
+        owners[ADDITIONAL_OWNERS.dbPath] = addOwners;
+      } else {
+        throw Error('Missing additional owners config file: ' + ADDITIONAL_OWNERS.filePath);
+      }
+    }
+    return owners;
+  }
+
+  static getShardingOwner(ownerAddress) {
+    return {
+      ".owner": {
+        "owners": {
+          [ownerAddress]: {
+            "branch_owner": false,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true
+          },
+          "*": {
+            "branch_owner": false,
+            "write_function": false,
+            "write_owner": false,
+            "write_rule": false
+          }
+        }
+      }
+    };
   }
 
   static getConsensusOwner(ownerAddress) {
@@ -162,7 +258,7 @@ class Block {
       ".owner": {
         "owners": {
           [ownerAddress]: {
-            "branch_owner": true,
+            "branch_owner": false,
             "write_function": true,
             "write_owner": true,
             "write_rule": true
@@ -179,91 +275,84 @@ class Block {
   }
 
   static getDbSetupTransaction(ownerAccount, timestamp, keyBuffer) {
+    const opList = [];
+
     // Token operation
-    const tokenOp = {
+    opList.push({
       type: 'SET_VALUE',
       ref: `/${PredefinedDbPaths.TOKEN}`,
       value: GenesisToken
-    };
+    });
 
     // Balance operation
-    const balanceOp = {
+    opList.push({
       type: 'SET_VALUE',
       ref: `/${PredefinedDbPaths.ACCOUNTS}/${ownerAccount.address}/${PredefinedDbPaths.BALANCE}`,
       value: GenesisToken.total_supply
-    };
-    if (!fs.existsSync(GENESIS_RULES)) {
-      throw Error('Missing genesis rules file: ' + GENESIS_RULES);
-    }
+    });
 
-    // Consensus (whitelisting) operation
-    // TODO(lia): increase this list to 10
-    const whitelistValOp = {
+    const shardingConfig = Block.getShardingConfig();
+    // Sharding value operation
+    opList.push({
+      type: 'SET_VALUE',
+      ref: `/${PredefinedDbPaths.SHARDING}/${PredefinedDbPaths.SHARDING_CONFIG}`,
+      value: shardingConfig,
+    });
+
+    // Consensus (whitelisting) value operation
+    opList.push({
       type: 'SET_VALUE',
       ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
-      value: GenesisWhitelist
-    };
+      value: Block.getConsensusWhitelist(),
+    });
 
-    // Function configs operation
-    const functionConfigs = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
-    if (ADDITIONAL_FUNCTIONS) {
-      if (fs.existsSync(ADDITIONAL_FUNCTIONS.filePath)) {
-        const addFunctions = JSON.parse(fs.readFileSync(ADDITIONAL_FUNCTIONS.filePath));
-        ruleConfigs[ADDITIONAL_FUNCTIONS.dbPath] = addFunctions;
-      } else {
-        throw Error('Missing additional functions file: ' + ADDITIONAL_FUNCTIONS.filePath);
-      }
-    }
-    const functionsOp = {
+    // Functions operation
+    opList.push({
       type: 'SET_FUNCTION',
       ref: '/',
-      value: functionConfigs
-    };
+      value: Block.getFunctions(),
+    });
 
-    // Rule configs operation
-    const ruleConfigs = JSON.parse(fs.readFileSync(GENESIS_RULES));
-    if (ADDITIONAL_RULES) {
-      if (fs.existsSync(ADDITIONAL_RULES.filePath)) {
-        const addRules = JSON.parse(fs.readFileSync(ADDITIONAL_RULES.filePath));
-        ruleConfigs[ADDITIONAL_RULES.dbPath] = addRules;
-      } else {
-        throw Error('Missing additional rules file: ' + ADDITIONAL_RULES.filePath);
-      }
-    }
-    const rulesOp = {
+    // Rules operation
+    opList.push({
       type: 'SET_RULE',
       ref: '/',
-      value: ruleConfigs
-    };
-
-    // Owner configs operation
-    if (!fs.existsSync(GENESIS_OWNERS)) {
-      throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
+      value: Block.getRules(),
+    });
+    if (shardingConfig[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
+      // Sharding rule operation
+      opList.push({
+        type: 'SET_RULE',
+        ref: `/${PredefinedDbPaths.SHARDING}/${PredefinedDbPaths.SHARDING_CONFIG}`,
+        value: Block.getShardingRule(ownerAccount.address)
+      });
     }
-    const ownerConfigs = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
-    if (ADDITIONAL_OWNERS) {
-      if (fs.existsSync(ADDITIONAL_OWNERS.filePath)) {
-        const addOwners = JSON.parse(fs.readFileSync(ADDITIONAL_OWNERS.filePath));
-        ownerConfigs[ADDITIONAL_OWNERS.dbPath] = addOwners;
-      } else {
-        throw Error('Missing additional owners file: ' + ADDITIONAL_OWNERS.filePath);
-      }
-    }
-    const ownersOp = {
-      type: 'SET_OWNER',
-      ref: '/',
-      value: ownerConfigs
-    };
-    const whitelistRuleOp = {
+    // Consensus (whitelisting) rule operation
+    opList.push({
       type: 'SET_RULE',
       ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
       value: Block.getConsensusRule(ownerAccount.address)
-    }
-    const whitelistOwnerOp = {
+    });
+
+    // Owners operation
+    opList.push({
+      type: 'SET_OWNER',
+      ref: '/',
+      value: Block.getOwners(),
+    });
+    // Sharding owner operation
+    opList.push({
+      type: 'SET_OWNER',
+      ref: `/${PredefinedDbPaths.SHARDING}/${PredefinedDbPaths.SHARDING_CONFIG}`,
+      value: shardingConfig[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE ?
+          Block.getShardingOwner(ownerAccount.address) : null,
+    });
+    // Consensus (whitelisting) owner operation
+    opList.push({
       type: 'SET_OWNER',
       ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
       value: Block.getConsensusOwner(ownerAccount.address)
-    }
+    });
 
     // Transaction
     const firstTxData = {
@@ -271,7 +360,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, whitelistValOp, functionsOp, rulesOp, whitelistRuleOp, ownersOp, whitelistOwnerOp ]
+        op_list: opList,
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);

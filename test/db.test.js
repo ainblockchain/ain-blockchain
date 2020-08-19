@@ -15,6 +15,7 @@ const {
 } = require('../constants')
 const {
   setDbForTesting,
+  addShardingOwners,
   addConsensusOwners,
   addConsensusRules,
 } = require('./test-util');
@@ -57,6 +58,7 @@ describe("DB initialization", () => {
   describe("owners", () => {
     it("loading owners properly on initialization", () => {
       const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
+      addShardingOwners(owners);
       addConsensusOwners(owners);
       assert.deepEqual(node.db.getOwner("/"), owners);
     })

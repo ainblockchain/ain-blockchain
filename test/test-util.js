@@ -4,7 +4,7 @@ const syncRequest = require('sync-request');
 const sleep = require('system-sleep');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
-const { GenesisAccounts } = require('../constants');
+const { PredefinedDbPaths, GenesisAccounts } = require('../constants');
 const { ConsensusDbPaths } = require('../consensus/constants');
 
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
@@ -38,6 +38,10 @@ function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   node.addNewBlock(Block.createBlock(lastBlock.hash, votes, txs, lastBlock.number + 1,
     lastBlock.epoch + 1, node.account.address, validators));
+}
+
+function addShardingOwners(owners) {
+  delete owners[PredefinedDbPaths.SHARDING];
 }
 
 function addConsensusOwners(owners) {
@@ -81,6 +85,7 @@ module.exports = {
   setDbForTesting,
   getTransaction,
   addBlock,
+  addShardingOwners,
   addConsensusOwners,
   addConsensusRules,
   waitUntilTxFinalized
