@@ -184,11 +184,14 @@ module.exports = function getMethods(
         case ReadDbOperations.GET_RULE:
           done(null, addProtocolVersion({ result: p2pServer.node.db.getRule(args.ref) }));
           return;
+        case ReadDbOperations.GET_FUNCTION:
+          done(null, addProtocolVersion({ result: p2pServer.node.db.getFunction(args.ref) }));
+          return;
         case ReadDbOperations.GET_OWNER:
           done(null, addProtocolVersion({ result: p2pServer.node.db.getOwner(args.ref) }));
           return;
-        case ReadDbOperations.GET_FUNCTION:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.getFunction(args.ref) }));
+        case ReadDbOperations.GET_PROOF:
+          done(null, addProtocolVersion({ result: p2pServer.node.db.getProof(args.ref) }));
           return;
         case ReadDbOperations.GET:
           done(null, addProtocolVersion({ result: p2pServer.node.db.get(args.op_list) }));
