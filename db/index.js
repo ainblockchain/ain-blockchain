@@ -96,11 +96,11 @@ class DB {
 
   writeDatabase(fullPath, value) {
     const valueTree = jsObjectToStateTree(value);
+    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       this.dbRoot = valueTree;
     } else {
       const label = fullPath[fullPath.length - 1];
-      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
       const parent = this.getRefForWriting(pathToParent);
       parent.setChild(label, valueTree);
     }
@@ -109,7 +109,7 @@ class DB {
     } else {
       setProofHashForStateTree(valueTree);
     }
-    updateProofHashForPath(fullPath, this.dbRoot);
+    updateProofHashForPath(pathToParent, this.dbRoot);
   }
 
   static isEmptyNode(dbNode) {
