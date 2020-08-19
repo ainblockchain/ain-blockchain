@@ -162,9 +162,9 @@ class DB {
   }
 
   /**
-   * Returns proof for a state node.
+   * Returns a proof of a state node.
    * 
-   * @param {*} dbPath full path to a database state node.
+   * @param {*} dbPath full database path to the state node to be proved.
    */
   getProof(dbPath) {
     const fullPath = ChainUtil.parsePath(dbPath);
