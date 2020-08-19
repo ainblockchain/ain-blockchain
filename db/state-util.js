@@ -1,5 +1,6 @@
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
+const { HASH_DELIMITER } = require('../constants');
 
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]/gm;
@@ -115,6 +116,47 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
+function buildProofHashOfStateNode(StateNode) {
+  let preimage;
+  if (StateNode.getIsLeaf()) {
+    preimage = StateNode.getValue();
+  } else {
+    preimage = StateNode.getChildLabels().map(label => {
+      return `${label}${HASH_DELIMITER}${StateNode.getChild(label).getProofHash()}`;
+    }, '').join(HASH_DELIMITER);
+  }
+  return ChainUtil.hashString(ChainUtil.toString(preimage));
+}
+
+function setProofHashForStateTree(stateTree) {
+  if (!stateTree.getIsLeaf()) {
+    stateTree.getChildNodes().forEach(node => {
+      setProofHashForStateTree(node);
+    });
+  }
+  updateProofHashOfStateNode(stateTree);
+}
+
+function updateProofHashOfStateNode(stateNode) {
+  const proof = buildProofHashOfStateNode(stateNode);
+  stateNode.setProofHash(proof);
+}
+
+function updateProofHashForPathRecursive(path, stateTree, idx) {
+  if (idx < 0 || idx > path.length) {
+    return;
+  }
+  const child = stateTree.getChild(path[idx]);
+  if (child != null) {
+    updateProofHashForPathRecursive(path, child, idx + 1);
+  }
+  updateProofHashOfStateNode(stateTree);
+}
+
+function updateProofHashForPath(fullPath, root) {
+  return updateProofHashForPathRecursive(fullPath, root, 0);
+}
+
 module.exports = {
   hasReservedChar,
   hasAllowedPattern,
@@ -125,4 +167,7 @@ module.exports = {
   stateTreeToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
+  buildProofHashOfStateNode,
+  setProofHashForStateTree,
+  updateProofHashForPath,
 }
