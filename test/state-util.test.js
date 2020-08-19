@@ -487,19 +487,25 @@ describe("state-util: a part of state Proof", () => {
     it("tests a NON-leaf node case", () => {
       const jsObject = {
         level0: {
-          bool: true,
-          number: '100',
-          str: 'foo'
+          child1: 'value1',
+          child2: 'value2',
+          child3: 'value3'
         }
       };
       const level0Node = jsObjectToStateTree(jsObject).getChild('level0');
       const childLabels = level0Node.getChildLabels();
+      const boolNode = level0Node.getChild(childLabels[0]);
+      const numberNode = level0Node.getChild(childLabels[1]);
+      const strNode = level0Node.getChild(childLabels[2]);
+      boolNode.setProofHash('proofHash1');
+      numberNode.setProofHash('proofHash2');
+      strNode.setProofHash('proofHash3');
       const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${level0Node.getChild(childLabels[0]).getProofHash()}${HASH_DELIMITER}`
+          + `${boolNode.getProofHash()}${HASH_DELIMITER}`
           + `${childLabels[1]}${HASH_DELIMITER}`
-          + `${level0Node.getChild(childLabels[1]).getProofHash()}${HASH_DELIMITER}`
+          + `${numberNode.getProofHash()}${HASH_DELIMITER}`
           + `${childLabels[2]}${HASH_DELIMITER}`
-          + `${level0Node.getChild(childLabels[2]).getProofHash()}`;
+          + `${strNode.getProofHash()}`;
       expect(buildProofHashOfStateNode(level0Node))
         .to.equal(ChainUtil.hashString(ChainUtil.toString(preimage)));
     });
