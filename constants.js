@@ -328,28 +328,32 @@ function getGenesisOwners() {
 }
 
 function getShardingRule() {
-  return `auth === '${GenesisAccounts.owner.address}'`;
+  return {
+    [RuleProperties.WRITE]: `auth === '${GenesisAccounts.owner.address}'`,
+  };
 }
 
 function getWhitelistRule() {
-  return `auth === '${GenesisAccounts.owner.address}'`;
+  return {
+    [RuleProperties.WRITE]: `auth === '${GenesisAccounts.owner.address}'`,
+  };
 }
 
 function getShardingOwner() {
   return {
-    ".owner": {
-      "owners": {
+    [OwnerProperties.OWNER]: {
+      [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: {
-          "branch_owner": false,
-          "write_function": true,
-          "write_owner": true,
-          "write_rule": true
+          [OwnerProperties.BRANCH_OWNER]: false,
+          [OwnerProperties.WRITE_FUNCTION]: true,
+          [OwnerProperties.WRITE_OWNER]: true,
+          [OwnerProperties.WRITE_RULE]: true
         },
-        "*": {
-          "branch_owner": false,
-          "write_function": false,
-          "write_owner": false,
-          "write_rule": false
+        [OwnerProperties.ANYONE]: {
+          [OwnerProperties.BRANCH_OWNER]: false,
+          [OwnerProperties.WRITE_FUNCTION]: false,
+          [OwnerProperties.WRITE_OWNER]: false,
+          [OwnerProperties.WRITE_RULE]: false
         }
       }
     }
@@ -358,19 +362,19 @@ function getShardingOwner() {
 
 function getWhitelistOwner() {
   return {
-    ".owner": {
-      "owners": {
+    [OwnerProperties.OWNER]: {
+      [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: {
-          "branch_owner": false,
-          "write_function": true,
-          "write_owner": true,
-          "write_rule": true
+          [OwnerProperties.BRANCH_OWNER]: false,
+          [OwnerProperties.WRITE_FUNCTION]: true,
+          [OwnerProperties.WRITE_OWNER]: true,
+          [OwnerProperties.WRITE_RULE]: true
         },
-        "*": {
-          "branch_owner": false,
-          "write_function": false,
-          "write_owner": false,
-          "write_rule": false
+        [OwnerProperties.ANYONE]: {
+          [OwnerProperties.BRANCH_OWNER]: false,
+          [OwnerProperties.WRITE_FUNCTION]: false,
+          [OwnerProperties.WRITE_OWNER]: false,
+          [OwnerProperties.WRITE_RULE]: false
         }
       }
     }
