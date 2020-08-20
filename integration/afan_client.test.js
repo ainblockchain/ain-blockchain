@@ -58,7 +58,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 describe('aFan Client Test', () => {
-  let tracker_proc; let server1_proc; let server2_proc; let server3_proc; let server4_proc;
+  let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
   before(() => {
     rimraf.sync(BLOCKCHAINS_DIR);

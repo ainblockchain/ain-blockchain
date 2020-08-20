@@ -15,7 +15,7 @@
     ".owner": {
       "owners": {
         "*": {
-          "branch_owner": false,
+          "branch_owner": true,
           "write_function": true,
           "write_owner": true,
           "write_rule": true
@@ -28,7 +28,7 @@
       ".owner": {
         "owners": {
           "*": {
-            "branch_owner": false,
+            "branch_owner": true,
             "write_function": true,
             "write_owner": true,
             "write_rule": true
@@ -42,7 +42,7 @@
       ".owner": {
         "owners": {
           "*": {
-            "branch_owner": false,
+            "branch_owner": true,
             "write_function": true,
             "write_owner": true,
             "write_rule": true
