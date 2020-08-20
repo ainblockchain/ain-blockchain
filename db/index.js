@@ -1,7 +1,13 @@
 const logger = require('../logger');
 const {
-  ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
-  FunctionProperties, DEBUG
+  ReadDbOperations,
+  WriteDbOperations,
+  PredefinedDbPaths,
+  OwnerProperties,
+  RuleProperties,
+  FunctionProperties,
+  DEBUG,
+  getOwnerPermissions,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -32,12 +38,7 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
         [OwnerProperties.OWNERS]: {
-          [OwnerProperties.ANYONE]: {
-            [OwnerProperties.BRANCH_OWNER]: true,
-            [OwnerProperties.WRITE_FUNCTION]: true,
-            [OwnerProperties.WRITE_OWNER]: true,
-            [OwnerProperties.WRITE_RULE]: true
-          }
+          [OwnerProperties.ANYONE]: getOwnerPermissions(true, true, true, true),
         }
       }
     });

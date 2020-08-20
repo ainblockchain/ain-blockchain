@@ -343,18 +343,8 @@ function getShardingOwner() {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
-        [GenesisAccounts.owner.address]: {
-          [OwnerProperties.BRANCH_OWNER]: false,
-          [OwnerProperties.WRITE_FUNCTION]: true,
-          [OwnerProperties.WRITE_OWNER]: true,
-          [OwnerProperties.WRITE_RULE]: true
-        },
-        [OwnerProperties.ANYONE]: {
-          [OwnerProperties.BRANCH_OWNER]: false,
-          [OwnerProperties.WRITE_FUNCTION]: false,
-          [OwnerProperties.WRITE_OWNER]: false,
-          [OwnerProperties.WRITE_RULE]: false
-        }
+        [GenesisAccounts.owner.address]: getOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: getOwnerPermissions(false, false, false, false),
       }
     }
   };
@@ -364,20 +354,19 @@ function getWhitelistOwner() {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
-        [GenesisAccounts.owner.address]: {
-          [OwnerProperties.BRANCH_OWNER]: false,
-          [OwnerProperties.WRITE_FUNCTION]: true,
-          [OwnerProperties.WRITE_OWNER]: true,
-          [OwnerProperties.WRITE_RULE]: true
-        },
-        [OwnerProperties.ANYONE]: {
-          [OwnerProperties.BRANCH_OWNER]: false,
-          [OwnerProperties.WRITE_FUNCTION]: false,
-          [OwnerProperties.WRITE_OWNER]: false,
-          [OwnerProperties.WRITE_RULE]: false
-        }
+        [GenesisAccounts.owner.address]: getOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: getOwnerPermissions(false, false, false, false),
       }
     }
+  };
+}
+
+function getOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
+  return {
+    [OwnerProperties.BRANCH_OWNER]: branchOwner,
+    [OwnerProperties.WRITE_FUNCTION]: writeFunction,
+    [OwnerProperties.WRITE_OWNER]: writeOwner,
+    [OwnerProperties.WRITE_RULE]: writeRule
   };
 }
 
@@ -417,4 +406,5 @@ module.exports = {
   GenesisRules,
   GenesisOwners,
   HASH_DELIMITER,
+  getOwnerPermissions,
 };
