@@ -2010,7 +2010,7 @@ describe("DB owner config", () => {
   })
 })
 
-describe("Test Writedatabase with proof", () => {
+describe("Test proof with database", () => {
   let node, jsObject;
 
   beforeEach(() => {
@@ -2021,7 +2021,16 @@ describe("Test Writedatabase with proof", () => {
     node = new Node();
     setDbForTesting(node);
 
-    jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
+    jsObject = {
+      level0: {
+        level1: {
+          level2: {
+            foo: 'bar',
+            baz: 'caz'
+          }
+        }
+      }
+    };
     result = node.db.setValue("test", jsObject);
     console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
   });
@@ -2030,18 +2039,14 @@ describe("Test Writedatabase with proof", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  describe("Check proof", () => {
-    it("checks jsObject is correctly set", () => {
-      assert.deepEqual(node.db.getValue("test"), jsObject);
-    });
-
+  describe("Check proof on writeDatabase and setValue", () => {
     it("checks proof hash of /values/test", () => {
       const testNode = node.db.getRefForReading(['values', 'test']);
       const childLabels = testNode.getChildLabels();
       const preimage = `${childLabels[0]}${HASH_DELIMITER}`
           + `${testNode.getChild(childLabels[0]).getProofHash()}`;
       const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      assert.deepEqual(testNode.getProofHash(), rootHash);
+      expect(testNode.getProofHash()).to.equal(rootHash);
     });
 
     it("checks newly setup proof hash", () => {
@@ -2051,7 +2056,14 @@ describe("Test Writedatabase with proof", () => {
       const preimage = `${childLabels[0]}${HASH_DELIMITER}`
           + `${testNode.getChild(childLabels[0]).getProofHash()}`;
       const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      assert.deepEqual(testNode.getProofHash(), rootHash);
+      expect(testNode.getProofHash()).to.equal(rootHash);
+    });
+  });
+
+  describe("getProof", () => {
+    it("tests values, owners, rules and functions", () => {
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      expect(node.db.getProof('/values/test')).to.equal(valuesNode.getProofHash());
     });
   });
 });
