@@ -343,8 +343,8 @@ function getShardingOwner() {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
-        [GenesisAccounts.owner.address]: getOwnerPermissions(false, true, true, true),
-        [OwnerProperties.ANYONE]: getOwnerPermissions(false, false, false, false),
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
       }
     }
   };
@@ -354,14 +354,14 @@ function getWhitelistOwner() {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
-        [GenesisAccounts.owner.address]: getOwnerPermissions(false, true, true, true),
-        [OwnerProperties.ANYONE]: getOwnerPermissions(false, false, false, false),
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
       }
     }
   };
 }
 
-function getOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
+function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
   return {
     [OwnerProperties.BRANCH_OWNER]: branchOwner,
     [OwnerProperties.WRITE_FUNCTION]: writeFunction,
@@ -406,5 +406,5 @@ module.exports = {
   GenesisRules,
   GenesisOwners,
   HASH_DELIMITER,
-  getOwnerPermissions,
+  buildOwnerPermissions,
 };
