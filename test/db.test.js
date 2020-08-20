@@ -2063,7 +2063,13 @@ describe("Test proof with database", () => {
   describe("getProof", () => {
     it("tests values, owners, rules and functions", () => {
       const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions']);
       expect(node.db.getProof('/values/test')).to.equal(valuesNode.getProofHash());
+      expect(node.db.getProof('/owners/test')).to.equal(ownersNode.getProofHash());
+      expect(node.db.getProof('/rules/test')).to.equal(rulesNode.getProofHash());
+      expect(node.db.getProof('/functions')).to.equal(functionNode.getProofHash());
     });
   });
 });
