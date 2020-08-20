@@ -7,7 +7,7 @@ const {
   RuleProperties,
   FunctionProperties,
   DEBUG,
-  getOwnerPermissions,
+  buildOwnerPermissions,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -38,7 +38,7 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
         [OwnerProperties.OWNERS]: {
-          [OwnerProperties.ANYONE]: getOwnerPermissions(true, true, true, true),
+          [OwnerProperties.ANYONE]: buildOwnerPermissions(true, true, true, true),
         }
       }
     });
