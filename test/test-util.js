@@ -5,6 +5,13 @@ const sleep = require('system-sleep');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 
+function readConfigFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    throw Error('Missing config file: ' + filePath);
+  }
+  return JSON.parse(fs.readFileSync(filePath));
+}
+
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
 
@@ -12,16 +19,10 @@ function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
 
   if (!skipTestingConfig) {
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
-    if (!fs.existsSync(ownersFile)) {
-      throw Error('Missing owners file: ' + ownersFile);
-    }
-    const owners = JSON.parse(fs.readFileSync(ownersFile));
+    const owners = readConfigFile(ownersFile);
     node.db.setOwnersForTesting("test", owners);
     const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
-    if (!fs.existsSync(rulesFile)) {
-      throw Error('Missing rules file: ' + rulesFile);
-    }
-    const rules = JSON.parse(fs.readFileSync(rulesFile));
+    const rules = readConfigFile(rulesFile);
     node.db.setRulesForTesting("test", rules);
   }
 }
@@ -58,6 +59,7 @@ function waitUntilTxFinalized(servers, txHash) {
 }
 
 module.exports = {
+  readConfigFile,
   setDbForTesting,
   getTransaction,
   addBlock,
