@@ -6,18 +6,20 @@ const assert = chai.assert;
 const Node = require('../node')
 const {
   BLOCKCHAINS_DIR,
+  PredefinedDbPaths,
   GenesisToken,
   GenesisAccounts,
-  GENESIS_OWNERS,
-  GENESIS_RULES,
-  GENESIS_FUNCTIONS,
-  PredefinedDbPaths,
+  GenesisSharding,
+  GenesisWhitelist,
+  GenesisFunctions,
+  GenesisRules,
+  GenesisOwners,
 } = require('../constants')
 const {
+  ConsensusDbPaths,
+} = require('../consensus/constants')
+const {
   setDbForTesting,
-  addShardingOwners,
-  addConsensusOwners,
-  addConsensusRules,
 } = require('./test-util');
 const {
   HASH_DELIMITER
@@ -55,27 +57,33 @@ describe("DB initialization", () => {
     })
   })
 
-  describe("owners", () => {
-    it("loading owners properly on initialization", () => {
-      const owners = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
-      addShardingOwners(owners);
-      addConsensusOwners(owners);
-      assert.deepEqual(node.db.getOwner("/"), owners);
+  describe("sharding", () => {
+    it("loading sharding properly on initialization", () => {
+      assert.deepEqual(node.db.getValue(`/${PredefinedDbPaths.SHARDING}/${PredefinedDbPaths.SHARDING_CONFIG}`), GenesisSharding);
     })
   })
 
-  describe("rules", () => {
-    it("loading rules properly on initialization", () => {
-      const rules = JSON.parse(fs.readFileSync(GENESIS_RULES));
-      addConsensusRules(rules);
-      assert.deepEqual(node.db.getRule("/"), rules);
+  describe("whitelist", () => {
+    it("loading whitelist properly on initialization", () => {
+      assert.deepEqual(node.db.getValue(`/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`), GenesisWhitelist);
     })
   })
 
   describe("functions", () => {
     it("loading functions properly on initialization", () => {
-      const rules = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
-      assert.deepEqual(node.db.getFunction("/"), rules);
+      assert.deepEqual(node.db.getFunction('/'), GenesisFunctions);
+    })
+  })
+
+  describe("rules", () => {
+    it("loading rules properly on initialization", () => {
+      assert.deepEqual(node.db.getRule("/"), GenesisRules);
+    })
+  })
+
+  describe("owners", () => {
+    it("loading owners properly on initialization", () => {
+      assert.deepEqual(node.db.getOwner('/'), GenesisOwners);
     })
   })
 })

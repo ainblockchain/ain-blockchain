@@ -4,8 +4,6 @@ const syncRequest = require('sync-request');
 const sleep = require('system-sleep');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
-const { PredefinedDbPaths, GenesisAccounts } = require('../constants');
-const { ConsensusDbPaths } = require('../consensus/constants');
 
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
@@ -40,28 +38,6 @@ function addBlock(node, txs, votes, validators) {
     lastBlock.epoch + 1, node.account.address, validators));
 }
 
-function addShardingOwners(owners) {
-  delete owners[PredefinedDbPaths.SHARDING];
-}
-
-function addConsensusOwners(owners) {
-  const ownerAddress = GenesisAccounts.owner.address;
-  if (!owners[ConsensusDbPaths.CONSENSUS]) {
-    owners[ConsensusDbPaths.CONSENSUS] = {};
-  }
-  owners[ConsensusDbPaths.CONSENSUS][ConsensusDbPaths.WHITELIST]
-      = Block.getConsensusOwner(ownerAddress);
-}
-
-function addConsensusRules(rules) {
-  const ownerAddress = GenesisAccounts.owner.address;
-  if (!rules[ConsensusDbPaths.CONSENSUS]) {
-    rules[ConsensusDbPaths.CONSENSUS] = {};
-  }
-  rules[ConsensusDbPaths.CONSENSUS][ConsensusDbPaths.WHITELIST]
-      = Block.getConsensusRule(ownerAddress);
-}
-
 function waitUntilTxFinalized(servers, txHash) {
   const unchecked = new Set(servers);
   while (true) {
@@ -85,8 +61,5 @@ module.exports = {
   setDbForTesting,
   getTransaction,
   addBlock,
-  addShardingOwners,
-  addConsensusOwners,
-  addConsensusRules,
   waitUntilTxFinalized
 };
