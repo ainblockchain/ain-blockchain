@@ -2,8 +2,8 @@ const RuleUtil = require('./db/rule-util');
 const ruleUtil = new RuleUtil();
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
+const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
-const _ = require('lodash');
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
@@ -87,7 +87,7 @@ class ChainUtil {
       if (ChainUtil.isString(label)) {
         formatted += '/' + label;
       } else {
-        formatted += '/' + JSON.stringify(label);
+        formatted += '/' + stringify(label);
       }
     }
     return (formatted.startsWith('/') ? '' : '/') + formatted;
