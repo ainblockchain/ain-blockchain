@@ -410,15 +410,11 @@ module.exports = {
   DefaultValues,
   GenesisToken,
   GenesisAccounts,
-<<<<<<< HEAD
-  GenesisWhitelist,
-  HASH_DELIMITER
-=======
   GenesisSharding,
   GenesisWhitelist,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
->>>>>>> Make shard inherit default genesis config. Refactor genesis block generation.
+  HASH_DELIMITER,
 };
