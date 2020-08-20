@@ -173,9 +173,8 @@ class DB {
    */
   getProof(dbPath) {
     const fullPath = ChainUtil.parsePath(dbPath);
-    // TODO(minsu): Validate the first label.
-    // TODO(minsu): Implement this.
-    return {};
+    const stateNode = this.getRefForReading(fullPath);
+    return stateNode.getProofHash();
   }
 
   matchFunction(funcPath) {
