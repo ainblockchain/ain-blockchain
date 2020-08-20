@@ -63,4 +63,131 @@ describe("ChainUtil", () => {
       assert.deepEqual(ChainUtil.formatPath(['a', 'b', 'c']), '/a/b/c');
     })
   })
+
+  describe("getJsObject", () => {
+    let obj;
+
+    beforeEach(() => {
+      obj = {
+        a: {
+          aa: '/a/aa',
+          ab: true,
+          ac: 10,
+          ad: [],
+        },
+        b: {
+          ba: '/b/ba'
+        }
+      };
+    })
+
+    it("when abnormal path", () => {
+      assert.deepEqual(ChainUtil.getJsObject(obj, null), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, undefined), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, true), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, 0), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ''), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, {}), null);
+    })
+
+    it("when non-existing path", () => {
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['z']), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'az']), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'aa', 'aaz']), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ab', 'abz']), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ac', 'acz']), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ad', 'adz']), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['b', 'bz']), null);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['b', 'ba', 'baz']), null);
+    })
+
+    it("when existing path", () => {
+      assert.deepEqual(ChainUtil.getJsObject(obj, []), obj);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a']), obj.a);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'aa']), obj.a.aa);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ab']), obj.a.ab);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ac']), obj.a.ac);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ad']), obj.a.ad);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['b']), obj.b);
+      assert.deepEqual(ChainUtil.getJsObject(obj, ['b', 'ba']), obj.b.ba);
+    })
+  })
+
+  describe("setJsObject", () => {
+    const org = {
+      a: {
+        aa: '/a/aa',
+        ab: true,
+        ac: 10,
+        ad: [],
+      },
+      b: {
+        ba: '/b/ba'
+      }
+    };
+    const value = {
+      some: 'value'
+    };
+    let obj;
+
+    beforeEach(() => {
+      obj = JSON.parse(JSON.stringify(org));
+    })
+
+    it("when abnormal path", () => {
+      expect(ChainUtil.setJsObject(obj, null, null)).to.equal(false);
+      assert.deepEqual(obj, org);
+      expect(ChainUtil.setJsObject(obj, undefined, null)).to.equal(false);
+      assert.deepEqual(obj, org);
+      expect(ChainUtil.setJsObject(obj, true, null)).to.equal(false);
+      assert.deepEqual(obj, org);
+      expect(ChainUtil.setJsObject(obj, 0, null)).to.equal(false);
+      assert.deepEqual(obj, org);
+      expect(ChainUtil.setJsObject(obj, '', null)).to.equal(false);
+      assert.deepEqual(obj, org);
+      expect(ChainUtil.setJsObject(obj, {}, null)).to.equal(false);
+      assert.deepEqual(obj, org);
+    })
+
+    it("when non-existing path", () => {
+      expect(ChainUtil.setJsObject(obj, ['z'], value)).to.equal(true);
+      assert.deepEqual(obj.z, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'az'], value)).to.equal(true);
+      assert.deepEqual(obj.a.az, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'aa', 'aaz'], value)).to.equal(true);
+      assert.deepEqual(obj.a.aa.aaz, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'ab', 'abz'], value)).to.equal(true);
+      assert.deepEqual(obj.a.ab.abz, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'ac', 'acz'], value)).to.equal(true);
+      assert.deepEqual(obj.a.ac.acz, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'ad', 'adz'], value)).to.equal(true);
+      assert.deepEqual(obj.a.ad.adz, value);
+      expect(ChainUtil.setJsObject(obj, ['b', 'bz'], value)).to.equal(true);
+      assert.deepEqual(obj.b.bz, value);
+      expect(ChainUtil.setJsObject(obj, ['b', 'ba', 'baz'], value)).to.equal(true);
+      assert.deepEqual(obj.b.ba.baz, value);
+    })
+
+    it("when empty path", () => {
+      expect(ChainUtil.setJsObject(obj, [], value)).to.equal(false);
+      assert.deepEqual(obj, org);  // No change.
+    })
+
+    it("when existing path", () => {
+      expect(ChainUtil.setJsObject(obj, ['a'], value)).to.equal(true);
+      assert.deepEqual(obj.a, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'aa'], value)).to.equal(true);
+      assert.deepEqual(obj.a.aa, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'ab'], value)).to.equal(true);
+      assert.deepEqual(obj.a.ab, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'ac'], value)).to.equal(true);
+      assert.deepEqual(obj.a.ac, value);
+      expect(ChainUtil.setJsObject(obj, ['a', 'ad'], value)).to.equal(true);
+      assert.deepEqual(obj.a.ad, value);
+      expect(ChainUtil.setJsObject(obj, ['b'], value)).to.equal(true);
+      assert.deepEqual(obj.b, value);
+      expect(ChainUtil.setJsObject(obj, ['b', 'ba'], value)).to.equal(true);
+      assert.deepEqual(obj.b.ba, value);
+    })
+  })
 })

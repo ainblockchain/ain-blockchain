@@ -42,7 +42,7 @@ class ChainUtil {
   }
 
   static isArray(value) {
-    return ruleUtil.isString(value);
+    return ruleUtil.isArray(value);
   }
 
   static isDict(value) {
@@ -91,6 +91,44 @@ class ChainUtil {
       }
     }
     return (formatted.startsWith('/') ? '' : '/') + formatted;
+  }
+
+  static getJsObject(obj, path) {
+    if (!ChainUtil.isArray(path)) {
+      return null;
+    }
+    let ref = obj;
+    for (let i = 0; i < path.length; i++) {
+      const key = String(path[i]);
+      if (!ChainUtil.isDict(ref)) {
+        return null;
+      }
+      ref = ref[key];
+    }
+    return ref === undefined ? null : ref;
+  }
+
+  static setJsObject(obj, path, value) {
+    if (!ChainUtil.isArray(path)) {
+      return false;
+    }
+    if (!ChainUtil.isDict(obj)) {
+      return false;
+    }
+    if (path.length == 0) {
+      return false;
+    }
+    let ref = obj;
+    for (let i = 0; i < path.length - 1; i++) {
+      const key = String(path[i]);
+      if (!ChainUtil.isDict(ref[key])) {
+        ref[key] = {};
+      }
+      ref = ref[key];
+    }
+    const key = String(path[path.length - 1]);
+    ref[key] = value;;
+    return true;
   }
 
   static transactionFailed(response) {
