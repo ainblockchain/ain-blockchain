@@ -2069,11 +2069,11 @@ describe("Test proof with database", () => {
       const valuesNode = node.db.getRefForReading(['values', 'test']);
       const ownersNode = node.db.getRefForReading(['owners', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'test']);
-      const functionNode = node.db.getRefForReading(['functions']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
       expect(node.db.getProof('/values/test')).to.equal(valuesNode.getProofHash());
       expect(node.db.getProof('/owners/test')).to.equal(ownersNode.getProofHash());
       expect(node.db.getProof('/rules/test')).to.equal(rulesNode.getProofHash());
-      expect(node.db.getProof('/functions')).to.equal(functionNode.getProofHash());
+      expect(node.db.getProof('/functions/test')).to.equal(functionNode.getProofHash());
     });
   });
 });

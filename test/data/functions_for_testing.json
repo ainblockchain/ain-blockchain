@@ -1,0 +1,15 @@
+{
+  "some_function": {
+    "$var_path": {
+      ".function": "some function config with var path"
+    },
+    "path": {
+      ".function": "some function config",
+      "deeper": {
+        "path": {
+          ".function": "some function config deeper"
+        }
+      }
+    }
+  }
+}

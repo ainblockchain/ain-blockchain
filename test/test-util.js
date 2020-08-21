@@ -25,6 +25,12 @@ function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
     }
     const rules = JSON.parse(fs.readFileSync(rulesFile));
     node.db.setRulesForTesting("test", rules);
+    const functionsFile = path.resolve(__dirname, './data/functions_for_testing.json');
+    if (!fs.existsSync(functionsFile)) {
+      throw Error('Missing rules file: ' + functionsFile);
+    }
+    const functions = JSON.parse(fs.readFileSync(functionsFile));
+    node.db.setFunctionsForTesting("test", functions);
   }
 }
 
