@@ -57,6 +57,12 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
+  // For testing purpose only.
+  setFunctionsForTesting(functionsPath, functions) {
+    this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT,
+      ...ChainUtil.parsePath(functionsPath)], functions);
+  }
+
   /**
    * Returns reference to the input path for reading if exists, otherwise null.
    */
