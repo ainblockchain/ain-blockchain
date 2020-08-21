@@ -21,6 +21,9 @@ const {
 const {
   HASH_DELIMITER
 } = require('../constants');
+const {
+  buildProofHashOfStateNode
+} = require('../db/state-util');
 const ChainUtil = require('../chain-util');
 
 describe("DB initialization", () => {
@@ -2027,8 +2030,17 @@ describe("Test proof with database", () => {
           level2: {
             foo: 'bar',
             baz: 'caz'
+          },
+          level2_sibling: {
+            data1: true,
+            data2: -200
           }
         }
+      },
+      another_route: {
+        child1: '',
+        child2: 0,
+        child3: false
       }
     };
     result = node.db.setValue("test", jsObject);
@@ -2039,24 +2051,16 @@ describe("Test proof with database", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  describe("Check proof on writeDatabase and setValue", () => {
+  describe("Check proof for setValue()", () => {
     it("checks proof hash of /values/test", () => {
       const testNode = node.db.getRefForReading(['values', 'test']);
-      const childLabels = testNode.getChildLabels();
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${testNode.getChild(childLabels[0]).getProofHash()}`;
-      const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      expect(testNode.getProofHash()).to.equal(rootHash);
+      expect(testNode.getProofHash()).to.equal(buildProofHashOfStateNode(testNode));
     });
 
     it("checks newly setup proof hash", () => {
       node.db.setValue("test/level0/level1/level2", { aaa: 'bbb' });
       const testNode = node.db.getRefForReading(['values', 'test']);
-      const childLabels = testNode.getChildLabels();
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${testNode.getChild(childLabels[0]).getProofHash()}`;
-      const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      expect(testNode.getProofHash()).to.equal(rootHash);
+      expect(testNode.getProofHash()).to.equal(buildProofHashOfStateNode(testNode));
     });
   });
 
