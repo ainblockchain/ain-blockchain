@@ -174,7 +174,8 @@ class DB {
   getProof(dbPath) {
     const fullPath = ChainUtil.parsePath(dbPath);
     const stateNode = this.getRefForReading(fullPath);
-    return stateNode.getProofHash();
+    if (!!stateNode) return stateNode.getProofHash();
+    else return null;
   }
 
   matchFunction(funcPath) {
