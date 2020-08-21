@@ -219,15 +219,15 @@ class Block {
     return (new Transaction({ signature: secondSig, transaction: secondTxData }));
   }
 
-  static getGenesisBlockData(timestamp) {
+  static getGenesisBlockData(genesisTime) {
     const ownerAccount = GenesisAccounts.owner;
     if (!ownerAccount) {
       throw Error('Missing owner account.');
     }
     const keyBuffer = Buffer.from(ownerAccount.private_key, 'hex');
 
-    const firstTx = this.getDbSetupTransaction(timestamp, keyBuffer);
-    const secondTx = this.getAccountsSetupTransaction(ownerAccount, timestamp, keyBuffer);
+    const firstTx = this.getDbSetupTransaction(genesisTime, keyBuffer);
+    const secondTx = this.getAccountsSetupTransaction(ownerAccount, genesisTime, keyBuffer);
 
     return [firstTx, secondTx];
   }
@@ -236,15 +236,15 @@ class Block {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
     const ownerAccount = GenesisAccounts.owner;
-    const timestamp = Date.now();
+    const genesisTime = Date.now();
     const lastHash = '';
     const lastVotes = [];
-    const transactions = Block.getGenesisBlockData(timestamp);
+    const transactions = Block.getGenesisBlockData(genesisTime);
     const number = 0;
     const epoch = 0;
     const proposer = ownerAccount.address;
    const validators = GenesisWhitelist;
-    return new this(lastHash, lastVotes, transactions, number, epoch, timestamp,
+    return new this(lastHash, lastVotes, transactions, number, epoch, genesisTime,
         proposer, validators);
   }
 }
