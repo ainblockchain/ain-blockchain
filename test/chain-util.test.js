@@ -28,6 +28,38 @@ describe("ChainUtil", () => {
     })
   })
 
+  describe("toString", () => {
+    it("when normal input", () => {
+      expect(ChainUtil.toString(true)).to.equal('true');
+      expect(ChainUtil.toString(false)).to.equal('false');
+      expect(ChainUtil.toString(0)).to.equal('0');
+      expect(ChainUtil.toString(100)).to.equal('100');
+      expect(ChainUtil.toString(-100)).to.equal('-100');
+      expect(ChainUtil.toString(10.19)).to.equal('10.19');
+      expect(ChainUtil.toString(-10.19)).to.equal('-10.19');
+      expect(ChainUtil.toString('')).to.equal('');
+      expect(ChainUtil.toString('!@#$%^&*()_+')).to.equal('!@#$%^&*()_+');
+      expect(ChainUtil.toString([])).to.equal('[]');
+      expect(ChainUtil.toString([true, 10, 'abc'])).to.equal('[true,10,"abc"]');
+      expect(ChainUtil.toString({})).to.equal('{}');
+      expect(ChainUtil.toString({
+        bool: true,
+        num: 10,
+        str: 'abc',
+        obj: {
+          nil: null,
+          undef: undefined,
+          inf: Infinity,
+          nan: NaN,
+        }
+      })).to.equal('{"bool":true,"num":10,"str":"abc","obj":{"nil":null,"inf":null,"nan":null}}');
+      expect(ChainUtil.toString(null)).to.equal('null');
+      expect(ChainUtil.toString(undefined)).to.equal('');
+      expect(ChainUtil.toString(Infinity)).to.equal('null');
+      expect(ChainUtil.toString(NaN)).to.equal('null');
+    })
+  })
+
   describe("parsePath", () => {
     it("when abnormal input", () => {
       assert.deepEqual(ChainUtil.parsePath('//a/b/c'), ['a', 'b', 'c']);

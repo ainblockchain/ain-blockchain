@@ -62,11 +62,17 @@ class ChainUtil {
   }
 
   static toString(value) {
-    if (ChainUtil.isBool(value)) return value.toString();
-    else if (ChainUtil.isNumber(value)) return value.toString();
-    else if (ChainUtil.isString(value)) return value;
-    else if (ChainUtil.isArray(value)) return JSON.stringify(value);
-    else if (ChainUtil.isDict(value)) return JSON.stringify(value);
+    if (ChainUtil.isBool(value)) {
+      return value.toString();
+    } else if (ChainUtil.isNumber(value)) {
+      return value.toString();
+    } else if (ChainUtil.isString(value)) {
+      return value;
+    } else if (value === undefined) {
+      return '';
+    } else {
+      return JSON.stringify(value);
+    }
   }
 
   static parsePath(path) {
@@ -99,7 +105,7 @@ class ChainUtil {
     }
     let ref = obj;
     for (let i = 0; i < path.length; i++) {
-      const key = String(path[i]);
+      const key = ChainUtil.toString(path[i]);
       if (!ChainUtil.isDict(ref)) {
         return null;
       }
@@ -120,13 +126,13 @@ class ChainUtil {
     }
     let ref = obj;
     for (let i = 0; i < path.length - 1; i++) {
-      const key = String(path[i]);
+      const key = ChainUtil.toString(path[i]);
       if (!ChainUtil.isDict(ref[key])) {
         ref[key] = {};
       }
       ref = ref[key];
     }
-    const key = String(path[path.length - 1]);
+    const key = ChainUtil.toString(path[path.length - 1]);
     ref[key] = value;;
     return true;
   }
