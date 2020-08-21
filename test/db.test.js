@@ -2014,7 +2014,7 @@ describe("DB owner config", () => {
 })
 
 describe("Test proof with database", () => {
-  let node, jsObject;
+  let node, valuesObject;
 
   beforeEach(() => {
     let result;
@@ -2024,7 +2024,7 @@ describe("Test proof with database", () => {
     node = new Node();
     setDbForTesting(node);
 
-    jsObject = {
+    valuesObject = {
       level0: {
         level1: {
           level2: {
@@ -2043,7 +2043,7 @@ describe("Test proof with database", () => {
         child3: false
       }
     };
-    result = node.db.setValue("test", jsObject);
+    result = node.db.setValue("test", valuesObject);
     console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
   });
 
@@ -2053,14 +2053,60 @@ describe("Test proof with database", () => {
 
   describe("Check proof for setValue()", () => {
     it("checks proof hash of /values/test", () => {
-      const testNode = node.db.getRefForReading(['values', 'test']);
-      expect(testNode.getProofHash()).to.equal(buildProofHashOfStateNode(testNode));
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
+      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
+      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
+      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
+      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
     });
 
     it("checks newly setup proof hash", () => {
+      const nestedRules = {
+        "nested": {
+          "$var_path": {
+            ".write": "auth !== 'abcd'"
+          },
+          "path": {
+            ".write": "auth === 'abcd'",
+            "deeper": {
+              "path": {
+                ".write": "auth === 'ijkl'"
+              }
+            }
+          }
+        }
+      };
+
+      const dbFuncs = {
+        "some": {
+          "$var_path": {
+            ".function": "some function config with var path"
+          },
+          "path": {
+            ".function": "some function config",
+            "deeper": {
+              "path": {
+                ".function": "some function config deeper"
+              }
+            }
+          },
+        }
+      };
       node.db.setValue("test/level0/level1/level2", { aaa: 'bbb' });
-      const testNode = node.db.getRefForReading(['values', 'test']);
-      expect(testNode.getProofHash()).to.equal(buildProofHashOfStateNode(testNode));
+      node.db.setOwner("test/empty_owners/.owner/owners/*/write_function", false);
+      node.db.setRule("test/test_rules", nestedRules);
+      node.db.setFunction("test/test_functions", dbFuncs);
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
+      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
+      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
+      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
+      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
     });
   });
 
