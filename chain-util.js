@@ -133,7 +133,7 @@ class ChainUtil {
       ref = ref[key];
     }
     const key = ChainUtil.toString(path[path.length - 1]);
-    ref[key] = value;;
+    ref[key] = value;
     return true;
   }
 
