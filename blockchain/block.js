@@ -236,7 +236,7 @@ class Block {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
     const ownerAccount = GenesisAccounts.owner;
-    const genesisTime = Date.now();
+    const genesisTime = GenesisAccounts.timestamp;
     const lastHash = '';
     const lastVotes = [];
     const transactions = Block.getGenesisBlockData(genesisTime);
