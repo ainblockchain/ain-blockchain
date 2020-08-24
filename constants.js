@@ -319,7 +319,7 @@ function getGenesisValues() {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   ChainUtil.setJsObject(
       values,
-      [ PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE ],
+      [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
       GenesisToken[TokenProperties.TOTAL_SUPPLY]);
   ChainUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
