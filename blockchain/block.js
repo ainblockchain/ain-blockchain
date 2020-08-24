@@ -13,6 +13,7 @@ const {
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
+  AccountProperties,
 } = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 
@@ -189,18 +190,19 @@ class Block {
     return (new Transaction({ signature: firstSig, transaction: firstTxData }));
   }
 
-  static getAccountsSetupTransaction(ownerAccount, timestamp, keyBuffer) {
+  static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
     const transferOps = [];
-    const otherAccounts = GenesisAccounts.others;
+    const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
-        GenesisAccounts.shares > 0) {
+        GenesisAccounts[AccountProperties.SHARES] > 0) {
       for (let i = 0; i < otherAccounts.length; i++) {
+        const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
         // Transfer operation
         const op = {
           type: 'SET_VALUE',
-          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAccount.address}/` +
-              `${otherAccounts[i].address}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
-          value: GenesisAccounts.shares
+          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAddress}/` +
+              `${accountAddress}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
+          value: GenesisAccounts[AccountProperties.SHARES],
         };
         transferOps.push(op);
       }
@@ -220,14 +222,14 @@ class Block {
   }
 
   static getGenesisBlockData(genesisTime) {
-    const ownerAccount = GenesisAccounts.owner;
-    if (!ownerAccount) {
-      throw Error('Missing owner account.');
-    }
-    const keyBuffer = Buffer.from(ownerAccount.private_key, 'hex');
+    const ownerAddress = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    const ownerPrivateKey = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
 
     const firstTx = this.getDbSetupTransaction(genesisTime, keyBuffer);
-    const secondTx = this.getAccountsSetupTransaction(ownerAccount, genesisTime, keyBuffer);
+    const secondTx = this.getAccountsSetupTransaction(ownerAddress, genesisTime, keyBuffer);
 
     return [firstTx, secondTx];
   }
@@ -235,14 +237,15 @@ class Block {
   static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
-    const ownerAccount = GenesisAccounts.owner;
-    const genesisTime = GenesisAccounts.timestamp;
+    const ownerAddress = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
     const lastHash = '';
     const lastVotes = [];
     const transactions = Block.getGenesisBlockData(genesisTime);
     const number = 0;
     const epoch = 0;
-    const proposer = ownerAccount.address;
+    const proposer = ownerAddress;
    const validators = GenesisWhitelist;
     return new this(lastHash, lastVotes, transactions, number, epoch, genesisTime,
         proposer, validators);

@@ -92,6 +92,30 @@ const PredefinedDbPaths = {
 };
 
 /**
+ * Properties of token configs
+ * @enum {string}
+ */
+const TokenProperties = {
+  NAME: 'name',
+  SYMBOL: 'symbol',
+  TOTAL_SUPPLY: 'total_supply',
+};
+
+/**
+ * Properties of account configs
+ * @enum {string}
+ */
+const AccountProperties = {
+  ADDRESS: 'address',
+  OTHERS: 'others',
+  OWNER: 'owner',
+  PRIVATE_KEY: 'private_key',
+  PUBLIC_KEY: 'public_key',
+  SHARES: 'shares',
+  TIMESTAMP: 'timestamp',
+};
+
+/**
  * Properties of owner configs
  * @enum {string}
  */
@@ -268,9 +292,12 @@ function getGenesisConfig(filename, additionalEnv) {
 function getGenesisSharding() {
   const config = getGenesisConfig('genesis_sharding.json');
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
-    ChainUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], GenesisAccounts.owner.address);
-    ChainUtil.setJsObject(
-        config, [ShardingProperties.SHARD_REPORTER], GenesisAccounts.others[0].address);
+    const ownerAddress = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    const reporterAddress =
+        GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
+    ChainUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
+    ChainUtil.setJsObject(config, [ShardingProperties.SHARD_REPORTER], reporterAddress);
   }
   return config;
 }
@@ -279,8 +306,9 @@ function getGenesisSharding() {
 function getGenesisWhitelist() {
   const whitelist = {};
   for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+    const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
     ChainUtil.setJsObject(
-        whitelist, [GenesisAccounts.others[i].address], ConsensusConsts.INITIAL_STAKE);
+        whitelist, [accountAddress], ConsensusConsts.INITIAL_STAKE);
   }
   return whitelist;
 }
@@ -288,10 +316,12 @@ function getGenesisWhitelist() {
 function getGenesisValues() {
   const values = {};
   ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
+  const ownerAddress = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   ChainUtil.setJsObject(
       values,
-      [PredefinedDbPaths.ACCOUNTS, GenesisAccounts.owner.address, PredefinedDbPaths.BALANCE],
-      GenesisToken.total_supply);
+      [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
+      GenesisToken[TokenProperties.TOTAL_SUPPLY]);
   ChainUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   ChainUtil.setJsObject(
@@ -328,14 +358,18 @@ function getGenesisOwners() {
 }
 
 function getShardingRule() {
+  const ownerAddress =
+      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
-    [RuleProperties.WRITE]: `auth === '${GenesisAccounts.owner.address}'`,
+    [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
   };
 }
 
 function getWhitelistRule() {
+  const ownerAddress =
+      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
-    [RuleProperties.WRITE]: `auth === '${GenesisAccounts.owner.address}'`,
+    [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
   };
 }
 
@@ -385,6 +419,8 @@ module.exports = {
   TRACKER_WS_ADDR,
   MessageTypes,
   PredefinedDbPaths,
+  TokenProperties,
+  AccountProperties,
   OwnerProperties,
   RuleProperties,
   FunctionProperties,
