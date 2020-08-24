@@ -1,12 +1,14 @@
 const logger = require('../logger');
 const {
+  DEBUG,
   ReadDbOperations,
   WriteDbOperations,
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
   FunctionProperties,
-  DEBUG,
+  ShardingProperties,
+  GenesisSharding,
   buildOwnerPermissions,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
@@ -26,7 +28,9 @@ const RuleUtil = require('./rule-util');
 
 class DB {
   constructor(bc, blockNumberSnapshot) {
-    this.dbRoot = new StateNode();
+    this.shardingPath = ChainUtil.parsePath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
+    this.isRoot = (this.shardingPath.length === 0);
+    this.stateTree = new StateNode();
     this.initDbData();
     this.func = new Functions(this);
     this.bc = bc;
@@ -62,7 +66,7 @@ class DB {
    * Returns reference to the input path for reading if exists, otherwise null.
    */
   getRefForReading(fullPath) {
-    let node = this.dbRoot;
+    let node = this.stateTree;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
@@ -78,7 +82,7 @@ class DB {
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
   getRefForWriting(fullPath) {
-    let node = this.dbRoot;
+    let node = this.stateTree;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
@@ -99,7 +103,7 @@ class DB {
     const stateTree = jsObjectToStateTree(stateObj);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
-      this.dbRoot = stateTree;
+      this.stateTree = stateTree;
     } else {
       const label = fullPath[fullPath.length - 1];
       const parent = this.getRefForWriting(pathToParent);
@@ -110,7 +114,7 @@ class DB {
     } else {
       setProofHashForStateTree(stateTree);
     }
-    updateProofHashForPath(pathToParent, this.dbRoot);
+    updateProofHashForPath(pathToParent, this.stateTree);
   }
 
   static isEmptyNode(dbNode) {
@@ -135,7 +139,7 @@ class DB {
   }
 
   removeEmptyNodes(fullPath) {
-    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbRoot);
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.stateTree);
   }
 
   readDatabase(fullPath) {
@@ -425,7 +429,7 @@ class DB {
   }
 
   setDbToSnapshot(snapshot) {
-    this.dbRoot = makeCopyOfStateTree(snapshot.dbRoot);
+    this.stateTree = makeCopyOfStateTree(snapshot.stateTree);
   }
 
   executeOperation(operation, address, timestamp, transaction) {
@@ -589,7 +593,7 @@ class DB {
 
   matchFunctionPath(parsedValuePath) {
     return this.matchFunctionPathRecursive(
-        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
+        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
   }
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
@@ -739,7 +743,7 @@ class DB {
 
   matchRulePath(parsedValuePath) {
     return this.matchRulePathRecursive(
-        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.RULES_ROOT));
+        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.RULES_ROOT));
   }
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
@@ -868,7 +872,7 @@ class DB {
 
   matchOwnerPath(parsedRefPath) {
     return this.matchOwnerPathRecursive(
-        parsedRefPath, 0, this.dbRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
+        parsedRefPath, 0, this.stateTree.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
   matchOwnerForParsedPath(parsedRefPath) {
