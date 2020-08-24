@@ -37,7 +37,7 @@ class Consensus {
     const finalizedNumber = this.node.bc.lastBlockNumber();
     const genesisBlock = this.node.bc.getBlockByNumber(0);
     if (!genesisBlock) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: gensis block is not found`);
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Init error: genesis block is not found`);
       return;
     }
     this.genesisHash = genesisBlock.hash;

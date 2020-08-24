@@ -4,8 +4,13 @@ const syncRequest = require('sync-request');
 const sleep = require('system-sleep');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
-const { GenesisAccounts } = require('../constants');
-const { ConsensusDbPaths } = require('../consensus/constants');
+
+function readConfigFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    throw Error('Missing config file: ' + filePath);
+  }
+  return JSON.parse(fs.readFileSync(filePath));
+}
 
 function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
   node.setAccountForTesting(accountIndex);
@@ -14,16 +19,10 @@ function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
 
   if (!skipTestingConfig) {
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
-    if (!fs.existsSync(ownersFile)) {
-      throw Error('Missing owners file: ' + ownersFile);
-    }
-    const owners = JSON.parse(fs.readFileSync(ownersFile));
+    const owners = readConfigFile(ownersFile);
     node.db.setOwnersForTesting("test", owners);
     const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
-    if (!fs.existsSync(rulesFile)) {
-      throw Error('Missing rules file: ' + rulesFile);
-    }
-    const rules = JSON.parse(fs.readFileSync(rulesFile));
+    const rules = readConfigFile(rulesFile);
     node.db.setRulesForTesting("test", rules);
   }
 }
@@ -38,24 +37,6 @@ function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   node.addNewBlock(Block.createBlock(lastBlock.hash, votes, txs, lastBlock.number + 1,
     lastBlock.epoch + 1, node.account.address, validators));
-}
-
-function addConsensusOwners(owners) {
-  const ownerAddress = GenesisAccounts.owner.address;
-  if (!owners[ConsensusDbPaths.CONSENSUS]) {
-    owners[ConsensusDbPaths.CONSENSUS] = {};
-  }
-  owners[ConsensusDbPaths.CONSENSUS][ConsensusDbPaths.WHITELIST]
-      = Block.getConsensusOwner(ownerAddress);
-}
-
-function addConsensusRules(rules) {
-  const ownerAddress = GenesisAccounts.owner.address;
-  if (!rules[ConsensusDbPaths.CONSENSUS]) {
-    rules[ConsensusDbPaths.CONSENSUS] = {};
-  }
-  rules[ConsensusDbPaths.CONSENSUS][ConsensusDbPaths.WHITELIST]
-      = Block.getConsensusRule(ownerAddress);
 }
 
 function waitUntilTxFinalized(servers, txHash) {
@@ -78,10 +59,9 @@ function waitUntilTxFinalized(servers, txHash) {
 }
 
 module.exports = {
+  readConfigFile,
   setDbForTesting,
   getTransaction,
   addBlock,
-  addConsensusOwners,
-  addConsensusRules,
   waitUntilTxFinalized
 };

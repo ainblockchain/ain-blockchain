@@ -1,9 +1,9 @@
-const RuleUtil = require('./db/rule-util');
-const ruleUtil = new RuleUtil();
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
+const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
-const _ = require('lodash');
+const RuleUtil = require('./db/rule-util');
+const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
@@ -42,7 +42,7 @@ class ChainUtil {
   }
 
   static isArray(value) {
-    return ruleUtil.isString(value);
+    return ruleUtil.isArray(value);
   }
 
   static isDict(value) {
@@ -62,11 +62,17 @@ class ChainUtil {
   }
 
   static toString(value) {
-    if (ChainUtil.isBool(value)) return value.toString();
-    else if (ChainUtil.isNumber(value)) return value.toString();
-    else if (ChainUtil.isString(value)) return value;
-    else if (ChainUtil.isArray(value)) return JSON.stringify(value);
-    else if (ChainUtil.isDict(value)) return JSON.stringify(value);
+    if (ChainUtil.isBool(value)) {
+      return value.toString();
+    } else if (ChainUtil.isNumber(value)) {
+      return value.toString();
+    } else if (ChainUtil.isString(value)) {
+      return value;
+    } else if (value === undefined) {
+      return '';
+    } else {
+      return JSON.stringify(value);
+    }
   }
 
   static parsePath(path) {
@@ -87,10 +93,48 @@ class ChainUtil {
       if (ChainUtil.isString(label)) {
         formatted += '/' + label;
       } else {
-        formatted += '/' + JSON.stringify(label);
+        formatted += '/' + stringify(label);
       }
     }
     return (formatted.startsWith('/') ? '' : '/') + formatted;
+  }
+
+  static getJsObject(obj, path) {
+    if (!ChainUtil.isArray(path)) {
+      return null;
+    }
+    let ref = obj;
+    for (let i = 0; i < path.length; i++) {
+      const key = ChainUtil.toString(path[i]);
+      if (!ChainUtil.isDict(ref)) {
+        return null;
+      }
+      ref = ref[key];
+    }
+    return ref === undefined ? null : ref;
+  }
+
+  static setJsObject(obj, path, value) {
+    if (!ChainUtil.isArray(path)) {
+      return false;
+    }
+    if (!ChainUtil.isDict(obj)) {
+      return false;
+    }
+    if (path.length == 0) {
+      return false;
+    }
+    let ref = obj;
+    for (let i = 0; i < path.length - 1; i++) {
+      const key = ChainUtil.toString(path[i]);
+      if (!ChainUtil.isDict(ref[key])) {
+        ref[key] = {};
+      }
+      ref = ref[key];
+    }
+    const key = ChainUtil.toString(path[path.length - 1]);
+    ref[key] = value;
+    return true;
   }
 
   static transactionFailed(response) {
