@@ -239,7 +239,7 @@ class Block {
     // genesis block broadcasting feature is implemented.
     const ownerAddress = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    const genesisTime = GenesisAccounts.timestamp;
+    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
     const lastHash = '';
     const lastVotes = [];
     const transactions = Block.getGenesisBlockData(genesisTime);

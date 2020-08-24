@@ -112,6 +112,7 @@ const AccountProperties = {
   PRIVATE_KEY: 'private_key',
   PUBLIC_KEY: 'public_key',
   SHARES: 'shares',
+  TIMESTAMP: 'timestamp',
 };
 
 /**
