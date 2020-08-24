@@ -1,24 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
-const GENESIS_TOKEN = path.resolve(__dirname, 'blockchain/genesis_token.json');
-const GENESIS_ACCOUNTS = path.resolve(__dirname, 'blockchain/genesis_accounts.json');
-const GENESIS_OWNERS = path.resolve(__dirname, 'blockchain/genesis_owners.json');
-const ADDITIONAL_OWNERS = process.env.ADDITIONAL_OWNERS ? {
-  dbPath: process.env.ADDITIONAL_OWNERS.split(':')[0],
-  filePath: path.resolve(__dirname, process.env.ADDITIONAL_OWNERS.split(':')[1])
-} : null;
-const GENESIS_RULES = path.resolve(__dirname, 'blockchain/genesis_rules.json');
-const ADDITIONAL_RULES = process.env.ADDITIONAL_RULES ? {
-  dbPath: process.env.ADDITIONAL_RULES.split(':')[0],
-  filePath: path.resolve(__dirname, process.env.ADDITIONAL_RULES.split(':')[1])
-} : null;
-const GENESIS_FUNCTIONS = path.resolve(__dirname, 'blockchain/genesis_functions.json');
-const ADDITIONAL_FUNCTIONS = process.env.ADDITIONAL_FUNCTIONS ? {
-  dbPath: process.env.ADDITIONAL_FUNCTIONS.split(':')[0],
-  filePath: path.resolve(__dirname, process.env.ADDITIONAL_FUNCTIONS.split(':')[1])
-} : null;
-const {ConsensusConsts} = require('./consensus/constants');
+const {
+  ConsensusConsts,
+  ConsensusDbPaths,
+} = require('./consensus/constants');
+const ChainUtil = require('./chain-util');
+
+const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
+const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
+    process.env.GENESIS_CONFIGS_DIR : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
@@ -94,7 +85,10 @@ const PredefinedDbPaths = {
   WITHDRAW_VALUE: 'value',
   DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
   DEPOSIT_CONSENSUS: 'deposit/consensus',
-  WITHDRAW_CONSENSUS: 'withdraw/consensus'
+  WITHDRAW_CONSENSUS: 'withdraw/consensus',
+  // Sharding
+  SHARDING: 'sharding',
+  SHARDING_CONFIG: 'config',
 };
 
 /**
@@ -148,6 +142,28 @@ const NativeFunctionIds = {
   DEPOSIT: '_deposit',
   TRANSFER: '_transfer',
   WITHDRAW: '_withdraw',
+};
+
+/**
+ * Properties of sharding configs
+ * @enum {string}
+ */
+const ShardingProperties = {
+  PARENT_CHAIN_POC: 'parent_chain_poc',
+  REPORTING_PERIOD: 'reporting_period',
+  SHARD_OWNER: 'shard_owner',
+  SHARD_REPORTER: 'shard_reporter',
+  SHARDING_PATH: 'sharding_path',
+  SHARDING_PROTOCOL: 'sharding_protocol',
+};
+
+/**
+ * Sharding protocols
+ * @enum {string}
+ */
+const ShardingProtocols = {
+  NONE: 'NONE',
+  POA: 'POA',
 };
 
 /**
@@ -210,23 +226,151 @@ const DefaultValues = {
   DEPOSIT_LOCKUP_DURATION_MS: 2592000000 // 30 days
 }
 
-const GenesisToken = fs.existsSync(GENESIS_TOKEN) ?
-    JSON.parse(fs.readFileSync(GENESIS_TOKEN)) : null;
-const GenesisAccounts = fs.existsSync(GENESIS_ACCOUNTS) ?
-    JSON.parse(fs.readFileSync(GENESIS_ACCOUNTS)) : null;
+const GenesisToken = getGenesisConfig('genesis_token.json');
+const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
+const GenesisSharding = getGenesisSharding();
+const GenesisWhitelist = getGenesisWhitelist();
+const GenesisValues = getGenesisValues();
+const GenesisFunctions = getGenesisFunctions();
+const GenesisRules = getGenesisRules();
+const GenesisOwners = getGenesisOwners();
 
-const GenesisWhitelist = {};
-for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
-  GenesisWhitelist[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
+function getGenesisConfig(filename, additionalEnv) {
+  let config = null;
+  if (CUSTOM_GENESIS_CONFIGS_DIR) {
+    const configPath = path.resolve(__dirname, CUSTOM_GENESIS_CONFIGS_DIR, filename);
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath));
+    }
+  }
+  if (!config) {
+    const configPath = path.resolve(__dirname, DEFAULT_GENESIS_CONFIGS_DIR, filename);
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath));
+    } else {
+      throw Error(`Missing genesis config file: ${configPath}`);
+    }
+  }
+  if (additionalEnv) {
+    const parts = additionalEnv.split(':');
+    const dbPath = parts[0];
+    const additionalFilePath = path.resolve(__dirname, parts[1])
+    if (fs.existsSync(additionalFilePath)) {
+      const additionalConfig = JSON.parse(fs.readFileSync(additionalFilePath));
+      ChainUtil.setJsObject(config, [dbPath], additionalConfig);
+    } else {
+      throw Error(`Missing additional genesis config file: ${additionalFilePath}`);
+    }
+  }
+  return config;
+}
+
+function getGenesisSharding() {
+  const config = getGenesisConfig('genesis_sharding.json');
+  if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
+    ChainUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], GenesisAccounts.owner.address);
+    ChainUtil.setJsObject(
+        config, [ShardingProperties.SHARD_REPORTER], GenesisAccounts.others[0].address);
+  }
+  return config;
+}
+
+// TODO(lia): Increase this list to 10.
+function getGenesisWhitelist() {
+  const whitelist = {};
+  for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+    ChainUtil.setJsObject(
+        whitelist, [GenesisAccounts.others[i].address], ConsensusConsts.INITIAL_STAKE);
+  }
+  return whitelist;
+}
+
+function getGenesisValues() {
+  const values = {};
+  ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
+  ChainUtil.setJsObject(
+      values,
+      [PredefinedDbPaths.ACCOUNTS, GenesisAccounts.owner.address, PredefinedDbPaths.BALANCE],
+      GenesisToken.total_supply);
+  ChainUtil.setJsObject(
+      values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
+  ChainUtil.setJsObject(
+      values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisWhitelist);
+  return values;
+}
+
+function getGenesisFunctions() {
+  const functions = getGenesisConfig('genesis_functions.json', process.env.ADDITIONAL_FUNCTIONS);
+  return functions;
+}
+
+function getGenesisRules() {
+  const rules = getGenesisConfig('genesis_rules.json', process.env.ADDITIONAL_RULES);
+  if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
+    ChainUtil.setJsObject(
+        rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
+  }
+  ChainUtil.setJsObject(
+      rules, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistRule());
+  return rules;
+}
+
+function getGenesisOwners() {
+  const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
+  if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
+    ChainUtil.setJsObject(
+        owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
+        getShardingOwner());
+  }
+  ChainUtil.setJsObject(
+      owners, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistOwner());
+  return owners;
+}
+
+function getShardingRule() {
+  return {
+    [RuleProperties.WRITE]: `auth === '${GenesisAccounts.owner.address}'`,
+  };
+}
+
+function getWhitelistRule() {
+  return {
+    [RuleProperties.WRITE]: `auth === '${GenesisAccounts.owner.address}'`,
+  };
+}
+
+function getShardingOwner() {
+  return {
+    [OwnerProperties.OWNER]: {
+      [OwnerProperties.OWNERS]: {
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
+  };
+}
+
+function getWhitelistOwner() {
+  return {
+    [OwnerProperties.OWNER]: {
+      [OwnerProperties.OWNERS]: {
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
+  };
+}
+
+function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
+  return {
+    [OwnerProperties.BRANCH_OWNER]: branchOwner,
+    [OwnerProperties.WRITE_FUNCTION]: writeFunction,
+    [OwnerProperties.WRITE_OWNER]: writeOwner,
+    [OwnerProperties.WRITE_RULE]: writeRule
+  };
 }
 
 module.exports = {
-  GENESIS_OWNERS,
-  ADDITIONAL_OWNERS,
-  GENESIS_RULES,
-  ADDITIONAL_RULES,
-  GENESIS_FUNCTIONS,
-  ADDITIONAL_FUNCTIONS,
   BLOCKCHAINS_DIR,
   PROTOCOL_VERSIONS,
   DEBUG,
@@ -247,12 +391,20 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   NativeFunctionIds,
+  ShardingProperties,
+  ShardingProtocols,
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
   DefaultValues,
   GenesisToken,
   GenesisAccounts,
+  GenesisSharding,
   GenesisWhitelist,
-  HASH_DELIMITER
+  GenesisValues,
+  GenesisFunctions,
+  GenesisRules,
+  GenesisOwners,
+  HASH_DELIMITER,
+  buildOwnerPermissions,
 };
