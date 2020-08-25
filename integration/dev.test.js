@@ -1384,22 +1384,6 @@ describe('API Tests', () => {
           syncRequest('GET', server1 + `/get_value?ref=/sharding/shard/${encodedShardingPath}`).body.toString('utf-8')
         ).result;
         expect(shardingConfigRes).to.equal(null);
-        // const ownerRes = JSON.parse(
-        //   syncRequest('GET', server1 + `/get_owner?ref=${shardingPath}`).body.toString('utf-8')
-        // ).result;
-        // const ruleRes = JSON.parse(
-        //   syncRequest('GET', server1 + `/get_rule?ref=${shardingPath}`).body.toString('utf-8')
-        // ).result;
-        // const functionRes = JSON.parse(
-        //   syncRequest('GET', server1 + `/get_function?ref=${shardingPath}`).body.toString('utf-8')
-        // ).result;
-        // const valueRes = JSON.parse(
-        //   syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
-        // ).result;
-        // expect(ownerRes).to.equal(null);
-        // expect(ruleRes).to.equal(null);
-        // expect(functionRes).to.equal(null);
-        // expect(valueRes).to.equal(null);
       });
     });
 
