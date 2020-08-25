@@ -62,6 +62,12 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
+  // For testing purpose only.
+  setFunctionsForTesting(functionsPath, functions) {
+    this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT,
+      ...ChainUtil.parsePath(functionsPath)], functions);
+  }
+
   /**
    * Returns reference to the input path for reading if exists, otherwise null.
    */
@@ -178,9 +184,13 @@ class DB {
    */
   getProof(dbPath) {
     const fullPath = ChainUtil.parsePath(dbPath);
-    // TODO(minsu): Validate the first label.
-    // TODO(minsu): Implement this.
-    return {};
+    const stateNode = this.getRefForReading(fullPath);
+    if (stateNode) {
+      return stateNode.getProofHash();
+    }
+    else {
+      return null;
+    }
   }
 
   matchFunction(funcPath) {

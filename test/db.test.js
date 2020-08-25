@@ -24,6 +24,9 @@ const {
 const {
   HASH_DELIMITER
 } = require('../constants');
+const {
+  buildProofHashOfStateNode
+} = require('../db/state-util');
 const ChainUtil = require('../chain-util');
 
 describe("DB initialization", () => {
@@ -2020,8 +2023,8 @@ describe("DB owner config", () => {
   })
 })
 
-describe("Test Writedatabase with proof", () => {
-  let node, jsObject;
+describe("Test proof with database", () => {
+  let node, valuesObject;
 
   beforeEach(() => {
     let result;
@@ -2031,8 +2034,26 @@ describe("Test Writedatabase with proof", () => {
     node = new Node();
     setDbForTesting(node);
 
-    jsObject = { level0: { level1: { level2: { foo: 'bar', baz: 'caz' } } } };
-    result = node.db.setValue("test", jsObject);
+    valuesObject = {
+      level0: {
+        level1: {
+          level2: {
+            foo: 'bar',
+            baz: 'caz'
+          },
+          level2_sibling: {
+            data1: true,
+            data2: -200
+          }
+        }
+      },
+      another_route: {
+        child1: '',
+        child2: 0,
+        child3: false
+      }
+    };
+    result = node.db.setValue("test", valuesObject);
     console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
   });
 
@@ -2040,28 +2061,75 @@ describe("Test Writedatabase with proof", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  describe("Check proof", () => {
-    it("checks jsObject is correctly set", () => {
-      assert.deepEqual(node.db.getValue("test"), jsObject);
-    });
-
+  describe("Check proof for setValue()", () => {
     it("checks proof hash of /values/test", () => {
-      const testNode = node.db.getRefForReading(['values', 'test']);
-      const childLabels = testNode.getChildLabels();
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${testNode.getChild(childLabels[0]).getProofHash()}`;
-      const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      assert.deepEqual(testNode.getProofHash(), rootHash);
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
+      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
+      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
+      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
+      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
     });
 
     it("checks newly setup proof hash", () => {
+      const nestedRules = {
+        "nested": {
+          "$var_path": {
+            ".write": "auth !== 'abcd'"
+          },
+          "path": {
+            ".write": "auth === 'abcd'",
+            "deeper": {
+              "path": {
+                ".write": "auth === 'ijkl'"
+              }
+            }
+          }
+        }
+      };
+
+      const dbFuncs = {
+        "some": {
+          "$var_path": {
+            ".function": "some function config with var path"
+          },
+          "path": {
+            ".function": "some function config",
+            "deeper": {
+              "path": {
+                ".function": "some function config deeper"
+              }
+            }
+          },
+        }
+      };
       node.db.setValue("test/level0/level1/level2", { aaa: 'bbb' });
-      const testNode = node.db.getRefForReading(['values', 'test']);
-      const childLabels = testNode.getChildLabels();
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${testNode.getChild(childLabels[0]).getProofHash()}`;
-      const rootHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-      assert.deepEqual(testNode.getProofHash(), rootHash);
+      node.db.setOwner("test/empty_owners/.owner/owners/*/write_function", false);
+      node.db.setRule("test/test_rules", nestedRules);
+      node.db.setFunction("test/test_functions", dbFuncs);
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
+      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
+      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
+      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
+      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
+    });
+  });
+
+  describe("getProof", () => {
+    it("tests values, owners, rules and functions", () => {
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
+      expect(node.db.getProof('/values/test')).to.equal(valuesNode.getProofHash());
+      expect(node.db.getProof('/owners/test')).to.equal(ownersNode.getProofHash());
+      expect(node.db.getProof('/rules/test')).to.equal(rulesNode.getProofHash());
+      expect(node.db.getProof('/functions/test')).to.equal(functionNode.getProofHash());
     });
   });
 });
