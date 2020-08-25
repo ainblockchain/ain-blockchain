@@ -15,8 +15,11 @@ const {
   BLOCKCHAINS_DIR,
   FunctionResultCode,
   MAX_TX_BYTES,
-  GenesisAccounts
+  GenesisAccounts,
+  HASH_DELIMITER,
+  PredefinedDbPaths,
 } = require('../constants');
+const ChainUtil = require('../chain-util');
 const { waitUntilTxFinalized } = require('../test/test-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -235,6 +238,40 @@ describe('API Tests', () => {
         });
       })
     })
+
+    describe('/get_proof', () => {
+      const body = JSON.parse(syncRequest('GET', server1 + '/get_proof?ref=/')
+        .body.toString('utf-8'));
+      const ownersBody = JSON.parse(
+        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.OWNERS_ROOT}`)
+        .body.toString('utf-8'));
+      const rulesBody = JSON.parse(
+        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.RULES_ROOT}`)
+        .body.toString('utf-8'));
+      const valuesBody = JSON.parse(
+        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.VALUES_ROOT}`)
+        .body.toString('utf-8'));
+      const functionsBody = JSON.parse(
+        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
+        .body.toString('utf-8'));
+      const ownersProof = ownersBody.result;
+      const rulesProof = rulesBody.result;
+      const valuesProof = valuesBody.result;
+      const functionProof = functionsBody.result;
+      // TODO(minsu): it needs to be updated after some updates on db/index.js
+      // proof is somehow not updated when new blocks are added. After fixing this bug,
+      // the if statement will be removed.
+      if (!valuesProof && !ownersProof && !rulesProof && !functionProof) {
+        assert.deepEqual(body, {code: 1, result: null});
+      } else {
+        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
+          + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
+          + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
+          + `functions${HASH_DELIMITER}${functionProof}`;
+        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+        assert.deepEqual(body, {code: 0, result: proofHash});
+      }
+    });
 
     describe('/match_function', () => {
       let client;
