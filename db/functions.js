@@ -1,10 +1,11 @@
 const logger = require('../logger');
 const {
-  PredefinedDbPaths, FunctionProperties, FunctionTypes, FunctionResultCode, NativeFunctionIds,
-  DefaultValues
+  PredefinedDbPaths, FunctionTypes, FunctionResultCode, FunctionProperties, NativeFunctionIds,
+  DefaultValues, ShardingProperties, OwnerProperties, buildOwnerPermissions, RuleProperties
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const axios = require('axios');
+const ainUtil = require('@ainblockchain/ain-util');
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
@@ -21,6 +22,8 @@ class Functions {
       [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
       [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
+      [NativeFunctionIds.SHARD_INIT]: this._initializeShard.bind(this),
+      [NativeFunctionIds.SHARD_REPORT]: this._reportShardProofHash.bind(this),
     };
   }
 
@@ -42,12 +45,14 @@ class Functions {
       if (functionConfig.function_type === FunctionTypes.NATIVE) {
         const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
         if (nativeFunction) {
+          const functionPath = matched.matchedFunction.path;
           const params = Functions.convertPathVars2Params(matched.pathVars);
           logger.info(
             `  ==> Running native function '${functionConfig.function_id}' ` +
             `with value '${value}', timestamp '${timestamp}',
-            currentTime '${currentTime}' and params: ` + JSON.stringify(params));
-          nativeFunction(value, { params, timestamp, currentTime });
+            currentTime '${currentTime}', params: ` + JSON.stringify(params) + 
+            ` and functionPath: ` + JSON.stringify(functionPath, null, 2));
+          nativeFunction(value, { params, timestamp, currentTime, functionPath });
         }
       } else if (functionConfig.function_type === FunctionTypes.REST) {
         if (functionConfig.event_listener &&
@@ -155,6 +160,79 @@ class Functions {
     }
   }
 
+  _initializeShard(value, context) {
+    if (!Functions.isValidShardingConfig(value)) {
+      // Shard owner trying to remove the shard
+      // TODO(lia): support modification of the shard config (update owners, rules, functions, values)
+      return;
+    }
+    const shardingPath = ChainUtil.parsePath(ainUtil.decode(context.params.sharding_path));
+    if (ChainUtil.formatPath(shardingPath) !== value[ShardingProperties.SHARDING_PATH]) {
+      return;
+    }
+    const { shard_owner, shard_reporter } = value;
+    // Set owners
+    this.db.writeDatabase(this._getFullOwnerPath(shardingPath), {
+      [OwnerProperties.OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [shard_owner]: buildOwnerPermissions(false, true, true, true),
+          [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+        }
+      }
+    });
+    // Set rules
+    // TODO(lia): make this rule tighter (e.g. only allow writing at /$sharding_path/$block_number, values should be strings prefixed with '0x', and cannot write at /$sharding_path/latest)
+    this.db.writeDatabase(this._getFullRulePath(shardingPath), {
+      [RuleProperties.WRITE]: `auth === '${shard_reporter}'`,
+    });
+    // Reset functions
+    this.db.writeDatabase(this._getFullFunctionPath(shardingPath), null);
+    // Reset values
+    this.db.writeDatabase(this._getFullValuePath(shardingPath), null);
+    // Add a native function for shard proof hash reporting
+    this.db.writeDatabase(
+      this._getFullFunctionPath([...shardingPath, '$block_number', PredefinedDbPaths.SHARDING_PROOF_HASH]),
+      {
+        [FunctionProperties.FUNCTION]: {
+          [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+          [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.SHARD_REPORT
+        }
+      }
+    );
+  }
+
+  static isValidShardingConfig(shardingConfig) {
+    return ChainUtil.isDict(shardingConfig) &&
+      ChainUtil.isString(shardingConfig[ShardingProperties.SHARDING_PATH]) &&
+      ChainUtil.isString(shardingConfig[ShardingProperties.PARENT_CHAIN_POC]) &&
+      ChainUtil.isNumber(shardingConfig[ShardingProperties.REPORTING_PERIOD]) &&
+      ChainUtil.isValAddr(shardingConfig[ShardingProperties.SHARD_OWNER]) &&
+      ChainUtil.isValAddr(shardingConfig[ShardingProperties.SHARD_REPORTER]) &&
+      ChainUtil.isValShardingProtocol(shardingConfig[ShardingProperties.SHARDING_PROTOCOL]);
+  }
+
+  _reportShardProofHash(value, context) {
+    const blockNumber = Number(context.params.block_number);
+    if (!ChainUtil.isArray(context.functionPath)) return null;
+    const index = context.functionPath.findIndex((el) => el === '$block_number');
+    if (index < 0) {
+      // Invalid function path
+      return;
+    }
+    if (!ChainUtil.isString(value)) {
+      // Invalid hash reporting
+      return;
+    }
+    const shardingPath = ChainUtil.formatPath(context.functionPath.slice(0, index));
+    const latestReportPath = this._getLatestShardReportPath(shardingPath);
+    const currentLatestBlockNumber = this.db.getValue(latestReportPath);
+    if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
+      // Nothing to update
+      return;
+    }
+    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+  }
+
   _transferInternal(fromPath, toPath, value) {
     const fromBalance = this.db.getValue(fromPath);
     if (fromBalance < value) return false;
@@ -200,6 +278,22 @@ class Functions {
 
   _getWithdrawResultPath(service, user, withdrawId) {
     return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/${PredefinedDbPaths.WITHDRAW_RESULT}`);
+  }
+
+  _getLatestShardReportPath(shardingPath) {
+    return `${shardingPath}/${PredefinedDbPaths.SHARDING_LATEST}`;
+  }
+
+  _getFullOwnerPath(parsedPath) {
+    return this.db.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
+  }
+
+  _getFullFunctionPath(parsedPath) {
+    return this.db.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+  }
+
+  _getFullRulePath(parsedPath) {
+    return this.db.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
   }
 
   _getFullValuePath(parsedPath) {

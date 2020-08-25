@@ -52,6 +52,10 @@ class RuleUtil {
   isCksumAddr(addr) {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
+
+  isValShardingProtocol(value) {
+    return value === 'NONE' || value === 'POA';
+  }
 }
 
 module.exports = RuleUtil;

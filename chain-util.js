@@ -53,6 +53,14 @@ class ChainUtil {
     return ruleUtil.isEmptyNode(value);
   }
 
+  static isValAddr(value) {
+    return ruleUtil.isValAddr(value);
+  }
+
+  static isValShardingProtocol(value) {
+    return ruleUtil.isValShardingProtocol(value);
+  }
+
   static numberOrZero(num) {
     return ChainUtil.isNumber(num) ? num : 0;
   }

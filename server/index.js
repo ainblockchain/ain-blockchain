@@ -6,13 +6,29 @@ const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
+const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
 const logger = require('../logger');
 const Consensus = require('../consensus');
 const { ConsensusStatus } = require('../consensus/constants');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
-const { DEBUG, P2P_PORT, TRACKER_WS_ADDR, HOSTING_ENV, MessageTypes } = require('../constants');
+const {
+  DEBUG,
+  P2P_PORT,
+  TRACKER_WS_ADDR,
+  HOSTING_ENV,
+  MessageTypes,
+  PredefinedDbPaths,
+  WriteDbOperations,
+  GenesisSharding,
+  GenesisAccounts,
+  AccountProperties,
+  ShardingProperties,
+  ShardingProtocols
+} = require('../constants');
 const ChainUtil = require('../chain-util');
+const { sleep } = require('sleep');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -157,7 +173,7 @@ class P2pServer {
   }
 
   async setTrackerEventHandlers() {
-    this.trackerWebSocket.on('message', (message) => {
+    this.trackerWebSocket.on('message', async (message) => {
       try {
         const parsedMsg = JSON.parse(message);
         logger.info(`\n$[${P2P_PREFIX}] << Message from [TRACKER]: ` +
@@ -170,6 +186,7 @@ class P2pServer {
           this.isStarting = false;
           if (parsedMsg.numLivePeers === 0) {
             const lastBlockWithoutProposal = this.node.init(true);
+            await this.tryInitializeShard();
             this.node.bc.syncedAfterStartup = true;
             this.consensus.init(lastBlockWithoutProposal, true);
           } else {
@@ -586,6 +603,83 @@ class P2pServer {
 
       return response;
     }
+  }
+
+  async tryInitializeShard() {
+    if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
+      // Not a shard
+      return;
+    }
+    const isShardReporter = ainUtil.areSameAddresses(
+      GenesisSharding[ShardingProperties.SHARD_REPORTER],
+      this.node.account.address
+    );
+    if (this.node.bc.lastBlockNumber() !== 0 || !isShardReporter) {
+      // Shard initialization not necessary
+      return;
+    }
+    const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+    const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+    const tx = {
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: ChainUtil.formatPath([
+          PredefinedDbPaths.SHARDING,
+          PredefinedDbPaths.SHARDING_SHARD,
+          ainUtil.encode(GenesisSharding[ShardingProperties.SHARDING_PATH])
+        ]),
+        value: GenesisSharding
+      },
+      timestamp: Date.now(),
+      nonce: -1
+    };
+    const ownerPrivateKey = ChainUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
+    const response = await axios.post(
+      parentChainEndpoint,
+      {
+        method: "ain_sendSignedTransaction",
+        params: {
+          protoVer: CURRENT_PROTOCOL_VERSION,
+          signature: sig,
+          transaction: tx
+        },
+        jsonrpc: "2.0",
+        id: 0
+      }
+    );
+    if (ChainUtil.transactionFailed(response.data.result)) {
+      throw Error(`Shard initialization transaction failed: ${response.data.result}`);
+    }
+    const sigBuffer = ainUtil.toBuffer(sig);
+    const lenHash = sigBuffer.length - 65;
+    const hashedData = sigBuffer.slice(0, lenHash);
+    const txHash = '0x' + hashedData.toString('hex');
+    const MAX_NUM_TRIES = 10;
+    let numTries = 0;
+    while (numTries < MAX_NUM_TRIES) {
+      const response = await axios.post(
+        parentChainEndpoint,
+        {
+          method: "ain_getTransactionByHash",
+          params: {
+            protoVer: CURRENT_PROTOCOL_VERSION,
+            hash: txHash
+          },
+          jsonrpc: "2.0",
+          id: 0
+        }
+      );
+      if (_.get(response, 'data.result.result.is_confirmed')) {
+        return;
+      }
+      sleep(1);
+      numTries++;
+    }
+    throw Error('Shard initialization transaction did not finalize in time. ' +
+        'Try selecting a different parent_chain_poc.');
   }
 
   // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
