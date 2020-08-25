@@ -56,6 +56,14 @@
       }
     }
   },
+  "sharding": {
+    "shard": {
+      ".write": false,
+      "$sharding_path": {
+        ".write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardingProtocol(newData.sharding_protocol)) || (auth === data.shard_owner && newData === null)"
+      }
+    }
+  },
   "transfer": {
     "$from": {
       "$to": {
