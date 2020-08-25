@@ -23,8 +23,8 @@ const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
-const PORT = getPortNumber(8080, process.env.PORT_BASE || 8081);
-const P2P_PORT = getPortNumber(5000, process.env.P2P_PORT_BASE || 5001);
+const PORT = process.env.PORT || getPortNumber(8080, 8081);
+const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 
 function getPortNumber(defaultValue, baseValue) {
