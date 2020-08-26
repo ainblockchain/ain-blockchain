@@ -10,16 +10,17 @@ class StateNode {
     this.proof = null;
   }
 
-  static create(isLeaf, childMap, value) {
+  static create(isLeaf, childMap, value, proof) {
     const node = new StateNode();
     node.isLeaf = isLeaf;
     node.childMap = new Map(childMap);
     node.value = value;
+    node.proof = proof;
     return node;
   }
 
   makeCopy() {
-    return StateNode.create(this.isLeaf, this.childMap, this.value);
+    return StateNode.create(this.isLeaf, this.childMap, this.value, this.proof);
   }
 
   getIsLeaf() {
