@@ -57,8 +57,8 @@ class ChainUtil {
     return ruleUtil.isValAddr(value);
   }
 
-  static isValShardingProtocol(value) {
-    return ruleUtil.isValShardingProtocol(value);
+  static isValShardProto(value) {
+    return ruleUtil.isValShardProto(value);
   }
 
   static numberOrZero(num) {

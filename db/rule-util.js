@@ -53,7 +53,7 @@ class RuleUtil {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
-  isValShardingProtocol(value) {
+  isValShardProto(value) {
     return value === 'NONE' || value === 'POA';
   }
 }
