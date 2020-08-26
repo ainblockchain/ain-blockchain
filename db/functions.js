@@ -170,12 +170,13 @@ class Functions {
     if (ChainUtil.formatPath(shardingPath) !== value[ShardingProperties.SHARDING_PATH]) {
       return;
     }
-    const { shard_owner, shard_reporter } = value;
+    const shardOwner = value[ShardingProperties.SHARD_OWNER];
+    const shardReporter = value[ShardingProperties.SHARD_REPORTER];
     // Set owners
     this.db.writeDatabase(this._getFullOwnerPath(shardingPath), {
       [OwnerProperties.OWNER]: {
         [OwnerProperties.OWNERS]: {
-          [shard_owner]: buildOwnerPermissions(false, true, true, true),
+          [shardOwner]: buildOwnerPermissions(false, true, true, true),
           [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
         }
       }
@@ -183,7 +184,7 @@ class Functions {
     // Set rules
     // TODO(lia): make this rule tighter (e.g. only allow writing at /$sharding_path/$block_number, values should be strings prefixed with '0x', and cannot write at /$sharding_path/latest)
     this.db.writeDatabase(this._getFullRulePath(shardingPath), {
-      [RuleProperties.WRITE]: `auth === '${shard_reporter}'`,
+      [RuleProperties.WRITE]: `auth === '${shardReporter}'`,
     });
     // Reset functions
     this.db.writeDatabase(this._getFullFunctionPath(shardingPath), null);
