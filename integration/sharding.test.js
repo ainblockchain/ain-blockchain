@@ -151,7 +151,7 @@ describe('Sharding initialization', () => {
             "proof_hash": {
               ".function": {
                 "function_type": "NATIVE",
-                "function_id": "_reportShardProofHash"
+                "function_id": "_updateLatestShardReport"
               }
             }
           }

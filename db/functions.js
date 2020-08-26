@@ -23,7 +23,7 @@ class Functions {
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
       [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
       [NativeFunctionIds.INIT_SHARD]: this._initializeShard.bind(this),
-      [NativeFunctionIds.REPORT_SHARD]: this._reportShardProofHash.bind(this),
+      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
     };
   }
 
@@ -196,7 +196,7 @@ class Functions {
       {
         [FunctionProperties.FUNCTION]: {
           [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-          [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.REPORT_SHARD
+          [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
         }
       }
     );
@@ -212,7 +212,7 @@ class Functions {
       ChainUtil.isValShardProto(shardingConfig[ShardingProperties.SHARDING_PROTOCOL]);
   }
 
-  _reportShardProofHash(value, context) {
+  _updateLatestShardReport(value, context) {
     const blockNumber = Number(context.params.block_number);
     if (!ChainUtil.isArray(context.functionPath)) {
       return null;
