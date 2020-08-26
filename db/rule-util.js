@@ -1,5 +1,4 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const { ShardingProtocols } = require('../constants');
 
 // NOTE(seo): To keep the blockchain deterministic as much as possibble over time,
 // we keep util functions here self-contained as much as possible.
@@ -55,6 +54,7 @@ class RuleUtil {
   }
 
   isValShardProto(value) {
+    const { ShardingProtocols } = require('../constants');
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 }
