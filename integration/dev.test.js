@@ -1338,7 +1338,7 @@ describe('API Tests', () => {
               "proof_hash": {
                 ".function": {
                   "function_type": "NATIVE",
-                  "function_id": "_reportShardProofHash"
+                  "function_id": "_updateLatestShardReport"
                 }
               }
             }
@@ -1387,7 +1387,7 @@ describe('API Tests', () => {
       });
     });
 
-    describe('_reportShardProofHash', () => {
+    describe('_updateLatestShardReport', () => {
       before(() => {
         const shardInitRes = JSON.parse(
           syncRequest(

@@ -170,7 +170,7 @@ const NativeFunctionIds = {
   TRANSFER: '_transfer',
   WITHDRAW: '_withdraw',
   INIT_SHARD: '_initializeShard',
-  REPORT_SHARD: '_reportShardProofHash',
+  UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
 };
 
 /**
