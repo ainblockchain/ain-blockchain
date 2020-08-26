@@ -57,6 +57,7 @@ class ChainUtil {
     return ruleUtil.isValAddr(value);
   }
 
+  // TODO(lia): normalize addresses in user inputs using this function.
   static toCksumAddr(value) {
     return ruleUtil.toCksumAddr(value);
   }
