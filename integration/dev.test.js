@@ -258,19 +258,12 @@ describe('API Tests', () => {
       const rulesProof = rulesBody.result;
       const valuesProof = valuesBody.result;
       const functionProof = functionsBody.result;
-      // TODO(minsu): it needs to be updated after some updates on db/index.js
-      // proof is somehow not updated when new blocks are added. After fixing this bug,
-      // the if statement will be removed.
-      if (!valuesProof && !ownersProof && !rulesProof && !functionProof) {
-        assert.deepEqual(body, {code: 1, result: null});
-      } else {
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
-          + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
-          + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
-          + `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-        assert.deepEqual(body, {code: 0, result: proofHash});
-      }
+      const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
+        + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
+        + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
+        + `functions${HASH_DELIMITER}${functionProof}`;
+      const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+      assert.deepEqual(body, { code: 0, result: proofHash });
     });
 
     describe('/match_function', () => {
