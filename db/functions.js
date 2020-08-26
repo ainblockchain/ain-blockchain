@@ -213,7 +213,9 @@ class Functions {
 
   _reportShardProofHash(value, context) {
     const blockNumber = Number(context.params.block_number);
-    if (!ChainUtil.isArray(context.functionPath)) return null;
+    if (!ChainUtil.isArray(context.functionPath)) {
+      return null;
+    }
     const index = context.functionPath.findIndex((el) => el === '$block_number');
     if (index < 0) {
       // Invalid function path
