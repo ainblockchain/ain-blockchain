@@ -53,6 +53,7 @@ class RuleUtil {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
+  // TODO(lia): normalize addresses in rule strings using this function.
   toCksumAddr(addr) {
     try {
       return ainUtil.toChecksumAddress(addr);
