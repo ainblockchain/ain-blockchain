@@ -673,6 +673,7 @@ class P2pServer {
         }
       );
       if (_.get(response, 'data.result.result.is_confirmed')) {
+        logger.info(`[${P2P_PREFIX}] Shard init success`);
         return;
       }
       sleep(1);
