@@ -57,6 +57,10 @@ class ChainUtil {
     return ruleUtil.isValAddr(value);
   }
 
+  static toCksumAddr(value) {
+    return ruleUtil.toCksumAddr(value);
+  }
+
   static isValShardProto(value) {
     return ruleUtil.isValShardProto(value);
   }
