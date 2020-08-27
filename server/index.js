@@ -7,7 +7,6 @@ const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
 const ainUtil = require('@ainblockchain/ain-util');
-const _ = require('lodash');
 const logger = require('../logger');
 const Consensus = require('../consensus');
 const { ConsensusStatus } = require('../consensus/constants');
@@ -24,11 +23,14 @@ const {
   GenesisSharding,
   GenesisAccounts,
   AccountProperties,
+  OwnerProperties,
+  RuleProperties,
   ShardingProperties,
-  ShardingProtocols
+  ShardingProtocols,
+  buildOwnerPermissions
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sleep } = require('sleep');
+const { sendTxAndWaitForConfirmation } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -618,9 +620,58 @@ class P2pServer {
       // Shard initialization not necessary
       return;
     }
-    const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
-    const tx = {
+    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    const ownerPrivateKey = ChainUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    await this.setOwnerAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer);
+    await this.setRuleAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer);
+    await this.setShardingConfig(parentChainEndpoint, keyBuffer);
+  }
+
+  // Make sure the shard owner has required owner permissions at the sharding path
+  async setOwnerAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer) {
+    const ownerSetTx = {
+      operation: {
+        type: WriteDbOperations.SET_OWNER,
+        ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+        value: {
+          [OwnerProperties.OWNER]: {
+            [OwnerProperties.OWNERS]: {
+              [shardOwner]: buildOwnerPermissions(true, true, true, true)
+            }
+          }
+        }
+      },
+      timestamp: Date.now(),
+      nonce: -1
+    };
+    await sendTxAndWaitForConfirmation(parentChainEndpoint, ownerSetTx, keyBuffer);
+    logger.info(`[${P2P_PREFIX}] setOwnerAtShardingPath success`);
+  }
+
+  // Make sure the shard owner has required write permissions at the sharding path.
+  // Note that the above set_owner tx needs to be finalized before this set_rule tx.
+  async setRuleAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer) {
+    const ruleSetTx = {
+      operation: {
+        type: WriteDbOperations.SET_RULE,
+        ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+        value: {
+          [RuleProperties.WRITE]: `auth === '${shardOwner}'`
+        }
+      },
+      timestamp: Date.now(),
+      nonce: -1
+    }
+    await sendTxAndWaitForConfirmation(parentChainEndpoint, ruleSetTx, keyBuffer);
+    logger.info(`[${P2P_PREFIX}] setOwnerAtShardingPath success`);
+  }
+
+  // Init shard by setting sharding config at /sharding/shard/<Sharding Path>
+  async setShardingConfig(parentChainEndpoint, keyBuffer) {
+    const shardInitTx = {
       operation: {
         type: WriteDbOperations.SET_VALUE,
         ref: ChainUtil.formatPath([
@@ -633,54 +684,8 @@ class P2pServer {
       timestamp: Date.now(),
       nonce: -1
     };
-    const ownerPrivateKey = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
-    const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
-    const response = await axios.post(
-      parentChainEndpoint,
-      {
-        method: "ain_sendSignedTransaction",
-        params: {
-          protoVer: CURRENT_PROTOCOL_VERSION,
-          signature: sig,
-          transaction: tx
-        },
-        jsonrpc: "2.0",
-        id: 0
-      }
-    );
-    if (ChainUtil.transactionFailed(response.data.result)) {
-      throw Error(`Shard initialization transaction failed: ${response.data.result}`);
-    }
-    const sigBuffer = ainUtil.toBuffer(sig);
-    const lenHash = sigBuffer.length - 65;
-    const hashedData = sigBuffer.slice(0, lenHash);
-    const txHash = '0x' + hashedData.toString('hex');
-    const MAX_NUM_TRIES = 10;
-    let numTries = 0;
-    while (numTries < MAX_NUM_TRIES) {
-      const response = await axios.post(
-        parentChainEndpoint,
-        {
-          method: "ain_getTransactionByHash",
-          params: {
-            protoVer: CURRENT_PROTOCOL_VERSION,
-            hash: txHash
-          },
-          jsonrpc: "2.0",
-          id: 0
-        }
-      );
-      if (_.get(response, 'data.result.result.is_confirmed')) {
-        logger.info(`[${P2P_PREFIX}] Shard init success`);
-        return;
-      }
-      sleep(1);
-      numTries++;
-    }
-    throw Error('Shard initialization transaction did not finalize in time. ' +
-        'Try selecting a different parent_chain_poc.');
+    await sendTxAndWaitForConfirmation(parentChainEndpoint, shardInitTx, keyBuffer);
+    logger.info(`[${P2P_PREFIX}] setShardingConfig success`);
   }
 
   // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
