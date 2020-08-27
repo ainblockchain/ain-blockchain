@@ -187,7 +187,7 @@ describe('API Tests', () => {
         assert.deepEqual(body, {code: 0, result: 100});
       })
     })
-  
+
     describe('/get_function', () => {
       it('get_function', () => {
         const body =
@@ -201,7 +201,7 @@ describe('API Tests', () => {
         });
       })
     })
-  
+
     describe('/get_rule', () => {
       it('get_rule', () => {
         const body =
@@ -215,7 +215,7 @@ describe('API Tests', () => {
         });
       })
     })
-  
+
     describe('/get_owner', () => {
       it('get_owner', () => {
         const body = JSON.parse(syncRequest('GET', server1 +
@@ -240,37 +240,39 @@ describe('API Tests', () => {
     })
 
     describe('/get_proof', () => {
-      const body = JSON.parse(syncRequest('GET', server1 + '/get_proof?ref=/')
-        .body.toString('utf-8'));
-      const ownersBody = JSON.parse(
-        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.OWNERS_ROOT}`)
-        .body.toString('utf-8'));
-      const rulesBody = JSON.parse(
-        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.RULES_ROOT}`)
-        .body.toString('utf-8'));
-      const valuesBody = JSON.parse(
-        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.VALUES_ROOT}`)
-        .body.toString('utf-8'));
-      const functionsBody = JSON.parse(
-        syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
-        .body.toString('utf-8'));
-      const ownersProof = ownersBody.result;
-      const rulesProof = rulesBody.result;
-      const valuesProof = valuesBody.result;
-      const functionProof = functionsBody.result;
-      // TODO(minsu): it needs to be updated after some updates on db/index.js
-      // proof is somehow not updated when new blocks are added. After fixing this bug,
-      // the if statement will be removed.
-      if (!valuesProof && !ownersProof && !rulesProof && !functionProof) {
-        assert.deepEqual(body, {code: 1, result: null});
-      } else {
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
-          + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
-          + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
-          + `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-        assert.deepEqual(body, {code: 0, result: proofHash});
-      }
+      it('get_proof', () => {
+        const body = JSON.parse(syncRequest('GET', server1 + '/get_proof?ref=/')
+          .body.toString('utf-8'));
+        const ownersBody = JSON.parse(
+          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.OWNERS_ROOT}`)
+            .body.toString('utf-8'));
+        const rulesBody = JSON.parse(
+          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.RULES_ROOT}`)
+            .body.toString('utf-8'));
+        const valuesBody = JSON.parse(
+          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.VALUES_ROOT}`)
+            .body.toString('utf-8'));
+        const functionsBody = JSON.parse(
+          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
+            .body.toString('utf-8'));
+        const ownersProof = ownersBody.result;
+        const rulesProof = rulesBody.result;
+        const valuesProof = valuesBody.result;
+        const functionProof = functionsBody.result;
+        // TODO(minsu): it needs to be updated after some updates on db/index.js
+        // proof is somehow not updated when new blocks are added. After fixing this bug,
+        // the if statement will be removed.
+        if (!valuesProof && !ownersProof && !rulesProof && !functionProof) {
+          assert.deepEqual(body, {code: 1, result: null});
+        } else {
+          const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
+            + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
+            + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
+            + `functions${HASH_DELIMITER}${functionProof}`;
+          const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+          assert.deepEqual(body, {code: 0, result: proofHash});
+        }
+      });
     });
 
     describe('/match_function', () => {
@@ -278,7 +280,7 @@ describe('API Tests', () => {
       before(() => {
         client = jayson.client.http(server1 + '/json-rpc');
       })
-  
+
       it('match_function', () => {
         sleep(200)
         const ref = "/test/test_function/some/path";
@@ -314,13 +316,13 @@ describe('API Tests', () => {
         })
       })
     })
-  
+
     describe('/match_rule', () => {
       let client;
       before(() => {
         client = jayson.client.http(server1 + '/json-rpc');
       })
-  
+
       it('match_rule', () => {
         const ref = "/test/test_rule/some/path";
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -355,13 +357,13 @@ describe('API Tests', () => {
         })
       })
     })
-  
+
     describe('/match_owner', () => {
       let client;
       before(() => {
         client = jayson.client.http(server1 + '/json-rpc');
       })
-  
+
       it('match_owner', () => {
         const ref = "/test/test_owner/some/path";
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -408,13 +410,13 @@ describe('API Tests', () => {
         })
       })
     })
-  
+
     describe('/eval_rule', () => {
       let client;
       before(() => {
         client = jayson.client.http(server1 + '/json-rpc');
       })
-  
+
       it('eval_rule returning true', () => {
         const ref = "/test/test_rule/some/path";
         const value = "value";
@@ -428,7 +430,7 @@ describe('API Tests', () => {
           expect(res.result.result).to.equal(true);
         })
       })
-  
+
       it('eval_rule returning false', () => {
         const ref = "/test/test_rule/some/path";
         const value = "value";
@@ -443,7 +445,7 @@ describe('API Tests', () => {
         })
       })
     })
-  
+
     describe('/eval_owner', () => {
       it('eval_owner', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
@@ -463,7 +465,7 @@ describe('API Tests', () => {
         })
       })
     })
-  
+
     describe('/get', () => {
       it('get', () => {
         const request = {
@@ -538,7 +540,7 @@ describe('API Tests', () => {
         })
       });
     });
-  
+
     describe('/ain_checkProtocolVersion', () => {
       it('checks protocol versions correctly', () => {
         return new Promise((resolve, reject) => {
@@ -577,7 +579,7 @@ describe('API Tests', () => {
       });
     });
   })
-  
+
   describe('APIs (sets)', () => {
     beforeEach(() => {
       setUp();
@@ -1132,7 +1134,7 @@ describe('API Tests', () => {
         }
         const signature =
             ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-        
+
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature,
           protoVer: CURRENT_PROTOCOL_VERSION })
