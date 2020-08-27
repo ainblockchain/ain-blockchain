@@ -825,7 +825,7 @@ class DB {
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime',
                         'getValue', 'getRule', 'getFunction', 'getOwner',
-                        'evalRule', 'evalOwner', 'util','lastBlockNumber', ...Object.keys(pathVars),
+                        'evalRule', 'evalOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
