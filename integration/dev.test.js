@@ -143,6 +143,48 @@ cleanUp = () => {
   waitUntilTxFinalized(servers, res.tx_hash);
 }
 
+setUpForSharding = (shardingPath, shardOwner) => {
+  const setOwnerRes = JSON.parse(
+    syncRequest(
+      'POST',
+      server1 + '/set_owner',
+      {
+        json: {
+          ref: shardingPath,
+          value: {
+            ".owner": {
+              "owners": {
+                [shardOwner]: {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true
+                }
+              }
+            }
+          }
+        }
+      }
+    ).body.toString('utf-8')
+  ).result;
+  waitUntilTxFinalized(servers, setOwnerRes.tx_hash);
+  const setRuleRes = JSON.parse(
+    syncRequest(
+      'POST',
+      server1 + '/set_rule',
+      {
+        json: {
+          ref: shardingPath,
+          value: {
+            ".write": `auth === '${shardOwner}'`
+          }
+        }
+      }
+    ).body.toString('utf-8')
+  ).result;
+  waitUntilTxFinalized(servers, setRuleRes.tx_hash);
+}
+
 describe('API Tests', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
@@ -1284,6 +1326,10 @@ describe('API Tests', () => {
     });
 
     describe('_initializeShard', () => {
+      before(() => {
+        setUpForSharding(shardingPath, shardOwner);
+      });
+
       it('initializes shard', () => {
         const res = JSON.parse(
           syncRequest(
@@ -1389,6 +1435,7 @@ describe('API Tests', () => {
 
     describe('_updateLatestShardReport', () => {
       before(() => {
+        setUpForSharding(shardingPath, shardOwner);
         const shardInitRes = JSON.parse(
           syncRequest(
             'POST',

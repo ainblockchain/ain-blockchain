@@ -78,6 +78,18 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
+// Needed to make sure the shard initialization is finished
+// before other shard nodes start
+function waitUntilShardReporterStarts() {
+  let consensusState;
+  while (true) {
+    consensusState = JSON.parse(syncRequest('GET', server1 + '/get_consensus_state')
+      .body.toString('utf-8')).result;
+    if (consensusState && consensusState.status === 1) return;
+    sleep(1000);
+  }
+}
+
 describe('Sharding initialization', () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_token.json'));
@@ -100,6 +112,7 @@ describe('Sharding initialization', () => {
     sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
     sleep(2000);
+    waitUntilShardReporterStarts();
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3]);
     sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4]);
