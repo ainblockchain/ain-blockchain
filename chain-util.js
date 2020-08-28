@@ -53,6 +53,19 @@ class ChainUtil {
     return ruleUtil.isEmptyNode(value);
   }
 
+  static isValAddr(value) {
+    return ruleUtil.isValAddr(value);
+  }
+
+  // TODO(lia): normalize addresses in user inputs using this function.
+  static toCksumAddr(value) {
+    return ruleUtil.toCksumAddr(value);
+  }
+
+  static isValShardProto(value) {
+    return ruleUtil.isValShardProto(value);
+  }
+
   static numberOrZero(num) {
     return ChainUtil.isNumber(num) ? num : 0;
   }

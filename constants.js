@@ -23,13 +23,13 @@ const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
-const PORT = getPortNumber(8080, 8081);
-const P2P_PORT = getPortNumber(5000, 5001);
+const PORT = process.env.PORT || getPortNumber(8080, 8081);
+const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 
 function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV == 'local') {
-    return baseValue + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
+    return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
   }
   return defaultValue;
 }
@@ -89,6 +89,9 @@ const PredefinedDbPaths = {
   // Sharding
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
+  SHARDING_SHARD: 'shard',
+  SHARDING_PROOF_HASH: 'proof_hash',
+  SHARDING_LATEST: 'latest'
 };
 
 /**
@@ -166,6 +169,7 @@ const NativeFunctionIds = {
   DEPOSIT: '_deposit',
   TRANSFER: '_transfer',
   WITHDRAW: '_withdraw',
+  UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
 };
 
 /**

@@ -24,6 +24,7 @@ cd ..
 ```
 node tracker-server/index.js
 ```
+You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 
 #### On Google Coud Platform (GCP)
 
@@ -96,6 +97,7 @@ NUM_VALIDATORS=4 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index
 NUM_VALIDATORS=4 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
 ```
 The environment variable `NUM_VALIDATORS` has default value `5`.
+You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
 ```
 rm -rf blockchain/blockchains logger/logs
