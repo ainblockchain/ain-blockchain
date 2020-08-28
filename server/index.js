@@ -644,7 +644,7 @@ class P2pServer {
             value: {
               [OwnerProperties.OWNER]: {
                 [OwnerProperties.OWNERS]: {
-                  [shardOwner]: buildOwnerPermissions(true, true, true, true),
+                  [shardOwner]: buildOwnerPermissions(false, true, true, true),
                   [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
                 }
               }
