@@ -69,6 +69,7 @@ class StateNode {
     if (this.getNumChild() === 0) {
       this.setIsLeaf(true);
     }
+    this.setProofHash(null);
   }
 
   getChildLabels() {

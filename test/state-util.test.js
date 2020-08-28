@@ -593,4 +593,24 @@ describe("state-util: a part of state Proof", () => {
       expect(copyTree.getProofHash()).to.equal(stateTree.getProofHash());
     });
   });
+
+  it("delete with proof", () => {
+    const jsObject = {
+      level0: {
+        level1: {
+          level2: {
+            foo: 'bar',
+            baz: 'caz'
+          }
+        },
+        another_route: {
+          test: -1000
+        }
+      }
+    };
+    const stateTree = jsObjectToStateTree(jsObject);
+    setProofHashForStateTree(stateTree);
+    deleteStateTree(stateTree);
+    expect(stateTree.getProofHash()).to.equal(null);
+  });
 });
