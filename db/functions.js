@@ -159,48 +159,6 @@ class Functions {
     }
   }
 
-  // _initializeShard(value, context) {
-  //   if (!Functions.isValidShardingConfig(value)) {
-  //     // Shard owner trying to remove the shard
-  //     // TODO(lia): support modification of the shard config (update owners, rules, functions, values)
-  //     return;
-  //   }
-  //   const shardingPath = ChainUtil.parsePath(ainUtil.decode(context.params.sharding_path));
-  //   if (ChainUtil.formatPath(shardingPath) !== value[ShardingProperties.SHARDING_PATH]) {
-  //     return;
-  //   }
-  //   const shardOwner = value[ShardingProperties.SHARD_OWNER];
-  //   const shardReporter = value[ShardingProperties.SHARD_REPORTER];
-  //   // Set owners
-  //   this.db.writeDatabase(this._getFullOwnerPath(shardingPath), {
-  //     [OwnerProperties.OWNER]: {
-  //       [OwnerProperties.OWNERS]: {
-  //         [shardOwner]: buildOwnerPermissions(false, true, true, true),
-  //         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
-  //       }
-  //     }
-  //   });
-  //   // Set rules
-  //   // TODO(lia): make this rule tighter (e.g. only allow writing at /$sharding_path/$block_number, values should be strings prefixed with '0x', and cannot write at /$sharding_path/latest)
-  //   this.db.writeDatabase(this._getFullRulePath(shardingPath), {
-  //     [RuleProperties.WRITE]: `auth === '${shardReporter}'`,
-  //   });
-  //   // Reset functions
-  //   this.db.writeDatabase(this._getFullFunctionPath(shardingPath), null);
-  //   // Reset values
-  //   this.db.writeDatabase(this._getFullValuePath(shardingPath), null);
-  //   // Add a native function for shard proof hash reporting
-  //   this.db.writeDatabase(
-  //     this._getFullFunctionPath([...shardingPath, '$block_number', PredefinedDbPaths.SHARDING_PROOF_HASH]),
-  //     {
-  //       [FunctionProperties.FUNCTION]: {
-  //         [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-  //         [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
-  //       }
-  //     }
-  //   );
-  // }
-
   static isValidShardingConfig(shardingConfig) {
     return ChainUtil.isDict(shardingConfig) &&
       ChainUtil.isString(shardingConfig[ShardingProperties.SHARDING_PATH]) &&
