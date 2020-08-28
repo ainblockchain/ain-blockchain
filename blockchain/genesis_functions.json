@@ -13,16 +13,6 @@
       }
     }
   },
-  "sharding": {
-    "shard": {
-      "$sharding_path": {
-        ".function": {
-          "function_type": "NATIVE",
-          "function_id": "_initializeShard"
-        }
-      }
-    }
-  },
   "transfer": {
     "$from": {
       "$to": {

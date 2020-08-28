@@ -27,6 +27,9 @@ const {
   RuleProperties,
   ShardingProperties,
   ShardingProtocols,
+  FunctionProperties,
+  FunctionTypes,
+  NativeFunctionIds,
   buildOwnerPermissions
 } = require('../constants');
 const ChainUtil = require('../chain-util');
@@ -620,72 +623,70 @@ class P2pServer {
       // Shard initialization not necessary
       return;
     }
+    await this.setUpDbForSharding();
+  }
+
+  async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
       GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
-    await this.setOwnerAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer);
-    await this.setRuleAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer);
-    await this.setShardingConfig(parentChainEndpoint, keyBuffer);
-  }
+    const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
 
-  // Make sure the shard owner has required owner permissions at the sharding path
-  async setOwnerAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer) {
-    const ownerSetTx = {
-      operation: {
-        type: WriteDbOperations.SET_OWNER,
-        ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
-        value: {
-          [OwnerProperties.OWNER]: {
-            [OwnerProperties.OWNERS]: {
-              [shardOwner]: buildOwnerPermissions(true, true, true, true)
-            }
-          }
-        }
-      },
-      timestamp: Date.now(),
-      nonce: -1
-    };
-    await sendTxAndWaitForConfirmation(parentChainEndpoint, ownerSetTx, keyBuffer);
-    logger.info(`[${P2P_PREFIX}] setOwnerAtShardingPath success`);
-  }
-
-  // Make sure the shard owner has required write permissions at the sharding path.
-  // Note that the above set_owner tx needs to be finalized before this set_rule tx.
-  async setRuleAtShardingPath(parentChainEndpoint, shardOwner, keyBuffer) {
-    const ruleSetTx = {
-      operation: {
-        type: WriteDbOperations.SET_RULE,
-        ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
-        value: {
-          [RuleProperties.WRITE]: `auth === '${shardOwner}'`
-        }
-      },
-      timestamp: Date.now(),
-      nonce: -1
-    }
-    await sendTxAndWaitForConfirmation(parentChainEndpoint, ruleSetTx, keyBuffer);
-    logger.info(`[${P2P_PREFIX}] setOwnerAtShardingPath success`);
-  }
-
-  // Init shard by setting sharding config at /sharding/shard/<Sharding Path>
-  async setShardingConfig(parentChainEndpoint, keyBuffer) {
     const shardInitTx = {
       operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: ChainUtil.formatPath([
-          PredefinedDbPaths.SHARDING,
-          PredefinedDbPaths.SHARDING_SHARD,
-          ainUtil.encode(GenesisSharding[ShardingProperties.SHARDING_PATH])
-        ]),
-        value: GenesisSharding
+        type: WriteDbOperations.SET,
+        op_list: [
+          {
+            type: WriteDbOperations.SET_OWNER,
+            ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+            value: {
+              [OwnerProperties.OWNER]: {
+                [OwnerProperties.OWNERS]: {
+                  [shardOwner]: buildOwnerPermissions(true, true, true, true),
+                  [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+                }
+              }
+            }
+          },
+          {
+            type: WriteDbOperations.SET_RULE,
+            ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+            value: {
+              [RuleProperties.WRITE]: `auth === '${shardReporter}'`
+            }
+          },
+          {
+            type: WriteDbOperations.SET_FUNCTION,
+            ref: ChainUtil.formatPath([
+              ...ChainUtil.parsePath(GenesisSharding[ShardingProperties.SHARDING_PATH]),
+              '$block_number',
+              PredefinedDbPaths.SHARDING_PROOF_HASH
+            ]),
+            value: {
+              [FunctionProperties.FUNCTION]: {
+                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+              }
+            }
+          },
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: ChainUtil.formatPath([
+              PredefinedDbPaths.SHARDING,
+              PredefinedDbPaths.SHARDING_SHARD,
+              ainUtil.encode(GenesisSharding[ShardingProperties.SHARDING_PATH])
+            ]),
+            value: GenesisSharding
+          }
+        ]
       },
       timestamp: Date.now(),
       nonce: -1
     };
     await sendTxAndWaitForConfirmation(parentChainEndpoint, shardInitTx, keyBuffer);
-    logger.info(`[${P2P_PREFIX}] setShardingConfig success`);
+    logger.info(`[${P2P_PREFIX}] setUpDbForSharding success`);
   }
 
   // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
