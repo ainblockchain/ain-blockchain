@@ -18,6 +18,13 @@ const {
   GenesisAccounts,
   HASH_DELIMITER,
   PredefinedDbPaths,
+  WriteDbOperations,
+  OwnerProperties,
+  RuleProperties,
+  FunctionProperties,
+  FunctionTypes,
+  NativeFunctionIds,
+  buildOwnerPermissions
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const { waitUntilTxFinalized } = require('../test/test-util');
@@ -143,46 +150,59 @@ cleanUp = () => {
   waitUntilTxFinalized(servers, res.tx_hash);
 }
 
-setUpForSharding = (shardingPath, shardOwner) => {
-  const setOwnerRes = JSON.parse(
+setUpForSharding = (shardingConfig) => {
+  const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+  const res = JSON.parse(
     syncRequest(
       'POST',
-      server1 + '/set_owner',
+      server1 + '/set',
       {
         json: {
-          ref: shardingPath,
-          value: {
-            ".owner": {
-              "owners": {
-                [shardOwner]: {
-                  "branch_owner": true,
-                  "write_function": true,
-                  "write_owner": true,
-                  "write_rule": true
+          op_list: [
+            {
+              type: WriteDbOperations.SET_OWNER,
+              ref: sharding_path,
+              value: {
+                [OwnerProperties.OWNER]: {
+                  [OwnerProperties.OWNERS]: {
+                    [shard_owner]: buildOwnerPermissions(true ,true, true, true),
+                    [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
+                  }
                 }
               }
+            },
+            {
+              type: WriteDbOperations.SET_RULE,
+              ref: sharding_path,
+              value: {
+                [RuleProperties.WRITE]: `auth === '${shard_reporter}'`
+              }
+            },
+            {
+              type: WriteDbOperations.SET_FUNCTION,
+              ref: `${sharding_path}/$block_number/proof_hash`,
+              value: {
+                [FunctionProperties.FUNCTION]: {
+                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                }
+              }
+            },
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: ChainUtil.formatPath([
+                PredefinedDbPaths.SHARDING,
+                PredefinedDbPaths.SHARDING_SHARD,
+                ainUtil.encode(sharding_path)
+              ]),
+              value: shardingConfig
             }
-          }
+          ]
         }
       }
     ).body.toString('utf-8')
   ).result;
-  waitUntilTxFinalized(servers, setOwnerRes.tx_hash);
-  const setRuleRes = JSON.parse(
-    syncRequest(
-      'POST',
-      server1 + '/set_rule',
-      {
-        json: {
-          ref: shardingPath,
-          value: {
-            ".write": `auth === '${shardOwner}'`
-          }
-        }
-      }
-    ).body.toString('utf-8')
-  ).result;
-  waitUntilTxFinalized(servers, setRuleRes.tx_hash);
+  waitUntilTxFinalized(servers, res.tx_hash);
 }
 
 describe('API Tests', () => {
@@ -1325,130 +1345,9 @@ describe('API Tests', () => {
       });
     });
 
-    describe('_initializeShard', () => {
-      before(() => {
-        setUpForSharding(shardingPath, shardOwner);
-      });
-
-      it('initializes shard', () => {
-        const res = JSON.parse(
-          syncRequest(
-            'POST',
-            server1 + '/set_value',
-            {
-              json: {
-                ref: `/sharding/shard/${encodedShardingPath}`,
-                value: shardingConfig
-              }
-            }
-          ).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(servers, res.tx_hash);
-        const shardingConfigRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_value?ref=/sharding/shard/${encodedShardingPath}`).body.toString('utf-8')
-        ).result;
-        const ownerRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_owner?ref=${shardingPath}`).body.toString('utf-8')
-        ).result;
-        const ruleRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_rule?ref=${shardingPath}`).body.toString('utf-8')
-        ).result;
-        const functionRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_function?ref=${shardingPath}`).body.toString('utf-8')
-        ).result;
-        const valueRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
-        ).result;
-        assert.deepEqual(shardingConfigRes, shardingConfig);
-        assert.deepEqual(ownerRes, {
-          ".owner": {
-            "owners": {
-              [shardOwner]: {
-                "branch_owner": false,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true
-              },
-              "*": {
-                "branch_owner": false,
-                "write_function": false,
-                "write_owner": false,
-                "write_rule": false
-              }
-            }
-          }
-        });
-        assert.deepEqual(ruleRes, {".write": `auth === '${shardReporter}'`});
-        assert.deepEqual(functionRes, {
-            "$block_number": {
-              "proof_hash": {
-                ".function": {
-                  "function_type": "NATIVE",
-                  "function_id": "_updateLatestShardReport"
-                }
-              }
-            }
-          }
-        );
-        expect(valueRes).to.equal(null);
-      });
-
-      it('cannot initialize the same shard more than once', () => {
-        const res = JSON.parse(
-          syncRequest(
-            'POST',
-            server2 + '/set_value',
-            {
-              json: {
-                ref: `/sharding/shard/${encodedShardingPath}`,
-                value: shardingConfig
-              }
-            }
-          ).body.toString('utf-8')
-        ).result;
-        assert.deepEqual(res.result, {
-          code: 2,
-          error_message: 'No .write permission on: /sharding/shard/!2Fapps!2Fafan'
-        });
-      });
-
-      it('shard owner can remove the shard', () => {
-        const res = JSON.parse(
-          syncRequest(
-            'POST',
-            server1 + '/set_value',
-            {
-              json: {
-                ref: `/sharding/shard/${encodedShardingPath}`,
-                value: null
-              }
-            }
-          ).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(servers, res.tx_hash);
-        const shardingConfigRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_value?ref=/sharding/shard/${encodedShardingPath}`).body.toString('utf-8')
-        ).result;
-        expect(shardingConfigRes).to.equal(null);
-      });
-    });
-
     describe('_updateLatestShardReport', () => {
       before(() => {
-        setUpForSharding(shardingPath, shardOwner);
-        const shardInitRes = JSON.parse(
-          syncRequest(
-            'POST',
-            server1 + '/set_value',
-            {
-              json: {
-                ref: `/sharding/shard/${encodedShardingPath}`,
-                value: shardingConfig
-              }
-            }
-          ).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(servers, shardInitRes.tx_hash);
+        setUpForSharding(shardingConfig);
       });
 
       it('updates the block number of the latest reported proof hash', () => {

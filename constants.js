@@ -169,7 +169,6 @@ const NativeFunctionIds = {
   DEPOSIT: '_deposit',
   TRANSFER: '_transfer',
   WITHDRAW: '_withdraw',
-  INIT_SHARD: '_initializeShard',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
 };
 
