@@ -2061,8 +2061,8 @@ describe("Test proof with database", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  describe("Check proof for setValue()", () => {
-    it("checks proof hash of /values/test", () => {
+  describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
+    it("checks proof hash of under $root_path/test", () => {
       const valuesNode = node.db.getRefForReading(['values', 'test']);
       const ownersNode = node.db.getRefForReading(['owners', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'test']);
