@@ -1,7 +1,7 @@
 const logger = require('../logger');
 const {
-  PredefinedDbPaths, FunctionTypes, FunctionResultCode, FunctionProperties, NativeFunctionIds,
-  DefaultValues, ShardingProperties, OwnerProperties, buildOwnerPermissions, RuleProperties
+  PredefinedDbPaths, FunctionTypes, FunctionResultCode, NativeFunctionIds,
+  DefaultValues, ShardingProperties
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const axios = require('axios');
@@ -159,16 +159,6 @@ class Functions {
     }
   }
 
-  static isValidShardingConfig(shardingConfig) {
-    return ChainUtil.isDict(shardingConfig) &&
-      ChainUtil.isString(shardingConfig[ShardingProperties.SHARDING_PATH]) &&
-      ChainUtil.isString(shardingConfig[ShardingProperties.PARENT_CHAIN_POC]) &&
-      ChainUtil.isNumber(shardingConfig[ShardingProperties.REPORTING_PERIOD]) &&
-      ChainUtil.isValAddr(shardingConfig[ShardingProperties.SHARD_OWNER]) &&
-      ChainUtil.isValAddr(shardingConfig[ShardingProperties.SHARD_REPORTER]) &&
-      ChainUtil.isValShardProto(shardingConfig[ShardingProperties.SHARDING_PROTOCOL]);
-  }
-
   _updateLatestShardReport(value, context) {
     const blockNumber = Number(context.params.block_number);
     if (!ChainUtil.isArray(context.functionPath)) {
@@ -242,18 +232,6 @@ class Functions {
 
   _getLatestShardReportPath(shardingPath) {
     return `${shardingPath}/${PredefinedDbPaths.SHARDING_LATEST}`;
-  }
-
-  _getFullOwnerPath(parsedPath) {
-    return this.db.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
-  }
-
-  _getFullFunctionPath(parsedPath) {
-    return this.db.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-  }
-
-  _getFullRulePath(parsedPath) {
-    return this.db.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
   }
 
   _getFullValuePath(parsedPath) {
