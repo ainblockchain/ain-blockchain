@@ -494,18 +494,18 @@ describe("state-util: a part of state Proof", () => {
       };
       const level0Node = jsObjectToStateTree(jsObject).getChild('level0');
       const childLabels = level0Node.getChildLabels();
-      const boolNode = level0Node.getChild(childLabels[0]);
-      const numberNode = level0Node.getChild(childLabels[1]);
-      const strNode = level0Node.getChild(childLabels[2]);
-      boolNode.setProofHash('proofHash1');
-      numberNode.setProofHash('proofHash2');
-      strNode.setProofHash('proofHash3');
+      const child1Node = level0Node.getChild(childLabels[0]);
+      const child2Node = level0Node.getChild(childLabels[1]);
+      const child3Node = level0Node.getChild(childLabels[2]);
+      child1Node.setProofHash('proofHash1');
+      child2Node.setProofHash('proofHash2');
+      child3Node.setProofHash('proofHash3');
       const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${boolNode.getProofHash()}${HASH_DELIMITER}`
+          + `${child1Node.getProofHash()}${HASH_DELIMITER}`
           + `${childLabels[1]}${HASH_DELIMITER}`
-          + `${numberNode.getProofHash()}${HASH_DELIMITER}`
+          + `${child2Node.getProofHash()}${HASH_DELIMITER}`
           + `${childLabels[2]}${HASH_DELIMITER}`
-          + `${strNode.getProofHash()}`;
+          + `${child3Node.getProofHash()}`;
       expect(buildProofHashOfStateNode(level0Node))
         .to.equal(ChainUtil.hashString(ChainUtil.toString(preimage)));
     });
@@ -569,6 +569,28 @@ describe("state-util: a part of state Proof", () => {
       expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
       expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
       expect(stateTree.getProofHash()).to.equal(buildProofHashOfStateNode(stateTree));
+    });
+  });
+
+  describe("makeCopyOfStateTree and deleteStateTree", () => {
+    it("copy with proof", () => {
+      const jsObject = {
+        level0: {
+          level1: {
+            level2: {
+              foo: 'bar',
+              baz: 'caz'
+            }
+          },
+          another_route: {
+            test: -1000
+          }
+        }
+      };
+      const stateTree = jsObjectToStateTree(jsObject);
+      setProofHashForStateTree(stateTree);
+      const copyTree = makeCopyOfStateTree(stateTree);
+      expect(copyTree.getProofHash()).to.equal(stateTree.getProofHash());
     });
   });
 });
