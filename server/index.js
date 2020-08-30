@@ -223,13 +223,15 @@ class P2pServer {
       updatedAt: Date.now(),
       lastBlock: {
         number: this.node.bc.lastBlockNumber(),
+        epoch: this.node.bc.lastBlockEpoch(),
         timestamp: this.node.bc.lastBlockTimestamp(),
       },
-      consensusStatus: {
-        consensus: this.consensus.getState(),
-        blockPool: this.consensus.blockPool ? this.consensus.blockPool.hashToBlockInfo : {},
-        longestNotarizedChainTips: this.consensus.blockPool ? this.consensus.blockPool.longestNotarizedChainTips : []
-      },
+      consensusStatus: Object.assign(
+        {},
+        this.consensus.getState(),
+        { longestNotarizedChainTipsSize: this.consensus.blockPool ?
+            this.consensus.blockPool.longestNotarizedChainTips.length : 0 }
+      ),
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
