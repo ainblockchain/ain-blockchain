@@ -81,11 +81,6 @@ function setTimer(ws, timeSec) {
   }, timeSec * 1000);
 }
 
-function jsonReplacer(key, val) {
-  if (key === 'blockPool') return undefined;
-  else return val;
-}
-
 // A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
 // TODO(seo): Sign messages to nodes.
 const server = new WebSocketServer({
@@ -122,7 +117,7 @@ server.on('connection', (ws) => {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
         node.assignRandomPeers();
         logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
-            `${JSON.stringify(nodeInfo, jsonReplacer, 2)}`)
+            `${JSON.stringify(nodeInfo, null, 2)}`)
       } else {
         node = new PeerNode(nodeInfo);
         node.assignRandomPeers();
