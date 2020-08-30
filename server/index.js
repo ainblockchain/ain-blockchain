@@ -223,6 +223,7 @@ class P2pServer {
       updatedAt: Date.now(),
       lastBlock: {
         number: this.node.bc.lastBlockNumber(),
+        epoch: this.node.bc.lastBlockEpoch(),
         timestamp: this.node.bc.lastBlockTimestamp(),
       },
       consensusStatus: Object.assign(
