@@ -228,7 +228,7 @@ module.exports = function getMethods(
     },
 
     ain_getProof: function(args, done) {
-      const result = p2pServer.node.db.getProof(args.dbPath);
+      const result = p2pServer.node.db.getProof(args.ref);
       done (null, addProtocolVersion({ result }));
     },
 
