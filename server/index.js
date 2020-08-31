@@ -6,13 +6,34 @@ const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
+const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const Consensus = require('../consensus');
 const { ConsensusStatus } = require('../consensus/constants');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
-const { DEBUG, P2P_PORT, TRACKER_WS_ADDR, HOSTING_ENV, MessageTypes } = require('../constants');
+const {
+  DEBUG,
+  P2P_PORT,
+  TRACKER_WS_ADDR,
+  HOSTING_ENV,
+  MessageTypes,
+  PredefinedDbPaths,
+  WriteDbOperations,
+  GenesisSharding,
+  GenesisAccounts,
+  AccountProperties,
+  OwnerProperties,
+  RuleProperties,
+  ShardingProperties,
+  ShardingProtocols,
+  FunctionProperties,
+  FunctionTypes,
+  NativeFunctionIds,
+  buildOwnerPermissions
+} = require('../constants');
 const ChainUtil = require('../chain-util');
+const { sendTxAndWaitForConfirmation } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -157,7 +178,7 @@ class P2pServer {
   }
 
   async setTrackerEventHandlers() {
-    this.trackerWebSocket.on('message', (message) => {
+    this.trackerWebSocket.on('message', async (message) => {
       try {
         const parsedMsg = JSON.parse(message);
         logger.info(`\n$[${P2P_PREFIX}] << Message from [TRACKER]: ` +
@@ -170,6 +191,7 @@ class P2pServer {
           this.isStarting = false;
           if (parsedMsg.numLivePeers === 0) {
             const lastBlockWithoutProposal = this.node.init(true);
+            await this.tryInitializeShard();
             this.node.bc.syncedAfterStartup = true;
             this.consensus.init(lastBlockWithoutProposal, true);
           } else {
@@ -201,13 +223,15 @@ class P2pServer {
       updatedAt: Date.now(),
       lastBlock: {
         number: this.node.bc.lastBlockNumber(),
+        epoch: this.node.bc.lastBlockEpoch(),
         timestamp: this.node.bc.lastBlockTimestamp(),
       },
-      consensusStatus: {
-        consensus: this.consensus.getState(),
-        blockPool: this.consensus.blockPool ? this.consensus.blockPool.hashToBlockInfo : {},
-        longestNotarizedChainTips: this.consensus.blockPool ? this.consensus.blockPool.longestNotarizedChainTips : []
-      },
+      consensusStatus: Object.assign(
+        {},
+        this.consensus.getState(),
+        { longestNotarizedChainTipsSize: this.consensus.blockPool ?
+            this.consensus.blockPool.longestNotarizedChainTips.length : 0 }
+      ),
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
@@ -586,6 +610,85 @@ class P2pServer {
 
       return response;
     }
+  }
+
+  async tryInitializeShard() {
+    if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
+      // Not a shard
+      return;
+    }
+    const isShardReporter = ainUtil.areSameAddresses(
+      GenesisSharding[ShardingProperties.SHARD_REPORTER],
+      this.node.account.address
+    );
+    if (this.node.bc.lastBlockNumber() !== 0 || !isShardReporter) {
+      // Shard initialization not necessary
+      return;
+    }
+    await this.setUpDbForSharding();
+  }
+
+  async setUpDbForSharding() {
+    const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    const ownerPrivateKey = ChainUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
+
+    const shardInitTx = {
+      operation: {
+        type: WriteDbOperations.SET,
+        op_list: [
+          {
+            type: WriteDbOperations.SET_OWNER,
+            ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+            value: {
+              [OwnerProperties.OWNER]: {
+                [OwnerProperties.OWNERS]: {
+                  [shardOwner]: buildOwnerPermissions(false, true, true, true),
+                  [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+                }
+              }
+            }
+          },
+          {
+            type: WriteDbOperations.SET_RULE,
+            ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+            value: {
+              [RuleProperties.WRITE]: `auth === '${shardReporter}'`
+            }
+          },
+          {
+            type: WriteDbOperations.SET_FUNCTION,
+            ref: ChainUtil.formatPath([
+              ...ChainUtil.parsePath(GenesisSharding[ShardingProperties.SHARDING_PATH]),
+              '$block_number',
+              PredefinedDbPaths.SHARDING_PROOF_HASH
+            ]),
+            value: {
+              [FunctionProperties.FUNCTION]: {
+                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+              }
+            }
+          },
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: ChainUtil.formatPath([
+              PredefinedDbPaths.SHARDING,
+              PredefinedDbPaths.SHARDING_SHARD,
+              ainUtil.encode(GenesisSharding[ShardingProperties.SHARDING_PATH])
+            ]),
+            value: GenesisSharding
+          }
+        ]
+      },
+      timestamp: Date.now(),
+      nonce: -1
+    };
+    await sendTxAndWaitForConfirmation(parentChainEndpoint, shardInitTx, keyBuffer);
+    logger.info(`[${P2P_PREFIX}] setUpDbForSharding success`);
   }
 
   // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.

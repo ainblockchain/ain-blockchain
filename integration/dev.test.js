@@ -18,6 +18,13 @@ const {
   GenesisAccounts,
   HASH_DELIMITER,
   PredefinedDbPaths,
+  WriteDbOperations,
+  OwnerProperties,
+  RuleProperties,
+  FunctionProperties,
+  FunctionTypes,
+  NativeFunctionIds,
+  buildOwnerPermissions
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const { waitUntilTxFinalized } = require('../test/test-util');
@@ -140,6 +147,61 @@ cleanUp = () => {
       ]
     }
   }).body.toString('utf-8')).result;
+  waitUntilTxFinalized(servers, res.tx_hash);
+}
+
+setUpForSharding = (shardingConfig) => {
+  const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+  const res = JSON.parse(
+    syncRequest(
+      'POST',
+      server1 + '/set',
+      {
+        json: {
+          op_list: [
+            {
+              type: WriteDbOperations.SET_OWNER,
+              ref: sharding_path,
+              value: {
+                [OwnerProperties.OWNER]: {
+                  [OwnerProperties.OWNERS]: {
+                    [shard_owner]: buildOwnerPermissions(true ,true, true, true),
+                    [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
+                  }
+                }
+              }
+            },
+            {
+              type: WriteDbOperations.SET_RULE,
+              ref: sharding_path,
+              value: {
+                [RuleProperties.WRITE]: `auth === '${shard_reporter}'`
+              }
+            },
+            {
+              type: WriteDbOperations.SET_FUNCTION,
+              ref: `${sharding_path}/$block_number/proof_hash`,
+              value: {
+                [FunctionProperties.FUNCTION]: {
+                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                }
+              }
+            },
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: ChainUtil.formatPath([
+                PredefinedDbPaths.SHARDING,
+                PredefinedDbPaths.SHARDING_SHARD,
+                ainUtil.encode(sharding_path)
+              ]),
+              value: shardingConfig
+            }
+          ]
+        }
+      }
+    ).body.toString('utf-8')
+  ).result;
   waitUntilTxFinalized(servers, res.tx_hash);
 }
 
@@ -853,7 +915,7 @@ describe('API Tests', () => {
     })
   })
 
-  describe('built-in functions', () => {
+  describe('Native functions', () => {
     let transferFrom; // = server1
     let transferTo; // = server2
     let transferFromBad;     // = server3
@@ -870,6 +932,8 @@ describe('API Tests', () => {
     let depositPath;
     let withdrawPath;
     let depositBalancePath;
+
+    let shardOwner, shardReporter, shardingPath, encodedShardingPath, shardingConfig;
 
     before(() => {
       transferFrom =
@@ -892,6 +956,20 @@ describe('API Tests', () => {
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;
       depositBalancePath = `/accounts/${depositActor}/balance`;
+
+      shardOwner = transferFrom;
+      shardReporter = transferTo;
+      shardingPath = '/apps/afan';
+      encodedShardingPath = ainUtil.encode(shardingPath);
+      shardingConfig = {
+        sharding_protocol: "POA",
+        sharding_path: shardingPath,
+        parent_chain_poc: server1,
+        reporting_period: 5,
+        shard_owner: shardOwner,
+        shard_reporter: shardReporter
+      };
+
       let res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
       waitUntilTxFinalized(servers, res.tx_hash);
@@ -1259,6 +1337,66 @@ describe('API Tests', () => {
         expect(balance).to.equal(beforeBalance - newDepositAmount);
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
       });
+    });
+
+    describe('_updateLatestShardReport', () => {
+      before(() => {
+        setUpForSharding(shardingConfig);
+      });
+
+      it('updates the block number of the latest reported proof hash', () => {
+        const reportVal = {
+          ref: `${shardingPath}/5/proof_hash`,
+          value: "0xPROOF_HASH_5"
+        }
+        const shardReportRes = JSON.parse(
+          syncRequest('POST', server2 + '/set_value', { json: reportVal }).body.toString('utf-8')
+        ).result;
+        waitUntilTxFinalized(servers, shardReportRes.tx_hash);
+        const shardingPathRes = JSON.parse(
+          syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
+        ).result;
+        assert.deepEqual(shardingPathRes, {
+          latest: 5,
+          5: {
+            proof_hash: "0xPROOF_HASH_5"
+          }
+        });
+      });
+
+      it('can handle reports that are out of order', () => {
+        const multipleReportVal = {
+          op_list: [
+            {
+              ref: `${shardingPath}/15/proof_hash`,
+              value: "0xPROOF_HASH_15" 
+            },
+            {
+              ref: `${shardingPath}/10/proof_hash`,
+              value: "0xPROOF_HASH_10" 
+            }
+          ]
+        }
+        const shardReportRes = JSON.parse(
+          syncRequest('POST', server2 + '/set', { json: multipleReportVal }).body.toString('utf-8')
+        ).result;
+        waitUntilTxFinalized(servers, shardReportRes.tx_hash);
+        const shardingPathRes = JSON.parse(
+          syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
+        ).result;
+        assert.deepEqual(shardingPathRes, {
+          latest: 15,
+          5: {
+            proof_hash: "0xPROOF_HASH_5"
+          },
+          10: {
+            proof_hash: "0xPROOF_HASH_10"
+          },
+          15: {
+            proof_hash: "0xPROOF_HASH_15"
+          }
+        });
+      })
     });
   });
 })

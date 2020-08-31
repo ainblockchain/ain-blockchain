@@ -125,6 +125,14 @@ class Blockchain {
     return lastBlock.number;
   }
 
+  lastBlockEpoch() {
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return -1;
+    }
+    return lastBlock.epoch;
+  }
+
   lastBlockTimestamp() {
     const lastBlock = this.lastBlock();
     if (!lastBlock) {

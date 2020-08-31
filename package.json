@@ -24,7 +24,7 @@
     "test_state_util": "mocha ./test/state-util.test.js"
   },
   "dependencies": {
-    "@ainblockchain/ain-util": "^1.1.5",
+    "@ainblockchain/ain-util": "^1.1.6",
     "@google-cloud/logging-winston": "^3.0.5",
     "ajv": "^5.5.2",
     "axios": "^0.19.2",

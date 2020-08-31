@@ -647,6 +647,9 @@ class Consensus {
 
   getCatchUpInfo() {
     let res = [];
+    if (!this.blockPool) {
+      return res;
+    }
     this.blockPool.longestNotarizedChainTips.forEach(chainTip => {
       const chain = this.blockPool.getExtendingChain(chainTip, true);
       res = _.unionWith(res, chain, (a, b) => _.get(a, 'block.hash') === _.get(b, 'block.hash'));
