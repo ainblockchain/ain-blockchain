@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@ainblockchain/ain-util@^1.1.5":
+"@ainblockchain/ain-util@^1.1.6":
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/@ainblockchain/ain-util/-/ain-util-1.1.6.tgz#f8dc8506e5f4560ab4f81bd0664e3b6606ba70b4"
   integrity sha512-1QbPfHGE5PV/AmWPZ5VD2gW5t2bagFCn1xZPpVnpfPiNCc45RnNS0D6scRzMwBsTo1kJpNciJXIyUpCabaEplA==

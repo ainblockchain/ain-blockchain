@@ -823,8 +823,9 @@ class DB {
   }
 
   makeEvalFunction(ruleString, pathVars) {
-    return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-                        'getFunction', 'getOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
+    return new Function('auth', 'data', 'newData', 'currentTime',
+                        'getValue', 'getRule', 'getFunction', 'getOwner',
+                        'evalRule', 'evalOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
@@ -837,6 +838,7 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
+                    this.evalRule.bind(this), this.evalOwner.bind(this),
                     new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
   }
 
