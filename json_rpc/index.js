@@ -227,6 +227,11 @@ module.exports = function getMethods(
       done (null, addProtocolVersion({ result }));
     },
 
+    ain_getProof: function(args, done) {
+      const result = p2pServer.node.db.getProof(args.dbPath);
+      done (null, addProtocolVersion({ result }));
+    },
+
     // Account API
     ain_getAddress: function(args, done) {
       done(null, addProtocolVersion({ result: p2pServer.node.account ?
