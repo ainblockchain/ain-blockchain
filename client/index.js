@@ -58,7 +58,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref);
+  const result = node.db.getValue(req.query.ref, req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -66,7 +66,7 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref);
+  const result = node.db.getFunction(req.query.ref, req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -74,7 +74,7 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref);
+  const result = node.db.getRule(req.query.ref, req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -82,18 +82,7 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-/**
- * Returns a proof of the state node in the given full database path.
- */
-app.get('/get_proof', (req, res, next) => {
-  const result = node.db.getProof(req.query.ref);
+  const result = node.db.getOwner(req.query.ref, req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -101,7 +90,7 @@ app.get('/get_proof', (req, res, next) => {
 });
 
 app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref);
+  const result = node.db.matchFunction(req.query.ref, req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -109,7 +98,7 @@ app.get('/match_function', (req, res, next) => {
 });
 
 app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref);
+  const result = node.db.matchRule(req.query.ref, req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -117,7 +106,7 @@ app.get('/match_rule', (req, res, next) => {
 });
 
 app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref);
+  const result = node.db.matchOwner(req.query.ref, req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -126,7 +115,8 @@ app.get('/match_owner', (req, res, next) => {
 
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const result = node.db.evalRule(body.ref, body.value, body.address, body.timestamp || Date.now());
+  const result = node.db.evalRule(body.ref, body.value, body.is_global, body.address,
+      body.timestamp || Date.now());
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -135,7 +125,7 @@ app.post('/eval_rule', (req, res, next) => {
 
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
-  const result = node.db.evalOwner(body.ref, body.permission, body.address);
+  const result = node.db.evalOwner(body.ref, body.permission, body.is_global, body.address);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -147,6 +137,17 @@ app.post('/get', (req, res, next) => {
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
+    .end();
+});
+
+/**
+ * Returns a proof of the state node in the given full database path.
+ */
+app.get('/get_proof', (req, res, next) => {
+  const result = node.db.getProof(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
