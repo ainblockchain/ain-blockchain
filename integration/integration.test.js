@@ -445,6 +445,7 @@ describe('Integration Tests', () => {
             transactions_hash: block.transactions_hash,
             number: block.number,
             epoch: block.epoch,
+            stateProofHash: block.stateProofHash,
             timestamp: block.timestamp,
             proposer: block.proposer,
             validators: block.validators,
