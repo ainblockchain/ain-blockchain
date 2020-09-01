@@ -156,32 +156,28 @@ class DB {
 
   getValue(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     return this.readDatabase(fullPath);
   }
 
   getFunction(functionPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(functionPath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     return this.readDatabase(fullPath);
   }
 
   getRule(rulePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(rulePath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     return this.readDatabase(fullPath);
   }
 
   getOwner(ownerPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     return this.readDatabase(fullPath);
   }
@@ -213,36 +209,31 @@ class DB {
 
   matchFunction(funcPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(funcPath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     return this.convertFunctionMatch(this.matchFunctionForParsedPath(localPath));
   }
 
   matchRule(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     return this.convertRuleMatch(this.matchRuleForParsedPath(localPath));
   }
 
   matchOwner(rulePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(rulePath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath));
   }
 
   evalRule(valuePath, value, isGlobal, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     return this.getPermissionForValue(localPath, value, address, timestamp);
   }
 
   evalOwner(refPath, permission, isGlobal, address) {
     const parsedPath = ChainUtil.parsePath(refPath);
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     const matched = this.matchOwnerForParsedPath(localPath);
     return this.checkPermission(matched.closestOwner.config, address, permission);
   }
@@ -289,8 +280,7 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (!this.getPermissionForValue(localPath, value, address, timestamp)) {
       return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
@@ -335,8 +325,7 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (!this.getPermissionForFunction(localPath, address)) {
       return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
     }
@@ -359,8 +348,7 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (!this.getPermissionForRule(localPath, address)) {
       return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
     }
@@ -381,8 +369,7 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    const localPath = (isGlobal === true && !this.isRoot) ?
-        this.toLocalPath(parsedPath) : parsedPath;
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (!this.getPermissionForOwner(localPath, address)) {
       return {code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}`};
     }
@@ -478,6 +465,9 @@ class DB {
    * Converts to local path by removing the sharding path part of the given parsed path.
    */
   toLocalPath(parsedPath) {
+    if (this.isRoot) {
+      return parsedPath;
+    }
     if (parsedPath.length < this.shardingPath.length) {
       return null;
     }

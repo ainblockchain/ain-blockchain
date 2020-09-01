@@ -58,7 +58,7 @@ const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCO
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const servers = [ server1, server2, server3, server4 ];
+const SERVERS = [ server1, server2, server3, server4 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -118,7 +118,7 @@ setUp = () => {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(servers, res.tx_hash);
+  waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
 cleanUp = () => {
@@ -148,7 +148,7 @@ cleanUp = () => {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(servers, res.tx_hash);
+  waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
 setUpForSharding = (shardingConfig) => {
@@ -203,7 +203,7 @@ setUpForSharding = (shardingConfig) => {
       }
     ).body.toString('utf-8')
   ).result;
-  waitUntilTxFinalized(servers, res.tx_hash);
+  waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
 describe('API Tests', () => {
@@ -973,12 +973,12 @@ describe('API Tests', () => {
 
       let res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(servers, res.tx_hash);
+      waitUntilTxFinalized(SERVERS, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(servers, res.tx_hash);
+      waitUntilTxFinalized(SERVERS, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(servers, res.tx_hash);
+      waitUntilTxFinalized(SERVERS, res.tx_hash);
     })
 
     describe('_transfer', () => {
@@ -993,7 +993,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const fromAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = JSON.parse(syncRequest('GET',
@@ -1127,7 +1127,7 @@ describe('API Tests', () => {
           ]
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(0);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
       })
 
       it('deposit', () => {
@@ -1139,7 +1139,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1194,7 +1194,7 @@ describe('API Tests', () => {
         const account = ainUtil.createAccount();
         const res = JSON.parse(syncRequest('POST', server2+'/set_value',
                     {json: {ref: `/accounts/${account.address}/balance`, value: 1000}}).body.toString('utf-8')).result;
-        waitUntilTxFinalized(servers, res.tx_hash);
+        waitUntilTxFinalized(SERVERS, res.tx_hash);
         const transaction = {
           operation: {
             type: 'SET_VALUE',
@@ -1297,7 +1297,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
@@ -1323,7 +1323,7 @@ describe('API Tests', () => {
         }}).body.toString('utf-8'));
         assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1353,7 +1353,7 @@ describe('API Tests', () => {
         const shardReportRes = JSON.parse(
           syncRequest('POST', server2 + '/set_value', { json: reportVal }).body.toString('utf-8')
         ).result;
-        waitUntilTxFinalized(servers, shardReportRes.tx_hash);
+        waitUntilTxFinalized(SERVERS, shardReportRes.tx_hash);
         const shardingPathRes = JSON.parse(
           syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
@@ -1381,7 +1381,7 @@ describe('API Tests', () => {
         const shardReportRes = JSON.parse(
           syncRequest('POST', server2 + '/set', { json: multipleReportVal }).body.toString('utf-8')
         ).result;
-        waitUntilTxFinalized(servers, shardReportRes.tx_hash);
+        waitUntilTxFinalized(SERVERS, shardReportRes.tx_hash);
         const shardingPathRes = JSON.parse(
           syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
