@@ -6,10 +6,8 @@ const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const logger = require('../logger')
 const { Block } = require('./block');
-const DB = require('../db');
 const BlockFilePatterns = require('./block-file-patterns');
-const { BLOCKCHAINS_DIR, GenesisAccounts, AccountProperties } = require('../constants');
-const ChainUtil = require('../chain-util');
+const { BLOCKCHAINS_DIR } = require('../constants');
 const CHAIN_SUBSECT_LENGTH = 20;
 
 const LOG_PREFIX = 'BLOCKCHAIN';
@@ -21,7 +19,6 @@ class Blockchain {
     this.blockchainDir = blockchainDir;
     this.backupDb = null;
     this.syncedAfterStartup = false;
-    this.setGenesisStateProof();
   }
 
   init(isFirstNode) {
@@ -33,7 +30,7 @@ class Blockchain {
         logger.info("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
         logger.info("############################################################");
         logger.info("\n");
-        this.chain = [Block.genesis(this.genesisStateProof)];
+        this.chain = [Block.genesis(Block.getGenesisStateProof())];
         this.writeChain();
       } else {
         logger.info("\n");
@@ -174,7 +171,7 @@ class Blockchain {
 
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
-    if (!firstBlock || firstBlock.hash !== Block.genesis(Blockchain.getGenesisStateProof()).hash) {
+    if (!firstBlock || firstBlock.hash !== Block.genesis(Block.getGenesisStateProof()).hash) {
       logger.error(`[${LOG_PREFIX}] First block is not the Genesis block`);
       return false;
     }
@@ -195,26 +192,6 @@ class Blockchain {
       }
     }
     return true;
-  }
-
-  setGenesisStateProof() {
-    if (this.genesisStateProof) {
-      return;
-    }
-    this.genesisStateProof = Blockchain.getGenesisStateProof();
-  }
-
-  static getGenesisStateProof() {
-    const tempGenesisState = new DB(null, -1);
-    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
-    for (const tx of genesisTransactions) {
-      const res = tempGenesisState.executeTransaction(tx);
-      if (ChainUtil.transactionFailed(res)) {
-        logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
-        return null;
-      }
-    }
-    return tempGenesisState.getProof();
   }
 
   _blockchainDir() {
