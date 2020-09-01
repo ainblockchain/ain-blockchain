@@ -77,7 +77,7 @@ class Consensus {
 
   startEpochTransition() {
     const LOG_SUFFIX = 'startEpochTransition';
-    const genesisBlock = Block.genesis();
+    const genesisBlock = Block.genesis(this.node.bc.genesisStateProof);
     this.startingTime = genesisBlock.timestamp;
     this.state.epoch = Math.ceil((Date.now() - this.startingTime) / ConsensusConsts.EPOCH_MS);
     logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch initialized to ${this.state.epoch}`);
@@ -240,17 +240,6 @@ class Consensus {
     if (DEBUG) {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Created a temp state for tx checks`);
     }
-    transactions.forEach(tx => {
-      if (DEBUG) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Checking transaction ${JSON.stringify(tx, null, 2)}`);
-      }
-      if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] transaction result: success!`);
-        validTransactions.push(tx);
-      } else {
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] transaction result: failed..`);
-      }
-    })
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     if (DEBUG) {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
@@ -262,12 +251,32 @@ class Consensus {
     if (lastBlockInfo && lastBlockInfo.proposal) {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
+    lastVotes.forEach(voteTx => {
+      if (!ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: success!`);
+      } else {
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: failed..`);
+      }
+    })
+
+    transactions.forEach(tx => {
+      if (DEBUG) {
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Checking tx ${JSON.stringify(tx, null, 2)}`);
+      }
+      if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
+        validTransactions.push(tx);
+      } else {
+        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
+      }
+    })
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastBlock.validators : this.getWhitelist();
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
-    const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch, myAddr, validators);
+    const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
+      blockNumber, this.state.epoch, tempState.getProof(), myAddr, validators);
 
     let proposalTx;
     const txOps = {
@@ -447,6 +456,12 @@ class Consensus {
         return false;
       }
     }
+    tempState.setDbToSnapshot(prevState);
+    if (ChainUtil.transactionFailed(tempState.executeTransaction(proposalTx))) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute the proposal tx`);
+      return false;
+    }
+    this.node.tp.addTransaction(new Transaction(proposalTx));
     const newState = new DB(null, prevBlock.number);
     newState.setDbToSnapshot(prevState);
     if (!newState.executeTransactionList(proposalBlock.last_votes)) {
@@ -457,13 +472,11 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute transactions`);
       return false;
     }
-    tempState.setDbToSnapshot(prevState);
-    if (ChainUtil.transactionFailed(tempState.executeTransaction(proposalTx))) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute the proposal tx`);
+    newState.lastBlockNumber += 1;
+    if (newState.getProof() !== proposalBlock.stateProof) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof()} / ${proposalBlock.stateProof}`);
       return false;
     }
-    this.node.tp.addTransaction(new Transaction(proposalTx));
-    newState.lastBlockNumber += 1;
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;

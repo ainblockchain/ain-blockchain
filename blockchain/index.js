@@ -8,7 +8,8 @@ const logger = require('../logger')
 const { Block } = require('./block');
 const DB = require('../db');
 const BlockFilePatterns = require('./block-file-patterns');
-const { BLOCKCHAINS_DIR } = require('../constants');
+const { BLOCKCHAINS_DIR, GenesisAccounts, AccountProperties } = require('../constants');
+const ChainUtil = require('../chain-util');
 const CHAIN_SUBSECT_LENGTH = 20;
 
 const LOG_PREFIX = 'BLOCKCHAIN';
@@ -20,6 +21,7 @@ class Blockchain {
     this.blockchainDir = blockchainDir;
     this.backupDb = null;
     this.syncedAfterStartup = false;
+    this.setGenesisStateProof();
   }
 
   init(isFirstNode) {
@@ -31,7 +33,7 @@ class Blockchain {
         logger.info("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
         logger.info("############################################################");
         logger.info("\n");
-        this.chain = [Block.genesis()];
+        this.chain = [Block.genesis(this.genesisStateProof)];
         this.writeChain();
       } else {
         logger.info("\n");
@@ -153,7 +155,6 @@ class Blockchain {
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
-    this.chain.push(newBlock);
     if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
       logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
@@ -162,6 +163,7 @@ class Blockchain {
       logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
+    this.chain.push(newBlock);
     this.writeChain();
     // Keep up to latest 20 blocks
     while (this.chain.length > 20) {
@@ -172,7 +174,7 @@ class Blockchain {
 
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
-    if (!firstBlock || firstBlock.hash !== Block.genesis().hash) {
+    if (!firstBlock || firstBlock.hash !== Block.genesis(Blockchain.getGenesisStateProof()).hash) {
       logger.error(`[${LOG_PREFIX}] First block is not the Genesis block`);
       return false;
     }
@@ -193,6 +195,26 @@ class Blockchain {
       }
     }
     return true;
+  }
+
+  setGenesisStateProof() {
+    if (this.genesisStateProof) {
+      return;
+    }
+    this.genesisStateProof = Blockchain.getGenesisStateProof();
+  }
+
+  static getGenesisStateProof() {
+    const tempGenesisState = new DB(null, -1);
+    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
+    genesisTransactions.forEach(tx => {
+      const res = tempGenesisState.executeTransaction(tx);
+      if (ChainUtil.transactionFailed(res)) {
+        logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
+        return;
+      }
+    });
+    return tempGenesisState.getProof();
   }
 
   _blockchainDir() {
@@ -320,6 +342,7 @@ class Blockchain {
       if (block.number <= this.lastBlockNumber()) {
         continue;
       }
+      // TODO(lia): validate the state proof of each block
       if (!this.addNewBlock(block)) {
         logger.error(`[${LOG_PREFIX}] Failed to add block ` + block);
         return false;
