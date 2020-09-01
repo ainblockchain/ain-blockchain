@@ -77,7 +77,7 @@ class Consensus {
 
   startEpochTransition() {
     const LOG_SUFFIX = 'startEpochTransition';
-    const genesisBlock = Block.genesis(Block.getGenesisStateProof());
+    const genesisBlock = Block.genesis(Block.getGenesisProofHash());
     this.startingTime = genesisBlock.timestamp;
     this.state.epoch = Math.ceil((Date.now() - this.startingTime) / ConsensusConsts.EPOCH_MS);
     logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch initialized to ${this.state.epoch}`);
@@ -473,8 +473,8 @@ class Consensus {
       return false;
     }
     newState.lastBlockNumber += 1;
-    if (newState.getProof('/') !== proposalBlock.stateProof) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')} / ${proposalBlock.stateProof}`);
+    if (newState.getProof('/') !== proposalBlock.proofHash) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')} / ${proposalBlock.proofHash}`);
       return false;
     }
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
