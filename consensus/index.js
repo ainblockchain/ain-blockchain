@@ -77,7 +77,7 @@ class Consensus {
 
   startEpochTransition() {
     const LOG_SUFFIX = 'startEpochTransition';
-    const genesisBlock = Block.genesis(Block.getGenesisProofHash());
+    const genesisBlock = Block.genesis();
     this.startingTime = genesisBlock.timestamp;
     this.state.epoch = Math.ceil((Date.now() - this.startingTime) / ConsensusConsts.EPOCH_MS);
     logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Epoch initialized to ${this.state.epoch}`);
