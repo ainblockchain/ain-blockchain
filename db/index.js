@@ -154,25 +154,25 @@ class DB {
     return stateTreeToJsObject(stateNode);
   }
 
-  getValue(valuePath) {
+  getValue(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  getFunction(functionPath) {
+  getFunction(functionPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(functionPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  getRule(rulePath) {
+  getRule(rulePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  getOwner(ownerPath) {
+  getOwner(ownerPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
     return this.readDatabase(fullPath);
@@ -203,27 +203,27 @@ class DB {
     return rootProof;
   }
 
-  matchFunction(funcPath) {
+  matchFunction(funcPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(funcPath);
     return this.convertFunctionMatch(this.matchFunctionForParsedPath(parsedPath));
   }
 
-  matchRule(valuePath) {
+  matchRule(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     return this.convertRuleMatch(this.matchRuleForParsedPath(parsedPath));
   }
 
-  matchOwner(rulePath) {
+  matchOwner(rulePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(rulePath);
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(parsedPath));
   }
 
-  evalRule(valuePath, value, address, timestamp) {
+  evalRule(valuePath, value, isGlobal, address, timestamp) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     return this.getPermissionForValue(parsedPath, value, address, timestamp);
   }
 
-  evalOwner(refPath, permission, address) {
+  evalOwner(refPath, permission, isGlobal, address) {
     const parsedPath = ChainUtil.parsePath(refPath);
     const matched = this.matchOwnerForParsedPath(parsedPath);
     return this.checkPermission(matched.closestOwner.config, address, permission);
@@ -231,28 +231,28 @@ class DB {
 
   get(opList) {
     const resultList = [];
-    opList.forEach((item) => {
-      if (item.type === undefined || item.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(item.ref));
-      } else if (item.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(item.ref));
-      } else if (item.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(item.ref));
-      } else if (item.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(item.ref));
-      } else if (item.type === ReadDbOperations.GET_PROOF) {
-        resultList.push(this.getProof(item.ref));
-      } else if (item.type === ReadDbOperations.MATCH_FUNCTION) {
-        resultList.push(this.matchFunction(item.ref));
-      } else if (item.type === ReadDbOperations.MATCH_RULE) {
-        resultList.push(this.matchRule(item.ref));
-      } else if (item.type === ReadDbOperations.MATCH_OWNER) {
-        resultList.push(this.matchOwner(item.ref));
-      } else if (item.type === ReadDbOperations.EVAL_RULE) {
+    opList.forEach((op) => {
+      if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
+        resultList.push(this.getValue(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_RULE) {
+        resultList.push(this.getRule(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_FUNCTION) {
+        resultList.push(this.getFunction(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_OWNER) {
+        resultList.push(this.getOwner(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_PROOF) {
+        resultList.push(this.getProof(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
+        resultList.push(this.matchFunction(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.MATCH_RULE) {
+        resultList.push(this.matchRule(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.MATCH_OWNER) {
+        resultList.push(this.matchOwner(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.EVAL_RULE) {
         resultList.push(
-            this.evalRule(item.ref, item.value, item.address, item.timestamp || Date.now()));
-      } else if (item.type === ReadDbOperations.EVAL_OWNER) {
-        resultList.push(this.evalOwner(item.ref, item.permission, item.address));
+            this.evalRule(op.ref, op.value, op.is_global, op.address, op.timestamp || Date.now()));
+      } else if (op.type === ReadDbOperations.EVAL_OWNER) {
+        resultList.push(this.evalOwner(op.ref, op.permission, op.is_global, op.address));
       }
     });
     return resultList;
@@ -261,7 +261,7 @@ class DB {
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
-  setValue(valuePath, value, address, timestamp, transaction) {
+  setValue(valuePath, value, isGlobal, address, timestamp, transaction) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -281,7 +281,7 @@ class DB {
     return true;
   }
 
-  incValue(valuePath, delta, address, timestamp, transaction) {
+  incValue(valuePath, delta, isGlobal, address, timestamp, transaction) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -290,10 +290,10 @@ class DB {
       return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
+    return this.setValue(valuePath, valueAfter, isGlobal, address, timestamp, transaction);
   }
 
-  decValue(valuePath, delta, address, timestamp, transaction) {
+  decValue(valuePath, delta, isGlobal, address, timestamp, transaction) {
     const valueBefore = this.getValue(valuePath);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -302,10 +302,10 @@ class DB {
       return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
+    return this.setValue(valuePath, valueAfter, isGlobal, address, timestamp, transaction);
   }
 
-  setFunction(functionPath, functionInfo, address) {
+  setFunction(functionPath, functionInfo, isGlobal, address) {
     const isValidObj = isValidJsObjectForStates(functionInfo);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -327,7 +327,7 @@ class DB {
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
-  setRule(rulePath, rule, address) {
+  setRule(rulePath, rule, isGlobal, address) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -347,7 +347,7 @@ class DB {
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  setOwner(ownerPath, owner, address) {
+  setOwner(ownerPath, owner, isGlobal, address) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -372,32 +372,32 @@ class DB {
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, address, timestamp, transaction);
+        ret = this.setValue(op.ref, op.value, op.is_global, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, address, timestamp, transaction);
+        ret = this.incValue(op.ref, op.value, op.is_global, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, address, timestamp, transaction);
+        ret = this.decValue(op.ref, op.value, op.is_global, address, timestamp, transaction);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, address);
+        ret = this.setFunction(op.ref, op.value, op.is_global, address);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, address);
+        ret = this.setRule(op.ref, op.value, op.is_global, address);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, address);
+        ret = this.setOwner(op.ref, op.value, op.is_global, address);
         if (ret !== true) {
           break;
         }
@@ -452,26 +452,26 @@ class DB {
     this.stateTree = makeCopyOfStateTree(snapshot.stateTree);
   }
 
-  executeOperation(operation, address, timestamp, transaction) {
-    if (!operation) {
+  executeOperation(op, address, timestamp, tx) {
+    if (!op) {
       return null;
     }
-    switch (operation.type) {
+    switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(operation.ref, operation.value, address, timestamp, transaction);
+        return this.setValue(op.ref, op.value, op.is_global, address, timestamp, tx);
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(operation.ref, operation.value, address, timestamp, transaction);
+        return this.incValue(op.ref, op.value, op.is_global, address, timestamp, tx);
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(operation.ref, operation.value, address, timestamp, transaction);
+        return this.decValue(op.ref, op.value, op.is_global, address, timestamp, tx);
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(operation.ref, operation.value, address);
+        return this.setFunction(op.ref, op.value, op.is_global, address);
       case WriteDbOperations.SET_RULE:
-        return this.setRule(operation.ref, operation.value, address);
+        return this.setRule(op.ref, op.value, op.is_global, address);
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(operation.ref, operation.value, address);
+        return this.setOwner(op.ref, op.value, op.is_global, address);
       case WriteDbOperations.SET:
-        return this.set(operation.op_list, address, timestamp, transaction);
+        return this.set(op.op_list, address, timestamp, tx);
     }
   }
 
