@@ -3,6 +3,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
 const ainUtil = require('@ainblockchain/ain-util');
+const Blockchain = require('../blockchain');
 const {Block} = require('../blockchain/block');
 const Node = require('../node');
 const {setDbForTesting, getTransaction} = require('./test-util')
@@ -112,7 +113,7 @@ describe('TransactionPool', () => {
       const number = 1;
       const lastBlock = Block.genesis();
       const block = Block.createBlock(lastBlock.hash, [], node.tp.getValidTransactions(),
-          number, lastBlock.epoch + 1, node.account.address, []);
+          number, lastBlock.epoch + 1, '', node.account.address, []);
       const newTransactions = {};
       newTransactions[node.account.address] = [];
       for (let i = 0; i < 10; i++) {
