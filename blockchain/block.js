@@ -160,7 +160,7 @@ class Block {
         return null;
       }
     }
-    return tempGenesisState.getProof();
+    return tempGenesisState.getProof('/');
   }
 
   static getDbSetupTransaction(timestamp, keyBuffer) {
