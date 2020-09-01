@@ -5,6 +5,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
+const DB = require('../db');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
@@ -147,6 +148,19 @@ class Block {
 
     logger.info(`[${LOG_PREFIX}] Valid block of number ${block.number}`);
     return true;
+  }
+
+  static getGenesisStateProof() {
+    const tempGenesisState = new DB(null, -1);
+    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
+    for (const tx of genesisTransactions) {
+      const res = tempGenesisState.executeTransaction(tx);
+      if (ChainUtil.transactionFailed(res)) {
+        logger.error(`[${LOG_PREFIX}] Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
+        return null;
+      }
+    }
+    return tempGenesisState.getProof();
   }
 
   static getDbSetupTransaction(timestamp, keyBuffer) {
