@@ -207,13 +207,13 @@ class Blockchain {
   static getGenesisStateProof() {
     const tempGenesisState = new DB(null, -1);
     const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
-    genesisTransactions.forEach(tx => {
+    for (const tx of genesisTransactions) {
       const res = tempGenesisState.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
-        return;
+        return null;
       }
-    });
+    }
     return tempGenesisState.getProof();
   }
 
