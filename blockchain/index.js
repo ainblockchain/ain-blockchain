@@ -30,7 +30,7 @@ class Blockchain {
         logger.info("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
         logger.info("############################################################");
         logger.info("\n");
-        this.chain = [Block.genesis(Block.getGenesisStateProof())];
+        this.chain = [Block.genesis(Block.getGenesisProofHash())];
         this.writeChain();
       } else {
         logger.info("\n");
@@ -171,7 +171,7 @@ class Blockchain {
 
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
-    if (!firstBlock || firstBlock.hash !== Block.genesis(Block.getGenesisStateProof()).hash) {
+    if (!firstBlock || firstBlock.hash !== Block.genesis(Block.getGenesisProofHash()).hash) {
       logger.error(`[${LOG_PREFIX}] First block is not the Genesis block`);
       return false;
     }

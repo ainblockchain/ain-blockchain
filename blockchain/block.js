@@ -21,7 +21,7 @@ const BlockFilePatterns = require('./block-file-patterns');
 const LOG_PREFIX = 'BLOCK';
 
 class Block {
-  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, stateProof, proposer, validators) {
+  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, proofHash, proposer, validators) {
     this.last_votes = lastVotes;
     this.transactions = transactions;
     // Block's header
@@ -31,7 +31,7 @@ class Block {
     this.number = number;
     this.epoch = epoch;
     this.timestamp = timestamp;
-    this.stateProof = stateProof;
+    this.proofHash = proofHash;
     this.proposer = proposer;
     this.validators = validators;
     this.size = sizeof(this.transactions);
@@ -47,7 +47,7 @@ class Block {
       number: this.number,
       epoch: this.epoch,
       timestamp: this.timestamp,
-      stateProof: this.stateProof,
+      proofHash: this.proofHash,
       proposer: this.proposer,
       validators: this.validators,
       size: this.size
@@ -63,7 +63,7 @@ class Block {
             number:            ${this.number}
             epoch:             ${this.epoch}
             timestamp:         ${this.timestamp}
-            stateProof:        ${this.stateProof}
+            proofHash:         ${this.proofHash}
             proposer:          ${this.proposer}
             validators:        ${this.validators}
             size:              ${this.size}
@@ -78,8 +78,8 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, epoch, stateProof, proposer, validators) {
-    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), stateProof, proposer, validators);
+  static createBlock(lastHash, lastVotes, transactions, number, epoch, proofHash, proposer, validators) {
+    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), proofHash, proposer, validators);
   }
 
   static getFileName(block) {
@@ -97,13 +97,13 @@ class Block {
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo['last_hash'], blockInfo['last_votes'],
         blockInfo['transactions'], blockInfo['number'], blockInfo['epoch'],
-        blockInfo['timestamp'], blockInfo['stateProof'], blockInfo['proposer'], blockInfo['validators']);
+        blockInfo['timestamp'], blockInfo['proofHash'], blockInfo['proposer'], blockInfo['validators']);
   }
 
   static hasRequiredFields(block) {
     return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined && block.epoch !== undefined &&
-        block.timestamp !== undefined && block.stateProof !== undefined &&
+        block.timestamp !== undefined && block.proofHash !== undefined &&
         block.proposer !== undefined && block.validators !== undefined);
   }
 
@@ -150,7 +150,7 @@ class Block {
     return true;
   }
 
-  static getGenesisStateProof() {
+  static getGenesisProofHash() {
     const tempGenesisState = new DB(null, -1);
     const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
@@ -251,7 +251,7 @@ class Block {
     return [firstTx, secondTx];
   }
 
-  static genesis(stateProof) {
+  static genesis(proofHash) {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
     const ownerAddress = ChainUtil.getJsObject(
@@ -265,7 +265,7 @@ class Block {
     const proposer = ownerAddress;
     const validators = GenesisWhitelist;
     return new this(lastHash, lastVotes, transactions, number, epoch, genesisTime,
-      stateProof, proposer, validators);
+      proofHash, proposer, validators);
   }
 }
 
