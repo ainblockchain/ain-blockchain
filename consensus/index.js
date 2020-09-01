@@ -473,8 +473,8 @@ class Consensus {
       return false;
     }
     newState.lastBlockNumber += 1;
-    if (newState.getProof('/') !== proposalBlock.proofHash) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')} / ${proposalBlock.proofHash}`);
+    if (newState.getProof('/') !== proposalBlock.stateProofHash) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')} / ${proposalBlock.stateProofHash}`);
       return false;
     }
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
@@ -773,6 +773,18 @@ class Consensus {
       }
     }, false);
     return depositTx;
+  }
+
+  reportStateProofHash() {
+    // TODO(lia):
+    // 1. Get /${sharding_path}/latest
+    // 2. Until latest === current lastBlockNumber || transaction size <= MAX,
+    //    keep adding proof hash setting txs
+    // option 1: report only when number % reporting_period === 0
+    // => this may block other process if she has missed many reports
+    // option 2: try to report whenever a block is finalized, but make at most 1 tx at a time
+    // => this means missing reports will take more time to catch up?
+    //    also, this function gets called more often.
   }
 
   isRunning() {
