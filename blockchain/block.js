@@ -62,7 +62,7 @@ class Block {
             number:            ${this.number}
             epoch:             ${this.epoch}
             timestamp:         ${this.timestamp}
-            stateProof:         ${this.stateProof}
+            stateProof:        ${this.stateProof}
             proposer:          ${this.proposer}
             validators:        ${this.validators}
             size:              ${this.size}
