@@ -111,7 +111,7 @@ describe('TransactionPool', () => {
 
     it('clean up for new block', () => {
       const number = 1;
-      const lastBlock = Block.genesis(Block.getGenesisProofHash());
+      const lastBlock = Block.genesis();
       const block = Block.createBlock(lastBlock.hash, [], node.tp.getValidTransactions(),
           number, lastBlock.epoch + 1, '', node.account.address, []);
       const newTransactions = {};

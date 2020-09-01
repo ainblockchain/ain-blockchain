@@ -150,19 +150,6 @@ class Block {
     return true;
   }
 
-  static getGenesisProofHash() {
-    const tempGenesisState = new DB(null, -1);
-    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
-    for (const tx of genesisTransactions) {
-      const res = tempGenesisState.executeTransaction(tx);
-      if (ChainUtil.transactionFailed(res)) {
-        logger.error(`[${LOG_PREFIX}] Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
-        return null;
-      }
-    }
-    return tempGenesisState.getProof('/');
-  }
-
   static getDbSetupTransaction(timestamp, keyBuffer) {
     const opList = [];
 
@@ -251,7 +238,20 @@ class Block {
     return [firstTx, secondTx];
   }
 
-  static genesis(proofHash) {
+  static getGenesisProofHash() {
+    const tempGenesisState = new DB(null, -1);
+    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
+    for (const tx of genesisTransactions) {
+      const res = tempGenesisState.executeTransaction(tx);
+      if (ChainUtil.transactionFailed(res)) {
+        logger.error(`[${LOG_PREFIX}] Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
+        return null;
+      }
+    }
+    return tempGenesisState.getProof('/');
+  }
+
+  static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
     const ownerAddress = ChainUtil.getJsObject(
@@ -264,6 +264,7 @@ class Block {
     const epoch = 0;
     const proposer = ownerAddress;
     const validators = GenesisWhitelist;
+    const proofHash = Block.getGenesisProofHash();
     return new this(lastHash, lastVotes, transactions, number, epoch, genesisTime,
       proofHash, proposer, validators);
   }
