@@ -110,6 +110,8 @@ GENESIS_CONFIGS_DIR=blockchain/afan_shard NUM_VALIDATORS=1 ACCOUNT_INDEX=0 HOSTI
 
 ### How to run tests
 
+Please check your node version before running the below tests. Tests has passed node version 10.15.*
+
 ```
 npm run test_unit
 npm run test_smoke
