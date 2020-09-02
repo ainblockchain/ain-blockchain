@@ -9,6 +9,7 @@ const { Block } = require('./block');
 const BlockFilePatterns = require('./block-file-patterns');
 const { BLOCKCHAINS_DIR } = require('../constants');
 const CHAIN_SUBSECT_LENGTH = 20;
+const ON_MEM_CHAIN_LENGTH = 20;
 
 const LOG_PREFIX = 'BLOCKCHAIN';
 
@@ -94,7 +95,7 @@ class Blockchain {
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
-    if (blockFileName === undefined) {
+    if (blockFileName === undefined || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
       const found = this.chain.filter(block => block.number === number);
       return found.length ? found[0] : null;
     } else {
@@ -162,8 +163,8 @@ class Blockchain {
     }
     this.chain.push(newBlock);
     this.writeChain();
-    // Keep up to latest 20 blocks
-    while (this.chain.length > 20) {
+    // Keep up to latest ON_MEM_CHAIN_LENGTH blocks
+    while (this.chain.length > ON_MEM_CHAIN_LENGTH) {
       this.chain.shift();
     }
     return true;

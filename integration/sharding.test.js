@@ -10,6 +10,7 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
+const _ = require('lodash');
 const {
   BLOCKCHAINS_DIR,
 } = require('../constants');
@@ -89,8 +90,22 @@ function waitUntilShardReporterStarts() {
     sleep(1000);
   }
 }
+function waitForNewBlocks(waitFor = 1) {
+  const initialLastBlockNumber =
+      JSON.parse(syncRequest('GET', server1 + '/last_block_number')
+        .body.toString('utf-8'))['result'];
+  let updatedLastBlockNumber = initialLastBlockNumber;
+  console.log(`Initial last block number: ${initialLastBlockNumber}`)
+  while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
+    sleep(1000);
+    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server1 + '/last_block_number')
+      .body.toString('utf-8'))['result'];
+    console.log(`block number... ${updatedLastBlockNumber}`)
+  }
+  console.log(`Updated last block number: ${updatedLastBlockNumber}`)
+}
 
-describe('Sharding initialization', () => {
+describe('Sharding', () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_token.json'));
   const accounts =
@@ -174,7 +189,7 @@ describe('Sharding initialization', () => {
 
     describe('DB rules', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_rule?ref=${sharding.sharding_path}`)
+        const body = JSON.parse(syncRequest('GET', parentServer + `/get_rule?ref=${sharding.sharding_path}/$block_number/proof_hash`)
         .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.write']).to.have.string(accounts.others[0].address);
@@ -248,5 +263,37 @@ describe('Sharding initialization', () => {
         expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
       })
     })
+  });
+
+  describe('Shard state proof hash reporting', () => {
+    const reportingPeriod = sharding.reporting_period; 
+
+    before(() => {
+      waitForNewBlocks(sharding.reporting_period * 3);
+    });
+
+    describe('periodic reports', () => {
+      it ('reports proof hashes periodically', () => {
+        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+            .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        let blockNumber = 0;
+        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        for (const key of sortedReports) {
+          expect(blockNumber).to.equal(Number(key));
+          blockNumber += reportingPeriod;
+        }
+      });
+
+      it ('updates latest block number', () => {
+        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+        .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        const latest = body.result.latest;
+        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const highest = sortedReports[sortedReports.length - 1];
+        expect(latest).to.equal(Number(highest));
+      });
+    });
   });
 })
