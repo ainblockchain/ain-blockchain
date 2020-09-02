@@ -230,13 +230,13 @@ module.exports = function getMethods(
 
     ain_evalRule: function(args, done) {
       const result = p2pServer.node.db.evalRule(
-          args.ref, args.value, args.is_global, args.address, args.timestamp || Date.now());
+          args.ref, args.value, args.address, args.timestamp || Date.now(), args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
     ain_evalOwner: function(args, done) {
       const result =
-          p2pServer.node.db.evalOwner(args.ref, args.permission, args.is_global, args.address);
+          p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
       done (null, addProtocolVersion({ result }));
     },
 
