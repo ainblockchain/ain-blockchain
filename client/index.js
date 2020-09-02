@@ -354,6 +354,7 @@ function createSingleSetTxData(input, opType) {
       type: opType,
       ref: input.ref,
       value: input.value,
+      is_global: input.is_global,
     }
   };
   if (input.address !== undefined) {
