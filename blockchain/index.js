@@ -6,7 +6,6 @@ const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const logger = require('../logger')
 const { Block } = require('./block');
-const DB = require('../db');
 const BlockFilePatterns = require('./block-file-patterns');
 const { BLOCKCHAINS_DIR } = require('../constants');
 const CHAIN_SUBSECT_LENGTH = 20;
@@ -153,7 +152,6 @@ class Blockchain {
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
-    this.chain.push(newBlock);
     if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
       logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
@@ -162,6 +160,7 @@ class Blockchain {
       logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
+    this.chain.push(newBlock);
     this.writeChain();
     // Keep up to latest 20 blocks
     while (this.chain.length > 20) {
@@ -320,6 +319,7 @@ class Blockchain {
       if (block.number <= this.lastBlockNumber()) {
         continue;
       }
+      // TODO(lia): validate the state proof of each block
       if (!this.addNewBlock(block)) {
         logger.error(`[${LOG_PREFIX}] Failed to add block ` + block);
         return false;

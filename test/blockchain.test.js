@@ -35,7 +35,7 @@ describe('Blockchain', () => {
     const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
-        lastBlock.epoch + 1, node1.account.address, {}));
+        lastBlock.epoch + 1, '', node1.account.address, {}));
     assert.deepEqual(node1.bc.chain[node1.bc.chain.length -1].transactions[0], tx);
   });
 
@@ -58,7 +58,7 @@ describe('Blockchain', () => {
     const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.createBlock(lastBlock.hash, [], [tx], lastBlock.number + 1,
-        lastBlock.epoch + 1, node1.account.address, {}));
+        lastBlock.epoch + 1, '', node1.account.address, {}));
     node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
   });
@@ -80,7 +80,7 @@ describe('Blockchain', () => {
         });
         const lastBlock = node1.bc.lastBlock();
         const block = Block.createBlock(lastBlock.hash, [], node1.tp.getValidTransactions(),
-            lastBlock.number + 1, i, node1.account.address, []);
+            lastBlock.number + 1, i, '', node1.account.address, []);
         if (block.number === 500) {
           blockHash = block.hash;
         }
