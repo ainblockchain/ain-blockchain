@@ -42,7 +42,7 @@ function getTransaction(node, txData) {
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   node.addNewBlock(Block.createBlock(lastBlock.hash, votes, txs, lastBlock.number + 1,
-    lastBlock.epoch + 1, node.account.address, validators));
+    lastBlock.epoch + 1, '', node.account.address, validators));
 }
 
 function waitUntilTxFinalized(servers, txHash) {
