@@ -2,6 +2,7 @@ const seedrandom = require('seedrandom');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const ntpsync = require('ntpsync');
+const sizeof = require('object-sizeof');
 const logger = require('../logger');
 const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
@@ -9,10 +10,26 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, WriteDbOperations, PredefinedDbPaths, MessageTypes } = require('../constants');
+const {
+  DEBUG,
+  WriteDbOperations,
+  ReadDbOperations,
+  PredefinedDbPaths,
+  MessageTypes,
+  GenesisSharding,
+  ShardingProperties,
+  ShardingProtocols,
+  MAX_TX_BYTES
+} = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
+const { sendTxAndWaitForConfirmation, sendGetRequest } = require('../server/util');
 const LOG_PREFIX = 'CONSENSUS';
+const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
+const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
+const txSizeThreshold = MAX_TX_BYTES * 0.9;
 
 class Consensus {
   constructor(server, node) {
@@ -25,6 +42,7 @@ class Consensus {
     this.epochInterval = null;
     this.startingTime = 0;
     this.timeAdjustment = 0;
+    this.isShardReporter = false;
     this.state = {
       // epoch increases by 1 every EPOCH_MS, and at each epoch a new proposer is pseudo-randomly selected.
       epoch: 1,
@@ -41,8 +59,14 @@ class Consensus {
       return;
     }
     this.genesisHash = genesisBlock.hash;
+    const myAddr = this.node.account.address;
     try {
-      const myAddr = this.node.account.address;
+      if (isShardChain) {
+        this.isShardReporter = ainUtil.areSameAddresses(
+          GenesisSharding[ShardingProperties.SHARD_REPORTER],
+          myAddr
+        );
+      }
       const currentStake = this.getValidConsensusDeposit(myAddr);
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current stake: ${currentStake}`);
       if (!currentStake) {
@@ -603,6 +627,7 @@ class Consensus {
       }
     }
     this.blockPool.cleanUpAfterFinalization(finalizableChain[finalizableChain.length - 2]);
+    this.reportStateProofHash();
   }
 
   catchUp(blockList) {
@@ -775,16 +800,78 @@ class Consensus {
     return depositTx;
   }
 
-  reportStateProofHash() {
-    // TODO(lia):
-    // 1. Get /${sharding_path}/latest
-    // 2. Until latest === current lastBlockNumber || transaction size <= MAX,
-    //    keep adding proof hash setting txs
-    // option 1: report only when number % reporting_period === 0
-    // => this may block other process if she has missed many reports
-    // option 2: try to report whenever a block is finalized, but make at most 1 tx at a time
-    // => this means missing reports will take more time to catch up?
-    //    also, this function gets called more often.
+  async reportStateProofHash() {
+    if (!isShardChain) {
+      return;
+    }
+    if (!this.isShardReporter) {
+      return;
+    }
+    if (this.isReporting) {
+      return;
+    }
+    const lastFinalizedBlock = this.node.bc.lastBlock();
+    const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
+    if (lastFinalizedBlock.number % reportingPeriod !== 0) {
+      return;
+    }
+    
+    this.isReporting = true;
+    const lastReportedBlockNumber = await this.getLastReportedBlockNumber();
+    let numToReport = lastReportedBlockNumber ? lastReportedBlockNumber + reportingPeriod : 0;
+    const opList = [];
+    while (numToReport <= lastFinalizedBlockNumber) {
+      if (sizeof(opList) >= txSizeThreshold) {
+        break;
+      }
+      const block = numToReport === lastFinalizedBlockNumber ?
+        lastFinalizedBlock : this.node.bc.getBlockByNumber(numToReport);
+      if (!block) {
+        logger.error(`[${LOG_PREFIX}] Failed to fetch block of number ${numToReport} while reporting`);
+        break;
+      }
+      opList.push({
+        type: WriteDbOperations.SET_VALUE,
+        ref: `${shardingPath}/${numToReport}/${PredefinedDbPaths.SHARDING_PROOF_HASH}`,
+        value: block.stateProofHash
+      })
+      numToReport += reportingPeriod;
+    }
+    logger.debug(`[${LOG_PREFIX}] Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
+    const tx = {
+      operation: {
+        type: WriteDbOperations.SET,
+        op_list: opList,
+      },
+      timestamp: Date.now(),
+      nonce: -1
+    };
+    try {
+      await sendTxAndWaitForConfirmation(
+        parentChainEndpoint,
+        tx,
+        Buffer.from(this.node.account.private_key, 'hex')
+      );
+    } catch (e) {
+      logger.error(`[${LOG_PREFIX}] Failed to report state proof hashes: ${e}`);
+    }
+    this.isReporting = false;
+  }
+
+  async getLastReportedBlockNumber() {
+    try {
+      const response = await sendGetRequest(
+        parentChainEndpoint,
+        'ain_get',
+        {
+          type: ReadDbOperations.GET_VALUE,
+          ref: `${shardingPath}/${PredefinedDbPaths.SHARDING_LATEST}`
+        }
+      );
+      return _.get(response, 'data.result.result');
+    } catch (e) {
+      logger.error(`Failed to get the latest reported block number: ${e}`);
+    } 
   }
 
   isRunning() {
