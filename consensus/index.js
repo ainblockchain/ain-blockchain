@@ -9,7 +9,13 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
-const { DEBUG, WriteDbOperations, PredefinedDbPaths, MessageTypes } = require('../constants');
+const {
+  DEBUG,
+  WriteDbOperations,
+  PredefinedDbPaths,
+  MessageTypes,
+  ProofProperties
+} = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const LOG_PREFIX = 'CONSENSUS';
@@ -276,7 +282,8 @@ class Consensus {
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-      blockNumber, this.state.epoch, tempState.getProof('/').proof_hash, myAddr, validators);
+      blockNumber, this.state.epoch, tempState.getProof('/')[ProofProperties.PROOF_HASH], myAddr,
+      validators);
 
     let proposalTx;
     const txOps = {
@@ -473,8 +480,8 @@ class Consensus {
       return false;
     }
     newState.lastBlockNumber += 1;
-    if (newState.getProof('/').proof_hash !== proposalBlock.stateProofHash) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/').proof_hash} / ${proposalBlock.stateProofHash}`);
+    if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ${proposalBlock.stateProofHash}`);
       return false;
     }
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
