@@ -64,10 +64,26 @@ function waitUntilTxFinalized(servers, txHash) {
   }
 }
 
+function waitForNewBlocks(server, waitFor = 1) {
+  const initialLastBlockNumber =
+      JSON.parse(syncRequest('GET', server + '/last_block_number')
+        .body.toString('utf-8'))['result'];
+  let updatedLastBlockNumber = initialLastBlockNumber;
+  console.log(`Initial last block number: ${initialLastBlockNumber}`)
+  while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
+    sleep(1000);
+    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server + '/last_block_number')
+      .body.toString('utf-8'))['result'];
+    console.log(`block number... ${updatedLastBlockNumber}`)
+  }
+  console.log(`Updated last block number: ${updatedLastBlockNumber}`)
+}
+
 module.exports = {
   readConfigFile,
   setDbForTesting,
   getTransaction,
   addBlock,
-  waitUntilTxFinalized
+  waitUntilTxFinalized,
+  waitForNewBlocks
 };
