@@ -16,6 +16,7 @@ const {
 } = require('../constants');
 const {
   readConfigFile,
+  waitForNewBlocks
 } = require('../test/test-util');
 
 const ENV_VARIABLES = [
@@ -89,20 +90,6 @@ function waitUntilShardReporterStarts() {
     if (consensusState && consensusState.status === 1) return;
     sleep(1000);
   }
-}
-function waitForNewBlocks(waitFor = 1) {
-  const initialLastBlockNumber =
-      JSON.parse(syncRequest('GET', server1 + '/last_block_number')
-        .body.toString('utf-8'))['result'];
-  let updatedLastBlockNumber = initialLastBlockNumber;
-  console.log(`Initial last block number: ${initialLastBlockNumber}`)
-  while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
-    sleep(1000);
-    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server1 + '/last_block_number')
-      .body.toString('utf-8'))['result'];
-    console.log(`block number... ${updatedLastBlockNumber}`)
-  }
-  console.log(`Updated last block number: ${updatedLastBlockNumber}`)
 }
 
 describe('Sharding', () => {
@@ -269,7 +256,7 @@ describe('Sharding', () => {
     const reportingPeriod = sharding.reporting_period; 
 
     before(() => {
-      waitForNewBlocks(sharding.reporting_period * 3);
+      waitForNewBlocks(server1, sharding.reporting_period * 3);
     });
 
     describe('periodic reports', () => {
