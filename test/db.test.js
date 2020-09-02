@@ -14,6 +14,7 @@ const {
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
+  ProofProperties,
 } = require('../constants')
 const {
   ConsensusDbPaths,
@@ -2123,31 +2124,31 @@ describe("Test proof with database", () => {
       const rulesNode = node.db.getRefForReading(['rules']);
       const valuesNode = node.db.getRefForReading(['values']);
       const functionNode = node.db.getRefForReading(['functions']);
-      const rootProof = { proof_hash: rootNode.getProofHash() };
+      const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
       const secondProof = JSON.parse(JSON.stringify(rootProof));
       rootNode.getChildLabels().forEach(label => {
         Object.assign(secondProof,
-          { [label]: { proof_hash: rootNode.getChild(label).getProofHash() } });
+          { [label]: { [ProofProperties.PROOF_HASH]: rootNode.getChild(label).getProofHash() } });
       });
       const ownersProof = JSON.parse(JSON.stringify(secondProof));
       ownersNode.getChildLabels().forEach(label => {
         Object.assign(ownersProof.owners,
-          { [label]: { proof_hash: ownersNode.getChild(label).getProofHash() } });
+          { [label]: { [ProofProperties.PROOF_HASH]: ownersNode.getChild(label).getProofHash() } });
       });
       const rulesProof = JSON.parse(JSON.stringify(secondProof));
       rulesNode.getChildLabels().forEach(label => {
         Object.assign(rulesProof.rules,
-          { [label]: { proof_hash: rulesNode.getChild(label).getProofHash() } });
+          { [label]: { [ProofProperties.PROOF_HASH]: rulesNode.getChild(label).getProofHash() } });
       });
       const valuesProof = JSON.parse(JSON.stringify(secondProof));
       valuesNode.getChildLabels().forEach(label => {
         Object.assign(valuesProof.values,
-          { [label]: { proof_hash: valuesNode.getChild(label).getProofHash() } });
+          { [label]: { [ProofProperties.PROOF_HASH]: valuesNode.getChild(label).getProofHash() } });
       });
       const functionsProof = JSON.parse(JSON.stringify(secondProof));
       functionNode.getChildLabels().forEach(label => {
         Object.assign(functionsProof.functions,
-          { [label]: { proof_hash: functionNode.getChild(label).getProofHash() } });
+          { [label]: { [ProofProperties.PROOF_HASH]: functionNode.getChild(label).getProofHash() } });
       });
       assert.deepEqual(rootProof, node.db.getProof('/'));
       assert.deepEqual(ownersProof, node.db.getProof('/owners/test'));
