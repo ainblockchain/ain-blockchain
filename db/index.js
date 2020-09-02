@@ -7,6 +7,7 @@ const {
   OwnerProperties,
   RuleProperties,
   FunctionProperties,
+  ProofProperties,
   ShardingProperties,
   GenesisSharding,
   buildOwnerPermissions,
@@ -185,20 +186,21 @@ class DB {
   getProof(dbPath) {
     let node = this.stateTree;
     const fullPath = ChainUtil.parsePath(dbPath);
-    const proof = { proof_hash: node.getProofHash() };
-    let child = proof;
+    const rootProof = { [ProofProperties.PROOF_HASH]: node.getProofHash() };
+    let proof = rootProof;
     for (const label of fullPath) {
       if (node.hasChild(label)) {
         node.getChildLabels().forEach(label => {
-          Object.assign(child, { [label]: { proof_hash: node.getChild(label).getProofHash() } });
+          Object.assign(proof,
+            { [label]: { [ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash() } });
         });
-        child = child[label];
+        proof = proof[label];
         node = node.getChild(label);
       } else {
         return null;
       }
     }
-    return proof;
+    return rootProof;
   }
 
   matchFunction(funcPath) {
