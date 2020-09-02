@@ -183,14 +183,22 @@ class DB {
    * @param {*} dbPath full database path to the state node to be proved.
    */
   getProof(dbPath) {
+    let node = this.stateTree;
     const fullPath = ChainUtil.parsePath(dbPath);
-    const stateNode = this.getRefForReading(fullPath);
-    if (stateNode) {
-      return stateNode.getProofHash();
+    const proof = { proof_hash: node.getProofHash() };
+    let child = proof;
+    for (const label of fullPath) {
+      if (node.hasChild(label)) {
+        node.getChildLabels().forEach(label => {
+          Object.assign(child, { [label]: { proof_hash: node.getChild(label).getProofHash() } });
+        });
+        child = child[label];
+        node = node.getChild(label);
+      } else {
+        return null;
+      }
     }
-    else {
-      return null;
-    }
+    return proof;
   }
 
   matchFunction(funcPath) {

@@ -22,12 +22,8 @@ const {
   setDbForTesting,
 } = require('./test-util');
 const {
-  HASH_DELIMITER
-} = require('../constants');
-const {
   buildProofHashOfStateNode
 } = require('../db/state-util');
-const ChainUtil = require('../chain-util');
 
 describe("DB initialization", () => {
   let node;
@@ -2122,14 +2118,42 @@ describe("Test proof with database", () => {
 
   describe("getProof", () => {
     it("tests values, owners, rules and functions", () => {
-      const valuesNode = node.db.getRefForReading(['values', 'test']);
-      const ownersNode = node.db.getRefForReading(['owners', 'test']);
-      const rulesNode = node.db.getRefForReading(['rules', 'test']);
-      const functionNode = node.db.getRefForReading(['functions', 'test']);
-      expect(node.db.getProof('/values/test')).to.equal(valuesNode.getProofHash());
-      expect(node.db.getProof('/owners/test')).to.equal(ownersNode.getProofHash());
-      expect(node.db.getProof('/rules/test')).to.equal(rulesNode.getProofHash());
-      expect(node.db.getProof('/functions/test')).to.equal(functionNode.getProofHash());
+      const rootNode = node.db.stateTree;
+      const ownersNode = node.db.getRefForReading(['owners']);
+      const rulesNode = node.db.getRefForReading(['rules']);
+      const valuesNode = node.db.getRefForReading(['values']);
+      const functionNode = node.db.getRefForReading(['functions']);
+      const rootProof = { proof_hash: rootNode.getProofHash() };
+      const secondProof = JSON.parse(JSON.stringify(rootProof));
+      rootNode.getChildLabels().forEach(label => {
+        Object.assign(secondProof,
+          { [label]: { proof_hash: rootNode.getChild(label).getProofHash() } });
+      });
+      const ownersProof = JSON.parse(JSON.stringify(secondProof));
+      ownersNode.getChildLabels().forEach(label => {
+        Object.assign(ownersProof.owners,
+          { [label]: { proof_hash: ownersNode.getChild(label).getProofHash() } });
+      });
+      const rulesProof = JSON.parse(JSON.stringify(secondProof));
+      rulesNode.getChildLabels().forEach(label => {
+        Object.assign(rulesProof.rules,
+          { [label]: { proof_hash: rulesNode.getChild(label).getProofHash() } });
+      });
+      const valuesProof = JSON.parse(JSON.stringify(secondProof));
+      valuesNode.getChildLabels().forEach(label => {
+        Object.assign(valuesProof.values,
+          { [label]: { proof_hash: valuesNode.getChild(label).getProofHash() } });
+      });
+      const functionsProof = JSON.parse(JSON.stringify(secondProof));
+      functionNode.getChildLabels().forEach(label => {
+        Object.assign(functionsProof.functions,
+          { [label]: { proof_hash: functionNode.getChild(label).getProofHash() } });
+      });
+      assert.deepEqual(rootProof, node.db.getProof('/'));
+      assert.deepEqual(ownersProof, node.db.getProof('/owners/test'));
+      assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
+      assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
+      assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
     });
   });
 });
