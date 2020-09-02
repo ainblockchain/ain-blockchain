@@ -248,7 +248,7 @@ class Block {
         return null;
       }
     }
-    return tempGenesisState.getProof('/');
+    return tempGenesisState.getProof('/').proof_hash;
   }
 
   static genesis() {
