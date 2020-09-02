@@ -29,7 +29,7 @@ const RuleUtil = require('./rule-util');
 
 class DB {
   constructor(bc, blockNumberSnapshot) {
-    this.shardingPath = ChainUtil.parsePath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
+    this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.isRoot = (this.shardingPath.length === 0);
     this.stateTree = new StateNode();
     this.initDbData();
@@ -67,6 +67,27 @@ class DB {
   setFunctionsForTesting(functionsPath, functions) {
     this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT,
       ...ChainUtil.parsePath(functionsPath)], functions);
+  }
+
+  // For testing purpose only.
+  setValuesForTesting(valuesPath, values) {
+    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT,
+      ...ChainUtil.parsePath(valuesPath)], values);
+  }
+
+  // For testing purpose only.
+  setShardingForTesting(sharding) {
+    this.setValuesForTesting(
+        ChainUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG]),
+        sharding);
+    this.setShardingPath(sharding[ShardingProperties.SHARDING_PATH]);
+  }
+
+  /**
+   * Sets the sharding path of the database.
+   */
+  setShardingPath(shardingPath) {
+    this.shardingPath = ChainUtil.parsePath(shardingPath);
   }
 
   /**
