@@ -2154,6 +2154,7 @@ describe("Test proof with database", () => {
       assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
       assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
       assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
+      assert.deepEqual(null, node.db.getProof('/test/test'));
     });
   });
 });
