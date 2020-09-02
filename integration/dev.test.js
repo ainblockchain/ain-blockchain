@@ -317,16 +317,16 @@ describe('API Tests', () => {
         const functionsBody = JSON.parse(
           syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
             .body.toString('utf-8'));
-        const ownersProof = ownersBody.result;
-        const rulesProof = rulesBody.result;
-        const valuesProof = valuesBody.result;
-        const functionProof = functionsBody.result;
+        const ownersProof = ownersBody.result.owners.proof_hash;
+        const rulesProof = rulesBody.result.rules.proof_hash;
+        const valuesProof = valuesBody.result.values.proof_hash;
+        const functionProof = functionsBody.result.functions.proof_hash;
         const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
           + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
           + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
           + `functions${HASH_DELIMITER}${functionProof}`;
         const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-        assert.deepEqual(body, { code: 0, result: proofHash });
+        assert.deepEqual(body, { code: 0, result: { proof_hash: proofHash } });
       });
     });
 
