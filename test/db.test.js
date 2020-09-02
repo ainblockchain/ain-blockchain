@@ -2125,27 +2125,27 @@ describe("Test proof with database", () => {
       const valuesNode = node.db.getRefForReading(['values']);
       const functionNode = node.db.getRefForReading(['functions']);
       const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
-      const secondProof = JSON.parse(JSON.stringify(rootProof));
+      const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
       rootNode.getChildLabels().forEach(label => {
-        Object.assign(secondProof,
+        Object.assign(secondLevelProof,
           { [label]: { [ProofProperties.PROOF_HASH]: rootNode.getChild(label).getProofHash() } });
       });
-      const ownersProof = JSON.parse(JSON.stringify(secondProof));
+      const ownersProof = JSON.parse(JSON.stringify(secondLevelProof));
       ownersNode.getChildLabels().forEach(label => {
         Object.assign(ownersProof.owners,
           { [label]: { [ProofProperties.PROOF_HASH]: ownersNode.getChild(label).getProofHash() } });
       });
-      const rulesProof = JSON.parse(JSON.stringify(secondProof));
+      const rulesProof = JSON.parse(JSON.stringify(secondLevelProof));
       rulesNode.getChildLabels().forEach(label => {
         Object.assign(rulesProof.rules,
           { [label]: { [ProofProperties.PROOF_HASH]: rulesNode.getChild(label).getProofHash() } });
       });
-      const valuesProof = JSON.parse(JSON.stringify(secondProof));
+      const valuesProof = JSON.parse(JSON.stringify(secondLevelProof));
       valuesNode.getChildLabels().forEach(label => {
         Object.assign(valuesProof.values,
           { [label]: { [ProofProperties.PROOF_HASH]: valuesNode.getChild(label).getProofHash() } });
       });
-      const functionsProof = JSON.parse(JSON.stringify(secondProof));
+      const functionsProof = JSON.parse(JSON.stringify(secondLevelProof));
       functionNode.getChildLabels().forEach(label => {
         Object.assign(functionsProof.functions,
           { [label]: { [ProofProperties.PROOF_HASH]: functionNode.getChild(label).getProofHash() } });
