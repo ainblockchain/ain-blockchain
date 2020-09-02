@@ -256,7 +256,7 @@ class DB {
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath));
   }
 
-  evalRule(valuePath, value, isGlobal, address, timestamp) {
+  evalRule(valuePath, value, address, timestamp, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -266,7 +266,7 @@ class DB {
     return this.getPermissionForValue(localPath, value, address, timestamp);
   }
 
-  evalOwner(refPath, permission, isGlobal, address) {
+  evalOwner(refPath, permission, address, isGlobal) {
     const parsedPath = ChainUtil.parsePath(refPath);
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -298,9 +298,9 @@ class DB {
         resultList.push(this.matchOwner(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
         resultList.push(
-            this.evalRule(op.ref, op.value, op.is_global, op.address, op.timestamp || Date.now()));
+            this.evalRule(op.ref, op.value, op.address, op.timestamp || Date.now(), op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
-        resultList.push(this.evalOwner(op.ref, op.permission, op.is_global, op.address));
+        resultList.push(this.evalOwner(op.ref, op.permission, op.address, op.is_global));
       }
     });
     return resultList;
@@ -309,7 +309,7 @@ class DB {
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
-  setValue(valuePath, value, isGlobal, address, timestamp, transaction) {
+  setValue(valuePath, value, address, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -334,7 +334,7 @@ class DB {
     return true;
   }
 
-  incValue(valuePath, delta, isGlobal, address, timestamp, transaction) {
+  incValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
     const valueBefore = this.getValue(valuePath, isGlobal);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -343,10 +343,10 @@ class DB {
       return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, isGlobal, address, timestamp, transaction);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
   }
 
-  decValue(valuePath, delta, isGlobal, address, timestamp, transaction) {
+  decValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
     const valueBefore = this.getValue(valuePath, isGlobal);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -355,10 +355,10 @@ class DB {
       return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, isGlobal, address, timestamp, transaction);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
   }
 
-  setFunction(functionPath, functionInfo, isGlobal, address) {
+  setFunction(functionPath, functionInfo, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionInfo);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -385,7 +385,7 @@ class DB {
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
-  setRule(rulePath, rule, isGlobal, address) {
+  setRule(rulePath, rule, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -410,7 +410,7 @@ class DB {
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  setOwner(ownerPath, owner, isGlobal, address) {
+  setOwner(ownerPath, owner, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -440,32 +440,32 @@ class DB {
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, op.is_global, address, timestamp, transaction);
+        ret = this.setValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, op.is_global, address, timestamp, transaction);
+        ret = this.incValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, op.is_global, address, timestamp, transaction);
+        ret = this.decValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, op.is_global, address);
+        ret = this.setFunction(op.ref, op.value, address, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, op.is_global, address);
+        ret = this.setRule(op.ref, op.value, address, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, op.is_global, address);
+        ret = this.setOwner(op.ref, op.value, address, op.is_global);
         if (ret !== true) {
           break;
         }
@@ -545,17 +545,17 @@ class DB {
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(op.ref, op.value, op.is_global, address, timestamp, tx);
+        return this.setValue(op.ref, op.value, address, timestamp, tx, op.is_global);
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(op.ref, op.value, op.is_global, address, timestamp, tx);
+        return this.incValue(op.ref, op.value, address, timestamp, tx, op.is_global);
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(op.ref, op.value, op.is_global, address, timestamp, tx);
+        return this.decValue(op.ref, op.value, address, timestamp, tx, op.is_global);
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(op.ref, op.value, op.is_global, address);
+        return this.setFunction(op.ref, op.value, address, op.is_global);
       case WriteDbOperations.SET_RULE:
-        return this.setRule(op.ref, op.value, op.is_global, address);
+        return this.setRule(op.ref, op.value, address, op.is_global);
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(op.ref, op.value, op.is_global, address);
+        return this.setOwner(op.ref, op.value, address, op.is_global);
       case WriteDbOperations.SET:
         return this.set(op.op_list, address, timestamp, tx);
     }
