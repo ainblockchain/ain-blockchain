@@ -29,10 +29,11 @@ const RuleUtil = require('./rule-util');
 
 class DB {
   constructor(bc, blockNumberSnapshot) {
-    this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
-    this.isRoot = (this.shardingPath.length === 0);
+    this.shardingPath = null;
+    this.isRoot = null;
     this.stateTree = new StateNode();
     this.initDbData();
+    this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
@@ -88,6 +89,14 @@ class DB {
    */
   setShardingPath(shardingPath) {
     this.shardingPath = ChainUtil.parsePath(shardingPath);
+    this.isRoot = (this.shardingPath.length === 0);
+  }
+
+  /**
+   * Returns the sharding path of the database.
+   */
+  getShardingPath() {
+    return ChainUtil.formatPath(this.shardingPath);
   }
 
   /**
@@ -254,7 +263,7 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.convertFunctionMatch(this.matchFunctionForParsedPath(localPath));
+    return this.convertFunctionMatch(this.matchFunctionForParsedPath(localPath), isGlobal);
   }
 
   matchRule(valuePath, isGlobal) {
@@ -264,7 +273,7 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.convertRuleMatch(this.matchRuleForParsedPath(localPath));
+    return this.convertRuleMatch(this.matchRuleForParsedPath(localPath), isGlobal);
   }
 
   matchOwner(rulePath, isGlobal) {
@@ -274,7 +283,7 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath));
+    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
   evalRule(valuePath, value, address, timestamp, isGlobal) {
@@ -555,6 +564,18 @@ class DB {
     return parsedPath.slice(this.shardingPath.length);
   }
 
+  /**
+   * Converts to global path by adding the sharding path to the front of the given parsed path.
+   */
+  toGlobalPath(parsedPath) {
+    if (this.isRoot) {
+      return parsedPath;
+    }
+    const globalPath = parsedPath.slice();
+    globalPath.unshift(...this.shardingPath);
+    return globalPath;
+  }
+
   setDbToSnapshot(snapshot) {
     this.stateTree = makeCopyOfStateTree(snapshot.stateTree);
   }
@@ -781,23 +802,28 @@ class DB {
     }
   }
 
-  convertPathAndConfig(pathAndConfig) {
+  convertPathAndConfig(pathAndConfig, isGlobal) {
+    const path = (isGlobal === true) ? this.toGlobalPath(pathAndConfig.path) : pathAndConfig.path;
     return {
-      path: ChainUtil.formatPath(pathAndConfig.path),
+      path: ChainUtil.formatPath(path),
       config: pathAndConfig.config,
     }
   }
 
-  convertFunctionMatch(matched) {
+  convertFunctionMatch(matched, isGlobal) {
+    const functionPath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedFunctionPath) : matched.matchedFunctionPath;
+    const valuePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeFunctions =
-        matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
+        matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
-        target_path: ChainUtil.formatPath(matched.matchedFunctionPath),
-        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
+        target_path: ChainUtil.formatPath(functionPath),
+        ref_path: ChainUtil.formatPath(valuePath),
         path_vars: matched.pathVars,
       },
-      matched_config: this.convertPathAndConfig(matched.matchedFunction),
+      matched_config: this.convertPathAndConfig(matched.matchedFunction, isGlobal),
       subtree_configs: subtreeFunctions,
     };
   }
@@ -926,15 +952,19 @@ class DB {
     }
   }
 
-  convertRuleMatch(matched) {
-    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry));
+  convertRuleMatch(matched, isGlobal) {
+    const rulePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
+    const valuePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
+    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
-        target_path: ChainUtil.formatPath(matched.matchedRulePath),
-        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
+        target_path: ChainUtil.formatPath(rulePath),
+        ref_path: ChainUtil.formatPath(valuePath),
         path_vars: matched.pathVars,
       },
-      matched_config: this.convertPathAndConfig(matched.closestRule),
+      matched_config: this.convertPathAndConfig(matched.closestRule, isGlobal),
       subtree_configs: subtreeRules,
     };
   }
@@ -1015,12 +1045,14 @@ class DB {
     }
   }
 
-  convertOwnerMatch(matched) {
+  convertOwnerMatch(matched, isGlobal) {
+    const ownerPath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
     return {
       matched_path: {
-        target_path: ChainUtil.formatPath(matched.matchedOwnerPath),
+        target_path: ChainUtil.formatPath(ownerPath),
       },
-      matched_config: this.convertPathAndConfig(matched.closestOwner),
+      matched_config: this.convertPathAndConfig(matched.closestOwner, isGlobal),
     };
   }
 

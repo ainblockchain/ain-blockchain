@@ -13,19 +13,13 @@ function readConfigFile(filePath) {
   return JSON.parse(fs.readFileSync(filePath));
 }
 
-function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
+function setDbForTesting(
+    node, accountIndex = 0, skipTestingConfig = false, skipShardingConfig = true) {
   node.setAccountForTesting(accountIndex);
 
   node.init(true);
 
   if (!skipTestingConfig) {
-    const shardingFile = path.resolve(__dirname, './data/sharding_for_testing.json');
-    if (!fs.existsSync(shardingFile)) {
-      throw Error('Missing sharding file: ' + shardingFile);
-    }
-    const sharding = JSON.parse(fs.readFileSync(shardingFile));
-    node.db.setShardingForTesting(sharding);
-
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
     if (!fs.existsSync(ownersFile)) {
       throw Error('Missing owners file: ' + ownersFile);
@@ -46,6 +40,14 @@ function setDbForTesting(node, accountIndex = 0, skipTestingConfig = false) {
     }
     const functions = JSON.parse(fs.readFileSync(functionsFile));
     node.db.setFunctionsForTesting("test", functions);
+  }
+  if (!skipShardingConfig) {
+    const shardingFile = path.resolve(__dirname, './data/sharding_for_testing.json');
+    if (!fs.existsSync(shardingFile)) {
+      throw Error('Missing sharding file: ' + shardingFile);
+    }
+    const sharding = JSON.parse(fs.readFileSync(shardingFile));
+    node.db.setShardingForTesting(sharding);
   }
 }
 

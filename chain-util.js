@@ -98,7 +98,7 @@ class ChainUtil {
   }
 
   static formatPath(parsedPath) {
-    if (!Array.isArray(parsedPath) || !parsedPath.length) {
+    if (!Array.isArray(parsedPath) || parsedPath.length === 0) {
       return '/';
     }
     let formatted = '';

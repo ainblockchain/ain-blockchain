@@ -6,7 +6,6 @@ const assert = chai.assert;
 const Node = require('../node')
 const {
   BLOCKCHAINS_DIR,
-  PredefinedDbPaths,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
@@ -16,9 +15,6 @@ const {
   GenesisOwners,
   ProofProperties,
 } = require('../constants')
-const {
-  ConsensusDbPaths,
-} = require('../consensus/constants')
 const {
   setDbForTesting,
 } = require('./test-util');
@@ -40,9 +36,19 @@ describe("DB initialization", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
+  describe("sharding path", () => {
+    it("getShardingPath", () => {
+      expect(node.db.getShardingPath()).to.equal(GenesisSharding.sharding_path);
+    })
+
+    it("isRoot", () => {
+      expect(node.db.isRoot).to.equal(GenesisSharding.sharding_protocol === 'NONE');
+    })
+  })
+
   describe("token", () => {
     it("loading token properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/${PredefinedDbPaths.TOKEN}`), GenesisToken);
+      assert.deepEqual(node.db.getValue(`/token`), GenesisToken);
     })
   })
 
@@ -50,26 +56,20 @@ describe("DB initialization", () => {
     it("loading balances properly on initialization", () => {
       const expected =
           GenesisToken.total_supply - GenesisAccounts.others.length * GenesisAccounts.shares;
-      const dbPath =
-          `/${PredefinedDbPaths.ACCOUNTS}/${GenesisAccounts.owner.address}/` +
-          `${PredefinedDbPaths.BALANCE}`;
+      const dbPath = `/accounts/${GenesisAccounts.owner.address}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
   })
 
   describe("sharding", () => {
     it("loading sharding properly on initialization", () => {
-      assert.deepEqual(
-        node.db.getValue(`/${PredefinedDbPaths.SHARDING}/${PredefinedDbPaths.SHARDING_CONFIG}`),
-        GenesisSharding);
+      assert.deepEqual(node.db.getValue(`/sharding/config`), GenesisSharding);
     })
   })
 
   describe("whitelist", () => {
     it("loading whitelist properly on initialization", () => {
-      assert.deepEqual(
-        node.db.getValue(`/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`),
-        GenesisWhitelist);
+      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), GenesisWhitelist);
     })
   })
 
@@ -1798,7 +1798,7 @@ describe("DB owner config", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new Node();
-    setDbForTesting(node, 0);
+    setDbForTesting(node);
     node.db.setOwner("test/test_owner/mixed/true/true/true",
       {
         ".owner": {
@@ -2085,6 +2085,524 @@ describe("DB owner config", () => {
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/true/true/false/deeper_path', 'write_function', 'unknown_user'))
       .to.equal(true)
+  })
+})
+
+
+describe("DB sharding config", () => {
+  let node;
+
+  beforeEach(() => {
+    let result;
+
+    rimraf.sync(BLOCKCHAINS_DIR);
+
+    node = new Node();
+    setDbForTesting(node, 0, false, false);
+
+    dbValues = {
+      "some": {
+        "path": {
+          "to": {
+            "value": "this",
+            "number": 10,
+          }
+        }
+      }
+    };
+    result = node.db.setValue("test/test_sharding", dbValues);
+    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+
+    dbFuncs = {
+      "some": {
+        "path": {
+          "to": {
+            ".function": "some function config",
+            "deeper": {
+              ".function": "some deeper function config",
+            }
+          }
+        }
+      }
+    };
+    result = node.db.setFunction("test/test_sharding", dbFuncs);
+    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
+
+    dbRules = {
+      "some": {
+        "path": {
+          ".write": "false",
+          "to": {
+            ".write": "auth === 'known_user'",
+            "deeper": {
+              ".write": "some deeper rule config",
+            }
+          }
+        }
+      }
+    };
+    result = node.db.setRule("test/test_sharding", dbRules);
+    console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
+
+    dbOwners = {
+      "some": {
+        "path": {
+          "to": {
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                "known_user": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+    result = node.db.setOwner("test/test_sharding", dbOwners);
+    console.log(`Result of setOwner(): ${JSON.stringify(result, null, 2)}`);
+  })
+
+  afterEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+  });
+
+  describe("sharding path", () => {
+    it("getShardingPath", () => {
+      expect(node.db.getShardingPath()).to.equal("/apps/afan");
+    })
+
+    it("setShardingPath", () => {
+      node.db.setShardingPath("/apps/another_app");
+      expect(node.db.getShardingPath()).to.equal("/apps/another_app");
+    })
+
+    it("isRoot", () => {
+      expect(node.db.isRoot).to.equal(false);
+    })
+  })
+
+  describe("value operations", () => {
+    const value = "this";
+    const newValue = "that";
+    const incDelta = 5;
+    const decDelta = 3;
+
+    it("getValue with isGlobal = false", () => {
+      expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(value);
+      expect(node.db.getValue("apps/test_sharding/afan/test/some/path/to/value")).to.equal(null);
+    })
+
+    it("getValue with isGlobal = true", () => {
+      expect(node.db.getValue("test/test_sharding/some/path/to/value", true)).to.equal(null);
+      expect(node.db.getValue("apps/afan/test/test_sharding/some/path/to/value", true))
+        .to.equal(value);
+    })
+
+    it("getValue with isGlobal = true and non-existing path", () => {
+      expect(node.db.getValue("some/non-existing/path", true)).to.equal(null);
+    })
+
+    it("setValue with isGlobal = false", () => {
+      expect(node.db.setValue("test/test_sharding/some/path/to/value", newValue, 'known_user'))
+        .to.equal(true);
+      expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
+    })
+
+    it("setValue with isGlobal = true", () => {
+      expect(node.db.setValue(
+          "apps/afan/test/test_sharding/some/path/to/value", newValue, 'known_user', null, null,
+          true))
+        .to.equal(true);
+      expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
+    })
+
+    it("setValue with isGlobal = true and non-existing path", () => {
+      expect(node.db.setValue("some/non-existing/path", newValue, 'known_user', null, null, true))
+        .to.equal(true);
+    })
+
+    it("incValue with isGlobal = false", () => {
+      expect(node.db.incValue("test/test_sharding/some/path/to/number", incDelta, 'known_user'))
+        .to.equal(true);
+      expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
+    })
+
+    it("incValue with isGlobal = true", () => {
+      expect(node.db.incValue(
+          "apps/afan/test/test_sharding/some/path/to/number", incDelta, 'known_user', null, null, true))
+        .to.equal(true);
+      expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
+    })
+
+    it("incValue with isGlobal = true and non-existing path", () => {
+      expect(node.db.incValue("some/non-existing/path", incDelta, 'known_user', null, null, true))
+        .to.equal(true);
+    })
+
+    it("decValue with isGlobal = false", () => {
+      expect(node.db.decValue("test/test_sharding/some/path/to/number", decDelta, 'known_user'))
+        .to.equal(true);
+      expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
+    })
+
+    it("decValue with isGlobal = true", () => {
+      expect(node.db.decValue(
+          "apps/afan/test/test_sharding/some/path/to/number", decDelta, 'known_user', null, null, true))
+        .to.equal(true);
+      expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
+    })
+
+    it("decValue with isGlobal = true and non-existing path", () => {
+      expect(node.db.decValue("some/non-existing/path", decDelta, 'known_user', null, null, true))
+        .to.equal(true);
+    })
+  })
+
+  describe("function operations", () => {
+    const func = {
+      ".function": "some function config",
+      "deeper": {
+        ".function": "some deeper function config"
+      }
+    };
+    const newFunc = { ".function": "another function config" };
+
+    it("getFunction with isGlobal = false", () => {
+      assert.deepEqual(node.db.getFunction("test/test_sharding/some/path/to"), func);
+      expect(node.db.getFunction("apps/afan/test/test_sharding/some/path/to")).to.equal(null);
+    })
+
+    it("getFunction with isGlobal = true", () => {
+      expect(node.db.getFunction("test/test_sharding/some/path/to", true)).to.equal(null);
+      assert.deepEqual(
+          node.db.getFunction("apps/afan/test/test_sharding/some/path/to", true), func);
+    })
+
+    it("getFunction with isGlobal = true and non-existing path", () => {
+      expect(node.db.getFunction("some/non-existing/path", true)).to.equal(null);
+    })
+
+    it("setFunction with isGlobal = false", () => {
+      expect(node.db.setFunction(
+          "test/test_sharding/some/path/to", newFunc, 'known_user'))
+        .to.equal(true);
+      assert.deepEqual(node.db.getFunction("test/test_sharding/some/path/to"), newFunc);
+    })
+
+    it("setFunction with isGlobal = true", () => {
+      expect(node.db.setFunction(
+          "apps/afan/test/test_sharding/some/path/to", newFunc, 'known_user', true))
+        .to.equal(true);
+      assert.deepEqual(
+          node.db.getFunction("apps/afan/test/test_sharding/some/path/to", true), newFunc);
+    })
+
+    it("setFunction with isGlobal = true and non-existing path", () => {
+      expect(node.db.setFunction("some/non-existing/path", newFunc, 'known_user', true))
+        .to.equal(true);
+    })
+
+    it("matchFunction with isGlobal = false", () => {
+      assert.deepEqual(node.db.matchFunction("/test/test_sharding/some/path/to"), {
+        "matched_path": {
+          "target_path": "/test/test_sharding/some/path/to",
+          "ref_path": "/test/test_sharding/some/path/to",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": "some function config",
+          "path": "/test/test_sharding/some/path/to"
+        },
+        "subtree_configs": [
+          {
+            "config": "some deeper function config",
+            "path": "/deeper",
+          }
+        ]
+      });
+    })
+
+    it("matchFunction with isGlobal = true", () => {
+      assert.deepEqual(node.db.matchFunction("/apps/afan/test/test_sharding/some/path/to", true), {
+        "matched_path": {
+          "target_path": "/apps/afan/test/test_sharding/some/path/to",
+          "ref_path": "/apps/afan/test/test_sharding/some/path/to",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": "some function config",
+          "path": "/apps/afan/test/test_sharding/some/path/to"
+        },
+        "subtree_configs": [
+          {
+            "config": "some deeper function config",
+            "path": "/deeper",
+          }
+        ]
+      });
+    })
+
+    it("matchFunction with isGlobal = true and non-existing path", () => {
+      expect(node.db.matchFunction("some/non-existing/path", true)).to.equal(null);
+    })
+  })
+
+  describe("rule operations", () => {
+    const rule = {
+      ".write": "auth === 'known_user'",
+      "deeper": {
+        ".write": "some deeper rule config"
+      }
+    };
+    const newRule = { ".write": "another rule" };
+    const newValue = "that";
+
+    it("getRule with isGlobal = false", () => {
+      assert.deepEqual(node.db.getRule("test/test_sharding/some/path/to"), rule);
+      expect(node.db.getRule("apps/afan/test/test_sharding/some/path/to")).to.equal(null);
+    })
+
+    it("getRule with isGlobal = true", () => {
+      expect(node.db.getRule("test/test_sharding/some/path/to", true)).to.equal(null);
+      assert.deepEqual(
+          node.db.getRule("apps/afan/test/test_sharding/some/path/to", true), rule);
+    })
+
+    it("getRule with isGlobal = true and non-existing path", () => {
+      expect(node.db.getRule("some/non-existing/path", true)).to.equal(null);
+    })
+
+    it("setRule with isGlobal = false", () => {
+      expect(node.db.setRule(
+          "test/test_sharding/some/path/to", newRule, 'known_user'))
+        .to.equal(true);
+      assert.deepEqual(node.db.getRule("test/test_sharding/some/path/to"), newRule);
+    })
+
+    it("setRule with isGlobal = true", () => {
+      expect(node.db.setRule(
+          "apps/afan/test/test_sharding/some/path/to", newRule, 'known_user', true))
+        .to.equal(true);
+      assert.deepEqual(
+          node.db.getRule("apps/afan/test/test_sharding/some/path/to", true), newRule);
+    })
+
+    it("setRule with isGlobal = true and non-existing path", () => {
+      expect(node.db.setRule("some/non-existing/path", newRule, 'known_user', true))
+        .to.equal(true);
+    })
+
+    it("matchRule with isGlobal = false", () => {
+      assert.deepEqual(node.db.matchRule("/test/test_sharding/some/path/to"), {
+        "matched_path": {
+          "target_path": "/test/test_sharding/some/path/to",
+          "ref_path": "/test/test_sharding/some/path/to",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": "auth === 'known_user'",
+          "path": "/test/test_sharding/some/path/to"
+        },
+        "subtree_configs": [
+          {
+            "config": "some deeper rule config",
+            "path": "/deeper",
+          }
+        ]
+      });
+    })
+
+    it("matchRule with isGlobal = true", () => {
+      assert.deepEqual(node.db.matchRule("/apps/afan/test/test_sharding/some/path/to", true), {
+        "matched_path": {
+          "target_path": "/apps/afan/test/test_sharding/some/path/to",
+          "ref_path": "/apps/afan/test/test_sharding/some/path/to",
+          "path_vars": {},
+        },
+        "matched_config": {
+          "config": "auth === 'known_user'",
+          "path": "/apps/afan/test/test_sharding/some/path/to"
+        },
+        "subtree_configs": [
+          {
+            "config": "some deeper rule config",
+            "path": "/deeper",
+          }
+        ]
+      });
+    })
+
+    it("matchRule with isGlobal = true and non-existing path", () => {
+      expect(node.db.matchRule("some/non-existing/path", true)).to.equal(null);
+    })
+
+    it("evalRule with isGlobal = false", () => {
+      expect(node.db.evalRule("/test/test_sharding/some/path/to", newValue, "known_user"))
+        .to.equal(true);
+    })
+
+    it("evalRule with isGlobal = true", () => {
+      expect(node.db.evalRule(
+          "/apps/afan/test/test_sharding/some/path/to", newValue, "known_user", null, true))
+        .to.equal(true);
+    })
+
+    it("evalRule with isGlobal = true and non-existing path", () => {
+      expect(node.db.evalRule("/some/non-existing/path", newValue, "known_user", null, true))
+        .to.equal(null);
+    })
+  })
+
+  describe("owner operations", () => {
+    const owner = {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": false,
+            "write_function": false,
+            "write_owner": false,
+            "write_rule": false,
+          },
+          "known_user": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          }
+        }
+      }
+    };
+    const newOwner = {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": false,
+            "write_function": false,
+            "write_owner": false,
+            "write_rule": false,
+          },
+        }
+      }
+    };
+
+    it("getOwner with isGlobal = false", () => {
+      assert.deepEqual(node.db.getOwner("test/test_sharding/some/path/to"), owner);
+      expect(node.db.getOwner("apps/afan/test/test_sharding/some/path/to")).to.equal(null);
+    })
+
+    it("getOwner with isGlobal = true", () => {
+      expect(node.db.getOwner("test/test_sharding/some/path/to", true)).to.equal(null);
+      assert.deepEqual(
+          node.db.getOwner("apps/afan/test/test_sharding/some/path/to", true), owner);
+    })
+
+    it("getOwner with isGlobal = true and non-existing path", () => {
+      expect(node.db.getOwner("some/non-existing/path", true)).to.equal(null);
+    })
+
+    it("setOwner with isGlobal = false", () => {
+      expect(node.db.setOwner(
+          "test/test_sharding/some/path/to", newOwner, 'known_user'))
+        .to.equal(true);
+      assert.deepEqual(node.db.getOwner("test/test_sharding/some/path/to"), newOwner);
+    })
+
+    it("setOwner with isGlobal = true", () => {
+      expect(node.db.setOwner(
+          "apps/afan/test/test_sharding/some/path/to", newOwner, 'known_user', true))
+        .to.equal(true);
+      assert.deepEqual(
+          node.db.getOwner("apps/afan/test/test_sharding/some/path/to", true), newOwner);
+    })
+
+    it("setOwner with isGlobal = true and non-existing path", () => {
+      expect(node.db.setOwner("some/non-existing/path", newOwner, 'known_user', true))
+        .to.equal(true);
+    })
+
+    it("matchOwner with isGlobal = false", () => {
+      assert.deepEqual(node.db.matchOwner("/test/test_sharding/some/path/to"), {
+        "matched_path": {
+          "target_path": "/test/test_sharding/some/path/to",
+        },
+        "matched_config": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              "known_user": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          },
+          "path": "/test/test_sharding/some/path/to"
+        }
+      });
+    })
+
+    it("matchOwner with isGlobal = true", () => {
+      assert.deepEqual(node.db.matchOwner("/apps/afan/test/test_sharding/some/path/to", true), {
+        "matched_path": {
+          "target_path": "/apps/afan/test/test_sharding/some/path/to",
+        },
+        "matched_config": {
+          "config": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              "known_user": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          },
+          "path": "/apps/afan/test/test_sharding/some/path/to"
+        }
+      });
+    })
+
+    it("matchOwner with isGlobal = true and non-existing path", () => {
+      expect(node.db.matchOwner("some/non-existing/path", true)).to.equal(null);
+    })
+
+    it("evalOwner with isGlobal = false", () => {
+      expect(node.db.evalOwner("/test/test_sharding/some/path/to", "write_rule", "known_user"))
+        .to.equal(true);
+    })
+
+    it("evalOwner with isGlobal = true", () => {
+      expect(node.db.evalOwner(
+          "/apps/afan/test/test_sharding/some/path/to", "write_rule", "known_user", true))
+        .to.equal(true);
+    })
+
+    it("evalOwner with isGlobal = true and non-existing path", () => {
+      expect(node.db.evalOwner("/some/non-existing/path", "write_rule", "known_user", true))
+        .to.equal(null);
+    })
   })
 })
 
