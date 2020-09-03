@@ -82,7 +82,7 @@ setUp = () => {
       op_list: [
         {
           type: 'SET_VALUE',
-          ref: 'test/test',
+          ref: 'test/test_value/some/path',
           value: 100
         },
         {
@@ -142,7 +142,7 @@ cleanUp = () => {
         },
         {
           type: 'SET_VALUE',
-          ref: 'test/test',
+          ref: 'test/test_value/some/path',
           value: null
         }
       ]
@@ -245,17 +245,18 @@ describe('API Tests', () => {
 
     describe('/get_value', () => {
       it('get_value', () => {
-        const body = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=test/test')
-            .body.toString('utf-8'));
+        const body = JSON.parse(
+            syncRequest('GET', server1 + '/get_value?ref=test/test_value/some/path')
+          .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: 100});
       })
     })
 
     describe('/get_function', () => {
       it('get_function', () => {
-        const body =
-            JSON.parse(syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
-              .body.toString('utf-8'));
+        const body = JSON.parse(
+            syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
+          .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: {
@@ -528,7 +529,7 @@ describe('API Tests', () => {
           op_list: [
             {
               type: "GET_VALUE",
-              ref: "/test/test",
+              ref: "/test/test_value/some/path",
             },
             {
               type: 'GET_FUNCTION',
@@ -647,31 +648,31 @@ describe('API Tests', () => {
 
     describe('/set_value', () => {
       it('set_value', () => {
-        const request = {ref: 'test/value', value: "something"};
+        const request = {ref: 'test/test_value/some/path', value: "something"};
         const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
     describe('/inc_value', () => {
       it('inc_value', () => {
-        const request = {ref: "test/test", value: 10};
+        const request = {ref: "test/test_value/some/path", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
     describe('/dec_value', () => {
       it('dec_value', () => {
-        const request = {ref: "test/test", value: 10};
+        const request = {ref: "test/test_value/some/path", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -685,8 +686,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -700,8 +701,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -715,8 +716,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -731,12 +732,12 @@ describe('API Tests', () => {
             },
             {
               type: 'INC_VALUE',
-              ref: "test/test",
+              ref: "test/test_value/some/path",
               value: 10
             },
             {
               type: 'DEC_VALUE',
-              ref: "test/test2",
+              ref: "test/test_value/some/path2",
               value: 10
             },
             {
@@ -764,8 +765,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -783,14 +784,14 @@ describe('API Tests', () => {
             {
               operation: {
                 type: 'INC_VALUE',
-                ref: "test/test",
+                ref: "test/test_value/some/path",
                 value: 10
               }
             },
             {
               operation: {
                 type: 'DEC_VALUE',
-                ref: "test/test2",
+                ref: "test/test_value/some/path2",
                 value: 10
               }
             },
@@ -835,12 +836,12 @@ describe('API Tests', () => {
                   },
                   {
                     type: 'INC_VALUE',
-                    ref: "test/test",
+                    ref: "test/test_value/some/path",
                     value: 5
                   },
                   {
                     type: 'DEC_VALUE',
-                    ref: "test/test2",
+                    ref: "test/test_value/some/path2",
                     value: 5
                   },
                   {
@@ -871,7 +872,6 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.deepEqual(body.result.result, [
           true,
           true,
@@ -881,6 +881,7 @@ describe('API Tests', () => {
           true,
           true,
         ]);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -991,8 +992,8 @@ describe('API Tests', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const fromAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
@@ -1137,8 +1138,8 @@ describe('API Tests', () => {
           ref: depositPath + '/1/value',
           value: depositAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
@@ -1295,8 +1296,8 @@ describe('API Tests', () => {
           value: depositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
@@ -1321,8 +1322,8 @@ describe('API Tests', () => {
           value: newDepositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;

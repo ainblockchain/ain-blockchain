@@ -76,31 +76,25 @@ class Transaction {
   }
 
   /**
-   * Sanitize op_list of SET operation.
+   * Sanitize SET operation.
    */
-  static sanitizeSetOpList(opList) {
-    const sanitized = [];
-    if (Array.isArray(opList)) {
-      opList.forEach((op) => {
-        const sanitizedOp = {
-          ref: ChainUtil.stringOrEmpty(op.ref),
-          value: op.value
-        };
-        if (op.type === WriteDbOperations.SET_VALUE || op.type === WriteDbOperations.INC_VALUE ||
-            op.type === WriteDbOperations.DEC_VALUE || op.type === WriteDbOperations.SET_RULE ||
-            op.type === WriteDbOperations.SET_FUNCTION || op.type === WriteDbOperations.SET_OWNER) {
-          sanitizedOp.type = op.type;
-        }
-        sanitized.push(sanitizedOp);
+  static sanitizeSetOperation(op) {
+    const sanitizedOpList = []
+    if (Array.isArray(op.op_list)) {
+      op.op_list.forEach((op) => {
+        sanitizedOpList.push(this.sanitizeSimpleOperation(op));
       });
     }
-    return sanitized;
+    return {
+      type: op.type,
+      op_list: sanitizedOpList,
+    };
   }
 
   /**
-   * Sanitize operation.
+   * Sanitize simple operation.
    */
-  static sanitizeOperation(op) {
+  static sanitizeSimpleOperation(op) {
     const sanitized = {}
     switch(op.type) {
       case undefined:
@@ -116,14 +110,22 @@ class Transaction {
         sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
         sanitized.value = ChainUtil.numberOrZero(op.value);
         break;
-      case WriteDbOperations.SET:
-        sanitized.op_list = this.sanitizeSetOpList(op.op_list);
-        break;
       default:
         return sanitized;
     }
     sanitized.type = op.type;
+    if (op.is_global !== undefined) {
+      sanitized.is_global = ChainUtil.boolOrFalse(op.is_global);
+    }
     return sanitized;
+  }
+
+  /**
+   * Sanitize operation.
+   */
+  static sanitizeOperation(op) {
+    return (op.type === WriteDbOperations.SET) ?
+        this.sanitizeSetOperation(op) : this.sanitizeSimpleOperation(op);
   }
 
   /**
