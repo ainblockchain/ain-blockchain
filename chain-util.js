@@ -66,6 +66,10 @@ class ChainUtil {
     return ruleUtil.isValShardProto(value);
   }
 
+  static boolOrFalse(value) {
+    return ChainUtil.isBool(value) ? value : false;
+  }
+
   static numberOrZero(num) {
     return ChainUtil.isNumber(num) ? num : 0;
   }
