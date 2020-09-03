@@ -228,7 +228,6 @@ class DB {
     return this.readDatabase(fullPath);
   }
 
-<<<<<<< HEAD
   /**
    * Returns a proof of a state node.
    * 
@@ -254,8 +253,6 @@ class DB {
     return rootProof;
   }
 
-=======
->>>>>>> Do not apply local path convertion to getProof().
   matchFunction(funcPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(funcPath);
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
