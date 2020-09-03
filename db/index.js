@@ -231,14 +231,14 @@ class DB {
   /**
    * Returns a proof of a state node.
    * 
-   * @param {*} dbPath full database path to the state node to be proved.
+   * @param {string} fullPath full database path to the state node to be proved.
    */
-  getProof(dbPath) {
+  getProof(fullPath) {
+    const parsedPath = ChainUtil.parsePath(fullPath);
     let node = this.stateTree;
-    const fullPath = ChainUtil.parsePath(dbPath);
     const rootProof = { [ProofProperties.PROOF_HASH]: node.getProofHash() };
     let proof = rootProof;
-    for (const label of fullPath) {
+    for (const label of parsedPath) {
       if (node.hasChild(label)) {
         node.getChildLabels().forEach(label => {
           Object.assign(proof,
@@ -316,7 +316,7 @@ class DB {
       } else if (op.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.GET_PROOF) {
-        resultList.push(this.getProof(op.ref, op.is_global));
+        resultList.push(this.getProof(op.ref));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
         resultList.push(this.matchFunction(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
