@@ -126,8 +126,8 @@ app.get('/match_owner', (req, res, next) => {
 
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const result = node.db.evalRule(body.ref, body.value, body.address, !!body.is_global,
-      body.timestamp || Date.now());
+  const result = node.db.evalRule(
+      body.ref, body.value, body.address, body.timestamp || Date.now(), !!body.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
