@@ -23,6 +23,7 @@ const {
   RuleProperties,
   FunctionProperties,
   FunctionTypes,
+  ProofProperties,
   NativeFunctionIds,
   buildOwnerPermissions
 } = require('../constants');
@@ -317,16 +318,16 @@ describe('API Tests', () => {
         const functionsBody = JSON.parse(
           syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
             .body.toString('utf-8'));
-        const ownersProof = ownersBody.result;
-        const rulesProof = rulesBody.result;
-        const valuesProof = valuesBody.result;
-        const functionProof = functionsBody.result;
+        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
+        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
+        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
+        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
         const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
           + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
           + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
           + `functions${HASH_DELIMITER}${functionProof}`;
         const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-        assert.deepEqual(body, { code: 0, result: proofHash });
+        assert.deepEqual(body, { code: 0, result: { [ProofProperties.PROOF_HASH]: proofHash } });
       });
     });
 
