@@ -233,6 +233,7 @@ class DB {
    * 
    * @param {string} fullPath full database path to the state node to be proved.
    */
+  // TODO(seo): Consider supporting global path for getProof().
   getProof(fullPath) {
     const parsedPath = ChainUtil.parsePath(fullPath);
     let node = this.stateTree;
