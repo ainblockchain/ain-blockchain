@@ -58,7 +58,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref, req.query.is_global);
+  const result = node.db.getValue(req.query.ref, !!req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -66,7 +66,7 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, req.query.is_global);
+  const result = node.db.getFunction(req.query.ref, !!req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -74,7 +74,7 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref, req.query.is_global);
+  const result = node.db.getRule(req.query.ref, !!req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -82,7 +82,7 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref, req.query.is_global);
+  const result = node.db.getOwner(req.query.ref, !!req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -101,7 +101,7 @@ app.get('/get_proof', (req, res, next) => {
 });
 
 app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref, req.query.is_global);
+  const result = node.db.matchFunction(req.query.ref, !!req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -109,7 +109,7 @@ app.get('/match_function', (req, res, next) => {
 });
 
 app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref, req.query.is_global);
+  const result = node.db.matchRule(req.query.ref, !!req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -117,7 +117,7 @@ app.get('/match_rule', (req, res, next) => {
 });
 
 app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref, req.query.is_global);
+  const result = node.db.matchOwner(req.query.ref, !!req.query.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -126,7 +126,7 @@ app.get('/match_owner', (req, res, next) => {
 
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const result = node.db.evalRule(body.ref, body.value, body.address, body.is_global,
+  const result = node.db.evalRule(body.ref, body.value, body.address, !!body.is_global,
       body.timestamp || Date.now());
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -136,7 +136,7 @@ app.post('/eval_rule', (req, res, next) => {
 
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
-  const result = node.db.evalOwner(body.ref, body.permission, body.address, body.is_global);
+  const result = node.db.evalOwner(body.ref, body.permission, body.address, !!body.is_global);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -153,7 +153,7 @@ app.post('/get', (req, res, next) => {
 
 app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -163,7 +163,7 @@ app.post('/set_value', (req, res, next) => {
 
 app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -173,7 +173,7 @@ app.post('/inc_value', (req, res, next) => {
 
 app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -183,7 +183,7 @@ app.post('/dec_value', (req, res, next) => {
 
 app.post('/set_function', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -193,7 +193,7 @@ app.post('/set_function', (req, res, next) => {
 
 app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -203,7 +203,7 @@ app.post('/set_rule', (req, res, next) => {
 
 app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -214,7 +214,7 @@ app.post('/set_owner', (req, res, next) => {
 // TODO(seo): Replace skip_verif with real signature.
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -223,7 +223,7 @@ app.post('/set', (req, res, next) => {
 
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(createBatchTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createBatchTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -349,14 +349,15 @@ p2pServer.listen();
 module.exports = app;
 
 function createSingleSetTxData(input, opType) {
-  const txData = {
-    operation: {
-      type: opType,
-      ref: input.ref,
-      value: input.value,
-      is_global: input.is_global,
-    }
+  const op = {
+    type: opType,
+    ref: input.ref,
+    value: input.value,
   };
+  if (input.is_global !== undefined) {
+    op.is_global = input.is_global;
+  }
+  const txData = { operation: op };
   if (input.address !== undefined) {
     txData.address = input.address;
   }
@@ -386,7 +387,7 @@ function createBatchTxData(input) {
   return { tx_list: input.tx_list };
 }
 
-function createTransaction(txData, isNoncedTransaction) {
+function createAndExecuteTransaction(txData, isNoncedTransaction) {
   const transaction = node.createTransaction(txData, isNoncedTransaction);
   return {
     tx_hash: transaction.hash,
