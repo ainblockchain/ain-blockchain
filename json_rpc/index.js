@@ -200,7 +200,7 @@ module.exports = function getMethods(
           return;
         case ReadDbOperations.GET_PROOF:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getProof(args.ref, args.is_global)
+            result: p2pServer.node.db.getProof(args.ref)
           }));
           return;
         case ReadDbOperations.GET:

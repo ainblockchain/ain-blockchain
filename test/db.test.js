@@ -1,4 +1,3 @@
-const fs = require("fs")
 const rimraf = require('rimraf');
 const chai = require('chai');
 const expect = chai.expect;
