@@ -89,6 +89,17 @@ app.get('/get_owner', (req, res, next) => {
     .end();
 });
 
+/**
+ * Returns a proof of the state node in the given full database path.
+ */
+app.get('/get_proof', (req, res, next) => {
+  const result = node.db.getProof(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/match_function', (req, res, next) => {
   const result = node.db.matchFunction(req.query.ref, req.query.is_global);
   res.status(200)
@@ -137,17 +148,6 @@ app.post('/get', (req, res, next) => {
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
-    .end();
-});
-
-/**
- * Returns a proof of the state node in the given full database path.
- */
-app.get('/get_proof', (req, res, next) => {
-  const result = node.db.getProof(req.query.ref);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
