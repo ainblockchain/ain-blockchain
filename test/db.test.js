@@ -2118,16 +2118,17 @@ describe("Test proof with database", () => {
   });
 
   describe("getProof", () => {
-    it("tests proof with root and null cases", () => {
+    it("tests proof with a null case", () => {
       const rootNode = node.db.stateTree;
-      const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
-      assert.deepEqual(rootProof, node.db.getProof('/'));
       assert.deepEqual(null, node.db.getProof('/test/test'));
     });
 
-    it("tests proof with owners", () => {
+    it("tests proof with owners, rules, values and functions", () => {
       const rootNode = node.db.stateTree;
       const ownersNode = node.db.getRefForReading(['owners']);
+      const rulesNode = node.db.getRefForReading(['rules']);
+      const valuesNode = node.db.getRefForReading(['values']);
+      const functionNode = node.db.getRefForReading(['functions']);
       const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
       const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
       rootNode.getChildLabels().forEach(label => {
@@ -2139,57 +2140,25 @@ describe("Test proof with database", () => {
         Object.assign(ownersProof.owners,
           { [label]: { [ProofProperties.PROOF_HASH]: ownersNode.getChild(label).getProofHash() } });
       });
-      assert.deepEqual(ownersProof, node.db.getProof('/owners/test'));
-    });
-
-    it("tests proof with rules", () => {
-      const rootNode = node.db.stateTree;
-      const rulesNode = node.db.getRefForReading(['rules']);
-      const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
-      const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
-      rootNode.getChildLabels().forEach(label => {
-        Object.assign(secondLevelProof,
-          { [label]: { [ProofProperties.PROOF_HASH]: rootNode.getChild(label).getProofHash() } });
-      });
       const rulesProof = JSON.parse(JSON.stringify(secondLevelProof));
       rulesNode.getChildLabels().forEach(label => {
         Object.assign(rulesProof.rules,
           { [label]: { [ProofProperties.PROOF_HASH]: rulesNode.getChild(label).getProofHash() } });
-      });
-      assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
-    });
-
-    it("tests proof with values", () => {
-      const rootNode = node.db.stateTree;
-      const valuesNode = node.db.getRefForReading(['values']);
-      const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
-      const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
-      rootNode.getChildLabels().forEach(label => {
-        Object.assign(secondLevelProof,
-          { [label]: { [ProofProperties.PROOF_HASH]: rootNode.getChild(label).getProofHash() } });
       });
       const valuesProof = JSON.parse(JSON.stringify(secondLevelProof));
       valuesNode.getChildLabels().forEach(label => {
         Object.assign(valuesProof.values,
           { [label]: { [ProofProperties.PROOF_HASH]: valuesNode.getChild(label).getProofHash() } });
       });
-      assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
-    });
-
-    it("tests proof with functions", () => {
-      const rootNode = node.db.stateTree;
-      const functionNode = node.db.getRefForReading(['functions']);
-      const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
-      const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
-      rootNode.getChildLabels().forEach(label => {
-        Object.assign(secondLevelProof,
-          { [label]: { [ProofProperties.PROOF_HASH]: rootNode.getChild(label).getProofHash() } });
-      });
       const functionsProof = JSON.parse(JSON.stringify(secondLevelProof));
       functionNode.getChildLabels().forEach(label => {
         Object.assign(functionsProof.functions,
           { [label]: { [ProofProperties.PROOF_HASH]: functionNode.getChild(label).getProofHash() } });
       });
+      assert.deepEqual(rootProof, node.db.getProof('/'));
+      assert.deepEqual(ownersProof, node.db.getProof('/owners/test'));
+      assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
+      assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
       assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
     });
   });
