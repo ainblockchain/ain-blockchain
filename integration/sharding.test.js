@@ -10,11 +10,14 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
+const _ = require('lodash');
 const {
   BLOCKCHAINS_DIR,
 } = require('../constants');
 const {
   readConfigFile,
+  waitForNewBlocks,
+  waitUntilNodeSyncs
 } = require('../test/test-util');
 
 const ENV_VARIABLES = [
@@ -90,7 +93,7 @@ function waitUntilShardReporterStarts() {
   }
 }
 
-describe('Sharding initialization', () => {
+describe('Sharding', () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_token.json'));
   const accounts =
@@ -174,7 +177,7 @@ describe('Sharding initialization', () => {
 
     describe('DB rules', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_rule?ref=${sharding.sharding_path}`)
+        const body = JSON.parse(syncRequest('GET', parentServer + `/get_rule?ref=${sharding.sharding_path}/$block_number/proof_hash`)
         .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.write']).to.have.string(accounts.others[0].address);
@@ -248,5 +251,57 @@ describe('Sharding initialization', () => {
         expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
       })
     })
+  });
+
+  describe('Shard state proof hash reporting', () => {
+    before(() => {
+      waitForNewBlocks(server1, sharding.reporting_period * 3);
+    });
+
+    describe('periodic reports', () => {
+      it ('reports proof hashes periodically', () => {
+        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+            .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        let blockNumber = 0;
+        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        for (const key of sortedReports) {
+          expect(blockNumber).to.equal(Number(key));
+          blockNumber++;
+        }
+      });
+
+      it ('updates latest block number', () => {
+        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+        .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        const latest = body.result.latest;
+        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const highest = sortedReports[sortedReports.length - 1];
+        expect(latest).to.equal(Number(highest));
+      });
+
+      it('can resume reporting after missing some reports', () => {
+        const reportsBefore = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+            .body.toString('utf-8'));
+        console.log(`Shutting down server[0]...`);
+        server1_proc.kill();
+        waitForNewBlocks(server2, sharding.reporting_period);
+        console.log(`Restarting server[0]...`);
+        server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
+        waitForNewBlocks(server2, sharding.reporting_period);
+        waitUntilNodeSyncs(server1);
+        waitForNewBlocks(server1, sharding.reporting_period);
+        const reportsAfter = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+            .body.toString('utf-8'));
+        let blockNumber = 0;
+        const sortedReports = _.without(Object.keys(reportsAfter.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        for (const key of sortedReports) {
+          expect(blockNumber).to.equal(Number(key));
+          blockNumber++;
+        }
+        expect(reportsAfter.result.latest).to.be.greaterThan(reportsBefore.result.latest);
+      });
+    });
   });
 })

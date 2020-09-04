@@ -635,6 +635,8 @@ class P2pServer {
       GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
+    const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
+    const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 
     const shardInitTx = {
       operation: {
@@ -642,7 +644,7 @@ class P2pServer {
         op_list: [
           {
             type: WriteDbOperations.SET_OWNER,
-            ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+            ref: shardingPath,
             value: {
               [OwnerProperties.OWNER]: {
                 [OwnerProperties.OWNERS]: {
@@ -654,15 +656,21 @@ class P2pServer {
           },
           {
             type: WriteDbOperations.SET_RULE,
-            ref: GenesisSharding[ShardingProperties.SHARDING_PATH],
+            ref: ChainUtil.formatPath([
+              ...ChainUtil.parsePath(shardingPath),
+              '$block_number',
+              PredefinedDbPaths.SHARDING_PROOF_HASH
+            ]),
             value: {
-              [RuleProperties.WRITE]: `auth === '${shardReporter}'`
+              [RuleProperties.WRITE]: `auth === '${shardReporter}' && ` +
+                  `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
+                  `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`
             }
           },
           {
             type: WriteDbOperations.SET_FUNCTION,
             ref: ChainUtil.formatPath([
-              ...ChainUtil.parsePath(GenesisSharding[ShardingProperties.SHARDING_PATH]),
+              ...ChainUtil.parsePath(shardingPath),
               '$block_number',
               PredefinedDbPaths.SHARDING_PROOF_HASH
             ]),
@@ -678,7 +686,7 @@ class P2pServer {
             ref: ChainUtil.formatPath([
               PredefinedDbPaths.SHARDING,
               PredefinedDbPaths.SHARDING_SHARD,
-              ainUtil.encode(GenesisSharding[ShardingProperties.SHARDING_PATH])
+              ainUtil.encode(shardingPath)
             ]),
             value: GenesisSharding
           }
