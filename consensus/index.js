@@ -813,14 +813,14 @@ class Consensus {
       return;
     }
     this.isReporting = true;
-    const lastFinalizedBlock = this.node.bc.lastBlock();
-    const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
-    if (lastFinalizedBlock.number % reportingPeriod !== 0) {
-      this.isReporting = false;
-      return;
-    }
     try {
+      const lastFinalizedBlock = this.node.bc.lastBlock();
+      const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
       const lastReportedBlockNumber = await this.getLastReportedBlockNumber();
+      if (lastReportedBlockNumber && lastFinalizedBlockNumber < lastReportedBlockNumber + reportingPeriod) {
+        this.isReporting = false;
+        return;
+      }
       let blockNumberToReport = lastReportedBlockNumber ? lastReportedBlockNumber + 1 : 0;
       const opList = [];
       while (blockNumberToReport <= lastFinalizedBlockNumber) {
