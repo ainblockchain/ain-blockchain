@@ -393,436 +393,114 @@ describe('Sharding', () => {
         cleanUp();
       })
 
-      it('/get_value with is_global = false', () => {
-        const body = JSON.parse(
-            syncRequest('GET', server1 + '/get_value?ref=/test/test_value/some/path')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, 100);
+      describe('/get_value', () => {
+        it('/get_value with is_global = false', () => {
+          const body = JSON.parse(
+              syncRequest('GET', server1 + '/get_value?ref=/test/test_value/some/path')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, 100);
+        })
+
+        it('/get_value with is_global = false (explicit)', () => {
+          const body = JSON.parse(syncRequest(
+              'GET', server1 + '/get_value?ref=/test/test_value/some/path&is_global=false')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, 100);
+        })
+
+        it('/get_value with is_global = true', () => {
+          const body = JSON.parse(syncRequest(
+              'GET', server1 + '/get_value?ref=/apps/afan/test/test_value/some/path&is_global=true')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, 100);
+        })
       })
 
-      it('/get_value with is_global = false (explicit)', () => {
-        const body = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=/test/test_value/some/path&is_global=false')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, 100);
+      describe('/get_function', () => {
+        it('/get_function with is_global = false', () => {
+          const body = JSON.parse(
+              syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, { '.function': 'some function config' });
+        })
+
+        it('/get_function with is_global = true', () => {
+          const body = JSON.parse(syncRequest(
+              'GET', server1 + '/get_function?ref=/apps/afan/test/test_function/some/path&is_global=true')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, { '.function': 'some function config' });
+        })
       })
 
-      it('/get_value with is_global = true', () => {
-        const body = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=/apps/afan/test/test_value/some/path&is_global=true')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, 100);
+      describe('/get_rule', () => {
+        it('/get_rule with is_global = false', () => {
+          const body = JSON.parse(
+              syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+        })
+
+        it('/get_rule with is_global = true', () => {
+          const body = JSON.parse(syncRequest(
+              'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+        })
       })
 
-      it('/get_function with is_global = false', () => {
-        const body = JSON.parse(
-            syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, { '.function': 'some function config' });
-      })
-
-      it('/get_function with is_global = true', () => {
-        const body = JSON.parse(syncRequest(
-            'GET', server1 + '/get_function?ref=/apps/afan/test/test_function/some/path&is_global=true')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, { '.function': 'some function config' });
-      })
-
-      it('/get_rule with is_global = false', () => {
-        const body = JSON.parse(
-            syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
-      })
-
-      it('/get_rule with is_global = true', () => {
-        const body = JSON.parse(syncRequest(
-            'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
-      })
-
-      it('/get_owner with is_global = false', () => {
-        const body = JSON.parse(
-            syncRequest('GET', server1 + '/get_owner?ref=/test/test_owner/some/path')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, {
-          ".owner": {
-            "owners": {
-              "*": {
-                "branch_owner": false,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": false,
-              }
-            }
-          }
-        });
-      })
-
-      it('/get_owner with is_global = true', () => {
-        const body = JSON.parse(syncRequest(
-            'GET', server1 + '/get_owner?ref=/apps/afan/test/test_owner/some/path&is_global=true')
-          .body.toString('utf-8'));
-        assert.equal(body.code, 0);
-        assert.deepEqual(body.result, {
-          ".owner": {
-            "owners": {
-              "*": {
-                "branch_owner": false,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": false,
-              }
-            }
-          }
-        });
-      })
-
-      it('/match_function with is_global = false', () => {
-        const ref = "/test/test_function/some/path";
-        const body = JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/test/test_function/some/path",
-            "ref_path": "/test/test_function/some/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": "some function config",
-            "path": "/test/test_function/some/path"
-          },
-          "subtree_configs": []
-        }});
-      })
-
-      it('/match_function with is_global = true', () => {
-        const ref = "/apps/afan/test/test_function/some/path";
-        const body =
-            JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}&is_global=true`)
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/apps/afan/test/test_function/some/path",
-            "ref_path": "/apps/afan/test/test_function/some/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": "some function config",
-            "path": "/apps/afan/test/test_function/some/path"
-          },
-          "subtree_configs": []
-        }});
-      })
-
-      it('/match_rule with is_global = false', () => {
-        const ref = "/test/test_rule/some/path";
-        const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/test/test_rule/some/path",
-            "ref_path": "/test/test_rule/some/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": "auth === 'abcd'",
-            "path": "/test/test_rule/some/path"
-          },
-          "subtree_configs": []
-        }});
-      })
-
-      it('/match_rule with is_global = true', () => {
-        const ref = "/apps/afan/test/test_rule/some/path";
-        const body =
-            JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}&is_global=true`)
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/apps/afan/test/test_rule/some/path",
-            "ref_path": "/apps/afan/test/test_rule/some/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": "auth === 'abcd'",
-            "path": "/apps/afan/test/test_rule/some/path"
-          },
-          "subtree_configs": []
-        }});
-      })
-
-      it('/match_owner with is_global = false', () => {
-        const ref = "/test/test_owner/some/path";
-        const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/test/test_owner/some/path"
-          },
-          "matched_config": {
-            "config": {
+      describe('/get_owner', () => {
+        it('/get_owner with is_global = false', () => {
+          const body = JSON.parse(
+              syncRequest('GET', server1 + '/get_owner?ref=/test/test_owner/some/path')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, {
+            ".owner": {
               "owners": {
                 "*": {
                   "branch_owner": false,
                   "write_function": true,
                   "write_owner": true,
-                  "write_rule": false
+                  "write_rule": false,
                 }
               }
-            },
-            "path": "/test/test_owner/some/path"
-          }
-        }});
-      })
+            }
+          });
+        })
 
-      it('/match_owner with is_global = true', () => {
-        const ref = "/apps/afan/test/test_owner/some/path";
-        const body =
-            JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}&is_global=true`)
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/apps/afan/test/test_owner/some/path"
-          },
-          "matched_config": {
-            "config": {
+        it('/get_owner with is_global = true', () => {
+          const body = JSON.parse(syncRequest(
+              'GET', server1 + '/get_owner?ref=/apps/afan/test/test_owner/some/path&is_global=true')
+            .body.toString('utf-8'));
+          assert.equal(body.code, 0);
+          assert.deepEqual(body.result, {
+            ".owner": {
               "owners": {
                 "*": {
                   "branch_owner": false,
                   "write_function": true,
                   "write_owner": true,
-                  "write_rule": false
+                  "write_rule": false,
                 }
               }
-            },
-            "path": "/apps/afan/test/test_owner/some/path"
-          }
-        }});
-      })
-
-      it('/eval_rule with is_global = false', () => {
-        const ref = "/test/test_rule/some/path";
-        const value = "value";
-        const address = "abcd";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
-        const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
-      })
-
-      it('/eval_rule with is_global = true', () => {
-        const ref = "/apps/afan/test/test_rule/some/path";
-        const value = "value";
-        const address = "abcd";
-        const is_global = true;
-        const request = { ref, value, address, is_global, protoVer: CURRENT_PROTOCOL_VERSION };
-        const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
-      })
-
-      it('/eval_owner with is_global = false', () => {
-        const ref = "/test/test_owner/some/path";
-        const address = "abcd";
-        const permission = "write_owner";
-        const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
-        const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {
-          code: 0,
-          result: true,
-        });
-      })
-
-      it('/eval_owner with is_global = true', () => {
-        const ref = "/apps/afan/test/test_owner/some/path";
-        const address = "abcd";
-        const permission = "write_owner";
-        const is_global = true;
-        const request = { ref, permission, address, is_global, protoVer: CURRENT_PROTOCOL_VERSION };
-        const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {
-          code: 0,
-          result: true,
-        });
-      })
-
-      it('/get with is_global = false', () => {
-        const request = {
-          op_list: [
-            {
-              type: "GET_VALUE",
-              ref: "/test/test_value/some/path",
-            },
-            {
-              type: 'GET_FUNCTION',
-              ref: "/test/test_function/some/path",
-            },
-            {
-              type: 'GET_RULE',
-              ref: "/test/test_rule/some/path",
-            },
-            {
-              type: 'GET_OWNER',
-              ref: "/test/test_owner/some/path",
-            },
-            {
-              type: 'EVAL_RULE',
-              ref: "/test/test_rule/some/path",
-              value: "value",
-              address: "abcd"
-            },
-            {
-              type: 'EVAL_OWNER',
-              ref: "/test/test_owner/some/path",
-              permission: "write_owner",
-              address: "abcd"
             }
-          ]
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {
-          code: 0,
-          result: [
-            100,
-            {
-              ".function": "some function config"
-            },
-            {
-              ".write": "auth === 'abcd'"
-            },
-            {
-              ".owner": {
-                "owners": {
-                  "*": {
-                    "branch_owner": false,
-                    "write_function": true,
-                    "write_owner": true,
-                    "write_rule": false,
-                  }
-                }
-              }
-            },
-            true,
-            true,
-          ]
-        });
+          });
+        })
       })
 
-      it('/get with is_global = true', () => {
-        const request = {
-          op_list: [
-            {
-              type: "GET_VALUE",
-              ref: "/apps/afan/test/test_value/some/path",
-              is_global: true,
-            },
-            {
-              type: 'GET_FUNCTION',
-              ref: "/apps/afan/test/test_function/some/path",
-              is_global: true,
-            },
-            {
-              type: 'GET_RULE',
-              ref: "/apps/afan/test/test_rule/some/path",
-              is_global: true,
-            },
-            {
-              type: 'GET_OWNER',
-              ref: "/apps/afan/test/test_owner/some/path",
-              is_global: true,
-            },
-            {
-              type: 'EVAL_RULE',
-              ref: "/apps/afan/test/test_rule/some/path",
-              value: "value",
-              address: "abcd",
-              is_global: true,
-            },
-            {
-              type: 'EVAL_OWNER',
-              ref: "/apps/afan/test/test_owner/some/path",
-              permission: "write_owner",
-              address: "abcd",
-              is_global: true,
-            }
-          ]
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body, {
-          code: 0,
-          result: [
-            100,
-            {
-              ".function": "some function config"
-            },
-            {
-              ".write": "auth === 'abcd'"
-            },
-            {
-              ".owner": {
-                "owners": {
-                  "*": {
-                    "branch_owner": false,
-                    "write_function": true,
-                    "write_owner": true,
-                    "write_rule": false,
-                  }
-                }
-              }
-            },
-            true,
-            true,
-          ]
-        });
-      })
-
-      it('ain_get with is_global = false', () => {
-        const expected = 100;
-        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_get', {
-          protoVer: CURRENT_PROTOCOL_VERSION,
-          type: 'GET_VALUE',
-          ref: "/test/test_value/some/path"
-        })
-        .then(res => {
-          expect(res.result.result).to.equal(expected);
-        });
-      });
-
-      it('ain_get with is_global = true', () => {
-        const expected = 100;
-        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_get', {
-          protoVer: CURRENT_PROTOCOL_VERSION,
-          type: 'GET_VALUE',
-          ref: "/apps/afan/test/test_value/some/path",
-          is_global: true,
-        })
-        .then(res => {
-          expect(res.result.result).to.equal(expected);
-        });
-      });
-
-      it('ain_matchFunction with is_global = false', () => {
-        const ref = "/test/test_function/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
+      describe('/match_function', () => {
+        it('/match_function with is_global = false', () => {
+          const ref = "/test/test_function/some/path";
+          const body = JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/test/test_function/some/path",
               "ref_path": "/test/test_function/some/path",
@@ -833,16 +511,15 @@ describe('Sharding', () => {
               "path": "/test/test_function/some/path"
             },
             "subtree_configs": []
-          });
+          }});
         })
-      })
 
-      it('ain_matchFunction with is_global = true', () => {
-        const ref = "/apps/afan/test/test_function/some/path";
-        const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
+        it('/match_function with is_global = true', () => {
+          const ref = "/apps/afan/test/test_function/some/path";
+          const body =
+              JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}&is_global=true`)
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/apps/afan/test/test_function/some/path",
               "ref_path": "/apps/afan/test/test_function/some/path",
@@ -853,16 +530,16 @@ describe('Sharding', () => {
               "path": "/apps/afan/test/test_function/some/path"
             },
             "subtree_configs": []
-          });
+          }});
         })
       })
 
-      it('ain_matchRule with is_global = false', () => {
-        const ref = "/test/test_rule/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
+      describe('/match_rule', () => {
+        it('/match_rule with is_global = false', () => {
+          const ref = "/test/test_rule/some/path";
+          const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/test/test_rule/some/path",
               "ref_path": "/test/test_rule/some/path",
@@ -873,16 +550,15 @@ describe('Sharding', () => {
               "path": "/test/test_rule/some/path"
             },
             "subtree_configs": []
-          });
+          }});
         })
-      })
 
-      it('ain_matchRule with is_global = true', () => {
-        const ref = "/apps/afan/test/test_rule/some/path";
-        const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
+        it('/match_rule with is_global = true', () => {
+          const ref = "/apps/afan/test/test_rule/some/path";
+          const body =
+              JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}&is_global=true`)
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/apps/afan/test/test_rule/some/path",
               "ref_path": "/apps/afan/test/test_rule/some/path",
@@ -893,16 +569,16 @@ describe('Sharding', () => {
               "path": "/apps/afan/test/test_rule/some/path"
             },
             "subtree_configs": []
-          });
+          }});
         })
       })
 
-      it('ain_matchOwner with is_global = false', () => {
-        const ref = "/test/test_owner/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
+      describe('/match_owner', () => {
+        it('/match_owner with is_global = false', () => {
+          const ref = "/test/test_owner/some/path";
+          const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/test/test_owner/some/path"
             },
@@ -919,16 +595,15 @@ describe('Sharding', () => {
               },
               "path": "/test/test_owner/some/path"
             }
-          });
+          }});
         })
-      })
 
-      it('ain_matchOwner with is_global = true', () => {
-        const ref = "/apps/afan/test/test_owner/some/path";
-        const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
+        it('/match_owner with is_global = true', () => {
+          const ref = "/apps/afan/test/test_owner/some/path";
+          const body =
+              JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}&is_global=true`)
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/apps/afan/test/test_owner/some/path"
             },
@@ -945,53 +620,424 @@ describe('Sharding', () => {
               },
               "path": "/apps/afan/test/test_owner/some/path"
             }
+          }});
+        })
+      })
+
+      describe('/eval_rule', () => {
+        it('/eval_rule with is_global = false', () => {
+          const ref = "/test/test_rule/some/path";
+          const value = "value";
+          const address = "abcd";
+          const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+          const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: true});
+        })
+
+        it('/eval_rule with is_global = true', () => {
+          const ref = "/apps/afan/test/test_rule/some/path";
+          const value = "value";
+          const address = "abcd";
+          const is_global = true;
+          const request = { ref, value, address, is_global, protoVer: CURRENT_PROTOCOL_VERSION };
+          const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {code: 0, result: true});
+        })
+      })
+
+      describe('/eval_owner', () => {
+        it('/eval_owner with is_global = false', () => {
+          const ref = "/test/test_owner/some/path";
+          const address = "abcd";
+          const permission = "write_owner";
+          const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
+          const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {
+            code: 0,
+            result: true,
+          });
+        })
+
+        it('/eval_owner with is_global = true', () => {
+          const ref = "/apps/afan/test/test_owner/some/path";
+          const address = "abcd";
+          const permission = "write_owner";
+          const is_global = true;
+          const request = { ref, permission, address, is_global, protoVer: CURRENT_PROTOCOL_VERSION };
+          const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {
+            code: 0,
+            result: true,
           });
         })
       })
 
-      it('ain_evalRule with is_global = false', () => {
-        const ref = "/test/test_rule/some/path";
-        const value = "value";
-        const address = "abcd";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
-        .then(res => {
-          expect(res.result.result).to.equal(true);
+      describe('/get', () => {
+        it('/get with is_global = false', () => {
+          const request = {
+            op_list: [
+              {
+                type: "GET_VALUE",
+                ref: "/test/test_value/some/path",
+              },
+              {
+                type: 'GET_FUNCTION',
+                ref: "/test/test_function/some/path",
+              },
+              {
+                type: 'GET_RULE',
+                ref: "/test/test_rule/some/path",
+              },
+              {
+                type: 'GET_OWNER',
+                ref: "/test/test_owner/some/path",
+              },
+              {
+                type: 'EVAL_RULE',
+                ref: "/test/test_rule/some/path",
+                value: "value",
+                address: "abcd"
+              },
+              {
+                type: 'EVAL_OWNER',
+                ref: "/test/test_owner/some/path",
+                permission: "write_owner",
+                address: "abcd"
+              }
+            ]
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {
+            code: 0,
+            result: [
+              100,
+              {
+                ".function": "some function config"
+              },
+              {
+                ".write": "auth === 'abcd'"
+              },
+              {
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
+                  }
+                }
+              },
+              true,
+              true,
+            ]
+          });
+        })
+
+        it('/get with is_global = true', () => {
+          const request = {
+            op_list: [
+              {
+                type: "GET_VALUE",
+                ref: "/apps/afan/test/test_value/some/path",
+                is_global: true,
+              },
+              {
+                type: 'GET_FUNCTION',
+                ref: "/apps/afan/test/test_function/some/path",
+                is_global: true,
+              },
+              {
+                type: 'GET_RULE',
+                ref: "/apps/afan/test/test_rule/some/path",
+                is_global: true,
+              },
+              {
+                type: 'GET_OWNER',
+                ref: "/apps/afan/test/test_owner/some/path",
+                is_global: true,
+              },
+              {
+                type: 'EVAL_RULE',
+                ref: "/apps/afan/test/test_rule/some/path",
+                value: "value",
+                address: "abcd",
+                is_global: true,
+              },
+              {
+                type: 'EVAL_OWNER',
+                ref: "/apps/afan/test/test_owner/some/path",
+                permission: "write_owner",
+                address: "abcd",
+                is_global: true,
+              }
+            ]
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body, {
+            code: 0,
+            result: [
+              100,
+              {
+                ".function": "some function config"
+              },
+              {
+                ".write": "auth === 'abcd'"
+              },
+              {
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
+                  }
+                }
+              },
+              true,
+              true,
+            ]
+          });
         })
       })
 
-      it('ain_evalRule with is_global = true', () => {
-        const ref = "/apps/afan/test/test_rule/some/path";
-        const value = "value";
-        const address = "abcd";
-        const request =
-            { ref, value, address, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
-        .then(res => {
-          expect(res.result.result).to.equal(true);
+      describe('ain_get', () => {
+        it('ain_get with is_global = false', () => {
+          const expected = 100;
+          const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+          return jsonRpcClient.request('ain_get', {
+            protoVer: CURRENT_PROTOCOL_VERSION,
+            type: 'GET_VALUE',
+            ref: "/test/test_value/some/path"
+          })
+          .then(res => {
+            expect(res.result.result).to.equal(expected);
+          });
+        });
+
+        it('ain_get with is_global = false (explicit)', () => {
+          const expected = 100;
+          const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+          return jsonRpcClient.request('ain_get', {
+            protoVer: CURRENT_PROTOCOL_VERSION,
+            type: 'GET_VALUE',
+            ref: "/test/test_value/some/path",
+            is_global: false,
+          })
+          .then(res => {
+            expect(res.result.result).to.equal(expected);
+          });
+        });
+
+        it('ain_get with is_global = true', () => {
+          const expected = 100;
+          const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+          return jsonRpcClient.request('ain_get', {
+            protoVer: CURRENT_PROTOCOL_VERSION,
+            type: 'GET_VALUE',
+            ref: "/apps/afan/test/test_value/some/path",
+            is_global: true,
+          })
+          .then(res => {
+            expect(res.result.result).to.equal(expected);
+          });
+        });
+      })
+
+      describe('ain_matchFunction', () => {
+        it('ain_matchFunction with is_global = false', () => {
+          const ref = "/test/test_function/some/path";
+          const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, {
+              "matched_path": {
+                "target_path": "/test/test_function/some/path",
+                "ref_path": "/test/test_function/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": "some function config",
+                "path": "/test/test_function/some/path"
+              },
+              "subtree_configs": []
+            });
+          })
+        })
+
+        it('ain_matchFunction with is_global = true', () => {
+          const ref = "/apps/afan/test/test_function/some/path";
+          const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, {
+              "matched_path": {
+                "target_path": "/apps/afan/test/test_function/some/path",
+                "ref_path": "/apps/afan/test/test_function/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": "some function config",
+                "path": "/apps/afan/test/test_function/some/path"
+              },
+              "subtree_configs": []
+            });
+          })
         })
       })
 
-      it('ain_evalOwner with is_global = false', () => {
-        const ref = "/test/test_owner/some/path";
-        const address = "abcd";
-        const permission = "write_owner";
-        const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, true);
+      describe('ain_matchRule', () => {
+        it('ain_matchRule with is_global = false', () => {
+          const ref = "/test/test_rule/some/path";
+          const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, {
+              "matched_path": {
+                "target_path": "/test/test_rule/some/path",
+                "ref_path": "/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": "auth === 'abcd'",
+                "path": "/test/test_rule/some/path"
+              },
+              "subtree_configs": []
+            });
+          })
+        })
+
+        it('ain_matchRule with is_global = true', () => {
+          const ref = "/apps/afan/test/test_rule/some/path";
+          const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, {
+              "matched_path": {
+                "target_path": "/apps/afan/test/test_rule/some/path",
+                "ref_path": "/apps/afan/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": "auth === 'abcd'",
+                "path": "/apps/afan/test/test_rule/some/path"
+              },
+              "subtree_configs": []
+            });
+          })
         })
       })
 
-      it('ain_evalOwner with is_global = true', () => {
-        const ref = "/apps/afan/test/test_owner/some/path";
-        const address = "abcd";
-        const permission = "write_owner";
-        const request =
-            { ref, permission, address, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, true);
+      describe('ain_matchOwner', () => {
+        it('ain_matchOwner with is_global = false', () => {
+          const ref = "/test/test_owner/some/path";
+          const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, {
+              "matched_path": {
+                "target_path": "/test/test_owner/some/path"
+              },
+              "matched_config": {
+                "config": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": false
+                    }
+                  }
+                },
+                "path": "/test/test_owner/some/path"
+              }
+            });
+          })
+        })
+
+        it('ain_matchOwner with is_global = true', () => {
+          const ref = "/apps/afan/test/test_owner/some/path";
+          const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, {
+              "matched_path": {
+                "target_path": "/apps/afan/test/test_owner/some/path"
+              },
+              "matched_config": {
+                "config": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": false
+                    }
+                  }
+                },
+                "path": "/apps/afan/test/test_owner/some/path"
+              }
+            });
+          })
+        })
+      })
+
+      describe('ain_evalRule', () => {
+        it('ain_evalRule with is_global = false', () => {
+          const ref = "/test/test_rule/some/path";
+          const value = "value";
+          const address = "abcd";
+          const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+          .then(res => {
+            expect(res.result.result).to.equal(true);
+          })
+        })
+
+        it('ain_evalRule with is_global = true', () => {
+          const ref = "/apps/afan/test/test_rule/some/path";
+          const value = "value";
+          const address = "abcd";
+          const request =
+              { ref, value, address, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+          .then(res => {
+            expect(res.result.result).to.equal(true);
+          })
+        })
+      })
+
+      describe('ain_evalOwner', () => {
+        it('ain_evalOwner with is_global = false', () => {
+          const ref = "/test/test_owner/some/path";
+          const address = "abcd";
+          const permission = "write_owner";
+          const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, true);
+          })
+        })
+
+        it('ain_evalOwner with is_global = true', () => {
+          const ref = "/apps/afan/test/test_owner/some/path";
+          const address = "abcd";
+          const permission = "write_owner";
+          const request =
+              { ref, permission, address, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
+          return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
+          .then(res => {
+            assert.deepEqual(res.result.result, true);
+          })
         })
       })
     })
@@ -1005,282 +1051,328 @@ describe('Sharding', () => {
         cleanUp();
       })
 
-      it('/set_value with is_global = false', () => {
-        const request = {ref: 'test/test_value/some/path', value: "some value"};
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body.result.result, true);
-        assert.equal(body.code, 0);
+      describe('/set_value', () => {
+        it('/set_value with is_global = false', () => {
+          const request = {ref: 'test/test_value/some/path', value: "some value"};
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+
+        it('/set_value with is_global = false (explicit)', () => {
+          const request = {ref: 'test/test_value/some/path', value: "some value", is_global: false};
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+
+        it('/set_value with is_global = true', () => {
+          const request = {
+            ref: 'apps/afan/test/test_value/some/path', value: "some value", is_global: true
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
       })
 
-      it('/set_value with is_global = true', () => {
-        const request = {
-          ref: 'apps/afan/test/test_value/some/path', value: "some value", is_global: true
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body.result.result, true);
-        assert.equal(body.code, 0);
+      describe('/inc_value', () => {
+        it('/inc_value with is_global = false', () => {
+          const request = {ref: 'test/test_value/some/path', value: 10};
+          const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+
+        it('/inc_value with is_global = true', () => {
+          const request = {
+            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
       })
 
-      it('/inc_value with is_global = false', () => {
-        const request = {ref: 'test/test_value/some/path', value: 10};
-        const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body.result.result, true);
-        assert.equal(body.code, 0);
+      describe('/dec_value', () => {
+        it('/dec_value with is_global = false', () => {
+          const request = {ref: 'test/test_value/some/path', value: 10};
+          const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+
+        it('/dec_value with is_global = true', () => {
+          const request = {
+            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
+            .body.toString('utf-8'));
+          assert.deepEqual(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
       })
 
-      it('/inc_value with is_global = true', () => {
-        const request = {
-          ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/dec_value with is_global = false', () => {
-        const request = {ref: 'test/test_value/some/path', value: 10};
-        const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/dec_value with is_global = true', () => {
-        const request = {
-          ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
-          .body.toString('utf-8'));
-        assert.deepEqual(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/set_function with is_global = false', () => {
-        const request = {
-          ref: "test/test_function/other/path",
-          value: {
-            ".function": "some other function config"
-          }
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/set_function with is_global = true', () => {
-        const request = {
-          ref: "apps/afan/test/test_function/other/path",
-          value: {
-            ".function": "some other function config"
-          },
-          is_global: true,
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/set_rule with is_global = false', () => {
-        const request = {
-          ref: "test/test_rule/other/path",
-          value: {
-            ".write": "some other rule config"
-          }
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/set_rule with is_global = true', () => {
-        const request = {
-          ref: "apps/afan/test/test_rule/other/path",
-          value: {
-            ".write": "some other rule config"
-          },
-          is_global: true,
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/set_owner with is_global = false', () => {
-        const request = {
-          ref: "test/test_owner/other/path",
-          value: {
-            ".owner": "some other owner config"
-          }
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/set_owner with is_global = true', () => {
-        const request = {
-          ref: "apps/afan/test/test_owner/other2/path",
-          value: {
-            ".owner": "some other2 owner config"
-          },
-          is_global: true,
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('/set with is_global = false', () => {
-        const request = {
-          op_list: [
-            {
-              // Default type: SET_VALUE
-              ref: "test/test_value/other3/path",
-              value: "some other3 value",
-            },
-            {
-              type: 'INC_VALUE',
-              ref: "test/test_value/some/path",
-              value: 10
-            },
-            {
-              type: 'DEC_VALUE',
-              ref: "test/test_value/some/path2",
-              value: 10
-            },
-            {
-              type: 'SET_FUNCTION',
-              ref: "/test/test_function/other3/path",
-              value: {
-                ".function": "some other3 function config"
-              }
-            },
-            {
-              type: 'SET_RULE',
-              ref: "/test/test_rule/other3/path",
-              value: {
-                ".write": "some other3 rule config"
-              }
-            },
-            {
-              type: 'SET_OWNER',
-              ref: "/test/test_owner/other3/path",
-              value: {
-                ".owner": "some other3 owner config"
-              }
+      describe('/set_function', () => {
+        it('/set_function with is_global = false', () => {
+          const request = {
+            ref: "test/test_function/other/path",
+            value: {
+              ".function": "some other function config"
             }
-          ]
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
 
-      it('/set with is_global = true', () => {
-        const request = {
-          op_list: [
-            {
-              // Default type: SET_VALUE
-              ref: "test/test_value/other4/path",
-              value: "some other4 value",
-              is_global: true,
+        it('/set_function with is_global = true', () => {
+          const request = {
+            ref: "apps/afan/test/test_function/other/path",
+            value: {
+              ".function": "some other function config"
             },
-            {
-              type: 'INC_VALUE',
-              ref: "test/test_value/some/path",
-              value: 10,
-              is_global: true,
-            },
-            {
-              type: 'DEC_VALUE',
-              ref: "test/test_value/some/path4",
-              value: 10,
-              is_global: true,
-            },
-            {
-              type: 'SET_FUNCTION',
-              ref: "/test/test_function/other4/path",
-              value: {
-                ".function": "some other4 function config"
-              },
-              is_global: true,
-            },
-            {
-              type: 'SET_RULE',
-              ref: "/test/test_rule/other4/path",
-              value: {
-                ".write": "some other4 rule config"
-              },
-              is_global: true,
-            },
-            {
-              type: 'SET_OWNER',
-              ref: "/test/test_owner/other4/path",
-              value: {
-                ".owner": "some other4 owner config"
-              },
-              is_global: true,
-            }
-          ]
-        };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
-          .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
-      })
-
-      it('ain_sendSignedTransaction with is_global = false', () => {
-        const account = ainUtil.createAccount();
-        const client = jayson.client.http(server1 + '/json-rpc');
-        const transaction = {
-          operation: {
-            type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `test/test_value/some/path`
-          },
-          timestamp: Date.now(),
-          nonce: -1
-        }
-        const signature =
-            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', { transaction, signature,
-            protoVer: CURRENT_PROTOCOL_VERSION })
-          .then((res) => {
-            assert.deepEqual(res.result, { "protoVer": "0.1.0", "result": true });
-          })
-      })
-
-      it('ain_sendSignedTransaction with is_global = true', () => {
-        const account = ainUtil.createAccount();
-        const client = jayson.client.http(server1 + '/json-rpc');
-        const transaction = {
-          operation: {
-            type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `apps/afan/test/test_value/some/path`,
             is_global: true,
-          },
-          timestamp: Date.now(),
-          nonce: -1
-        }
-        const signature =
-            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', { transaction, signature,
-            protoVer: CURRENT_PROTOCOL_VERSION })
-          .then((res) => {
-            assert.deepEqual(res.result, { "protoVer": "0.1.0", "result": true });
-          })
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+      })
+
+      describe('/set_rule', () => {
+        it('/set_rule with is_global = false', () => {
+          const request = {
+            ref: "test/test_rule/other/path",
+            value: {
+              ".write": "some other rule config"
+            }
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+
+        it('/set_rule with is_global = true', () => {
+          const request = {
+            ref: "apps/afan/test/test_rule/other/path",
+            value: {
+              ".write": "some other rule config"
+            },
+            is_global: true,
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+      })
+
+      describe('/set_owner', () => {
+        it('/set_owner with is_global = false', () => {
+          const request = {
+            ref: "test/test_owner/other/path",
+            value: {
+              ".owner": "some other owner config"
+            }
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+
+        it('/set_owner with is_global = true', () => {
+          const request = {
+            ref: "apps/afan/test/test_owner/other2/path",
+            value: {
+              ".owner": "some other2 owner config"
+            },
+            is_global: true,
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+      })
+
+      describe('/set', () => {
+        it('/set with is_global = false', () => {
+          const request = {
+            op_list: [
+              {
+                // Default type: SET_VALUE
+                ref: "test/test_value/other3/path",
+                value: "some other3 value",
+              },
+              {
+                type: 'INC_VALUE',
+                ref: "test/test_value/some/path",
+                value: 10
+              },
+              {
+                type: 'DEC_VALUE',
+                ref: "test/test_value/some/path2",
+                value: 10
+              },
+              {
+                type: 'SET_FUNCTION',
+                ref: "/test/test_function/other3/path",
+                value: {
+                  ".function": "some other3 function config"
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: "/test/test_rule/other3/path",
+                value: {
+                  ".write": "some other3 rule config"
+                }
+              },
+              {
+                type: 'SET_OWNER',
+                ref: "/test/test_owner/other3/path",
+                value: {
+                  ".owner": "some other3 owner config"
+                }
+              }
+            ]
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+
+        it('/set with is_global = true', () => {
+          const request = {
+            op_list: [
+              {
+                // Default type: SET_VALUE
+                ref: "test/test_value/other4/path",
+                value: "some other4 value",
+                is_global: true,
+              },
+              {
+                type: 'INC_VALUE',
+                ref: "test/test_value/some/path",
+                value: 10,
+                is_global: true,
+              },
+              {
+                type: 'DEC_VALUE',
+                ref: "test/test_value/some/path4",
+                value: 10,
+                is_global: true,
+              },
+              {
+                type: 'SET_FUNCTION',
+                ref: "/test/test_function/other4/path",
+                value: {
+                  ".function": "some other4 function config"
+                },
+                is_global: true,
+              },
+              {
+                type: 'SET_RULE',
+                ref: "/test/test_rule/other4/path",
+                value: {
+                  ".write": "some other4 rule config"
+                },
+                is_global: true,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: "/test/test_owner/other4/path",
+                value: {
+                  ".owner": "some other4 owner config"
+                },
+                is_global: true,
+              }
+            ]
+          };
+          const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
+            .body.toString('utf-8'));
+          assert.equal(body.result.result, true);
+          assert.equal(body.code, 0);
+        })
+      })
+
+      describe('ain_sendSignedTransaction', () => {
+        it('ain_sendSignedTransaction with is_global = false', () => {
+          const account = ainUtil.createAccount();
+          const client = jayson.client.http(server1 + '/json-rpc');
+          const transaction = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value',
+              ref: `test/test_value/some/path`
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          }
+          const signature =
+              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              protoVer: CURRENT_PROTOCOL_VERSION })
+            .then((res) => {
+              assert.deepEqual(res.result, { "protoVer": "0.1.0", "result": true });
+            })
+        })
+
+        it('ain_sendSignedTransaction with is_global = false (explicit)', () => {
+          const account = ainUtil.createAccount();
+          const client = jayson.client.http(server1 + '/json-rpc');
+          const transaction = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value',
+              ref: `test/test_value/some/path`,
+              is_global: false,
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          }
+          const signature =
+              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              protoVer: CURRENT_PROTOCOL_VERSION })
+            .then((res) => {
+              assert.deepEqual(res.result, { "protoVer": "0.1.0", "result": true });
+            })
+        })
+
+        it('ain_sendSignedTransaction with is_global = true', () => {
+          const account = ainUtil.createAccount();
+          const client = jayson.client.http(server1 + '/json-rpc');
+          const transaction = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value',
+              ref: `apps/afan/test/test_value/some/path`,
+              is_global: true,
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          }
+          const signature =
+              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              protoVer: CURRENT_PROTOCOL_VERSION })
+            .then((res) => {
+              assert.deepEqual(res.result, { "protoVer": "0.1.0", "result": true });
+            })
+        })
       })
     })
   })
