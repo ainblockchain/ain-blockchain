@@ -19,7 +19,8 @@ const {
   GenesisSharding,
   ShardingProperties,
   ShardingProtocols,
-  MAX_TX_BYTES
+  MAX_TX_BYTES,
+  MAX_SHARD_REPORT
 } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
@@ -43,6 +44,7 @@ class Consensus {
     this.startingTime = 0;
     this.timeAdjustment = 0;
     this.isShardReporter = false;
+    this.isReporting = false;
     this.state = {
       // epoch increases by 1 every EPOCH_MS, and at each epoch a new proposer is pseudo-randomly selected.
       epoch: 1,
@@ -810,43 +812,52 @@ class Consensus {
     if (this.isReporting) {
       return;
     }
+    this.isReporting = true;
     const lastFinalizedBlock = this.node.bc.lastBlock();
     const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
     if (lastFinalizedBlock.number % reportingPeriod !== 0) {
+      this.isReporting = false;
       return;
     }
-    
-    this.isReporting = true;
-    const lastReportedBlockNumber = await this.getLastReportedBlockNumber();
-    let numToReport = lastReportedBlockNumber ? lastReportedBlockNumber + reportingPeriod : 0;
-    const opList = [];
-    while (numToReport <= lastFinalizedBlockNumber) {
-      if (sizeof(opList) >= txSizeThreshold) {
-        break;
-      }
-      const block = numToReport === lastFinalizedBlockNumber ?
-        lastFinalizedBlock : this.node.bc.getBlockByNumber(numToReport);
-      if (!block) {
-        logger.error(`[${LOG_PREFIX}] Failed to fetch block of number ${numToReport} while reporting`);
-        break;
-      }
-      opList.push({
-        type: WriteDbOperations.SET_VALUE,
-        ref: `${shardingPath}/${numToReport}/${PredefinedDbPaths.SHARDING_PROOF_HASH}`,
-        value: block.stateProofHash
-      })
-      numToReport += reportingPeriod;
-    }
-    logger.debug(`[${LOG_PREFIX}] Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
-    const tx = {
-      operation: {
-        type: WriteDbOperations.SET,
-        op_list: opList,
-      },
-      timestamp: Date.now(),
-      nonce: -1
-    };
     try {
+      const lastReportedBlockNumber = await this.getLastReportedBlockNumber();
+      let blockNumberToReport = lastReportedBlockNumber ? lastReportedBlockNumber + 1 : 0;
+      const opList = [];
+      while (blockNumberToReport <= lastFinalizedBlockNumber) {
+        if (sizeof(opList) >= txSizeThreshold) {
+          break;
+        }
+        const block = blockNumberToReport === lastFinalizedBlockNumber ?
+            lastFinalizedBlock : this.node.bc.getBlockByNumber(blockNumberToReport);
+        if (!block) {
+          logger.error(`[${LOG_PREFIX}] Failed to fetch block of number ${blockNumberToReport} while reporting`);
+          break;
+        }
+        opList.push({
+          type: WriteDbOperations.SET_VALUE,
+          ref: `${shardingPath}/${blockNumberToReport}/${PredefinedDbPaths.SHARDING_PROOF_HASH}`,
+          value: block.stateProofHash
+        });
+        if (blockNumberToReport >= MAX_SHARD_REPORT) {
+          // Remove old reports
+          opList.push({
+            type: WriteDbOperations.SET_VALUE,
+            ref: `${shardingPath}/${blockNumberToReport - MAX_SHARD_REPORT}/${PredefinedDbPaths.SHARDING_PROOF_HASH}`,
+            value: null
+          });
+        }
+        blockNumberToReport++;
+      }
+      logger.debug(`[${LOG_PREFIX}] Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
+      const tx = {
+        operation: {
+          type: WriteDbOperations.SET,
+          op_list: opList,
+        },
+        timestamp: Date.now(),
+        nonce: -1
+      };
+      // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
       await sendTxAndWaitForConfirmation(
         parentChainEndpoint,
         tx,
