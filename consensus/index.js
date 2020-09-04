@@ -818,12 +818,12 @@ class Consensus {
     try {
       const lastFinalizedBlock = this.node.bc.lastBlock();
       const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
-      const lastReportedBlockNumber = await this.getLastReportedBlockNumber();
-      if (lastReportedBlockNumber && lastFinalizedBlockNumber < lastReportedBlockNumber + reportingPeriod) {
+      const lastReportedBlockNumber = (await this.getLastReportedBlockNumber()) || -1;
+      if (lastFinalizedBlockNumber < lastReportedBlockNumber + reportingPeriod) {
         this.isReporting = false;
         return;
       }
-      let blockNumberToReport = lastReportedBlockNumber ? lastReportedBlockNumber + 1 : 0;
+      let blockNumberToReport = lastReportedBlockNumber + 1;
       const opList = [];
       while (blockNumberToReport <= lastFinalizedBlockNumber) {
         if (sizeof(opList) >= txSizeThreshold) {
