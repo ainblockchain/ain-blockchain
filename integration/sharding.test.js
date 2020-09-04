@@ -349,6 +349,14 @@ describe('Sharding', () => {
         assert.deepEqual(body.result, 100);
       })
 
+      it('/get_value with is_global = false (explicit)', () => {
+        const body = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=/test/test_value/some/path&is_global=false')
+          .body.toString('utf-8'));
+        assert.equal(body.code, 0);
+        assert.deepEqual(body.result, 100);
+      })
+
       it('/get_value with is_global = true', () => {
         const body = JSON.parse(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/afan/test/test_value/some/path&is_global=true')
