@@ -24,6 +24,7 @@ const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const { waitForNewBlocks, waitUntilNodeSyncs } = require('../test/test-util');
 
 const ENV_VARIABLES = [
   {
@@ -185,35 +186,6 @@ function waitUntilNodeStakes() {
   }
 }
 
-function waitForNewBlocks(server = server1, waitFor = 1) {
-  const initialLastBlockNumber =
-      JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-        .body.toString('utf-8'))['result'];
-  let updatedLastBlockNumber = initialLastBlockNumber;
-  console.log(`Initial last block number: ${initialLastBlockNumber}`)
-  while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
-    sleep(1000);
-    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-      .body.toString('utf-8'))['result'];
-    console.log(`block number... ${updatedLastBlockNumber}`)
-  }
-  console.log(`Updated last block number: ${updatedLastBlockNumber}`)
-}
-
-function waitUntilNodeSyncs(server = server1) {
-  let isSyncing = true;
-  while (isSyncing) {
-    console.log("still syncing..");
-    isSyncing = JSON.parse(syncRequest('POST', server + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: JSON_RPC_NET_SYNCING, id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
-    sleep(1000);
-  }
-  console.log("finally synced!");
-}
-
-
 function sendTransactions(sentOperations) {
   for (let i = 0; i < NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
     const randomOperation =
@@ -321,7 +293,7 @@ describe('Integration Tests', () => {
 
     it('will sync to new peers on startup', () => {
       sendTransactions(sentOperations);
-      waitForNewBlocks();
+      waitForNewBlocks(server1);
       let baseChain;
       let number;
       const accountIndex = 4;
@@ -399,7 +371,7 @@ describe('Integration Tests', () => {
       it('blocks have correct validators and voting data', () => {
         for (let i = 0; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
               {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
@@ -454,7 +426,7 @@ describe('Integration Tests', () => {
         }
         for (let i = 0; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
               {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
@@ -486,7 +458,7 @@ describe('Integration Tests', () => {
     describe('and rules', () => {
       it('prevent users from restructed areas', () => {
         sendTransactions(sentOperations);
-        waitForNewBlocks();
+        waitForNewBlocks(server1);
         const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
           ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
         }}).body.toString('utf-8'));
@@ -507,7 +479,7 @@ describe('Integration Tests', () => {
       });
 
       it('facilitate transfer between accounts', () => {
-        waitForNewBlocks();
+        waitForNewBlocks(server1);
         const transferRef = `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`;
         syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
           ref: transferRef, value: 10
@@ -561,7 +533,7 @@ describe('Integration Tests', () => {
 
       it('can be queried by index ', () => {
         sendTransactions(sentOperations);
-        waitForNewBlocks();
+        waitForNewBlocks(server1);
         return new Promise((resolve) => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
                                 {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
@@ -578,7 +550,7 @@ describe('Integration Tests', () => {
 
       it('can be queried by hash ', () => {
         sendTransactions(sentOperations);
-        waitForNewBlocks();
+        waitForNewBlocks(server1);
         return new Promise((resolve) => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
               {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
@@ -691,7 +663,7 @@ describe('Integration Tests', () => {
 
       it('keeps track of nonces correctly after committing to a block', () => {
         return new Promise((resolve, reject) => {
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
           let promises = [];
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
               { address, protoVer: CURRENT_PROTOCOL_VERSION }));
@@ -714,10 +686,10 @@ describe('Integration Tests', () => {
         console.log(`Starting server[0]...`);
         SERVER_PROCS[0].start();
         sleep(10000);
-        waitUntilNodeSyncs();
+        waitUntilNodeSyncs(server1);
         for (let i = 0; i < 4; i++) {
           sendTransactions(sentOperations);
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
         }
         return new Promise((resolve) => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)

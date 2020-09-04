@@ -403,7 +403,7 @@ class DB {
         }
       } else {
         // Invalid Operation
-        return {code: 5, error_message: `Invalid opeartionn type: ${op.type}`};
+        return {code: 5, error_message: `Invalid opeartion type: ${op.type}`};
       }
     }
     return ret;

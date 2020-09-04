@@ -165,7 +165,7 @@ class Functions {
       return;
     }
     if (!ChainUtil.isString(value)) {
-      // Invalid hash reporting
+      // Removing old report or invalid reporting
       return;
     }
     const index = context.functionPath.findIndex((el) => el === '$block_number');

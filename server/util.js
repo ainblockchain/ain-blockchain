@@ -82,6 +82,19 @@ async function waitUntilTxFinalize(endpoint, txHash) {
   return false;
 }
 
+async function sendGetRequest(endpoint, method, params) {
+  return await axios.post(
+    endpoint,
+    {
+      method,
+      params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
+      jsonrpc: "2.0",
+      id: 0
+    }
+  );
+}
+
 module.exports = {
-  sendTxAndWaitForConfirmation
+  sendTxAndWaitForConfirmation,
+  sendGetRequest
 }
