@@ -60,7 +60,7 @@
     "shard": {
       ".write": false,
       "$sharding_path": {
-        ".write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardProto(newData.sharding_protocol)) || (auth === data.shard_owner && newData === null)"
+        ".write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardProto(newData.sharding_protocol) && evalOwner(newData.sharding_path, 'write_owner', auth) && evalOwner(newData.sharding_path, 'write_rule', auth) && evalOwner(newData.sharding_path, 'write_function', auth)) || (auth === data.shard_owner && newData === null)"
       }
     }
   },
