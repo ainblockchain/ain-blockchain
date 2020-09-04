@@ -4,6 +4,7 @@ const syncRequest = require('sync-request');
 const sleep = require('system-sleep');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -79,11 +80,25 @@ function waitForNewBlocks(server, waitFor = 1) {
   console.log(`Updated last block number: ${updatedLastBlockNumber}`)
 }
 
+function waitUntilNodeSyncs(server) {
+  let isSyncing = true;
+  while (isSyncing) {
+    console.log("still syncing..");
+    isSyncing = JSON.parse(syncRequest('POST', server + '/json-rpc',
+        {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
+                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+        .body.toString('utf-8')).result.result;
+    sleep(1000);
+  }
+  console.log("finally synced!");
+}
+
 module.exports = {
   readConfigFile,
   setDbForTesting,
   getTransaction,
   addBlock,
   waitUntilTxFinalized,
-  waitForNewBlocks
+  waitForNewBlocks,
+  waitUntilNodeSyncs
 };
