@@ -2,6 +2,8 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const spawn = require('child_process').spawn;
+const rimraf = require('rimraf');
+const jayson = require('jayson/promise');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -18,8 +20,7 @@ const DB = require('../db');
 const TransactionPool = require('../tx-pool');
 const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../constants');
 const { ConsensusConsts } = require('../consensus/constants');
-const rimraf = require('rimraf');
-const jayson = require('jayson/promise');
+const { waitUntilTxFinalized } = require('../test/test-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
@@ -481,29 +482,13 @@ describe('Integration Tests', () => {
       it('facilitate transfer between accounts', () => {
         waitForNewBlocks(server1);
         const transferRef = `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`;
-        syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
+        const body = JSON.parse(syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
           ref: transferRef, value: 10
-        }});
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        const txHash = body.result.tx_hash;
         // Make sure the transaction is included in the chain
-        let tries = 0;
-        let txHash;
-        while (true) {
-          const txPool = JSON.parse(syncRequest('GET', server1 + '/tx_pool').body.toString('utf-8')).result;
-          const txTracker = JSON.parse(syncRequest('GET', server1 + '/tx_tracker').body.toString('utf-8')).result;
-          const tx = txPool[nodeAddressList[0]]
-            .filter(tx => _.get(tx, 'operation.ref') === transferRef && 
-              _.get(tx, 'operation.value') === 10)[0];
-          if (tx || txHash) {
-            if (!txHash) txHash = tx.hash;
-            const txStatus = _.get(txTracker, `${txHash}.status`)
-            if (txStatus === TransactionStatus.BLOCK_STATUS) {
-              break;
-            }
-          }
-          tries++;
-          console.log(tries)
-          sleep(1000);
-        }
+        waitUntilTxFinalized(SERVERS, txHash);
         const balance1 = JSON.parse(syncRequest('GET',
             server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
             .body.toString('utf-8')).result;

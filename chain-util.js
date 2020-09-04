@@ -57,13 +57,16 @@ class ChainUtil {
     return ruleUtil.isValAddr(value);
   }
 
-  // TODO(lia): normalize addresses in user inputs using this function.
-  static toCksumAddr(value) {
-    return ruleUtil.toCksumAddr(value);
+  static isCksumAddr(addr) {
+    return ruleUtil.isCksumAddr(addr);
   }
 
   static isValShardProto(value) {
     return ruleUtil.isValShardProto(value);
+  }
+
+  static boolOrFalse(value) {
+    return ChainUtil.isBool(value) ? value : false;
   }
 
   static numberOrZero(num) {
@@ -72,6 +75,15 @@ class ChainUtil {
 
   static stringOrEmpty(str) {
     return ChainUtil.isString(str) ? str : '';
+  }
+
+  static toBool(value) {
+    return ruleUtil.toBool(value);
+  }
+
+  // TODO(lia): normalize addresses in user inputs using this function.
+  static toCksumAddr(addr) {
+    return ruleUtil.toCksumAddr(addr);
   }
 
   static toString(value) {
@@ -98,7 +110,7 @@ class ChainUtil {
   }
 
   static formatPath(parsedPath) {
-    if (!Array.isArray(parsedPath) || !parsedPath.length) {
+    if (!Array.isArray(parsedPath) || parsedPath.length === 0) {
       return '/';
     }
     let formatted = '';
