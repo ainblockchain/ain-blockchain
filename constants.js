@@ -163,6 +163,14 @@ const FunctionTypes = {
 };
 
 /**
+ * Properties of proof configs
+ * @enum {string}
+ */
+const ProofProperties = {
+  PROOF_HASH: '.proof_hash',
+};
+
+/**
  * IDs of native functions
  * @enum {string}
  */
@@ -432,6 +440,7 @@ module.exports = {
   FunctionProperties,
   FunctionTypes,
   FunctionResultCode,
+  ProofProperties,
   NativeFunctionIds,
   ShardingProperties,
   ShardingProtocols,
