@@ -15,6 +15,7 @@ const {
   GenesisRules,
   GenesisOwners,
   AccountProperties,
+  ProofProperties,
 } = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 
@@ -248,7 +249,7 @@ class Block {
         return null;
       }
     }
-    return tempGenesisState.getProof('/');
+    return tempGenesisState.getProof('/')[ProofProperties.PROOF_HASH];
   }
 
   static genesis() {
