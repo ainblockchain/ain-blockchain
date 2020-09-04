@@ -196,6 +196,32 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("toBool", () => {
+    it("returns false", () => {
+      expect(util.toBool(0)).to.equal(false);
+      expect(util.toBool(10)).to.equal(false);
+      expect(util.toBool(-1)).to.equal(false);
+      expect(util.toBool(15.5)).to.equal(false);
+      expect(util.toBool(null)).to.equal(false);
+      expect(util.toBool(undefined)).to.equal(false);
+      expect(util.toBool(Infinity)).to.equal(false);
+      expect(util.toBool(NaN)).to.equal(false);
+      expect(util.toBool('')).to.equal(false);
+      expect(util.toBool('abc')).to.equal(false);
+      expect(util.toBool('false')).to.equal(false);
+      expect(util.toBool({})).to.equal(false);
+      expect(util.toBool({a: 'A'})).to.equal(false);
+      expect(util.toBool([])).to.equal(false);
+      expect(util.toBool([10])).to.equal(false);
+      expect(util.toBool(false)).to.equal(false);
+    })
+
+    it("returns true", () => {
+      expect(util.toBool(true)).to.equal(true);
+      expect(util.toBool('true')).to.equal(true);
+    })
+  })
+
   describe("isValAddr", () => {
     it("when non-string input", () => {
       expect(util.isValAddr(true)).to.equal(false);
