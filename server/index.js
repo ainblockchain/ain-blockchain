@@ -662,8 +662,9 @@ class P2pServer {
               PredefinedDbPaths.SHARDING_PROOF_HASH
             ]),
             value: {
-              [RuleProperties.WRITE]: `auth === '${shardReporter}' && ($block_number === '0' || ` +
-                `$block_number === String((getValue('${shardingPath}/latest') || 0) + ${reportingPeriod}))`
+              [RuleProperties.WRITE]: `auth === '${shardReporter}' && ` +
+                  `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
+                  `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`
             }
           },
           {

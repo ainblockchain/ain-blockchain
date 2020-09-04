@@ -26,6 +26,7 @@ const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
 const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
+const MAX_SHARD_REPORT = 100;
 
 function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV == 'local') {
@@ -421,6 +422,7 @@ module.exports = {
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
+  MAX_SHARD_REPORT,
   MessageTypes,
   PredefinedDbPaths,
   TokenProperties,

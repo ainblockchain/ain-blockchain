@@ -253,8 +253,6 @@ describe('Sharding', () => {
   });
 
   describe('Shard state proof hash reporting', () => {
-    const reportingPeriod = sharding.reporting_period; 
-
     before(() => {
       waitForNewBlocks(server1, sharding.reporting_period * 3);
     });
@@ -268,7 +266,7 @@ describe('Sharding', () => {
         const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
-          blockNumber += reportingPeriod;
+          blockNumber++;
         }
       });
 
