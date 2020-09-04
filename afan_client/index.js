@@ -60,11 +60,9 @@ class AfanClient {
   }
 
   async tx_adpropose(from, to, value, intermed) {
-    console.log('adpropose');
     const requestManager = new RequestManager(this.endpoint, APP_NAME);
     try {
       const state = await requestManager.getAdState(from, to);
-      console.log('state: ' + state.result);
       if (state.result && state.result !==3) {
         return {code: -4, message: 'Already proposed'};
       }
