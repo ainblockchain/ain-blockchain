@@ -19,6 +19,7 @@ const {
   GenesisSharding,
   ShardingProperties,
   ShardingProtocols,
+  ProofProperties,
   MAX_TX_BYTES,
   MAX_SHARD_REPORT
 } = require('../constants');
@@ -302,7 +303,8 @@ class Consensus {
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-      blockNumber, this.state.epoch, tempState.getProof('/'), myAddr, validators);
+      blockNumber, this.state.epoch, tempState.getProof('/')[ProofProperties.PROOF_HASH], myAddr,
+      validators);
 
     let proposalTx;
     const txOps = {
@@ -499,8 +501,8 @@ class Consensus {
       return false;
     }
     newState.lastBlockNumber += 1;
-    if (newState.getProof('/') !== proposalBlock.stateProofHash) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')} / ${proposalBlock.stateProofHash}`);
+    if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
+      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ${proposalBlock.stateProofHash}`);
       return false;
     }
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
