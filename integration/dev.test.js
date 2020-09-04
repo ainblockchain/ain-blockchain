@@ -3,14 +3,14 @@ const assert = chai.assert;
 const expect = chai.expect;
 const _ = require("lodash");
 const spawn = require("child_process").spawn;
-const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
-const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
-const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const sleep = require('system-sleep');
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
+const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
+const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   BLOCKCHAINS_DIR,
   FunctionResultCode,
@@ -58,7 +58,7 @@ const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCO
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const servers = [ server1, server2, server3, server4 ];
+const SERVERS = [ server1, server2, server3, server4 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -82,7 +82,7 @@ setUp = () => {
       op_list: [
         {
           type: 'SET_VALUE',
-          ref: 'test/test',
+          ref: 'test/test_value/some/path',
           value: 100
         },
         {
@@ -118,7 +118,7 @@ setUp = () => {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(servers, res.tx_hash);
+  waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
 cleanUp = () => {
@@ -142,13 +142,13 @@ cleanUp = () => {
         },
         {
           type: 'SET_VALUE',
-          ref: 'test/test',
+          ref: 'test/test_value/some/path',
           value: null
         }
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(servers, res.tx_hash);
+  waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
 setUpForSharding = (shardingConfig) => {
@@ -203,7 +203,7 @@ setUpForSharding = (shardingConfig) => {
       }
     ).body.toString('utf-8')
   ).result;
-  waitUntilTxFinalized(servers, res.tx_hash);
+  waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
 describe('API Tests', () => {
@@ -245,17 +245,18 @@ describe('API Tests', () => {
 
     describe('/get_value', () => {
       it('get_value', () => {
-        const body = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=test/test')
-            .body.toString('utf-8'));
+        const body = JSON.parse(
+            syncRequest('GET', server1 + '/get_value?ref=test/test_value/some/path')
+          .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: 100});
       })
     })
 
     describe('/get_function', () => {
       it('get_function', () => {
-        const body =
-            JSON.parse(syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
-              .body.toString('utf-8'));
+        const body = JSON.parse(
+            syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
+          .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: {
@@ -332,15 +333,8 @@ describe('API Tests', () => {
     });
 
     describe('/match_function', () => {
-      let client;
-      before(() => {
-        client = jayson.client.http(server1 + '/json-rpc');
-      })
-
       it('match_function', () => {
-        sleep(200)
         const ref = "/test/test_function/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         const body = JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
@@ -355,33 +349,12 @@ describe('API Tests', () => {
           },
           "subtree_configs": []
         }});
-        return client.request('ain_matchFunction', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
-            "matched_path": {
-              "target_path": "/test/test_function/some/path",
-              "ref_path": "/test/test_function/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": "some function config",
-              "path": "/test/test_function/some/path"
-            },
-            "subtree_configs": []
-          });
-        })
       })
     })
 
     describe('/match_rule', () => {
-      let client;
-      before(() => {
-        client = jayson.client.http(server1 + '/json-rpc');
-      })
-
       it('match_rule', () => {
         const ref = "/test/test_rule/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
@@ -396,33 +369,12 @@ describe('API Tests', () => {
           },
           "subtree_configs": []
         }});
-        return client.request('ain_matchRule', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
-            "matched_path": {
-              "target_path": "/test/test_rule/some/path",
-              "ref_path": "/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": "auth === 'abcd'",
-              "path": "/test/test_rule/some/path"
-            },
-            "subtree_configs": []
-          });
-        })
       })
     })
 
     describe('/match_owner', () => {
-      let client;
-      before(() => {
-        client = jayson.client.http(server1 + '/json-rpc');
-      })
-
       it('match_owner', () => {
         const ref = "/test/test_owner/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
@@ -443,36 +395,10 @@ describe('API Tests', () => {
             "path": "/test/test_owner/some/path"
           }
         }});
-        return client.request('ain_matchOwner', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, {
-            "matched_path": {
-              "target_path": "/test/test_owner/some/path"
-            },
-            "matched_config": {
-              "config": {
-                "owners": {
-                  "*": {
-                    "branch_owner": false,
-                    "write_function": true,
-                    "write_owner": true,
-                    "write_rule": false
-                  }
-                }
-              },
-              "path": "/test/test_owner/some/path"
-            }
-          });
-        })
       })
     })
 
     describe('/eval_rule', () => {
-      let client;
-      before(() => {
-        client = jayson.client.http(server1 + '/json-rpc');
-      })
-
       it('eval_rule returning true', () => {
         const ref = "/test/test_rule/some/path";
         const value = "value";
@@ -481,10 +407,6 @@ describe('API Tests', () => {
         const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: true});
-        return client.request('ain_evalRule', request)
-        .then(res => {
-          expect(res.result.result).to.equal(true);
-        })
       })
 
       it('eval_rule returning false', () => {
@@ -495,16 +417,11 @@ describe('API Tests', () => {
         const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: false});
-        return client.request('ain_evalRule', request)
-        .then(res => {
-          expect(res.result.result).to.equal(false);
-        })
       })
     })
 
     describe('/eval_owner', () => {
       it('eval_owner', () => {
-        const client = jayson.client.http(server1 + '/json-rpc');
         const ref = "/test/test_owner/some/path";
         const address = "abcd";
         const permission = "write_owner";
@@ -515,10 +432,6 @@ describe('API Tests', () => {
           code: 0,
           result: true,
         });
-        return client.request('ain_evalOwner', request)
-        .then(res => {
-          assert.deepEqual(res.result.result, true);
-        })
       })
     })
 
@@ -528,7 +441,7 @@ describe('API Tests', () => {
           op_list: [
             {
               type: "GET_VALUE",
-              ref: "/test/test",
+              ref: "/test/test_value/some/path",
             },
             {
               type: 'GET_FUNCTION',
@@ -584,6 +497,130 @@ describe('API Tests', () => {
             true,
           ]
         });
+      })
+    })
+
+    describe('/ain_get', () => {
+      it('returns the correct value', () => {
+        const expected = 100;
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_get', {
+          protoVer: CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/test/test_value/some/path"
+        })
+        .then(res => {
+          expect(res.result.result).to.equal(expected);
+        });
+      });
+    });
+
+    describe('ain_matchFunction', () => {
+      it('returns correct value', () => {
+        const ref = "/test/test_function/some/path";
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "matched_path": {
+              "target_path": "/test/test_function/some/path",
+              "ref_path": "/test/test_function/some/path",
+              "path_vars": {},
+            },
+            "matched_config": {
+              "config": "some function config",
+              "path": "/test/test_function/some/path"
+            },
+            "subtree_configs": []
+          });
+        })
+      })
+    })
+
+    describe('ain_matchRule', () => {
+      it('returns correct value', () => {
+        const ref = "/test/test_rule/some/path";
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "matched_path": {
+              "target_path": "/test/test_rule/some/path",
+              "ref_path": "/test/test_rule/some/path",
+              "path_vars": {},
+            },
+            "matched_config": {
+              "config": "auth === 'abcd'",
+              "path": "/test/test_rule/some/path"
+            },
+            "subtree_configs": []
+          });
+        })
+      })
+    })
+
+    describe('ain_matchOwner', () => {
+      it('returns correct value', () => {
+        const ref = "/test/test_owner/some/path";
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "matched_path": {
+              "target_path": "/test/test_owner/some/path"
+            },
+            "matched_config": {
+              "config": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_function": true,
+                    "write_owner": true,
+                    "write_rule": false
+                  }
+                }
+              },
+              "path": "/test/test_owner/some/path"
+            }
+          });
+        })
+      })
+    })
+
+    describe('ain_evalRule', () => {
+      it('returns true', () => {
+        const ref = "/test/test_rule/some/path";
+        const value = "value";
+        const address = "abcd";
+        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+        .then(res => {
+          expect(res.result.result).to.equal(true);
+        })
+      })
+
+      it('returns false', () => {
+        const ref = "/test/test_rule/some/path";
+        const value = "value";
+        const address = "efgh";
+        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+        .then(res => {
+          expect(res.result.result).to.equal(false);
+        })
+      })
+    })
+
+    describe('ain_evalOwner', () => {
+      it('returns correct value', () => {
+        const ref = "/test/test_owner/some/path";
+        const address = "abcd";
+        const permission = "write_owner";
+        const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, true);
+        })
       })
     })
 
@@ -647,31 +684,31 @@ describe('API Tests', () => {
 
     describe('/set_value', () => {
       it('set_value', () => {
-        const request = {ref: 'test/value', value: "something"};
+        const request = {ref: 'test/test_value/some/path', value: "some value"};
         const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
     describe('/inc_value', () => {
       it('inc_value', () => {
-        const request = {ref: "test/test", value: 10};
+        const request = {ref: "test/test_value/some/path", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
     describe('/dec_value', () => {
       it('dec_value', () => {
-        const request = {ref: "test/test", value: 10};
+        const request = {ref: "test/test_value/some/path", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -685,8 +722,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -700,8 +737,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -715,8 +752,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -725,18 +762,18 @@ describe('API Tests', () => {
         const request = {
           op_list: [
             {
-              type: "SET_VALUE",
-              ref: "test/balance",
-              value: {a: 1, b: 2}
+              // Default type: SET_VALUE
+              ref: "test/test_value/other2/path",
+              value: "some other2 value",
             },
             {
               type: 'INC_VALUE',
-              ref: "test/test",
+              ref: "test/test_value/some/path",
               value: 10
             },
             {
               type: 'DEC_VALUE',
-              ref: "test/test2",
+              ref: "test/test_value/some/path2",
               value: 10
             },
             {
@@ -764,8 +801,8 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
+        assert.equal(body.code, 0);
       })
     })
 
@@ -776,21 +813,21 @@ describe('API Tests', () => {
             {
               operation: {
                 // Default type: SET_VALUE
-                ref: 'test/a',
-                value: 1
+                ref: "test/test_value/other3/path",
+                value: "some other3 value",
               }
             },
             {
               operation: {
                 type: 'INC_VALUE',
-                ref: "test/test",
+                ref: "test/test_value/some/path",
                 value: 10
               }
             },
             {
               operation: {
                 type: 'DEC_VALUE',
-                ref: "test/test2",
+                ref: "test/test_value/some/path2",
                 value: 10
               }
             },
@@ -827,20 +864,17 @@ describe('API Tests', () => {
                 op_list: [
                   {
                     type: "SET_VALUE",
-                    ref: "test/balance",
-                    value: {
-                      a:1,
-                      b:2
-                    }
+                    ref: "test/test_value/other4/path",
+                    value: "some other4 value",
                   },
                   {
                     type: 'INC_VALUE',
-                    ref: "test/test",
+                    ref: "test/test_value/some/path",
                     value: 5
                   },
                   {
                     type: 'DEC_VALUE',
-                    ref: "test/test2",
+                    ref: "test/test_value/some/path2",
                     value: 5
                   },
                   {
@@ -871,7 +905,6 @@ describe('API Tests', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.deepEqual(body.result.result, [
           true,
           true,
@@ -881,10 +914,32 @@ describe('API Tests', () => {
           true,
           true,
         ]);
+        assert.equal(body.code, 0);
       })
     })
 
     describe('/ain_sendSignedTransaction', () => {
+      it('accepts a transaction', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const transaction = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        }
+        const signature =
+            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', { transaction, signature,
+            protoVer: CURRENT_PROTOCOL_VERSION })
+          .then((res) => {
+            assert.deepEqual(res.result, { "protoVer": "0.1.0", "result": true });
+          })
+      })
+
       it('rejects a transaction that exceeds the size limit.', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
@@ -973,12 +1028,12 @@ describe('API Tests', () => {
 
       let res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(servers, res.tx_hash);
+      waitUntilTxFinalized(SERVERS, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(servers, res.tx_hash);
+      waitUntilTxFinalized(SERVERS, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}}).body.toString('utf-8')).result;
-      waitUntilTxFinalized(servers, res.tx_hash);
+      waitUntilTxFinalized(SERVERS, res.tx_hash);
     })
 
     describe('_transfer', () => {
@@ -991,9 +1046,9 @@ describe('API Tests', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        assert.equal(body.code, 0);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const fromAfterBalance = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = JSON.parse(syncRequest('GET',
@@ -1127,7 +1182,7 @@ describe('API Tests', () => {
           ]
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(0);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
       })
 
       it('deposit', () => {
@@ -1137,9 +1192,9 @@ describe('API Tests', () => {
           ref: depositPath + '/1/value',
           value: depositAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        assert.equal(body.code, 0);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1194,7 +1249,7 @@ describe('API Tests', () => {
         const account = ainUtil.createAccount();
         const res = JSON.parse(syncRequest('POST', server2+'/set_value',
                     {json: {ref: `/accounts/${account.address}/balance`, value: 1000}}).body.toString('utf-8')).result;
-        waitUntilTxFinalized(servers, res.tx_hash);
+        waitUntilTxFinalized(SERVERS, res.tx_hash);
         const transaction = {
           operation: {
             type: 'SET_VALUE',
@@ -1295,9 +1350,9 @@ describe('API Tests', () => {
           value: depositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        assert.equal(body.code, 0);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositAccountValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = JSON.parse(syncRequest('GET',
@@ -1321,9 +1376,9 @@ describe('API Tests', () => {
           value: newDepositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
         }}).body.toString('utf-8'));
-        assert.equal(body.code, 0);
         assert.equal(body.result.result, true);
-        waitUntilTxFinalized(servers, body.result.tx_hash);
+        assert.equal(body.code, 0);
+        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = JSON.parse(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
         const depositAccountValue = JSON.parse(syncRequest('GET',
@@ -1353,7 +1408,7 @@ describe('API Tests', () => {
         const shardReportRes = JSON.parse(
           syncRequest('POST', server2 + '/set_value', { json: reportVal }).body.toString('utf-8')
         ).result;
-        waitUntilTxFinalized(servers, shardReportRes.tx_hash);
+        waitUntilTxFinalized(SERVERS, shardReportRes.tx_hash);
         const shardingPathRes = JSON.parse(
           syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
@@ -1381,7 +1436,7 @@ describe('API Tests', () => {
         const shardReportRes = JSON.parse(
           syncRequest('POST', server2 + '/set', { json: multipleReportVal }).body.toString('utf-8')
         ).result;
-        waitUntilTxFinalized(servers, shardReportRes.tx_hash);
+        waitUntilTxFinalized(SERVERS, shardReportRes.tx_hash);
         const shardingPathRes = JSON.parse(
           syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;

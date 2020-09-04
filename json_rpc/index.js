@@ -179,22 +179,34 @@ module.exports = function getMethods(
     ain_get: function(args, done) { // TODO (lia): split this method
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.getValue(args.ref) }));
+          done(null, addProtocolVersion({
+            result: p2pServer.node.db.getValue(args.ref, args.is_global)
+          }));
           return;
         case ReadDbOperations.GET_RULE:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.getRule(args.ref) }));
+          done(null, addProtocolVersion({
+            result: p2pServer.node.db.getRule(args.ref, args.is_global)
+          }));
           return;
         case ReadDbOperations.GET_FUNCTION:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.getFunction(args.ref) }));
+          done(null, addProtocolVersion({
+            result: p2pServer.node.db.getFunction(args.ref, args.is_global)
+          }));
           return;
         case ReadDbOperations.GET_OWNER:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.getOwner(args.ref) }));
+          done(null, addProtocolVersion({
+            result: p2pServer.node.db.getOwner(args.ref, args.is_global)
+          }));
           return;
         case ReadDbOperations.GET_PROOF:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.getProof(args.ref) }));
+          done(null, addProtocolVersion({
+            result: p2pServer.node.db.getProof(args.ref)
+          }));
           return;
         case ReadDbOperations.GET:
-          done(null, addProtocolVersion({ result: p2pServer.node.db.get(args.op_list) }));
+          done(null, addProtocolVersion({
+            result: p2pServer.node.db.get(args.op_list, args.is_global)
+          }));
           return;
         default:
           done(null, addProtocolVersion({ code: 1, message: "Invalid get request type" }));
@@ -202,28 +214,29 @@ module.exports = function getMethods(
     },
 
     ain_matchFunction: function(args, done) {
-      const result = p2pServer.node.db.matchFunction(args.ref);
+      const result = p2pServer.node.db.matchFunction(args.ref, args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
     ain_matchRule: function(args, done) {
-      const result = p2pServer.node.db.matchRule(args.ref);
+      const result = p2pServer.node.db.matchRule(args.ref, args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
     ain_matchOwner: function(args, done) {
-      const result = p2pServer.node.db.matchOwner(args.ref);
+      const result = p2pServer.node.db.matchOwner(args.ref, args.is_global);
       done (null, addProtocolVersion({ result }));
     },
 
     ain_evalRule: function(args, done) {
       const result = p2pServer.node.db.evalRule(
-          args.ref, args.value, args.address, args.timestamp || Date.now());
+          args.ref, args.value, args.address, args.timestamp || Date.now(), args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
     ain_evalOwner: function(args, done) {
-      const result = p2pServer.node.db.evalOwner(args.ref, args.permission, args.address);
+      const result =
+          p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
       done (null, addProtocolVersion({ result }));
     },
 

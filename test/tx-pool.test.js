@@ -13,7 +13,7 @@ describe('TransactionPool', () => {
 
   beforeEach(() => {
     node = new Node();
-    setDbForTesting(node, 0);
+    setDbForTesting(node);
 
     transaction = getTransaction(node, {
       operation: {

@@ -53,6 +53,15 @@ class RuleUtil {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
+  isValShardProto(value) {
+    const { ShardingProtocols } = require('../constants');
+    return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
+  }
+
+  toBool(value) {
+    return this.isBool(value) ? value : value === 'true';
+  }
+
   // TODO(lia): normalize addresses in rule strings using this function.
   toCksumAddr(addr) {
     try {
@@ -60,11 +69,6 @@ class RuleUtil {
     } catch (e) {
       return '';
     }
-  }
-
-  isValShardProto(value) {
-    const { ShardingProtocols } = require('../constants');
-    return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 }
 
