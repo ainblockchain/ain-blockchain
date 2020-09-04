@@ -24,7 +24,7 @@ const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { waitForNewBlocks } = require('../test/test-util');
+const { waitForNewBlocks, waitUntilNodeSyncs } = require('../test/test-util');
 
 const ENV_VARIABLES = [
   {
@@ -184,19 +184,6 @@ function waitUntilNodeStakes() {
     count++;
     sleep(6000);
   }
-}
-
-function waitUntilNodeSyncs(server = server1) {
-  let isSyncing = true;
-  while (isSyncing) {
-    console.log("still syncing..");
-    isSyncing = JSON.parse(syncRequest('POST', server + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: JSON_RPC_NET_SYNCING, id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
-    sleep(1000);
-  }
-  console.log("finally synced!");
 }
 
 function sendTransactions(sentOperations) {
@@ -699,7 +686,7 @@ describe('Integration Tests', () => {
         console.log(`Starting server[0]...`);
         SERVER_PROCS[0].start();
         sleep(10000);
-        waitUntilNodeSyncs();
+        waitUntilNodeSyncs(server1);
         for (let i = 0; i < 4; i++) {
           sendTransactions(sentOperations);
           waitForNewBlocks(server1);

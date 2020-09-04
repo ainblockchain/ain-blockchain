@@ -16,7 +16,8 @@ const {
 } = require('../constants');
 const {
   readConfigFile,
-  waitForNewBlocks
+  waitForNewBlocks,
+  waitUntilNodeSyncs
 } = require('../test/test-util');
 
 const ENV_VARIABLES = [
@@ -278,6 +279,28 @@ describe('Sharding', () => {
         const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
         const highest = sortedReports[sortedReports.length - 1];
         expect(latest).to.equal(Number(highest));
+      });
+
+      it('can resume reporting after missing some reports', () => {
+        const reportsBefore = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+            .body.toString('utf-8'));
+        console.log(`Shutting down server[0]...`);
+        server1_proc.kill();
+        waitForNewBlocks(server2, sharding.reporting_period);
+        console.log(`Restarting server[0]...`);
+        server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
+        waitForNewBlocks(server2, sharding.reporting_period);
+        waitUntilNodeSyncs(server1);
+        waitForNewBlocks(server1, sharding.reporting_period);
+        const reportsAfter = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
+            .body.toString('utf-8'));
+        let blockNumber = 0;
+        const sortedReports = _.without(Object.keys(reportsAfter.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        for (const key of sortedReports) {
+          expect(blockNumber).to.equal(Number(key));
+          blockNumber++;
+        }
+        expect(reportsAfter.result.latest).to.be.greaterThan(reportsBefore.result.latest);
       });
     });
   });
