@@ -1,22 +1,28 @@
-const fs = require('fs');
 const stringify = require('fast-json-stable-stringify');
+const zipper = require('zip-local');
+const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
+const DB = require('../db');
 const {
-  GENESIS_OWNERS, ADDITIONAL_OWNERS, GENESIS_RULES, ADDITIONAL_RULES, GENESIS_FUNCTIONS,
-  ADDITIONAL_FUNCTIONS, PredefinedDbPaths, GenesisToken, GenesisAccounts, GenesisWhitelist
+  PredefinedDbPaths,
+  GenesisAccounts,
+  GenesisWhitelist,
+  GenesisValues,
+  GenesisFunctions,
+  GenesisRules,
+  GenesisOwners,
+  AccountProperties,
+  ProofProperties,
 } = require('../constants');
-const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
 const BlockFilePatterns = require('./block-file-patterns');
-const zipper = require('zip-local');
-const sizeof = require('object-sizeof');
 
 const LOG_PREFIX = 'BLOCK';
 
 class Block {
-  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, proposer, validators) {
+  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, stateProofHash, proposer, validators) {
     this.last_votes = lastVotes;
     this.transactions = transactions;
     // Block's header
@@ -26,6 +32,7 @@ class Block {
     this.number = number;
     this.epoch = epoch;
     this.timestamp = timestamp;
+    this.stateProofHash = stateProofHash;
     this.proposer = proposer;
     this.validators = validators;
     this.size = sizeof(this.transactions);
@@ -41,6 +48,7 @@ class Block {
       number: this.number,
       epoch: this.epoch,
       timestamp: this.timestamp,
+      stateProofHash: this.stateProofHash,
       proposer: this.proposer,
       validators: this.validators,
       size: this.size
@@ -56,6 +64,7 @@ class Block {
             number:            ${this.number}
             epoch:             ${this.epoch}
             timestamp:         ${this.timestamp}
+            stateProofHash:    ${this.stateProofHash}
             proposer:          ${this.proposer}
             validators:        ${this.validators}
             size:              ${this.size}
@@ -70,8 +79,8 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, epoch, proposer, validators) {
-    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), proposer, validators);
+  static createBlock(lastHash, lastVotes, transactions, number, epoch, stateProofHash, proposer, validators) {
+    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), stateProofHash, proposer, validators);
   }
 
   static getFileName(block) {
@@ -89,13 +98,13 @@ class Block {
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo['last_hash'], blockInfo['last_votes'],
         blockInfo['transactions'], blockInfo['number'], blockInfo['epoch'],
-        blockInfo['timestamp'], blockInfo['proposer'], blockInfo['validators']);
+        blockInfo['timestamp'], blockInfo['stateProofHash'], blockInfo['proposer'], blockInfo['validators']);
   }
 
   static hasRequiredFields(block) {
-    return (block.last_hash !== undefined && block.last_votes !== undefined &&
-        block.transactions !== undefined && block.number !== undefined &&
-        block.epoch !== undefined &&  block.timestamp !== undefined &&
+    return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
+        block.transactions !== undefined && block.number !== undefined && block.epoch !== undefined &&
+        block.timestamp !== undefined && block.stateProofHash !== undefined &&
         block.proposer !== undefined && block.validators !== undefined);
   }
 
@@ -142,105 +151,36 @@ class Block {
     return true;
   }
 
-  static getDbSetupTransaction(ownerAccount, timestamp, keyBuffer) {
-    // Token operation
-    const tokenOp = {
-      type: 'SET_VALUE',
-      ref: `/${PredefinedDbPaths.TOKEN}`,
-      value: GenesisToken
-    };
+  static getDbSetupTransaction(timestamp, keyBuffer) {
+    const opList = [];
 
-    // Balance operation
-    const balanceOp = {
+    // Values operation
+    opList.push({
       type: 'SET_VALUE',
-      ref: `/${PredefinedDbPaths.ACCOUNTS}/${ownerAccount.address}/${PredefinedDbPaths.BALANCE}`,
-      value: GenesisToken.total_supply
-    };
-    if (!fs.existsSync(GENESIS_RULES)) {
-      throw Error('Missing genesis rules file: ' + GENESIS_RULES);
-    }
+      ref: '/',
+      value: GenesisValues,
+    });
 
-    // Consensus (whitelisting) operation
-    // TODO(lia): increase this list to 10
-    const whitelistValOp = {
-      type: 'SET_VALUE',
-      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
-      value: GenesisWhitelist
-    };
-
-    // Function configs operation
-    const functionConfigs = JSON.parse(fs.readFileSync(GENESIS_FUNCTIONS));
-    if (ADDITIONAL_FUNCTIONS) {
-      if (fs.existsSync(ADDITIONAL_FUNCTIONS.filePath)) {
-        const addFunctions = JSON.parse(fs.readFileSync(ADDITIONAL_FUNCTIONS.filePath));
-        ruleConfigs[ADDITIONAL_FUNCTIONS.dbPath] = addFunctions;
-      } else {
-        throw Error('Missing additional functions file: ' + ADDITIONAL_FUNCTIONS.filePath);
-      }
-    }
-    const functionsOp = {
+    // Functions operation
+    opList.push({
       type: 'SET_FUNCTION',
       ref: '/',
-      value: functionConfigs
-    };
+      value: GenesisFunctions,
+    });
 
-    // Rule configs operation
-    const ruleConfigs = JSON.parse(fs.readFileSync(GENESIS_RULES));
-    if (ADDITIONAL_RULES) {
-      if (fs.existsSync(ADDITIONAL_RULES.filePath)) {
-        const addRules = JSON.parse(fs.readFileSync(ADDITIONAL_RULES.filePath));
-        ruleConfigs[ADDITIONAL_RULES.dbPath] = addRules;
-      } else {
-        throw Error('Missing additional rules file: ' + ADDITIONAL_RULES.filePath);
-      }
-    }
-    const rulesOp = {
+    // Rules operation
+    opList.push({
       type: 'SET_RULE',
       ref: '/',
-      value: ruleConfigs
-    };
+      value: GenesisRules,
+    });
 
-    // Owner configs operation
-    if (!fs.existsSync(GENESIS_OWNERS)) {
-      throw Error('Missing genesis owners file: ' + GENESIS_OWNERS);
-    }
-    const ownerConfigs = JSON.parse(fs.readFileSync(GENESIS_OWNERS));
-    if (ADDITIONAL_OWNERS) {
-      if (fs.existsSync(ADDITIONAL_OWNERS.filePath)) {
-        const addOwners = JSON.parse(fs.readFileSync(ADDITIONAL_OWNERS.filePath));
-        ownerConfigs[ADDITIONAL_OWNERS.dbPath] = addOwners;
-      } else {
-        throw Error('Missing additional owners file: ' + ADDITIONAL_OWNERS.filePath);
-      }
-    }
-    const ownersOp = {
+    // Owners operation
+    opList.push({
       type: 'SET_OWNER',
       ref: '/',
-      value: ownerConfigs
-    };
-    const whitelistRuleOp = {
-      type: 'SET_RULE',
-      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
-      value: `auth === '${ownerAccount.address}'`
-    }
-    const whitelistOwnerOp = {
-      type: 'SET_OWNER',
-      ref: `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`,
-      value: {
-        [ownerAccount.address]: {
-          "branch_owner": true,
-          "write_function": true,
-          "write_owner": true,
-          "write_rule": true
-        },
-        "*": {
-          "branch_owner": false,
-          "write_function": false,
-          "write_owner": false,
-          "write_rule": false
-        }
-      }
-    }
+      value: GenesisOwners,
+    });
 
     // Transaction
     const firstTxData = {
@@ -248,25 +188,26 @@ class Block {
       timestamp,
       operation: {
         type: 'SET',
-        op_list: [ tokenOp, balanceOp, whitelistValOp, functionsOp, rulesOp, whitelistRuleOp, ownersOp, whitelistOwnerOp ]
+        op_list: opList,
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
     return (new Transaction({ signature: firstSig, transaction: firstTxData }));
   }
 
-  static getAccountsSetupTransaction(ownerAccount, timestamp, keyBuffer) {
+  static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
     const transferOps = [];
-    const otherAccounts = GenesisAccounts.others;
+    const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
-        GenesisAccounts.shares > 0) {
+        GenesisAccounts[AccountProperties.SHARES] > 0) {
       for (let i = 0; i < otherAccounts.length; i++) {
+        const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
         // Transfer operation
         const op = {
           type: 'SET_VALUE',
-          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAccount.address}/` +
-              `${otherAccounts[i].address}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
-          value: GenesisAccounts.shares
+          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAddress}/` +
+              `${accountAddress}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
+          value: GenesisAccounts[AccountProperties.SHARES],
         };
         transferOps.push(op);
       }
@@ -285,40 +226,48 @@ class Block {
     return (new Transaction({ signature: secondSig, transaction: secondTxData }));
   }
 
-  static getGenesisBlockData() {
-    const ownerAccount = GenesisAccounts.owner;
-    if (!ownerAccount) {
-      throw Error('Missing owner account.');
-    }
-    const timestamp = GenesisAccounts.timestamp;
-    if (!timestamp) {
-      throw Error('Missing timestamp.');
-    }
-    const keyBuffer = Buffer.from(ownerAccount.private_key, 'hex');
+  static getGenesisBlockData(genesisTime) {
+    const ownerAddress = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    const ownerPrivateKey = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
 
-    const firstTx = this.getDbSetupTransaction(ownerAccount, timestamp, keyBuffer);
-    const secondTx = this.getAccountsSetupTransaction(ownerAccount, timestamp, keyBuffer);
+    const firstTx = this.getDbSetupTransaction(genesisTime, keyBuffer);
+    const secondTx = this.getAccountsSetupTransaction(ownerAddress, genesisTime, keyBuffer);
 
     return [firstTx, secondTx];
+  }
+
+  static getGenesisStateProofHash() {
+    const tempGenesisState = new DB(null, -1);
+    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
+    for (const tx of genesisTransactions) {
+      const res = tempGenesisState.executeTransaction(tx);
+      if (ChainUtil.transactionFailed(res)) {
+        logger.error(`[${LOG_PREFIX}] Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
+        return null;
+      }
+    }
+    return tempGenesisState.getProof('/')[ProofProperties.PROOF_HASH];
   }
 
   static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
-    const ownerAccount = GenesisAccounts.owner;
-    const timestamp = GenesisAccounts.timestamp;
+    const ownerAddress = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
     const lastHash = '';
     const lastVotes = [];
-    const transactions = Block.getGenesisBlockData();
+    const transactions = Block.getGenesisBlockData(genesisTime);
     const number = 0;
     const epoch = 0;
-    const proposer = ownerAccount.address;
-    const validators = {};
-    for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
-      validators[GenesisAccounts.others[i].address] = ConsensusConsts.INITIAL_STAKE;
-    }
-    return new this(lastHash, lastVotes, transactions, number, epoch, timestamp,
-        proposer, validators);
+    const proposer = ownerAddress;
+    const validators = GenesisWhitelist;
+    const stateProofHash = Block.getGenesisStateProofHash();
+    return new this(lastHash, lastVotes, transactions, number, epoch, genesisTime,
+      stateProofHash, proposer, validators);
   }
 }
 

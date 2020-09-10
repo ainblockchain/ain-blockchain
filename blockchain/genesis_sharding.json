@@ -1,0 +1,6 @@
+{
+  "sharding_protocol": "NONE",
+  "sharding_path": "/",
+  "parent_chain_poc": "",
+  "reporting_period": 0
+}

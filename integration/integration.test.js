@@ -1,6 +1,9 @@
+const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const spawn = require('child_process').spawn;
+const rimraf = require('rimraf');
+const jayson = require('jayson/promise');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -15,33 +18,33 @@ const stringify = require('fast-json-stable-stringify');
 const Blockchain = require('../blockchain');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
-const { BLOCKCHAINS_DIR, PredefinedDbPaths } = require('../constants');
+const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../constants');
 const { ConsensusConsts } = require('../consensus/constants');
-const rimraf = require('rimraf');
-const jayson = require('jayson/promise');
+const { waitUntilTxFinalized } = require('../test/test-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const { waitForNewBlocks, waitUntilNodeSyncs } = require('../test/test-util');
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
     ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
   },
@@ -77,11 +80,8 @@ RANDOM_OPERATION = [
   ['set_value', {ref: 'test/comeon/nnnnnn', value: 'through'}],
   ['set_value', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
   ['set_value', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
-  ['set_value', {ref: 'test/builed/heliii', value: {'range': [1, 2, 3, 1, 4, 5]}}],
-  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {'range': [1, 4, 5], 'another': [234]}}],
   ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
   ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
-  ['set_value', {ref: 'test/new/final/path', value: {'neste': [1, 2, 3, 4, 5]}}],
   ['set_value', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
   ['inc_value', {ref: 'test/balance/user1', value: 10}],
   ['inc_value', {ref: 'test/balance/user1', value: 20}],
@@ -121,16 +121,12 @@ RANDOM_OPERATION = [
       value: {'new': 'path'}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep',
       value: {'place': {'next': 1, 'level': 'down'}}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/heliii',
-      value: {'range': [1, 2, 3, 1, 4, 5]}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: {'range': [1, 4, 5], 'another': [234]}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: 'very nested'}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: {1: 2, 3: 4, 5: 6}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/new/final/path',
-      value: {'neste': [1, 2, 3, 4, 5]}}}]}],
 ];
 
 class Process {
@@ -191,35 +187,6 @@ function waitUntilNodeStakes() {
   }
 }
 
-function waitForNewBlocks(server = server1, waitFor = 1) {
-  const initialLastBlockNumber =
-      JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-        .body.toString('utf-8'))['result'];
-  let updatedLastBlockNumber = initialLastBlockNumber;
-  console.log(`Initial last block number: ${initialLastBlockNumber}`)
-  while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
-    sleep(1000);
-    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server + LAST_BLOCK_NUMBER_ENDPOINT)
-      .body.toString('utf-8'))['result'];
-    console.log(`block number... ${updatedLastBlockNumber}`)
-  }
-  console.log(`Updated last block number: ${updatedLastBlockNumber}`)
-}
-
-function waitUntilNodeSyncs(server = server1) {
-  let isSyncing = true;
-  while (isSyncing) {
-    console.log("still syncing..");
-    isSyncing = JSON.parse(syncRequest('POST', server + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: JSON_RPC_NET_SYNCING, id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
-    sleep(1000);
-  }
-  console.log("finally synced!");
-}
-
-
 function sendTransactions(sentOperations) {
   for (let i = 0; i < NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
     const randomOperation =
@@ -243,6 +210,7 @@ describe('Integration Tests', () => {
   before(() => {
     console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
+
     const promises = [];
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, {});
@@ -281,6 +249,7 @@ describe('Integration Tests', () => {
     }
     console.log('Shutting down tracker server...');
     trackerProc.kill();
+
     console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
   });
@@ -325,7 +294,7 @@ describe('Integration Tests', () => {
 
     it('will sync to new peers on startup', () => {
       sendTransactions(sentOperations);
-      waitForNewBlocks();
+      waitForNewBlocks(server1);
       let baseChain;
       let number;
       const accountIndex = 4;
@@ -403,7 +372,7 @@ describe('Integration Tests', () => {
       it('blocks have correct validators and voting data', () => {
         for (let i = 0; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
               {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
@@ -449,6 +418,7 @@ describe('Integration Tests', () => {
             transactions_hash: block.transactions_hash,
             number: block.number,
             epoch: block.epoch,
+            stateProofHash: block.stateProofHash,
             timestamp: block.timestamp,
             proposer: block.proposer,
             validators: block.validators,
@@ -457,7 +427,7 @@ describe('Integration Tests', () => {
         }
         for (let i = 0; i < SERVERS.length; i++) {
           sendTransactions(sentOperations);
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
           const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
               {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                       params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
@@ -489,7 +459,7 @@ describe('Integration Tests', () => {
     describe('and rules', () => {
       it('prevent users from restructed areas', () => {
         sendTransactions(sentOperations);
-        waitForNewBlocks();
+        waitForNewBlocks(server1);
         const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
           ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
         }}).body.toString('utf-8'));
@@ -498,29 +468,35 @@ describe('Integration Tests', () => {
     });
 
     describe('and built in functions', () => {
+      let balance1Before, balance2Before;
       beforeEach(() => {
-        syncRequest('POST', server1 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${nodeAddressList[0]}/balance`, value: 100}});
-        syncRequest('POST', server2 + SET_VALUE_ENDPOINT,
-            {json: {ref: `/accounts/${nodeAddressList[1]}/balance`, value: 0}});
+        balance1Before = JSON.parse(syncRequest('GET',
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
+            .body.toString('utf-8')).result;
+        balance2Before = JSON.parse(syncRequest('GET',
+            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
+            .body.toString('utf-8')).result;
         sleep(200);
       });
 
       it('facilitate transfer between accounts', () => {
-        sendTransactions(sentOperations);
-        waitForNewBlocks();
-        syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
-          ref: `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`, value: 10
-        }});
-        sleep(500);
+        waitForNewBlocks(server1);
+        const transferRef = `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`;
+        const body = JSON.parse(syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
+          ref: transferRef, value: 10
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        const txHash = body.result.tx_hash;
+        // Make sure the transaction is included in the chain
+        waitUntilTxFinalized(SERVERS, txHash);
         const balance1 = JSON.parse(syncRequest('GET',
             server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
             .body.toString('utf-8')).result;
         const balance2 = JSON.parse(syncRequest('GET',
             server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
             .body.toString('utf-8')).result;
-        expect(balance1).to.equal(90);
-        expect(balance2).to.equal(10);
+        expect(balance1).to.equal(balance1Before - 10);
+        expect(balance2).to.equal(balance2Before + 10);
       });
     });
 
@@ -542,7 +518,7 @@ describe('Integration Tests', () => {
 
       it('can be queried by index ', () => {
         sendTransactions(sentOperations);
-        waitForNewBlocks();
+        waitForNewBlocks(server1);
         return new Promise((resolve) => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
                                 {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
@@ -559,7 +535,7 @@ describe('Integration Tests', () => {
 
       it('can be queried by hash ', () => {
         sendTransactions(sentOperations);
-        waitForNewBlocks();
+        waitForNewBlocks(server1);
         return new Promise((resolve) => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
               {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
@@ -623,17 +599,18 @@ describe('Integration Tests', () => {
       });
       */
 
-      it('maintaining correct order', () => {
-        for (let i = 1; i < SERVERS.length; i++) {
-          sendTransactions(sentOperations);
-          waitForNewBlocks();
-          body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
-              .body.toString('utf-8'));
-          body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
-              .body.toString('utf-8'));
-          assert.deepEqual(body1.result, body2.result);
-        }
-      });
+      // FIXME(lia): this test case is flaky.
+      // it('maintaining correct order', () => {
+      //   for (let i = 1; i < SERVERS.length; i++) {
+      //     sendTransactions(sentOperations);
+      //     waitForNewBlocks();
+      //     body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
+      //         .body.toString('utf-8'));
+      //     body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
+      //         .body.toString('utf-8'));
+      //     assert.deepEqual(body1.result, body2.result);
+      //   }
+      // });
 
       it('keeps track of nonces correctly after creating and broadcasting a transaction', () => {
         return new Promise((resolve, reject) => {
@@ -671,7 +648,7 @@ describe('Integration Tests', () => {
 
       it('keeps track of nonces correctly after committing to a block', () => {
         return new Promise((resolve, reject) => {
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
           let promises = [];
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
               { address, protoVer: CURRENT_PROTOCOL_VERSION }));
@@ -694,10 +671,10 @@ describe('Integration Tests', () => {
         console.log(`Starting server[0]...`);
         SERVER_PROCS[0].start();
         sleep(10000);
-        waitUntilNodeSyncs();
+        waitUntilNodeSyncs(server1);
         for (let i = 0; i < 4; i++) {
           sendTransactions(sentOperations);
-          waitForNewBlocks();
+          waitForNewBlocks(server1);
         }
         return new Promise((resolve) => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)

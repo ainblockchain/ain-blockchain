@@ -1,10 +1,11 @@
 const logger = require('../logger');
 const {
-  PredefinedDbPaths, FunctionProperties, FunctionTypes, FunctionResultCode, NativeFunctionIds,
-  DefaultValues
+  PredefinedDbPaths, FunctionTypes, FunctionResultCode, NativeFunctionIds,
+  DefaultValues, ShardingProperties
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const axios = require('axios');
+const ainUtil = require('@ainblockchain/ain-util');
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
@@ -21,6 +22,7 @@ class Functions {
       [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
       [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
+      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
     };
   }
 
@@ -42,12 +44,14 @@ class Functions {
       if (functionConfig.function_type === FunctionTypes.NATIVE) {
         const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
         if (nativeFunction) {
+          const functionPath = matched.matchedFunction.path;
           const params = Functions.convertPathVars2Params(matched.pathVars);
           logger.info(
             `  ==> Running native function '${functionConfig.function_id}' ` +
             `with value '${value}', timestamp '${timestamp}',
-            currentTime '${currentTime}' and params: ` + JSON.stringify(params));
-          nativeFunction(value, { params, timestamp, currentTime });
+            currentTime '${currentTime}', params: ` + JSON.stringify(params) + 
+            ` and functionPath: ` + JSON.stringify(functionPath, null, 2));
+          nativeFunction(value, { params, timestamp, currentTime, functionPath });
         }
       } else if (functionConfig.function_type === FunctionTypes.REST) {
         if (functionConfig.event_listener &&
@@ -155,6 +159,30 @@ class Functions {
     }
   }
 
+  _updateLatestShardReport(value, context) {
+    const blockNumber = Number(context.params.block_number);
+    if (!ChainUtil.isArray(context.functionPath)) {
+      return;
+    }
+    if (!ChainUtil.isString(value)) {
+      // Removing old report or invalid reporting
+      return;
+    }
+    const index = context.functionPath.findIndex((el) => el === '$block_number');
+    if (index < 0) {
+      // Invalid function path
+      return;
+    }
+    const shardingPath = ChainUtil.formatPath(context.functionPath.slice(0, index));
+    const latestReportPath = this._getLatestShardReportPath(shardingPath);
+    const currentLatestBlockNumber = this.db.getValue(latestReportPath);
+    if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
+      // Nothing to update
+      return;
+    }
+    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+  }
+
   _transferInternal(fromPath, toPath, value) {
     const fromBalance = this.db.getValue(fromPath);
     if (fromBalance < value) return false;
@@ -200,6 +228,10 @@ class Functions {
 
   _getWithdrawResultPath(service, user, withdrawId) {
     return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/${PredefinedDbPaths.WITHDRAW_RESULT}`);
+  }
+
+  _getLatestShardReportPath(shardingPath) {
+    return `${shardingPath}/${PredefinedDbPaths.SHARDING_LATEST}`;
   }
 
   _getFullValuePath(parsedPath) {
