@@ -1,7 +1,16 @@
 const logger = require('../logger');
 const {
-  ReadDbOperations, WriteDbOperations, PredefinedDbPaths, OwnerProperties, RuleProperties,
-  FunctionProperties, DEBUG
+  DEBUG,
+  ReadDbOperations,
+  WriteDbOperations,
+  PredefinedDbPaths,
+  OwnerProperties,
+  RuleProperties,
+  FunctionProperties,
+  ProofProperties,
+  ShardingProperties,
+  GenesisSharding,
+  buildOwnerPermissions,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -12,14 +21,19 @@ const {
   jsObjectToStateTree,
   stateTreeToJsObject,
   makeCopyOfStateTree,
+  setProofHashForStateTree,
+  updateProofHashForPath
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
   constructor(bc, blockNumberSnapshot) {
-    this.dbRoot = new StateNode();
+    this.shardingPath = null;
+    this.isRoot = null;
+    this.stateTree = new StateNode();
     this.initDbData();
+    this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
@@ -30,12 +44,7 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
         [OwnerProperties.OWNERS]: {
-          [OwnerProperties.ANYONE]: {
-            [OwnerProperties.BRANCH_OWNER]: true,
-            [OwnerProperties.WRITE_FUNCTION]: true,
-            [OwnerProperties.WRITE_OWNER]: true,
-            [OwnerProperties.WRITE_RULE]: true
-          }
+          [OwnerProperties.ANYONE]: buildOwnerPermissions(true, true, true, true),
         }
       }
     });
@@ -55,11 +64,46 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...ChainUtil.parsePath(rulesPath)], rules);
   }
 
+  // For testing purpose only.
+  setFunctionsForTesting(functionsPath, functions) {
+    this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT,
+      ...ChainUtil.parsePath(functionsPath)], functions);
+  }
+
+  // For testing purpose only.
+  setValuesForTesting(valuesPath, values) {
+    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT,
+      ...ChainUtil.parsePath(valuesPath)], values);
+  }
+
+  // For testing purpose only.
+  setShardingForTesting(sharding) {
+    this.setValuesForTesting(
+        ChainUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG]),
+        sharding);
+    this.setShardingPath(sharding[ShardingProperties.SHARDING_PATH]);
+  }
+
+  /**
+   * Sets the sharding path of the database.
+   */
+  setShardingPath(shardingPath) {
+    this.shardingPath = ChainUtil.parsePath(shardingPath);
+    this.isRoot = (this.shardingPath.length === 0);
+  }
+
+  /**
+   * Returns the sharding path of the database.
+   */
+  getShardingPath() {
+    return ChainUtil.formatPath(this.shardingPath);
+  }
+
   /**
    * Returns reference to the input path for reading if exists, otherwise null.
    */
   getRefForReading(fullPath) {
-    let node = this.dbRoot;
+    let node = this.stateTree;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
@@ -75,7 +119,7 @@ class DB {
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
   getRefForWriting(fullPath) {
-    let node = this.dbRoot;
+    let node = this.stateTree;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
@@ -92,19 +136,22 @@ class DB {
     return node;
   }
 
-  writeDatabase(fullPath, value) {
-    const valueTree = jsObjectToStateTree(value);
+  writeDatabase(fullPath, stateObj) {
+    const stateTree = jsObjectToStateTree(stateObj);
+    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
-      this.dbRoot = valueTree;
+      this.stateTree = stateTree;
     } else {
-      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
       const label = fullPath[fullPath.length - 1];
       const parent = this.getRefForWriting(pathToParent);
-      parent.setChild(label, valueTree);
+      parent.setChild(label, stateTree);
     }
-    if (DB.isEmptyNode(valueTree)) {
+    if (DB.isEmptyNode(stateTree)) {
       this.removeEmptyNodes(fullPath);
+    } else {
+      setProofHashForStateTree(stateTree);
     }
+    updateProofHashForPath(pathToParent, this.stateTree);
   }
 
   static isEmptyNode(dbNode) {
@@ -129,96 +176,168 @@ class DB {
   }
 
   removeEmptyNodes(fullPath) {
-    return this.removeEmptyNodesRecursive(fullPath, 0, this.dbRoot);
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.stateTree);
   }
 
   readDatabase(fullPath) {
-    const node = this.getRefForReading(fullPath);
-    return stateTreeToJsObject(node);
+    const stateNode = this.getRefForReading(fullPath);
+    return stateTreeToJsObject(stateNode);
   }
 
-  getValue(valuePath) {
+  getValue(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  getFunction(functionPath) {
+  getFunction(functionPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(functionPath);
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  getRule(rulePath) {
+  getRule(rulePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(rulePath);
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  getOwner(ownerPath) {
+  getOwner(ownerPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(ownerPath);
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     return this.readDatabase(fullPath);
   }
 
-  matchFunction(funcPath) {
+  /**
+   * Returns a proof of a state node.
+   * 
+   * @param {string} fullPath full database path to the state node to be proved.
+   */
+  // TODO(seo): Consider supporting global path for getProof().
+  getProof(fullPath) {
+    const parsedPath = ChainUtil.parsePath(fullPath);
+    let node = this.stateTree;
+    const rootProof = { [ProofProperties.PROOF_HASH]: node.getProofHash() };
+    let proof = rootProof;
+    for (const label of parsedPath) {
+      if (node.hasChild(label)) {
+        node.getChildLabels().forEach(label => {
+          Object.assign(proof,
+            { [label]: { [ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash() } });
+        });
+        proof = proof[label];
+        node = node.getChild(label);
+      } else {
+        return null;
+      }
+    }
+    return rootProof;
+  }
+
+  matchFunction(funcPath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(funcPath);
-    return this.convertFunctionMatch(this.matchFunctionForParsedPath(parsedPath));
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    return this.convertFunctionMatch(this.matchFunctionForParsedPath(localPath), isGlobal);
   }
 
-  matchRule(valuePath) {
+  matchRule(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    return this.convertRuleMatch(this.matchRuleForParsedPath(parsedPath));
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    return this.convertRuleMatch(this.matchRuleForParsedPath(localPath), isGlobal);
   }
 
-  matchOwner(rulePath) {
+  matchOwner(rulePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(rulePath);
-    return this.convertOwnerMatch(this.matchOwnerForParsedPath(parsedPath));
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
-  evalRule(valuePath, value, address, timestamp) {
+  evalRule(valuePath, value, address, timestamp, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
-    return this.getPermissionForValue(parsedPath, value, address, timestamp);
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    return this.getPermissionForValue(localPath, value, address, timestamp);
   }
 
-  evalOwner(refPath, permission, address) {
+  evalOwner(refPath, permission, address, isGlobal) {
     const parsedPath = ChainUtil.parsePath(refPath);
-    const matched = this.matchOwnerForParsedPath(parsedPath);
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // No matched local path.
+      return null;
+    }
+    const matched = this.matchOwnerForParsedPath(localPath);
     return this.checkPermission(matched.closestOwner.config, address, permission);
   }
 
   get(opList) {
     const resultList = [];
-    opList.forEach((item) => {
-      if (item.type === undefined || item.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(item.ref));
-      } else if (item.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(item.ref));
-      } else if (item.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(item.ref));
-      } else if (item.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(item.ref));
-      } else if (item.type === ReadDbOperations.MATCH_FUNCTION) {
-        resultList.push(this.matchFunction(item.ref));
-      } else if (item.type === ReadDbOperations.MATCH_RULE) {
-        resultList.push(this.matchRule(item.ref));
-      } else if (item.type === ReadDbOperations.MATCH_OWNER) {
-        resultList.push(this.matchOwner(item.ref));
-      } else if (item.type === ReadDbOperations.EVAL_RULE) {
+    opList.forEach((op) => {
+      if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
+        resultList.push(this.getValue(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_RULE) {
+        resultList.push(this.getRule(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_FUNCTION) {
+        resultList.push(this.getFunction(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_OWNER) {
+        resultList.push(this.getOwner(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.GET_PROOF) {
+        resultList.push(this.getProof(op.ref));
+      } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
+        resultList.push(this.matchFunction(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.MATCH_RULE) {
+        resultList.push(this.matchRule(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.MATCH_OWNER) {
+        resultList.push(this.matchOwner(op.ref, op.is_global));
+      } else if (op.type === ReadDbOperations.EVAL_RULE) {
         resultList.push(
-            this.evalRule(item.ref, item.value, item.address, item.timestamp || Date.now()));
-      } else if (item.type === ReadDbOperations.EVAL_OWNER) {
-        resultList.push(this.evalOwner(item.ref, item.permission, item.address));
+            this.evalRule(op.ref, op.value, op.address, op.timestamp || Date.now(), op.is_global));
+      } else if (op.type === ReadDbOperations.EVAL_OWNER) {
+        resultList.push(this.evalOwner(op.ref, op.permission, op.address, op.is_global));
       }
     });
     return resultList;
   }
 
-  // TODO(seo): Add dbPath validity check (e.g. '$', '.', etc).
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
-  setValue(valuePath, value, address, timestamp, transaction) {
+  setValue(valuePath, value, address, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -228,18 +347,23 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    if (!this.getPermissionForValue(parsedPath, value, address, timestamp)) {
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // There is nothing to do.
+      return true;
+    }
+    if (!this.getPermissionForValue(localPath, value, address, timestamp)) {
       return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     this.writeDatabase(fullPath, valueCopy);
-    this.func.triggerFunctions(parsedPath, valueCopy, timestamp, Date.now(), transaction);
+    this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
     return true;
   }
 
-  incValue(valuePath, delta, address, timestamp, transaction) {
-    const valueBefore = this.getValue(valuePath);
+  incValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
+    const valueBefore = this.getValue(valuePath, isGlobal);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
@@ -247,11 +371,11 @@ class DB {
       return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
   }
 
-  decValue(valuePath, delta, address, timestamp, transaction) {
-    const valueBefore = this.getValue(valuePath);
+  decValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
+    const valueBefore = this.getValue(valuePath, isGlobal);
     if (DEBUG) {
       logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     }
@@ -259,10 +383,10 @@ class DB {
       return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, transaction);
+    return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
   }
 
-  setFunction(functionPath, functionInfo, address) {
+  setFunction(functionPath, functionInfo, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionInfo);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -272,19 +396,24 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    if (!this.getPermissionForFunction(parsedPath, address)) {
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // There is nothing to do.
+      return true;
+    }
+    if (!this.getPermissionForFunction(localPath, address)) {
       return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
     }
     const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
         JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, functionInfoCopy);
     return true;
   }
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
-  setRule(rulePath, rule, address) {
+  setRule(rulePath, rule, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -294,17 +423,22 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    if (!this.getPermissionForRule(parsedPath, address)) {
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // There is nothing to do.
+      return true;
+    }
+    if (!this.getPermissionForRule(localPath, address)) {
       return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
     }
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.RULES_ROOT);
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     this.writeDatabase(fullPath, ruleCopy);
     return true;
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  setOwner(ownerPath, owner, address) {
+  setOwner(ownerPath, owner, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
@@ -314,11 +448,16 @@ class DB {
     if (!isValidPath.isValid) {
       return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
-    if (!this.getPermissionForOwner(parsedPath, address)) {
+    const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
+    if (localPath === null) {
+      // There is nothing to do.
+      return true;
+    }
+    if (!this.getPermissionForOwner(localPath, address)) {
       return {code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}`};
     }
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
-    const fullPath = this.getFullPath(parsedPath, PredefinedDbPaths.OWNERS_ROOT);
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, ownerCopy);
     return true;
   }
@@ -329,38 +468,38 @@ class DB {
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, address, timestamp, transaction);
+        ret = this.setValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, address, timestamp, transaction);
+        ret = this.incValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, address, timestamp, transaction);
+        ret = this.decValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, address);
+        ret = this.setFunction(op.ref, op.value, address, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, address);
+        ret = this.setRule(op.ref, op.value, address, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, address);
+        ret = this.setOwner(op.ref, op.value, address, op.is_global);
         if (ret !== true) {
           break;
         }
       } else {
         // Invalid Operation
-        return {code: 5, error_message: `Invalid opeartionn type: ${op.type}`};
+        return {code: 5, error_message: `Invalid opeartion type: ${op.type}`};
       }
     }
     return ret;
@@ -397,38 +536,68 @@ class DB {
   }
 
   /**
-   *  Returns full path with given root node.
+   * Returns full path with given root node.
    */
-  getFullPath(parsedPath, root) {
+  getFullPath(parsedPath, rootLabel) {
     const fullPath = parsedPath.slice();
-    fullPath.unshift(root);
+    fullPath.unshift(rootLabel);
     return fullPath;
   }
 
-  setDbToSnapshot(snapshot) {
-    this.dbRoot = makeCopyOfStateTree(snapshot.dbRoot);
-  }
-
-  executeOperation(operation, address, timestamp, transaction) {
-    if (!operation) {
+  /**
+   * Converts to local path by removing the sharding path part of the given parsed path.
+   */
+  toLocalPath(parsedPath) {
+    if (this.isRoot) {
+      return parsedPath;
+    }
+    if (parsedPath.length < this.shardingPath.length) {
       return null;
     }
-    switch (operation.type) {
+    for (let i = 0; i < this.shardingPath.length; i++) {
+      if (parsedPath[i] !== this.shardingPath[i]) {
+        return null;
+      }
+    }
+    return parsedPath.slice(this.shardingPath.length);
+  }
+
+  /**
+   * Converts to global path by adding the sharding path to the front of the given parsed path.
+   */
+  toGlobalPath(parsedPath) {
+    if (this.isRoot) {
+      return parsedPath;
+    }
+    const globalPath = parsedPath.slice();
+    globalPath.unshift(...this.shardingPath);
+    return globalPath;
+  }
+
+  setDbToSnapshot(snapshot) {
+    this.stateTree = makeCopyOfStateTree(snapshot.stateTree);
+  }
+
+  executeOperation(op, address, timestamp, tx) {
+    if (!op) {
+      return null;
+    }
+    switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(operation.ref, operation.value, address, timestamp, transaction);
+        return this.setValue(op.ref, op.value, address, timestamp, tx, op.is_global);
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(operation.ref, operation.value, address, timestamp, transaction);
+        return this.incValue(op.ref, op.value, address, timestamp, tx, op.is_global);
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(operation.ref, operation.value, address, timestamp, transaction);
+        return this.decValue(op.ref, op.value, address, timestamp, tx, op.is_global);
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(operation.ref, operation.value, address);
+        return this.setFunction(op.ref, op.value, address, op.is_global);
       case WriteDbOperations.SET_RULE:
-        return this.setRule(operation.ref, operation.value, address);
+        return this.setRule(op.ref, op.value, address, op.is_global);
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(operation.ref, operation.value, address);
+        return this.setOwner(op.ref, op.value, address, op.is_global);
       case WriteDbOperations.SET:
-        return this.set(operation.op_list, address, timestamp, transaction);
+        return this.set(op.op_list, address, timestamp, tx);
     }
   }
 
@@ -570,7 +739,7 @@ class DB {
 
   matchFunctionPath(parsedValuePath) {
     return this.matchFunctionPathRecursive(
-        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
+        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
   }
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
@@ -631,23 +800,28 @@ class DB {
     }
   }
 
-  convertPathAndConfig(pathAndConfig) {
+  convertPathAndConfig(pathAndConfig, isGlobal) {
+    const path = (isGlobal === true) ? this.toGlobalPath(pathAndConfig.path) : pathAndConfig.path;
     return {
-      path: ChainUtil.formatPath(pathAndConfig.path),
+      path: ChainUtil.formatPath(path),
       config: pathAndConfig.config,
     }
   }
 
-  convertFunctionMatch(matched) {
+  convertFunctionMatch(matched, isGlobal) {
+    const functionPath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedFunctionPath) : matched.matchedFunctionPath;
+    const valuePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeFunctions =
-        matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry));
+        matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
-        target_path: ChainUtil.formatPath(matched.matchedFunctionPath),
-        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
+        target_path: ChainUtil.formatPath(functionPath),
+        ref_path: ChainUtil.formatPath(valuePath),
         path_vars: matched.pathVars,
       },
-      matched_config: this.convertPathAndConfig(matched.matchedFunction),
+      matched_config: this.convertPathAndConfig(matched.matchedFunction, isGlobal),
       subtree_configs: subtreeFunctions,
     };
   }
@@ -720,7 +894,7 @@ class DB {
 
   matchRulePath(parsedValuePath) {
     return this.matchRulePathRecursive(
-        parsedValuePath, 0, this.dbRoot.getChild(PredefinedDbPaths.RULES_ROOT));
+        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.RULES_ROOT));
   }
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
@@ -776,22 +950,27 @@ class DB {
     }
   }
 
-  convertRuleMatch(matched) {
-    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry));
+  convertRuleMatch(matched, isGlobal) {
+    const rulePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
+    const valuePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
+    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
-        target_path: ChainUtil.formatPath(matched.matchedRulePath),
-        ref_path: ChainUtil.formatPath(matched.matchedValuePath),
+        target_path: ChainUtil.formatPath(rulePath),
+        ref_path: ChainUtil.formatPath(valuePath),
         path_vars: matched.pathVars,
       },
-      matched_config: this.convertPathAndConfig(matched.closestRule),
+      matched_config: this.convertPathAndConfig(matched.closestRule, isGlobal),
       subtree_configs: subtreeRules,
     };
   }
 
   makeEvalFunction(ruleString, pathVars) {
-    return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-                        'getFunction', 'getOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
+    return new Function('auth', 'data', 'newData', 'currentTime',
+                        'getValue', 'getRule', 'getFunction', 'getOwner',
+                        'evalRule', 'evalOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
                         '"use strict"; return ' + ruleString);
   }
 
@@ -804,6 +983,7 @@ class DB {
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
                     this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
+                    this.evalRule.bind(this), this.evalOwner.bind(this),
                     new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
   }
 
@@ -849,7 +1029,7 @@ class DB {
 
   matchOwnerPath(parsedRefPath) {
     return this.matchOwnerPathRecursive(
-        parsedRefPath, 0, this.dbRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
+        parsedRefPath, 0, this.stateTree.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
   matchOwnerForParsedPath(parsedRefPath) {
@@ -863,12 +1043,14 @@ class DB {
     }
   }
 
-  convertOwnerMatch(matched) {
+  convertOwnerMatch(matched, isGlobal) {
+    const ownerPath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
     return {
       matched_path: {
-        target_path: ChainUtil.formatPath(matched.matchedOwnerPath),
+        target_path: ChainUtil.formatPath(ownerPath),
       },
-      matched_config: this.convertPathAndConfig(matched.closestOwner),
+      matched_config: this.convertPathAndConfig(matched.closestOwner, isGlobal),
     };
   }
 

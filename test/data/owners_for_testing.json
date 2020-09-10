@@ -35,6 +35,18 @@
       }
     }
   },
+  "test_sharding": {
+    ".owner": {
+      "owners": {
+        "*": {
+          "branch_owner": true,
+          "write_function": true,
+          "write_owner": true,
+          "write_rule": true
+        }
+      }
+    }
+  },
   "empty_rules": {
     ".owner": {
       "owners": {

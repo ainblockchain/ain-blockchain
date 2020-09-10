@@ -1,0 +1,6 @@
+{
+  "sharding_protocol": "POA",
+  "sharding_path": "/apps/afan",
+  "parent_chain_poc": "http://127.0.0.1:8081",
+  "reporting_period": 5
+}

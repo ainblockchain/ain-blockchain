@@ -30,7 +30,7 @@ const PushId = {
     // characters except "incremented" by one.
     const lastRandChars = [];
     return function () {
-      let now = new Date().getTime();
+      let now = Date.now();
       let duplicateTime = (now === lastPushTime);
       lastPushTime = now;
       let timeStampChars = new Array(8);

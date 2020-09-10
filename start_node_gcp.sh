@@ -24,6 +24,7 @@ if [ "$2" -lt 0 ] || [ "$2" -gt 4 ]; then
     exit
 fi
 
+export NUM_VALIDATORS=5
 export ACCOUNT_INDEX="$2"
 echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 

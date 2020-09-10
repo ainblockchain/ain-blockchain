@@ -1,6 +1,7 @@
 const rimraf = require('rimraf');
 const chai = require('chai');
 const expect = chai.expect;
+const { BLOCKCHAINS_DIR } = require('../constants');
 const Transaction = require('../tx-pool/transaction');
 const Node = require('../node/');
 const {setDbForTesting, getTransaction} = require('./test-util')
@@ -10,6 +11,8 @@ describe('Transaction', () => {
   let txDataSkipVerif; let txSkipVerif;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node = new Node();
     setDbForTesting(node);
     txData = {
@@ -33,7 +36,7 @@ describe('Transaction', () => {
   });
 
   afterEach(() => {
-    rimraf.sync(node.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   it('assigns nonces correctly', () => {

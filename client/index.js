@@ -8,7 +8,8 @@ const jayson = require('jayson');
 const logger = require('../logger');
 const Node = require('../node');
 const P2pServer = require('../server');
-const { PORT, PROTOCOL_VERSIONS, WriteDbOperations } = require('../constants');
+const ChainUtil = require('../chain-util');
+const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus } = require('../constants');
 const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -58,7 +59,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref);
+  const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -66,7 +67,7 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref);
+  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -74,7 +75,7 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref);
+  const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -82,7 +83,18 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref);
+  const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
+/**
+ * Returns a proof of the state node in the given full database path.
+ */
+app.get('/get_proof', (req, res, next) => {
+  const result = node.db.getProof(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -90,7 +102,7 @@ app.get('/get_owner', (req, res, next) => {
 });
 
 app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref);
+  const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -98,7 +110,7 @@ app.get('/match_function', (req, res, next) => {
 });
 
 app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref);
+  const result = node.db.matchRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -106,7 +118,7 @@ app.get('/match_rule', (req, res, next) => {
 });
 
 app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref);
+  const result = node.db.matchOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -115,7 +127,9 @@ app.get('/match_owner', (req, res, next) => {
 
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const result = node.db.evalRule(body.ref, body.value, body.address, body.timestamp || Date.now());
+  const result = node.db.evalRule(
+      body.ref, body.value, body.address, body.timestamp || Date.now(),
+      ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -124,7 +138,8 @@ app.post('/eval_rule', (req, res, next) => {
 
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
-  const result = node.db.evalOwner(body.ref, body.permission, body.address);
+  const result = node.db.evalOwner(
+      body.ref, body.permission, body.address, ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -141,77 +156,77 @@ app.post('/get', (req, res, next) => {
 
 app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
 app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
 app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
 app.post('/set_function', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
 app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
 app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(
+  const result = createAndExecuteTransaction(
       createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
 // TODO(seo): Replace skip_verif with real signature.
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result === true ? 0 : 1, result})
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createTransaction(createBatchTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createBatchTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -276,6 +291,26 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
     .end();
 });
 
+app.get('/get_transaction', (req, res, next) => {
+  const transactionInfo = node.tp.transactionTracker[req.query.hash];
+  let result = {};
+  if (transactionInfo) {
+    if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+      const block = node.bc.getBlockByNumber(transactionInfo.number);
+      const index = transactionInfo.index;
+      Object.assign(result, block.transactions[index], { is_confirmed: true });
+    } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+      const address = transactionInfo.address;
+      const index = transactionInfo.index;
+      Object.assign(result, node.tp.transactions[address][index], { is_confirmed: false });
+    }
+  }
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/get_address', (req, res, next) => {
   const result = node.account.address;
   res.status(200)
@@ -317,13 +352,15 @@ p2pServer.listen();
 module.exports = app;
 
 function createSingleSetTxData(input, opType) {
-  const txData = {
-    operation: {
-      type: opType,
-      ref: input.ref,
-      value: input.value,
-    }
+  const op = {
+    type: opType,
+    ref: input.ref,
+    value: input.value,
   };
+  if (input.is_global !== undefined) {
+    op.is_global = input.is_global;
+  }
+  const txData = { operation: op };
   if (input.address !== undefined) {
     txData.address = input.address;
   }
@@ -353,9 +390,12 @@ function createBatchTxData(input) {
   return { tx_list: input.tx_list };
 }
 
-function createTransaction(txData, isNoncedTransaction) {
+function createAndExecuteTransaction(txData, isNoncedTransaction) {
   const transaction = node.createTransaction(txData, isNoncedTransaction);
-  return p2pServer.executeAndBroadcastTransaction(transaction);
+  return {
+    tx_hash: transaction.hash,
+    result: p2pServer.executeAndBroadcastTransaction(transaction)
+  };
 }
 
 function checkIfTransactionShouldBeNonced(input) {

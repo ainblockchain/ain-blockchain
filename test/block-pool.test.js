@@ -1,27 +1,29 @@
-const Consensus = require('../consensus/');
-const BlockPool = require('../consensus/block-pool');
-const Node = require('../node');
-const { Block } = require('../blockchain/block');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
+const { BLOCKCHAINS_DIR } = require('../constants');
+const BlockPool = require('../consensus/block-pool');
+const Node = require('../node');
+const { Block } = require('../blockchain/block');
 const { setDbForTesting, getTransaction } = require('./test-util')
 
 describe("BlockPool", () => {
   let node1;
 
   beforeEach(() => {
+    rimraf.sync(BLOCKCHAINS_DIR);
+
     node1 = new Node();
-    setDbForTesting(node1, 0);
+    setDbForTesting(node1, 0, true);
   });
 
   afterEach(() => {
-    rimraf.sync(node1.bc._blockchainDir());
+    rimraf.sync(BLOCKCHAINS_DIR);
   });
 
   function createAndAddBlock(node, blockPool, lastBlock, number, epoch) {
-    const block = Block.createBlock(lastBlock.hash, [], [], number, epoch, node.account.address, {[node.account.address]: 250});
+    const block = Block.createBlock(lastBlock.hash, [], [], number, epoch, '', node.account.address, {[node.account.address]: 250});
     const proposal = getTransaction(node, {
         operation: {
           type: 'SET_VALUE',
@@ -59,7 +61,7 @@ describe("BlockPool", () => {
     const lastBlock = node1.bc.lastBlock();
     const addr = node1.account.address;
     const block = Block.createBlock(lastBlock.hash, [], [], lastBlock.number + 1,
-        lastBlock.epoch + 1, addr, {[addr]: 250});
+        lastBlock.epoch + 1, '', addr, {[addr]: 250});
     const proposalTx = getTransaction(node1, {
         operation: 'SET_VALUE',
         ref: `/consensus/number/${block.number}/propose`,
@@ -84,7 +86,7 @@ describe("BlockPool", () => {
     const addr = node1.account.address;
     const lastBlock = node1.bc.lastBlock();
     const block = Block.createBlock(lastBlock.hash, [], [], lastBlock.number + 1,
-        lastBlock.epoch + 1, addr, {[addr]: 250});
+        lastBlock.epoch + 1, '', addr, {[addr]: 250});
     const proposalTx = getTransaction(node1, {
         operation: 'SET_VALUE',
         ref: `/consensus/number/${block.number}/propose`,

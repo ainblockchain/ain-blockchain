@@ -6,10 +6,10 @@ const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const logger = require('../logger')
 const { Block } = require('./block');
-const DB = require('../db');
 const BlockFilePatterns = require('./block-file-patterns');
 const { BLOCKCHAINS_DIR } = require('../constants');
 const CHAIN_SUBSECT_LENGTH = 20;
+const ON_MEM_CHAIN_LENGTH = 20;
 
 const LOG_PREFIX = 'BLOCKCHAIN';
 
@@ -95,7 +95,7 @@ class Blockchain {
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
-    if (blockFileName === undefined) {
+    if (blockFileName === undefined || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
       const found = this.chain.filter(block => block.number === number);
       return found.length ? found[0] : null;
     } else {
@@ -125,6 +125,14 @@ class Blockchain {
     return lastBlock.number;
   }
 
+  lastBlockEpoch() {
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return -1;
+    }
+    return lastBlock.epoch;
+  }
+
   lastBlockTimestamp() {
     const lastBlock = this.lastBlock();
     if (!lastBlock) {
@@ -145,23 +153,26 @@ class Blockchain {
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
-    const block = this.chain.shift();
-    this.chain.push(newBlock);
     if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
-      logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(block, null, 2)}`);
+      logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     if (!this.backupDb.executeTransactionList(newBlock.transactions)) {
-      logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(block, null, 2)}`);
+      logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
+    this.chain.push(newBlock);
     this.writeChain();
+    // Keep up to latest ON_MEM_CHAIN_LENGTH blocks
+    while (this.chain.length > ON_MEM_CHAIN_LENGTH) {
+      this.chain.shift();
+    }
     return true;
   }
 
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
-    if (firstBlock.hash !== Block.genesis().hash) {
+    if (!firstBlock || firstBlock.hash !== Block.genesis().hash) {
       logger.error(`[${LOG_PREFIX}] First block is not the Genesis block`);
       return false;
     }
@@ -309,6 +320,7 @@ class Blockchain {
       if (block.number <= this.lastBlockNumber()) {
         continue;
       }
+      // TODO(lia): validate the state proof of each block
       if (!this.addNewBlock(block)) {
         logger.error(`[${LOG_PREFIX}] Failed to add block ` + block);
         return false;
