@@ -96,5 +96,6 @@ async function sendGetRequest(endpoint, method, params) {
 
 module.exports = {
   sendTxAndWaitForConfirmation,
+  signAndSendTx,
   sendGetRequest
 }
