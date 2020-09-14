@@ -1,7 +1,7 @@
 #!/bin/sh
 
-if [ "$#" -lt 2 ]; then
-    echo "Usage: sh deploy_cloud.sh dev lia"
+if [ "$#" -lt 3 ]; then
+    echo "Usage: sh deploy_gcp.sh dev lia 0"
     exit
 fi
 
@@ -45,3 +45,25 @@ gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/
 NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
 printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/
+
+if [ "$3" -gt 0 ]; then
+  for i in `seq 1 $3`
+  do
+    echo "$i"
+    SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
+    printf "\nDeploying files to ${SHARD_TRACKER_TARGET_ADDR}..."
+    gcloud compute scp --recurse $FILES_FOR_TRACKER ${SHARD_TRACKER_TARGET_ADDR}:~/
+
+    SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
+    printf "\nDeploying files to ${SHARD_NODE_0_TARGET_ADDR}..."
+    gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/
+
+    SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
+    printf "\nDeploying files to ${SHARD_NODE_1_TARGET_ADDR}..."
+    gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_1_TARGET_ADDR}:~/
+
+    SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
+    printf "\nDeploying files to ${SHARD_NODE_2_TARGET_ADDR}..."
+    gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/
+  done
+fi
