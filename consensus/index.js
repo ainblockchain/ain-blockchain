@@ -45,6 +45,7 @@ class Consensus {
     this.timeAdjustment = 0;
     this.isShardReporter = false;
     this.isReporting = false;
+    this.isInEpochTransition = false;
     this.state = {
       // epoch increases by 1 every EPOCH_MS, and at each epoch a new proposer is pseudo-randomly selected.
       epoch: 1,
@@ -117,6 +118,10 @@ class Consensus {
       clearInterval(this.epochInterval);
     }
     this.epochInterval = setInterval(async () => {
+      if (this.isInEpochTransition) {
+        return;
+      }
+      this.isInEpochTransition = true;
       this.tryFinalize();
       let currentTime = Date.now();
       if (this.state.epoch % 100 === 0) {
@@ -143,6 +148,7 @@ class Consensus {
         this.updateProposer();
         this.tryPropose();
       }
+      this.isInEpochTransition = false;
     }, ConsensusConsts.EPOCH_MS);
   }
 
