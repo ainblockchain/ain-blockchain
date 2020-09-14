@@ -31,7 +31,7 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
 - Deploy code (in common with Node server)
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME>
+sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -123,7 +123,7 @@ npm run test_integration
 - Deploy code (in common with Tracker server) 
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME>
+sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -133,9 +133,9 @@ sh setup_ubuntu.sh
 ```
 sh setup_node_gcp.sh
 ```
-- Start Node server job
+- Start Node server job (set shard index to 0 if you're running a root chain node)
 ```
-sh start_node_gcp.sh {dev|spring|summer} <SERVER_INDEX>
+sh start_node_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 ```
 
 <!--
