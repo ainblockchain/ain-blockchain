@@ -32,6 +32,7 @@ class Block {
     this.number = number;
     this.epoch = epoch;
     this.timestamp = timestamp;
+    // TODO(lia): change this to snake case
     this.stateProofHash = stateProofHash;
     this.proposer = proposer;
     this.validators = validators;
