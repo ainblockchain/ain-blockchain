@@ -394,7 +394,7 @@ class P2pServer {
               // Continuously request the blockchain in subsections until
               // your local blockchain matches the height of the consensus blockchain.
               if (data.number > this.node.bc.lastBlockNumber()) {
-                this.requestChainSubsection(this.node.bc.lastBlock());
+                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
               }
             } else {
               logger.info(`[${P2P_PREFIX}] Failed to merge incoming chain subsection.`);
@@ -409,7 +409,7 @@ class P2pServer {
                 }
               } else {
                 logger.info(`[${P2P_PREFIX}] I am behind (${data.number} < ${this.node.bc.lastBlockNumber()}).`);
-                this.requestChainSubsection(this.node.bc.lastBlock());
+                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
               }
             }
             break;
