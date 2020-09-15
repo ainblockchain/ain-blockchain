@@ -11,6 +11,21 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
 
+const getWinstonConsoleTransport = () => {
+  return new (winston.transports.Console) ({
+    name: 'debug-console-log',
+    level: process.env.D === 'true' ? 'debug' : 'info',
+    handleExceptions: true,
+    json: false,
+    colorize: true,
+    format: combine(
+      label({ label: prefix }),
+      timestamp(),
+      logFormat
+    ),
+  });
+};
+
 const getWinstonDailyDebugFileTransport = () => {
   return new (winstonDaily) ({
     name: 'daily-combined-log',
@@ -25,22 +40,7 @@ const getWinstonDailyDebugFileTransport = () => {
       label({ label: prefix }),
       timestamp(),
       logFormat
-    )
-  });
-};
-
-const getWinstonDebugConsoleTransport = () => {
-  return new (winston.transports.Console) ({
-    name: 'debug-console-log',
-    level: 'debug',
-    handleExceptions: true,
-    json: false,
-    colorize: true,
-    format: combine(
-      label({ label: prefix }),
-      timestamp(),
-      logFormat
-    )
+    ),
   });
 };
 
@@ -63,7 +63,7 @@ const getWinstonDailyErrorFileTransport = () => {
 };
 
 module.exports = {
-  getWinstonDebugConsoleTransport,
+  getWinstonConsoleTransport,
   getWinstonDailyDebugFileTransport,
   getWinstonDailyErrorFileTransport,
 };
