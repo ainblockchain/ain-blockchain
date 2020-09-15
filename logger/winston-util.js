@@ -11,7 +11,13 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
 
-// XXX(minsu): we are able to set new winston log levels when necessary in the near future.
+/*
+  We are able to set new winston log levels when necessary in the near future.
+  Reminder: level means that it will print out all under the specified level,
+  e.i. it prints all messages if set to debug,
+       it prints both error and info if info is specified.
+       it only prints error when error is set.
+*/
 const getWinstonLevels = () => {
   return {
     'error': 0,
