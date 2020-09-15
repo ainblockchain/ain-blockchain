@@ -1,7 +1,7 @@
 const winston = require('winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
-const { PORT, ACCOUNT_INDEX } = require('../constants');
+const { DEBUG, PORT, ACCOUNT_INDEX } = require('../constants');
 
 const { combine, timestamp, label, printf } = winston.format;
 
@@ -23,7 +23,7 @@ const getWinstonLevels = () => {
 const getWinstonConsoleTransport = () => {
   return new (winston.transports.Console) ({
     name: 'debug-console-log',
-    level: process.env.DEBUG === 'true' ? 'debug' : 'info',
+    level: DEBUG ? 'debug' : 'info',
     handleExceptions: true,
     json: false,
     colorize: true,
