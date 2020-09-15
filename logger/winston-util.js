@@ -14,9 +14,9 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
 // XXX(minsu): we are able to set new winston log levels when necessary in the near future.
 const getWinstonLevels = () => {
   return {
-    'info': 0,
-    'debug': 1,
-    'error': 2
+    'error': 0,
+    'info': 1,
+    'debug': 2
   };
 }
 
