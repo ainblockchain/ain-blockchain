@@ -1,29 +1,9 @@
 const winston = require('winston');
-const { LoggingWinston } = require('@google-cloud/logging-winston');
-const { HOSTING_ENV } = require('../constants');
-const {
-  getWinstonLevels,
-  getWinstonConsoleTransport,
-  getWinstonDailyDebugFileTransport,
-  getWinstonDailyErrorFileTransport,
-} = require('./winston-util');
-
-function getTransports() {
-  const transports = [
-    getWinstonConsoleTransport(),
-    getWinstonDailyDebugFileTransport(),
-    getWinstonDailyErrorFileTransport(),
-  ];
-  if (HOSTING_ENV === 'gcp') {
-    // Add Stackdriver Logging
-    transports.push(new LoggingWinston);
-  }
-  return transports;
-}
+const { getWinstonLevels, getWinstonTransports } = require('./winston-util');
 
 const logger = new winston.createLogger({
   levels: getWinstonLevels(),
-  transports: getTransports(),
+  transports: getWinstonTransports(),
   exitOnError: false
 });
 

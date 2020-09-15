@@ -1,7 +1,8 @@
 const winston = require('winston');
+const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
-const { DEBUG, PORT, ACCOUNT_INDEX } = require('../constants');
+const { DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV } = require('../constants');
 
 const { combine, timestamp, label, printf } = winston.format;
 
@@ -13,7 +14,7 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
 
 /*
   We are able to set new winston log levels when necessary in the near future.
-  Reminder: level means that it will print out all under the specified level,
+  Reminder: winston prints messages out less than or equal to this level.
   e.i. it prints all messages if set to debug,
        it prints both error and info if info is specified.
        it only prints error when error is set.
@@ -24,7 +25,7 @@ const getWinstonLevels = () => {
     'info': 1,
     'debug': 2
   };
-}
+};
 
 const getWinstonConsoleTransport = () => {
   return new (winston.transports.Console) ({
@@ -77,9 +78,20 @@ const getWinstonDailyErrorFileTransport = () => {
   });
 };
 
+const getWinstonTransports = () => {
+  const transports = [
+    getWinstonConsoleTransport(),
+    getWinstonDailyDebugFileTransport(),
+    getWinstonDailyErrorFileTransport(),
+  ];
+  if (HOSTING_ENV === 'gcp') {
+    // Add Stackdriver Logging
+    transports.push(new LoggingWinston);
+  }
+  return transports;
+};
+
 module.exports = {
   getWinstonLevels,
-  getWinstonConsoleTransport,
-  getWinstonDailyDebugFileTransport,
-  getWinstonDailyErrorFileTransport,
+  getWinstonTransports,
 };
