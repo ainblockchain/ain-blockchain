@@ -4,7 +4,7 @@ const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const { DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV } = require('../constants');
 
-const { combine, timestamp, label, printf } = winston.format;
+const { combine, timestamp, label, printf, colorize } = winston.format;
 
 const logDir = path.join(__dirname, '.', 'logs', String(PORT));
 const prefix = `node-${ACCOUNT_INDEX}`;
@@ -21,9 +21,17 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
 */
 const getWinstonLevels = () => {
   return {
-    'error': 0,
-    'info': 1,
-    'debug': 2
+    error: 0,
+    info: 1,
+    debug: 2
+  };
+};
+
+const getWinstonColors = () => {
+  return {
+    error: 'red',
+    info: 'green',
+    debug: 'yellow'
   };
 };
 
@@ -35,6 +43,7 @@ const getWinstonConsoleTransport = () => {
     json: false,
     colorize: true,
     format: combine(
+      colorize(),
       label({ label: prefix }),
       timestamp(),
       logFormat
@@ -93,5 +102,6 @@ const getWinstonTransports = () => {
 
 module.exports = {
   getWinstonLevels,
+  getWinstonColors,
   getWinstonTransports,
 };
