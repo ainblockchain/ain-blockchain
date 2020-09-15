@@ -2,6 +2,7 @@ const winston = require('winston');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 const { HOSTING_ENV } = require('../constants');
 const {
+  getWinstonLevels,
   getWinstonConsoleTransport,
   getWinstonDailyDebugFileTransport,
   getWinstonDailyErrorFileTransport,
@@ -21,6 +22,7 @@ function getTransports() {
 }
 
 const logger = new winston.createLogger({
+  levels: getWinstonLevels(),
   transports: getTransports(),
   exitOnError: false
 });

@@ -11,10 +11,19 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
 
+// XXX(minsu): we are able to set new winston log levels when necessary in the near future.
+const getWinstonLevels = () => {
+  return {
+    'info': 0,
+    'debug': 1,
+    'error': 2
+  };
+}
+
 const getWinstonConsoleTransport = () => {
   return new (winston.transports.Console) ({
     name: 'debug-console-log',
-    level: process.env.D === 'true' ? 'debug' : 'info',
+    level: process.env.DEBUG === 'true' ? 'debug' : 'info',
     handleExceptions: true,
     json: false,
     colorize: true,
@@ -63,6 +72,7 @@ const getWinstonDailyErrorFileTransport = () => {
 };
 
 module.exports = {
+  getWinstonLevels,
   getWinstonConsoleTransport,
   getWinstonDailyDebugFileTransport,
   getWinstonDailyErrorFileTransport,
