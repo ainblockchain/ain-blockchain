@@ -2,14 +2,14 @@ const winston = require('winston');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 const { HOSTING_ENV } = require('../constants');
 const {
-  getWinstonDebugConsoleTransport,
+  getWinstonConsoleTransport,
   getWinstonDailyDebugFileTransport,
   getWinstonDailyErrorFileTransport,
 } = require('./winston-util');
 
 function getTransports() {
   const transports = [
-    getWinstonDebugConsoleTransport(),
+    getWinstonConsoleTransport(),
     getWinstonDailyDebugFileTransport(),
     getWinstonDailyErrorFileTransport(),
   ];
