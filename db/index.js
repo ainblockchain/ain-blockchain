@@ -1,6 +1,5 @@
 const logger = require('../logger');
 const {
-  DEBUG,
   ReadDbOperations,
   WriteDbOperations,
   PredefinedDbPaths,
@@ -364,11 +363,9 @@ class DB {
 
   incValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
     const valueBefore = this.getValue(valuePath, isGlobal);
-    if (DEBUG) {
-      logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
-    }
+    logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
+      return { code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}` };
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
@@ -376,11 +373,9 @@ class DB {
 
   decValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
     const valueBefore = this.getValue(valuePath, isGlobal);
-    if (DEBUG) {
-      logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
-    }
+    logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
+      return { code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}` };
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);

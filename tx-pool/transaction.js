@@ -1,6 +1,6 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
-const { WriteDbOperations, DEBUG } = require('../constants');
+const { WriteDbOperations } = require('../constants');
 const ChainUtil = require('../chain-util');
 
 // TODO(seo): Remove 'txWithSig.transaction ?' use cases.
@@ -26,9 +26,7 @@ class Transaction {
     this.address = txData.address !== undefined ? txData.address :
         Transaction.getAddress(this.hash.slice(2), this.signature);
 
-    if (DEBUG) {
-      logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
-    }
+    logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
   }
 
   static newTransaction(privateKey, txData) {
