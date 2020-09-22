@@ -55,7 +55,8 @@ async function signAndSendTx(endpoint, tx, keyBuffer) {
 
 async function waitUntilTxFinalize(endpoint, txHash) {
   let numTries = 0;
-  while (numTries < MAX_NUM_CONF_CHECK) {
+  // while (numTries < MAX_NUM_CONF_CHECK) {
+  while (true) {
     try {
       const response = await axios.post(
         endpoint,
