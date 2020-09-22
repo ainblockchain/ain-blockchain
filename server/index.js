@@ -533,12 +533,10 @@ class P2pServer {
     logger.debug(`[${P2P_PREFIX}] EXECUTING: ${JSON.stringify(transaction)}`);
     if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
       logger.debug(`[${P2P_PREFIX}] TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
-      logger.info(`[${P2P_PREFIX}] Timed-out transaction`);
       return null;
     }
     if (this.node.tp.isNotEligibleTransaction(transaction)) {
       logger.debug(`[${P2P_PREFIX}] ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
-      logger.info(`[${P2P_PREFIX}] Transaction already received`);
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
