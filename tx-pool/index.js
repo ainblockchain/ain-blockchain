@@ -22,12 +22,15 @@ class TransactionPool {
   addTransaction(tx) {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
+
+
+    // TODO: Recovery (for test)
     // (closer to the communication layers where the node first receives transactions)
-    if (!Transaction.verifyTransaction(tx)) {
-      logger.info('Invalid transaction');
-      logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
-      return false;
-    }
+    // if (!Transaction.verifyTransaction(tx)) {
+    //   logger.info('Invalid transaction');
+    //   logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
+    //   return false;
+    // }
 
     if (!(tx.address in this.transactions)) {
       this.transactions[tx.address] = [];
@@ -82,8 +85,8 @@ class TransactionPool {
     // Transactions are first ordered by nonce in their individual lists by address
     for (const address in unvalidatedTransactions) {
       let tempFilteredTransactions = _.differenceWith(
-          unvalidatedTransactions[address], 
-          excludeTransactions, 
+          unvalidatedTransactions[address],
+          excludeTransactions,
           (a, b) => { return a.hash === b.hash; }
         );
       tempFilteredTransactions = tempFilteredTransactions.filter(tx => {
