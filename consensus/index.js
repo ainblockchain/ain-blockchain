@@ -265,19 +265,19 @@ class Consensus {
     }
     lastVotes.forEach(voteTx => {
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: success!`);
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: success!`);
       } else {
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: failed..`);
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: failed..`);
       }
     })
 
     transactions.forEach(tx => {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Checking tx ${JSON.stringify(tx, null, 2)}`);
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
         validTransactions.push(tx);
       } else {
-        logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
       }
     })
     const myAddr = this.node.account.address;
@@ -473,7 +473,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute transactions`);
       return false;
     }
-    newState.lastBlockNumber += 1;
+    newState.blockNumberSnapshot += 1;
     if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ${proposalBlock.stateProofHash}`);
       return false;
