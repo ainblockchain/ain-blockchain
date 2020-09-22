@@ -51,6 +51,7 @@ class Consensus {
       epoch: 1,
       proposer: null
     }
+    this.cache = {};
   }
 
   init(lastBlockWithoutProposal, isFirstNode = false) {
@@ -171,8 +172,9 @@ class Consensus {
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators : this.getWhitelist();
     // FIXME(lia): make the seeds more secure and unpredictable
-    const seed = '' + this.genesisHash + this.state.epoch;
-    this.state.proposer = Consensus.selectProposer(seed, validators);
+    // const seed = '' + this.genesisHash + this.state.epoch;
+    //this.state.proposer = Consensus.selectProposer(seed, validators);
+    this.state.proposer = Consensus.selectProposalSequential(lastNotarizedBlock.number, Object.keys(validators));
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
@@ -247,6 +249,13 @@ class Consensus {
     const lastBlock = longestNotarizedChain && longestNotarizedChain.length ?
         longestNotarizedChain[longestNotarizedChain.length - 1] : this.node.bc.lastBlock();
     const blockNumber = lastBlock.number + 1;
+
+    if (this.cache[blockNumber]) {
+      throw Error(`Already proposed ${blockNumber}`);
+    }
+
+    this.cache[blockNumber] = true;
+
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
     const validTransactions = [];
     const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
@@ -422,7 +431,7 @@ class Consensus {
       tempState.setDbToSnapshot(prevState);
       proposalBlock.last_votes.forEach(voteTx => {
         if (voteTx.hash === prevBlockProposal.hash) return;
-        if (!Consensus.isValidConsensusTx(voteTx) || 
+        if (!Consensus.isValidConsensusTx(voteTx) ||
             ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
           logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting tx execution for prev block failed`);
           // return;
@@ -439,8 +448,9 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Previous block's epoch (${prevBlock.epoch}) is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
-    const seed = '' + this.genesisHash + epoch;
-    const expectedProposer = Consensus.selectProposer(seed, validators);
+    // const seed = '' + this.genesisHash + epoch;
+    // const expectedProposer = Consensus.selectProposer(seed, validators);
+    const expectedProposer = Consensus.selectProposalSequential(prevBlock.number, Object.keys(validators));
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`);
       return false;
@@ -571,7 +581,7 @@ class Consensus {
         }
       }
     }, false);
-    
+
     this.handleConsensusMessage({ value: voteTx, type: ConsensusMessageTypes.VOTE });
   }
 
@@ -845,7 +855,7 @@ class Consensus {
       return _.get(response, 'data.result.result');
     } catch (e) {
       logger.error(`Failed to get the latest reported block number: ${e}`);
-    } 
+    }
   }
 
   isRunning() {
@@ -868,7 +878,7 @@ class Consensus {
    *     proposer
    *   },
    *   block_pool: {
-   *     hashToBlockInfo, 
+   *     hashToBlockInfo,
    *     hashToState,
    *     hashToNextBlockSet,
    *     epochToBlock,
@@ -915,6 +925,11 @@ class Consensus {
       health = (this.state.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
     }
     return { health, status: this.status, epoch: this.state.epoch };
+  }
+
+  // TODO : Delete
+  static selectProposalSequential(lastBlockNumber, validatorAccounts) {
+    return validatorAccounts[lastBlockNumber % validatorAccounts.length];
   }
 
   static selectProposer(seed, validators) {
