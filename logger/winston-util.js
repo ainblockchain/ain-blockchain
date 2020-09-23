@@ -89,8 +89,8 @@ const getWinstonDailyErrorFileTransport = () => {
 
 const getWinstonTransports = () => {
   const transports = [
-    getWinstonConsoleTransport(),
-    getWinstonDailyDebugFileTransport(),
+    // getWinstonConsoleTransport(),
+    // getWinstonDailyDebugFileTransport(),
     getWinstonDailyErrorFileTransport(),
   ];
   if (HOSTING_ENV === 'gcp') {
