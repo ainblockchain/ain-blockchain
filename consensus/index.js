@@ -25,6 +25,7 @@ const {
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const { signAndSendTx, sendGetRequest } = require('../server/util');
+const { sleep } = require('sleep');
 const LOG_PREFIX = 'CONSENSUS';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -172,9 +173,9 @@ class Consensus {
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators : this.getWhitelist();
     // FIXME(lia): make the seeds more secure and unpredictable
-    // const seed = '' + this.genesisHash + this.state.epoch;
-    //this.state.proposer = Consensus.selectProposer(seed, validators);
-    this.state.proposer = Consensus.selectProposalSequential(lastNotarizedBlock.number, Object.keys(validators));
+    const seed = '' + this.genesisHash + this.state.epoch;
+    this.state.proposer = Consensus.selectProposer(seed, validators);
+    // this.state.proposer = Consensus.selectProposalSequential(lastNotarizedBlock.number, Object.keys(validators));
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
@@ -250,11 +251,13 @@ class Consensus {
         longestNotarizedChain[longestNotarizedChain.length - 1] : this.node.bc.lastBlock();
     const blockNumber = lastBlock.number + 1;
 
-    if (this.cache[blockNumber]) {
-      throw Error(`Already proposed ${blockNumber}`);
+    if (blockNumber > 1 && this.cache[blockNumber]) {
+      logger.error(`Already proposed ${blockNumber} / ${this.cache[blockNumber]}`);
+      // const blockInfo = this.blockPool.hashToBlockInfo[this.cache[blockNumber]];
+      // logger.error(`Already proposed block info: ${JSON.stringify(blockInfo)}`);
+      // this.server.broadcastConsensusMessage({ value: { proposalBlock: blockInfo.block, proposalTx: blockInfo.proposal }, type: ConsensusMessageTypes.PROPOSE });
+      return null;
     }
-
-    this.cache[blockNumber] = true;
 
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
     const validTransactions = [];
@@ -289,6 +292,19 @@ class Consensus {
         logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
       }
     })
+
+    // for (const tx of transactions) {
+    //   if (validTransactions.length > 1000) {
+    //     break;
+    //   }
+    //   if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
+    //     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
+    //     validTransactions.push(tx);
+    //   } else {
+    //     logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
+    //   }
+    // }
+
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastBlock.validators : this.getWhitelist();
@@ -340,6 +356,7 @@ class Consensus {
         }
       }, false);
     }
+    this.cache[blockNumber] = proposalBlock.hash;
     return { proposalBlock, proposalTx };
   }
 
@@ -358,10 +375,10 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] The block_hash value in proposalTx (${block_hash}) and the actual proposalBlock's hash (${proposalBlock.hash}) don't match`);
       return false;
     }
-    if (!Block.validateProposedBlock(proposalBlock)) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposed block didn't pass the basic checks`);
-      return false;
-    }
+    // if (!Block.validateProposedBlock(proposalBlock)) {
+    //   logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposed block didn't pass the basic checks`);
+    //   return false;
+    // }
     const { proposer, number, epoch, last_hash } = proposalBlock;
     if (number <= this.node.bc.lastBlockNumber()) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] There already is a finalized block of the number`);
@@ -389,6 +406,7 @@ class Consensus {
       const depositSum = depositTxs.reduce((a, b) => { return a + b.operation.value; }, 0);
       if (depositSum < majority) {
         logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] We don't have enough deposits yet`)
+        this.blockPool.addSeenBlock(proposalBlock, proposalTx);
         return false;
       }
       // TODO(lia): make sure each validator staked only once at this point
@@ -448,9 +466,9 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Previous block's epoch (${prevBlock.epoch}) is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
-    // const seed = '' + this.genesisHash + epoch;
-    // const expectedProposer = Consensus.selectProposer(seed, validators);
-    const expectedProposer = Consensus.selectProposalSequential(prevBlock.number, Object.keys(validators));
+    const seed = '' + this.genesisHash + epoch;
+    const expectedProposer = Consensus.selectProposer(seed, validators);
+    // const expectedProposer = Consensus.selectProposalSequential(prevBlock.number, Object.keys(validators));
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`);
       return false;
@@ -534,7 +552,10 @@ class Consensus {
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] I'm the proposer`);
       try {
-        this.handleConsensusMessage({ value: this.createProposal(), type: ConsensusMessageTypes.PROPOSE });
+        const proposal = this.createProposal();
+        if (proposal !== null) {
+          this.handleConsensusMessage({ value: proposal, type: ConsensusMessageTypes.PROPOSE });
+        }
       } catch (e) {
         logger.error(`Error while creating a proposal: ${e}`);
       }
