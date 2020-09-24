@@ -18,6 +18,10 @@ elif [ "$1" = 'dev' ]; then
     export TRACKER_WS_ADDR=ws://35.187.153.22:5000  # dev-shard-1-tracker-ip
   elif [ "$2" = 2 ]; then
     export TRACKER_WS_ADDR=ws://34.80.203.104:5000  # dev-shard-2-tracker-ip
+  elif [ "$2" = 3 ]; then
+    export TRACKER_WS_ADDR=ws://35.189.174.17:5000  # dev-shard-3-tracker-ip
+  elif [ "$2" = 4 ]; then
+    export TRACKER_WS_ADDR=ws://35.221.164.158:5000  # dev-shard-4-tracker-ip
   else
     echo "Invalid shard ID argument: $2"
     exit
@@ -34,7 +38,7 @@ if [ "$3" -lt 0 ] || [ "$3" -gt 4 ]; then
 fi
 
 if [ "$2" = 0 ]; then
-  export NUM_VALIDATORS=5
+  export NUM_VALIDATORS=3
 else
   export NUM_VALIDATORS=3
   export GENESIS_CONFIGS_DIR="blockchain/shard_$2"
