@@ -32,16 +32,16 @@ TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
 NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-node-1-oregon"
 NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-node-2-singapore"
-NODE_3_TARGET_ADDR="${GCP_USER}@${SEASON}-node-3-iowa"
-NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
+# NODE_3_TARGET_ADDR="${GCP_USER}@${SEASON}-node-3-iowa"
+# NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
 
 # kill any processes still alive
 gcloud compute ssh $TRACKER_TARGET_ADDR --command "killall node" --project $PROJECT_ID
 gcloud compute ssh $NODE_0_TARGET_ADDR --command "killall node" --project $PROJECT_ID
 gcloud compute ssh $NODE_1_TARGET_ADDR --command "killall node" --project $PROJECT_ID
 gcloud compute ssh $NODE_2_TARGET_ADDR --command "killall node" --project $PROJECT_ID
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "killall node" --project $PROJECT_ID
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "killall node" --project $PROJECT_ID
+# gcloud compute ssh $NODE_3_TARGET_ADDR --command "killall node" --project $PROJECT_ID
+# gcloud compute ssh $NODE_4_TARGET_ADDR --command "killall node" --project $PROJECT_ID
 
 # deploy files to GCP instances
 printf "\nDeploying parent blockchain..."
@@ -53,10 +53,10 @@ printf "\nDeploying files to ${NODE_1_TARGET_ADDR}..."
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID
 printf "\nDeploying files to ${NODE_2_TARGET_ADDR}..."
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_2_TARGET_ADDR}:~/ --project $PROJECT_ID
-printf "\nDeploying files to ${NODE_3_TARGET_ADDR}..."
-gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project $PROJECT_ID
-printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
-gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID
+# printf "\nDeploying files to ${NODE_3_TARGET_ADDR}..."
+# gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project $PROJECT_ID
+# printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
+# gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID
 
 # ssh into each instance, set the parent chain up, and start running the nodes
 printf "\n\n############################\n# Running parent tracker #\n############################\n\n"
@@ -67,10 +67,10 @@ printf "\n\n#########################\n# Running parent node 1 #\n##############
 gcloud compute ssh $NODE_1_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 1" --project $PROJECT_ID
 printf "\n\n#########################\n# Running parent node 2 #\n#########################\n\n"
 gcloud compute ssh $NODE_2_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 2" --project $PROJECT_ID
-printf "\n\n#########################\n# Running parent node 3 #\n#########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 3" --project $PROJECT_ID
-printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 4" --project $PROJECT_ID
+# printf "\n\n#########################\n# Running parent node 3 #\n#########################\n\n"
+# gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 3" --project $PROJECT_ID
+# printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
+# gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 4" --project $PROJECT_ID
 
 printf "\nDeploying shard blockchains..."
 if [ "$3" -gt 0 ]; then
