@@ -97,7 +97,7 @@ function waitUntilShardReporterStarts() {
   }
 }
 
-setUp = () => {
+function setUp() {
   let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -142,7 +142,7 @@ setUp = () => {
   waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
-cleanUp = () => {
+function cleanUp() {
   let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
