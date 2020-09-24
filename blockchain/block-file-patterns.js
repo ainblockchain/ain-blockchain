@@ -9,7 +9,7 @@ class BlockFilePatterns {
   * @return {String} A RegEx statement matching the block corresponding to the hash in the given chainPath directory.
   */
   static getBlockFilenameByHash(chainPath, hash) {
-    return `${chainPath}/*-*-*${hash}*.${FILE_NAME_SUFFIX}`;
+    return `${chainPath}/[0-9]*-*${hash}.${FILE_NAME_SUFFIX}`;
   }
   /**
   * Returns a RegEx query expression for querying all block files in a given chainPath directory.
