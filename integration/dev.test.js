@@ -76,7 +76,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-setUp = () => {
+function setUp() {
   let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -121,7 +121,7 @@ setUp = () => {
   waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
-cleanUp = () => {
+function cleanUp() {
   let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -151,7 +151,7 @@ cleanUp = () => {
   waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
-setUpForSharding = (shardingConfig) => {
+function setUpForSharding(shardingConfig) {
   const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
   const res = JSON.parse(
     syncRequest(
