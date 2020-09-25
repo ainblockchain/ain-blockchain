@@ -39,7 +39,7 @@ sh setup_ubuntu.sh
 ```
 - Copy files to a sharable folder & install npm packages
 ```
-sh setup_tracker_gcp.sh
+source setup_tracker_gcp.sh
 ```
 - Start tracker server job
 ```
