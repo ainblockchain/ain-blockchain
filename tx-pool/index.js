@@ -178,6 +178,16 @@ class TransactionPool {
   cleanUpForNewBlock(block) {
     // Get in-block transaction set.
     const inBlockTxs = new Set();
+    block.last_votes.forEach(voteTx => {
+      // voting txs are loosely ordered.
+      this.transactionTracker[voteTx.hash] = {
+        status: TransactionStatus.BLOCK_STATUS,
+        number: block.number,
+        index: -1,
+        timestamp: voteTx.timestamp,
+      };
+      inBlockTxs.add(voteTx.hash);
+    });
     for (let i = 0; i < block.transactions.length; i++) {
       const tx = block.transactions[i];
       // Update committed nonce tracker.
