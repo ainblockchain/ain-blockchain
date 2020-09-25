@@ -148,9 +148,9 @@ class DB {
     if (DB.isEmptyNode(stateTree)) {
       this.removeEmptyNodes(fullPath);
     } else {
-      setProofHashForStateTree(stateTree);
+      // setProofHashForStateTree(stateTree);
     }
-    updateProofHashForPath(pathToParent, this.stateTree);
+    // updateProofHashForPath(pathToParent, this.stateTree);
   }
 
   static isEmptyNode(dbNode) {
