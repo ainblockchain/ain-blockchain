@@ -20,7 +20,8 @@ const {
   ShardingProtocols,
   ProofProperties,
   MAX_TX_BYTES,
-  MAX_SHARD_REPORT
+  MAX_SHARD_REPORT,
+  GenesisWhitelist
 } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
@@ -311,7 +312,7 @@ class Consensus {
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-      blockNumber, this.state.epoch, tempState.getProof('/')[ProofProperties.PROOF_HASH], myAddr,
+      blockNumber, this.state.epoch, /*tempState.getProof('/')[ProofProperties.PROOF_HASH]*/ '', myAddr,
       validators);
 
     let proposalTx;
@@ -502,10 +503,10 @@ class Consensus {
       return false;
     }
     newState.blockNumberSnapshot += 1;
-    if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
-      logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ${proposalBlock.stateProofHash}`);
-      return false;
-    }
+    // if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
+    //   logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ${proposalBlock.stateProofHash}`);
+    //   return false;
+    // }
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;
@@ -746,10 +747,11 @@ class Consensus {
   }
 
   getWhitelist() {
-    return this.node.db.getValue(ChainUtil.formatPath([
-      ConsensusDbPaths.CONSENSUS,
-      ConsensusDbPaths.WHITELIST
-    ])) || {};
+    // return this.node.db.getValue(ChainUtil.formatPath([
+    //   ConsensusDbPaths.CONSENSUS,
+    //   ConsensusDbPaths.WHITELIST
+    // ])) || {};
+    return GenesisWhitelist;
   }
 
   getValidConsensusDeposit(address) {
