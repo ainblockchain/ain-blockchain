@@ -131,7 +131,7 @@ sh setup_ubuntu.sh
 ```
 - Copy files to a sharable folder & install npm packages
 ```
-sh setup_node_gcp.sh
+source setup_node_gcp.sh
 ```
 - Start Node server job
 ```
