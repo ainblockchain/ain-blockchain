@@ -1,6 +1,10 @@
 const logger = require('../logger');
-const { DEBUG, TRANSACTION_POOL_TIME_OUT_MS, TRANSACTION_TRACKER_TIME_OUT_MS,
-  TransactionStatus, WriteDbOperations } = require('../constants');
+const {
+  TRANSACTION_POOL_TIME_OUT_MS,
+  TRANSACTION_TRACKER_TIME_OUT_MS,
+  TransactionStatus,
+  WriteDbOperations
+} = require('../constants');
 const Transaction = require('./transaction');
 const _ = require('lodash');
 
@@ -21,9 +25,7 @@ class TransactionPool {
     // (closer to the communication layers where the node first receives transactions)
     if (!Transaction.verifyTransaction(tx)) {
       logger.info('Invalid transaction');
-      if (DEBUG) {
-        logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
-      }
+      logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
       return false;
     }
 
@@ -42,10 +44,7 @@ class TransactionPool {
             tx.nonce > this.pendingNonceTracker[tx.address])) {
       this.pendingNonceTracker[tx.address] = tx.nonce;
     }
-
-    if (DEBUG) {
-      logger.debug(`ADDING: ${JSON.stringify(tx)}`);
-    }
+    logger.debug(`ADDING: ${JSON.stringify(tx)}`);
     return true;
   }
 
