@@ -76,7 +76,6 @@ printf "\nDeploying shard blockchains..."
 if [ "$3" -gt 0 ]; then
     for i in $(seq $3)
         do
-        if [ "$i" -gt 0 ]; then
             echo "shard #$i"
 
             # generate genesis config files in ./blockchain/shard_$i
@@ -122,6 +121,5 @@ if [ "$3" -gt 0 ]; then
             gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON $i 1" --project $PROJECT_ID
             printf "\n\n##########################\n# Running shard_$i node 2 #\n##########################\n\n"
             gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON $i 2" --project $PROJECT_ID
-        fi
         done
 fi
