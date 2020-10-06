@@ -8,8 +8,8 @@ const parentChainPoCList = {
     'http://35.194.235.180:8080',
     'http://34.83.238.42:8080',
     'http://34.87.61.255:8080',
-    // 'http://35.224.157.200:8080',
-    // 'http://34.90.7.23:8080'
+    'http://35.224.157.200:8080',
+    'http://34.90.7.23:8080'
   ],
   staging: [
     'http://35.194.139.219:8080',
@@ -56,7 +56,7 @@ function createAccount(prefix) {
 }
 
 function createAccounts(num, _prefix) {
-  const ownerAccount = createAccount(_prefix + _prefix + _prefix);
+  const ownerAccount = createAccount(_prefix + _prefix);
   const otherAccounts = [];
   for (let i = 0; i < num; i++) {
     const prefix = _prefix === null ? '' : _.padStart(i, 2, '0') + _prefix;
@@ -115,8 +115,9 @@ async function processArguments() {
     fs.mkdirSync(shardDir);
   }
   // genesis_accounts.json
-  // prefixing rule: shard 1 = 'B', shard 2 = 'C', ... (A is reserved for the parent chain)
-  const prefix = String.fromCharCode(65 + index);
+  // prefixing rule: shard 1 = 'B0', shard 2 = 'B1', ... shard 11 = 'C0' ... shard 20 = 'C9'
+  // TODO(lia): improve the prefixing rule to support shards of index > 20
+  const prefix = (index < 11 ? 'B' : 'C') + (index - 1) % 10;
   const accounts = createAccounts(num, prefix);
   const accountsFile = path.join(shardDir, 'genesis_accounts.json');
   writeFile(JSON.stringify(accounts, null, 2), accountsFile);
