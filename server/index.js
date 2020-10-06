@@ -547,9 +547,9 @@ class P2pServer {
     const result = this.node.db.executeTransaction(transaction);
     if (!ChainUtil.transactionFailed(result)) {
       this.node.tp.addTransaction(transaction);
+    } else {
+      logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
-    logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
-
     return result;
   }
 
