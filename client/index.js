@@ -6,7 +6,7 @@ const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
 const logger = require('../logger');
-const Node = require('../node');
+const BlockchainNode = require('../node');
 const P2pServer = require('../server');
 const ChainUtil = require('../chain-util');
 const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus } = require('../constants');
@@ -41,7 +41,7 @@ const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_VERSION].max;
 const app = express();
 app.use(express.json()); // support json encoded bodies
 
-const node = new Node();
+const node = new BlockchainNode();
 const p2pServer = new P2pServer(node, minProtocolVersion, maxProtocolVersion);
 
 const jsonRpcMethods = require('../json_rpc')(

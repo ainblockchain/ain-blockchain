@@ -5,7 +5,7 @@ const assert = chai.assert;
 const { BLOCKCHAINS_DIR } = require('../constants');
 const Blockchain = require('../blockchain/');
 const { Block } = require('../blockchain/block');
-const Node = require('../node');
+const BlockchainNode = require('../node');
 const { setDbForTesting, getTransaction } = require('./test-util')
 
 describe('Blockchain', () => {
@@ -14,9 +14,9 @@ describe('Blockchain', () => {
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node1 = new Node();
+    node1 = new BlockchainNode();
     setDbForTesting(node1, 0);
-    node2 = new Node();
+    node2 = new BlockchainNode();
     setDbForTesting(node2, 1);
   });
 
