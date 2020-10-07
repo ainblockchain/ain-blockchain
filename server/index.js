@@ -29,7 +29,8 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-  buildOwnerPermissions
+  buildOwnerPermissions,
+  LIGHTWEIGHT
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const { sendTxAndWaitForConfirmation } = require('./util');
@@ -609,6 +610,10 @@ class P2pServer {
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
+    const lightweightRules = `auth === '${shardReporter}'`;
+    const nonLightweightRules = `auth === '${shardReporter}' && ` +
+        `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
+        `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`;
 
     const shardInitTx = {
       operation: {
@@ -634,7 +639,7 @@ class P2pServer {
               PredefinedDbPaths.SHARDING_PROOF_HASH
             ]),
             value: {
-              [RuleProperties.WRITE]: `auth === '${shardReporter}'`
+              [RuleProperties.WRITE]: LIGHTWEIGHT ? lightweightRules : nonLightweightRules
             }
           },
           {

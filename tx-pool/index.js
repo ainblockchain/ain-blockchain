@@ -3,7 +3,8 @@ const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
   TransactionStatus,
-  WriteDbOperations
+  WriteDbOperations,
+  LIGHTWEIGHT,
 } = require('../constants');
 const Transaction = require('./transaction');
 const _ = require('lodash');
@@ -22,15 +23,14 @@ class TransactionPool {
   addTransaction(tx) {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
-
-
-    // TODO: Recovery (for test)
     // (closer to the communication layers where the node first receives transactions)
-    // if (!Transaction.verifyTransaction(tx)) {
-    //   logger.info('Invalid transaction');
-    //   logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
-    //   return false;
-    // }
+    if (!LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(tx)) {
+        logger.info('Invalid transaction');
+        logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
+        return false;
+      }
+    }
 
     if (!(tx.address in this.transactions)) {
       this.transactions[tx.address] = [];

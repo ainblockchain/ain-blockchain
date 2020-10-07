@@ -10,6 +10,7 @@ const {
   ShardingProperties,
   GenesisSharding,
   buildOwnerPermissions,
+  LIGHTWEIGHT,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -147,10 +148,12 @@ class DB {
     }
     if (DB.isEmptyNode(stateTree)) {
       this.removeEmptyNodes(fullPath);
-    } else {
-      // setProofHashForStateTree(stateTree);
+    } else if (!LIGHTWEIGHT) {
+      setProofHashForStateTree(stateTree);
     }
-    // updateProofHashForPath(pathToParent, this.stateTree);
+    if (!LIGHTWEIGHT) {
+      updateProofHashForPath(pathToParent, this.stateTree);
+    }
   }
 
   static isEmptyNode(dbNode) {
