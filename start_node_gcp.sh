@@ -81,5 +81,6 @@ echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 
 export HOSTING_ENV=gcp
 export DEBUG=false
+export LIGHTWEIGHT=true
 
 nohup node client/index.js >/dev/null 2>&1 &

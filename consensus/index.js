@@ -21,7 +21,8 @@ const {
   ProofProperties,
   MAX_TX_BYTES,
   MAX_SHARD_REPORT,
-  GenesisWhitelist
+  GenesisWhitelist,
+  LIGHTWEIGHT,
 } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
@@ -54,6 +55,7 @@ class Consensus {
       proposer: null
     }
     this.cache = {};
+    this.validatorList = Object.keys(GenesisWhitelist).sort();
   }
 
   init(lastBlockWithoutProposal, isFirstNode = false) {
@@ -176,7 +178,6 @@ class Consensus {
     // FIXME(lia): make the seeds more secure and unpredictable
     const seed = '' + this.genesisHash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
-    // this.state.proposer = Consensus.selectProposalSequential(lastNotarizedBlock.number, Object.keys(validators));
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
@@ -252,7 +253,7 @@ class Consensus {
         longestNotarizedChain[longestNotarizedChain.length - 1] : this.node.bc.lastBlock();
     const blockNumber = lastBlock.number + 1;
 
-    if (blockNumber > 1 && this.cache[blockNumber]) {
+    if (blockNumber > 1 && LIGHTWEIGHT && this.cache[blockNumber]) {
       logger.error(`Already proposed ${blockNumber} / ${this.cache[blockNumber]}`);
       // const blockInfo = this.blockPool.hashToBlockInfo[this.cache[blockNumber]];
       // logger.error(`Already proposed block info: ${JSON.stringify(blockInfo)}`);
@@ -294,25 +295,28 @@ class Consensus {
       }
     })
 
-    // for (const tx of transactions) {
-    //   if (validTransactions.length > 1000) {
-    //     break;
-    //   }
-    //   if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
-    //     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
-    //     validTransactions.push(tx);
-    //   } else {
-    //     logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
-    //   }
-    // }
+    if (!LIGHTWEIGHT) {
+      for (const tx of transactions) {
+        if (validTransactions.length > 1000) {
+          break;
+        }
+        if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
+          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
+          validTransactions.push(tx);
+        } else {
+          logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
+        }
+      }
+    }
 
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastBlock.validators : this.getWhitelist();
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) { return a + b; }, 0);
+    const stateProofHash = LIGHTWEIGHT ? '' : tempState.getProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-      blockNumber, this.state.epoch, /*tempState.getProof('/')[ProofProperties.PROOF_HASH]*/ '', myAddr,
+      blockNumber, this.state.epoch, stateProofHash, myAddr,
       validators);
 
     let proposalTx;
@@ -357,7 +361,9 @@ class Consensus {
         }
       }, false);
     }
-    this.cache[blockNumber] = proposalBlock.hash;
+    if (LIGHTWEIGHT) {
+      this.cache[blockNumber] = proposalBlock.hash;
+    }
     return { proposalBlock, proposalTx };
   }
 
@@ -376,10 +382,12 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] The block_hash value in proposalTx (${block_hash}) and the actual proposalBlock's hash (${proposalBlock.hash}) don't match`);
       return false;
     }
-    // if (!Block.validateProposedBlock(proposalBlock)) {
-    //   logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposed block didn't pass the basic checks`);
-    //   return false;
-    // }
+    if (!LIGHTWEIGHT) {
+      if (!Block.validateProposedBlock(proposalBlock)) {
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposed block didn't pass the basic checks`);
+        return false;
+      }
+    }
     const { proposer, number, epoch, last_hash } = proposalBlock;
     if (number <= this.node.bc.lastBlockNumber()) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] There already is a finalized block of the number`);
@@ -469,7 +477,6 @@ class Consensus {
     }
     const seed = '' + this.genesisHash + epoch;
     const expectedProposer = Consensus.selectProposer(seed, validators);
-    // const expectedProposer = Consensus.selectProposalSequential(prevBlock.number, Object.keys(validators));
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`);
       return false;
@@ -503,10 +510,12 @@ class Consensus {
       return false;
     }
     newState.blockNumberSnapshot += 1;
-    // if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
-    //   logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ${proposalBlock.stateProofHash}`);
-    //   return false;
-    // }
+    if (!LIGHTWEIGHT) {
+      if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] State proof hashes don't match: ${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ${proposalBlock.stateProofHash}`);
+        return false;
+      }
+    }
     this.blockPool.hashToState.set(proposalBlock.hash, newState);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;
@@ -747,11 +756,10 @@ class Consensus {
   }
 
   getWhitelist() {
-    // return this.node.db.getValue(ChainUtil.formatPath([
-    //   ConsensusDbPaths.CONSENSUS,
-    //   ConsensusDbPaths.WHITELIST
-    // ])) || {};
-    return GenesisWhitelist;
+    return LIGHTWEIGHT ? GenesisWhitelist : this.node.db.getValue(ChainUtil.formatPath([
+        ConsensusDbPaths.CONSENSUS,
+        ConsensusDbPaths.WHITELIST
+      ])) || {};
   }
 
   getValidConsensusDeposit(address) {
@@ -948,11 +956,6 @@ class Consensus {
       health = (this.state.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
     }
     return { health, status: this.status, epoch: this.state.epoch };
-  }
-
-  // TODO : Delete
-  static selectProposalSequential(lastBlockNumber, validatorAccounts) {
-    return validatorAccounts[lastBlockNumber % validatorAccounts.length];
   }
 
   static selectProposer(seed, validators) {

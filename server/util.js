@@ -12,7 +12,6 @@ const logger = require('../logger');
 const ChainUtil = require('../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const MAX_NUM_CONF_CHECK = 10;
 
 async function sendTxAndWaitForConfirmation(endpoint, tx, keyBuffer) {
   const res = await signAndSendTx(endpoint, tx, keyBuffer);
@@ -55,7 +54,6 @@ async function signAndSendTx(endpoint, tx, keyBuffer) {
 
 async function waitUntilTxFinalize(endpoint, txHash) {
   let numTries = 0;
-  // while (numTries < MAX_NUM_CONF_CHECK) {
   while (true) {
     try {
       const response = await axios.post(
@@ -80,7 +78,6 @@ async function waitUntilTxFinalize(endpoint, txHash) {
     sleep(1);
     numTries++;
   }
-  return false;
 }
 
 async function sendGetRequest(endpoint, method, params) {
