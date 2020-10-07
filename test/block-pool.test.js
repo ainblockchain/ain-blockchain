@@ -4,7 +4,7 @@ const rimraf = require('rimraf');
 const assert = chai.assert;
 const { BLOCKCHAINS_DIR } = require('../constants');
 const BlockPool = require('../consensus/block-pool');
-const Node = require('../node');
+const BlockchainNode = require('../node');
 const { Block } = require('../blockchain/block');
 const { setDbForTesting, getTransaction } = require('./test-util')
 
@@ -14,7 +14,7 @@ describe("BlockPool", () => {
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node1 = new Node();
+    node1 = new BlockchainNode();
     setDbForTesting(node1, 0, true);
   });
 

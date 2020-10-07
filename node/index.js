@@ -8,7 +8,7 @@ const Transaction = require('../tx-pool/transaction');
 
 const NODE_PREFIX = 'NODE';
 
-class Node {
+class BlockchainNode {
   constructor() {
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool();
@@ -18,7 +18,8 @@ class Node {
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    logger.info(`[${NODE_PREFIX}] Initializing a new node with account: ${this.account.address}`);
+    logger.info(`[${NODE_PREFIX}] Initializing a new blockchain node with account: ` +
+        `${this.account.address}`);
   }
 
   // For testing purpose only.
@@ -123,4 +124,4 @@ class Node {
   }
 }
 
-module.exports = Node;
+module.exports = BlockchainNode;
