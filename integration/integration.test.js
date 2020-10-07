@@ -436,8 +436,8 @@ describe('Integration Tests', () => {
           for (let j = 0; j < len; j++) {
             const block = blocks[j];
             if (block.hash !== hashBlock(block)) {
-              assert.fail(`Block hash is incorrect for block ${JSON.stringify(block, null, 2)}
-                          \n(hash: ${hashBlock(block)}, node ${i})`);
+              assert.fail(`Block hash is incorrect for block ${JSON.stringify(block, null, 2)}` +
+                          `\n(hash: ${hashBlock(block)}, node ${i})`);
             }
             if (block.transactions_hash !== hashString(stringify(block.transactions))) {
               assert.fail(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
