@@ -76,7 +76,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-function setUp() {
+function setUp(){
   let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -121,7 +121,7 @@ function setUp() {
   waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
-function cleanUp() {
+function cleanUp(){
   let res = JSON.parse(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
