@@ -5,14 +5,14 @@ const shuffleSeed = require('shuffle-seed');
 const ainUtil = require('@ainblockchain/ain-util');
 const Blockchain = require('../blockchain');
 const {Block} = require('../blockchain/block');
-const Node = require('../node');
+const BlockchainNode = require('../node');
 const {setDbForTesting, getTransaction} = require('./test-util')
 
 describe('TransactionPool', () => {
   let node, transaction;
 
   beforeEach(() => {
-    node = new Node();
+    node = new BlockchainNode();
     setDbForTesting(node);
 
     transaction = getTransaction(node, {
@@ -49,11 +49,11 @@ describe('TransactionPool', () => {
       node.tp.transactions[node.account.address] =
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
 
-      node2 = new Node();
+      node2 = new BlockchainNode();
       setDbForTesting(node2, 1);
-      node3 = new Node();
+      node3 = new BlockchainNode();
       setDbForTesting(node3, 2);
-      node4 = new Node();
+      node4 = new BlockchainNode();
       setDbForTesting(node4, 3);
       const nodes = [node2, node3, node4];
       for (let j = 0; j < nodes.length; j++) {

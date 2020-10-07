@@ -3,7 +3,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const { BLOCKCHAINS_DIR } = require('../constants');
 const Transaction = require('../tx-pool/transaction');
-const Node = require('../node/');
+const BlockchainNode = require('../node/');
 const {setDbForTesting, getTransaction} = require('./test-util')
 
 describe('Transaction', () => {
@@ -13,7 +13,7 @@ describe('Transaction', () => {
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node = new Node();
+    node = new BlockchainNode();
     setDbForTesting(node);
     txData = {
       operation: {
