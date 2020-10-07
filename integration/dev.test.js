@@ -1029,7 +1029,8 @@ describe('API Tests', () => {
       let res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
       waitUntilTxFinalized(SERVERS, res.tx_hash);
-      res = JSON.parse(syncRequest('POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
+      res = JSON.parse(syncRequest('POST', server1+'/set_value', 
+                  {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
       waitUntilTxFinalized(SERVERS, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}}).body.toString('utf-8')).result;
