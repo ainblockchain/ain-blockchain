@@ -54,6 +54,7 @@ class Consensus {
       epoch: 1,
       proposer: null
     }
+    // This feature is only used when LIGHTWEIGHT=true.
     this.cache = {};
     this.validatorList = Object.keys(GenesisWhitelist).sort();
   }
