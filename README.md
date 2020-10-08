@@ -29,9 +29,10 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
 #### On Google Coud Platform (GCP)
 
 - Deploy code (in common with Node server)
+  Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME>
+sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -121,9 +122,10 @@ npm run test_integration
 #### On Google Coud Platform (GCP)
 
 - Deploy code (in common with Tracker server) 
+  Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME>
+sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -133,9 +135,9 @@ sh setup_ubuntu.sh
 ```
 source setup_node_gcp.sh
 ```
-- Start Node server job
+- Start Node server job (set shard index to 0 if you're running a root chain node)
 ```
-sh start_node_gcp.sh {dev|spring|summer} <SERVER_INDEX>
+sh start_node_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 ```
 
 <!--

@@ -3,7 +3,8 @@ const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
   TransactionStatus,
-  WriteDbOperations
+  WriteDbOperations,
+  LIGHTWEIGHT,
 } = require('../constants');
 const Transaction = require('./transaction');
 const _ = require('lodash');
@@ -23,10 +24,12 @@ class TransactionPool {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
     // (closer to the communication layers where the node first receives transactions)
-    if (!Transaction.verifyTransaction(tx)) {
-      logger.info('Invalid transaction');
-      logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
-      return false;
+    if (!LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(tx)) {
+        logger.info('Invalid transaction');
+        logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
+        return false;
+      }
     }
 
     if (!(tx.address in this.transactions)) {
@@ -82,8 +85,8 @@ class TransactionPool {
     // Transactions are first ordered by nonce in their individual lists by address
     for (const address in unvalidatedTransactions) {
       let tempFilteredTransactions = _.differenceWith(
-          unvalidatedTransactions[address], 
-          excludeTransactions, 
+          unvalidatedTransactions[address],
+          excludeTransactions,
           (a, b) => { return a.hash === b.hash; }
         );
       tempFilteredTransactions = tempFilteredTransactions.filter(tx => {
@@ -175,6 +178,16 @@ class TransactionPool {
   cleanUpForNewBlock(block) {
     // Get in-block transaction set.
     const inBlockTxs = new Set();
+    block.last_votes.forEach(voteTx => {
+      // voting txs are loosely ordered.
+      this.transactionTracker[voteTx.hash] = {
+        status: TransactionStatus.BLOCK_STATUS,
+        number: block.number,
+        index: -1,
+        timestamp: voteTx.timestamp,
+      };
+      inBlockTxs.add(voteTx.hash);
+    });
     for (let i = 0; i < block.transactions.length; i++) {
       const tx = block.transactions[i];
       // Update committed nonce tracker.

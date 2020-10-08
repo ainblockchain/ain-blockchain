@@ -29,7 +29,8 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-  buildOwnerPermissions
+  buildOwnerPermissions,
+  LIGHTWEIGHT
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const { sendTxAndWaitForConfirmation } = require('./util');
@@ -385,7 +386,7 @@ class P2pServer {
               // Continuously request the blockchain in subsections until
               // your local blockchain matches the height of the consensus blockchain.
               if (data.number > this.node.bc.lastBlockNumber()) {
-                this.requestChainSubsection(this.node.bc.lastBlock());
+                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
               }
             } else {
               logger.info(`[${P2P_PREFIX}] Failed to merge incoming chain subsection.`);
@@ -400,7 +401,7 @@ class P2pServer {
                 }
               } else {
                 logger.info(`[${P2P_PREFIX}] I am behind (${data.number} < ${this.node.bc.lastBlockNumber()}).`);
-                this.requestChainSubsection(this.node.bc.lastBlock());
+                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
               }
             }
             break;
@@ -533,12 +534,10 @@ class P2pServer {
     logger.debug(`[${P2P_PREFIX}] EXECUTING: ${JSON.stringify(transaction)}`);
     if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
       logger.debug(`[${P2P_PREFIX}] TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
-      logger.info(`[${P2P_PREFIX}] Timed-out transaction`);
       return null;
     }
     if (this.node.tp.isNotEligibleTransaction(transaction)) {
       logger.debug(`[${P2P_PREFIX}] ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
-      logger.info(`[${P2P_PREFIX}] Transaction already received`);
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
@@ -549,9 +548,9 @@ class P2pServer {
     const result = this.node.db.executeTransaction(transaction);
     if (!ChainUtil.transactionFailed(result)) {
       this.node.tp.addTransaction(transaction);
+    } else {
+      logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
     }
-    logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
-
     return result;
   }
 
@@ -611,6 +610,10 @@ class P2pServer {
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
+    const lightweightRules = `auth === '${shardReporter}'`;
+    const nonLightweightRules = `auth === '${shardReporter}' && ` +
+        `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
+        `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`;
 
     const shardInitTx = {
       operation: {
@@ -636,9 +639,7 @@ class P2pServer {
               PredefinedDbPaths.SHARDING_PROOF_HASH
             ]),
             value: {
-              [RuleProperties.WRITE]: `auth === '${shardReporter}' && ` +
-                  `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
-                  `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`
+              [RuleProperties.WRITE]: LIGHTWEIGHT ? lightweightRules : nonLightweightRules
             }
           },
           {
