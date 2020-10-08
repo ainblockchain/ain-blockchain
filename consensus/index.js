@@ -295,20 +295,6 @@ class Consensus {
       }
     })
 
-    if (!LIGHTWEIGHT) {
-      for (const tx of transactions) {
-        if (validTransactions.length > 1000) {
-          break;
-        }
-        if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
-          logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
-          validTransactions.push(tx);
-        } else {
-          logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
-        }
-      }
-    }
-
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastBlock.validators : this.getWhitelist();
