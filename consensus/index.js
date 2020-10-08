@@ -255,9 +255,6 @@ class Consensus {
 
     if (blockNumber > 1 && LIGHTWEIGHT && this.cache[blockNumber]) {
       logger.error(`Already proposed ${blockNumber} / ${this.cache[blockNumber]}`);
-      // const blockInfo = this.blockPool.hashToBlockInfo[this.cache[blockNumber]];
-      // logger.error(`Already proposed block info: ${JSON.stringify(blockInfo)}`);
-      // this.server.broadcastConsensusMessage({ value: { proposalBlock: blockInfo.block, proposalTx: blockInfo.proposal }, type: ConsensusMessageTypes.PROPOSE });
       return null;
     }
 
