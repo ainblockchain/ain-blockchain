@@ -2,7 +2,7 @@ const rimraf = require('rimraf');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const Node = require('../node')
+const BlockchainNode = require('../node')
 const {
   BLOCKCHAINS_DIR,
   GenesisToken,
@@ -27,7 +27,7 @@ describe("DB initialization", () => {
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node = new Node();
+    node = new BlockchainNode();
     setDbForTesting(node, 0, true);
   })
 
@@ -99,7 +99,7 @@ describe("DB operations", () => {
 
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node = new Node();
+    node = new BlockchainNode();
     setDbForTesting(node);
 
     dbValues = {
@@ -1679,9 +1679,9 @@ describe("DB rule config", () => {
 
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node1 = new Node();
+    node1 = new BlockchainNode();
     setDbForTesting(node1, 0);
-    node2 = new Node();
+    node2 = new BlockchainNode();
     setDbForTesting(node2, 1);
     dbValues = {
       "comcom": "unreadable value",
@@ -1796,7 +1796,7 @@ describe("DB owner config", () => {
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node = new Node();
+    node = new BlockchainNode();
     setDbForTesting(node);
     node.db.setOwner("test/test_owner/mixed/true/true/true",
       {
@@ -2096,7 +2096,7 @@ describe("DB sharding config", () => {
 
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node = new Node();
+    node = new BlockchainNode();
     setDbForTesting(node, 0, false, false);
 
     dbValues = {
@@ -2613,7 +2613,7 @@ describe("Test proof with database", () => {
 
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node = new Node();
+    node = new BlockchainNode();
     setDbForTesting(node);
 
     valuesObject = {

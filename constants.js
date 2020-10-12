@@ -27,6 +27,7 @@ const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT || false;
 
 function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV == 'local') {
@@ -431,6 +432,7 @@ module.exports = {
   P2P_PORT,
   TRACKER_WS_ADDR,
   MAX_SHARD_REPORT,
+  LIGHTWEIGHT,
   MessageTypes,
   PredefinedDbPaths,
   TokenProperties,
