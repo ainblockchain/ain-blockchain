@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const { BLOCKCHAINS_DIR } = require('../constants');
-const Node = require('../node');
+const BlockchainNode = require('../node');
 const { setDbForTesting, getTransaction, addBlock } = require('./test-util')
 
 describe("Consensus", () => {
@@ -11,9 +11,9 @@ describe("Consensus", () => {
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
-    node1 = new Node();
+    node1 = new BlockchainNode();
     setDbForTesting(node1, 0);
-    node2 = new Node();
+    node2 = new BlockchainNode();
     setDbForTesting(node2, 1);
   });
 

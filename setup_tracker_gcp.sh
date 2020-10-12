@@ -1,5 +1,6 @@
 #!/bin/sh
 cd
+killall node
 sudo rm -rf ../ain-blockchain
 sudo mkdir ../ain-blockchain
 sudo chmod 777 ../ain-blockchain
