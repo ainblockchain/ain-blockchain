@@ -189,8 +189,10 @@ const NativeFunctionIds = {
 const ShardingProperties = {
   PARENT_CHAIN_POC: 'parent_chain_poc',
   REPORTING_PERIOD: 'reporting_period',
+  SHARD: '.shard',
   SHARD_OWNER: 'shard_owner',
   SHARD_REPORTER: 'shard_reporter',
+  SHARD_ENABLED: 'shard_enabled',
   SHARDING_PATH: 'sharding_path',
   SHARDING_PROTOCOL: 'sharding_protocol',
 };
