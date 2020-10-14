@@ -669,7 +669,7 @@ class P2pServer {
               ref: shardingPath,
               value: {
                 [ShardingProperties.SHARD]: {
-                  [ShardingProperties.SHARD_ENABLED]: true
+                  [ShardingProperties.SHARDING_ENABLED]: true
                 }
               }
             },

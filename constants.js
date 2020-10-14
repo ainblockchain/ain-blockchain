@@ -192,7 +192,7 @@ const ShardingProperties = {
   SHARD: '.shard',
   SHARD_OWNER: 'shard_owner',
   SHARD_REPORTER: 'shard_reporter',
-  SHARD_ENABLED: 'shard_enabled',
+  SHARDING_ENABLED: 'sharding_enabled',
   SHARDING_PATH: 'sharding_path',
   SHARDING_PROTOCOL: 'sharding_protocol',
 };
