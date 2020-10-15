@@ -5,17 +5,22 @@ const {
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
-  FunctionProperties,
   ProofProperties,
   ShardingProperties,
   GenesisSharding,
-  buildOwnerPermissions,
   LIGHTWEIGHT,
+  buildOwnerPermissions,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {
+  hasFunctionConfig,
+  getFunctionConfig,
+  hasRuleConfig,
+  getRuleConfig,
+  hasOwnerConfig,
+  getOwnerConfig,
   isValidPathForStates,
   isValidJsObjectForStates,
   jsObjectToStateTree,
@@ -673,22 +678,6 @@ class DB {
     return null;
   }
 
-  static hasConfig(node, label) {
-    return node && node.hasChild(label);
-  }
-
-  static getConfig(node, label) {
-    return DB.hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
-  }
-
-  static hasFunctionConfig(funcNode) {
-    return DB.hasConfig(funcNode, FunctionProperties.FUNCTION);
-  }
-
-  static getFunctionConfig(funcNode) {
-    return DB.getConfig(funcNode, FunctionProperties.FUNCTION);
-  }
-
   // Does a DFS search to find most specific nodes matched in the function tree.
   matchFunctionPathRecursive(parsedValuePath, depth, curFuncNode) {
     // Maximum depth reached.
@@ -742,10 +731,10 @@ class DB {
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
     const funcs = [];
-    if (depth !== 0 && DB.hasFunctionConfig(curFuncNode)) {
+    if (depth !== 0 && hasFunctionConfig(curFuncNode)) {
       funcs.push({
         path: [],
-        config: DB.getFunctionConfig(curFuncNode),
+        config: getFunctionConfig(curFuncNode),
       })
     }
     if (curFuncNode && !curFuncNode.getIsLeaf()) {
@@ -783,8 +772,8 @@ class DB {
     const subtreeFunctions = this.getSubtreeFunctions(matched.matchedFunctionNode);
     let matchedConfig = null;
     if (matched.matchedFunctionPath.length === parsedValuePath.length &&
-        DB.hasFunctionConfig(matched.matchedFunctionNode)) {
-      matchedConfig = DB.getFunctionConfig(matched.matchedFunctionNode);
+        hasFunctionConfig(matched.matchedFunctionNode)) {
+      matchedConfig = getFunctionConfig(matched.matchedFunctionNode);
     }
     return {
       matchedValuePath: matched.matchedValuePath,
@@ -824,14 +813,6 @@ class DB {
     };
   }
 
-  static hasRuleConfig(ruleNode) {
-    return DB.hasConfig(ruleNode, RuleProperties.WRITE);
-  }
-
-  static getRuleConfig(ruleNode) {
-    return DB.getConfig(ruleNode, RuleProperties.WRITE);
-  }
-
   // Does a DFS search to find most specific nodes matched in the rule tree.
   matchRulePathRecursive(parsedValuePath, depth, curRuleNode) {
     // Maximum depth reached.
@@ -841,8 +822,8 @@ class DB {
         matchedRulePath: [],
         pathVars: {},
         matchedRuleNode: curRuleNode,
-        closestConfigNode: DB.hasRuleConfig(curRuleNode) ? curRuleNode : null,
-        closestConfigDepth: DB.hasRuleConfig(curRuleNode) ? depth : 0,
+        closestConfigNode: hasRuleConfig(curRuleNode) ? curRuleNode : null,
+        closestConfigDepth: hasRuleConfig(curRuleNode) ? depth : 0,
       };
     }
     if (curRuleNode) {
@@ -852,7 +833,7 @@ class DB {
         const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
         matched.matchedRulePath.unshift(parsedValuePath[depth]);
-        if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+        if (!matched.closestConfigNode && hasRuleConfig(curRuleNode)) {
           matched.closestConfigNode = curRuleNode;
           matched.closestConfigDepth = depth;
         }
@@ -872,7 +853,7 @@ class DB {
         } else {
           matched.pathVars[varLabel] = parsedValuePath[depth];
         }
-        if (!matched.closestConfigNode && DB.hasRuleConfig(curRuleNode)) {
+        if (!matched.closestConfigNode && hasRuleConfig(curRuleNode)) {
           matched.closestConfigNode = curRuleNode;
           matched.closestConfigDepth = depth;
         }
@@ -885,8 +866,8 @@ class DB {
       matchedRulePath: [],
       pathVars: {},
       matchedRuleNode: curRuleNode,
-      closestConfigNode: DB.hasRuleConfig(curRuleNode) ? curRuleNode : null,
-      closestConfigDepth: DB.hasRuleConfig(curRuleNode) ? depth : 0,
+      closestConfigNode: hasRuleConfig(curRuleNode) ? curRuleNode : null,
+      closestConfigDepth: hasRuleConfig(curRuleNode) ? depth : 0,
     };
   }
 
@@ -897,10 +878,10 @@ class DB {
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
     const rules = [];
-    if (depth !== 0 && DB.hasRuleConfig(curRuleNode)) {
+    if (depth !== 0 && hasRuleConfig(curRuleNode)) {
       rules.push({
         path: [],
-        config: DB.getRuleConfig(curRuleNode),
+        config: getRuleConfig(curRuleNode),
       })
     }
     if (curRuleNode && !curRuleNode.getIsLeaf()) {
@@ -942,7 +923,7 @@ class DB {
       pathVars: matched.pathVars,
       closestRule: {
         path: matched.matchedRulePath.slice(0, matched.closestConfigDepth),
-        config: DB.getRuleConfig(matched.closestConfigNode),
+        config: getRuleConfig(matched.closestConfigNode),
       },
       subtreeRules,
     }
@@ -989,28 +970,20 @@ class DB {
     return !!this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
   }
 
-  static hasOwnerConfig(ownerNode) {
-    return DB.hasConfig(ownerNode, OwnerProperties.OWNER);
-  }
-
-  static getOwnerConfig(ownerNode) {
-    return DB.getConfig(ownerNode, OwnerProperties.OWNER);
-  }
-
   matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {
     // Maximum depth reached.
     if (depth === parsedRefPath.length) {
       return {
         matchedDepth: depth,
-        closestConfigNode: DB.hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
-        closestConfigDepth: DB.hasOwnerConfig(curOwnerNode) ? depth : 0,
+        closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
+        closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
       };
     }
     if (curOwnerNode) {
       const nextOwnerNode = curOwnerNode.getChild(parsedRefPath[depth]);
       if (nextOwnerNode !== null) {
         const matched = this.matchOwnerPathRecursive(parsedRefPath, depth + 1, nextOwnerNode);
-        if (!matched.closestConfigNode && DB.hasOwnerConfig(curOwnerNode)) {
+        if (!matched.closestConfigNode && hasOwnerConfig(curOwnerNode)) {
           matched.closestConfigNode = curOwnerNode;
           matched.closestConfigDepth = depth;
         }
@@ -1020,8 +993,8 @@ class DB {
     // No match with child nodes.
     return {
       matchedDepth: depth,
-      closestConfigNode: DB.hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
-      closestConfigDepth: DB.hasOwnerConfig(curOwnerNode) ? depth : 0,
+      closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
+      closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
     };
   }
 
@@ -1036,7 +1009,7 @@ class DB {
       matchedOwnerPath: parsedRefPath.slice(0, matched.matchedDepth),
       closestOwner: {
         path: parsedRefPath.slice(0, matched.closestConfigDepth),
-        config: DB.getOwnerConfig(matched.closestConfigNode),
+        config: getOwnerConfig(matched.closestConfigNode),
       },
     }
   }
