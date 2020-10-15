@@ -5,6 +5,7 @@ const {
   FunctionProperties,
   RuleProperties,
   OwnerProperties,
+  ShardingProperties,
 } = require('../constants');
 
 function hasConfig(node, label) {
@@ -13,6 +14,14 @@ function hasConfig(node, label) {
 
 function getConfig(node, label) {
   return hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
+}
+
+function hasShardConfig(valueNode) {
+  return hasConfig(valueNode, ShardingProperties.SHARD);
+}
+
+function getShardConfig(valueNode) {
+  return getConfig(valueNode, ShardingProperties.SHARD);
 }
 
 function hasFunctionConfig(funcNode) {
@@ -39,6 +48,38 @@ function getOwnerConfig(ownerNode) {
   return getConfig(ownerNode, OwnerProperties.OWNER);
 }
 
+function hasEnabledShardConfig(node) {
+  let isEnabled = false;
+  if (hasShardConfig(node)) {
+    const shardConfig = getShardConfig(node);
+    isEnabled = ChainUtil.boolOrFalse(shardConfig[ShardingProperties.SHARDING_ENABLED]);
+  }
+  return isEnabled;
+}
+
+function isWritablePathWithSharding(fullPath, root) {
+  let isValid = true;
+  const path = [];
+  let curNode = root;
+  if (hasEnabledShardConfig(curNode)) {
+    isValid = false;
+  } else {
+    for (const label of fullPath) {
+      if (curNode.hasChild(label)) {
+        curNode = curNode.getChild(label);
+        path.push(label);
+        if (hasEnabledShardConfig(curNode)) {
+          isValid = false;
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+  }
+  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+}
+
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]/gm;
   return ChainUtil.isString(label) ? reservedCharRegex.test(label) : false;
@@ -49,33 +90,6 @@ function hasAllowedPattern(label) {
   const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]+$/gm;
   return ChainUtil.isString(label) ?
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
-}
-
-function hasShardingLabel(stateNode) {
-  return false;
-}
-
-function isValidPathForSharding(fullPath, root) {
-  let isValid = true;
-  const path = [];
-  let curNode = root;
-  if (hasShardingLabel(curNode)) {
-    isValid = false;
-  } else {
-    for (const label of fullPath) {
-      if (curNode.hasChild(label)) {
-        curNode = curNode.getChild(label);
-        path.push(label);
-        if (hasShardingLabel(curNode)) {
-          isValid = false;
-          break;
-        }
-      } else {
-        break;
-      }
-    }
-  }
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
 function isValidStateLabel(label) {
@@ -222,15 +236,18 @@ function updateProofHashForPath(fullPath, root) {
 }
 
 module.exports = {
+  hasShardConfig,
+  getShardConfig,
   hasFunctionConfig,
   getFunctionConfig,
   hasRuleConfig,
   getRuleConfig,
   hasOwnerConfig,
   getOwnerConfig,
+  hasEnabledShardConfig,
   hasReservedChar,
   hasAllowedPattern,
-  isValidPathForSharding,
+  isWritablePathWithSharding,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
