@@ -21,13 +21,14 @@ const {
   getRuleConfig,
   hasOwnerConfig,
   getOwnerConfig,
+  isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
   makeCopyOfStateTree,
   setProofHashForStateTree,
-  updateProofHashForPath
+  updateProofHashForPath,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -362,8 +363,20 @@ class DB {
     if (!this.getPermissionForValue(localPath, value, address, timestamp)) {
       return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
-    const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
+    const isWritablePath = isWritablePathWithSharding(fullPath, this.stateTree);
+    if (!isWritablePath.isValid) {
+      if (isGlobal) {
+        // There is nothing to do.
+        return true;
+      } else {
+        return {
+          code: 8,
+          error_message: `Non-writable path with shard config: ${isWritablePath.invalidPath}`
+        };
+      }
+    }
+    const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
     return true;
@@ -407,9 +420,9 @@ class DB {
     if (!this.getPermissionForFunction(localPath, address)) {
       return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
     }
+    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
         JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
-    const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, functionInfoCopy);
     return true;
   }
@@ -434,8 +447,8 @@ class DB {
     if (!this.getPermissionForRule(localPath, address)) {
       return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
     }
-    const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
+    const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
     return true;
   }
@@ -459,8 +472,8 @@ class DB {
     if (!this.getPermissionForOwner(localPath, address)) {
       return {code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}`};
     }
-    const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
+    const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
     return true;
   }
