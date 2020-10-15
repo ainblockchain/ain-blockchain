@@ -1,6 +1,43 @@
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
-const { HASH_DELIMITER } = require('../constants');
+const {
+  HASH_DELIMITER,
+  FunctionProperties,
+  RuleProperties,
+  OwnerProperties,
+} = require('../constants');
+
+function hasConfig(node, label) {
+  return node && node.hasChild(label);
+}
+
+function getConfig(node, label) {
+  return hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
+}
+
+function hasFunctionConfig(funcNode) {
+  return hasConfig(funcNode, FunctionProperties.FUNCTION);
+}
+
+function getFunctionConfig(funcNode) {
+  return getConfig(funcNode, FunctionProperties.FUNCTION);
+}
+
+function hasRuleConfig(ruleNode) {
+  return hasConfig(ruleNode, RuleProperties.WRITE);
+}
+
+function getRuleConfig(ruleNode) {
+  return getConfig(ruleNode, RuleProperties.WRITE);
+}
+
+function hasOwnerConfig(ownerNode) {
+  return hasConfig(ownerNode, OwnerProperties.OWNER);
+}
+
+function getOwnerConfig(ownerNode) {
+  return getConfig(ownerNode, OwnerProperties.OWNER);
+}
 
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]/gm;
@@ -12,6 +49,33 @@ function hasAllowedPattern(label) {
   const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]+$/gm;
   return ChainUtil.isString(label) ?
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
+}
+
+function hasShardingLabel(stateNode) {
+  return false;
+}
+
+function isValidPathForSharding(fullPath, root) {
+  let isValid = true;
+  const path = [];
+  let curNode = root;
+  if (hasShardingLabel(curNode)) {
+    isValid = false;
+  } else {
+    for (const label of fullPath) {
+      if (curNode.hasChild(label)) {
+        curNode = curNode.getChild(label);
+        path.push(label);
+        if (hasShardingLabel(curNode)) {
+          isValid = false;
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+  }
+  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
 function isValidStateLabel(label) {
@@ -158,8 +222,15 @@ function updateProofHashForPath(fullPath, root) {
 }
 
 module.exports = {
+  hasFunctionConfig,
+  getFunctionConfig,
+  hasRuleConfig,
+  getRuleConfig,
+  hasOwnerConfig,
+  getOwnerConfig,
   hasReservedChar,
   hasAllowedPattern,
+  isValidPathForSharding,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
