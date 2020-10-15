@@ -232,6 +232,17 @@ describe('Sharding', () => {
           )
         });
       });
+
+      it('.shard', () => {
+        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard`)
+        .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          code: 0,
+          result: {
+            sharding_enabled: true
+          },
+        });
+      });
     });
 
     describe('DB functions', () => {
@@ -342,7 +353,7 @@ describe('Sharding', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         let blockNumber = 0;
-        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const sortedReports = _.without(Object.keys(body.result), '.shard', 'latest').sort((a,b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
@@ -354,7 +365,7 @@ describe('Sharding', () => {
         .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         const latest = body.result.latest;
-        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const sortedReports = _.without(Object.keys(body.result), '.shard', 'latest').sort((a,b) => Number(a) - Number(b));
         const highest = sortedReports[sortedReports.length - 1];
         expect(latest).to.equal(Number(highest));
       });
@@ -373,7 +384,7 @@ describe('Sharding', () => {
         const reportsAfter = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
             .body.toString('utf-8'));
         let blockNumber = 0;
-        const sortedReports = _.without(Object.keys(reportsAfter.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const sortedReports = _.without(Object.keys(reportsAfter.result), '.shard', 'latest').sort((a,b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
