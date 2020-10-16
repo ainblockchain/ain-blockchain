@@ -92,7 +92,6 @@ const PredefinedDbPaths = {
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
   SHARDING_SHARD: 'shard',
-  SHARDING_PROOF_HASH: 'proof_hash',
   SHARDING_LATEST: 'latest'
 };
 
@@ -188,6 +187,8 @@ const NativeFunctionIds = {
  */
 const ShardingProperties = {
   PARENT_CHAIN_POC: 'parent_chain_poc',
+  PROOF_HASH: 'proof_hash',
+  PROOF_HASH_MAP: 'proof_hash_map',
   REPORTING_PERIOD: 'reporting_period',
   SHARD: '.shard',
   SHARD_OWNER: 'shard_owner',
