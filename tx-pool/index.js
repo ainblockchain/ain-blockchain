@@ -175,6 +175,27 @@ class TransactionPool {
     return removed;
   }
 
+  removeInvalidTxsFromPool(txs) {
+    const addrToTxSet = {};
+    txs.forEach(tx => {
+      if (!addrToTxSet[tx.address]) {
+        addrToTxSet[tx.address] = new Set();
+      }
+      addrToTxSet[tx.address].add(tx.hash);
+      const tracked = this.transactionTracker[tx.hash];
+      if (tracked && tracked.status !== TransactionStatus.BLOCK_STATUS) {
+        delete this.transactionTracker[tx.hash];
+      }
+    })
+    for (const address in addrToTxSet) {
+      if (this.transactions[address]) {
+        this.transactions[address] = this.transactions[address].filter(tx => {
+          return !(addrToTxSet[address].has(tx.hash));
+        })
+      }
+    }
+  }
+
   cleanUpForNewBlock(block) {
     // Get in-block transaction set.
     const inBlockTxs = new Set();
