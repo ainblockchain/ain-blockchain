@@ -541,7 +541,8 @@ class P2pServer {
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
-      logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`);
+      logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
+          `${JSON.stringify(transaction)}`);
       this.node.tp.addTransaction(transaction);
       return null;
     }
@@ -549,7 +550,8 @@ class P2pServer {
     if (!ChainUtil.transactionFailed(result)) {
       this.node.tp.addTransaction(transaction);
     } else {
-      logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
+      logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t ` +
+          `RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
@@ -573,8 +575,8 @@ class P2pServer {
 
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction ? transactionWithSig
-                                                                    : new Transaction(transactionWithSig);
+      const transaction = transactionWithSig instanceof Transaction ?
+          transactionWithSig : new Transaction(transactionWithSig);
       const response = this.executeTransaction(transaction);
       logger.debug(`\n[${P2P_PREFIX}] TX RESPONSE: ` + JSON.stringify(response))
       if (!ChainUtil.transactionFailed(response)) {
@@ -678,7 +680,10 @@ class P2pServer {
               ref: shardingPath,
               value: {
                 [ShardingProperties.SHARD]: {
-                  [ShardingProperties.SHARDING_ENABLED]: true
+                  [ShardingProperties.SHARDING_ENABLED]: true,
+                  [ShardingProperties.PROOF_HASH_MAP]: {
+                    [ShardingProperties.LATEST]: -1,
+                  }
                 }
               }
             },

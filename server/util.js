@@ -65,23 +65,25 @@ async function signAndSendTxList(endpoint, txList, keyBuffer) {
       tx_list: signedTxList,
     };
   }
-  try {
-    const response = await axios.post(
+  return await axios.post(
       endpoint,
       {
         method: "ain_sendSignedTransaction",
         params,
         jsonrpc: "2.0",
         id: 0
-      }
-    );
-    if (ChainUtil.transactionFailed(response.data.result)) {
-      throw Error(`Transaction failed: ${JSON.stringify(response.data.result)}`);
+      })
+  .then(resp => {
+    const result = _.get(resp, 'data.result');
+    if (ChainUtil.transactionFailed(result)) {
+      throw Error(`Transaction failed: ${JSON.stringify(result)}`);
     }
     return { txHashList };
-  } catch (e) {
-    return { errMsg: e.message };
-  }
+  })
+  .catch(err => {
+    logger.error(`Failed to confirm transaction: ${err}`);
+    return { errMsg: err.message };
+  });
 }
 
 async function waitUntilTxListFinalize(endpoint, txHashList) {
@@ -95,8 +97,7 @@ async function waitUntilTxListFinalize(endpoint, txHashList) {
 async function waitUntilTxFinalize(endpoint, txHash) {
   let numTries = 0;
   while (true) {
-    try {
-      const response = await axios.post(
+    const confirmed = await axios.post(
         endpoint,
         {
           method: "ain_getTransactionByHash",
@@ -106,14 +107,16 @@ async function waitUntilTxFinalize(endpoint, txHash) {
           },
           jsonrpc: "2.0",
           id: 0
-        }
-      );
-      if (_.get(response, 'data.result.result.is_confirmed')) {
-        return true;
-      }
-    } catch (e) {
-      logger.error(`Failed to confirm transaction: ${e}`);
+        })
+    .then(resp => {
+      return (_.get(resp, 'data.result.result.is_confirmed') === true);
+    })
+    .catch(err => {
+      logger.error(`Failed to confirm transaction: ${err}`);
       return false;
+    });
+    if (confirmed) {
+      return true;
     }
     sleep(1);
     numTries++;
@@ -122,14 +125,16 @@ async function waitUntilTxFinalize(endpoint, txHash) {
 
 async function sendGetRequest(endpoint, method, params) {
   return await axios.post(
-    endpoint,
-    {
-      method,
-      params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
-      jsonrpc: "2.0",
-      id: 0
-    }
-  );
+      endpoint,
+      {
+        method,
+        params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
+        jsonrpc: "2.0",
+        id: 0
+      })
+  .then(function (resp) {
+    return _.get(resp, 'data.result.result');
+  });
 }
 
 module.exports = {
