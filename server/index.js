@@ -601,6 +601,7 @@ class P2pServer {
     await this.setUpDbForSharding();
   }
 
+  // TODO(seo): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
