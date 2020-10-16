@@ -33,7 +33,7 @@ const {
   LIGHTWEIGHT
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendTxAndWaitForConfirmation } = require('./util');
+const { sendTxListAndWaitForConfirmation } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -601,6 +601,7 @@ class P2pServer {
     await this.setUpDbForSharding();
   }
 
+  // TODO(seo): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
@@ -609,68 +610,95 @@ class P2pServer {
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-    const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
-    const lightweightRules = `auth === '${shardReporter}'`;
-    const nonLightweightRules = `auth === '${shardReporter}' && ` +
-        `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
-        `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`;
+    const shardingPathRules = `auth === '${shardOwner}'`;
+    const proofHashRulesLight = `auth === '${shardReporter}'`;
+    const proofHashRules = `auth === '${shardReporter}' && ` +
+        `((newData === null && ` +
+        `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
+        `(newData !== null && ($block_number === '0' || ` +
+        `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
 
-    const shardInitTx = {
-      operation: {
-        type: WriteDbOperations.SET,
-        op_list: [
-          {
-            type: WriteDbOperations.SET_OWNER,
-            ref: shardingPath,
-            value: {
-              [OwnerProperties.OWNER]: {
-                [OwnerProperties.OWNERS]: {
-                  [shardOwner]: buildOwnerPermissions(false, true, true, true),
-                  [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+    const shardInitTxList = [
+      {
+        operation: {
+          type: WriteDbOperations.SET,
+          op_list: [
+            {
+              type: WriteDbOperations.SET_OWNER,
+              ref: shardingPath,
+              value: {
+                [OwnerProperties.OWNER]: {
+                  [OwnerProperties.OWNERS]: {
+                    [shardOwner]: buildOwnerPermissions(false, true, true, true),
+                    [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+                  }
                 }
               }
-            }
-          },
-          {
-            type: WriteDbOperations.SET_RULE,
-            ref: ChainUtil.formatPath([
-              ...ChainUtil.parsePath(shardingPath),
-              '$block_number',
-              PredefinedDbPaths.SHARDING_PROOF_HASH
-            ]),
-            value: {
-              [RuleProperties.WRITE]: LIGHTWEIGHT ? lightweightRules : nonLightweightRules
-            }
-          },
-          {
-            type: WriteDbOperations.SET_FUNCTION,
-            ref: ChainUtil.formatPath([
-              ...ChainUtil.parsePath(shardingPath),
-              '$block_number',
-              PredefinedDbPaths.SHARDING_PROOF_HASH
-            ]),
-            value: {
-              [FunctionProperties.FUNCTION]: {
-                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+            },
+            {
+              type: WriteDbOperations.SET_RULE,
+              ref: shardingPath,
+              value: {
+                [RuleProperties.WRITE]: shardingPathRules
               }
+            },
+            {
+              type: WriteDbOperations.SET_RULE,
+              ref: ChainUtil.formatPath([
+                ...ChainUtil.parsePath(shardingPath),
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                '$block_number',
+                ShardingProperties.PROOF_HASH
+              ]),
+              value: {
+                [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+              }
+            },
+            {
+              type: WriteDbOperations.SET_FUNCTION,
+              ref: ChainUtil.formatPath([
+                ...ChainUtil.parsePath(shardingPath),
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                '$block_number',
+                ShardingProperties.PROOF_HASH
+              ]),
+              value: {
+                [FunctionProperties.FUNCTION]: {
+                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                }
+              }
+            },
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: shardingPath,
+              value: {
+                [ShardingProperties.SHARD]: {
+                  [ShardingProperties.SHARDING_ENABLED]: true
+                }
+              }
+            },
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: ChainUtil.formatPath([
+                PredefinedDbPaths.SHARDING,
+                PredefinedDbPaths.SHARDING_SHARD,
+                ainUtil.encode(shardingPath)
+              ]),
+              value: GenesisSharding
             }
-          },
-          {
-            type: WriteDbOperations.SET_VALUE,
-            ref: ChainUtil.formatPath([
-              PredefinedDbPaths.SHARDING,
-              PredefinedDbPaths.SHARDING_SHARD,
-              ainUtil.encode(shardingPath)
-            ]),
-            value: GenesisSharding
-          }
-        ]
-      },
-      timestamp: Date.now(),
-      nonce: -1
-    };
-    await sendTxAndWaitForConfirmation(parentChainEndpoint, shardInitTx, keyBuffer);
+          ]
+        },
+        timestamp: Date.now(),
+        nonce: -1
+      }
+    ];
+
+    await sendTxListAndWaitForConfirmation(parentChainEndpoint, shardInitTxList, keyBuffer);
     logger.info(`[${P2P_PREFIX}] setUpDbForSharding success`);
   }
 

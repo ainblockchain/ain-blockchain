@@ -173,14 +173,15 @@ class Functions {
       // Invalid function path
       return;
     }
-    const shardingPath = ChainUtil.formatPath(context.functionPath.slice(0, index));
-    const latestReportPath = this._getLatestShardReportPath(shardingPath);
+    const functionPath = ChainUtil.formatPath(context.functionPath.slice(0, index));
+    const latestReportPath = this._getLatestShardReportPath(functionPath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
       return;
     }
-    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+    this.db.writeDatabase(
+        this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
   }
 
   _transferInternal(fromPath, toPath, value) {
@@ -203,35 +204,42 @@ class Functions {
   }
 
   _getDepositLockupDurationPath(service) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
+    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/` +
+        `${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
   }
 
   _getDepositAmountPath(service, user) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/${PredefinedDbPaths.DEPOSIT_VALUE}`);
+    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
+        `${PredefinedDbPaths.DEPOSIT_VALUE}`);
   }
 
   _getDepositExpirationPath(service, user) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/${PredefinedDbPaths.DEPOSIT_EXPIRE_AT}`);
+    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
+        `${PredefinedDbPaths.DEPOSIT_EXPIRE_AT}`);
   }
 
   _getDepositCreatedAtPath(service, user, depositId) {
-    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/${PredefinedDbPaths.DEPOSIT_CREATED_AT}`);
+    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
+        `${PredefinedDbPaths.DEPOSIT_CREATED_AT}`);
   }
 
   _getDepositResultPath(service, user, depositId) {
-    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/${PredefinedDbPaths.DEPOSIT_RESULT}`);
+    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
+        `${PredefinedDbPaths.DEPOSIT_RESULT}`);
   }
 
   _getWithdrawCreatedAtPath(service, user, withdrawId) {
-    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/${PredefinedDbPaths.WITHDRAW_CREATED_AT}`);
+    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
+        `${PredefinedDbPaths.WITHDRAW_CREATED_AT}`);
   }
 
   _getWithdrawResultPath(service, user, withdrawId) {
-    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/${PredefinedDbPaths.WITHDRAW_RESULT}`);
+    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
+        `${PredefinedDbPaths.WITHDRAW_RESULT}`);
   }
 
-  _getLatestShardReportPath(shardingPath) {
-    return `${shardingPath}/${PredefinedDbPaths.SHARDING_LATEST}`;
+  _getLatestShardReportPath(functionPath) {
+    return `${functionPath}/${PredefinedDbPaths.SHARDING_LATEST}`;
   }
 
   _getFullValuePath(parsedPath) {
