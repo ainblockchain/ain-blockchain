@@ -56,6 +56,7 @@ class Consensus {
     // This feature is only used when LIGHTWEIGHT=true.
     this.cache = {};
     this.validatorList = Object.keys(GenesisWhitelist).sort();
+    this.lastReportedBlockNumberSent = -1;
   }
 
   init(lastBlockWithoutProposal, isFirstNode = false) {
@@ -796,20 +797,23 @@ class Consensus {
     if (!this.isShardReporter) {
       return;
     }
+    const lastFinalizedBlock = this.node.bc.lastBlock();
+    const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
+    if (lastFinalizedBlockNumber < this.lastReportedBlockNumberSent + reportingPeriod) {
+      // Too early.
+      return;
+    }
+    const lastReportedBlockNumberConfirmed = (await this.getLastReportedBlockNumber()) || null;
+    if (lastReportedBlockNumberConfirmed === null) {
+      // Try next time.
+      return;
+    }
     if (this.isReporting) {
       return;
     }
     this.isReporting = true;
     try {
-      const lastFinalizedBlock = this.node.bc.lastBlock();
-      const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
-      const lastReportedBlockNumber = (await this.getLastReportedBlockNumber()) || null;
-      if (lastReportedBlockNumber === null ||
-          lastFinalizedBlockNumber < lastReportedBlockNumber + reportingPeriod) {
-        this.isReporting = false;
-        return;
-      }
-      let blockNumberToReport = lastReportedBlockNumber + 1;
+      let blockNumberToReport = lastReportedBlockNumberConfirmed + 1;
       const opList = [];
       while (blockNumberToReport <= lastFinalizedBlockNumber) {
         if (sizeof(opList) >= txSizeThreshold) {
@@ -859,6 +863,7 @@ class Consensus {
     } catch (e) {
       logger.error(`[${LOG_PREFIX}] Failed to report state proof hashes: ${e}`);
     }
+    this.lastReportedBlockNumberSent = lastFinalizedBlockNumber;
     this.isReporting = false;
   }
 
