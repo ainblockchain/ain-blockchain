@@ -61,21 +61,20 @@ function isWritablePathWithSharding(fullPath, root) {
   let isValid = true;
   const path = [];
   let curNode = root;
+  for (const label of fullPath) {
+    if (label !== ShardingProperties.SHARD && hasEnabledShardConfig(curNode)) {
+      isValid = false;
+      break;
+    }
+    if (curNode.hasChild(label)) {
+      curNode = curNode.getChild(label);
+      path.push(label);
+    } else {
+      break;
+    }
+  }
   if (hasEnabledShardConfig(curNode)) {
     isValid = false;
-  } else {
-    for (const label of fullPath) {
-      if (curNode.hasChild(label)) {
-        curNode = curNode.getChild(label);
-        path.push(label);
-        if (hasEnabledShardConfig(curNode)) {
-          isValid = false;
-          break;
-        }
-      } else {
-        break;
-      }
-    }
   }
   return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }

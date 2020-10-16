@@ -613,8 +613,12 @@ class P2pServer {
     const shardingPathRules = `auth === '${shardOwner}'`;
     const proofHashRulesLight = `auth === '${shardReporter}'`;
     const proofHashRules = `auth === '${shardReporter}' && ` +
-        `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
-        `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`;
+        `((newData === null && ` +
+        `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
+        `(newData !== null && ($block_number === '0' || ` +
+        `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
 
     const shardInitTxList = [
       {
@@ -644,8 +648,10 @@ class P2pServer {
               type: WriteDbOperations.SET_RULE,
               ref: ChainUtil.formatPath([
                 ...ChainUtil.parsePath(shardingPath),
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
                 '$block_number',
-                PredefinedDbPaths.SHARDING_PROOF_HASH
+                ShardingProperties.PROOF_HASH
               ]),
               value: {
                 [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
@@ -655,8 +661,10 @@ class P2pServer {
               type: WriteDbOperations.SET_FUNCTION,
               ref: ChainUtil.formatPath([
                 ...ChainUtil.parsePath(shardingPath),
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
                 '$block_number',
-                PredefinedDbPaths.SHARDING_PROOF_HASH
+                ShardingProperties.PROOF_HASH
               ]),
               value: {
                 [FunctionProperties.FUNCTION]: {

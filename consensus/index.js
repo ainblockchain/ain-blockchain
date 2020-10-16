@@ -625,7 +625,7 @@ class Consensus {
       }
     }
     this.blockPool.cleanUpAfterFinalization(finalizableChain[finalizableChain.length - 2]);
-    this.reportStateProofHash();
+    this.reportStateProofHashes();
   }
 
   catchUp(blockList) {
@@ -790,7 +790,7 @@ class Consensus {
     return depositTx;
   }
 
-  async reportStateProofHash() {
+  async reportStateProofHashes() {
     if (!isShardChain) {
       return;
     }
@@ -823,14 +823,19 @@ class Consensus {
         }
         opList.push({
           type: WriteDbOperations.SET_VALUE,
-          ref: `${shardingPath}/${blockNumberToReport}/${PredefinedDbPaths.SHARDING_PROOF_HASH}`,
+          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+              `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
+              `${ShardingProperties.PROOF_HASH}`,
           value: block.stateProofHash
         });
         if (blockNumberToReport >= MAX_SHARD_REPORT) {
           // Remove old reports
           opList.push({
             type: WriteDbOperations.SET_VALUE,
-            ref: `${shardingPath}/${blockNumberToReport - MAX_SHARD_REPORT}/${PredefinedDbPaths.SHARDING_PROOF_HASH}`,
+            ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+                `${ShardingProperties.PROOF_HASH_MAP}/` +
+                `${blockNumberToReport - MAX_SHARD_REPORT}/` +
+                `${ShardingProperties.PROOF_HASH}`,
             value: null
           });
         }
@@ -864,7 +869,8 @@ class Consensus {
         'ain_get',
         {
           type: ReadDbOperations.GET_VALUE,
-          ref: `${shardingPath}/${PredefinedDbPaths.SHARDING_LATEST}`
+          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+              `${ShardingProperties.PROOF_HASH_MAP}/${PredefinedDbPaths.SHARDING_LATEST}`
         }
       );
       return _.get(response, 'data.result.result');
@@ -879,7 +885,8 @@ class Consensus {
 
   setStatus(status, setter = '') {
     const LOG_SUFFIX = 'setStatus';
-    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] setting consensus status from ${this.status} to ${status} (setter = ${setter})`);
+    logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] setting consensus status from ${this.status} to ` +
+        `${status} (setter = ${setter})`);
     this.status = status;
     this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
     this.setter = setter;
