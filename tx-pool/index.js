@@ -178,13 +178,14 @@ class TransactionPool {
   removeInvalidTxsFromPool(txs) {
     const addrToTxSet = {};
     txs.forEach(tx => {
-      if (!addrToTxSet[tx.address]) {
-        addrToTxSet[tx.address] = new Set();
+      const { address, hash } = tx;
+      if (!addrToTxSet[address]) {
+        addrToTxSet[address] = new Set();
       }
-      addrToTxSet[tx.address].add(tx.hash);
-      const tracked = this.transactionTracker[tx.hash];
+      addrToTxSet[address].add(hash);
+      const tracked = this.transactionTracker[hash];
       if (tracked && tracked.status !== TransactionStatus.BLOCK_STATUS) {
-        delete this.transactionTracker[tx.hash];
+        delete this.transactionTracker[hash];
       }
     })
     for (const address in addrToTxSet) {
