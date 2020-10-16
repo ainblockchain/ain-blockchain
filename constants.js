@@ -92,7 +92,6 @@ const PredefinedDbPaths = {
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
   SHARDING_SHARD: 'shard',
-  SHARDING_LATEST: 'latest'
 };
 
 /**
@@ -186,6 +185,7 @@ const NativeFunctionIds = {
  * @enum {string}
  */
 const ShardingProperties = {
+  LATEST: 'latest',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
   PROOF_HASH_MAP: 'proof_hash_map',
