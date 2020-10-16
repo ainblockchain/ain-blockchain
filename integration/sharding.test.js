@@ -218,8 +218,10 @@ describe('Sharding', () => {
   describe('Parent chain initialization', () => {
     describe('DB values', () => {
       it('sharding', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=/sharding/shard/${ainUtil.encode(sharding.sharding_path)}`)
-        .body.toString('utf-8'));
+        const body = JSON.parse(syncRequest(
+            'GET', parentServer +
+            `/get_value?ref=/sharding/shard/${ainUtil.encode(sharding.sharding_path)}`)
+          .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: Object.assign(
@@ -232,12 +234,26 @@ describe('Sharding', () => {
           )
         });
       });
+
+      it('.shard', () => {
+        const body = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard`)
+          .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          code: 0,
+          result: {
+            sharding_enabled: true
+          },
+        });
+      });
     });
 
     describe('DB functions', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_function?ref=${sharding.sharding_path}`)
-        .body.toString('utf-8'));
+        const body = JSON.parse(syncRequest(
+            'GET', parentServer +
+            `/get_function?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result).to.not.be.null;
         assert.deepEqual(body.result, {
@@ -255,8 +271,11 @@ describe('Sharding', () => {
 
     describe('DB rules', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_rule?ref=${sharding.sharding_path}/$block_number/proof_hash`)
-        .body.toString('utf-8'));
+        const body = JSON.parse(syncRequest(
+            'GET', parentServer +
+            `/get_rule?ref=${sharding.sharding_path}/` +
+            `.shard/proof_hash_map/$block_number/proof_hash`)
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.write']).to.have.string(accounts.others[0].address);
       });
@@ -264,8 +283,9 @@ describe('Sharding', () => {
 
     describe('DB owners', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_owner?ref=${sharding.sharding_path}`)
-        .body.toString('utf-8'));
+        const body = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_owner?ref=${sharding.sharding_path}`)
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
       });
@@ -276,27 +296,27 @@ describe('Sharding', () => {
     describe('DB values', () => {
       it('token', () => {
         const body = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=/token')
-            .body.toString('utf-8'));
+          .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: token});
       })
 
       it('accounts', () => {
         const body1 = JSON.parse(syncRequest(
             'GET', server1 + '/get_value?ref=/accounts/' + accounts.owner.address + '/balance')
-            .body.toString('utf-8'));
+          .body.toString('utf-8'));
         expect(body1.code).to.equal(0);
         expect(body1.result).to.be.above(0);
 
         const body2 = JSON.parse(syncRequest(
             'GET', server1 + '/get_value?ref=/accounts/' + accounts.others[0].address + '/balance')
-            .body.toString('utf-8'));
+          .body.toString('utf-8'));
         expect(body2.code).to.equal(0);
         expect(body2.result).to.be.above(0);
       })
 
       it('sharding', () => {
         const body = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=/sharding/config')
-            .body.toString('utf-8'));
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result.sharding_protocol).to.equal(sharding.sharding_protocol);
         expect(body.result.sharding_path).to.equal(sharding.sharding_path);
@@ -306,7 +326,7 @@ describe('Sharding', () => {
     describe('DB functions', () => {
       it('sharding', () => {
         const body = JSON.parse(syncRequest('GET', server2 + '/get_function?ref=/transfer')
-            .body.toString('utf-8'));
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result).to.not.be.null;
       })
@@ -315,7 +335,7 @@ describe('Sharding', () => {
     describe('DB rules', () => {
       it('sharding', () => {
         const body = JSON.parse(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
-            .body.toString('utf-8'));
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.write']).to.have.string(accounts.owner.address);
       })
@@ -338,11 +358,13 @@ describe('Sharding', () => {
 
     describe('periodic reports', () => {
       it ('reports proof hashes periodically', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
-            .body.toString('utf-8'));
+        const body = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         let blockNumber = 0;
-        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const sortedReports = _.without(
+            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
@@ -350,18 +372,21 @@ describe('Sharding', () => {
       });
 
       it ('updates latest block number', () => {
-        const body = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
-        .body.toString('utf-8'));
+        const body = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
+          .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         const latest = body.result.latest;
-        const sortedReports = _.without(Object.keys(body.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const sortedReports = _.without(
+            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
         const highest = sortedReports[sortedReports.length - 1];
         expect(latest).to.equal(Number(highest));
       });
 
       it('can resume reporting after missing some reports', () => {
-        const reportsBefore = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
-            .body.toString('utf-8'));
+        const reportsBefore = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
+          .body.toString('utf-8'));
         console.log(`Shutting down server[0]...`);
         server1_proc.kill();
         waitForNewBlocks(server2, sharding.reporting_period);
@@ -370,10 +395,12 @@ describe('Sharding', () => {
         waitForNewBlocks(server2, sharding.reporting_period);
         waitUntilNodeSyncs(server1);
         waitForNewBlocks(server1, sharding.reporting_period);
-        const reportsAfter = JSON.parse(syncRequest('GET', parentServer + `/get_value?ref=${sharding.sharding_path}`)
-            .body.toString('utf-8'));
+        const reportsAfter = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
+          .body.toString('utf-8'));
         let blockNumber = 0;
-        const sortedReports = _.without(Object.keys(reportsAfter.result), 'latest').sort((a,b) => Number(a) - Number(b));
+        const sortedReports = _.without(
+            Object.keys(reportsAfter.result), 'latest').sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
