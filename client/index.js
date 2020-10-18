@@ -303,6 +303,9 @@ app.get('/get_transaction', (req, res, next) => {
       const address = transactionInfo.address;
       const index = transactionInfo.index;
       Object.assign(result, node.tp.transactions[address][index], { is_confirmed: false });
+    } else if (transactionInfo.status === TransactionStatus.FAILED_STATUS ||
+          transactionInfo.status === TransactionStatus.TIMEOUT_STATUS) {
+      result[status] = transactionInfo.status;
     }
   }
   res.status(200)
