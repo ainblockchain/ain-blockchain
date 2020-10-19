@@ -832,6 +832,7 @@ class Consensus {
               `${ShardingProperties.PROOF_HASH}`,
           value: block.stateProofHash
         });
+        this.lastReportedBlockNumberSent = blockNumberToReport;
         if (blockNumberToReport >= MAX_SHARD_REPORT) {
           // Remove old reports
           opList.push({
@@ -863,7 +864,6 @@ class Consensus {
     } catch (e) {
       logger.error(`[${LOG_PREFIX}] Failed to report state proof hashes: ${e}`);
     }
-    this.lastReportedBlockNumberSent = lastFinalizedBlockNumber;
     this.isReporting = false;
   }
 
