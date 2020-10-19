@@ -239,7 +239,7 @@ class Functions {
   }
 
   _getLatestShardReportPath(functionPath) {
-    return `${functionPath}/${PredefinedDbPaths.SHARDING_LATEST}`;
+    return `${functionPath}/${ShardingProperties.LATEST}`;
   }
 
   _getFullValuePath(parsedPath) {
