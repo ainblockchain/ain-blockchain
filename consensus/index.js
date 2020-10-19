@@ -27,7 +27,6 @@ const {
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const { signAndSendTxList, sendGetRequest } = require('../server/util');
-const { sleep } = require('sleep');
 const LOG_PREFIX = 'CONSENSUS';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -57,6 +56,7 @@ class Consensus {
     // This feature is only used when LIGHTWEIGHT=true.
     this.cache = {};
     this.validatorList = Object.keys(GenesisWhitelist).sort();
+    this.lastReportedBlockNumberSent = -1;
   }
 
   init(lastBlockWithoutProposal, isFirstNode = false) {
@@ -803,19 +803,23 @@ class Consensus {
     if (!this.isShardReporter) {
       return;
     }
+    const lastFinalizedBlock = this.node.bc.lastBlock();
+    const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
+    if (lastFinalizedBlockNumber < this.lastReportedBlockNumberSent + reportingPeriod) {
+      // Too early.
+      return;
+    }
+    const lastReportedBlockNumberConfirmed = (await this.getLastReportedBlockNumber()) || null;
+    if (lastReportedBlockNumberConfirmed === null) {
+      // Try next time.
+      return;
+    }
     if (this.isReporting) {
       return;
     }
     this.isReporting = true;
     try {
-      const lastFinalizedBlock = this.node.bc.lastBlock();
-      const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
-      const lastReportedBlockNumber = (await this.getLastReportedBlockNumber()) || -1;
-      if (lastFinalizedBlockNumber < lastReportedBlockNumber + reportingPeriod) {
-        this.isReporting = false;
-        return;
-      }
-      let blockNumberToReport = lastReportedBlockNumber + 1;
+      let blockNumberToReport = lastReportedBlockNumberConfirmed + 1;
       const opList = [];
       while (blockNumberToReport <= lastFinalizedBlockNumber) {
         if (sizeof(opList) >= txSizeThreshold) {
@@ -834,6 +838,7 @@ class Consensus {
               `${ShardingProperties.PROOF_HASH}`,
           value: block.stateProofHash
         });
+        this.lastReportedBlockNumberSent = blockNumberToReport;
         if (blockNumberToReport >= MAX_SHARD_REPORT) {
           // Remove old reports
           opList.push({
@@ -870,16 +875,15 @@ class Consensus {
 
   async getLastReportedBlockNumber() {
     try {
-      const response = await sendGetRequest(
+      return await sendGetRequest(
         parentChainEndpoint,
         'ain_get',
         {
           type: ReadDbOperations.GET_VALUE,
           ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-              `${ShardingProperties.PROOF_HASH_MAP}/${PredefinedDbPaths.SHARDING_LATEST}`
+              `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
         }
       );
-      return _.get(response, 'data.result.result');
     } catch (e) {
       logger.error(`Failed to get the latest reported block number: ${e}`);
     }

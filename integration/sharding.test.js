@@ -242,7 +242,10 @@ describe('Sharding', () => {
         assert.deepEqual(body, {
           code: 0,
           result: {
-            sharding_enabled: true
+            sharding_enabled: true,
+            proof_hash_map: {
+              latest: -1
+            }
           },
         });
       });
