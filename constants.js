@@ -255,7 +255,7 @@ const TransactionStatus = {
   BLOCK_STATUS: 'BLOCK',
   POOL_STATUS: 'POOL',
   TIMEOUT_STATUS: 'TIMEOUT',
-  FAILED_STATUS: 'FAILED'
+  FAIL_STATUS: 'FAIL'
 };
 
 /**
