@@ -146,7 +146,7 @@ module.exports = function getMethods(
           const address = transactionInfo.address;
           const index = transactionInfo.index;
           transaction = Object.assign({}, node.tp.transactions[address][index], { is_confirmed: false });
-        } else if (transactionInfo.status === TransactionStatus.FAILED_STATUS ||
+        } else if (transactionInfo.status === TransactionStatus.FAIL_STATUS ||
               transactionInfo.status === TransactionStatus.TIMEOUT_STATUS) {
           transaction = {
             status: transactionInfo.status

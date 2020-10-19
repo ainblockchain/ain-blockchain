@@ -185,7 +185,7 @@ class TransactionPool {
       addrToTxSet[address].add(hash);
       const tracked = this.transactionTracker[hash];
       if (tracked && tracked.status !== TransactionStatus.BLOCK_STATUS) {
-        this.transactionTracker[hash].status = TransactionStatus.FAILED_STATUS;
+        this.transactionTracker[hash].status = TransactionStatus.FAIL_STATUS;
         this.transactionTracker[hash].index = -1;
       }
     })
