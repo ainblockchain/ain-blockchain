@@ -261,6 +261,7 @@ class Consensus {
 
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
     const validTransactions = [];
+    const invalidTransactions = [];
     const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
     const tempState = new DB(null, lastBlock.number - 1);
@@ -277,21 +278,26 @@ class Consensus {
     }
     lastVotes.forEach(voteTx => {
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: success!`);
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] last vote: success`);
       } else {
-        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] vote tx result: failed..`);
+        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] last vote: failed`);
       }
     })
 
     transactions.forEach(tx => {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Checking tx ${JSON.stringify(tx, null, 2)}`);
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
-        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: success!`);
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx: success`);
         validTransactions.push(tx);
       } else {
-        logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx result: failed..`);
+        logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx: failed`);
+        invalidTransactions.push(tx);
       }
     })
+
+    // Once successfully executed txs (when submitted to tx pool) can become invalid
+    // after some blocks are created. Remove those transactions from tx pool.
+    this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
 
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
