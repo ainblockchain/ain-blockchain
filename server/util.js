@@ -124,6 +124,8 @@ async function waitUntilTxFinalize(endpoint, txHash) {
 }
 
 async function sendGetRequest(endpoint, method, params) {
+  // NOTE(seo): .then() was used here to avoid some unexpected behavior or axios.post()
+  //            (see https://github.com/ainblockchain/ain-blockchain/issues/101)
   return await axios.post(
       endpoint,
       {
