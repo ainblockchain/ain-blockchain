@@ -11,6 +11,18 @@
       ".write": true
     }
   },
+  "checkin": {
+    "$user_addr": {
+      "$checkin_id": {
+        "request": {
+          ".write": "data === null && auth === $user_addr && util.isDict(newData)"
+        },
+        "parent_finalize": {
+          ".write": "auth === getValue('/sharding/config/shard_owner')"
+        }
+      }
+    }
+  },
   "consensus": {
     "number": {
       "$number": {
