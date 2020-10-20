@@ -1,6 +1,8 @@
 module.exports = {
-  nodeUrl: "http://localhost:8081",
-  address: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
-  privateKey: "ee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640",
-  targetPath: "/apps/afan",
+  endpointUrl: "http://localhost:8081",
+  userAddr: "0x09BAec4d86C2b376bF85Ef91191bEd401d33634B",
+  userPrivateKey: "e5cf600fbd1bdf5f5cdddfe5b93385d7f8188c9cbd0dbd7533c199e341e28930",
+  shardOwnerAddr: "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",
+  parentTokenAmount: 1,  // Parent token amount for checkin
+  shardTokenAmount: 10,  // Shard token amount for checkout
 };
