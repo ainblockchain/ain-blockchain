@@ -27,7 +27,7 @@ const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT || false;
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
 function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV == 'local') {
@@ -92,6 +92,11 @@ const PredefinedDbPaths = {
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
   SHARDING_SHARD: 'shard',
+  // Check-in & Check-out
+  CHECKIN: 'checkin',
+  CHECKIN_REQUEST: 'request',
+  CHECKIN_PARENT_FINALIZE: 'parent_finalize',
+  CHECKOUT: 'checkout',
 };
 
 /**
@@ -178,6 +183,8 @@ const NativeFunctionIds = {
   TRANSFER: '_transfer',
   WITHDRAW: '_withdraw',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
+  OPEN_CHECKIN: '_openCheckin',
+  CLOSE_CHECKIN: '_closeCheckin',
 };
 
 /**
@@ -196,6 +203,8 @@ const ShardingProperties = {
   SHARDING_ENABLED: 'sharding_enabled',
   SHARDING_PATH: 'sharding_path',
   SHARDING_PROTOCOL: 'sharding_protocol',
+  TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
+  TOKEN_EXCH_RATE: 'token_exchange_rate',
 };
 
 /**
@@ -205,6 +214,15 @@ const ShardingProperties = {
 const ShardingProtocols = {
   NONE: 'NONE',
   POA: 'POA',
+};
+
+/**
+ * Token exchange schemes
+ * @enum {string}
+ */
+const TokenExchangeSchemes = {
+  NONE: 'NONE',
+  FIXED: 'FIXED',
 };
 
 /**
@@ -450,6 +468,7 @@ module.exports = {
   NativeFunctionIds,
   ShardingProperties,
   ShardingProtocols,
+  TokenExchangeSchemes,
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
