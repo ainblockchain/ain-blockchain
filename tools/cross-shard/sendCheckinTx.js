@@ -3,7 +3,6 @@ const axios = require('axios');
 const ainUtil = require('@ainblockchain/ain-util');
 const config = require("./config");
 const ChainUtil = require('../../chain-util');
-const { parentTokenAmount } = require("./config");
 
 const CURRENT_PROTOCOL_VERSION = require('../../package.json').version;
 
@@ -85,7 +84,7 @@ async function sendTransaction() {
   const signedPayloadTx = signTx(payloadTxBody, keyBuffer);
   console.log(`signedPayloadTx: ${JSON.stringify(signedPayloadTx, null, 2)}`);
   const triggerTxBody =
-      buildTriggerTx(config.userAddr, JSON.stringify(signedPayloadTx.signedTx), timestamp);
+      buildTriggerTx(config.userAddr, signedPayloadTx.signedTx, timestamp);
   console.log(`triggerTxBody: ${JSON.stringify(triggerTxBody, null, 2)}`);
   console.log('Sending job transaction...')
   const txInfo = await signAndSendTx(endpoint, triggerTxBody, keyBuffer);
