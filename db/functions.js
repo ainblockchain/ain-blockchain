@@ -23,6 +23,8 @@ class Functions {
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
       [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
+      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
+      [NativeFunctionIds.CLOSE_CHECKIN]: this._closeCheckin.bind(this),
     };
   }
 
@@ -182,6 +184,14 @@ class Functions {
     }
     this.db.writeDatabase(
         this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+  }
+
+  _openCheckin(value, context) {
+    // TODO(lia): implement this
+  }
+
+  _closeCheckin(value, context) {
+    // TODO(lia): implement this
   }
 
   _transferInternal(fromPath, toPath, value) {
