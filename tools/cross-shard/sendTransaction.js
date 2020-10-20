@@ -109,15 +109,13 @@ function sendJobTransaction(endpoint, keyBuffer) {
   return signAndSendTx(endpoint, jobTxBody, keyBuffer);
 }
 
-function sendTransaction(setup) {
+async function sendTransaction(setup) {
   console.log(`config: ${JSON.stringify(config, null, 2)}`);
   const endpoint = `${config.nodeUrl}/json-rpc`;
   const keyBuffer = Buffer.from(config.privateKey, 'hex');
-  if (setup) {
-    return sendSetupTransaction(endpoint, keyBuffer);
-  } else {
-    return sendJobTransaction(endpoint, keyBuffer);
-  }
+  const txInfo = setup ? await sendSetupTransaction(endpoint, keyBuffer) :
+      await sendJobTransaction(endpoint, keyBuffer);
+  console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
 }
 
 function processArguments() {
@@ -128,7 +126,7 @@ function processArguments() {
     console.log('Invalid option: ' + process.argv[2])
     usage();
   }
-  return sendTransaction(process.argv.length === 3);
+  sendTransaction(process.argv.length === 3);
 }
 
 function usage() {
