@@ -293,24 +293,20 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
 
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
-  let result = {};
   if (transactionInfo) {
     if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
-      Object.assign(result, block.transactions[index], { is_confirmed: true });
+      transactionInfo.transaction = block.transactions[index];
     } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
       const address = transactionInfo.address;
       const index = transactionInfo.index;
-      Object.assign(result, node.tp.transactions[address][index], { is_confirmed: false });
-    } else if (transactionInfo.status === TransactionStatus.FAIL_STATUS ||
-          transactionInfo.status === TransactionStatus.TIMEOUT_STATUS) {
-      result[status] = transactionInfo.status;
+      transactionInfo.transaction = node.tp.transactions[address][index];
     }
   }
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({code: 0, result: transactionInfo})
     .end();
 });
 
