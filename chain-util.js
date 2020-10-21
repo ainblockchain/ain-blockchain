@@ -17,6 +17,13 @@ class ChainUtil {
     return hash.substring(0,6) + '...' + hash.substring(hash.length - 4, hash.length);
   }
 
+  static hashSignature(sig) {
+    const sigBuffer = ainUtil.toBuffer(sig);
+    const lenHash = sigBuffer.length - 65;
+    const hashedData = sigBuffer.slice(0, lenHash);
+    return '0x' + hashedData.toString('hex');
+  }
+
   // TODO (lia): remove this function
   static genKeyPair() {
     let keyPair;

@@ -267,7 +267,7 @@ class Block {
     const proposer = ownerAddress;
     const validators = GenesisWhitelist;
     const stateProofHash = Block.getGenesisStateProofHash();
-    return new this(lastHash, lastVotes, transactions, number, epoch, genesisTime,
+    return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
       stateProofHash, proposer, validators);
   }
 }

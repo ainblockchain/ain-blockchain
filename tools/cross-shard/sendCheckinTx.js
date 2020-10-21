@@ -63,7 +63,7 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
         id: 0
       })
   .then(resp => {
-    const success = _.get(resp, 'data.result', false);
+    const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
     console.log(`result: ${JSON.stringify(success, null, 2)}`);
     return { txHash, signedTx, success };
   })
@@ -93,18 +93,20 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
 async function sendTransaction() {
   console.log(`\n*** sendTransaction():`);
   const timestamp = Date.now();
+  const keyBuffer = Buffer.from(config.userPrivateKey, 'hex');
   const payloadTxBody =
       buildPayloadTx(config.userAddr, config.shardOwnerAddr, config.parentTokenAmount, timestamp);
   console.log(`payloadTxBody: ${JSON.stringify(payloadTxBody, null, 2)}`);
-  const signedPayloadTx = signTx(payloadTxBody, config.userPrivateKey);
+  const signedPayloadTx = signTx(payloadTxBody, keyBuffer);
   console.log(`signedPayloadTx: ${JSON.stringify(signedPayloadTx, null, 2)}`);
+  console.log(`payloadTxHash: ${signedPayloadTx.txHash}`);
 
   const triggerTxBody =
       buildTriggerTx(config.userAddr, signedPayloadTx.signedTx, timestamp);
   console.log(`triggerTxBody: ${JSON.stringify(triggerTxBody, null, 2)}`);
 
   console.log('Sending job transaction...')
-  const txInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, config.userPrivateKey);
+  const txInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, keyBuffer);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   return { timestamp, txInfo };
 }

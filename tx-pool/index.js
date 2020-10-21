@@ -298,28 +298,28 @@ class TransactionPool {
     return size;
   }
 
-  addRemoteTransaction(transaction, action) {
+  addRemoteTransaction(txHash, action) {
     const trackingInfo = {
-      txHash: transaction.hash,
+      txHash,
       action,
     };
     logger.info(
         `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
-    this.remoteTransactionTracker[transaction.hash] = trackingInfo;
+    this.remoteTransactionTracker[txHash] = trackingInfo;
   }
 
   checkRemoteTransactions() {
     const tasks = [];
     for (let txHash in this.remoteTransactionTracker) {
-      const trackingInfo = this.remoteTransactionTracker[txHash];
       tasks.push(sendGetRequest(
         parentChainEndpoint,
         'ain_getTransactionByHash',
         { hash: txHash }
       )
       .then(resp => {
+        const trackingInfo = this.remoteTransactionTracker[txHash];
         logger.info(`  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)}`);
-        console.log(`data: ${JSON.stringify(resp.data, null, 2)}`);
+        console.log(`data: ${JSON.stringify(_.get(resp, 'data', null), null, 2)}`);
         // TODO(seo): Implement remote tx removal logic.
         return true;
       }));
