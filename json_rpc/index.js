@@ -134,26 +134,18 @@ module.exports = function getMethods(
 
     ain_getTransactionByHash: function(args, done) {
       const transactionInfo = node.tp.transactionTracker[args.hash];
-      if (!transactionInfo) {
-        done(null, addProtocolVersion({ result: null }));
-      } else {
-        let transaction = null;
+      if (transactionInfo) {
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          transaction = Object.assign({}, block.transactions[index], { is_confirmed: true });
+          transactionInfo.transaction = block.transactions[index];
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
           const address = transactionInfo.address;
           const index = transactionInfo.index;
-          transaction = Object.assign({}, node.tp.transactions[address][index], { is_confirmed: false });
-        } else if (transactionInfo.status === TransactionStatus.FAIL_STATUS ||
-              transactionInfo.status === TransactionStatus.TIMEOUT_STATUS) {
-          transaction = {
-            status: transactionInfo.status
-          };
+          transactionInfo.transaction = node.tp.transactions[address][index];
         }
-        done(null, addProtocolVersion({ result: transaction }));
       }
+      done(null, addProtocolVersion({ result: transactionInfo }));
     },
 
     ain_getTransactionByBlockHashAndIndex: function(args, done) {
