@@ -63,12 +63,9 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
         id: 0
       })
   .then(resp => {
-    const result = _.get(resp, 'data.result', null);
-    console.log(`result: ${JSON.stringify(result, null, 2)}`);
-    if (result.result !== true) {
-      return { txHash, signedTx, success: false };
-    }
-    return { txHash, signedTx, success: true };
+    const success = _.get(resp, 'data.result', false);
+    console.log(`result: ${JSON.stringify(success, null, 2)}`);
+    return { txHash, signedTx, success };
   })
   .catch(err => {
     console.log(`Failed to send transaction: ${err}`);
@@ -121,7 +118,7 @@ async function confirmTransaction(timestamp, txHash) {
     iteration++;
     result = await sendGetTxByHashRequest(config.endpointUrl, txHash);
     sleep(1);
-    if (result.is_confirmed) {
+    if (_.get(result, 'is_confirmed')) {
       break;
     }
   }
