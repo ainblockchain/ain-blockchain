@@ -26,7 +26,7 @@ const {
 } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
-const { signAndSendTxList, sendGetRequest } = require('../server/util');
+const { signAndSendTx, sendGetRequest } = require('../server/util');
 
 const LOG_PREFIX = 'CONSENSUS';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -863,9 +863,9 @@ class Consensus {
         nonce: -1
       };
       // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
-      await signAndSendTxList(
+      await signAndSendTx(
         parentChainEndpoint,
-        [ tx ],
+        tx,
         Buffer.from(this.node.account.private_key, 'hex')
       );
     } catch (e) {

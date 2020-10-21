@@ -13,12 +13,12 @@ const ChainUtil = require('../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
-async function sendTxListAndWaitForConfirmation(endpoint, txList, keyBuffer) {
-  const res = await signAndSendTxList(endpoint, txList, keyBuffer);
-  if (res.errMsg || !res.txHashList) {
+async function sendTxAndWaitForConfirmation(endpoint, tx, keyBuffer) {
+  const res = await signAndSendTx(endpoint, tx, keyBuffer);
+  if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
   }
-  if (!(await waitUntilTxListFinalize(endpoint, res.txHashList))) {
+  if (!(await waitUntilTxFinalize(endpoint, _.get(res, 'txHash', null)))) {
     throw Error('Transaction did not finalize in time. Try selecting a different parent_chain_poc.');
   }
 }
@@ -38,64 +38,37 @@ function signTx(tx, keyBuffer) {
   };
 }
 
-async function signAndSendTxList(endpoint, txList, keyBuffer) {
-  const txHashList = [];
-  let params = null;
-  if (!Array.isArray(txList)) {
-    return {
-      txHashList: []
-    };
-  } else if (txList.length == 1) {
-    const { txHash, signedTx } = signTx(txList[0], keyBuffer);
-    txHashList.push(txHash);
-    params = {
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      signature: signedTx.signature,
-      transaction: signedTx.transaction,
-    };
-  } else {
-    let signedTxList = [];
-    for (let tx of txList) {
-      const { txHash, signedTx } = signTx(tx, keyBuffer);
-      signedTxList.push(signedTx);
-      txHashList.push(txHash);
-    }
-    params = {
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      tx_list: signedTxList,
-    };
-  }
+async function sendSignedTx(endpoint, signedTxParams) {
   return await axios.post(
       endpoint,
       {
         method: "ain_sendSignedTransaction",
-        params,
+        params: signedTxParams,
         jsonrpc: "2.0",
         id: 0
       })
   .then(resp => {
-    const result = _.get(resp, 'data.result');
-    if (ChainUtil.transactionFailed(result)) {
-      throw Error(`Transaction failed: ${JSON.stringify(result)}`);
-    }
-    return { txHashList };
+    const success = _.get(resp, 'data.result', false);
+    return { success };
   })
   .catch(err => {
     logger.error(`Failed to send transaction: ${err}`);
-    return { errMsg: err.message };
+    return { errMsg: err.message, success: false };
   });
 }
 
-async function waitUntilTxListFinalize(endpoint, txHashList) {
-  const tasks = [];
-  for (let txHash of txHashList) {
-    tasks.push(waitUntilTxFinalize(endpoint, txHash));
-  }
-  return await Promise.all(tasks);
+async function signAndSendTx(endpoint, tx, keyBuffer) {
+  const { txHash, signedTx } = signTx(tx, keyBuffer);
+  params = {
+    protoVer: CURRENT_PROTOCOL_VERSION,
+    signature: signedTx.signature,
+    transaction: signedTx.transaction,
+  };
+  const result = await sendSignedTx(endpoint, params);
+  return Object.assign(result, { txHash });
 }
 
 async function waitUntilTxFinalize(endpoint, txHash) {
-  let numTries = 0;
   while (true) {
     const confirmed = await axios.post(
         endpoint,
@@ -119,7 +92,6 @@ async function waitUntilTxFinalize(endpoint, txHash) {
       return true;
     }
     sleep(1);
-    numTries++;
   }
 }
 
@@ -144,7 +116,7 @@ async function sendGetRequest(endpoint, method, params) {
 }
 
 module.exports = {
-  sendTxListAndWaitForConfirmation,
-  signAndSendTxList,
+  sendTxAndWaitForConfirmation,
+  signAndSendTx,
   sendGetRequest
 }
