@@ -1,10 +1,19 @@
+const axios = require('axios');
+const _ = require('lodash');
 const logger = require('../logger');
 const {
-  PredefinedDbPaths, FunctionTypes, FunctionResultCode, NativeFunctionIds,
-  DefaultValues, ShardingProperties
+  PredefinedDbPaths,
+  FunctionTypes,
+  FunctionResultCode,
+  NativeFunctionIds,
+  DefaultValues,
+  ShardingProperties,
+  GenesisSharding,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const axios = require('axios');
+const { sendSignedTx } = require('../server/util');
+
+const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
@@ -202,19 +211,31 @@ class Functions {
     return this._getCheckinParentFinalizePath(branchPath);
   }
 
+  // TODO(seo): Support refund feature.
   _openCheckin(value, context) {
     // TODO(lia): implement this
     const valuePath = context.valuePath;
-    const transaction = context.transaction;
-    if (this.tp) {
-      // TODO(seo): Replace tx_hash value with payload tx hash.
-      const action = {
-        ref: this.getCheckinParentFinalizePathFromValuePath(valuePath),
-        value: {
-          tx_hash: transaction.hash,
+    const payloadTx = _.get(value, 'payload', null);
+    if (this.tp && payloadTx && payloadTx.transaction && payloadTx.signature) {
+      // TODO(seo): Call this only from shard reporter node.
+      sendSignedTx(parentChainEndpoint, payloadTx)
+      .then(result => {
+        const txHash = ChainUtil.hashSignature(payloadTx.signature);
+        if (!_.get(result, 'success', false) === true) {
+          logger.info(
+              `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+          return;
         }
-      };
-      this.tp.addRemoteTransaction(transaction, action);
+        logger.info(
+            `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+        const action = {
+          ref: this.getCheckinParentFinalizePathFromValuePath(valuePath),
+          value: {
+            tx_hash: txHash,
+          }
+        };
+        this.tp.addRemoteTransaction(txHash, action);
+      });
     }
   }
 
