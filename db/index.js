@@ -34,13 +34,13 @@ const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor(bc, blockNumberSnapshot) {
+  constructor(bc, tp, blockNumberSnapshot) {
     this.shardingPath = null;
     this.isRoot = null;
     this.stateTree = new StateNode();
     this.initDbData();
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
-    this.func = new Functions(this);
+    this.func = new Functions(this, tp);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
   }
@@ -160,6 +160,13 @@ class DB {
     if (!LIGHTWEIGHT) {
       updateProofHashForPath(pathToParent, this.stateTree);
     }
+  }
+
+  // TODO(seo): Clearly define function's DB write permissions.
+  writeDbAndTriggerFunctions(
+      localPath, fullPath, stateObj, timestamp, currentTime, transaction) {
+    this.writeDatabase(fullPath, stateObj);
+    this.func.triggerFunctions(localPath, stateObj, timestamp, currentTime, transaction);
   }
 
   static isEmptyNode(dbNode) {
@@ -379,8 +386,8 @@ class DB {
       }
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.writeDatabase(fullPath, valueCopy);
-    this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
+    this.writeDbAndTriggerFunctions(
+        localPath, fullPath, valueCopy, timestamp, Date.now(), transaction);
     return true;
   }
 

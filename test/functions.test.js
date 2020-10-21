@@ -11,7 +11,7 @@ describe("Functions", () => {
     let functions;
 
     beforeEach(() => {
-      const db = new DB(null, 0);
+      const db = new DB(null, null, 0);
       const functionConfig = {
         ".function": {
           "function_type": "REST",
@@ -21,7 +21,7 @@ describe("Functions", () => {
         }
       };
       db.setFunction("test/test_function/some/path", functionConfig);
-      functions = new Functions(db);
+      functions = new Functions(db, null);
       const response = { 'success': true };
       nock('https://events.ainetwork.ai')
         .post('/trigger')

@@ -35,7 +35,6 @@ function buildTriggerTx(address, payload, timestamp) {
 }
 
 function signTx(tx, privateKey) {
-  console.log(`\n*** signTx():`);
   const keyBuffer = Buffer.from(privateKey, 'hex');
   const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
   const sigBuffer = ainUtil.toBuffer(sig);
@@ -64,12 +63,12 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
         id: 0
       })
   .then(resp => {
-    const result = _.get(resp, 'data.result');
+    const result = _.get(resp, 'data.result', null);
     console.log(`result: ${JSON.stringify(result, null, 2)}`);
-    if (ChainUtil.transactionFailed(result)) {
-      throw Error(`Transaction failed: ${JSON.stringify(result)}`);
+    if (result.result !== true) {
+      return { txHash, signedTx, success: false };
     }
-    return { txHash, signedTx };
+    return { txHash, signedTx, success: true };
   })
   .catch(err => {
     console.log(`Failed to send transaction: ${err}`);
@@ -90,7 +89,7 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
         id: 0
       })
   .then(function (resp) {
-    return _.get(resp, 'data.result.result');
+    return _.get(resp, 'data.result.result', null);
   });
 }
 
@@ -134,7 +133,9 @@ async function sendCheckinTransaction() {
   console.log(`\n*** sendTransaction():`);
   console.log(`config: ${JSON.stringify(config, null, 2)}`);
   const { timestamp, txInfo } = await sendTransaction();
-  await confirmTransaction(timestamp, txInfo.txHash);
+  if (txInfo.success) {
+    await confirmTransaction(timestamp, txInfo.txHash);
+  }
 }
 
 async function processArguments() {
