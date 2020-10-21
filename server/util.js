@@ -81,7 +81,7 @@ async function signAndSendTxList(endpoint, txList, keyBuffer) {
     return { txHashList };
   })
   .catch(err => {
-    logger.error(`Failed to confirm transaction: ${err}`);
+    logger.error(`Failed to send transaction: ${err}`);
     return { errMsg: err.message };
   });
 }
@@ -109,7 +109,7 @@ async function waitUntilTxFinalize(endpoint, txHash) {
           id: 0
         })
     .then(resp => {
-      return (_.get(resp, 'data.result.result.is_confirmed') === true);
+      return (_.get(resp, 'data.result.result.is_confirmed', false) === true);
     })
     .catch(err => {
       logger.error(`Failed to confirm transaction: ${err}`);
@@ -134,8 +134,12 @@ async function sendGetRequest(endpoint, method, params) {
         jsonrpc: "2.0",
         id: 0
       })
-  .then(function (resp) {
-    return _.get(resp, 'data.result.result');
+  .then(resp => {
+    return resp;
+  })
+  .catch(err => {
+    logger.error(`Failed to send get request: ${err}`);
+    return null;
   });
 }
 

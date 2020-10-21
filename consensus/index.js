@@ -27,6 +27,7 @@ const {
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
 const { signAndSendTxList, sendGetRequest } = require('../server/util');
+
 const LOG_PREFIX = 'CONSENSUS';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -264,7 +265,7 @@ class Consensus {
     const invalidTransactions = [];
     const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
-    const tempState = new DB(null, lastBlock.number - 1);
+    const tempState = new DB(null, null, lastBlock.number - 1);
     tempState.setDbToSnapshot(prevState);
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
@@ -419,7 +420,7 @@ class Consensus {
         }
       }
     }
-    const tempState = new DB(null, prevBlock.number - 1);
+    const tempState = new DB(null, null, prevBlock.number - 1);
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
@@ -489,7 +490,7 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(new Transaction(proposalTx));
-    const newState = new DB(null, prevBlock.number);
+    const newState = new DB(null, null, prevBlock.number);
     newState.setDbToSnapshot(prevState);
     if (!newState.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute last votes`);
@@ -711,7 +712,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
-    const snapshot = new DB(null, (chain.length ? chain[0].number : block.number));
+    const snapshot = new DB(null, null, (chain.length ? chain[0].number : block.number));
     if (this.blockPool.hashToState.has(blockHash)) {
       snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
     } else if (blockHash === lastFinalizedHash) {
@@ -809,7 +810,7 @@ class Consensus {
       // Too early.
       return;
     }
-    const lastReportedBlockNumberConfirmed = (await this.getLastReportedBlockNumber()) || null;
+    const lastReportedBlockNumberConfirmed = await this.getLastReportedBlockNumber();
     if (lastReportedBlockNumberConfirmed === null) {
       // Try next time.
       return;
@@ -874,19 +875,16 @@ class Consensus {
   }
 
   async getLastReportedBlockNumber() {
-    try {
-      return await sendGetRequest(
-        parentChainEndpoint,
-        'ain_get',
-        {
-          type: ReadDbOperations.GET_VALUE,
-          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-              `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
-        }
-      );
-    } catch (e) {
-      logger.error(`Failed to get the latest reported block number: ${e}`);
-    }
+    const resp = await sendGetRequest(
+      parentChainEndpoint,
+      'ain_get',
+      {
+        type: ReadDbOperations.GET_VALUE,
+        ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
+      }
+    );
+    return _.get(resp, 'data.result.result', null);
   }
 
   isRunning() {

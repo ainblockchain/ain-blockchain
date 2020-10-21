@@ -241,7 +241,7 @@ class Block {
   }
 
   static getGenesisStateProofHash() {
-    const tempGenesisState = new DB(null, -1);
+    const tempGenesisState = new DB(null, null, -1);
     const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
       const res = tempGenesisState.executeTransaction(tx);

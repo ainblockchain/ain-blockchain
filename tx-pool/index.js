@@ -2,12 +2,17 @@ const logger = require('../logger');
 const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
+  GenesisSharding,
+  ShardingProperties,
   TransactionStatus,
   WriteDbOperations,
   LIGHTWEIGHT,
 } = require('../constants');
+const { sendGetRequest } = require('../server/util');
 const Transaction = require('./transaction');
 const _ = require('lodash');
+
+const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
   constructor() {
@@ -18,6 +23,8 @@ class TransactionPool {
     // TODO (lia): do not store txs in the pool
     // (they're already tracked by this.transactions..)
     this.transactionTracker = {};
+    // Track transactions in remote blockchains (e.g. parent blockchain).
+    this.remoteTransactionTracker = {};
   }
 
   addTransaction(tx) {
@@ -289,6 +296,35 @@ class TransactionPool {
       size += this.transactions[address].length;
     }
     return size;
+  }
+
+  addRemoteTransaction(transaction, action) {
+    const trackingInfo = {
+      txHash: transaction.hash,
+      action,
+    };
+    logger.info(
+        `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
+    this.remoteTransactionTracker[transaction.hash] = trackingInfo;
+  }
+
+  checkRemoteTransactions() {
+    const tasks = [];
+    for (let txHash in this.remoteTransactionTracker) {
+      const trackingInfo = this.remoteTransactionTracker[txHash];
+      tasks.push(sendGetRequest(
+        parentChainEndpoint,
+        'ain_getTransactionByHash',
+        { hash: txHash }
+      )
+      .then(resp => {
+        logger.info(`  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)}`);
+        console.log(`data: ${JSON.stringify(resp.data, null, 2)}`);
+        // TODO(seo): Implement remote tx removal logic.
+        return true;
+      }));
+    }
+    return Promise.all(tasks);
   }
 }
 
