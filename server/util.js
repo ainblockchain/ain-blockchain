@@ -77,7 +77,7 @@ async function waitUntilTxFinalize(endpoint, txHash) {
       { hash: txHash }
     )
     .then(resp => {
-      return (_.get(resp, 'data.result.result.is_confirmed', false) === true);
+      return (_.get(resp, 'data.result.result.is_finalized', false) === true);
     })
     .catch(err => {
       logger.error(`Failed to confirm transaction: ${err}`);

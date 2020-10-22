@@ -74,7 +74,7 @@ function waitUntilTxFinalized(servers, txHash) {
         .toString('utf-8')
       )
       .result;
-      if (txStatus && txStatus.is_confirmed === true) {
+      if (txStatus && txStatus.is_finalized === true) {
         unchecked.delete(server);
       }
     });
