@@ -588,19 +588,10 @@ class P2pServer {
   }
 
   async tryInitializeShard() {
-    if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
-      // Not a shard
-      return;
+    if (this.node.isShardReporter && this.node.bc.lastBlockNumber() === 0) {
+      logger.info(`[${P2P_PREFIX}] Setting up sharding..`);
+      await this.setUpDbForSharding();
     }
-    const isShardReporter = ainUtil.areSameAddresses(
-      GenesisSharding[ShardingProperties.SHARD_REPORTER],
-      this.node.account.address
-    );
-    if (this.node.bc.lastBlockNumber() !== 0 || !isShardReporter) {
-      // Shard initialization not necessary
-      return;
-    }
-    await this.setUpDbForSharding();
   }
 
   // TODO(seo): Set .shard config for functions, rules, and owners as well.
