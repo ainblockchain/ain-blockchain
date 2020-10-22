@@ -371,8 +371,7 @@ class TransactionPool {
       GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const endpoint = `http://localhost:${PORT}/json-rpc`;
-    signAndSendTx(endpoint, actionTx, keyBuffer)
-    .catch(err => logger.debug(`=>> ERROR DOING ACTION: ${err}`));
+    signAndSendTx(endpoint, actionTx, keyBuffer);
   }
 }
 
