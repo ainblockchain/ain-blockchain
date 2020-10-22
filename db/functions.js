@@ -352,7 +352,8 @@ class Functions {
       return false;
     }
     // tokenToReceive = tokenExchRate * checkinAmount
-    if (tokenExchRate !== tokenToReceive / checkinAmount || checkinAmount !== tokenToReceive / tokenExchRate) {
+    if (tokenExchRate !== tokenToReceive / checkinAmount ||
+        checkinAmount !== tokenToReceive / tokenExchRate) {
       logger.debug(`  =>> Number overflow`);
       return false;
     }
