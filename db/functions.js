@@ -1,6 +1,6 @@
+const logger = require('../logger');
 const axios = require('axios');
 const _ = require('lodash');
-const logger = require('../logger');
 const {
   PredefinedDbPaths,
   FunctionTypes,
@@ -216,11 +216,10 @@ class Functions {
     // TODO(lia): implement this
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
+    const txHash = ChainUtil.hashSignature(payloadTx.signature);
     if (this.tp && payloadTx && payloadTx.transaction && payloadTx.signature) {
-      // TODO(seo): Call this only from shard reporter node.
       sendSignedTx(parentChainEndpoint, payloadTx)
       .then(result => {
-        const txHash = ChainUtil.hashSignature(payloadTx.signature);
         if (!_.get(result, 'success', false) === true) {
           logger.info(
               `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
@@ -232,10 +231,13 @@ class Functions {
           ref: this.getCheckinParentFinalizePathFromValuePath(valuePath),
           value: {
             tx_hash: txHash,
-          }
+          },
+          transaction: payloadTx.transaction,
         };
         this.tp.addRemoteTransaction(txHash, action);
       });
+    } else {
+      logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
     }
   }
 
