@@ -33,7 +33,7 @@ const {
   LIGHTWEIGHT
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendTxAndWaitForConfirmation } = require('./util');
+const { sendTxAndWaitForFinalization } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -692,7 +692,7 @@ class P2pServer {
       nonce: -1
     };
 
-    await sendTxAndWaitForConfirmation(parentChainEndpoint, shardInitTx, keyBuffer);
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, keyBuffer);
     logger.info(`[${P2P_PREFIX}] setUpDbForSharding success`);
   }
 
