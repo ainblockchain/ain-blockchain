@@ -26,11 +26,11 @@ const {
 } = require('../constants');
 const { ConsensusMessageTypes, ConsensusConsts, ConsensusStatus, ConsensusDbPaths }
   = require('./constants');
-const { signAndSendTxList, sendGetRequest } = require('../server/util');
+const { signAndSendTx, sendGetRequest } = require('../server/util');
+
 const LOG_PREFIX = 'CONSENSUS';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 const txSizeThreshold = MAX_TX_BYTES * 0.9;
 
@@ -45,7 +45,6 @@ class Consensus {
     this.epochInterval = null;
     this.startingTime = 0;
     this.timeAdjustment = 0;
-    this.isShardReporter = false;
     this.isReporting = false;
     this.isInEpochTransition = false;
     this.state = {
@@ -70,12 +69,6 @@ class Consensus {
     this.genesisHash = genesisBlock.hash;
     const myAddr = this.node.account.address;
     try {
-      if (isShardChain) {
-        this.isShardReporter = ainUtil.areSameAddresses(
-          GenesisSharding[ShardingProperties.SHARD_REPORTER],
-          myAddr
-        );
-      }
       const currentStake = this.getValidConsensusDeposit(myAddr);
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current stake: ${currentStake}`);
       if (!currentStake) {
@@ -264,7 +257,7 @@ class Consensus {
     const invalidTransactions = [];
     const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
-    const tempState = new DB(null, lastBlock.number - 1);
+    const tempState = new DB(null, null, false, lastBlock.number - 1);
     tempState.setDbToSnapshot(prevState);
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
@@ -419,7 +412,7 @@ class Consensus {
         }
       }
     }
-    const tempState = new DB(null, prevBlock.number - 1);
+    const tempState = new DB(null, null, false, prevBlock.number - 1);
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
@@ -489,7 +482,7 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(new Transaction(proposalTx));
-    const newState = new DB(null, prevBlock.number);
+    const newState = new DB(null, null, false, prevBlock.number);
     newState.setDbToSnapshot(prevState);
     if (!newState.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute last votes`);
@@ -711,7 +704,7 @@ class Consensus {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
-    const snapshot = new DB(null, (chain.length ? chain[0].number : block.number));
+    const snapshot = new DB(null, null, false, (chain.length ? chain[0].number : block.number));
     if (this.blockPool.hashToState.has(blockHash)) {
       snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
     } else if (blockHash === lastFinalizedHash) {
@@ -797,10 +790,7 @@ class Consensus {
   }
 
   async reportStateProofHashes() {
-    if (!isShardChain) {
-      return;
-    }
-    if (!this.isShardReporter) {
+    if (!this.node.isShardReporter) {
       return;
     }
     const lastFinalizedBlock = this.node.bc.lastBlock();
@@ -809,7 +799,7 @@ class Consensus {
       // Too early.
       return;
     }
-    const lastReportedBlockNumberConfirmed = (await this.getLastReportedBlockNumber()) || null;
+    const lastReportedBlockNumberConfirmed = await this.getLastReportedBlockNumber();
     if (lastReportedBlockNumberConfirmed === null) {
       // Try next time.
       return;
@@ -862,9 +852,9 @@ class Consensus {
         nonce: -1
       };
       // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
-      await signAndSendTxList(
+      await signAndSendTx(
         parentChainEndpoint,
-        [ tx ],
+        tx,
         Buffer.from(this.node.account.private_key, 'hex')
       );
     } catch (e) {
@@ -874,19 +864,16 @@ class Consensus {
   }
 
   async getLastReportedBlockNumber() {
-    try {
-      return await sendGetRequest(
-        parentChainEndpoint,
-        'ain_get',
-        {
-          type: ReadDbOperations.GET_VALUE,
-          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-              `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
-        }
-      );
-    } catch (e) {
-      logger.error(`Failed to get the latest reported block number: ${e}`);
-    }
+    const resp = await sendGetRequest(
+      parentChainEndpoint,
+      'ain_get',
+      {
+        type: ReadDbOperations.GET_VALUE,
+        ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
+      }
+    );
+    return _.get(resp, 'data.result.result', null);
   }
 
   isRunning() {

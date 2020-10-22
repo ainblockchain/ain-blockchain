@@ -88,6 +88,8 @@ const PredefinedDbPaths = {
   DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
   DEPOSIT_CONSENSUS: 'deposit/consensus',
   WITHDRAW_CONSENSUS: 'withdraw/consensus',
+  // Remote transaction action
+  REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',

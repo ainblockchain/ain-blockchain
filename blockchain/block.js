@@ -241,7 +241,7 @@ class Block {
   }
 
   static getGenesisStateProofHash() {
-    const tempGenesisState = new DB(null, -1);
+    const tempGenesisState = new DB(null, null, false, -1);
     const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
       const res = tempGenesisState.executeTransaction(tx);
@@ -267,7 +267,7 @@ class Block {
     const proposer = ownerAddress;
     const validators = GenesisWhitelist;
     const stateProofHash = Block.getGenesisStateProofHash();
-    return new this(lastHash, lastVotes, transactions, number, epoch, genesisTime,
+    return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
       stateProofHash, proposer, validators);
   }
 }

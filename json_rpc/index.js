@@ -154,7 +154,10 @@ module.exports = function getMethods(
         const index = Number(args.index);
         const block = node.bc.getBlockByHash(args.block_hash);
         if (block.transactions.length > index && index >= 0) {
-          result = Object.assign({}, block.transactions[index], { is_confirmed: true });
+          result = {
+            transaction: block.transactions[index],
+            is_finalized: true
+          };
         }
       }
       done(null, addProtocolVersion({ result }));
@@ -166,7 +169,10 @@ module.exports = function getMethods(
         const index = Number(args.index);
         const block = node.bc.getBlockByNumber(args.block_number);
         if (block.transactions.length > index && index >= 0) {
-          result = Object.assign({}, block.transactions[index], { is_confirmed: true });
+          result = {
+            transaction: block.transactions[index],
+            is_finalized: true
+          };
         }
       }
       done(null, addProtocolVersion({ result }));
