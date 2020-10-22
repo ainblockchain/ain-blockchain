@@ -9,6 +9,7 @@ const {
   DefaultValues,
   ShardingProperties,
   GenesisSharding,
+  ACCOUNT_INDEX,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const { sendSignedTx } = require('../server/util');
@@ -217,7 +218,7 @@ class Functions {
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
-    if (this.tp && this.db.isShardReporter &&
+    if (this.tp && this.db.isFinalizedState &&
         payloadTx && payloadTx.transaction && payloadTx.signature) {
       sendSignedTx(parentChainEndpoint, payloadTx)
       .then(result => {
@@ -244,6 +245,7 @@ class Functions {
 
   _closeCheckin(value, context) {
     // TODO(lia): implement this
+    console.log(`!!!!!_closeCheckin(): ${ACCOUNT_INDEX}`)
   }
 
   _transferInternal(fromPath, toPath, value) {

@@ -34,7 +34,7 @@ const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor(bc, tp, isShardReporter, blockNumberSnapshot) {
+  constructor(bc, tp, isFinalizedState, blockNumberSnapshot) {
     this.shardingPath = null;
     this.isRoot = null;
     this.stateTree = new StateNode();
@@ -43,7 +43,7 @@ class DB {
     this.func = new Functions(this, tp);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
-    this.isShardReporter = isShardReporter;
+    this.isFinalizedState = isFinalizedState;
   }
 
   initDbData() {

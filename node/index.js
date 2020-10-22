@@ -42,7 +42,7 @@ class BlockchainNode {
   init(isFirstNode) {
     logger.info(`[${NODE_PREFIX}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.bc.setBackupDb(new DB(this.bc, this.tp, this.isShardReporter));
+    this.bc.setBackupDb(new DB(this.bc, this.tp, true));
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
     this.db.setDbToSnapshot(this.bc.backupDb);
