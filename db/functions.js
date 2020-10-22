@@ -24,9 +24,10 @@ const EventListenerWhitelist = {
  * Built-in functions with function paths.
  */
 class Functions {
-  constructor(db, tp) {
+  constructor(db, tp, isShardReporter = false) {
     this.db = db;
     this.tp = tp;
+    this.isShardReporter = isShardReporter;
     this.nativeFunctionMap = {
       [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
@@ -217,7 +218,8 @@ class Functions {
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
-    if (this.tp && payloadTx && payloadTx.transaction && payloadTx.signature) {
+    if (this.tp && this.isShardReporter &&
+        payloadTx && payloadTx.transaction && payloadTx.signature) {
       sendSignedTx(parentChainEndpoint, payloadTx)
       .then(result => {
         if (!_.get(result, 'success', false) === true) {

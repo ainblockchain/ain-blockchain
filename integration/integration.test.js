@@ -510,7 +510,7 @@ describe('Integration Tests', () => {
 
       beforeEach(() =>{
         rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-        db = new DB(null, null, 0);
+        db = new DB(null, null, false, 0);
         sentOperations.forEach((op) => {
           const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
           db.executeTransaction({ operation });

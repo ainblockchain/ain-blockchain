@@ -1,25 +1,37 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
-const { PORT, ACCOUNT_INDEX, GenesisAccounts } = require('../constants');
+const {
+  PORT,
+  ACCOUNT_INDEX,
+  ShardingProperties,
+  ShardingProtocols,
+  GenesisAccounts,
+  GenesisSharding
+} = require('../constants');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
 const NODE_PREFIX = 'NODE';
+const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 
 class BlockchainNode {
   constructor() {
-    this.bc = new Blockchain(String(PORT));
-    this.tp = new TransactionPool();
-    this.db = new DB(this.bc, this.tp);
-    this.nonce = null;
-    this.initialized = false;
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
     logger.info(`[${NODE_PREFIX}] Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
+    this.isShardReporter =
+        isShardChain &&
+        ainUtil.areSameAddresses(
+            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+    this.bc = new Blockchain(String(PORT));
+    this.tp = new TransactionPool();
+    this.db = new DB(this.bc, this.tp, false);
+    this.nonce = null;
+    this.initialized = false;
   }
 
   // For testing purpose only.
@@ -30,7 +42,7 @@ class BlockchainNode {
   init(isFirstNode) {
     logger.info(`[${NODE_PREFIX}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.bc.setBackupDb(new DB(this.bc, this.tp));
+    this.bc.setBackupDb(new DB(this.bc, this.tp, this.isShardReporter));
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
     this.db.setDbToSnapshot(this.bc.backupDb);

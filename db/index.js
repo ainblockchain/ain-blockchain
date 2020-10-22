@@ -34,15 +34,16 @@ const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor(bc, tp, blockNumberSnapshot) {
+  constructor(bc, tp, isShardReporter, blockNumberSnapshot) {
     this.shardingPath = null;
     this.isRoot = null;
     this.stateTree = new StateNode();
     this.initDbData();
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
-    this.func = new Functions(this, tp);
+    this.func = new Functions(this, tp, isShardReporter);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
+    this.isShardReporter = isShardReporter;
   }
 
   initDbData() {
