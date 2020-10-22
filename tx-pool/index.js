@@ -18,7 +18,8 @@ const Transaction = require('./transaction');
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
-  constructor() {
+  constructor(node) {
+    this.node = node;
     // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
     this.transactions = {};
     this.committedNonceTracker = {};
