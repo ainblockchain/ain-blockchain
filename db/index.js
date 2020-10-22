@@ -40,7 +40,7 @@ class DB {
     this.stateTree = new StateNode();
     this.initDbData();
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
-    this.func = new Functions(this, tp, isShardReporter);
+    this.func = new Functions(this, tp);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.isShardReporter = isShardReporter;

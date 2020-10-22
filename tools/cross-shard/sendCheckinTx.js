@@ -120,7 +120,7 @@ async function confirmTransaction(timestamp, txHash) {
     iteration++;
     result = await sendGetTxByHashRequest(config.endpointUrl, txHash);
     sleep(1);
-    if (_.get(result, 'is_confirmed')) {
+    if (_.get(result, 'is_finalized')) {
       break;
     }
   }

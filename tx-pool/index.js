@@ -51,7 +51,7 @@ class TransactionPool {
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.timestamp,
-      is_confirmed: false,
+      is_finalized: false,
       confirmed_at: -1,
     };
     if (tx.nonce >= 0 &&
@@ -221,7 +221,7 @@ class TransactionPool {
         number: block.number,
         index: -1,
         timestamp: voteTx.timestamp,
-        is_confirmed: true,
+        is_finalized: true,
         confirmed_at: confirmTime,
       };
       inBlockTxs.add(voteTx.hash);
@@ -238,7 +238,7 @@ class TransactionPool {
         number: block.number,
         index: i,
         timestamp: tx.timestamp,
-        is_confirmed: true,
+        is_finalized: true,
         confirmed_at: confirmTime,
       };
       inBlockTxs.add(tx.hash);
@@ -325,13 +325,13 @@ class TransactionPool {
         logger.info(
             `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
             `with result: ${JSON.stringify(result, null, 2)}`);
-        if (result && (result.is_confirmed ||
+        if (result && (result.is_finalized ||
             result.status === TransactionStatus.FAIL_STATUS ||
             result.status === TransactionStatus.TIMEOUT_STATUS)) {
-          this.doAction(db, trackingInfo.action, result.is_confirmed);
+          this.doAction(db, trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
-        return result.is_confirmed;
+        return result.is_finalized;
       }));
     }
     return Promise.all(tasks);
