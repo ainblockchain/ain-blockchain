@@ -1,13 +1,21 @@
 const logger = require('../logger');
+const _ = require('lodash');
 const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
-  TransactionStatus,
-  WriteDbOperations,
   LIGHTWEIGHT,
+  PredefinedDbPaths,
+  GenesisSharding,
+  ShardingProperties,
+  TransactionStatus,
+  FunctionResultCode,
+  WriteDbOperations,
 } = require('../constants');
+const ChainUtil = require('../chain-util');
+const { sendGetRequest } = require('../server/util');
 const Transaction = require('./transaction');
-const _ = require('lodash');
+
+const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
   constructor() {
@@ -18,6 +26,8 @@ class TransactionPool {
     // TODO (lia): do not store txs in the pool
     // (they're already tracked by this.transactions..)
     this.transactionTracker = {};
+    // Track transactions in remote blockchains (e.g. parent blockchain).
+    this.remoteTransactionTracker = {};
   }
 
   addTransaction(tx) {
@@ -41,8 +51,8 @@ class TransactionPool {
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.timestamp,
-      is_confirmed: false,
-      confirmed_at: -1,
+      is_finalized: false,
+      finalized_at: -1,
     };
     if (tx.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
@@ -201,7 +211,7 @@ class TransactionPool {
   }
 
   cleanUpForNewBlock(block) {
-    const confirmTime = Date.now();
+    const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
     block.last_votes.forEach(voteTx => {
@@ -211,8 +221,8 @@ class TransactionPool {
         number: block.number,
         index: -1,
         timestamp: voteTx.timestamp,
-        is_confirmed: true,
-        confirmed_at: confirmTime,
+        is_finalized: true,
+        finalized_at: finalizedAt,
       };
       inBlockTxs.add(voteTx.hash);
     });
@@ -228,8 +238,8 @@ class TransactionPool {
         number: block.number,
         index: i,
         timestamp: tx.timestamp,
-        is_confirmed: true,
-        confirmed_at: confirmTime,
+        is_finalized: true,
+        finalized_at: finalizedAt,
       };
       inBlockTxs.add(tx.hash);
     }
@@ -289,6 +299,60 @@ class TransactionPool {
       size += this.transactions[address].length;
     }
     return size;
+  }
+
+  addRemoteTransaction(txHash, action) {
+    const trackingInfo = {
+      txHash,
+      action,
+    };
+    logger.info(
+        `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
+    this.remoteTransactionTracker[txHash] = trackingInfo;
+  }
+
+  checkRemoteTransactions(db) {
+    const tasks = [];
+    for (let txHash in this.remoteTransactionTracker) {
+      tasks.push(sendGetRequest(
+        parentChainEndpoint,
+        'ain_getTransactionByHash',
+        { hash: txHash }
+      )
+      .then(resp => {
+        const trackingInfo = this.remoteTransactionTracker[txHash];
+        const result = _.get(resp, 'data.result.result', null);
+        logger.info(
+            `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
+            `with result: ${JSON.stringify(result, null, 2)}`);
+        if (result && (result.is_finalized ||
+            result.status === TransactionStatus.FAIL_STATUS ||
+            result.status === TransactionStatus.TIMEOUT_STATUS)) {
+          this.doAction(db, trackingInfo.action, result.is_finalized);
+          delete this.remoteTransactionTracker[txHash];
+        }
+        return result.is_finalized;
+      }));
+    }
+    return Promise.all(tasks);
+  }
+
+  _getRemoteTxActionResultPath(basePath) {
+    return `${basePath}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+  }
+
+  // TODO(seo): Replace writeDbAndTriggerFunctions() with real transaction.
+  doAction(db, action, success) {
+    const parsedPath = ChainUtil.parsePath(action.ref);
+    const fullPath = db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    const valueCopy = ChainUtil.isDict(action.value) ?
+        JSON.parse(JSON.stringify(action.value)) : action.value;
+    valueCopy[PredefinedDbPaths.REMOTE_TX_ACTION_RESULT] = {
+      code: success ? FunctionResultCode.SUCCESS : FunctionResultCode.FAILURE
+    };
+    const transaction = action.transaction;
+    db.writeDbAndTriggerFunctions(
+        parsedPath, fullPath, valueCopy, transaction.timestamp, Date.now(), transaction);
   }
 }
 
