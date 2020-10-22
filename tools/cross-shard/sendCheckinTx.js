@@ -125,7 +125,7 @@ async function confirmTransaction(timestamp, txHash) {
     }
   }
   console.log(`iteration = ${iteration}, result: ${JSON.stringify(result, null, 2)}`);
-  console.log(`elapsed time (ms) = ${result.confirmed_at - timestamp}`);
+  console.log(`elapsed time (ms) = ${result.finalized_at - timestamp}`);
 }
 
 async function sendCheckinTransaction() {
