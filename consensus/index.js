@@ -31,7 +31,6 @@ const { signAndSendTx, sendGetRequest } = require('../server/util');
 const LOG_PREFIX = 'CONSENSUS';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 const txSizeThreshold = MAX_TX_BYTES * 0.9;
 
@@ -46,7 +45,6 @@ class Consensus {
     this.epochInterval = null;
     this.startingTime = 0;
     this.timeAdjustment = 0;
-    this.isShardReporter = false;
     this.isReporting = false;
     this.isInEpochTransition = false;
     this.state = {
@@ -71,12 +69,6 @@ class Consensus {
     this.genesisHash = genesisBlock.hash;
     const myAddr = this.node.account.address;
     try {
-      if (isShardChain) {
-        this.isShardReporter = ainUtil.areSameAddresses(
-          GenesisSharding[ShardingProperties.SHARD_REPORTER],
-          myAddr
-        );
-      }
       const currentStake = this.getValidConsensusDeposit(myAddr);
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current stake: ${currentStake}`);
       if (!currentStake) {
@@ -798,10 +790,7 @@ class Consensus {
   }
 
   async reportStateProofHashes() {
-    if (!isShardChain) {
-      return;
-    }
-    if (!this.isShardReporter) {
+    if (!this.node.isShardReporter) {
       return;
     }
     const lastFinalizedBlock = this.node.bc.lastBlock();

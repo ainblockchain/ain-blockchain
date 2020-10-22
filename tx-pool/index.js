@@ -52,7 +52,7 @@ class TransactionPool {
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.timestamp,
       is_finalized: false,
-      confirmed_at: -1,
+      finalized_at: -1,
     };
     if (tx.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
@@ -211,7 +211,7 @@ class TransactionPool {
   }
 
   cleanUpForNewBlock(block) {
-    const confirmTime = Date.now();
+    const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
     block.last_votes.forEach(voteTx => {
@@ -222,7 +222,7 @@ class TransactionPool {
         index: -1,
         timestamp: voteTx.timestamp,
         is_finalized: true,
-        confirmed_at: confirmTime,
+        finalized_at: finalizedAt,
       };
       inBlockTxs.add(voteTx.hash);
     });
@@ -239,7 +239,7 @@ class TransactionPool {
         index: i,
         timestamp: tx.timestamp,
         is_finalized: true,
-        confirmed_at: confirmTime,
+        finalized_at: finalizedAt,
       };
       inBlockTxs.add(tx.hash);
     }
