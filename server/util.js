@@ -13,7 +13,7 @@ const ChainUtil = require('../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
-async function sendTxAndWaitForConfirmation(endpoint, tx, keyBuffer) {
+async function sendTxAndWaitForFinalization(endpoint, tx, keyBuffer) {
   const res = await signAndSendTx(endpoint, tx, keyBuffer);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
@@ -112,7 +112,7 @@ function sendGetRequest(endpoint, method, params) {
 }
 
 module.exports = {
-  sendTxAndWaitForConfirmation,
+  sendTxAndWaitForFinalization,
   sendSignedTx,
   signAndSendTx,
   sendGetRequest
