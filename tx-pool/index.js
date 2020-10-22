@@ -4,15 +4,18 @@ const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
   LIGHTWEIGHT,
+  PORT,
   PredefinedDbPaths,
   GenesisSharding,
+  GenesisAccounts,
   ShardingProperties,
   TransactionStatus,
   FunctionResultCode,
   WriteDbOperations,
+  AccountProperties,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendGetRequest } = require('../server/util');
+const { sendGetRequest, signAndSendTx } = require('../server/util');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -311,7 +314,7 @@ class TransactionPool {
     this.remoteTransactionTracker[txHash] = trackingInfo;
   }
 
-  checkRemoteTransactions(db) {
+  checkRemoteTransactions() {
     const tasks = [];
     for (let txHash in this.remoteTransactionTracker) {
       tasks.push(sendGetRequest(
@@ -328,7 +331,7 @@ class TransactionPool {
         if (result && (result.is_finalized ||
             result.status === TransactionStatus.FAIL_STATUS ||
             result.status === TransactionStatus.TIMEOUT_STATUS)) {
-          this.doAction(db, trackingInfo.action, result.is_finalized);
+          this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
         return result.is_finalized;
@@ -341,18 +344,26 @@ class TransactionPool {
     return `${basePath}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
   }
 
-  // TODO(seo): Replace writeDbAndTriggerFunctions() with real transaction.
-  doAction(db, action, success) {
-    const parsedPath = ChainUtil.parsePath(action.ref);
-    const fullPath = db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
-    const valueCopy = ChainUtil.isDict(action.value) ?
-        JSON.parse(JSON.stringify(action.value)) : action.value;
-    valueCopy[PredefinedDbPaths.REMOTE_TX_ACTION_RESULT] = {
-      code: success ? FunctionResultCode.SUCCESS : FunctionResultCode.FAILURE
+  doAction(action, success) {
+    const triggerTx = action.transaction;
+    const valueWithResultCode = Object.assign(
+          ChainUtil.isDict(action.value) ? action.value : { value: action.value },
+          { code: success ? FunctionResultCode.SUCCESS : FunctionResultCode.FAILURE });
+    const actionTx = {
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: action.ref,
+        value: valueWithResultCode
+      },
+      timestamp: triggerTx.timestamp,
+      nonce: -1
     };
-    const transaction = action.transaction;
-    db.writeDbAndTriggerFunctions(
-        parsedPath, fullPath, valueCopy, transaction.timestamp, Date.now(), transaction);
+    const ownerPrivateKey = ChainUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    const endpoint = `http://localhost:${PORT}/json-rpc`;
+    signAndSendTx(endpoint, actionTx, keyBuffer)
+    .catch(err => logger.debug(`=>> ERROR DOING ACTION: ${err}`));
   }
 }
 
