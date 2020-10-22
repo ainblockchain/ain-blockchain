@@ -13,6 +13,7 @@ const { ConsensusStatus } = require('../consensus/constants');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
+  PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
   HOSTING_ENV,
@@ -25,7 +26,6 @@ const {
   OwnerProperties,
   RuleProperties,
   ShardingProperties,
-  ShardingProtocols,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
@@ -173,8 +173,13 @@ class P2pServer {
     })
     .then((ipAddr) => {
       this.ipAddress = ipAddr;
+      this.node.setNodeUrl(this.getNodeUrl(ipAddr))
       return ipAddr;
     });
+  }
+
+  getNodeUrl(ipAddr) {
+    return `http://${ipAddr}:${PORT}`;
   }
 
   async setTrackerEventHandlers() {
