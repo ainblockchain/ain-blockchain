@@ -105,7 +105,7 @@ class BlockchainNode {
       this.tp.cleanUpForNewBlock(block);
       this.db.setDbToSnapshot(this.bc.backupDb);
       this.tp.updateNonceTrackers(block.transactions);
-      this.tp.checkRemoteTransactions();
+      this.tp.checkRemoteTransactions(this.db);
       return true;
     }
     return false;

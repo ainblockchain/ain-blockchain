@@ -1,16 +1,19 @@
 const logger = require('../logger');
+const _ = require('lodash');
 const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
+  LIGHTWEIGHT,
+  PredefinedDbPaths,
   GenesisSharding,
   ShardingProperties,
   TransactionStatus,
+  FunctionResultCode,
   WriteDbOperations,
-  LIGHTWEIGHT,
 } = require('../constants');
+const ChainUtil = require('../chain-util');
 const { sendGetRequest } = require('../server/util');
 const Transaction = require('./transaction');
-const _ = require('lodash');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
@@ -308,7 +311,7 @@ class TransactionPool {
     this.remoteTransactionTracker[txHash] = trackingInfo;
   }
 
-  checkRemoteTransactions() {
+  checkRemoteTransactions(db) {
     const tasks = [];
     for (let txHash in this.remoteTransactionTracker) {
       tasks.push(sendGetRequest(
@@ -318,13 +321,38 @@ class TransactionPool {
       )
       .then(resp => {
         const trackingInfo = this.remoteTransactionTracker[txHash];
-        logger.info(`  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)}`);
-        console.log(`data: ${JSON.stringify(_.get(resp, 'data', null), null, 2)}`);
-        // TODO(seo): Implement remote tx removal logic.
-        return true;
+        const result = _.get(resp, 'data.result.result', null);
+        logger.info(
+            `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
+            `with result: ${JSON.stringify(result, null, 2)}`);
+        if (result && (result.is_confirmed ||
+            result.status === TransactionStatus.FAIL_STATUS ||
+            result.status === TransactionStatus.TIMEOUT_STATUS)) {
+          this.doAction(db, trackingInfo.action, result.is_confirmed);
+          delete this.remoteTransactionTracker[txHash];
+        }
+        return result.is_confirmed;
       }));
     }
     return Promise.all(tasks);
+  }
+
+  _getRemoteTxActionResultPath(basePath) {
+    return `${basePath}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+  }
+
+  // TODO(seo): Replace writeDbAndTriggerFunctions() with real transaction.
+  doAction(db, action, success) {
+    const parsedPath = ChainUtil.parsePath(action.ref);
+    const fullPath = db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    const valueCopy = ChainUtil.isDict(action.value) ?
+        JSON.parse(JSON.stringify(action.value)) : action.value;
+    valueCopy[PredefinedDbPaths.REMOTE_TX_ACTION_RESULT] = {
+      code: success ? FunctionResultCode.SUCCESS : FunctionResultCode.FAILURE
+    };
+    const transaction = action.transaction;
+    db.writeDbAndTriggerFunctions(
+        parsedPath, fullPath, valueCopy, transaction.timestamp, Date.now(), transaction);
   }
 }
 
