@@ -9,9 +9,13 @@
           }
         },
         "parent_finalize": {
-          ".function": {
-            "function_type": "NATIVE",
-            "function_id": "_closeCheckin"
+          "$tx_hash": {
+            "result": {
+              ".function": {
+                "function_type": "NATIVE",
+                "function_id": "_closeCheckin"
+              }
+            }
           }
         }
       }

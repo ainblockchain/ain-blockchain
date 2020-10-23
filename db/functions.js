@@ -256,16 +256,13 @@ class Functions {
     });
     const action = {
       ref: this.getCheckinParentFinalizePathFromValuePath(valuePath),
-      value: {
-        tx_hash: txHash,
-      },
       transaction: payloadTx.transaction,
     };
     this.tp.addRemoteTransaction(txHash, action);
   }
 
   getCheckinPayloadPathFromValuePath(valuePath) {
-    const branchPath = ChainUtil.formatPath(valuePath.slice(0, -1));
+    const branchPath = ChainUtil.formatPath(valuePath.slice(0, -3));
     return this._getCheckinPayloadPath(branchPath);
   }
 
@@ -281,7 +278,7 @@ class Functions {
     if (!this._validateShardConfig()) {
       return;
     }
-    if (value.code !== FunctionResultCode.SUCCESS) {
+    if (value !== true) {
       return;
     }
     // Transfer shard chain token from shard_owner to user_addr
@@ -315,7 +312,7 @@ class Functions {
           nonce: -1
         };
     // Sign and send transferTx to the node itself
-    const endpoint = `http://localhost:${PORT}/json-rpc`;
+    const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
     signAndSendTx(endpoint, transferTx, keyBuffer);
   }
 
