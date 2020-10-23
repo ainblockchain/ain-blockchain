@@ -213,9 +213,9 @@ class Functions {
         this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
   }
 
-  getCheckinParentFinalizePathFromValuePath(valuePath) {
+  getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
     const branchPath = ChainUtil.formatPath(valuePath.slice(0, -1));
-    return this._getCheckinParentFinalizePath(branchPath);
+    return this._getCheckinParentFinalizeResultPath(branchPath, txHash);
   }
 
   // TODO(seo): Support refund feature.
@@ -255,7 +255,8 @@ class Functions {
           `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
     });
     const action = {
-      ref: this.getCheckinParentFinalizePathFromValuePath(valuePath),
+      ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
+      valueFunction: (success) => !!success,
       transaction: payloadTx.transaction,
     };
     this.tp.addRemoteTransaction(txHash, action);
@@ -423,8 +424,9 @@ class Functions {
     return `${branchPath}/${ShardingProperties.LATEST}`;
   }
 
-  _getCheckinParentFinalizePath(branchPath) {
-    return `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}`;
+  _getCheckinParentFinalizeResultPath(branchPath, txHash) {
+    return `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/${txHash}/` +
+        `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
   }
 
   _getCheckinPayloadPath(branchPath) {

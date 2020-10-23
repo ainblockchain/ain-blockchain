@@ -307,6 +307,11 @@ class TransactionPool {
   }
 
   addRemoteTransaction(txHash, action) {
+    if (!action.ref || !action.valueFunction) {
+      logger.debug(
+          `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
+      return;
+    }
     const trackingInfo = {
       txHash,
       action,
@@ -337,7 +342,7 @@ class TransactionPool {
         if (result && (result.is_finalized ||
             result.status === TransactionStatus.FAIL_STATUS ||
             result.status === TransactionStatus.TIMEOUT_STATUS)) {
-          this.doAction(trackingInfo.action, txHash, result.is_finalized);
+          this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
         return result.is_finalized;
@@ -349,24 +354,20 @@ class TransactionPool {
       });
   }
 
-  _getRemoteTxActionResultPath(basePath, txHash) {
-    return `${basePath}/${txHash}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
-  }
-
-  _getRemoteTxActionResultValue(success) {
-    return !!success;
-  }
-
-  doAction(action, txHash, success) {
+  doAction(action, success) {
     const triggerTx = action.transaction;
+    let value = null;
+    try {
+      value = action.valueFunction(success);
+    } catch (e) {
+      logger.debug(`  =>> valueFunction failed: ${e}`);
+      return;
+    }
     const actionTx = {
       operation: {
         type: WriteDbOperations.SET_VALUE,
-        ref: this._getRemoteTxActionResultPath(
-            ChainUtil.formatPath(ChainUtil.parsePath(action.ref)),
-            txHash
-        ),
-        value: this._getRemoteTxActionResultValue(success)
+        ref: ChainUtil.formatPath(ChainUtil.parsePath(action.ref)),
+        value: value
       },
       timestamp: triggerTx.timestamp,
       nonce: -1
