@@ -36,6 +36,7 @@ const ChainUtil = require('../chain-util');
 const { sendTxAndWaitForFinalization } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
+const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
@@ -63,6 +64,7 @@ class P2pServer {
   }
 
   listen() {
+    this.setupNodeUrl();
     this.server = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
@@ -150,11 +152,11 @@ class P2pServer {
     this.trackerWebSocket.close();
   }
 
-  getIpAddress() {
+  getIpAddress(internal = false) {
     return Promise.resolve()
     .then(() => {
       if (HOSTING_ENV === 'gcp') {
-        return axios.get(GCP_EXTERNAL_IP_URL, {
+        return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
           headers: {'Metadata-Flavor': 'Google'},
           timeout: 3000
         })
@@ -173,12 +175,18 @@ class P2pServer {
     })
     .then((ipAddr) => {
       this.ipAddress = ipAddr;
-      this.node.setNodeUrl(this.getNodeUrl(ipAddr))
       return ipAddr;
     });
   }
 
-  getNodeUrl(ipAddr) {
+  async setupNodeUrl() {
+    const internalIpAddr = await this.getIpAddress(true);
+    const externalIpAddr = await this.getIpAddress(false);
+    this.node.setNodeUrls(
+        P2pServer.getNodeUrl(internalIpAddr), P2pServer.getNodeUrl(externalIpAddr));
+  }
+
+  static getNodeUrl(ipAddr) {
     return `http://${ipAddr}:${PORT}`;
   }
 
