@@ -9,10 +9,16 @@ const {
   DefaultValues,
   ShardingProperties,
   GenesisSharding,
-  ACCOUNT_INDEX,
+  WriteDbOperations,
+  ShardingProtocols,
+  GenesisAccounts,
+  AccountProperties,
+  TokenExchangeSchemes,
+  PORT,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendSignedTx } = require('../server/util');
+const { sendSignedTx, signAndSendTx } = require('../server/util');
+const Transaction = require('../tx-pool/transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
@@ -207,45 +213,157 @@ class Functions {
         this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
   }
 
-  getCheckinParentFinalizePathFromValuePath(valuePath) {
+  getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
     const branchPath = ChainUtil.formatPath(valuePath.slice(0, -1));
-    return this._getCheckinParentFinalizePath(branchPath);
+    return this._getCheckinParentFinalizeResultPath(branchPath, txHash);
   }
 
   // TODO(seo): Support refund feature.
   _openCheckin(value, context) {
-    // TODO(lia): implement this
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
-    if (this.tp && this.db.isFinalizedState &&
-        payloadTx && payloadTx.transaction && payloadTx.signature) {
-      sendSignedTx(parentChainEndpoint, payloadTx)
-      .then(result => {
-        if (!_.get(result, 'success', false) === true) {
-          logger.info(
-              `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
-          return;
-        }
-        logger.info(
-            `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
-        const action = {
-          ref: this.getCheckinParentFinalizePathFromValuePath(valuePath),
-          value: {
-            tx_hash: txHash,
-          },
-          transaction: payloadTx.transaction,
-        };
-        this.tp.addRemoteTransaction(txHash, action);
-      });
-    } else {
+    if (!this.tp || this.db.isFinalizedState) {
+      // It's not the backupDb
       logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
+      return;
     }
+    if (!this._validateCheckinParams(context.params)) {
+      return;
+    }
+    if (!this._validateShardConfig()) {
+      return;
+    }
+    if (!payloadTx || !payloadTx.transaction || !payloadTx.signature) {
+      logger.debug(`  =>> payloadTx is missing required fields`);
+      return;
+    }
+    const tx = new Transaction({ transaction: payloadTx.transaction, signature: payloadTx.signature });
+    if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.operation)) {
+      logger.debug(`  =>> Invalid payloadTx`);
+      return;
+    }
+    // Forward payload tx to parent chain
+    sendSignedTx(parentChainEndpoint, payloadTx)
+    .then(result => {
+      if (!_.get(result, 'success', false) === true) {
+        logger.info(
+            `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+        return;
+      }
+      logger.info(
+          `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+    });
+    const action = {
+      ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
+      valueFunction: (success) => !!success,
+      transaction: payloadTx.transaction,
+    };
+    this.tp.addRemoteTransaction(txHash, action);
+  }
+
+  getCheckinPayloadPathFromValuePath(valuePath) {
+    const branchPath = ChainUtil.formatPath(valuePath.slice(0, -3));
+    return this._getCheckinPayloadPath(branchPath);
   }
 
   _closeCheckin(value, context) {
-    // TODO(lia): implement this
-    console.log(`!!!!!_closeCheckin(): ${ACCOUNT_INDEX}`)
+    if (!this.tp || this.db.isFinalizedState) {
+      // It's not the backupDb
+      logger.info(`  =>> Skip sending transfer transaction to the shard blockchain`);
+      return;
+    }
+    if (!this._validateCheckinParams(context.params)) {
+      return;
+    }
+    if (!this._validateShardConfig()) {
+      return;
+    }
+    if (value !== true) {
+      return;
+    }
+    // Transfer shard chain token from shard_owner to user_addr
+    const user = context.params.user_addr;
+    const checkinId = context.params.checkin_id;
+    const valuePath = context.valuePath;
+    const checkinPayload = this.db.getValue(this.getCheckinPayloadPathFromValuePath(valuePath));
+    const checkinAmount = _.get(checkinPayload, 'transaction.operation.value', 0);
+    const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
+    const tokenToReceive = checkinAmount * tokenExchRate;
+    if (!this._validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
+      return;
+    }
+    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    const ownerPrivateKey = ChainUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    const transferTx = {
+          operation: {
+            type: WriteDbOperations.SET_VALUE,
+            ref: ChainUtil.formatPath([
+              PredefinedDbPaths.TRANSFER,
+              shardOwner,
+              user,
+              `checkin_${checkinId}`,
+              PredefinedDbPaths.TRANSFER_VALUE
+            ]),
+            value: tokenToReceive
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+    // Sign and send transferTx to the node itself
+    const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
+    signAndSendTx(endpoint, transferTx, keyBuffer);
+  }
+
+  _validateCheckinParams(params) {
+    const user = params.user_addr;
+    const checkInId = params.checkin_id;
+    if (!user || !ChainUtil.isCksumAddr(user)) {
+      logger.debug(`  =>> Invalid user_addr param`);
+      return false;
+    }
+    if (checkInId == null) {
+      logger.debug(`  =>> Invalid checkin_id param`);
+      return false;
+    }
+    return true;
+  }
+
+  _validateShardConfig() {
+    if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
+      logger.debug(`  =>> Not a shard`);
+      return false;
+    }
+    if (GenesisSharding[ShardingProperties.TOKEN_EXCH_SCHEME] !== TokenExchangeSchemes.FIXED) {
+      logger.debug(`  =>> Unsupported token exchange scheme`);
+      return false;
+    }
+    return true;
+  }
+
+  _validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive) {
+    if (!ChainUtil.isNumber(tokenExchRate) || tokenExchRate <= 0 || checkinAmount <= 0 ||
+        tokenToReceive <= 0) {
+      logger.debug(`  =>> Invalid exchange rate or checkin amount`);
+      return false;
+    }
+    // tokenToReceive = tokenExchRate * checkinAmount
+    if (tokenExchRate !== tokenToReceive / checkinAmount ||
+        checkinAmount !== tokenToReceive / tokenExchRate) {
+      logger.debug(`  =>> Number overflow`);
+      return false;
+    }
+    return true;
+  }
+
+  _isTransferTx(txOp) {
+    if (txOp.type !== WriteDbOperations.SET_VALUE) {
+      return false;
+    }
+    const parsedPath = ChainUtil.parsePath(txOp.ref);
+    return parsedPath.length && parsedPath[0] === PredefinedDbPaths.TRANSFER;
   }
 
   _transferInternal(fromPath, toPath, value) {
@@ -306,8 +424,14 @@ class Functions {
     return `${branchPath}/${ShardingProperties.LATEST}`;
   }
 
-  _getCheckinParentFinalizePath(branchPath) {
-    return `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}`;
+  _getCheckinParentFinalizeResultPath(branchPath, txHash) {
+    return `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/${txHash}/` +
+        `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+  }
+
+  _getCheckinPayloadPath(branchPath) {
+    return `${branchPath}/${PredefinedDbPaths.CHECKIN_REQUEST}/` +
+        `${PredefinedDbPaths.CHECKIN_PAYLOAD}`;
   }
 
   _getFullValuePath(parsedPath) {

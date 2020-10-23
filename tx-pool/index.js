@@ -4,15 +4,18 @@ const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
   LIGHTWEIGHT,
+  PORT,
   PredefinedDbPaths,
   GenesisSharding,
+  GenesisAccounts,
   ShardingProperties,
   TransactionStatus,
   FunctionResultCode,
   WriteDbOperations,
+  AccountProperties,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendGetRequest } = require('../server/util');
+const { sendGetRequest, signAndSendTx } = require('../server/util');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -304,6 +307,11 @@ class TransactionPool {
   }
 
   addRemoteTransaction(txHash, action) {
+    if (!action.ref || !action.valueFunction) {
+      logger.debug(
+          `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
+      return;
+    }
     const trackingInfo = {
       txHash,
       action,
@@ -313,7 +321,7 @@ class TransactionPool {
     this.remoteTransactionTracker[txHash] = trackingInfo;
   }
 
-  checkRemoteTransactions(db) {
+  checkRemoteTransactions() {
     if (this.isChecking) {
       return;
     }
@@ -334,7 +342,7 @@ class TransactionPool {
         if (result && (result.is_finalized ||
             result.status === TransactionStatus.FAIL_STATUS ||
             result.status === TransactionStatus.TIMEOUT_STATUS)) {
-          this.doAction(db, trackingInfo.action, result.is_finalized);
+          this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
         return result.is_finalized;
@@ -346,22 +354,29 @@ class TransactionPool {
       });
   }
 
-  _getRemoteTxActionResultPath(basePath) {
-    return `${basePath}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
-  }
-
-  // TODO(seo): Replace writeDbAndTriggerFunctions() with real transaction.
-  doAction(db, action, success) {
-    const parsedPath = ChainUtil.parsePath(action.ref);
-    const fullPath = db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
-    const valueCopy = ChainUtil.isDict(action.value) ?
-        JSON.parse(JSON.stringify(action.value)) : action.value;
-    valueCopy[PredefinedDbPaths.REMOTE_TX_ACTION_RESULT] = {
-      code: success ? FunctionResultCode.SUCCESS : FunctionResultCode.FAILURE
+  doAction(action, success) {
+    const triggerTx = action.transaction;
+    let value = null;
+    try {
+      value = action.valueFunction(success);
+    } catch (e) {
+      logger.debug(`  =>> valueFunction failed: ${e}`);
+      return;
+    }
+    const actionTx = {
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: ChainUtil.formatPath(ChainUtil.parsePath(action.ref)),
+        value: value
+      },
+      timestamp: triggerTx.timestamp,
+      nonce: -1
     };
-    const transaction = action.transaction;
-    db.writeDbAndTriggerFunctions(
-        parsedPath, fullPath, valueCopy, transaction.timestamp, Date.now(), transaction);
+    const ownerPrivateKey = ChainUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    const endpoint = `${this.node.urlInternal}/json-rpc`;
+    signAndSendTx(endpoint, actionTx, keyBuffer);
   }
 }
 
