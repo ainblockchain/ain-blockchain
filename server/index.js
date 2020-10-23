@@ -49,7 +49,8 @@ const P2P_PREFIX = 'P2P';
 class P2pServer {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.isStarting = true;
-    this.ipAddress = null;
+    this.internalIpAddress = null;
+    this.externalIpAddress = null;
     this.trackerWebSocket = null;
     this.server = null;
     this.node = node;
@@ -64,7 +65,6 @@ class P2pServer {
   }
 
   listen() {
-    this.setupNodeUrl();
     this.server = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
@@ -90,9 +90,12 @@ class P2pServer {
     });
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setIntervalForTrackerConnection();
-    // XXX(minsu): it won't run before updating p2p network.
-    // this.heartbeat();
+    this.setupIpAddresses()
+    .then(() => {
+      this.setIntervalForTrackerConnection();
+      // XXX(minsu): it won't run before updating p2p network.
+      // this.heartbeat();
+    });
   }
 
   stop() {
@@ -132,19 +135,16 @@ class P2pServer {
 
   connectToTracker() {
     logger.info(`[${P2P_PREFIX}] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
-    this.getIpAddress()
-    .then(() => {
-      this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
-      this.trackerWebSocket.on('open', () => {
-        logger.info(`[${P2P_PREFIX}] Connected to tracker (${TRACKER_WS_ADDR})`);
-        this.clearIntervalForTrackerConnection();
-        this.setTrackerEventHandlers();
-        this.setIntervalForTrackerUpdate();
-      });
-      this.trackerWebSocket.on('error', (error) => {
-        logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
-                     `${JSON.stringify(error, null, 2)}`);
-      });
+    this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
+    this.trackerWebSocket.on('open', () => {
+      logger.info(`[${P2P_PREFIX}] Connected to tracker (${TRACKER_WS_ADDR})`);
+      this.clearIntervalForTrackerConnection();
+      this.setTrackerEventHandlers();
+      this.setIntervalForTrackerUpdate();
+    });
+    this.trackerWebSocket.on('error', (error) => {
+      logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+                    `${JSON.stringify(error, null, 2)}`);
     });
   }
 
@@ -174,16 +174,15 @@ class P2pServer {
       }
     })
     .then((ipAddr) => {
-      this.ipAddress = ipAddr;
       return ipAddr;
     });
   }
 
-  async setupNodeUrl() {
-    const internalIpAddr = await this.getIpAddress(true);
-    const externalIpAddr = await this.getIpAddress(false);
-    this.node.setNodeUrls(
-        P2pServer.getNodeUrl(internalIpAddr), P2pServer.getNodeUrl(externalIpAddr));
+  async setupIpAddresses() {
+    const ipAddrInternal = await this.getIpAddress(true);
+    const ipAddrExternal = await this.getIpAddress(false);
+    this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
+    return true;
   }
 
   static getNodeUrl(ipAddr) {
@@ -228,10 +227,10 @@ class P2pServer {
     const updateToTracker = {
       url: url.format({
         protocol: 'ws',
-        hostname: this.ipAddress,
+        hostname: this.node.ipAddrExternal,
         port: P2P_PORT
       }),
-      ip: this.ipAddress,
+      ip: this.node.ipAddrExternal,
       address: this.node.account.address,
       updatedAt: Date.now(),
       lastBlock: {
