@@ -97,6 +97,7 @@ const PredefinedDbPaths = {
   // Check-in & Check-out
   CHECKIN: 'checkin',
   CHECKIN_REQUEST: 'request',
+  CHECKIN_PAYLOAD: 'payload',
   CHECKIN_PARENT_FINALIZE: 'parent_finalize',
   CHECKOUT: 'checkout',
 };

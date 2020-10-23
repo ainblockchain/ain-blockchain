@@ -163,13 +163,6 @@ class DB {
     }
   }
 
-  // TODO(seo): Clearly define function's DB write permissions.
-  writeDbAndTriggerFunctions(
-      localPath, fullPath, stateObj, timestamp, currentTime, transaction) {
-    this.writeDatabase(fullPath, stateObj);
-    this.func.triggerFunctions(localPath, stateObj, timestamp, currentTime, transaction);
-  }
-
   static isEmptyNode(dbNode) {
     return dbNode.getIsLeaf() && dbNode.getValue() === null;
   }
@@ -387,8 +380,8 @@ class DB {
       }
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.writeDbAndTriggerFunctions(
-        localPath, fullPath, valueCopy, timestamp, Date.now(), transaction);
+    this.writeDatabase(fullPath, valueCopy);
+    this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
     return true;
   }
 
