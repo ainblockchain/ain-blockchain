@@ -337,7 +337,7 @@ class TransactionPool {
         if (result && (result.is_finalized ||
             result.status === TransactionStatus.FAIL_STATUS ||
             result.status === TransactionStatus.TIMEOUT_STATUS)) {
-          this.doAction(trackingInfo.action, result.is_finalized);
+          this.doAction(trackingInfo.action, txHash, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
         return result.is_finalized;
@@ -349,20 +349,24 @@ class TransactionPool {
       });
   }
 
-  _getRemoteTxActionResultPath(basePath) {
-    return `${basePath}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+  _getRemoteTxActionResultPath(basePath, txHash) {
+    return `${basePath}/${txHash}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
   }
 
-  doAction(action, success) {
+  _getRemoteTxActionResultValue(success) {
+    return !!success;
+  }
+
+  doAction(action, txHash, success) {
     const triggerTx = action.transaction;
-    const valueWithResultCode = Object.assign(
-          ChainUtil.isDict(action.value) ? action.value : { value: action.value },
-          { code: success ? FunctionResultCode.SUCCESS : FunctionResultCode.FAILURE });
     const actionTx = {
       operation: {
         type: WriteDbOperations.SET_VALUE,
-        ref: action.ref,
-        value: valueWithResultCode
+        ref: this._getRemoteTxActionResultPath(
+            ChainUtil.formatPath(ChainUtil.parsePath(action.ref)),
+            txHash
+        ),
+        value: this._getRemoteTxActionResultValue(success)
       },
       timestamp: triggerTx.timestamp,
       nonce: -1
@@ -370,7 +374,7 @@ class TransactionPool {
     const ownerPrivateKey = ChainUtil.getJsObject(
       GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
-    const endpoint = `http://localhost:${PORT}/json-rpc`;
+    const endpoint = `${this.node.urlInternal}/json-rpc`;
     signAndSendTx(endpoint, actionTx, keyBuffer);
   }
 }

@@ -18,7 +18,11 @@
           ".write": "data === null && auth === $user_addr && util.isDict(newData)"
         },
         "parent_finalize": {
-          ".write": "auth === getValue('/sharding/config/shard_owner') && util.isDict(newData) && util.isString(newData.tx_hash) && util.isString(newData.code)"
+          "$tx_hash": {
+            "result": {
+              ".write": "auth === getValue('/sharding/config/shard_owner') && util.isBool(newData)"
+            }
+          }
         }
       }
     }
