@@ -18,7 +18,8 @@ const Transaction = require('./transaction');
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
-  constructor() {
+  constructor(node) {
+    this.node = node;
     // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
     this.transactions = {};
     this.committedNonceTracker = {};
@@ -28,6 +29,7 @@ class TransactionPool {
     this.transactionTracker = {};
     // Track transactions in remote blockchains (e.g. parent blockchain).
     this.remoteTransactionTracker = {};
+    this.isChecking = false;
   }
 
   addTransaction(tx) {
@@ -312,6 +314,10 @@ class TransactionPool {
   }
 
   checkRemoteTransactions(db) {
+    if (this.isChecking) {
+      return;
+    }
+    this.isChecking = true;
     const tasks = [];
     for (let txHash in this.remoteTransactionTracker) {
       tasks.push(sendGetRequest(
@@ -334,7 +340,10 @@ class TransactionPool {
         return result.is_finalized;
       }));
     }
-    return Promise.all(tasks);
+    return Promise.all(tasks)
+      .then(() => {
+        this.isChecking = false;
+      });
   }
 
   _getRemoteTxActionResultPath(basePath) {
