@@ -13,6 +13,7 @@ const { ConsensusStatus } = require('../consensus/constants');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
+  PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
   HOSTING_ENV,
@@ -25,7 +26,6 @@ const {
   OwnerProperties,
   RuleProperties,
   ShardingProperties,
-  ShardingProtocols,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
@@ -36,6 +36,7 @@ const ChainUtil = require('../chain-util');
 const { sendTxAndWaitForFinalization } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
+const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
@@ -48,7 +49,8 @@ const P2P_PREFIX = 'P2P';
 class P2pServer {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.isStarting = true;
-    this.ipAddress = null;
+    this.internalIpAddress = null;
+    this.externalIpAddress = null;
     this.trackerWebSocket = null;
     this.server = null;
     this.node = node;
@@ -88,9 +90,12 @@ class P2pServer {
     });
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setIntervalForTrackerConnection();
-    // XXX(minsu): it won't run before updating p2p network.
-    // this.heartbeat();
+    this.setupIpAddresses()
+    .then(() => {
+      this.setIntervalForTrackerConnection();
+      // XXX(minsu): it won't run before updating p2p network.
+      // this.heartbeat();
+    });
   }
 
   stop() {
@@ -130,19 +135,16 @@ class P2pServer {
 
   connectToTracker() {
     logger.info(`[${P2P_PREFIX}] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
-    this.getIpAddress()
-    .then(() => {
-      this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
-      this.trackerWebSocket.on('open', () => {
-        logger.info(`[${P2P_PREFIX}] Connected to tracker (${TRACKER_WS_ADDR})`);
-        this.clearIntervalForTrackerConnection();
-        this.setTrackerEventHandlers();
-        this.setIntervalForTrackerUpdate();
-      });
-      this.trackerWebSocket.on('error', (error) => {
-        logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
-                     `${JSON.stringify(error, null, 2)}`);
-      });
+    this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
+    this.trackerWebSocket.on('open', () => {
+      logger.info(`[${P2P_PREFIX}] Connected to tracker (${TRACKER_WS_ADDR})`);
+      this.clearIntervalForTrackerConnection();
+      this.setTrackerEventHandlers();
+      this.setIntervalForTrackerUpdate();
+    });
+    this.trackerWebSocket.on('error', (error) => {
+      logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+                    `${JSON.stringify(error, null, 2)}`);
     });
   }
 
@@ -150,11 +152,11 @@ class P2pServer {
     this.trackerWebSocket.close();
   }
 
-  getIpAddress() {
+  getIpAddress(internal = false) {
     return Promise.resolve()
     .then(() => {
       if (HOSTING_ENV === 'gcp') {
-        return axios.get(GCP_EXTERNAL_IP_URL, {
+        return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
           headers: {'Metadata-Flavor': 'Google'},
           timeout: 3000
         })
@@ -172,9 +174,19 @@ class P2pServer {
       }
     })
     .then((ipAddr) => {
-      this.ipAddress = ipAddr;
       return ipAddr;
     });
+  }
+
+  async setupIpAddresses() {
+    const ipAddrInternal = await this.getIpAddress(true);
+    const ipAddrExternal = await this.getIpAddress(false);
+    this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
+    return true;
+  }
+
+  static getNodeUrl(ipAddr) {
+    return `http://${ipAddr}:${PORT}`;
   }
 
   async setTrackerEventHandlers() {
@@ -215,10 +227,10 @@ class P2pServer {
     const updateToTracker = {
       url: url.format({
         protocol: 'ws',
-        hostname: this.ipAddress,
+        hostname: this.node.ipAddrExternal,
         port: P2P_PORT
       }),
-      ip: this.ipAddress,
+      ip: this.node.ipAddrExternal,
       address: this.node.account.address,
       updatedAt: Date.now(),
       lastBlock: {
