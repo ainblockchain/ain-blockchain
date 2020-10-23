@@ -27,8 +27,10 @@ class BlockchainNode {
         isShardChain &&
         ainUtil.areSameAddresses(
             GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
-    this.nodeInternalUrl = null;
-    this.nodeExternalUrl = null;
+    this.ipAddrInternal = null;
+    this.ipAddrExternal = null;
+    this.urlInternal = null;
+    this.urlExternal = null;
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.db = new DB(this.bc, this.tp, false);
@@ -41,12 +43,18 @@ class BlockchainNode {
     this.account = GenesisAccounts.others[accountIndex];
   }
 
-  setNodeUrls(internalUrl, externalUrl) {
-    this.nodeInternalUrl = internalUrl;
-    this.nodeExternalUrl = externalUrl;
+  setIpAddresses(ipAddrInternal, ipAddrExternal) {
+    this.ipAddrInternal = ipAddrInternal;
+    this.ipAddrExternal = ipAddrExternal;
+    this.urlInternal = BlockchainNode.getNodeUrl(ipAddrInternal);
+    this.urlExternal = BlockchainNode.getNodeUrl(ipAddrExternal);
     logger.info(
-        `[${NODE_PREFIX}] Set Node URLs to '${internalUrl}' (internal), ` +
-        `'${externalUrl}' (external)`);
+        `[${NODE_PREFIX}] Set Node URLs to '${this.urlInternal}' (internal), ` +
+        `'${this.urlExternal}' (external)`);
+  }
+
+  static getNodeUrl(ipAddr) {
+    return `http://${ipAddr}:${PORT}`;
   }
 
   init(isFirstNode) {
