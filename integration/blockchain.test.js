@@ -199,7 +199,7 @@ function sendTransactions(sentOperations) {
   }
 }
 
-describe('Integration Tests', () => {
+describe('Blockchain', () => {
   let trackerProc;
   let numNewBlocks = 0;
   let numBlocksOnStartup;
