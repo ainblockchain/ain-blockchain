@@ -21,7 +21,7 @@
     "test_unit": "NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 \"unittest/**/*.test.js\"",
     "test_node": "./node_modules/mocha/bin/mocha --timeout 160000 integration/node.test.js",
     "test_blockchain": "./node_modules/mocha/bin/mocha --timeout 160000 integration/blockchain.test.js",
-    "test_afan": "./node_modules/mocha/bin/mocha --timeout 160000 integration/afan.test.js",
+    "test_dapp": "./node_modules/mocha/bin/mocha --timeout 160000 integration/afan_dapp.test.js",
     "test_sharding": "./node_modules/mocha/bin/mocha --timeout 160000 integration/sharding.test.js",
     "test_integration": "./node_modules/mocha/bin/mocha --timeout 160000 \"integration/**/*.test.js\"",
     "loadtest": "sh loadtest/load_tester.sh"
