@@ -90,7 +90,7 @@ class P2pServer {
     });
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setupIpAddresses()
+    this.setUpIpAddresses()
     .then(() => {
       this.setIntervalForTrackerConnection();
       // XXX(minsu): it won't run before updating p2p network.
@@ -178,7 +178,7 @@ class P2pServer {
     });
   }
 
-  async setupIpAddresses() {
+  async setUpIpAddresses() {
     const ipAddrInternal = await this.getIpAddress(true);
     const ipAddrExternal = await this.getIpAddress(false);
     this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
