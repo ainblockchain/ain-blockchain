@@ -57,7 +57,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-describe('aFan Client Test', () => {
+describe('aFan DApp Test', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
   before(() => {
@@ -122,7 +122,7 @@ describe('aFan Client Test', () => {
     });
   });
 
-  describe('crushOnPost', () => {
+  describe('tx_crushOnPost', () => {
     beforeEach(() => {
       return set_value('afan', null)
       .then((res) => waitUntilTxFinalized(servers, res.result.tx_hash));
@@ -165,7 +165,7 @@ describe('aFan Client Test', () => {
     });
   });
 
-  describe('crushOnReply', () => {
+  describe('tx_crushOnReply', () => {
     beforeEach(() => {
       return set_value('afan', null)
       .then((res) => waitUntilTxFinalized(servers, res.result.tx_hash));
@@ -209,7 +209,7 @@ describe('aFan Client Test', () => {
     });
   });
 
-  describe('ad', () => {
+  describe('tx_adpropose', () => {
     beforeEach(() => {
       return set_value('afan', null)
       .then((res) => waitUntilTxFinalized(servers, res.result.tx_hash));
