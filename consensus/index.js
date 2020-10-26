@@ -527,6 +527,10 @@ class Consensus {
       return false;
     }
     const tempState = this.getStateSnapshot(block);
+    if (!tempState) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No state snapshot available for vote ${JSON.stringify(vote)}`);
+      return false;
+    }
     if (ChainUtil.transactionFailed(tempState.executeTransaction(vote))) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute the voting tx`);
       return false;
