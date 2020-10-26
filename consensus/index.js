@@ -843,20 +843,22 @@ class Consensus {
         blockNumberToReport++;
       }
       logger.debug(`[${LOG_PREFIX}] Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
-      const tx = {
-        operation: {
-          type: WriteDbOperations.SET,
-          op_list: opList,
-        },
-        timestamp: Date.now(),
-        nonce: -1
-      };
-      // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
-      await signAndSendTx(
-        parentChainEndpoint,
-        tx,
-        Buffer.from(this.node.account.private_key, 'hex')
-      );
+      if (opList.length > 0) {
+        const tx = {
+          operation: {
+            type: WriteDbOperations.SET,
+            op_list: opList,
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
+        await signAndSendTx(
+          parentChainEndpoint,
+          tx,
+          Buffer.from(this.node.account.private_key, 'hex')
+        );
+      }
     } catch (e) {
       logger.error(`[${LOG_PREFIX}] Failed to report state proof hashes: ${e}`);
     }
