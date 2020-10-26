@@ -208,18 +208,15 @@ describe('Blockchain', () => {
   const nodeAddressList = [];
 
   before(() => {
-    console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
 
     const promises = [];
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, {});
-    console.log('Starting tracker server...');
     trackerProc.start(false);
     sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
-      console.log(`Starting server[${i}]...`);
       proc.start();
       sleep(2000);
       const address =
@@ -244,18 +241,15 @@ describe('Blockchain', () => {
   after(() => {
     // Teardown all servers
     for (let i = 0; i < SERVER_PROCS.length; i++) {
-      console.log(`Shutting down server[${i}]...`);
       SERVER_PROCS[i].kill();
     }
-    console.log('Shutting down tracker server...');
     trackerProc.kill();
 
-    console.log('Removing stored blockchain data...');
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  describe(`blockchain database mining/forging`, () => {
-    it('syncs across all peers after mine', () => {
+  describe(`Synchronization`, () => {
+    it('syncs across all blockchain nodes', () => {
       for (let i = 1; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
         waitForNewBlocks(SERVERS[i]);
@@ -294,7 +288,7 @@ describe('Blockchain', () => {
 
     // TODO(seo): Uncomment this. It's flaky.
     /*
-    it('will sync to new peers on startup', () => {
+    it('syncs new peers on startup', () => {
       sendTransactions(sentOperations);
       waitForNewBlocks(server1);
       let baseChain;
@@ -334,436 +328,373 @@ describe('Blockchain', () => {
       });
     });
     */
+   
+    // TODO(seo): Uncomment this. It's flaky.
+    /*
+    it('all having correct number of blocks', () => {
+      expect(numNewBlocks + numBlocksOnStartup).to.equal(baseChain.pop().number);
+    });
+    */
+  });
 
-    describe('leads to blockchains', () => {
-      let baseChain;
+  describe('Block validity', () => {
+    it('blocks have correct validators and voting data', () => {
+      for (let i = 0; i < SERVERS.length; i++) {
+        sendTransactions(sentOperations);
+        waitForNewBlocks(server1);
+        const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
+            {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
+                    params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+            .body.toString('utf-8')).result.result;
+        const len = blocks.length;
+        for (let j = 2; j < len; j++) { // voting starts with block#1 (included in block#2's last_votes)
+          let voteSum = 0;
+          const validators = Object.assign({}, blocks[j - 1].validators);
+          let totalStakedAmount = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+          let majority = Math.floor(totalStakedAmount * ConsensusConsts.MAJORITY);
+          for (let k = 0; k < blocks[j].last_votes.length; k++) {
+            const vote = blocks[j].last_votes[k];
+            if (!blocks[j - 1].validators[vote.address]) {
+              assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
+            }
+            if (vote.operation.value.block_hash !== blocks[j - 1].hash) {
+              assert.fail('Invalid vote included in last_votes');
+            }
+            if (vote.operation.type === 'SET_VALUE' && vote.operation.value.stake &&
+                blocks[j - 1].validators[vote.address]) {
+              voteSum += vote.operation.value.stake;
+            }
+          }
+          if (voteSum < majority) {
+            assert.fail(`Insufficient votes received (${voteSum} / ${majority})`);
+          }
+        }
+      }
+    });
 
-      before(() => {
-        waitUntilNodeStakes();
-      })
+    it('blocks have valid hashes', () => {
+      const hashString = (str) => {
+        return '0x' + ainUtil.hashMessage(str).toString('hex');
+      }
+      const hashBlock = (block) => {
+        return hashString(stringify({
+          last_hash: block.last_hash,
+          last_votes_hash: block.last_votes_hash,
+          transactions_hash: block.transactions_hash,
+          number: block.number,
+          epoch: block.epoch,
+          stateProofHash: block.stateProofHash,
+          timestamp: block.timestamp,
+          proposer: block.proposer,
+          validators: block.validators,
+          size: block.size
+        }));
+      }
+      for (let i = 0; i < SERVERS.length; i++) {
+        sendTransactions(sentOperations);
+        waitForNewBlocks(server1);
+        const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
+            {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
+                    params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+            .body.toString('utf-8')).result.result;
+        const len = blocks.length;
+        for (let j = 0; j < len; j++) {
+          const block = blocks[j];
+          if (block.hash !== hashBlock(block)) {
+            assert.fail(`Block hash is incorrect for block ${JSON.stringify(block, null, 2)}` +
+                        `\n(hash: ${hashBlock(block)}, node ${i})`);
+          }
+          if (block.transactions_hash !== hashString(stringify(block.transactions))) {
+            assert.fail(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
+          }
+          if (block.last_votes_hash !== hashString(stringify(block.last_votes))) {
+            assert.fail(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+          }
+        }
+      }
+    });
 
-      beforeEach(() => {
-        baseChain = JSON.parse(syncRequest('POST', server2 + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
-      });
-
-      it('syncing across all chains', () => {
-        let server;
-        let newChain;
-        for (let i = 0; i < SERVERS.length; i++) {
-          server = SERVERS[i];
-          sendTransactions(sentOperations);
-          waitForNewBlocks(server);
-          const number = baseChain[baseChain.length - 1].number;
-          return new Promise((resolve) => {
-            jayson.client.http(server + JSON_RPC_ENDPOINT)
-            .request(
-                JSON_RPC_GET_BLOCKS,
-                {to: number + 1, protoVer: CURRENT_PROTOCOL_VERSION},
-                function(err, response) {
-                  if (err) throw err;
-                  newChain = response.result.result;
-                  assert.deepEqual(baseChain, newChain);
-                  resolve();
-                });
+    // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
+    /*
+    it('not dropping any transations ', () => {
+      let blocks;
+      for (let i = 0; i < SERVERS.length; i++) {
+        sendTransactions(sentOperations);
+        waitForNewBlocks(SERVERS[i]);
+        blocks = JSON.parse(syncRequest(
+            'GET', SERVERS[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
+        const transactionsOnBlockChain = [];
+        blocks.forEach((block) => {
+          block.transactions.forEach((transaction) => {
+            // TODO(seo): Find a better way.
+            if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
+                JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_PROPOSERS) ||
+                JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
+                JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNTS) ||
+                JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER) ||
+                JSON.stringify(transaction).includes(PredefinedDbPaths.DEPOSIT_CONSENSUS))) {
+              transactionsOnBlockChain.push(transaction);
+            }
           });
-        }
-      });
-
-      it('blocks have correct validators and voting data', () => {
-        for (let i = 0; i < SERVERS.length; i++) {
-          sendTransactions(sentOperations);
-          waitForNewBlocks(server1);
-          const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
-              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
-                      params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-              .body.toString('utf-8')).result.result;
-          const len = blocks.length;
-          for (let j = 2; j < len; j++) { // voting starts with block#1 (included in block#2's last_votes)
-            let voteSum = 0;
-            const validators = Object.assign({}, blocks[j - 1].validators);
-            let totalStakedAmount = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
-            let majority = Math.floor(totalStakedAmount * ConsensusConsts.MAJORITY);
-            for (let k = 0; k < blocks[j].last_votes.length; k++) {
-              const vote = blocks[j].last_votes[k];
-              if (!blocks[j - 1].validators[vote.address]) {
-                console.log(blocks[j -1]);
-                console.log(`Votes for block ${j - 1} had validator ${vote.address} ` +
-                    `which was not in designated validators list: ${JSON.stringify(blocks[j - 1].validators, null, 2)}` +
-                    `${JSON.stringify(blocks[j - 1].validators)}`);
-                assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
-              }
-              if (vote.operation.value.block_hash !== blocks[j - 1].hash) {
-                assert.fail('Invalid vote included in last_votes');
-              }
-              if (vote.operation.type === 'SET_VALUE' && vote.operation.value.stake &&
-                  blocks[j - 1].validators[vote.address]) {
-                voteSum += vote.operation.value.stake;
-              }
-            }
-            if (voteSum < majority) {
-              assert.fail(`Insufficient votes received (${voteSum} / ${majority})`);
-            }
-          }
-        }
-      });
-
-      it('blocks have valid hashes', () => {
-        const hashString = (str) => {
-          return '0x' + ainUtil.hashMessage(str).toString('hex');
-        }
-        const hashBlock = (block) => {
-          return hashString(stringify({
-            last_hash: block.last_hash,
-            last_votes_hash: block.last_votes_hash,
-            transactions_hash: block.transactions_hash,
-            number: block.number,
-            epoch: block.epoch,
-            stateProofHash: block.stateProofHash,
-            timestamp: block.timestamp,
-            proposer: block.proposer,
-            validators: block.validators,
-            size: block.size
-          }));
-        }
-        for (let i = 0; i < SERVERS.length; i++) {
-          sendTransactions(sentOperations);
-          waitForNewBlocks(server1);
-          const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
-              {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
-                      params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-              .body.toString('utf-8')).result.result;
-          const len = blocks.length;
-          for (let j = 0; j < len; j++) {
-            const block = blocks[j];
-            if (block.hash !== hashBlock(block)) {
-              assert.fail(`Block hash is incorrect for block ${JSON.stringify(block, null, 2)}` +
-                          `\n(hash: ${hashBlock(block)}, node ${i})`);
-            }
-            if (block.transactions_hash !== hashString(stringify(block.transactions))) {
-              assert.fail(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
-            }
-            if (block.last_votes_hash !== hashString(stringify(block.last_votes))) {
-              assert.fail(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
-            }
-          }
-        }
-      });
-
-      // TODO(seo): Uncomment this. It's flaky.
-      /*
-      it('all having correct number of blocks', () => {
-        expect(numNewBlocks + numBlocksOnStartup).to.equal(baseChain.pop().number);
-      });
-      */
-    });
-
-    describe('and rules', () => {
-      it('prevent users from restricted areas', () => {
-        sendTransactions(sentOperations);
-        waitForNewBlocks(server1);
-        const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
-          ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
-      });
-    });
-
-    describe('and built in functions', () => {
-      let balance1Before, balance2Before;
-      beforeEach(() => {
-        balance1Before = JSON.parse(syncRequest('GET',
-            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
-            .body.toString('utf-8')).result;
-        balance2Before = JSON.parse(syncRequest('GET',
-            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
-            .body.toString('utf-8')).result;
-        sleep(200);
-      });
-
-      it('facilitate transfer between accounts', () => {
-        waitForNewBlocks(server1);
-        const transferRef = `/transfer/${nodeAddressList[0]}/${nodeAddressList[1]}/1/value`;
-        const body = JSON.parse(syncRequest('POST', server1 + SET_VALUE_ENDPOINT, { json: {
-          ref: transferRef, value: 10
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equal(0);
-        const txHash = body.result.tx_hash;
-        // Make sure the transaction is included in the chain
-        waitUntilTxFinalized(SERVERS, txHash);
-        const balance1 = JSON.parse(syncRequest('GET',
-            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[0]}/balance`)
-            .body.toString('utf-8')).result;
-        const balance2 = JSON.parse(syncRequest('GET',
-            server3 + GET_VALUE_ENDPOINT + `?ref=/accounts/${nodeAddressList[1]}/balance`)
-            .body.toString('utf-8')).result;
-        expect(balance1).to.equal(balance1Before - 10);
-        expect(balance2).to.equal(balance2Before + 10);
-      });
-    });
-
-    describe('leads to blockchains', () => {
-      let db, address, committedNonceAfterBroadcast, pendingNonceAfterBroadcast;
-
-      before(() => {
-        address = JSON.parse(syncRequest('GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
-      });
-
-      beforeEach(() =>{
-        rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-        db = new DB(null, null, false, 0);
-        sentOperations.forEach((op) => {
-          const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
-          db.executeTransaction({ operation });
         });
-      });
+        expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST)
+          .to.equal(transactionsOnBlockChain.length);
+        for (let i = 0; i < transactionsOnBlockChain.length; i++) {
+          const sentOp = sentOperations[i][1];
+          const blockchainOp = transactionsOnBlockChain[i].operation;
+          if (sentOperations[i][0].toUpperCase() === "BATCH") {
+            expect(sentOp.tx_list).to.not.equal(undefined);
+            expect(sentOp.tx_list[0].operation.type).to.equal(blockchainOp.type);
+            expect(sentOp.tx_list[0].operation.ref).to.equal(blockchainOp.ref);
+            assert.deepEqual(sentOp.tx_list[0].operation.value, blockchainOp.value);
+          } else {
+            expect(sentOperations[i][0].toUpperCase()).to.equal(blockchainOp.type);
+            expect(sentOp.ref).to.equal(blockchainOp.ref);
+            assert.deepEqual(sentOp.value, blockchainOp.value);
+          }
+        };
+      }
+    });
+    */
+  });
 
-      it('can be queried by index ', () => {
+  describe('Database', () => {
+    it('rules correctly prevent users from restricted areas', () => {
+      sendTransactions(sentOperations);
+      waitForNewBlocks(server1);
+      const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
+        ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
+      }}).body.toString('utf-8'));
+      expect(body.code).to.equals(1);
+    });
+
+    // FIXME(lia): this test case is flaky.
+    /*
+    it('maintaining correct order', () => {
+      for (let i = 1; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(server1);
+        waitForNewBlocks(SERVERS[i]);
+        body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
+            .body.toString('utf-8'));
+        body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
+            .body.toString('utf-8'));
+        assert.deepEqual(body1.result, body2.result);
+      }
+    });
+    */
+  });
+
+  describe('Block APIs', () => {
+    let db;
+
+    before(() => {
+      address = JSON.parse(syncRequest('GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
+    });
+
+    beforeEach(() =>{
+      rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
+      db = new DB(null, null, false, 0);
+      sentOperations.forEach((op) => {
+        const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
+        db.executeTransaction({ operation });
+      });
+    });
+
+    it('ain_getBlockHeadersList', () => {
+      sendTransactions(sentOperations);
+      waitForNewBlocks(server1);
+      return new Promise((resolve) => {
+        jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
+                              {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
+                              function(err, response) {
+          if (err) throw err;
+          const body = response.result.result;
+          assert.deepEqual([2, 3], body.map((blockHeader) => {
+            return blockHeader.number;
+          }));
+          resolve();
+        });
+      })
+    });
+
+    it('ain_getBlockByHash and ain_getBlockByNumber', () => {
+      sendTransactions(sentOperations);
+      waitForNewBlocks(server1);
+      return new Promise((resolve) => {
+        jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+          if (err) throw err;
+          resolve(response.result.result);
+        });
+      }).then((resultByNumber) => {
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
-                                {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
+          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH,
+              {hash: resultByNumber.hash, protoVer: CURRENT_PROTOCOL_VERSION},
                                 function(err, response) {
             if (err) throw err;
-            const body = response.result.result;
-            assert.deepEqual([2, 3], body.map((blockHeader) => {
-              return blockHeader.number;
-            }));
-            resolve();
-          });
-        })
-      });
-
-      it('can be queried by hash ', () => {
-        sendTransactions(sentOperations);
-        waitForNewBlocks(server1);
-        return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
-            if (err) throw err;
-            resolve(response.result.result);
-          });
-        }).then((resultByNumber) => {
-          return new Promise((resolve) => {
-            jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH,
-                {hash: resultByNumber.hash, protoVer: CURRENT_PROTOCOL_VERSION},
-                                  function(err, response) {
-              if (err) throw err;
-              const resultByHash = response.result.result;
-              assert.deepEqual(resultByHash, resultByNumber);
-              resolve();
-            });
-          });
-        })
-      });
-
-      // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
-      /*
-      it('not dropping any transations ', function() {
-        let blocks;
-        for (let i = 0; i < SERVERS.length; i++) {
-          sendTransactions(sentOperations);
-          waitForNewBlocks();
-          blocks = JSON.parse(syncRequest(
-              'GET', SERVERS[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
-          const transactionsOnBlockChain = [];
-          blocks.forEach((block) => {
-            block.transactions.forEach((transaction) => {
-              // TODO(seo): Find a better way.
-              if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
-                  JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_PROPOSERS) ||
-                  JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
-                  JSON.stringify(transaction).includes(PredefinedDbPaths.ACCOUNTS) ||
-                  JSON.stringify(transaction).includes(PredefinedDbPaths.TRANSFER) ||
-                  JSON.stringify(transaction).includes(PredefinedDbPaths.DEPOSIT_CONSENSUS))) {
-                transactionsOnBlockChain.push(transaction);
-              }
-            });
-          });
-          expect(sentOperations.length - NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST)
-            .to.equal(transactionsOnBlockChain.length);
-          for (let i = 0; i < transactionsOnBlockChain.length; i++) {
-            const sentOp = sentOperations[i][1];
-            const blockchainOp = transactionsOnBlockChain[i].operation;
-            if (sentOperations[i][0].toUpperCase() === "BATCH") {
-              expect(sentOp.tx_list).to.not.equal(undefined);
-              expect(sentOp.tx_list[0].operation.type).to.equal(blockchainOp.type);
-              expect(sentOp.tx_list[0].operation.ref).to.equal(blockchainOp.ref);
-              assert.deepEqual(sentOp.tx_list[0].operation.value, blockchainOp.value);
-            } else {
-              expect(sentOperations[i][0].toUpperCase()).to.equal(blockchainOp.type);
-              expect(sentOp.ref).to.equal(blockchainOp.ref);
-              assert.deepEqual(sentOp.value, blockchainOp.value);
-            }
-          };
-        }
-      });
-      */
-
-      // FIXME(lia): this test case is flaky.
-      // it('maintaining correct order', () => {
-      //   for (let i = 1; i < SERVERS.length; i++) {
-      //     sendTransactions(sentOperations);
-      //     waitForNewBlocks();
-      //     body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
-      //         .body.toString('utf-8'));
-      //     body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
-      //         .body.toString('utf-8'));
-      //     assert.deepEqual(body1.result, body2.result);
-      //   }
-      // });
-
-      it('keeps track of nonces correctly after creating and broadcasting a transaction', () => {
-        return new Promise((resolve, reject) => {
-          let promises = [];
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-              { address, protoVer: CURRENT_PROTOCOL_VERSION }));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-              { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
-          Promise.all(promises).then(res => {
-            promises = [];
-            const committedNonceBefore = res[0].result.result;
-            const pendingNonceBefore = res[1].result.result;
-            syncRequest('POST', server2 + '/' + 'set_value',
-                  {
-                    json: {
-                      ref: '/test/nonce_test',
-                      value: 'testing...'
-                    }
-                  });
-            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-              { address, protoVer: CURRENT_PROTOCOL_VERSION }));
-            promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-                { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
-            Promise.all(promises).then(resAfterBroadcast => {
-              promises = [];
-              committedNonceAfterBroadcast = resAfterBroadcast[0].result.result;
-              pendingNonceAfterBroadcast = resAfterBroadcast[1].result.result;
-              expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
-              expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
-              resolve();
-            });
-          });
-        });
-      });
-
-      it('keeps track of nonces correctly after committing to a block', () => {
-        return new Promise((resolve, reject) => {
-          waitForNewBlocks(server1);
-          let promises = [];
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-              { address, protoVer: CURRENT_PROTOCOL_VERSION }));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-              { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
-          Promise.all(promises).then(resAfterCommit => {
-            const committedNonceAfterCommit = resAfterCommit[0].result.result;
-            const pendingNonceAfterCommit = resAfterCommit[1].result.result;
-            expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast);
-            expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
+            const resultByHash = response.result.result;
+            assert.deepEqual(resultByHash, resultByNumber);
             resolve();
           });
         });
-      });
+      })
+    });
+  });
 
-      it('and can be stopped and restarted', () => {
-        console.log(`Shutting down server[0]...`);
-        SERVER_PROCS[0].kill();
-        sleep(10000);
-        console.log(`Starting server[0]...`);
-        SERVER_PROCS[0].start();
-        sleep(10000);
-        waitUntilNodeSyncs(server1);
-        for (let i = 0; i < 4; i++) {
-          sendTransactions(sentOperations);
-          waitForNewBlocks(server1);
-        }
-        return new Promise((resolve) => {
-          jayson.client.http(server1 + JSON_RPC_ENDPOINT)
-          .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
-              function(err, response) {
-            if (err) throw err;
-            stoppedChain = response.result.result;
-            resolve();
-          });
-        }).then(() => {
-          return new Promise((resolve) => {
-            jayson.client.http(SERVERS[1] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
-                {protoVer: CURRENT_PROTOCOL_VERSION},
-                function(err, response) {
-                  if (err) throw err;
-                  const baseChain = response.result.result;
-                  const diff = Math.abs(stoppedChain.length - baseChain.length);
-                  assert.isBelow(diff, MAX_CHAIN_LENGTH_DIFF);
-                  while (stoppedChain.length !== baseChain.length) {
-                    if (stoppedChain.length > baseChain.length) {
-                      stoppedChain.pop();
-                    } else  {
-                      baseChain.pop();
-                    }
+  describe('Nonces', () => {
+    let address, committedNonceAfterBroadcast, pendingNonceAfterBroadcast;
+
+    before(() => {
+      address = JSON.parse(syncRequest('GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
+    });
+
+    it('pendingNonceTracker', () => {
+      return new Promise((resolve, reject) => {
+        let promises = [];
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+            { address, protoVer: CURRENT_PROTOCOL_VERSION }));
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+            { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
+        Promise.all(promises).then(res => {
+          promises = [];
+          const committedNonceBefore = res[0].result.result;
+          const pendingNonceBefore = res[1].result.result;
+          syncRequest('POST', server2 + '/' + 'set_value',
+                {
+                  json: {
+                    ref: '/test/nonce_test',
+                    value: 'testing...'
                   }
-                  assert.deepEqual(stoppedChain.length, baseChain.length);
-                  assert.deepEqual(stoppedChain, baseChain);
-                  resolve();
                 });
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+            { address, protoVer: CURRENT_PROTOCOL_VERSION }));
+          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+              { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
+          Promise.all(promises).then(resAfterBroadcast => {
+            promises = [];
+            committedNonceAfterBroadcast = resAfterBroadcast[0].result.result;
+            pendingNonceAfterBroadcast = resAfterBroadcast[1].result.result;
+            expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
+            expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
+            resolve();
           });
         });
       });
     });
 
-    describe('protocol versions', () => {
-      it('accepts API calls with correct protoVer', () => {
-        return new Promise((resolve, reject) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 0, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
-            if (err) throw err;
-            expect(response.result.result.number).to.equal(0);
-            expect(response.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
-            resolve();
-          });
+    it('committedNonceTracker', () => {
+      return new Promise((resolve, reject) => {
+        waitForNewBlocks(server1);
+        let promises = [];
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+            { address, protoVer: CURRENT_PROTOCOL_VERSION }));
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+            { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
+        Promise.all(promises).then(resAfterCommit => {
+          const committedNonceAfterCommit = resAfterCommit[0].result.result;
+          const pendingNonceAfterCommit = resAfterCommit[1].result.result;
+          expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast);
+          expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
+          resolve();
         });
       });
+    });
+  });
 
-      it('rejects API calls with incorrect protoVer', () => {
-        return new Promise((resolve, reject) => {
-          let promises = [];
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '.0'}));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '-alpha.1'}));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 0, protoVer: '0.01.0'}));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 0, protoVer: '1'}));
-          Promise.all(promises).then(res => {
-            expect(res[0].code).to.equal(1);
-            expect(res[0].message).to.equal("Invalid protocol version.");
-            expect(res[1].code).to.equal(1);
-            expect(res[1].message).to.equal("Incompatible protocol version.");
-            expect(res[2].code).to.equal(1);
-            expect(res[2].message).to.equal("Invalid protocol version.");
-            expect(res[3].code).to.equal(1);
-            expect(res[3].message).to.equal("Invalid protocol version.");
-            resolve();
-          })
+  describe('Restart', () => {
+    it('blockchain nodes can be stopped and restarted', () => {
+      SERVER_PROCS[0].kill();
+      sleep(10000);
+      SERVER_PROCS[0].start();
+      sleep(10000);
+      waitUntilNodeSyncs(server1);
+      for (let i = 0; i < 4; i++) {
+        sendTransactions(sentOperations);
+        waitForNewBlocks(server1);
+      }
+      return new Promise((resolve) => {
+        jayson.client.http(server1 + JSON_RPC_ENDPOINT)
+        .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
+            function(err, response) {
+          if (err) throw err;
+          stoppedChain = response.result.result;
+          resolve();
         });
-      });
-
-      it('rejects API calls with no protoVer', () => {
-        return new Promise((resolve, reject) => {
-          jsonRpcClient.request(
-              JSON_RPC_GET_BLOCK_BY_NUMBER,
-              {number: 0},
+      }).then(() => {
+        return new Promise((resolve) => {
+          jayson.client.http(SERVERS[1] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
+              {protoVer: CURRENT_PROTOCOL_VERSION},
               function(err, response) {
                 if (err) throw err;
-                expect(response.code).to.equal(1);
-                expect(response.message).to.equal("Protocol version not specified.");
+                const baseChain = response.result.result;
+                const diff = Math.abs(stoppedChain.length - baseChain.length);
+                assert.isBelow(diff, MAX_CHAIN_LENGTH_DIFF);
+                while (stoppedChain.length !== baseChain.length) {
+                  if (stoppedChain.length > baseChain.length) {
+                    stoppedChain.pop();
+                  } else  {
+                    baseChain.pop();
+                  }
+                }
+                assert.deepEqual(stoppedChain.length, baseChain.length);
+                assert.deepEqual(stoppedChain, baseChain);
                 resolve();
-              }
-          );
+              });
         });
+      });
+    });
+  });
+
+  describe('Protocol versions', () => {
+    it('accepts API calls with correct protoVer', () => {
+      return new Promise((resolve, reject) => {
+        jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 0, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+          if (err) throw err;
+          expect(response.result.result.number).to.equal(0);
+          expect(response.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
+          resolve();
+        });
+      });
+    });
+
+    it('rejects API calls with incorrect protoVer', () => {
+      return new Promise((resolve, reject) => {
+        let promises = [];
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '.0'}));
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '-alpha.1'}));
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 0, protoVer: '0.01.0'}));
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 0, protoVer: '1'}));
+        Promise.all(promises).then(res => {
+          expect(res[0].code).to.equal(1);
+          expect(res[0].message).to.equal("Invalid protocol version.");
+          expect(res[1].code).to.equal(1);
+          expect(res[1].message).to.equal("Incompatible protocol version.");
+          expect(res[2].code).to.equal(1);
+          expect(res[2].message).to.equal("Invalid protocol version.");
+          expect(res[3].code).to.equal(1);
+          expect(res[3].message).to.equal("Invalid protocol version.");
+          resolve();
+        })
+      });
+    });
+
+    it('rejects API calls with no protoVer', () => {
+      return new Promise((resolve, reject) => {
+        jsonRpcClient.request(
+            JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 0},
+            function(err, response) {
+              if (err) throw err;
+              expect(response.code).to.equal(1);
+              expect(response.message).to.equal("Protocol version not specified.");
+              resolve();
+            }
+        );
       });
     });
   });
