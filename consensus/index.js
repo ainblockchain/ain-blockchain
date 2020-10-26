@@ -527,6 +527,10 @@ class Consensus {
       return false;
     }
     const tempState = this.getStateSnapshot(block);
+    if (!tempState) {
+      logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] No state snapshot available for vote ${JSON.stringify(vote)}`);
+      return false;
+    }
     if (ChainUtil.transactionFailed(tempState.executeTransaction(vote))) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to execute the voting tx`);
       return false;
@@ -843,20 +847,22 @@ class Consensus {
         blockNumberToReport++;
       }
       logger.debug(`[${LOG_PREFIX}] Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
-      const tx = {
-        operation: {
-          type: WriteDbOperations.SET,
-          op_list: opList,
-        },
-        timestamp: Date.now(),
-        nonce: -1
-      };
-      // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
-      await signAndSendTx(
-        parentChainEndpoint,
-        tx,
-        Buffer.from(this.node.account.private_key, 'hex')
-      );
+      if (opList.length > 0) {
+        const tx = {
+          operation: {
+            type: WriteDbOperations.SET,
+            op_list: opList,
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
+        await signAndSendTx(
+          parentChainEndpoint,
+          tx,
+          Buffer.from(this.node.account.private_key, 'hex')
+        );
+      }
     } catch (e) {
       logger.error(`[${LOG_PREFIX}] Failed to report state proof hashes: ${e}`);
     }
