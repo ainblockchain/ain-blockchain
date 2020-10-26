@@ -16,12 +16,15 @@
     "clean": "sh stop_servers.sh & echo 'cleaned'",
     "tracker": "npm run clean & node ./tracker-server/index.js",
     "client": "NUM_VALIDATORS=1 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=true node ./client/index.js",
-    "test_unit": "NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 \"test/**/*.test.js\"",
-    "test_integration": "./node_modules/mocha/bin/mocha --timeout 160000 integration/integration.test.js",
-    "test_smoke": "./node_modules/mocha/bin/mocha --timeout 160000 --exclude integration/integration.test.js \"integration/**/*.test.js\"",
-    "loadtest": "sh loadtest/load_tester.sh",
-    "test_db": "mocha ./test/db.test.js",
-    "test_state_util": "mocha ./test/state-util.test.js"
+    "test_state_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-util.test.js",
+    "test_db": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/db.test.js",
+    "test_unit": "NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 \"unittest/**/*.test.js\"",
+    "test_node": "./node_modules/mocha/bin/mocha --timeout 160000 integration/node.test.js",
+    "test_blockchain": "./node_modules/mocha/bin/mocha --timeout 160000 integration/blockchain.test.js",
+    "test_dapp": "./node_modules/mocha/bin/mocha --timeout 160000 integration/afan_dapp.test.js",
+    "test_sharding": "./node_modules/mocha/bin/mocha --timeout 160000 integration/sharding.test.js",
+    "test_integration": "./node_modules/mocha/bin/mocha --timeout 160000 \"integration/**/*.test.js\"",
+    "loadtest": "sh loadtest/load_tester.sh"
   },
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.6",

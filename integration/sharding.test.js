@@ -14,13 +14,22 @@ const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   BLOCKCHAINS_DIR,
+  PredefinedDbPaths,
+  WriteDbOperations,
+  OwnerProperties,
+  RuleProperties,
+  FunctionProperties,
+  FunctionTypes,
+  NativeFunctionIds,
+  buildOwnerPermissions
 } = require('../constants');
+const ChainUtil = require('../chain-util');
 const {
   readConfigFile,
   waitForNewBlocks,
   waitUntilNodeSyncs,
   waitUntilTxFinalized,
-} = require('../test/test-util');
+} = require('../unittest/test-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
@@ -29,45 +38,46 @@ const ENV_VARIABLES = [
     NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true
   },
   {
-    // For child chain tracker
+    // For shard chain tracker
     PORT: 9090, P2P_PORT: 6000
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9091, P2P_PORT: 6001, TRACKER_WS_ADDR: 'ws://localhost:6000',
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9092, P2P_PORT: 6002, TRACKER_WS_ADDR: 'ws://localhost:6000',
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9093, P2P_PORT: 6003, TRACKER_WS_ADDR: 'ws://localhost:6000',
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9094, P2P_PORT: 6004, TRACKER_WS_ADDR: 'ws://localhost:6000',
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
 ];
 
-const parentServer = 'http://127.0.0.1:8081';
+const parentServer = 'http://localhost:8081';
+const PARENT_SERVERS = [ parentServer ];
 const server1 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[5].ACCOUNT_INDEX))
-const SERVERS = [ server1, server2, server3, server4 ];
+const SHARD_SERVERS = [ server1, server2, server3, server4 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -139,7 +149,7 @@ function setUp() {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SERVERS, res.tx_hash);
+  waitUntilTxFinalized(SHARD_SERVERS, res.tx_hash);
 }
 
 function cleanUp() {
@@ -169,7 +179,62 @@ function cleanUp() {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SERVERS, res.tx_hash);
+  waitUntilTxFinalized(SHARD_SERVERS, res.tx_hash);
+}
+
+function setUpForSharding(shardingConfig) {
+  const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+  const res = JSON.parse(
+    syncRequest(
+      'POST',
+      parentServer + '/set',
+      {
+        json: {
+          op_list: [
+            {
+              type: WriteDbOperations.SET_OWNER,
+              ref: sharding_path,
+              value: {
+                [OwnerProperties.OWNER]: {
+                  [OwnerProperties.OWNERS]: {
+                    [shard_owner]: buildOwnerPermissions(true ,true, true, true),
+                    [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
+                  }
+                }
+              }
+            },
+            {
+              type: WriteDbOperations.SET_RULE,
+              ref: sharding_path,
+              value: {
+                [RuleProperties.WRITE]: `auth === '${shard_reporter}'`
+              }
+            },
+            {
+              type: WriteDbOperations.SET_FUNCTION,
+              ref: `${sharding_path}/$block_number/proof_hash`,
+              value: {
+                [FunctionProperties.FUNCTION]: {
+                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                }
+              }
+            },
+            {
+              type: WriteDbOperations.SET_VALUE,
+              ref: ChainUtil.formatPath([
+                PredefinedDbPaths.SHARDING,
+                PredefinedDbPaths.SHARDING_SHARD,
+                ainUtil.encode(sharding_path)
+              ]),
+              value: shardingConfig
+            }
+          ]
+        }
+      }
+    ).body.toString('utf-8')
+  ).result;
+  waitUntilTxFinalized(PARENT_SERVERS, res.tx_hash);
 }
 
 describe('Sharding', () => {
@@ -180,15 +245,15 @@ describe('Sharding', () => {
   const sharding =
       readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_sharding.json'));
 
-  let parent_chain_tracker_proc, parent_chain_server_proc,
+  let parent_tracker_proc, parent_server_proc,
       tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
   before(() => {
     rimraf.sync(BLOCKCHAINS_DIR)
 
-    parent_chain_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
+    parent_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
     sleep(2000);
-    parent_chain_server_proc = startServer(APP_SERVER, 'parent server1', ENV_VARIABLES[0]);
+    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0]);
     sleep(2000);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
     sleep(2000);
@@ -204,8 +269,8 @@ describe('Sharding', () => {
   });
 
   after(() => {
-    parent_chain_tracker_proc.kill()
-    parent_chain_server_proc.kill()
+    parent_tracker_proc.kill()
+    parent_server_proc.kill()
     tracker_proc.kill()
     server1_proc.kill()
     server2_proc.kill()
@@ -1406,4 +1471,87 @@ describe('Sharding', () => {
       })
     })
   })
+
+  describe('Native functions', () => {
+    let parentAddr; // = parentServer
+
+    let shardOwner, shardReporter, shardingPath, shardingConfig;
+
+    before(() => {
+      parentAddr = JSON.parse(syncRequest(
+          'GET', parentServer + '/get_address').body.toString('utf-8')).result;
+
+      shardOwner = parentAddr;
+      shardReporter = parentAddr;
+      shardingPath = '/apps/a_dapp';
+      shardingConfig = {
+        sharding_protocol: "POA",
+        sharding_path: shardingPath,
+        parent_chain_poc: parentServer,
+        reporting_period: 5,
+        shard_owner: shardOwner,
+        shard_reporter: shardReporter
+      };
+    })
+
+    describe('_updateLatestShardReport', () => {
+      before(() => {
+        setUpForSharding(shardingConfig);
+      });
+
+      it('updates the block number of the latest reported proof hash', () => {
+        const reportVal = {
+          ref: `${shardingPath}/5/proof_hash`,
+          value: "0xPROOF_HASH_5"
+        }
+        const shardReportRes = JSON.parse(syncRequest(
+            'POST', parentServer + '/set_value', { json: reportVal }).body.toString('utf-8')
+        ).result;
+        waitUntilTxFinalized(PARENT_SERVERS, shardReportRes.tx_hash);
+        const shardingPathRes = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
+        ).result;
+        assert.deepEqual(shardingPathRes, {
+          latest: 5,
+          5: {
+            proof_hash: "0xPROOF_HASH_5"
+          }
+        });
+      });
+
+      it('can handle reports that are out of order', () => {
+        const multipleReportVal = {
+          op_list: [
+            {
+              ref: `${shardingPath}/15/proof_hash`,
+              value: "0xPROOF_HASH_15" 
+            },
+            {
+              ref: `${shardingPath}/10/proof_hash`,
+              value: "0xPROOF_HASH_10" 
+            }
+          ]
+        }
+        const shardReportRes = JSON.parse(syncRequest(
+            'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
+        ).result;
+        waitUntilTxFinalized(PARENT_SERVERS, shardReportRes.tx_hash);
+        const shardingPathRes = JSON.parse(syncRequest(
+            'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
+        ).result;
+        assert.deepEqual(shardingPathRes, {
+          latest: 15,
+          5: {
+            proof_hash: "0xPROOF_HASH_5"
+          },
+          10: {
+            proof_hash: "0xPROOF_HASH_10"
+          },
+          15: {
+            proof_hash: "0xPROOF_HASH_15"
+          }
+        });
+      })
+    });
+  });
 })
