@@ -1,11 +1,12 @@
+const path = require('path');
 const _ = require("lodash");
 const axios = require('axios');
 const { sleep } = require('sleep');
 const ainUtil = require('@ainblockchain/ain-util');
-const config = require("./config");
 const ChainUtil = require('../../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../../package.json').version;
+let config = {};
 
 function buildPayloadTx(fromAddr, toAddr, tokenAmount, timestamp) {
   return {
@@ -24,10 +25,11 @@ function buildTriggerTx(address, payload, timestamp) {
   return {
     operation: {
       type: "SET_VALUE",
-      ref: `/checkin/${address}/${timestamp}/request`,
+      ref: `${config.shardingPath}/checkin/${address}/${timestamp}/request`,
       value: {
         payload,
       },
+      is_global: true,
     },
     timestamp,
     nonce: -1
@@ -138,14 +140,15 @@ async function sendCheckinTransaction() {
 }
 
 async function processArguments() {
-  if (process.argv.length !== 2) {
+  if (process.argv.length !== 3) {
     usage();
   }
+  config = require(path.resolve(__dirname, process.argv[2]));
   await sendCheckinTransaction();
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node sendCheckinTx.js\n')
+  console.log('\nExample commandlines:\n  node sendCheckinTx.js config_local.js\n')
   process.exit(0)
 }
 
