@@ -438,7 +438,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/ain_get', () => {
+    describe('ain_get', () => {
       it('returns the correct value', () => {
         const expected = 100;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -562,7 +562,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/ain_getProtocolVersion', () => {
+    describe('ain_getProtocolVersion', () => {
       it('returns the correct version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getProtocolVersion', {})
@@ -572,7 +572,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/ain_checkProtocolVersion', () => {
+    describe('ain_checkProtocolVersion', () => {
       it('checks protocol versions correctly', () => {
         return new Promise((resolve, reject) => {
           const client = jayson.client.http(server1 + '/json-rpc');
@@ -599,7 +599,7 @@ describe('Blockchain Node', () => {
       });
     })
 
-    describe('/ain_getAddress', () => {
+    describe('ain_getAddress', () => {
       it('returns the correct node address', () => {
         const expAddr = GenesisAccounts.others[1].address;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -856,7 +856,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/ain_sendSignedTransaction', () => {
+    describe('ain_sendSignedTransaction', () => {
       it('accepts a transaction', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
