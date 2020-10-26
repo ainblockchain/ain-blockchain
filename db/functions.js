@@ -223,7 +223,7 @@ class Functions {
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
-    if (!this.tp || this.db.isFinalizedState) {
+    if (!this.tp || !this.db.isFinalizedState) {
       // It's not the backupDb
       logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
       return;
@@ -257,6 +257,7 @@ class Functions {
     const action = {
       ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
       valueFunction: (success) => !!success,
+      is_global: true,
       transaction: payloadTx.transaction,
     };
     this.tp.addRemoteTransaction(txHash, action);
@@ -268,7 +269,7 @@ class Functions {
   }
 
   _closeCheckin(value, context) {
-    if (!this.tp || this.db.isFinalizedState) {
+    if (!this.tp || !this.db.isFinalizedState) {
       // It's not the backupDb
       logger.info(`  =>> Skip sending transfer transaction to the shard blockchain`);
       return;
@@ -297,17 +298,20 @@ class Functions {
     const ownerPrivateKey = ChainUtil.getJsObject(
       GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    const shardingPath = this.db.shardingPath;
     const transferTx = {
           operation: {
             type: WriteDbOperations.SET_VALUE,
             ref: ChainUtil.formatPath([
+              ...shardingPath,
               PredefinedDbPaths.TRANSFER,
               shardOwner,
               user,
               `checkin_${checkinId}`,
               PredefinedDbPaths.TRANSFER_VALUE
             ]),
-            value: tokenToReceive
+            value: tokenToReceive,
+            is_global: true
           },
           timestamp: Date.now(),
           nonce: -1
@@ -425,8 +429,9 @@ class Functions {
   }
 
   _getCheckinParentFinalizeResultPath(branchPath, txHash) {
-    return `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/${txHash}/` +
-        `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+    const shardingPath = this.db.getShardingPath();
+    return `${shardingPath}/${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/` +
+        `${txHash}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
   }
 
   _getCheckinPayloadPath(branchPath) {
