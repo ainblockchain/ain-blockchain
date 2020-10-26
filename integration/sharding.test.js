@@ -419,12 +419,12 @@ describe('Sharding', () => {
     })
   });
 
-  describe('Shard state proof hash reporting', () => {
+  describe('State proof hash reporting', () => {
     before(() => {
       waitForNewBlocks(server1, sharding.reporting_period * 3);
     });
 
-    describe('periodic reports', () => {
+    describe('Periodic reports', () => {
       it ('reports proof hashes periodically', () => {
         const body = JSON.parse(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
@@ -438,7 +438,9 @@ describe('Sharding', () => {
           blockNumber++;
         }
       });
+    });
 
+    describe('Latest block number', () => {
       it ('updates latest block number', () => {
         const body = JSON.parse(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
@@ -450,7 +452,9 @@ describe('Sharding', () => {
         const highest = sortedReports[sortedReports.length - 1];
         expect(latest).to.equal(Number(highest));
       });
+    });
 
+    describe('Shard reporter node restart', () => {
       it('can resume reporting after missing some reports', () => {
         const reportsBefore = JSON.parse(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
