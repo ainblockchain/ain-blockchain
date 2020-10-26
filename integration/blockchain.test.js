@@ -20,33 +20,33 @@ const DB = require('../db');
 const TransactionPool = require('../tx-pool');
 const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../constants');
 const { ConsensusConsts } = require('../consensus/constants');
-const { waitUntilTxFinalized } = require('../test/test-util');
+const { waitUntilTxFinalized } = require('../unittest/test-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { waitForNewBlocks, waitUntilNodeSyncs } = require('../test/test-util');
+const { waitForNewBlocks, waitUntilNodeSyncs } = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -199,7 +199,7 @@ function sendTransactions(sentOperations) {
   }
 }
 
-describe('Integration Tests', () => {
+describe('Blockchain', () => {
   let trackerProc;
   let numNewBlocks = 0;
   let numBlocksOnStartup;
@@ -292,6 +292,8 @@ describe('Integration Tests', () => {
       }
     });
 
+    // TODO(seo): Uncomment this. It's flaky.
+    /*
     it('will sync to new peers on startup', () => {
       sendTransactions(sentOperations);
       waitForNewBlocks(server1);
@@ -331,6 +333,7 @@ describe('Integration Tests', () => {
         });
       });
     });
+    */
 
     describe('leads to blockchains', () => {
       let baseChain;
@@ -458,7 +461,7 @@ describe('Integration Tests', () => {
     });
 
     describe('and rules', () => {
-      it('prevent users from restructed areas', () => {
+      it('prevent users from restricted areas', () => {
         sendTransactions(sentOperations);
         waitForNewBlocks(server1);
         const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {

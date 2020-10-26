@@ -18,39 +18,32 @@ const {
   GenesisAccounts,
   HASH_DELIMITER,
   PredefinedDbPaths,
-  WriteDbOperations,
-  OwnerProperties,
-  RuleProperties,
-  FunctionProperties,
-  FunctionTypes,
   ProofProperties,
-  NativeFunctionIds,
-  buildOwnerPermissions
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { waitUntilTxFinalized } = require('../test/test-util');
+const { waitUntilTxFinalized } = require('../unittest/test-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -151,62 +144,7 @@ function cleanUp() {
   waitUntilTxFinalized(SERVERS, res.tx_hash);
 }
 
-function setUpForSharding(shardingConfig) {
-  const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-  const res = JSON.parse(
-    syncRequest(
-      'POST',
-      server1 + '/set',
-      {
-        json: {
-          op_list: [
-            {
-              type: WriteDbOperations.SET_OWNER,
-              ref: sharding_path,
-              value: {
-                [OwnerProperties.OWNER]: {
-                  [OwnerProperties.OWNERS]: {
-                    [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                    [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-                  }
-                }
-              }
-            },
-            {
-              type: WriteDbOperations.SET_RULE,
-              ref: sharding_path,
-              value: {
-                [RuleProperties.WRITE]: `auth === '${shard_reporter}'`
-              }
-            },
-            {
-              type: WriteDbOperations.SET_FUNCTION,
-              ref: `${sharding_path}/$block_number/proof_hash`,
-              value: {
-                [FunctionProperties.FUNCTION]: {
-                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
-                }
-              }
-            },
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: ChainUtil.formatPath([
-                PredefinedDbPaths.SHARDING,
-                PredefinedDbPaths.SHARDING_SHARD,
-                ainUtil.encode(sharding_path)
-              ]),
-              value: shardingConfig
-            }
-          ]
-        }
-      }
-    ).body.toString('utf-8')
-  ).result;
-  waitUntilTxFinalized(SERVERS, res.tx_hash);
-}
-
-describe('API Tests', () => {
+describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(() => {
@@ -989,8 +927,6 @@ describe('API Tests', () => {
     let withdrawPath;
     let depositBalancePath;
 
-    let shardOwner, shardReporter, shardingPath, encodedShardingPath, shardingConfig;
-
     before(() => {
       transferFrom =
           JSON.parse(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
@@ -1012,19 +948,6 @@ describe('API Tests', () => {
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;
       depositBalancePath = `/accounts/${depositActor}/balance`;
-
-      shardOwner = transferFrom;
-      shardReporter = transferTo;
-      shardingPath = '/apps/afan';
-      encodedShardingPath = ainUtil.encode(shardingPath);
-      shardingConfig = {
-        sharding_protocol: "POA",
-        sharding_path: shardingPath,
-        parent_chain_poc: server1,
-        reporting_period: 5,
-        shard_owner: shardOwner,
-        shard_reporter: shardReporter
-      };
 
       let res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
@@ -1394,66 +1317,6 @@ describe('API Tests', () => {
         expect(balance).to.equal(beforeBalance - newDepositAmount);
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
       });
-    });
-
-    describe('_updateLatestShardReport', () => {
-      before(() => {
-        setUpForSharding(shardingConfig);
-      });
-
-      it('updates the block number of the latest reported proof hash', () => {
-        const reportVal = {
-          ref: `${shardingPath}/5/proof_hash`,
-          value: "0xPROOF_HASH_5"
-        }
-        const shardReportRes = JSON.parse(
-          syncRequest('POST', server2 + '/set_value', { json: reportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(SERVERS, shardReportRes.tx_hash);
-        const shardingPathRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
-        ).result;
-        assert.deepEqual(shardingPathRes, {
-          latest: 5,
-          5: {
-            proof_hash: "0xPROOF_HASH_5"
-          }
-        });
-      });
-
-      it('can handle reports that are out of order', () => {
-        const multipleReportVal = {
-          op_list: [
-            {
-              ref: `${shardingPath}/15/proof_hash`,
-              value: "0xPROOF_HASH_15" 
-            },
-            {
-              ref: `${shardingPath}/10/proof_hash`,
-              value: "0xPROOF_HASH_10" 
-            }
-          ]
-        }
-        const shardReportRes = JSON.parse(
-          syncRequest('POST', server2 + '/set', { json: multipleReportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(SERVERS, shardReportRes.tx_hash);
-        const shardingPathRes = JSON.parse(
-          syncRequest('GET', server1 + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
-        ).result;
-        assert.deepEqual(shardingPathRes, {
-          latest: 15,
-          5: {
-            proof_hash: "0xPROOF_HASH_5"
-          },
-          10: {
-            proof_hash: "0xPROOF_HASH_10"
-          },
-          15: {
-            proof_hash: "0xPROOF_HASH_15"
-          }
-        });
-      })
     });
   });
 })
