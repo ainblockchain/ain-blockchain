@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -10,7 +10,7 @@
     "url": "https://github.com/ainblockchain/ain-blockchain"
   },
   "engines": {
-    "node": ">=8"
+    "node": ">=10"
   },
   "scripts": {
     "clean": "sh stop_servers.sh & echo 'cleaned'",
