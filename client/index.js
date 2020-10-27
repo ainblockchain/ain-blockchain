@@ -12,6 +12,8 @@ const ChainUtil = require('../chain-util');
 const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus } = require('../constants');
 const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const CURRENT_PROTOCOL_MAJOR_VERSION =
+  CURRENT_PROTOCOL_VERSION.substring(0, CURRENT_PROTOCOL_VERSION.length - 2);
 
 const MAX_BLOCKS = 20;
 const CLIENT_PREFIX = 'CLIENT';
@@ -31,12 +33,12 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-if (!VERSION_LIST[CURRENT_PROTOCOL_VERSION]) {
+if (!VERSION_LIST[CURRENT_PROTOCOL_MAJOR_VERSION]) {
   throw Error("Current protocol version doesn't exist in the protocol versions file");
 }
 const minProtocolVersion =
-    VERSION_LIST[CURRENT_PROTOCOL_VERSION].min || CURRENT_PROTOCOL_VERSION;
-const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_VERSION].max;
+    VERSION_LIST[CURRENT_PROTOCOL_MAJOR_VERSION].min || CURRENT_PROTOCOL_VERSION;
+const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_MAJOR_VERSION].max;
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
