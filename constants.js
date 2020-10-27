@@ -21,6 +21,12 @@ const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
 // of which value could be either 'local', 'default', or 'gcp'.
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const COMCOM_HOST_INTERNAL_IP_MAP = {
+  'aincom1': '192.168.1.13',
+  'aincom2': '192.168.1.14',
+}
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
 const PORT = process.env.PORT || getPortNumber(8080, 8081);
@@ -452,6 +458,8 @@ module.exports = {
   TRANSACTION_TRACKER_TIME_OUT_MS,
   NETWORK_ID,
   HOSTING_ENV,
+  COMCOM_HOST_EXTERNAL_IP,
+  COMCOM_HOST_INTERNAL_IP_MAP,
   ACCOUNT_INDEX,
   PORT,
   P2P_PORT,
