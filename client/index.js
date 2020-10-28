@@ -36,7 +36,7 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const MAJOR_MINOR_VERSION =
     `${semver.major(CURRENT_PROTOCOL_VERSION)}.${semver.minor(CURRENT_PROTOCOL_VERSION)}`;
-if (!semver.valid(MAJOR_MINOR_VERSION)) {
+if (!semver.valid(semver.coerce(MAJOR_MINOR_VERSION))) {
   throw Error("Given major and minor version does not correctly setup");
 }
 if (!VERSION_LIST[MAJOR_MINOR_VERSION]) {
