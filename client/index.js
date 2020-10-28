@@ -30,13 +30,21 @@ process.on('SIGINT', _ => {
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
+if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
+  throw Error("Wrong version format is specified in package.json");
+}
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-if (!VERSION_LIST[CURRENT_PROTOCOL_VERSION]) {
+const MAJOR_MINOR_VERSION =
+    `${semver.major(CURRENT_PROTOCOL_VERSION)}.${semver.minor(CURRENT_PROTOCOL_VERSION)}`;
+if (!semver.valid(semver.coerce(MAJOR_MINOR_VERSION))) {
+  throw Error("Given major and minor version does not correctly setup");
+}
+if (!VERSION_LIST[MAJOR_MINOR_VERSION]) {
   throw Error("Current protocol version doesn't exist in the protocol versions file");
 }
 const minProtocolVersion =
-    VERSION_LIST[CURRENT_PROTOCOL_VERSION].min || CURRENT_PROTOCOL_VERSION;
-const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_VERSION].max;
+    VERSION_LIST[MAJOR_MINOR_VERSION].min || CURRENT_PROTOCOL_VERSION;
+const maxProtocolVersion = VERSION_LIST[MAJOR_MINOR_VERSION].max;
 
 const app = express();
 app.use(express.json()); // support json encoded bodies

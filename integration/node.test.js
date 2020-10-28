@@ -874,7 +874,7 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', { transaction, signature,
             protoVer: CURRENT_PROTOCOL_VERSION })
           .then((res) => {
-            assert.deepEqual(res.result, { "protoVer": "0.1.0", "result": true });
+            assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
           })
       })
 
