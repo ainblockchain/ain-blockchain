@@ -6,6 +6,7 @@ const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
+const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const Consensus = require('../consensus');
@@ -17,6 +18,8 @@ const {
   P2P_PORT,
   TRACKER_WS_ADDR,
   HOSTING_ENV,
+  COMCOM_HOST_EXTERNAL_IP,
+  COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
   PredefinedDbPaths,
   WriteDbOperations,
@@ -167,6 +170,21 @@ class P2pServer {
           logger.error(`[${P2P_PREFIX}] Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
           process.exit(0);
         });
+      } else if (HOSTING_ENV === 'comcom') {
+        let ipAddr = null;
+        if (internal) {
+          const hostname = _.toLower(os.hostname());
+          logger.info(`[${P2P_PREFIX}] Hostname: ${hostname}`);
+          ipAddr = COMCOM_HOST_INTERNAL_IP_MAP[hostname];
+        } else {
+          ipAddr = COMCOM_HOST_EXTERNAL_IP;
+        }
+        if (ipAddr) {
+          return ipAddr;
+        }
+        logger.error(
+            `[${P2P_PREFIX}] Failed to get ${internal ? 'internal' : 'external'} ip address.`);
+        process.exit(0);
       } else if (HOSTING_ENV === 'local') {
         return ip.address();
       } else {
