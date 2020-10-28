@@ -1,16 +1,28 @@
 const logger = require('../logger');
+const _ = require('lodash');
 const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
-  TransactionStatus,
-  WriteDbOperations,
   LIGHTWEIGHT,
+  PORT,
+  PredefinedDbPaths,
+  GenesisSharding,
+  GenesisAccounts,
+  ShardingProperties,
+  TransactionStatus,
+  FunctionResultCode,
+  WriteDbOperations,
+  AccountProperties,
 } = require('../constants');
+const ChainUtil = require('../chain-util');
+const { sendGetRequest, signAndSendTx } = require('../server/util');
 const Transaction = require('./transaction');
-const _ = require('lodash');
+
+const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
-  constructor() {
+  constructor(node) {
+    this.node = node;
     // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
     this.transactions = {};
     this.committedNonceTracker = {};
@@ -18,6 +30,9 @@ class TransactionPool {
     // TODO (lia): do not store txs in the pool
     // (they're already tracked by this.transactions..)
     this.transactionTracker = {};
+    // Track transactions in remote blockchains (e.g. parent blockchain).
+    this.remoteTransactionTracker = {};
+    this.isChecking = false;
   }
 
   addTransaction(tx) {
@@ -41,6 +56,8 @@ class TransactionPool {
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.timestamp,
+      is_finalized: false,
+      finalized_at: -1,
     };
     if (tx.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
@@ -91,7 +108,8 @@ class TransactionPool {
         );
       tempFilteredTransactions = tempFilteredTransactions.filter(tx => {
         const ref = _.get(tx, 'operation.ref');
-        const innerRef = tx.operation.op_list ? tx.operation.op_list[0].ref : undefined;
+        const innerRef = tx.operation.op_list && tx.operation.op_list.length ?
+            tx.operation.op_list[0].ref : undefined;
         const type = _.get(tx, 'operation.type');
         return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
             (ref && !ref.startsWith('/consensus/number')) || (innerRef && !innerRef.startsWith('/consensus/number'));
@@ -175,7 +193,31 @@ class TransactionPool {
     return removed;
   }
 
+  removeInvalidTxsFromPool(txs) {
+    const addrToTxSet = {};
+    txs.forEach(tx => {
+      const { address, hash } = tx;
+      if (!addrToTxSet[address]) {
+        addrToTxSet[address] = new Set();
+      }
+      addrToTxSet[address].add(hash);
+      const tracked = this.transactionTracker[hash];
+      if (tracked && tracked.status !== TransactionStatus.BLOCK_STATUS) {
+        this.transactionTracker[hash].status = TransactionStatus.FAIL_STATUS;
+        this.transactionTracker[hash].index = -1;
+      }
+    })
+    for (const address in addrToTxSet) {
+      if (this.transactions[address]) {
+        this.transactions[address] = this.transactions[address].filter(tx => {
+          return !(addrToTxSet[address].has(tx.hash));
+        })
+      }
+    }
+  }
+
   cleanUpForNewBlock(block) {
+    const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
     block.last_votes.forEach(voteTx => {
@@ -185,6 +227,8 @@ class TransactionPool {
         number: block.number,
         index: -1,
         timestamp: voteTx.timestamp,
+        is_finalized: true,
+        finalized_at: finalizedAt,
       };
       inBlockTxs.add(voteTx.hash);
     });
@@ -200,6 +244,8 @@ class TransactionPool {
         number: block.number,
         index: i,
         timestamp: tx.timestamp,
+        is_finalized: true,
+        finalized_at: finalizedAt,
       };
       inBlockTxs.add(tx.hash);
     }
@@ -259,6 +305,80 @@ class TransactionPool {
       size += this.transactions[address].length;
     }
     return size;
+  }
+
+  addRemoteTransaction(txHash, action) {
+    if (!action.ref || !action.valueFunction) {
+      logger.debug(
+          `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
+      return;
+    }
+    const trackingInfo = {
+      txHash,
+      action,
+    };
+    logger.info(
+        `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
+    this.remoteTransactionTracker[txHash] = trackingInfo;
+  }
+
+  checkRemoteTransactions() {
+    if (this.isChecking) {
+      return;
+    }
+    this.isChecking = true;
+    const tasks = [];
+    for (let txHash in this.remoteTransactionTracker) {
+      tasks.push(sendGetRequest(
+        parentChainEndpoint,
+        'ain_getTransactionByHash',
+        { hash: txHash }
+      )
+      .then(resp => {
+        const trackingInfo = this.remoteTransactionTracker[txHash];
+        const result = _.get(resp, 'data.result.result', null);
+        logger.info(
+            `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
+            `with result: ${JSON.stringify(result, null, 2)}`);
+        if (result && (result.is_finalized ||
+            result.status === TransactionStatus.FAIL_STATUS ||
+            result.status === TransactionStatus.TIMEOUT_STATUS)) {
+          this.doAction(trackingInfo.action, result.is_finalized);
+          delete this.remoteTransactionTracker[txHash];
+        }
+        return result ? result.is_finalized : null;
+      }));
+    }
+    return Promise.all(tasks)
+      .then(() => {
+        this.isChecking = false;
+      });
+  }
+
+  doAction(action, success) {
+    const triggerTx = action.transaction;
+    let value = null;
+    try {
+      value = action.valueFunction(success);
+    } catch (e) {
+      logger.debug(`  =>> valueFunction failed: ${e}`);
+      return;
+    }
+    const actionTx = {
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: ChainUtil.formatPath(ChainUtil.parsePath(action.ref)),
+        value: value,
+        is_global: action.is_global
+      },
+      timestamp: triggerTx.timestamp,
+      nonce: -1
+    };
+    const ownerPrivateKey = ChainUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
+    const endpoint = `${this.node.urlInternal}/json-rpc`;
+    signAndSendTx(endpoint, actionTx, keyBuffer);
   }
 }
 

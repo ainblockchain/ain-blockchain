@@ -3,6 +3,7 @@ const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 
+const PORT = process.env.PORT || 8080;
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
 
 const { combine, timestamp, label, printf } = winston.format
@@ -11,7 +12,7 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
 })
 
 const logDir = path.join(__dirname, '.', 'logs');
-const prefix = `tracker`;
+const prefix = `tracker-${PORT}`;
 
 function getTransports() {
   const transports = [

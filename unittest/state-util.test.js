@@ -1,4 +1,6 @@
 const {
+  hasEnabledShardConfig,
+  isWritablePathWithSharding,
   hasReservedChar,
   hasAllowedPattern,
   isValidStateLabel,
@@ -19,6 +21,146 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 describe("state-util", () => {
+  describe("hasEnabledShardConfig", () => {
+    it("when input without matched shard config returning false", () => {
+      expect(hasEnabledShardConfig(jsObjectToStateTree(null))).to.equal(false);
+      expect(hasEnabledShardConfig(jsObjectToStateTree({}))).to.equal(false);
+      expect(hasEnabledShardConfig(jsObjectToStateTree({
+        subtree: {
+          path: "some value"
+        },
+        str: "string value"
+      }
+      ))).to.equal(false);
+      expect(hasEnabledShardConfig(jsObjectToStateTree({
+        subtree: {
+          path: "some value",
+          ".shard": {
+            sharding_enabled: true
+          }
+        },
+        str: "string value"
+      }
+      ))).to.equal(false);
+    })
+
+    it("when input with matched shard config returning false", () => {
+      expect(hasEnabledShardConfig(jsObjectToStateTree({
+        subtree: {
+          path: "some value",
+        },
+        str: "string value",
+        ".shard": {
+          sharding_enabled: false
+        }
+      }
+      ))).to.equal(false);
+    })
+
+    it("when input with shard config returning true", () => {
+      expect(hasEnabledShardConfig(jsObjectToStateTree({
+        subtree: {
+          path: "some value",
+        },
+        str: "string value",
+        ".shard": {
+          sharding_enabled: true
+        }
+      }
+      ))).to.equal(true);
+    })
+  })
+
+  describe("isWritablePathWithSharding", () => {
+    it("when non-writable path with shard config", () => {
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path'],
+          jsObjectToStateTree({
+            some: {
+              path: {
+                ".shard": {
+                  sharding_enabled: true
+                }
+              }
+            }
+          })), {isValid: false, invalidPath: '/some/path'});
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path'],
+          jsObjectToStateTree({
+            some: {
+              other_path: true,
+              ".shard": {
+                sharding_enabled: true
+              }
+            }
+          })), {isValid: false, invalidPath: '/some'});
+    })
+
+    it("when writable path w/o shard config", () => {
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path'],
+          jsObjectToStateTree({
+            some: {
+              path: true
+            }
+          })), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path'],
+          jsObjectToStateTree({
+            some: {
+              other_path: true
+            }
+          })), {isValid: true, invalidPath: ''});
+    })
+    it("when writable path with shard config", () => {
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path'],
+          jsObjectToStateTree({
+            some: {
+              path: {
+                ".shard": {
+                  sharding_enabled: false
+                }
+              }
+            }
+          })), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path'],
+          jsObjectToStateTree({
+            some: {
+              other_path: true,
+              ".shard": {
+                sharding_enabled: false
+              }
+            }
+          })), {isValid: true, invalidPath: ''});
+    })
+    it("when writable path through shard config", () => {
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path', '.shard', 'sharding_enabled'],
+          jsObjectToStateTree({
+            some: {
+              path: {
+                ".shard": {
+                  sharding_enabled: true
+                }
+              }
+            }
+          })), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isWritablePathWithSharding(
+          ['some', 'path', '.shard', 'proof_hash_map'],
+          jsObjectToStateTree({
+            some: {
+              path: {
+                ".shard": {
+                  sharding_enabled: true
+                }
+              }
+            }
+          })), {isValid: true, invalidPath: ''});
+    })
+  })
+
   describe("hasReservedChar", () => {
     it("when non-string input", () => {
       expect(hasReservedChar(null)).to.equal(false);

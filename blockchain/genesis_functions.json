@@ -1,4 +1,26 @@
 {
+  "checkin": {
+    "$user_addr": {
+      "$checkin_id": {
+        "request": {
+          ".function": {
+            "function_type": "NATIVE",
+            "function_id": "_openCheckin"
+          }
+        },
+        "parent_finalize": {
+          "$tx_hash": {
+            "result": {
+              ".function": {
+                "function_type": "NATIVE",
+                "function_id": "_closeCheckin"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "deposit": {
     "$service": {
       "$user_addr": {

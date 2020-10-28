@@ -141,24 +141,24 @@ class Blockchain {
     return lastBlock.timestamp;
   }
 
-  addNewBlock(newBlock) {
+  addNewBlockToChain(newBlock) {
     if (!newBlock) {
-      logger.error(`[blockchain.addNewBlock] Block is null`);
+      logger.error(`[blockchain.addNewBlockToChain] Block is null`);
       return false;
     }
     if (newBlock.number != this.lastBlockNumber() + 1) {
-      logger.error(`[blockchain.addNewBlock] Invalid blockchain number: ${newBlock.number}`);
+      logger.error(`[blockchain.addNewBlockToChain] Invalid blockchain number: ${newBlock.number}`);
       return false;
     }
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
     if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
-      logger.error(`[blockchain.addNewBlock] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
+      logger.error(`[blockchain.addNewBlockToChain] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     if (!this.backupDb.executeTransactionList(newBlock.transactions)) {
-      logger.error(`[blockchain.addNewBlock] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
+      logger.error(`[blockchain.addNewBlockToChain] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     this.chain.push(newBlock);
@@ -321,7 +321,7 @@ class Blockchain {
         continue;
       }
       // TODO(lia): validate the state proof of each block
-      if (!this.addNewBlock(block)) {
+      if (!this.addNewBlockToChain(block)) {
         logger.error(`[${LOG_PREFIX}] Failed to add block ` + block);
         return false;
       }
