@@ -346,7 +346,7 @@ class TransactionPool {
           this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
-        return result.is_finalized;
+        return result ? result.is_finalized : null;
       }));
     }
     return Promise.all(tasks)
