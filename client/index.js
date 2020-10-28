@@ -30,13 +30,21 @@ process.on('SIGINT', _ => {
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
+if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
+  throw Error("Wrong version format is specified in package.json");
+}
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-if (!VERSION_LIST[CURRENT_PROTOCOL_VERSION]) {
+const MAJOR_MINOR_VERSION =
+    `${semver.major(CURRENT_PROTOCOL_VERSION)}.${semver.minor(CURRENT_PROTOCOL_VERSION)}`;
+if (!semver.valid(semver.coerce(MAJOR_MINOR_VERSION))) {
+  throw Error("Given major and minor version does not correctly setup");
+}
+if (!VERSION_LIST[MAJOR_MINOR_VERSION]) {
   throw Error("Current protocol version doesn't exist in the protocol versions file");
 }
 const minProtocolVersion =
-    VERSION_LIST[CURRENT_PROTOCOL_VERSION].min || CURRENT_PROTOCOL_VERSION;
-const maxProtocolVersion = VERSION_LIST[CURRENT_PROTOCOL_VERSION].max;
+    VERSION_LIST[MAJOR_MINOR_VERSION].min || CURRENT_PROTOCOL_VERSION;
+const maxProtocolVersion = VERSION_LIST[MAJOR_MINOR_VERSION].max;
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
@@ -293,21 +301,20 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
 
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
-  let result = {};
   if (transactionInfo) {
     if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
-      Object.assign(result, block.transactions[index], { is_confirmed: true });
+      transactionInfo.transaction = block.transactions[index];
     } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
       const address = transactionInfo.address;
       const index = transactionInfo.index;
-      Object.assign(result, node.tp.transactions[address][index], { is_confirmed: false });
+      transactionInfo.transaction = node.tp.transactions[address][index];
     }
   }
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({code: 0, result: transactionInfo})
     .end();
 });
 

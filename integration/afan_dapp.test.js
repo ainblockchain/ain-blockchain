@@ -7,7 +7,7 @@ const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
 const { BLOCKCHAINS_DIR } = require('../constants');
-const { waitUntilTxFinalized } = require('../test/test-util');
+const { waitUntilTxFinalized } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -15,23 +15,23 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const ENV_VARIABLES = [
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
-    ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -57,7 +57,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-describe('aFan Client Test', () => {
+describe('aFan DApp Test', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
   before(() => {
@@ -122,7 +122,7 @@ describe('aFan Client Test', () => {
     });
   });
 
-  describe('crushOnPost', () => {
+  describe('tx_crushOnPost', () => {
     beforeEach(() => {
       return set_value('afan', null)
       .then((res) => waitUntilTxFinalized(servers, res.result.tx_hash));
@@ -165,7 +165,7 @@ describe('aFan Client Test', () => {
     });
   });
 
-  describe('crushOnReply', () => {
+  describe('tx_crushOnReply', () => {
     beforeEach(() => {
       return set_value('afan', null)
       .then((res) => waitUntilTxFinalized(servers, res.result.tx_hash));
@@ -209,7 +209,7 @@ describe('aFan Client Test', () => {
     });
   });
 
-  describe('ad', () => {
+  describe('tx_adpropose', () => {
     beforeEach(() => {
       return set_value('afan', null)
       .then((res) => waitUntilTxFinalized(servers, res.result.tx_hash));

@@ -76,7 +76,9 @@ function getShardingConfig(env, index) {
     sharding_protocol: 'POA',
     sharding_path: `/apps/shard_${index}`,
     parent_chain_poc: pocList[index % pocList.length],
-    reporting_period: 5
+    reporting_period: 5,
+    token_exchange_scheme: "FIXED",
+    token_exchange_rate: 10,
   };
 }
 

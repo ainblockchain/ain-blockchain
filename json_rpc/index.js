@@ -134,21 +134,18 @@ module.exports = function getMethods(
 
     ain_getTransactionByHash: function(args, done) {
       const transactionInfo = node.tp.transactionTracker[args.hash];
-      if (!transactionInfo) {
-        done(null, addProtocolVersion({ result: null }));
-      } else {
-        let transaction = null;
+      if (transactionInfo) {
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          transaction = Object.assign({}, block.transactions[index], { is_confirmed: true });
+          transactionInfo.transaction = block.transactions[index];
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
           const address = transactionInfo.address;
           const index = transactionInfo.index;
-          transaction = Object.assign({}, node.tp.transactions[address][index], { is_confirmed: false });
+          transactionInfo.transaction = node.tp.transactions[address][index];
         }
-        done(null, addProtocolVersion({ result: transaction }));
       }
+      done(null, addProtocolVersion({ result: transactionInfo }));
     },
 
     ain_getTransactionByBlockHashAndIndex: function(args, done) {
@@ -157,7 +154,10 @@ module.exports = function getMethods(
         const index = Number(args.index);
         const block = node.bc.getBlockByHash(args.block_hash);
         if (block.transactions.length > index && index >= 0) {
-          result = Object.assign({}, block.transactions[index], { is_confirmed: true });
+          result = {
+            transaction: block.transactions[index],
+            is_finalized: true
+          };
         }
       }
       done(null, addProtocolVersion({ result }));
@@ -169,7 +169,10 @@ module.exports = function getMethods(
         const index = Number(args.index);
         const block = node.bc.getBlockByNumber(args.block_number);
         if (block.transactions.length > index && index >= 0) {
-          result = Object.assign({}, block.transactions[index], { is_confirmed: true });
+          result = {
+            transaction: block.transactions[index],
+            is_finalized: true
+          };
         }
       }
       done(null, addProtocolVersion({ result }));

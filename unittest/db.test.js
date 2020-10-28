@@ -118,6 +118,20 @@ describe("DB operations", () => {
         "far": {
           "down": 456
         }
+      },
+      "shards": {
+        "enabled_shard": {
+          ".shard": {
+            "sharding_enabled": true
+          },
+          "path": 10,
+        },
+        "disabled_shard": {
+          ".shard": {
+            "sharding_enabled": false
+          },
+          "path": 10,
+        }
       }
     };
     result = node.db.setValue("test", dbValues);
@@ -1025,6 +1039,24 @@ describe("DB operations", () => {
         "error_message": "Invalid path: /test/new/unchartered/nested/\x7F"
       });
     })
+
+    it("when writing with non-writable path with sharding", () => {
+      assert.deepEqual(node.db.setValue("test/shards/enabled_shard", 20), {
+        "code": 8,
+        "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard"
+      });
+      assert.deepEqual(node.db.setValue("test/shards/enabled_shard/path", 20), {
+        "code": 8,
+        "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard"
+      });
+    })
+
+    it("when writing with writable path with sharding", () => {
+      expect(node.db.setValue("test/shards/disabled_shard", 20)).to.equal(true);
+      expect(node.db.getValue("test/shards/disabled_shard")).to.equal(20)
+      expect(node.db.setValue("test/shards/disabled_shard/path", 20)).to.equal(true);
+      expect(node.db.getValue("test/shards/disabled_shard/path")).to.equal(20)
+    })
   })
 
   describe("incValue operations", () => {
@@ -1047,6 +1079,18 @@ describe("DB operations", () => {
       node.db.incValue("test/completely/new/path/test", 100);
       expect(node.db.getValue("test/completely/new/path/test")).to.equal(100)
     })
+
+    it("returning error code with non-writable path with sharding", () => {
+      assert.deepEqual(node.db.incValue("test/shards/enabled_shard/path", 5), {
+        "code": 8,
+        "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard"
+      });
+    })
+
+    it("when increasing with writable path with sharding", () => {
+      expect(node.db.incValue("test/shards/disabled_shard/path", 5)).to.equal(true);
+      expect(node.db.getValue("test/shards/disabled_shard/path")).to.equal(15)
+    })
   })
 
   describe("decValue operations", () => {
@@ -1068,6 +1112,18 @@ describe("DB operations", () => {
     it("creating and decreasing given path from 0 if not currently in database", () => {
       node.db.decValue("test/completely/new/path/test", 100);
       expect(node.db.getValue("test/completely/new/path/test")).to.equal(-100)
+    })
+
+    it("returning error code with non-writable path with sharding", () => {
+      assert.deepEqual(node.db.decValue("test/shards/enabled_shard/path", 5), {
+        "code": 8,
+        "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard"
+      });
+    })
+
+    it("when increasing with writable path with sharding", () => {
+      expect(node.db.decValue("test/shards/disabled_shard/path", 5)).to.equal(true);
+      expect(node.db.getValue("test/shards/disabled_shard/path")).to.equal(5)
     })
   })
 
@@ -2107,6 +2163,20 @@ describe("DB sharding config", () => {
             "number": 10,
           }
         }
+      },
+      "shards": {
+        "enabled_shard": {
+          ".shard": {
+            "sharding_enabled": true,
+          },
+          "path": 10,
+        },
+        "disabled_shard": {
+          ".shard": {
+            "sharding_enabled": false,
+          },
+          "path": 10,
+        }
       }
     };
     result = node.db.setValue("test/test_sharding", dbValues);
@@ -2230,6 +2300,38 @@ describe("DB sharding config", () => {
         .to.equal(true);
     })
 
+    it("setValue with isGlobal = false and non-writable path with sharding", () => {
+      assert.deepEqual(node.db.setValue("test/test_sharding/shards/enabled_shard/path", 20), {
+        "code": 8,
+        "error_message":
+            "Non-writable path with shard config: /values/test/test_sharding/shards/enabled_shard"
+      });
+    })
+
+    it("setValue with isGlobal = true and non-writable path with sharding", () => {
+      expect(node.db.setValue(
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", 20, 'known_user', null, null,
+          true))
+        .to.equal(true);
+      expect(node.db.getValue(
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", true))
+        .to.equal(10);  // value unchanged
+    })
+
+    it("setValue with isGlobal = false and writable path with sharding", () => {
+      expect(node.db.setValue("test/test_sharding/shards/disabled_shard/path", 20)).to.equal(true);
+      expect(node.db.getValue("test/test_sharding/shards/disabled_shard/path")).to.equal(20);
+    })
+
+    it("setValue with isGlobal = true and writable path with sharding", () => {
+      expect(node.db.setValue(
+          "apps/afan/test/test_sharding/shards/disabled_shard/path", 20, 'known_user', null, null,
+          true))
+        .to.equal(true);
+      expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
+        .to.equal(20);  // value changed
+    })
+
     it("incValue with isGlobal = false", () => {
       expect(node.db.incValue("test/test_sharding/some/path/to/number", incDelta, 'known_user'))
         .to.equal(true);
@@ -2246,6 +2348,39 @@ describe("DB sharding config", () => {
     it("incValue with isGlobal = true and non-existing path", () => {
       expect(node.db.incValue("some/non-existing/path", incDelta, 'known_user', null, null, true))
         .to.equal(true);
+    })
+
+    it("setValue with isGlobal = false and non-writable path with sharding", () => {
+      assert.deepEqual(node.db.incValue("test/test_sharding/shards/enabled_shard/path", 5), {
+        "code": 8,
+        "error_message":
+            "Non-writable path with shard config: /values/test/test_sharding/shards/enabled_shard"
+      });
+    })
+
+    it("setValue with isGlobal = true and non-writable path with sharding", () => {
+      expect(node.db.incValue(
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", 5, 'known_user', null, null,
+          true))
+        .to.equal(true);
+      expect(node.db.getValue(
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", true))
+        .to.equal(10);  // value unchanged
+    })
+
+    it("setValue with isGlobal = false and writable path with sharding", () => {
+      expect(node.db.incValue("test/test_sharding/shards/disabled_shard/path", 5)).to.equal(true);
+      expect(node.db.getValue("test/test_sharding/shards/disabled_shard/path"))
+        .to.equal(15);  // value changed
+    })
+
+    it("setValue with isGlobal = true and writable path with sharding", () => {
+      expect(node.db.incValue(
+          "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, 'known_user', null, null,
+          true))
+        .to.equal(true);
+      expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
+        .to.equal(15);  // value changed
     })
 
     it("decValue with isGlobal = false", () => {
@@ -2265,6 +2400,40 @@ describe("DB sharding config", () => {
       expect(node.db.decValue("some/non-existing/path", decDelta, 'known_user', null, null, true))
         .to.equal(true);
     })
+
+    it("setValue with isGlobal = false and non-writable path with sharding", () => {
+      assert.deepEqual(node.db.decValue("test/test_sharding/shards/enabled_shard/path", 5), {
+        "code": 8,
+        "error_message":
+            "Non-writable path with shard config: /values/test/test_sharding/shards/enabled_shard"
+      });
+    })
+
+    it("setValue with isGlobal = true and non-writable path with sharding", () => {
+      expect(node.db.decValue(
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", 5, 'known_user', null, null,
+          true))
+        .to.equal(true);
+      expect(node.db.getValue(
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", true))
+        .to.equal(10);  // value unchanged
+    })
+
+    it("setValue with isGlobal = false and writable path with sharding", () => {
+      expect(node.db.decValue("test/test_sharding/shards/disabled_shard/path", 5)).to.equal(true);
+      expect(node.db.getValue("test/test_sharding/shards/disabled_shard/path"))
+        .to.equal(5);  // value changed
+    })
+
+    it("setValue with isGlobal = true and writable path with sharding", () => {
+      expect(node.db.decValue(
+          "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, 'known_user', null, null,
+          true))
+        .to.equal(true);
+      expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
+        .to.equal(5);  // value changed
+    })
+
   })
 
   describe("function operations", () => {

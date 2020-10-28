@@ -1,6 +1,83 @@
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
-const { HASH_DELIMITER } = require('../constants');
+const {
+  HASH_DELIMITER,
+  FunctionProperties,
+  RuleProperties,
+  OwnerProperties,
+  ShardingProperties,
+} = require('../constants');
+
+function hasConfig(node, label) {
+  return node && node.hasChild(label);
+}
+
+function getConfig(node, label) {
+  return hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
+}
+
+function hasShardConfig(valueNode) {
+  return hasConfig(valueNode, ShardingProperties.SHARD);
+}
+
+function getShardConfig(valueNode) {
+  return getConfig(valueNode, ShardingProperties.SHARD);
+}
+
+function hasFunctionConfig(funcNode) {
+  return hasConfig(funcNode, FunctionProperties.FUNCTION);
+}
+
+function getFunctionConfig(funcNode) {
+  return getConfig(funcNode, FunctionProperties.FUNCTION);
+}
+
+function hasRuleConfig(ruleNode) {
+  return hasConfig(ruleNode, RuleProperties.WRITE);
+}
+
+function getRuleConfig(ruleNode) {
+  return getConfig(ruleNode, RuleProperties.WRITE);
+}
+
+function hasOwnerConfig(ownerNode) {
+  return hasConfig(ownerNode, OwnerProperties.OWNER);
+}
+
+function getOwnerConfig(ownerNode) {
+  return getConfig(ownerNode, OwnerProperties.OWNER);
+}
+
+function hasEnabledShardConfig(node) {
+  let isEnabled = false;
+  if (hasShardConfig(node)) {
+    const shardConfig = getShardConfig(node);
+    isEnabled = ChainUtil.boolOrFalse(shardConfig[ShardingProperties.SHARDING_ENABLED]);
+  }
+  return isEnabled;
+}
+
+function isWritablePathWithSharding(fullPath, root) {
+  let isValid = true;
+  const path = [];
+  let curNode = root;
+  for (const label of fullPath) {
+    if (label !== ShardingProperties.SHARD && hasEnabledShardConfig(curNode)) {
+      isValid = false;
+      break;
+    }
+    if (curNode.hasChild(label)) {
+      curNode = curNode.getChild(label);
+      path.push(label);
+    } else {
+      break;
+    }
+  }
+  if (hasEnabledShardConfig(curNode)) {
+    isValid = false;
+  }
+  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+}
 
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]/gm;
@@ -158,8 +235,18 @@ function updateProofHashForPath(fullPath, root) {
 }
 
 module.exports = {
+  hasShardConfig,
+  getShardConfig,
+  hasFunctionConfig,
+  getFunctionConfig,
+  hasRuleConfig,
+  getRuleConfig,
+  hasOwnerConfig,
+  getOwnerConfig,
+  hasEnabledShardConfig,
   hasReservedChar,
   hasAllowedPattern,
+  isWritablePathWithSharding,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,

@@ -21,13 +21,19 @@ const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
 // of which value could be either 'local', 'default', or 'gcp'.
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const COMCOM_HOST_INTERNAL_IP_MAP = {
+  'aincom1': '192.168.1.13',
+  'aincom2': '192.168.1.14',
+}
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
 const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT || false;
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
 function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV == 'local') {
@@ -88,12 +94,18 @@ const PredefinedDbPaths = {
   DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
   DEPOSIT_CONSENSUS: 'deposit/consensus',
   WITHDRAW_CONSENSUS: 'withdraw/consensus',
+  // Remote transaction action
+  REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
   SHARDING_SHARD: 'shard',
-  SHARDING_PROOF_HASH: 'proof_hash',
-  SHARDING_LATEST: 'latest'
+  // Check-in & Check-out
+  CHECKIN: 'checkin',
+  CHECKIN_REQUEST: 'request',
+  CHECKIN_PAYLOAD: 'payload',
+  CHECKIN_PARENT_FINALIZE: 'parent_finalize',
+  CHECKOUT: 'checkout',
 };
 
 /**
@@ -180,6 +192,8 @@ const NativeFunctionIds = {
   TRANSFER: '_transfer',
   WITHDRAW: '_withdraw',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
+  OPEN_CHECKIN: '_openCheckin',
+  CLOSE_CHECKIN: '_closeCheckin',
 };
 
 /**
@@ -187,12 +201,19 @@ const NativeFunctionIds = {
  * @enum {string}
  */
 const ShardingProperties = {
+  LATEST: 'latest',
   PARENT_CHAIN_POC: 'parent_chain_poc',
+  PROOF_HASH: 'proof_hash',
+  PROOF_HASH_MAP: 'proof_hash_map',
   REPORTING_PERIOD: 'reporting_period',
+  SHARD: '.shard',
   SHARD_OWNER: 'shard_owner',
   SHARD_REPORTER: 'shard_reporter',
+  SHARDING_ENABLED: 'sharding_enabled',
   SHARDING_PATH: 'sharding_path',
   SHARDING_PROTOCOL: 'sharding_protocol',
+  TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
+  TOKEN_EXCH_RATE: 'token_exchange_rate',
 };
 
 /**
@@ -202,6 +223,15 @@ const ShardingProperties = {
 const ShardingProtocols = {
   NONE: 'NONE',
   POA: 'POA',
+};
+
+/**
+ * Token exchange schemes
+ * @enum {string}
+ */
+const TokenExchangeSchemes = {
+  NONE: 'NONE',
+  FIXED: 'FIXED',
 };
 
 /**
@@ -255,6 +285,7 @@ const TransactionStatus = {
   BLOCK_STATUS: 'BLOCK',
   POOL_STATUS: 'POOL',
   TIMEOUT_STATUS: 'TIMEOUT',
+  FAIL_STATUS: 'FAIL'
 };
 
 /**
@@ -427,6 +458,8 @@ module.exports = {
   TRANSACTION_TRACKER_TIME_OUT_MS,
   NETWORK_ID,
   HOSTING_ENV,
+  COMCOM_HOST_EXTERNAL_IP,
+  COMCOM_HOST_INTERNAL_IP_MAP,
   ACCOUNT_INDEX,
   PORT,
   P2P_PORT,
@@ -446,6 +479,7 @@ module.exports = {
   NativeFunctionIds,
   ShardingProperties,
   ShardingProtocols,
+  TokenExchangeSchemes,
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,

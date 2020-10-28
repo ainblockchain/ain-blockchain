@@ -6,6 +6,7 @@ const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
+const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const Consensus = require('../consensus');
@@ -13,9 +14,12 @@ const { ConsensusStatus } = require('../consensus/constants');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
+  PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
   HOSTING_ENV,
+  COMCOM_HOST_EXTERNAL_IP,
+  COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
   PredefinedDbPaths,
   WriteDbOperations,
@@ -25,7 +29,6 @@ const {
   OwnerProperties,
   RuleProperties,
   ShardingProperties,
-  ShardingProtocols,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
@@ -33,9 +36,10 @@ const {
   LIGHTWEIGHT
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendTxAndWaitForConfirmation } = require('./util');
+const { sendTxAndWaitForFinalization } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
+const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
@@ -48,7 +52,8 @@ const P2P_PREFIX = 'P2P';
 class P2pServer {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.isStarting = true;
-    this.ipAddress = null;
+    this.internalIpAddress = null;
+    this.externalIpAddress = null;
     this.trackerWebSocket = null;
     this.server = null;
     this.node = node;
@@ -88,9 +93,12 @@ class P2pServer {
     });
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setIntervalForTrackerConnection();
-    // XXX(minsu): it won't run before updating p2p network.
-    // this.heartbeat();
+    this.setUpIpAddresses()
+    .then(() => {
+      this.setIntervalForTrackerConnection();
+      // XXX(minsu): it won't run before updating p2p network.
+      // this.heartbeat();
+    });
   }
 
   stop() {
@@ -130,19 +138,16 @@ class P2pServer {
 
   connectToTracker() {
     logger.info(`[${P2P_PREFIX}] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
-    this.getIpAddress()
-    .then(() => {
-      this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
-      this.trackerWebSocket.on('open', () => {
-        logger.info(`[${P2P_PREFIX}] Connected to tracker (${TRACKER_WS_ADDR})`);
-        this.clearIntervalForTrackerConnection();
-        this.setTrackerEventHandlers();
-        this.setIntervalForTrackerUpdate();
-      });
-      this.trackerWebSocket.on('error', (error) => {
-        logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
-                     `${JSON.stringify(error, null, 2)}`);
-      });
+    this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
+    this.trackerWebSocket.on('open', () => {
+      logger.info(`[${P2P_PREFIX}] Connected to tracker (${TRACKER_WS_ADDR})`);
+      this.clearIntervalForTrackerConnection();
+      this.setTrackerEventHandlers();
+      this.setIntervalForTrackerUpdate();
+    });
+    this.trackerWebSocket.on('error', (error) => {
+      logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+                    `${JSON.stringify(error, null, 2)}`);
     });
   }
 
@@ -150,11 +155,11 @@ class P2pServer {
     this.trackerWebSocket.close();
   }
 
-  getIpAddress() {
+  getIpAddress(internal = false) {
     return Promise.resolve()
     .then(() => {
       if (HOSTING_ENV === 'gcp') {
-        return axios.get(GCP_EXTERNAL_IP_URL, {
+        return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
           headers: {'Metadata-Flavor': 'Google'},
           timeout: 3000
         })
@@ -165,6 +170,21 @@ class P2pServer {
           logger.error(`[${P2P_PREFIX}] Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
           process.exit(0);
         });
+      } else if (HOSTING_ENV === 'comcom') {
+        let ipAddr = null;
+        if (internal) {
+          const hostname = _.toLower(os.hostname());
+          logger.info(`[${P2P_PREFIX}] Hostname: ${hostname}`);
+          ipAddr = COMCOM_HOST_INTERNAL_IP_MAP[hostname];
+        } else {
+          ipAddr = COMCOM_HOST_EXTERNAL_IP;
+        }
+        if (ipAddr) {
+          return ipAddr;
+        }
+        logger.error(
+            `[${P2P_PREFIX}] Failed to get ${internal ? 'internal' : 'external'} ip address.`);
+        process.exit(0);
       } else if (HOSTING_ENV === 'local') {
         return ip.address();
       } else {
@@ -172,9 +192,19 @@ class P2pServer {
       }
     })
     .then((ipAddr) => {
-      this.ipAddress = ipAddr;
       return ipAddr;
     });
+  }
+
+  async setUpIpAddresses() {
+    const ipAddrInternal = await this.getIpAddress(true);
+    const ipAddrExternal = await this.getIpAddress(false);
+    this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
+    return true;
+  }
+
+  static getNodeUrl(ipAddr) {
+    return `http://${ipAddr}:${PORT}`;
   }
 
   async setTrackerEventHandlers() {
@@ -215,10 +245,10 @@ class P2pServer {
     const updateToTracker = {
       url: url.format({
         protocol: 'ws',
-        hostname: this.ipAddress,
+        hostname: this.node.ipAddrExternal,
         port: P2P_PORT
       }),
-      ip: this.ipAddress,
+      ip: this.node.ipAddrExternal,
       address: this.node.account.address,
       updatedAt: Date.now(),
       lastBlock: {
@@ -541,7 +571,8 @@ class P2pServer {
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
-      logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ${JSON.stringify(transaction)}`);
+      logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
+          `${JSON.stringify(transaction)}`);
       this.node.tp.addTransaction(transaction);
       return null;
     }
@@ -549,7 +580,8 @@ class P2pServer {
     if (!ChainUtil.transactionFailed(result)) {
       this.node.tp.addTransaction(transaction);
     } else {
-      logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t RESULT:${JSON.stringify(result)}`);
+      logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t ` +
+          `RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
@@ -573,8 +605,8 @@ class P2pServer {
 
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction ? transactionWithSig
-                                                                    : new Transaction(transactionWithSig);
+      const transaction = transactionWithSig instanceof Transaction ?
+          transactionWithSig : new Transaction(transactionWithSig);
       const response = this.executeTransaction(transaction);
       logger.debug(`\n[${P2P_PREFIX}] TX RESPONSE: ` + JSON.stringify(response))
       if (!ChainUtil.transactionFailed(response)) {
@@ -586,21 +618,13 @@ class P2pServer {
   }
 
   async tryInitializeShard() {
-    if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
-      // Not a shard
-      return;
+    if (this.node.isShardReporter && this.node.bc.lastBlockNumber() === 0) {
+      logger.info(`[${P2P_PREFIX}] Setting up sharding..`);
+      await this.setUpDbForSharding();
     }
-    const isShardReporter = ainUtil.areSameAddresses(
-      GenesisSharding[ShardingProperties.SHARD_REPORTER],
-      this.node.account.address
-    );
-    if (this.node.bc.lastBlockNumber() !== 0 || !isShardReporter) {
-      // Shard initialization not necessary
-      return;
-    }
-    await this.setUpDbForSharding();
   }
 
+  // TODO(seo): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
@@ -609,11 +633,15 @@ class P2pServer {
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-    const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
-    const lightweightRules = `auth === '${shardReporter}'`;
-    const nonLightweightRules = `auth === '${shardReporter}' && ` +
-        `((newData === null && Number($block_number) < (getValue('${shardingPath}/latest') || 0)) || ` +
-        `(newData !== null && ($block_number === '0' || $block_number === String((getValue('${shardingPath}/latest') || 0) + 1))))`;
+    const shardingPathRules = `auth === '${shardOwner}'`;
+    const proofHashRulesLight = `auth === '${shardReporter}'`;
+    const proofHashRules = `auth === '${shardReporter}' && ` +
+        `((newData === null && ` +
+        `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
+        `(newData !== null && ($block_number === '0' || ` +
+        `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
 
     const shardInitTx = {
       operation: {
@@ -633,26 +661,49 @@ class P2pServer {
           },
           {
             type: WriteDbOperations.SET_RULE,
+            ref: shardingPath,
+            value: {
+              [RuleProperties.WRITE]: shardingPathRules
+            }
+          },
+          {
+            type: WriteDbOperations.SET_RULE,
             ref: ChainUtil.formatPath([
               ...ChainUtil.parsePath(shardingPath),
+              ShardingProperties.SHARD,
+              ShardingProperties.PROOF_HASH_MAP,
               '$block_number',
-              PredefinedDbPaths.SHARDING_PROOF_HASH
+              ShardingProperties.PROOF_HASH
             ]),
             value: {
-              [RuleProperties.WRITE]: LIGHTWEIGHT ? lightweightRules : nonLightweightRules
+              [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
             }
           },
           {
             type: WriteDbOperations.SET_FUNCTION,
             ref: ChainUtil.formatPath([
               ...ChainUtil.parsePath(shardingPath),
+              ShardingProperties.SHARD,
+              ShardingProperties.PROOF_HASH_MAP,
               '$block_number',
-              PredefinedDbPaths.SHARDING_PROOF_HASH
+              ShardingProperties.PROOF_HASH
             ]),
             value: {
               [FunctionProperties.FUNCTION]: {
                 [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
                 [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+              }
+            }
+          },
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: shardingPath,
+            value: {
+              [ShardingProperties.SHARD]: {
+                [ShardingProperties.SHARDING_ENABLED]: true,
+                [ShardingProperties.PROOF_HASH_MAP]: {
+                  [ShardingProperties.LATEST]: -1,
+                }
               }
             }
           },
@@ -670,7 +721,8 @@ class P2pServer {
       timestamp: Date.now(),
       nonce: -1
     };
-    await sendTxAndWaitForConfirmation(parentChainEndpoint, shardInitTx, keyBuffer);
+
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, keyBuffer);
     logger.info(`[${P2P_PREFIX}] setUpDbForSharding success`);
   }
 
