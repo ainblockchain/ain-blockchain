@@ -30,10 +30,16 @@ process.on('SIGINT', _ => {
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
+if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
+  throw Error("Wrong version format is specified in package.json");
+}
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const MAJOR_MINOR_VERSION =
     `${semver.major(CURRENT_PROTOCOL_VERSION)}.${semver.minor(CURRENT_PROTOCOL_VERSION)}`;
-if (semver.valid(MAJOR_MINOR_VERSION) && !VERSION_LIST[MAJOR_MINOR_VERSION]) {
+if (!semver.valid(MAJOR_MINOR_VERSION)) {
+  throw Error("Given major and minor version does not correctly setup");
+}
+if (!VERSION_LIST[MAJOR_MINOR_VERSION]) {
   throw Error("Current protocol version doesn't exist in the protocol versions file");
 }
 const minProtocolVersion =
