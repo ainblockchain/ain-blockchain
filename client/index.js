@@ -35,10 +35,7 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
 }
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
-if (!min) {
-  throw Error(`Min version for current protocol version (${CURRENT_PROTOCOL_VERSION}) is missing`);
-}
-const minProtocolVersion = min;
+const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
 const app = express();
