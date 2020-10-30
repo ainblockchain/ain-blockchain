@@ -29,17 +29,18 @@ module.exports = function getMethods(
   ) {
   return {
     ain_getProtocolVersion: function(args, done) {
-      done(null, addProtocolVersion({}));
+      done(null, addProtocolVersion({ result: CURRENT_PROTOCOL_VERSION }));
     },
 
     ain_checkProtocolVersion: function(args, done) {
       const version = args.protoVer;
+      const coercedVer = semver.coerce(version);
       if (version === undefined) {
         done(null, addProtocolVersion({ code: 1, message: 'Protocol version not specified.' }));
-      } else if (!semver.valid(version)) {
+      } else if (!semver.valid(coercedVer)) {
         done(null, addProtocolVersion({ code: 1, message: 'Invalid protocol version.' }));
-      } else if (semver.gt(minProtocolVersion, version) ||
-                (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
+      } else if (semver.lt(coercedVer, minProtocolVersion) ||
+                (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
         done(null, addProtocolVersion({ code: 1, message: 'Incompatible protocol version.' }));
       } else {
         done(null, addProtocolVersion({ code: 0, result: 'Success' }));
