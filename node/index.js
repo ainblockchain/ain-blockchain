@@ -100,17 +100,12 @@ class BlockchainNode {
         [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
     for (let encodedPath in shards) {
       const shardPath = ainUtil.decode(encodedPath);
-      const shardProofHashes =
-          this.db.getValue(ChainUtil.appendPath(shardPath, ShardingProperties.SHARD));
       shardingInfo[encodedPath] = {
-        [ShardingProperties.SHARDING_ENABLED]: shardProofHashes[
-          ShardingProperties.SHARDING_ENABLED
-        ],
-        [ShardingProperties.LATEST_BLOCK_NUMBER]: ChainUtil.getJsObject(
-            shardProofHashes, [
-          ShardingProperties.PROOF_HASH_MAP,
-          ShardingProperties.LATEST
-        ]),
+        [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
+            shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+        [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
+            shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+            ShardingProperties.LATEST)),
       };
     }
     return shardingInfo;
