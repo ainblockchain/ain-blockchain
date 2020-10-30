@@ -131,6 +131,10 @@ class ChainUtil {
     return (formatted.startsWith('/') ? '' : '/') + formatted;
   }
 
+  static appendPath(path, toAppend) {
+    return ChainUtil.formatPath([...ChainUtil.parsePath(path), ...ChainUtil.parsePath(toAppend)]);
+  }
+
   static getJsObject(obj, path) {
     if (!ChainUtil.isArray(path)) {
       return null;

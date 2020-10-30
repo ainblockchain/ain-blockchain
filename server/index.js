@@ -241,6 +241,7 @@ class P2pServer {
     });
   }
 
+  // TODO(seo): Add sharding status.
   updateNodeStatusToTracker() {
     const updateToTracker = {
       url: url.format({
