@@ -662,22 +662,22 @@ describe('Blockchain', () => {
       return new Promise((resolve, reject) => {
         let promises = [];
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '.0'}));
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: CURRENT_PROTOCOL_VERSION + '-alpha.1'}));
+            {number: 0, protoVer: 'a.b.c'}));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
             {number: 0, protoVer: '0.01.0'}));
+        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+            {number: 0, protoVer: 'v0.1'}));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
             {number: 0, protoVer: '1'}));
         Promise.all(promises).then(res => {
           expect(res[0].code).to.equal(1);
           expect(res[0].message).to.equal("Invalid protocol version.");
           expect(res[1].code).to.equal(1);
-          expect(res[1].message).to.equal("Incompatible protocol version.");
+          expect(res[1].message).to.equal("Invalid protocol version.");
           expect(res[2].code).to.equal(1);
-          expect(res[2].message).to.equal("Invalid protocol version.");
+          expect(res[2].message).to.equal("Incompatible protocol version.");
           expect(res[3].code).to.equal(1);
-          expect(res[3].message).to.equal("Invalid protocol version.");
+          expect(res[3].message).to.equal("Incompatible protocol version.");
           resolve();
         })
       });
