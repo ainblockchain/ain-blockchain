@@ -326,6 +326,14 @@ app.get('/get_address', (req, res, next) => {
     .end();
 });
 
+app.get('/get_sharding', (req, res, next) => {
+  const result = node.getSharding();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/get_raw_consensus_state', (req, res) => {
   const result = p2pServer.consensus.getRawState();
   res.status(200)

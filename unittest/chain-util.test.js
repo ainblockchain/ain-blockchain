@@ -96,6 +96,19 @@ describe("ChainUtil", () => {
     })
   })
 
+  describe("appendPath", () => {
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/'), '/a/b/c');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '//'), '/a/b/c');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c/', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c//', '/d/e/f'), '/a/b/c/d/e/f');
+    })
+  })
+
   describe("getJsObject", () => {
     let obj;
 
