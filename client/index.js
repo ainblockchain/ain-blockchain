@@ -34,17 +34,9 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error("Wrong version format is specified in package.json");
 }
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const MAJOR_MINOR_VERSION =
-    `${semver.major(CURRENT_PROTOCOL_VERSION)}.${semver.minor(CURRENT_PROTOCOL_VERSION)}`;
-if (!semver.valid(semver.coerce(MAJOR_MINOR_VERSION))) {
-  throw Error("Given major and minor version does not correctly setup");
-}
-if (!VERSION_LIST[MAJOR_MINOR_VERSION]) {
-  throw Error("Current protocol version doesn't exist in the protocol versions file");
-}
-const minProtocolVersion =
-    VERSION_LIST[MAJOR_MINOR_VERSION].min || CURRENT_PROTOCOL_VERSION;
-const maxProtocolVersion = VERSION_LIST[MAJOR_MINOR_VERSION].max;
+const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
+const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
+const maxProtocolVersion = max;
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
@@ -410,6 +402,29 @@ function checkIfTransactionShouldBeNonced(input) {
   return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
 }
 
+function isValidVersionMatch(ver) {
+  return ver && semver.valid(semver.coerce(ver.min)) &&
+      (!ver.max || semver.valid(semver.coerce(ver.max)));
+}
+
+function matchVersions(ver) {
+  let match = VERSION_LIST[ver];
+  if (isValidVersionMatch(match)) {
+    return match;
+  }
+  const majorVer = semver.major(ver);
+  const majorMinorVer = `${majorVer}.${semver.minor(ver)}`;
+  match = VERSION_LIST[majorMinorVer];
+  if (isValidVersionMatch(match)) {
+    return match;
+  }
+  match = VERSION_LIST[majorVer];
+  if (isValidVersionMatch(match)) {
+    return match;
+  }
+  return {};
+}
+
 function validateVersion(req, res, next) {
   let version = null;
   if (req.query.protoVer) {
@@ -417,6 +432,7 @@ function validateVersion(req, res, next) {
   } else if (req.body.params) {
     version = req.body.params.protoVer;
   }
+  const coercedVer = semver.coerce(version);
   if (req.body.method === 'ain_getProtocolVersion' ||
       req.body.method === 'ain_checkProtocolVersion') {
     next();
@@ -426,14 +442,14 @@ function validateVersion(req, res, next) {
     .send({code: 1, message: "Protocol version not specified.",
            protoVer: CURRENT_PROTOCOL_VERSION})
     .end();
-  } else if (!semver.valid(version)) {
+  } else if (!semver.valid(coercedVer)) {
     res.status(200)
       .set('Content-Type', 'application/json')
       .send({code: 1, message: "Invalid protocol version.",
              protoVer: CURRENT_PROTOCOL_VERSION})
       .end();
-  } else if (semver.gt(minProtocolVersion, version) ||
-      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
+  } else if (semver.lt(coercedVer, minProtocolVersion) ||
+      (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
     res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 1, message: "Incompatible protocol version.",
