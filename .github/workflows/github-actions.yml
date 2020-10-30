@@ -23,8 +23,8 @@ jobs:
           node-version: '10.x'
           registry-url: 'https://registry.npmjs.org'
       - name: npm install
-      - run: npm install
+        run: npm install
       - name: run unittest
-      - run: npm run test_unit
+        run: npm run test_unit
       - name: run integration test
-      - run: npm run test_integration
+        run: npm run test_integration
