@@ -131,8 +131,12 @@ class ChainUtil {
     return (formatted.startsWith('/') ? '' : '/') + formatted;
   }
 
-  static appendPath(path, toAppend) {
-    return ChainUtil.formatPath([...ChainUtil.parsePath(path), ...ChainUtil.parsePath(toAppend)]);
+  static appendPath(path, ...pathsToAppend) {
+    const labels = ChainUtil.parsePath(path);
+    for (let toAppend of pathsToAppend) {
+      labels.push(...ChainUtil.parsePath(toAppend));
+    }
+    return ChainUtil.formatPath(labels);
   }
 
   static getJsObject(obj, path) {
