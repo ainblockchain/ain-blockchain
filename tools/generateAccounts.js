@@ -1,10 +1,10 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const _ = require("lodash");
+const _ = require('lodash');
 
-function createAccount(prefix) {
+function createAccount (prefix) {
   console.log(`Creating an account with prefix ${prefix}..`);
   let count = 0;
-  while(true) {
+  while (true) {
     const account = ainUtil.createAccount(); // { private_key, public_key, address }
     const address = account.address.substring(2);
     if (_.startsWith(address, prefix)) {
@@ -18,7 +18,7 @@ function createAccount(prefix) {
   }
 }
 
-function createAccounts(num, isPrefixed) {
+function createAccounts (num, isPrefixed) {
   const accounts = [];
   for (let i = 0; i < num; i++) {
     const prefix = isPrefixed ? _.padStart(i, 2, '0') + 'A' : '';
@@ -27,7 +27,7 @@ function createAccounts(num, isPrefixed) {
   console.log(`Generated accounts:\n${JSON.stringify(accounts, null, 2)}`);
 }
 
-async function processArguments() {
+async function processArguments () {
   if (process.argv.length !== 3 && process.argv.length !== 4) {
     usage();
   }
@@ -45,9 +45,9 @@ async function processArguments() {
   createAccounts(num, isPrefixed);
 }
 
-function usage() {
+function usage () {
   console.log('\nExample commandlines:\n  node generateAccounts.js 10 false\n')
   process.exit(0)
 }
 
-processArguments()
+processArguments();
