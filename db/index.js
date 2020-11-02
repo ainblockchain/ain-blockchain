@@ -1,5 +1,4 @@
-/* eslint no-new-func: "off" */
-const logger = require('../logger');
+const logger = require('../logger')('DATABASE');
 const {
   ReadDbOperations,
   WriteDbOperations,

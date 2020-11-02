@@ -2,7 +2,7 @@ const stringify = require('fast-json-stable-stringify');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger');
+const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const DB = require('../db');
@@ -18,8 +18,6 @@ const {
   ProofProperties,
 } = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
-
-const LOG_PREFIX = 'BLOCK';
 
 class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
@@ -114,20 +112,18 @@ class Block {
 
   static validateHashes(block) {
     if (block.hash !== Block.hash(block)) {
-      logger.error(`[${LOG_PREFIX}] Block hash is incorrect for block ${block.hash}`);
+      logger.error(`Block hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
-      logger.error(`[${LOG_PREFIX}] Transactions or transactions_hash is incorrect for block` +
-          `${block.hash}`);
+      logger.error(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
-      logger.error(`[${LOG_PREFIX}] Last votes or last_votes_hash is incorrect for block` +
-          `${block.hash}`);
+      logger.error(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
     }
-    logger.info(`[${LOG_PREFIX}] Hash check successfully done`);
+    logger.info(`Hash check successfully done`);
     return true;
   }
 
@@ -144,16 +140,16 @@ class Block {
         nonceTracker[transaction.address] = transaction.nonce;
         continue;
       }
-      if (transaction.nonce !== nonceTracker[transaction.address] + 1) {
-        logger.error(`[${LOG_PREFIX}] Invalid noncing for ${transaction.address} ` +
-          `Expected ${nonceTracker[transaction.address] + 1} ` +
-          `Received ${transaction.nonce}`);
+      if (transaction.nonce != nonceTracker[transaction.address] + 1) {
+        logger.error(`Invalid noncing for ${transaction.address} ` +
+            `Expected ${nonceTracker[transaction.address] + 1} ` +
+            `Received ${transaction.nonce}`);
         return false;
       }
       nonceTracker[transaction.address] = transaction.nonce;
     }
 
-    logger.info(`[${LOG_PREFIX}] Valid block of number ${block.number}`);
+    logger.info(`Valid block of number ${block.number}`);
     return true;
   }
 
@@ -252,8 +248,8 @@ class Block {
     for (const tx of genesisTransactions) {
       const res = tempGenesisState.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
-        logger.error(`[${LOG_PREFIX}] Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
-            `\nRESULT: ${JSON.stringify(res)}`);
+        logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
+            `\nRESULT: ${JSON.stringify(res)}`)
         return null;
       }
     }

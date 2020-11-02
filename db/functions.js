@@ -1,4 +1,4 @@
-const logger = require('../logger');
+const logger = require('../logger')('FUNCTIONS');
 const axios = require('axios');
 const _ = require('lodash');
 const {
@@ -13,7 +13,7 @@ const {
   ShardingProtocols,
   GenesisAccounts,
   AccountProperties,
-  TokenExchangeSchemes
+  TokenExchangeSchemes,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const { sendSignedTx, signAndSendTx } = require('../server/util');

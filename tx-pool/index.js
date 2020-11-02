@@ -1,5 +1,4 @@
-/* eslint guard-for-in: "off" */
-const logger = require('../logger');
+const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {
   TRANSACTION_POOL_TIME_OUT_MS,
