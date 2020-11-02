@@ -546,11 +546,10 @@ class DB {
           case WriteDbOperations.SET:
             resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
             break;
-          default: {
+          default:
             const message = `Invalid operation type: ${operation.type}`;
             resultList.push({ code: 2, error_message: message });
             logger.info(message);
-          }
         }
       }
     });
