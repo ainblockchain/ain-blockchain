@@ -4,13 +4,10 @@ const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
   LIGHTWEIGHT,
-  PORT,
-  PredefinedDbPaths,
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
   TransactionStatus,
-  FunctionResultCode,
   WriteDbOperations,
   AccountProperties,
 } = require('../constants');
@@ -21,7 +18,7 @@ const Transaction = require('./transaction');
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
-  constructor(node) {
+  constructor (node) {
     this.node = node;
     // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
     this.transactions = {};
@@ -35,7 +32,7 @@ class TransactionPool {
     this.isChecking = false;
   }
 
-  addTransaction(tx) {
+  addTransaction (tx) {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
     // (closer to the communication layers where the node first receives transactions)
@@ -60,37 +57,37 @@ class TransactionPool {
       finalized_at: -1,
     };
     if (tx.nonce >= 0 &&
-        (!(tx.address in this.pendingNonceTracker) ||
-            tx.nonce > this.pendingNonceTracker[tx.address])) {
+      (!(tx.address in this.pendingNonceTracker) ||
+        tx.nonce > this.pendingNonceTracker[tx.address])) {
       this.pendingNonceTracker[tx.address] = tx.nonce;
     }
     logger.debug(`ADDING: ${JSON.stringify(tx)}`);
     return true;
   }
 
-  isTimedOut(txTimestamp, lastBlockTimestamp, timeout) {
+  isTimedOut (txTimestamp, lastBlockTimestamp, timeout) {
     if (lastBlockTimestamp < 0) {
       return false;
     }
     return lastBlockTimestamp >= txTimestamp + timeout;
   }
 
-  isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
+  isTimedOutFromPool (txTimestamp, lastBlockTimestamp) {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_POOL_TIME_OUT_MS);
   }
 
-  isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
+  isTimedOutFromTracker (txTimestamp, lastBlockTimestamp) {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIME_OUT_MS);
   }
 
-  isNotEligibleTransaction(tx) {
+  isNotEligibleTransaction (tx) {
     return ((tx.address in this.transactions) &&
-        (this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined)) ||
-        (tx.nonce >= 0 && tx.nonce <= this.committedNonceTracker[tx.address]) ||
-        (tx.nonce < 0 && tx.hash in this.transactionTracker);
+      (this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined)) ||
+      (tx.nonce >= 0 && tx.nonce <= this.committedNonceTracker[tx.address]) ||
+      (tx.nonce < 0 && tx.hash in this.transactionTracker);
   }
 
-  getValidTransactions(excludeBlockList) {
+  getValidTransactions (excludeBlockList) {
     let excludeTransactions = [];
     if (excludeBlockList && excludeBlockList.length) {
       excludeBlockList.forEach((block) => {
@@ -98,30 +95,30 @@ class TransactionPool {
         excludeTransactions = excludeTransactions.concat(block.transactions);
       })
     }
-    let unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
+    const unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
     // Transactions are first ordered by nonce in their individual lists by address
     for (const address in unvalidatedTransactions) {
       let tempFilteredTransactions = _.differenceWith(
-          unvalidatedTransactions[address],
-          excludeTransactions,
-          (a, b) => { return a.hash === b.hash; }
-        );
+        unvalidatedTransactions[address],
+        excludeTransactions,
+        (a, b) => { return a.hash === b.hash; }
+      );
       tempFilteredTransactions = tempFilteredTransactions.filter(tx => {
         const ref = _.get(tx, 'operation.ref');
-        const innerRef = tx.operation.op_list && tx.operation.op_list.length ?
-            tx.operation.op_list[0].ref : undefined;
+        const innerRef = tx.operation.op_list && tx.operation.op_list.length
+          ? tx.operation.op_list[0].ref : undefined;
         const type = _.get(tx, 'operation.type');
         return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
-            (ref && !ref.startsWith('/consensus/number')) || (innerRef && !innerRef.startsWith('/consensus/number'));
+          (ref && !ref.startsWith('/consensus/number')) || (innerRef && !innerRef.startsWith('/consensus/number'));
       });
       if (!tempFilteredTransactions.length) {
         delete unvalidatedTransactions[address];
       } else {
         unvalidatedTransactions[address] = tempFilteredTransactions;
         // Order by noncing if transactions are nonced, else by timestamp
-        unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0) ?
-              ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
-                  (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
+        unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0)
+          ? ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0))
+          : (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
       }
     }
     // Secondly transactions are combined and ordered by timestamp, while still remaining
@@ -134,7 +131,8 @@ class TransactionPool {
       const newList = [];
       let listToTakeValue;
       while (list1.length + list2.length > 0) {
-        if ((list2.length == 0 || (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))) {
+        if ((list2.length === 0 ||
+          (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))) {
           listToTakeValue = list1;
         } else {
           listToTakeValue = list2;
@@ -143,7 +141,7 @@ class TransactionPool {
           tempNonceTracker[listToTakeValue[0].address] = listToTakeValue[0].nonce;
           newList.push(listToTakeValue.shift());
         } else if (!(listToTakeValue[0].address in tempNonceTracker) &&
-            listToTakeValue[0].nonce === 0) {
+          listToTakeValue[0].nonce === 0) {
           tempNonceTracker[listToTakeValue[0].address] = 0;
           newList.push(listToTakeValue.shift());
         } else if (listToTakeValue[0].nonce < 0) {
@@ -158,10 +156,10 @@ class TransactionPool {
 
       orderedUnvalidatedTransactions.push(newList);
     }
-    return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0]: [];
+    return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0] : [];
   }
 
-  removeTimedOutTxsFromPool(blockTimestamp) {
+  removeTimedOutTxsFromPool (blockTimestamp) {
     // Get timed-out transactions.
     const timedOutTxs = new Set();
     for (const address in this.transactions) {
@@ -180,7 +178,7 @@ class TransactionPool {
     return timedOutTxs.size > 0;
   }
 
-  removeTimedOutTxsFromTracker(blockTimestamp) {
+  removeTimedOutTxsFromTracker (blockTimestamp) {
     // Remove transactions from transactionTracker.
     let removed = false;
     for (const hash in this.transactionTracker) {
@@ -193,7 +191,7 @@ class TransactionPool {
     return removed;
   }
 
-  removeInvalidTxsFromPool(txs) {
+  removeInvalidTxsFromPool (txs) {
     const addrToTxSet = {};
     txs.forEach(tx => {
       const { address, hash } = tx;
@@ -216,7 +214,7 @@ class TransactionPool {
     }
   }
 
-  cleanUpForNewBlock(block) {
+  cleanUpForNewBlock (block) {
     const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
@@ -271,27 +269,27 @@ class TransactionPool {
     }
   }
 
-  updateNonceTrackers(transactions) {
+  updateNonceTrackers (transactions) {
     transactions.forEach((tx) => {
       if (tx.nonce >= 0) {
         if (this.committedNonceTracker[tx.address] === undefined ||
-            this.committedNonceTracker[tx.address] < tx.nonce) {
+          this.committedNonceTracker[tx.address] < tx.nonce) {
           this.committedNonceTracker[tx.address] = tx.nonce;
         }
         if (this.pendingNonceTracker[tx.address] === undefined ||
-            this.pendingNonceTracker[tx.address] < tx.nonce) {
+          this.pendingNonceTracker[tx.address] < tx.nonce) {
           this.pendingNonceTracker[tx.address] = tx.nonce;
         }
       }
     });
   }
 
-  rebuildPendingNonceTracker() {
+  rebuildPendingNonceTracker () {
     const newNonceTracker = JSON.parse(JSON.stringify(this.committedNonceTracker));
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
         if (tx.nonce >= 0 &&
-            (!(tx.address in newNonceTracker) || tx.nonce > newNonceTracker[tx.address])) {
+          (!(tx.address in newNonceTracker) || tx.nonce > newNonceTracker[tx.address])) {
           newNonceTracker[tx.address] = tx.nonce;
         }
       });
@@ -299,7 +297,7 @@ class TransactionPool {
     this.pendingNonceTracker = newNonceTracker;
   }
 
-  getPoolSize() {
+  getPoolSize () {
     let size = 0;
     for (const address in this.transactions) {
       size += this.transactions[address].length;
@@ -307,10 +305,10 @@ class TransactionPool {
     return size;
   }
 
-  addRemoteTransaction(txHash, action) {
+  addRemoteTransaction (txHash, action) {
     if (!action.ref || !action.valueFunction) {
       logger.debug(
-          `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
+        `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
       return;
     }
     const trackingInfo = {
@@ -318,31 +316,30 @@ class TransactionPool {
       action,
     };
     logger.info(
-        `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
+      `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
     this.remoteTransactionTracker[txHash] = trackingInfo;
   }
 
-  checkRemoteTransactions() {
+  checkRemoteTransactions () {
     if (this.isChecking) {
       return;
     }
     this.isChecking = true;
     const tasks = [];
-    for (let txHash in this.remoteTransactionTracker) {
+    for (const txHash in this.remoteTransactionTracker) {
       tasks.push(sendGetRequest(
         parentChainEndpoint,
         'ain_getTransactionByHash',
         { hash: txHash }
-      )
-      .then(resp => {
+      ).then(resp => {
         const trackingInfo = this.remoteTransactionTracker[txHash];
         const result = _.get(resp, 'data.result.result', null);
         logger.info(
-            `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
-            `with result: ${JSON.stringify(result, null, 2)}`);
+          `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
+          `with result: ${JSON.stringify(result, null, 2)}`);
         if (result && (result.is_finalized ||
-            result.status === TransactionStatus.FAIL_STATUS ||
-            result.status === TransactionStatus.TIMEOUT_STATUS)) {
+          result.status === TransactionStatus.FAIL_STATUS ||
+          result.status === TransactionStatus.TIMEOUT_STATUS)) {
           this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
@@ -355,7 +352,7 @@ class TransactionPool {
       });
   }
 
-  doAction(action, success) {
+  doAction (action, success) {
     const triggerTx = action.transaction;
     let value = null;
     try {

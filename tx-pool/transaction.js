@@ -5,7 +5,7 @@ const ChainUtil = require('../chain-util');
 
 // TODO(seo): Remove 'txWithSig.transaction ?' use cases.
 class Transaction {
-  constructor(txWithSig) {
+  constructor (txWithSig) {
     this.signature = txWithSig.signature;
 
     const transaction = txWithSig.transaction ? txWithSig.transaction : txWithSig;
@@ -23,22 +23,22 @@ class Transaction {
     Object.assign(this, sanitizedTxData);
     this.hash = '0x' + ainUtil.hashTransaction(sanitizedTxData).toString('hex');
     // Workaround for skip_verif with custom address
-    this.address = txData.address !== undefined ? txData.address :
-        Transaction.getAddress(this.hash.slice(2), this.signature);
+    this.address = txData.address !== undefined
+      ? txData.address : Transaction.getAddress(this.hash.slice(2), this.signature);
 
     logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
   }
 
-  static newTransaction(privateKey, txData) {
+  static newTransaction (privateKey, txData) {
     const transaction = JSON.parse(JSON.stringify(txData));
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address
-    const signature = transaction.address !== undefined ? '' :
-        ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
+    const signature = transaction.address !== undefined
+      ? '' : ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
     return new Transaction({ signature, transaction });
   }
 
-  toString() {
+  toString () {
     // TODO (lia): change JSON.stringify to 'fast-json-stable-stringify' or add
     // an utility function to ain-util.
     return `hash:       ${this.hash},
@@ -46,37 +46,37 @@ class Transaction {
             timestamp:  ${this.timestamp},
             operation:  ${JSON.stringify(this.operation)},
             address:    ${this.address},
-            ${this.parent_tx_hash !== undefined ? 'parent_tx_hash: '+this.parent_tx_hash : ''}
+            ${this.parent_tx_hash !== undefined ? 'parent_tx_hash: ' + this.parent_tx_hash : ''}
         `;
   }
 
   /**
    * Gets address from hash and signature.
    */
-  static getAddress(hash, signature) {
+  static getAddress (hash, signature) {
     const sigBuffer = ainUtil.toBuffer(signature);
     const len = sigBuffer.length;
     const lenHash = len - 65;
     const { r, s, v } = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
     const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
     return ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-        ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+      ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
   }
 
   /**
    * Returns the data object used for signing the transaction.
    */
-  get signingData() {
+  get signingData () {
     return Object.assign(
-        {operation: this.operation, nonce: this.nonce, timestamp: this.timestamp},
-        this.parent_tx_hash !== undefined ? {parent_tx_hash: this.parent_tx_hash} : {}
+      { operation: this.operation, nonce: this.nonce, timestamp: this.timestamp },
+      this.parent_tx_hash !== undefined ? { parent_tx_hash: this.parent_tx_hash } : {}
     );
   }
 
   /**
    * Sanitize SET operation.
    */
-  static sanitizeSetOperation(op) {
+  static sanitizeSetOperation (op) {
     const sanitizedOpList = []
     if (Array.isArray(op.op_list)) {
       op.op_list.forEach((op) => {
@@ -92,9 +92,9 @@ class Transaction {
   /**
    * Sanitize simple operation.
    */
-  static sanitizeSimpleOperation(op) {
+  static sanitizeSimpleOperation (op) {
     const sanitized = {}
-    switch(op.type) {
+    switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
       case WriteDbOperations.SET_RULE:
@@ -121,15 +121,15 @@ class Transaction {
   /**
    * Sanitize operation.
    */
-  static sanitizeOperation(op) {
-    return (op.type === WriteDbOperations.SET) ?
-        this.sanitizeSetOperation(op) : this.sanitizeSimpleOperation(op);
+  static sanitizeOperation (op) {
+    return (op.type === WriteDbOperations.SET)
+      ? this.sanitizeSetOperation(op) : this.sanitizeSimpleOperation(op);
   }
 
   /**
    * Sanitize transaction data.
    */
-  static sanitizeTxData(txData) {
+  static sanitizeTxData (txData) {
     const sanitized = {
       nonce: ChainUtil.numberOrZero(txData.nonce),
       timestamp: ChainUtil.numberOrZero(txData.timestamp),
@@ -141,7 +141,7 @@ class Transaction {
     return sanitized;
   }
 
-  static verifyTransaction(transaction) {
+  static verifyTransaction (transaction) {
     if (transaction.operation.type !== undefined && Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
       logger.info(`Invalid transaction type: ${transaction.operation.type}`);
       return false;
@@ -154,12 +154,12 @@ class Transaction {
     return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);
   }
 
-  static hasRequiredFields(transaction) {
+  static hasRequiredFields (transaction) {
     return transaction.timestamp !== undefined && transaction.nonce !== undefined &&
-        transaction.operation !== undefined;
+      transaction.operation !== undefined;
   }
 
-  static isBatchTransaction(transaction) {
+  static isBatchTransaction (transaction) {
     return Array.isArray(transaction.tx_list);
   }
 }
