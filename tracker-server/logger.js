@@ -26,9 +26,9 @@ function getTransports() {
       maxFiles: '14d',
       colorize: false,
       format: combine(
-        label({ label: prefix }),
-        timestamp(),
-        logFormat
+          label({ label: prefix }),
+          timestamp(),
+          logFormat
       )
     }),
     new (winstonDaily)({
@@ -41,9 +41,9 @@ function getTransports() {
       maxFiles: '180d',
       colorize: false,
       format: combine(
-        label({ label: prefix }),
-        timestamp(),
-        logFormat
+          label({ label: prefix }),
+          timestamp(),
+          logFormat
       )
     }),
     new (winston.transports.Console)({
@@ -53,9 +53,9 @@ function getTransports() {
       json: false,
       colorize: true,
       format: combine(
-        label({ label: prefix }),
-        timestamp(),
-        logFormat
+          label({ label: prefix }),
+          timestamp(),
+          logFormat
       )
     }),
   ];

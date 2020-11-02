@@ -111,7 +111,7 @@ class P2pServer {
     logger.info(`Disconnect from tracker server.`);
     this.disconnectFromTracker();
     logger.info(`Close server.`);
-    this.server.close(_ => { });
+    this.server.close((_) => { });
   }
 
   setIntervalForTrackerConnection() {
@@ -287,8 +287,7 @@ class P2pServer {
   getDiskUsage() {
     try {
       return disk.checkSync(DISK_USAGE_PATH);
-    }
-    catch (err) {
+    } catch (err) {
       logger.error(err);
       return null;
     }
@@ -376,7 +375,8 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION:
-            logger.debug(`Receiving a chain subsection: ${JSON.stringify(data.chainSubsection, null, 2)}`);
+            logger.debug(`Receiving a chain subsection: ` +
+                `${JSON.stringify(data.chainSubsection, null, 2)}`);
             if (data.number <= this.node.bc.lastBlockNumber()) {
               if (this.consensus.status === ConsensusStatus.STARTING) {
                 // XXX(minsu): need to be investigated
@@ -492,7 +492,7 @@ class P2pServer {
       }
     });
 
-    socket.on('pong', _ => {
+    socket.on('pong', (_) => {
       logger.info(`peer(${address}) is alive.`);
     });
 

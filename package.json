@@ -25,7 +25,7 @@
     "test_sharding": "./node_modules/mocha/bin/mocha --timeout 160000 integration/sharding.test.js",
     "test_integration": "./node_modules/mocha/bin/mocha --timeout 160000 \"integration/**/*.test.js\"",
     "loadtest": "sh loadtest/load_tester.sh",
-    "lint": "eslint --ext js --fix -c .eslintrc.json ."
+    "lint": "eslint --ext js -c .eslintrc.json ."
   },
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.6",

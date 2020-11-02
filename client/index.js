@@ -16,7 +16,7 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const MAX_BLOCKS = 20;
 
 // NOTE(seo): This is very useful when the server dies without any logs.
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', function(err) {
   logger.error(err);
 });
 

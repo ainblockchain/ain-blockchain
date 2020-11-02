@@ -60,7 +60,7 @@ class BlockPool {
 
   updateLongestNotarizedChains() {
     const LOG_HEADER = 'updateLongestNotarizedChains';
-    const currentLongest = this.longestNotarizedChainTips.length ? 
+    const currentLongest = this.longestNotarizedChainTips.length ?
         get(this.hashToBlockInfo[this.longestNotarizedChainTips[0]], 'block.number')
         : this.node.bc.lastBlockNumber();
     if (currentLongest == undefined) {
@@ -294,7 +294,7 @@ class BlockPool {
     if (!this.hashToBlockInfo[blockHash].votes) {
       this.hashToBlockInfo[blockHash].votes = [];
     }
-    if (this.hashToBlockInfo[blockHash].votes.filter(v => v.hash === voteTx.hash).length) {
+    if (this.hashToBlockInfo[blockHash].votes.filter((v) => v.hash === voteTx.hash).length) {
       logger.info(`[${LOG_HEADER}] we've already seen this vote`);
       return;
     }
@@ -340,7 +340,9 @@ class BlockPool {
       logger.info(`[${LOG_HEADER}] Prev block is unavailable`);
       return;
     }
-    const totalAtStake = Object.values(prevBlock.validators).reduce((a, b) => { return a + b; }, 0);
+    const totalAtStake = Object.values(prevBlock.validators).reduce((a, b) => {
+      return a + b;
+    }, 0);
     if (currentBlockInfo.tallied &&
         currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
       logger.info(`[${LOG_HEADER}] block ${currentBlockInfo.block.hash} is notarized!`);
