@@ -60,7 +60,7 @@ class Transaction {
     const { r, s, v } = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
     const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
     return ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-      ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+        ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
   }
 
   /**
@@ -68,7 +68,7 @@ class Transaction {
    */
   get signingData() {
     return Object.assign(
-      { operation: this.operation, nonce: this.nonce, timestamp: this.timestamp },
+        { operation: this.operation, nonce: this.nonce, timestamp: this.timestamp },
       this.parent_tx_hash !== undefined ? { parent_tx_hash: this.parent_tx_hash } : {}
     );
   }

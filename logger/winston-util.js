@@ -46,10 +46,10 @@ const getWinstonConsoleTransport = () => {
     json: false,
     colorize: true,
     format: combine(
-      colorize(),
-      label({ label: prefix }),
-      timestamp(),
-      logFormat
+        colorize(),
+        label({ label: prefix }),
+        timestamp(),
+        logFormat
     ),
   });
 };
@@ -65,9 +65,9 @@ const getWinstonDailyDebugFileTransport = () => {
     maxFiles: '14d',
     colorize: false,
     format: combine(
-      label({ label: prefix }),
-      timestamp(),
-      logFormat
+        label({ label: prefix }),
+        timestamp(),
+        logFormat
     ),
   });
 };
@@ -83,9 +83,9 @@ const getWinstonDailyErrorFileTransport = () => {
     maxFiles: '180d',
     colorize: false,
     format: combine(
-      label({ label: prefix }),
-      timestamp(),
-      logFormat
+        label({ label: prefix }),
+        timestamp(),
+        logFormat
     )
   });
 };

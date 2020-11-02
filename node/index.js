@@ -28,7 +28,7 @@ class BlockchainNode {
     this.isShardReporter =
       isShardChain &&
       ainUtil.areSameAddresses(
-        GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+          GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
     this.urlInternal = null;
@@ -51,7 +51,7 @@ class BlockchainNode {
     this.urlInternal = BlockchainNode.getNodeUrl(ipAddrInternal);
     this.urlExternal = BlockchainNode.getNodeUrl(ipAddrExternal);
     logger.info(
-      `[${NODE_PREFIX}] Set Node URLs to '${this.urlInternal}' (internal), ` +
+        `[${NODE_PREFIX}] Set Node URLs to '${this.urlInternal}' (internal), ` +
       `'${this.urlExternal}' (external)`);
   }
 
@@ -78,7 +78,7 @@ class BlockchainNode {
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
       for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
         if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
-          this.account.address) && this.bc.chain[i].transactions[j].nonce > -1) {
+            this.account.address) && this.bc.chain[i].transactions[j].nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
           nonce = this.bc.chain[i].transactions[j].nonce + 1;
           break;
@@ -96,15 +96,15 @@ class BlockchainNode {
   getSharding() {
     const shardingInfo = {};
     const shards = this.db.getValue(ChainUtil.formatPath(
-      [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
+        [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
     for (const encodedPath in shards) {
       const shardPath = ainUtil.decode(encodedPath);
       shardingInfo[encodedPath] = {
         [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
-          shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+            shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
         [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
-          shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
-          ShardingProperties.LATEST)),
+            shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+            ShardingProperties.LATEST)),
       };
     }
     return shardingInfo;

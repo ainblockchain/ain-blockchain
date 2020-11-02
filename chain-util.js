@@ -179,7 +179,7 @@ class ChainUtil {
 
   static transactionFailed(response) {
     if (Array.isArray(response)) {
-      response.forEach(res => {
+      response.forEach((res) => {
         if (ChainUtil.checkForTransactionErrorCode(res)) {
           return true;
         }

@@ -86,8 +86,8 @@ class DB {
   // For testing purpose only.
   setShardingForTesting(sharding) {
     this.setValuesForTesting(
-      ChainUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG]),
-      sharding);
+        ChainUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG]),
+        sharding);
     this.setShardingPath(sharding[ShardingProperties.SHARDING_PATH]);
   }
 
@@ -249,9 +249,9 @@ class DB {
     let proof = rootProof;
     for (const label of parsedPath) {
       if (node.hasChild(label)) {
-        node.getChildLabels().forEach(label => {
+        node.getChildLabels().forEach((label) => {
           Object.assign(proof,
-            { [label]: { [ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash() } });
+              { [label]: { [ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash() } });
         });
         proof = proof[label];
         node = node.getChild(label);
@@ -334,7 +334,7 @@ class DB {
         resultList.push(this.matchOwner(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
         resultList.push(
-          this.evalRule(op.ref, op.value, op.address, op.timestamp || Date.now(), op.is_global));
+            this.evalRule(op.ref, op.value, op.address, op.timestamp || Date.now(), op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         resultList.push(this.evalOwner(op.ref, op.permission, op.address, op.is_global));
       }
@@ -657,7 +657,7 @@ class DB {
     const newData =
       this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
     return !!this.evalRuleString(
-      matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
+        matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
   }
 
   getPermissionForRule(parsedRulePath, address) {
@@ -668,17 +668,17 @@ class DB {
   getPermissionForFunction(parsedFuncPath, address) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
     return this.checkPermission(
-      matched.closestOwner.config, address, OwnerProperties.WRITE_FUNCTION);
+        matched.closestOwner.config, address, OwnerProperties.WRITE_FUNCTION);
   }
 
   getPermissionForOwner(parsedOwnerPath, address) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
     if (matched.closestOwner.path.length === parsedOwnerPath.length) {
       return this.checkPermission(
-        matched.closestOwner.config, address, OwnerProperties.WRITE_OWNER);
+          matched.closestOwner.config, address, OwnerProperties.WRITE_OWNER);
     } else {
       return this.checkPermission(
-        matched.closestOwner.config, address, OwnerProperties.BRANCH_OWNER);
+          matched.closestOwner.config, address, OwnerProperties.BRANCH_OWNER);
     }
   }
 
@@ -742,7 +742,7 @@ class DB {
 
   matchFunctionPath(parsedValuePath) {
     return this.matchFunctionPathRecursive(
-      parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
+        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
   }
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
@@ -817,7 +817,7 @@ class DB {
     const valuePath = (isGlobal === true)
       ? this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeFunctions =
-      matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry, false));
+      matched.subtreeFunctions.map((entry) => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(functionPath),
@@ -889,7 +889,7 @@ class DB {
 
   matchRulePath(parsedValuePath) {
     return this.matchRulePathRecursive(
-      parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.RULES_ROOT));
+        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.RULES_ROOT));
   }
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
@@ -950,7 +950,7 @@ class DB {
       ? this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
     const valuePath = (isGlobal === true)
       ? this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
-    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry, false));
+    const subtreeRules = matched.subtreeRules.map((entry) => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(rulePath),
@@ -965,8 +965,8 @@ class DB {
   // XXX(minsu): need to be investigated. Using new Function() is not recommended.
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-      'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
-      ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
+        'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
+        ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
   }
 
   evalRuleString(ruleString, pathVars, data, newData, address, timestamp) {
@@ -977,9 +977,9 @@ class DB {
     }
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
-      this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-      this.evalRule.bind(this), this.evalOwner.bind(this),
-      new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+        this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
+        this.evalRule.bind(this), this.evalOwner.bind(this),
+        new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
   }
 
   lastBlockNumber() {
@@ -1016,7 +1016,7 @@ class DB {
 
   matchOwnerPath(parsedRefPath) {
     return this.matchOwnerPathRecursive(
-      parsedRefPath, 0, this.stateTree.getChild(PredefinedDbPaths.OWNERS_ROOT));
+        parsedRefPath, 0, this.stateTree.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
   matchOwnerForParsedPath(parsedRefPath) {

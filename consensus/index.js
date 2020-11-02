@@ -275,7 +275,7 @@ class Consensus {
     if (lastBlockInfo && lastBlockInfo.proposal) {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
-    lastVotes.forEach(voteTx => {
+    lastVotes.forEach((voteTx) => {
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
         logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] last vote: success`);
       } else {
@@ -283,7 +283,7 @@ class Consensus {
       }
     })
 
-    transactions.forEach(tx => {
+    transactions.forEach((tx) => {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Checking tx ${JSON.stringify(tx, null, 2)}`);
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
         logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] tx: success`);
@@ -302,11 +302,13 @@ class Consensus {
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastBlock.validators : this.getWhitelist();
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
-    const totalAtStake = Object.values(validators).reduce(function (a, b) { return a + b; }, 0);
+    const totalAtStake = Object.values(validators).reduce(function (a, b) {
+      return a + b;
+    }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempState.getProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-      blockNumber, this.state.epoch, stateProofHash, myAddr,
-      validators);
+        blockNumber, this.state.epoch, stateProofHash, myAddr,
+        validators);
 
     let proposalTx;
     const txOps = {
@@ -399,9 +401,13 @@ class Consensus {
     const validators = prevBlock.validators;
     // check that the transactions from block #1 amount to +2/3 deposits of initially whitelisted validators
     if (number === 1) {
-      const majority = ConsensusConsts.MAJORITY * Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+      const majority = ConsensusConsts.MAJORITY * Object.values(validators).reduce((a, b) => {
+        return a + b;
+      }, 0);
       const depositTxs = Consensus.filterDepositTxs(proposalBlock.transactions);
-      const depositSum = depositTxs.reduce((a, b) => { return a + b.operation.value; }, 0);
+      const depositSum = depositTxs.reduce((a, b) => {
+        return a + b.operation.value;
+      }, 0);
       if (depositSum < majority) {
         logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] We don't have enough deposits yet`)
         this.blockPool.addSeenBlock(proposalBlock, proposalTx);
@@ -445,7 +451,7 @@ class Consensus {
         }
       }
       tempState.setDbToSnapshot(prevState);
-      proposalBlock.last_votes.forEach(voteTx => {
+      proposalBlock.last_votes.forEach((voteTx) => {
         if (voteTx.hash === prevBlockProposal.hash) return;
         if (!Consensus.isValidConsensusTx(voteTx) ||
           ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
@@ -641,7 +647,7 @@ class Consensus {
     const LOG_SUFFIX = 'catchUp';
     if (!blockList || !blockList.length) return;
     let lastVerifiedBlock;
-    blockList.forEach(blockInfo => {
+    blockList.forEach((blockInfo) => {
       logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] Adding notarized chain's block: ${JSON.stringify(blockInfo, null, 2)}`);
       const lastNotarizedBlock = this.getLastNotarizedBlock();
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Current lastNotarizedBlock: ${lastNotarizedBlock.number} / ${lastNotarizedBlock.epoch}`);
@@ -650,7 +656,7 @@ class Consensus {
       }
       if (this.checkProposal(blockInfo.block, blockInfo.proposal) || this.blockPool.hasSeenBlock(blockInfo.block)) {
         if (blockInfo.votes) {
-          blockInfo.votes.forEach(vote => {
+          blockInfo.votes.forEach((vote) => {
             this.blockPool.addSeenVote(vote);
           });
         }
@@ -678,7 +684,7 @@ class Consensus {
     const LOG_SUFFIX = 'getLastNotarizedBlock';
     let candidate = this.node.bc.lastBlock();
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] longestNotarizedChainTips: ${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)}`);
-    this.blockPool.longestNotarizedChainTips.forEach(chainTip => {
+    this.blockPool.longestNotarizedChainTips.forEach((chainTip) => {
       const block = _.get(this.blockPool.hashToBlockInfo[chainTip], 'block');
       if (!block) return;
       if (block.epoch > candidate.epoch) candidate = block;
@@ -691,7 +697,7 @@ class Consensus {
     if (!this.blockPool) {
       return res;
     }
-    this.blockPool.longestNotarizedChainTips.forEach(chainTip => {
+    this.blockPool.longestNotarizedChainTips.forEach((chainTip) => {
       const chain = this.blockPool.getExtendingChain(chainTip, true);
       res = _.unionWith(res, chain, (a, b) => _.get(a, 'block.hash') === _.get(b, 'block.hash'));
     });
@@ -741,7 +747,7 @@ class Consensus {
     }
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] current epoch: ${this.state.epoch}\nblock hash: ${blockHash}\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`);
     const validators = {};
-    blockInfo.votes.forEach(vote => {
+    blockInfo.votes.forEach((vote) => {
       validators[vote.address] = _.get(vote, 'operation.value.stake');
     });
 
@@ -774,7 +780,7 @@ class Consensus {
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     if (!blockInfo || !blockInfo.votes) return false;
     const myAddr = this.node.account.address;
-    return blockInfo.votes.filter(vote => vote.address === myAddr).length > 0;
+    return blockInfo.votes.filter((vote) => vote.address === myAddr).length > 0;
   }
 
   stake(amount) {
@@ -864,9 +870,9 @@ class Consensus {
         };
         // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
         await signAndSendTx(
-          parentChainEndpoint,
-          tx,
-          Buffer.from(this.node.account.private_key, 'hex')
+            parentChainEndpoint,
+            tx,
+            Buffer.from(this.node.account.private_key, 'hex')
         );
       }
     } catch (e) {
@@ -877,13 +883,13 @@ class Consensus {
 
   async getLastReportedBlockNumber() {
     const resp = await sendGetRequest(
-      parentChainEndpoint,
-      'ain_get',
-      {
-        type: ReadDbOperations.GET_VALUE,
-        ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+        parentChainEndpoint,
+        'ain_get',
+        {
+          type: ReadDbOperations.GET_VALUE,
+          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
           `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
-      }
+        }
     );
     return _.get(resp, 'data.result.result', null);
   }
@@ -926,9 +932,9 @@ class Consensus {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
         hashToState: Array.from(this.blockPool.hashToState.keys()),
         hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
-          .reduce((acc, curr) => {
-            return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
-          }, {}),
+            .reduce((acc, curr) => {
+              return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
+            }, {}),
         epochToBlock: Object.keys(this.blockPool.epochToBlock),
         numberToBlock: Object.keys(this.blockPool.numberToBlock),
         longestNotarizedChainTips: this.blockPool.longestNotarizedChainTips
@@ -960,7 +966,9 @@ class Consensus {
     const LOG_SUFFIX = 'selectProposer';
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
     const alphabeticallyOrderedValidators = Object.keys(validators).sort();
-    const totalAtStake = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+    const totalAtStake = Object.values(validators).reduce((a, b) => {
+      return a + b;
+    }, 0);
     const randomNumGenerator = seedrandom(seed);
     const targetValue = randomNumGenerator() * totalAtStake;
     let cumulative = 0;
@@ -986,7 +994,7 @@ class Consensus {
       if (!opList || opList.length !== 2) {
         return false;
       }
-      opList.forEach(op => {
+      opList.forEach((op) => {
         if (!op.ref.startsWith(consensusTxPrefix)) return false;
       })
       return true;

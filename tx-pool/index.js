@@ -99,11 +99,13 @@ class TransactionPool {
     // Transactions are first ordered by nonce in their individual lists by address
     for (const address in unvalidatedTransactions) {
       let tempFilteredTransactions = _.differenceWith(
-        unvalidatedTransactions[address],
-        excludeTransactions,
-        (a, b) => { return a.hash === b.hash; }
+          unvalidatedTransactions[address],
+          excludeTransactions,
+          (a, b) => {
+            return a.hash === b.hash;
+          }
       );
-      tempFilteredTransactions = tempFilteredTransactions.filter(tx => {
+      tempFilteredTransactions = tempFilteredTransactions.filter((tx) => {
         const ref = _.get(tx, 'operation.ref');
         const innerRef = tx.operation.op_list && tx.operation.op_list.length
           ? tx.operation.op_list[0].ref : undefined;
@@ -193,7 +195,7 @@ class TransactionPool {
 
   removeInvalidTxsFromPool(txs) {
     const addrToTxSet = {};
-    txs.forEach(tx => {
+    txs.forEach((tx) => {
       const { address, hash } = tx;
       if (!addrToTxSet[address]) {
         addrToTxSet[address] = new Set();
@@ -207,7 +209,7 @@ class TransactionPool {
     })
     for (const address in addrToTxSet) {
       if (this.transactions[address]) {
-        this.transactions[address] = this.transactions[address].filter(tx => {
+        this.transactions[address] = this.transactions[address].filter((tx) => {
           return !(addrToTxSet[address].has(tx.hash));
         })
       }
@@ -218,7 +220,7 @@ class TransactionPool {
     const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
-    block.last_votes.forEach(voteTx => {
+    block.last_votes.forEach((voteTx) => {
       // voting txs are loosely ordered.
       this.transactionTracker[voteTx.hash] = {
         status: TransactionStatus.BLOCK_STATUS,
@@ -308,7 +310,7 @@ class TransactionPool {
   addRemoteTransaction(txHash, action) {
     if (!action.ref || !action.valueFunction) {
       logger.debug(
-        `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
+          `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
       return;
     }
     const trackingInfo = {
@@ -316,7 +318,7 @@ class TransactionPool {
       action,
     };
     logger.info(
-      `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
+        `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
     this.remoteTransactionTracker[txHash] = trackingInfo;
   }
 
@@ -328,14 +330,14 @@ class TransactionPool {
     const tasks = [];
     for (const txHash in this.remoteTransactionTracker) {
       tasks.push(sendGetRequest(
-        parentChainEndpoint,
-        'ain_getTransactionByHash',
-        { hash: txHash }
-      ).then(resp => {
+          parentChainEndpoint,
+          'ain_getTransactionByHash',
+          { hash: txHash }
+      ).then((resp) => {
         const trackingInfo = this.remoteTransactionTracker[txHash];
         const result = _.get(resp, 'data.result.result', null);
         logger.info(
-          `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
+            `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
           `with result: ${JSON.stringify(result, null, 2)}`);
         if (result && (result.is_finalized ||
           result.status === TransactionStatus.FAIL_STATUS ||
@@ -347,9 +349,9 @@ class TransactionPool {
       }));
     }
     return Promise.all(tasks)
-      .then(() => {
-        this.isChecking = false;
-      });
+        .then(() => {
+          this.isChecking = false;
+        });
   }
 
   doAction(action, success) {
@@ -372,7 +374,7 @@ class TransactionPool {
       nonce: -1
     };
     const ownerPrivateKey = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const endpoint = `${this.node.urlInternal}/json-rpc`;
     signAndSendTx(endpoint, actionTx, keyBuffer);

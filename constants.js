@@ -339,7 +339,7 @@ function getGenesisSharding() {
   const config = getGenesisConfig('genesis_sharding.json');
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
     const ownerAddress = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const reporterAddress =
       GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
     ChainUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
@@ -362,15 +362,15 @@ function getGenesisValues() {
   const values = {};
   ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
   const ownerAddress = ChainUtil.getJsObject(
-    GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   ChainUtil.setJsObject(
-    values,
-    [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
-    GenesisToken[TokenProperties.TOTAL_SUPPLY]);
+      values,
+      [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
+      GenesisToken[TokenProperties.TOTAL_SUPPLY]);
   ChainUtil.setJsObject(
-    values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
+      values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   ChainUtil.setJsObject(
-    values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisWhitelist);
+      values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisWhitelist);
   return values;
 }
 
@@ -383,10 +383,10 @@ function getGenesisRules() {
   const rules = getGenesisConfig('genesis_rules.json', process.env.ADDITIONAL_RULES);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     ChainUtil.setJsObject(
-      rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
+        rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
   ChainUtil.setJsObject(
-    rules, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistRule());
+      rules, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistRule());
   return rules;
 }
 
@@ -394,11 +394,11 @@ function getGenesisOwners() {
   const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     ChainUtil.setJsObject(
-      owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
-      getShardingOwner());
+        owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
+        getShardingOwner());
   }
   ChainUtil.setJsObject(
-    owners, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistOwner());
+      owners, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistOwner());
   return owners;
 }
 

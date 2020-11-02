@@ -41,7 +41,9 @@ const PushId = {
         // will convert to int and lose the upper bits.
         now = Math.floor(now / 64);
       }
-      if (now !== 0) { throw new Error('We should have converted the entire timestamp.'); }
+      if (now !== 0) {
+        throw new Error('We should have converted the entire timestamp.');
+      }
       let id = timeStampChars.join('');
       if (!duplicateTime) {
         for (i = 0; i < 12; i++) {
@@ -59,7 +61,9 @@ const PushId = {
       for (i = 0; i < 12; i++) {
         id += ASCII_CHARS.charAt(lastRandChars[i]);
       }
-      if (id.length !== 20) { throw new Error('Length should be 20.'); }
+      if (id.length !== 20) {
+        throw new Error('Length should be 20.');
+      }
       return id;
     };
   })(),
@@ -75,7 +79,9 @@ const PushId = {
       for (let i = 0; i < 8; i++) {
         time = time * 64 + ASCII_CHARS.indexOf(data[i]);
       }
-      if (asDate) { return new Date(time); }
+      if (asDate) {
+        return new Date(time);
+      }
       return time;
     };
   })()

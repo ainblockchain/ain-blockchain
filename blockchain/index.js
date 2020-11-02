@@ -79,7 +79,7 @@ class Blockchain {
     const blockFileName =
       glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
     if (blockFileName === undefined) {
-      const found = this.chain.filter(block => block.hash === hash);
+      const found = this.chain.filter((block) => block.hash === hash);
       return found.length ? found[0] : null;
     } else {
       return Block.loadBlock(blockFileName);
@@ -96,7 +96,7 @@ class Blockchain {
     if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
     if (blockFileName === undefined || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
-      const found = this.chain.filter(block => block.number === number);
+      const found = this.chain.filter((block) => block.number === number);
       return found.length ? found[0] : null;
     } else {
       return Block.loadBlock(blockFileName);
@@ -293,7 +293,7 @@ class Blockchain {
 
     const firstBlock = Block.parse(chainSubSection[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
-    const overlap = lastBlockHash ? chainSubSection.filter(block => block.number === this.lastBlockNumber()) : null;
+    const overlap = lastBlockHash ? chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.
@@ -354,7 +354,7 @@ class Blockchain {
   getBlockFiles(from, to) {
     // Here we use (to - 1) so files can be queried like normal array index querying.
     return glob.sync(BlockFilePatterns.getBlockFilesInRange(
-      this._blockchainDir(), from, to)).sort(naturalSort());
+        this._blockchainDir(), from, to)).sort(naturalSort());
   }
 
   getChainSection(from, to) {

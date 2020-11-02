@@ -18,14 +18,14 @@ process.on('uncaughtException', function (err) {
   logger.error(err);
 });
 
-process.on('SIGINT', _ => {
+process.on('SIGINT', (_) => {
   logger.info('Stopping tracking server....');
   logger.info('Gracefully close websokets....');
   for (const ws of WS_LIST) {
     ws.close();
   }
   logger.info('Gracefully close websoket server....');
-  server.close(_ => {
+  server.close((_) => {
     process.exit(0);
   });
 });
@@ -306,16 +306,16 @@ app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
   res.status(200)
-    .set('Content-Type', 'text/plain')
-    .send('Welcome to AIN Blockchain Tracker')
-    .end();
+      .set('Content-Type', 'text/plain')
+      .send('Welcome to AIN Blockchain Tracker')
+      .end();
 });
 
 app.get('/peer_nodes', (req, res, next) => {
   res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({ result: PEER_NODES })
-    .end();
+      .set('Content-Type', 'application/json')
+      .send({ result: PEER_NODES })
+      .end();
 });
 
 const trackerServer = app.listen(PORT, () => {

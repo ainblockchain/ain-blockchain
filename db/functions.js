@@ -64,28 +64,28 @@ class Functions {
           const functionPath = matched.matchedFunction.path;
           const params = Functions.convertPathVars2Params(matched.pathVars);
           logger.info(
-            `  ==> Running native function '${functionConfig.function_id}' with\n` +
+              `  ==> Running native function '${functionConfig.function_id}' with\n` +
             `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
             `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
             `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
             `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
           // Execute the matched native function.
           nativeFunction(
-            value,
-            {
-              valuePath: parsedValuePath,
-              functionPath,
-              params,
-              timestamp,
-              currentTime,
-              transaction
-            });
+              value,
+              {
+                valuePath: parsedValuePath,
+                functionPath,
+                params,
+                timestamp,
+                currentTime,
+                transaction
+              });
         }
       } else if (functionConfig.function_type === FunctionTypes.REST) {
         if (functionConfig.event_listener &&
           functionConfig.event_listener in EventListenerWhitelist) {
           logger.info(
-            `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
+              `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
             `of '${functionConfig.event_listener}' ` +
             `with transaction: ${JSON.stringify(transaction, null, 2)}`)
           return axios.post(functionConfig.event_listener, {
@@ -119,10 +119,10 @@ class Functions {
     const resultPath = this._getTransferResultPath(from, to, key);
     if (this._transferInternal(fromBalancePath, toBalancePath, value)) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-        { code: FunctionResultCode.SUCCESS });
+          { code: FunctionResultCode.SUCCESS });
     } else {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-        { code: FunctionResultCode.INSUFFICIENT_BALANCE });
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 
@@ -135,11 +135,11 @@ class Functions {
     const resultPath = this._getDepositResultPath(service, user, depositId);
     const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
     this.db.writeDatabase(
-      this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
+        this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
     // TODO (lia): move this check to when we first receive the transaction
     if (timestamp > currentTime) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-        { code: FunctionResultCode.FAILURE });
+          { code: FunctionResultCode.FAILURE });
       return;
     }
     const userBalancePath = this._getBalancePath(user);
@@ -149,12 +149,12 @@ class Functions {
         DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       const expirationPath = this._getDepositExpirationPath(service, user);
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
-        Number(timestamp) + Number(lockup));
+          Number(timestamp) + Number(lockup));
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-        { code: FunctionResultCode.SUCCESS });
+          { code: FunctionResultCode.SUCCESS });
     } else {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-        { code: FunctionResultCode.INSUFFICIENT_BALANCE });
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 
@@ -169,21 +169,21 @@ class Functions {
     const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
     this.db.writeDatabase(
-      this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
+        this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
     if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
       const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
       if (expireAt <= currentTime) {
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.SUCCESS });
+            { code: FunctionResultCode.SUCCESS });
       } else {
         // Still in lock-up period.
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.IN_LOCKUP_PERIOD });
+            { code: FunctionResultCode.IN_LOCKUP_PERIOD });
       }
     } else {
       // Not enough deposit.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-        { code: FunctionResultCode.INSUFFICIENT_BALANCE });
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 
@@ -209,7 +209,7 @@ class Functions {
       return;
     }
     this.db.writeDatabase(
-      this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+        this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
   }
 
   getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
@@ -244,15 +244,15 @@ class Functions {
     }
     // Forward payload tx to parent chain
     sendSignedTx(parentChainEndpoint, payloadTx)
-      .then(result => {
-        if (!_.get(result, 'success', false) === true) {
+        .then((result) => {
+          if (!_.get(result, 'success', false) === true) {
+            logger.info(
+                `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+            return;
+          }
           logger.info(
-            `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
-          return;
-        }
-        logger.info(
-          `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
-      });
+              `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+        });
     const action = {
       ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
       valueFunction: (success) => !!success,
@@ -295,7 +295,7 @@ class Functions {
     }
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardingPath = this.db.shardingPath;
     const transferTx = {
@@ -374,7 +374,7 @@ class Functions {
     if (fromBalance < value) return false;
     const toBalance = this.db.getValue(toPath);
     this.db.writeDatabase(
-      this._getFullValuePath(ChainUtil.parsePath(fromPath)), fromBalance - value);
+        this._getFullValuePath(ChainUtil.parsePath(fromPath)), fromBalance - value);
     this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toPath)), toBalance + value);
     return true;
   }

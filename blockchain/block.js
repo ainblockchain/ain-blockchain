@@ -98,8 +98,8 @@ class Block {
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes,
-      blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
-      blockInfo.stateProofHash, blockInfo.proposer, blockInfo.validators);
+        blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
+        blockInfo.stateProofHash, blockInfo.proposer, blockInfo.validators);
   }
 
   static hasRequiredFields(block) {
@@ -229,9 +229,9 @@ class Block {
 
   static getGenesisBlockData(genesisTime) {
     const ownerAddress = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const ownerPrivateKey = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
 
     const firstTx = this.getDbSetupTransaction(genesisTime, keyBuffer);
@@ -257,7 +257,7 @@ class Block {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
     const ownerAddress = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
     const lastHash = '';
     const lastVotes = [];
@@ -268,7 +268,7 @@ class Block {
     const validators = GenesisWhitelist;
     const stateProofHash = Block.getGenesisStateProofHash();
     return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
-      stateProofHash, proposer, validators);
+        stateProofHash, proposer, validators);
   }
 }
 
