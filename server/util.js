@@ -13,7 +13,7 @@ const ChainUtil = require('../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
-async function sendTxAndWaitForFinalization(endpoint, tx, keyBuffer) {
+async function sendTxAndWaitForFinalization (endpoint, tx, keyBuffer) {
   const res = await signAndSendTx(endpoint, tx, keyBuffer);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
@@ -23,7 +23,7 @@ async function sendTxAndWaitForFinalization(endpoint, tx, keyBuffer) {
   }
 }
 
-function signTx(tx, keyBuffer) {
+function signTx (tx, keyBuffer) {
   const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
   const sigBuffer = ainUtil.toBuffer(sig);
   const lenHash = sigBuffer.length - 65;
@@ -38,29 +38,27 @@ function signTx(tx, keyBuffer) {
   };
 }
 
-async function sendSignedTx(endpoint, signedTxParams) {
+async function sendSignedTx (endpoint, signedTxParams) {
   return await axios.post(
     endpoint,
     {
-      method: "ain_sendSignedTransaction",
+      method: 'ain_sendSignedTransaction',
       params: signedTxParams,
-      jsonrpc: "2.0",
+      jsonrpc: '2.0',
       id: 0
     }
-  )
-  .then(resp => {
+  ).then(resp => {
     const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
     return { success };
-  })
-  .catch(err => {
+  }).catch(err => {
     logger.error(`Failed to send transaction: ${err}`);
     return { errMsg: err.message, success: false };
   });
 }
 
-async function signAndSendTx(endpoint, tx, keyBuffer) {
+async function signAndSendTx (endpoint, tx, keyBuffer) {
   const { txHash, signedTx } = signTx(tx, keyBuffer);
-  params = {
+  const params = {
     protoVer: CURRENT_PROTOCOL_VERSION,
     signature: signedTx.signature,
     transaction: signedTx.transaction,
@@ -69,20 +67,20 @@ async function signAndSendTx(endpoint, tx, keyBuffer) {
   return Object.assign(result, { txHash });
 }
 
-async function waitUntilTxFinalize(endpoint, txHash) {
+async function waitUntilTxFinalize (endpoint, txHash) {
   while (true) {
     const confirmed = await sendGetRequest(
       endpoint,
       'ain_getTransactionByHash',
       { hash: txHash }
     )
-    .then(resp => {
-      return (_.get(resp, 'data.result.result.is_finalized', false) === true);
-    })
-    .catch(err => {
-      logger.error(`Failed to confirm transaction: ${err}`);
-      return false;
-    });
+      .then(resp => {
+        return (_.get(resp, 'data.result.result.is_finalized', false) === true);
+      })
+      .catch(err => {
+        logger.error(`Failed to confirm transaction: ${err}`);
+        return false;
+      });
     if (confirmed) {
       return true;
     }
@@ -90,7 +88,7 @@ async function waitUntilTxFinalize(endpoint, txHash) {
   }
 }
 
-function sendGetRequest(endpoint, method, params) {
+function sendGetRequest (endpoint, method, params) {
   // NOTE(seo): .then() was used here to avoid some unexpected behavior or axios.post()
   //            (see https://github.com/ainblockchain/ain-blockchain/issues/101)
   return axios.post(
@@ -98,14 +96,12 @@ function sendGetRequest(endpoint, method, params) {
     {
       method,
       params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
-      jsonrpc: "2.0",
+      jsonrpc: '2.0',
       id: 0
     }
-  )
-  .then(resp => {
+  ).then(resp => {
     return resp;
-  })
-  .catch(err => {
+  }).catch(err => {
     logger.error(`Failed to send get request: ${err}`);
     return null;
   });
@@ -116,4 +112,4 @@ module.exports = {
   sendSignedTx,
   signAndSendTx,
   sendGetRequest
-}
+};
