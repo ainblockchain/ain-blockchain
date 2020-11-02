@@ -1,3 +1,4 @@
+/* eslint guard-for-in: "off" */
 const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {

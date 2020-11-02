@@ -10,17 +10,17 @@ const winstonLogger = new winston.createLogger({
 
 winston.addColors(getWinstonColors());
 
-const logger = function(prefix) {    
+const logger = function(prefix) {
   const prefixedLogger = {
-      error: function(text) {
-          winstonLogger.error(`[${prefix}] ${text}`)
-      },
-      info: function(text) {
-          winstonLogger.info(`[${prefix}] ${text}`)
-      },
-      debug: function(text) {
-          winstonLogger.debug(`[${prefix}] ${text}`)
-      }
+    error: function(text) {
+      winstonLogger.error(`[${prefix}] ${text}`)
+    },
+    info: function(text) {
+      winstonLogger.info(`[${prefix}] ${text}`)
+    },
+    debug: function(text) {
+      winstonLogger.debug(`[${prefix}] ${text}`)
+    }
   }
 
   return prefixedLogger

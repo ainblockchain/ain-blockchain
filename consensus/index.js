@@ -291,7 +291,7 @@ class Consensus {
       }
     })
 
-    transactions.forEach(tx => {
+    transactions.forEach((tx) => {
       logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
       if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
         logger.debug(`[${LOG_HEADER}] tx: success`);
@@ -646,7 +646,7 @@ class Consensus {
   // finalize up to second to the last block of that notarized chain.
   tryFinalize() {
     const LOG_HEADER = 'tryFinalize';
-    let finalizableChain = this.blockPool.getFinalizableChain();
+    const finalizableChain = this.blockPool.getFinalizableChain();
     logger.debug(`[${LOG_HEADER}] finalizableChain: ${JSON.stringify(finalizableChain, null, 2)}`);
     if (!finalizableChain || !finalizableChain.length) {
       logger.debug(`[${LOG_HEADER}] No notarized chain with 3 consecutive epochs yet`);
@@ -676,10 +676,10 @@ class Consensus {
     const LOG_HEADER = 'catchUp';
     if (!blockList || !blockList.length) return;
     let lastVerifiedBlock;
-    blockList.forEach(blockInfo => {
+    blockList.forEach((blockInfo) => {
       logger.debug(`[${LOG_HEADER}] Adding notarized chain's block: ` +
           `${JSON.stringify(blockInfo, null, 2)}`);
-      let lastNotarizedBlock = this.getLastNotarizedBlock();
+      const lastNotarizedBlock = this.getLastNotarizedBlock();
       logger.info(`[${LOG_HEADER}] Current lastNotarizedBlock: ` +
           `${lastNotarizedBlock.number} / ${lastNotarizedBlock.epoch}`);
       if (!blockInfo.block || !blockInfo.proposal ||
@@ -720,7 +720,7 @@ class Consensus {
     let candidate = this.node.bc.lastBlock();
     logger.debug(`[${LOG_HEADER}] longestNotarizedChainTips: ` +
         `${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)}`);
-    this.blockPool.longestNotarizedChainTips.forEach(chainTip => {
+    this.blockPool.longestNotarizedChainTips.forEach((chainTip) => {
       const block = _.get(this.blockPool.hashToBlockInfo[chainTip], 'block');
       if (!block) return;
       if (block.epoch > candidate.epoch) candidate = block;
