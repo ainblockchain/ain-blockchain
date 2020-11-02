@@ -19,7 +19,8 @@ async function sendTxAndWaitForFinalization(endpoint, tx, keyBuffer) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
   }
   if (!(await waitUntilTxFinalize(endpoint, _.get(res, 'txHash', null)))) {
-    throw Error('Transaction did not finalize in time. Try selecting a different parent_chain_poc.');
+    throw Error('Transaction did not finalize in time.' +
+        'Try selecting a different parent_chain_poc.');
   }
 }
 

@@ -39,8 +39,10 @@ const {
 const ChainUtil = require('../chain-util');
 const { sendTxAndWaitForFinalization } = require('./util');
 
-const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
-const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip';
+const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
+    '/network-interfaces/0/access-configs/0/external-ip';
+const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
+    '/network-interfaces/0/ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
@@ -168,7 +170,8 @@ class P2pServer {
                   return res.data;
                 })
                 .catch((err) => {
-                  logger.error(`[${P2P_PREFIX}] Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+                  logger.error(`[${P2P_PREFIX}] Failed to get ip address: ` +
+                      `${JSON.stringify(err, null, 2)}`);
                   process.exit(0);
                 });
           } else if (HOSTING_ENV === 'comcom') {
@@ -236,7 +239,8 @@ class P2pServer {
     });
 
     this.trackerWebSocket.on('close', (code) => {
-      logger.info(`\n[${P2P_PREFIX}] Disconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
+      logger.info(`\n[${P2P_PREFIX}] Disconnected from [TRACKER] ${TRACKER_WS_ADDR}` +
+          `with code: ${code}`);
       this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
@@ -357,7 +361,8 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.CONSENSUS:
-            logger.debug(`[${P2P_PREFIX}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a consensus message: ` +
+                `${JSON.stringify(data.message)}`);
             if (this.node.bc.syncedAfterStartup) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
@@ -365,7 +370,8 @@ class P2pServer {
             }
             break;
           case MessageTypes.TRANSACTION:
-            logger.debug(`[${P2P_PREFIX}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a transaction: ` +
+                `${JSON.stringify(data.transaction)}`);
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
               logger.debug(`[${P2P_PREFIX}] Already have the transaction in my tx tracker`);
               break;
@@ -376,12 +382,14 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION:
-            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection: ${JSON.stringify(data.chainSubsection, null, 2)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection: ` +
+                `${JSON.stringify(data.chainSubsection, null, 2)}`);
             if (data.number <= this.node.bc.lastBlockNumber()) {
               if (this.consensus.status === ConsensusStatus.STARTING) {
                 // XXX(minsu): need to be investigated
                 // ref: https://eslint.org/docs/rules/no-mixed-operators
-                if (!data.chainSubsection && !data.catchUpInfo || data.number === this.node.bc.lastBlockNumber()) {
+                if (!data.chainSubsection && !data.catchUpInfo ||
+                    data.number === this.node.bc.lastBlockNumber()) {
                   this.node.bc.syncedAfterStartup = true;
                   this.consensus.init();
                   if (this.consensus.isRunning()) {
@@ -427,7 +435,8 @@ class P2pServer {
               logger.info(`[${P2P_PREFIX}] Failed to merge incoming chain subsection.`);
               // FIXME: Could be that I'm on a wrong chain.
               if (data.number <= this.node.bc.lastBlockNumber()) {
-                logger.info(`[${P2P_PREFIX}] I am ahead(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
+                logger.info(`[${P2P_PREFIX}] I am ahead(${data.number} > ` +
+                    `${this.node.bc.lastBlockNumber()}).`);
                 if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init();
                   if (this.consensus.isRunning()) {
@@ -435,13 +444,15 @@ class P2pServer {
                   }
                 }
               } else {
-                logger.info(`[${P2P_PREFIX}] I am behind (${data.number} < ${this.node.bc.lastBlockNumber()}).`);
+                logger.info(`[${P2P_PREFIX}] I am behind (${data.number} < ` +
+                    `${this.node.bc.lastBlockNumber()}).`);
                 setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
               }
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION_REQUEST: {
-            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
+            logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: ` +
+                `${JSON.stringify(data.lastBlock)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -452,7 +463,9 @@ class P2pServer {
               data.lastBlock ? Block.parse(data.lastBlock) : null);
             if (chainSubsection) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
-              logger.debug(`Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)} along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
+              logger.debug(
+                  `Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)}` +
+                  `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
               this.sendChainSubsection(
                   socket,
                   chainSubsection,
@@ -730,7 +743,8 @@ class P2pServer {
     logger.info(`[${P2P_PREFIX}] setUpDbForSharding success`);
   }
 
-  // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
+  // TODO(minsu): Since the p2p network has not been built completely,
+  // it will be updated afterwards.
   heartbeat() {
     logger.info(`[${P2P_PREFIX}] Start heartbeat`);
     this.intervalHeartbeat = setInterval(() => {

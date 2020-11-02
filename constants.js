@@ -33,7 +33,8 @@ const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT
+    ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
 function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV === 'local') {

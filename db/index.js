@@ -472,7 +472,10 @@ class DB {
       return true;
     }
     if (!this.getPermissionForOwner(localPath, address)) {
-      return { code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}` };
+      return {
+        code: 4,
+        error_message: `No write_owner or branch_owner permission on: ${ownerPath}`
+      };
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
@@ -632,7 +635,8 @@ class DB {
       const res = this.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
         // FIXME: remove the failed transaction from tx pool?
-        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}\nresult: ${JSON.stringify(res)}`);
+        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}` +
+            `\nresult: ${JSON.stringify(res)}`);
         return false;
       }
     }
@@ -950,7 +954,8 @@ class DB {
       ? this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
     const valuePath = (isGlobal === true)
       ? this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
-    const subtreeRules = matched.subtreeRules.map((entry) => this.convertPathAndConfig(entry, false));
+    const subtreeRules = matched.subtreeRules.map((entry) =>
+      this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(rulePath),

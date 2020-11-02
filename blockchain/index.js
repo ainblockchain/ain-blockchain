@@ -154,11 +154,13 @@ class Blockchain {
       newBlock = Block.parse(newBlock);
     }
     if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
-      logger.error(`[blockchain.addNewBlockToChain] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
+      logger.error('[blockchain.addNewBlockToChain] Failed to execute last_votes of block' +
+          `${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     if (!this.backupDb.executeTransactionList(newBlock.transactions)) {
-      logger.error(`[blockchain.addNewBlockToChain] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
+      logger.error('[blockchain.addNewBlockToChain] Failed to execute transactions of block' +
+          `${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     this.chain.push(newBlock);
@@ -248,7 +250,8 @@ class Blockchain {
 
     if (blockFiles.length > 0 &&
       (!!(refBlock) && Block.loadBlock(blockFiles[0]).last_hash !== refBlock.hash)) {
-      logger.error(`[${LOG_PREFIX}] Invalid blockchain request. Requesters last block does not belong to this blockchain`);
+      logger.error(`[${LOG_PREFIX}] Invalid blockchain request.` +
+          'Requesters last block does not belong to this blockchain');
       return;
     }
 
@@ -278,7 +281,8 @@ class Blockchain {
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
-      logger.info(`[${LOG_PREFIX}] Received chain is of lower block number than current last block number`);
+      logger.info(`[${LOG_PREFIX}] Received chain is of lower block number than` +
+          'current last block number');
       return false;
     }
     if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {
@@ -293,7 +297,8 @@ class Blockchain {
 
     const firstBlock = Block.parse(chainSubSection[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
-    const overlap = lastBlockHash ? chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
+    const overlap = lastBlockHash
+        ? chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.

@@ -22,7 +22,8 @@ const BlockFilePatterns = require('./block-file-patterns');
 const LOG_PREFIX = 'BLOCK';
 
 class Block {
-  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, stateProofHash, proposer, validators) {
+  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
+      stateProofHash, proposer, validators) {
     this.last_votes = lastVotes;
     this.transactions = transactions;
     // Block's header
@@ -80,8 +81,10 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, epoch, stateProofHash, proposer, validators) {
-    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), stateProofHash, proposer, validators);
+  static createBlock(lastHash, lastVotes, transactions, number, epoch,
+      stateProofHash, proposer, validators) {
+    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(),
+        stateProofHash, proposer, validators);
   }
 
   static getFileName(block) {
@@ -115,11 +118,13 @@ class Block {
       return false;
     }
     if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
-      logger.error(`[${LOG_PREFIX}] Transactions or transactions_hash is incorrect for block ${block.hash}`);
+      logger.error(`[${LOG_PREFIX}] Transactions or transactions_hash is incorrect for block` +
+          `${block.hash}`);
       return false;
     }
     if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
-      logger.error(`[${LOG_PREFIX}] Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+      logger.error(`[${LOG_PREFIX}] Last votes or last_votes_hash is incorrect for block` +
+          `${block.hash}`);
       return false;
     }
     logger.info(`[${LOG_PREFIX}] Hash check successfully done`);
@@ -242,11 +247,13 @@ class Block {
 
   static getGenesisStateProofHash() {
     const tempGenesisState = new DB(null, null, false, -1);
-    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
+    const genesisTransactions = Block.getGenesisBlockData(
+        GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
       const res = tempGenesisState.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
-        logger.error(`[${LOG_PREFIX}] Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
+        logger.error(`[${LOG_PREFIX}] Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
+            `\nRESULT: ${JSON.stringify(res)}`);
         return null;
       }
     }
