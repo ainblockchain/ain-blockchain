@@ -18,11 +18,11 @@ class RequestManager {
     };
 
     return rp(options)
-        .then(function (parsedBody) {
+        .then(function(parsedBody) {
         // POST succeeded
           return parsedBody;
         })
-        .catch(function (err) {
+        .catch(function(err) {
         // POST failed
           console.log(err);
         });

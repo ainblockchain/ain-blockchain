@@ -14,7 +14,7 @@ const WS_LIST = [];
 const MASK = 'xxx';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', function(err) {
   logger.error(err);
 });
 

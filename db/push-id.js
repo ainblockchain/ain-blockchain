@@ -18,7 +18,7 @@ const PushId = {
    * Generate
    * Generates uid push identifier.
    */
-  generate: (function () {
+  generate: (function() {
     // Timestamp of last push, used to prevent local
     // collisions if you push twice in one ms.
     let lastPushTime = 0;
@@ -29,7 +29,7 @@ const PushId = {
     // in the event of a collision, we'll use those same
     // characters except "incremented" by one.
     const lastRandChars = [];
-    return function () {
+    return function() {
       let now = Date.now();
       const duplicateTime = (now === lastPushTime);
       lastPushTime = now;
@@ -72,8 +72,8 @@ const PushId = {
    * Timestamp
    * Gets timestamp from provided uid.
    */
-  timestamp: (function () {
-    return function (id, asDate) {
+  timestamp: (function() {
+    return function(id, asDate) {
       let time = 0;
       const data = id.substr(0, 8);
       for (let i = 0; i < 8; i++) {

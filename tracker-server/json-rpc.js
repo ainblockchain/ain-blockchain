@@ -9,7 +9,7 @@
  */
 module.exports = function getMethods(nodes) {
   return {
-    getNodeInfoList: function (args, done) {
+    getNodeInfoList: function(args, done) {
       const list = [];
       Object.keys(nodes).forEach((key) => {
         list.push(nodes[key].getNodeInfo());
@@ -17,7 +17,7 @@ module.exports = function getMethods(nodes) {
       done(null, list);
     },
 
-    getNodeAddressList: function (args, done) {
+    getNodeAddressList: function(args, done) {
       const list = [];
       Object.keys(nodes).forEach((key) => {
         list.push(nodes[key].address);
@@ -25,7 +25,7 @@ module.exports = function getMethods(nodes) {
       done(null, list);
     },
 
-    getNodeInfoByAddress: function (args, done) {
+    getNodeInfoByAddress: function(args, done) {
       let result = null;
       for (let i = 0; i < nodes.length; i++) {
         if (nodes[i].address === args[0]) {

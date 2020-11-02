@@ -87,7 +87,7 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
         jsonrpc: '2.0',
         id: 0
       })
-      .then(function (resp) {
+      .then(function(resp) {
         return _.get(resp, 'data.result.result', null);
       });
 }
