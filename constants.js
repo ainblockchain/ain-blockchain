@@ -8,8 +8,8 @@ const {
 const ChainUtil = require('./chain-util');
 
 const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
-const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
-    process.env.GENESIS_CONFIGS_DIR : null;
+const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR
+  ? process.env.GENESIS_CONFIGS_DIR : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
@@ -21,11 +21,11 @@ const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
 // of which value could be either 'local', 'default', or 'gcp'.
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
-const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
-    process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP
+  ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const COMCOM_HOST_INTERNAL_IP_MAP = {
-  'aincom1': '192.168.1.13',
-  'aincom2': '192.168.1.14',
+  aincom1: '192.168.1.13',
+  aincom2: '192.168.1.14',
 }
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
@@ -35,8 +35,8 @@ const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
 const LIGHTWEIGHT = process.env.LIGHTWEIGHT ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
-function getPortNumber(defaultValue, baseValue) {
-  if (HOSTING_ENV == 'local') {
+function getPortNumber (defaultValue, baseValue) {
+  if (HOSTING_ENV === 'local') {
     return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
   }
   return defaultValue;
@@ -58,7 +58,7 @@ const MessageTypes = {
  * Predefined database paths
  * @enum {string}
  */
- // TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
+// TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -304,7 +304,7 @@ const GenesisFunctions = getGenesisFunctions();
 const GenesisRules = getGenesisRules();
 const GenesisOwners = getGenesisOwners();
 
-function getGenesisConfig(filename, additionalEnv) {
+function getGenesisConfig (filename, additionalEnv) {
   let config = null;
   if (CUSTOM_GENESIS_CONFIGS_DIR) {
     const configPath = path.resolve(__dirname, CUSTOM_GENESIS_CONFIGS_DIR, filename);
@@ -334,13 +334,13 @@ function getGenesisConfig(filename, additionalEnv) {
   return config;
 }
 
-function getGenesisSharding() {
+function getGenesisSharding () {
   const config = getGenesisConfig('genesis_sharding.json');
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
     const ownerAddress = ChainUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const reporterAddress =
-        GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
+      GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
     ChainUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
     ChainUtil.setJsObject(config, [ShardingProperties.SHARD_REPORTER], reporterAddress);
   }
@@ -348,77 +348,76 @@ function getGenesisSharding() {
 }
 
 // TODO(lia): Increase this list to 10.
-function getGenesisWhitelist() {
+function getGenesisWhitelist () {
   const whitelist = {};
   for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
     const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(
-        whitelist, [accountAddress], ConsensusConsts.INITIAL_STAKE);
+    ChainUtil.setJsObject(whitelist, [accountAddress], ConsensusConsts.INITIAL_STAKE);
   }
   return whitelist;
 }
 
-function getGenesisValues() {
+function getGenesisValues () {
   const values = {};
   ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
   const ownerAddress = ChainUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   ChainUtil.setJsObject(
-      values,
-      [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
-      GenesisToken[TokenProperties.TOTAL_SUPPLY]);
+    values,
+    [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
+    GenesisToken[TokenProperties.TOTAL_SUPPLY]);
   ChainUtil.setJsObject(
-      values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
+    values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   ChainUtil.setJsObject(
-      values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisWhitelist);
+    values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisWhitelist);
   return values;
 }
 
-function getGenesisFunctions() {
+function getGenesisFunctions () {
   const functions = getGenesisConfig('genesis_functions.json', process.env.ADDITIONAL_FUNCTIONS);
   return functions;
 }
 
-function getGenesisRules() {
+function getGenesisRules () {
   const rules = getGenesisConfig('genesis_rules.json', process.env.ADDITIONAL_RULES);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     ChainUtil.setJsObject(
-        rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
+      rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
   ChainUtil.setJsObject(
-      rules, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistRule());
+    rules, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistRule());
   return rules;
 }
 
-function getGenesisOwners() {
+function getGenesisOwners () {
   const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     ChainUtil.setJsObject(
-        owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
-        getShardingOwner());
+      owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
+      getShardingOwner());
   }
   ChainUtil.setJsObject(
-      owners, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistOwner());
+    owners, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistOwner());
   return owners;
 }
 
-function getShardingRule() {
+function getShardingRule () {
   const ownerAddress =
-      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
     [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
   };
 }
 
-function getWhitelistRule() {
+function getWhitelistRule () {
   const ownerAddress =
-      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
     [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
   };
 }
 
-function getShardingOwner() {
+function getShardingOwner () {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
@@ -429,7 +428,7 @@ function getShardingOwner() {
   };
 }
 
-function getWhitelistOwner() {
+function getWhitelistOwner () {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
@@ -440,7 +439,7 @@ function getWhitelistOwner() {
   };
 }
 
-function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
+function buildOwnerPermissions (branchOwner, writeFunction, writeOwner, writeRule) {
   return {
     [OwnerProperties.BRANCH_OWNER]: branchOwner,
     [OwnerProperties.WRITE_FUNCTION]: writeFunction,
