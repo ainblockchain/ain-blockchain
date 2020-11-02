@@ -302,7 +302,7 @@ class Consensus {
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastBlock.validators : this.getWhitelist();
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
-    const totalAtStake = Object.values(validators).reduce(function (a, b) {
+    const totalAtStake = Object.values(validators).reduce(function(a, b) {
       return a + b;
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempState.getProof('/')[ProofProperties.PROOF_HASH];

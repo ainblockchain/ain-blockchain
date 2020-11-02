@@ -17,7 +17,7 @@ const MAX_BLOCKS = 20;
 const CLIENT_PREFIX = 'CLIENT';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', function(err) {
   logger.error(`[${CLIENT_PREFIX}]` + err);
 });
 

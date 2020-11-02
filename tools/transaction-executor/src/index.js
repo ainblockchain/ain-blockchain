@@ -136,9 +136,9 @@ class TransactionExecutorCommand extends Command {
   }
 
   static sendTransaction(transaction, jsonRpcClient) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
       jsonRpcClient.request(JSON_RPC_SEND_TRANSACTION, JSON.parse(JSON.stringify(transaction)),
-          function (err, response) {
+          function(err, response) {
             if (err) {
               reject(err);
             } else {
