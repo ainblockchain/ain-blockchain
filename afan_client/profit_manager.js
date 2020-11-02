@@ -1,6 +1,6 @@
 
 class ProfitManager {
-  constructor (to, from, investors, requestManager, isAds) {
+  constructor(to, from, investors, requestManager, isAds) {
     this.to = to;
     this.from = from;
     this.investors = investors;
@@ -8,7 +8,7 @@ class ProfitManager {
     this.isAds = isAds;
   }
 
-  increaseProfit (value) {
+  increaseProfit(value) {
     this.requestManager.increaseBalance(this.to, value);
     if (this.isAds) {
       this.requestManager.increaseAdsProfit(this.to, value);
@@ -17,7 +17,7 @@ class ProfitManager {
     }
   }
 
-  updateProfit (value) {
+  updateProfit(value) {
     let sum = 0.0;
     if (this.investors) {
       for (const key in this.investors) {

@@ -34,11 +34,11 @@ const parentChainPoCList = {
   ]
 };
 
-function writeFile (json, file) {
+function writeFile(json, file) {
   fs.writeFileSync(file, json, 'utf8');
 }
 
-function createAccount (prefix) {
+function createAccount(prefix) {
   console.log(`Creating an account with prefix ${prefix}..`);
   let count = 0;
   while (true) {
@@ -55,7 +55,7 @@ function createAccount (prefix) {
   }
 }
 
-function createAccounts (num, _prefix) {
+function createAccounts(num, _prefix) {
   const ownerAccount = createAccount(_prefix + _prefix);
   const otherAccounts = [];
   for (let i = 0; i < num; i++) {
@@ -70,7 +70,7 @@ function createAccounts (num, _prefix) {
   }
 }
 
-function getShardingConfig (env, index) {
+function getShardingConfig(env, index) {
   const pocList = parentChainPoCList[env];
   return {
     sharding_protocol: 'POA',
@@ -82,7 +82,7 @@ function getShardingConfig (env, index) {
   };
 }
 
-function getShardingToken (prefix) {
+function getShardingToken(prefix) {
   return {
     name: `ShardCoin${prefix}`,
     symbol: `SHARDCO${prefix}`,
@@ -90,7 +90,7 @@ function getShardingToken (prefix) {
   };
 }
 
-async function processArguments () {
+async function processArguments() {
   if (process.argv.length !== 5) {
     usage();
   }
@@ -135,7 +135,7 @@ async function processArguments () {
   writeFile(JSON.stringify(shardingToken, null, 2), tokenFile);
 }
 
-function usage () {
+function usage() {
   console.log('\nExample commandlines:\n  node generateShardGenesisFiles.js dev 10 1\n');
   process.exit(0);
 }

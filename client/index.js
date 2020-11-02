@@ -322,7 +322,7 @@ app.get('/get_sharding', (req, res, next) => {
   const result = node.getSharding();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -358,7 +358,7 @@ p2pServer.listen();
 
 module.exports = app;
 
-function createSingleSetTxData (input, opType) {
+function createSingleSetTxData(input, opType) {
   const op = {
     type: opType,
     ref: input.ref,
@@ -377,7 +377,7 @@ function createSingleSetTxData (input, opType) {
   return txData;
 }
 
-function createMultiSetTxData (input) {
+function createMultiSetTxData(input) {
   const txData = {
     operation: {
       type: WriteDbOperations.SET,
@@ -393,11 +393,11 @@ function createMultiSetTxData (input) {
   return txData;
 }
 
-function createBatchTxData (input) {
+function createBatchTxData(input) {
   return { tx_list: input.tx_list };
 }
 
-function createAndExecuteTransaction (txData, isNoncedTransaction) {
+function createAndExecuteTransaction(txData, isNoncedTransaction) {
   const transaction = node.createTransaction(txData, isNoncedTransaction);
   return {
     tx_hash: transaction.hash,
@@ -405,17 +405,17 @@ function createAndExecuteTransaction (txData, isNoncedTransaction) {
   };
 }
 
-function checkIfTransactionShouldBeNonced (input) {
+function checkIfTransactionShouldBeNonced(input) {
   // Default to true if noncing information is not specified
   return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
 }
 
-function isValidVersionMatch (ver) {
+function isValidVersionMatch(ver) {
   return ver && semver.valid(semver.coerce(ver.min)) &&
-      (!ver.max || semver.valid(semver.coerce(ver.max)));
+    (!ver.max || semver.valid(semver.coerce(ver.max)));
 }
 
-function matchVersions (ver) {
+function matchVersions(ver) {
   let match = VERSION_LIST[ver];
   if (isValidVersionMatch(match)) {
     return match;
@@ -433,7 +433,7 @@ function matchVersions (ver) {
   return {};
 }
 
-function validateVersion (req, res, next) {
+function validateVersion(req, res, next) {
   let version = null;
   if (req.query.protoVer) {
     version = req.query.protoVer;

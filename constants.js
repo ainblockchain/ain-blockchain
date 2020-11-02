@@ -35,7 +35,7 @@ const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
 const LIGHTWEIGHT = process.env.LIGHTWEIGHT ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
-function getPortNumber (defaultValue, baseValue) {
+function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV === 'local') {
     return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
   }
@@ -305,7 +305,7 @@ const GenesisFunctions = getGenesisFunctions();
 const GenesisRules = getGenesisRules();
 const GenesisOwners = getGenesisOwners();
 
-function getGenesisConfig (filename, additionalEnv) {
+function getGenesisConfig(filename, additionalEnv) {
   let config = null;
   if (CUSTOM_GENESIS_CONFIGS_DIR) {
     const configPath = path.resolve(__dirname, CUSTOM_GENESIS_CONFIGS_DIR, filename);
@@ -335,7 +335,7 @@ function getGenesisConfig (filename, additionalEnv) {
   return config;
 }
 
-function getGenesisSharding () {
+function getGenesisSharding() {
   const config = getGenesisConfig('genesis_sharding.json');
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
     const ownerAddress = ChainUtil.getJsObject(
@@ -349,7 +349,7 @@ function getGenesisSharding () {
 }
 
 // TODO(lia): Increase this list to 10.
-function getGenesisWhitelist () {
+function getGenesisWhitelist() {
   const whitelist = {};
   for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
     const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
@@ -358,7 +358,7 @@ function getGenesisWhitelist () {
   return whitelist;
 }
 
-function getGenesisValues () {
+function getGenesisValues() {
   const values = {};
   ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
   const ownerAddress = ChainUtil.getJsObject(
@@ -374,12 +374,12 @@ function getGenesisValues () {
   return values;
 }
 
-function getGenesisFunctions () {
+function getGenesisFunctions() {
   const functions = getGenesisConfig('genesis_functions.json', process.env.ADDITIONAL_FUNCTIONS);
   return functions;
 }
 
-function getGenesisRules () {
+function getGenesisRules() {
   const rules = getGenesisConfig('genesis_rules.json', process.env.ADDITIONAL_RULES);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     ChainUtil.setJsObject(
@@ -390,7 +390,7 @@ function getGenesisRules () {
   return rules;
 }
 
-function getGenesisOwners () {
+function getGenesisOwners() {
   const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     ChainUtil.setJsObject(
@@ -402,7 +402,7 @@ function getGenesisOwners () {
   return owners;
 }
 
-function getShardingRule () {
+function getShardingRule() {
   const ownerAddress =
     ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
@@ -410,7 +410,7 @@ function getShardingRule () {
   };
 }
 
-function getWhitelistRule () {
+function getWhitelistRule() {
   const ownerAddress =
     ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
@@ -418,7 +418,7 @@ function getWhitelistRule () {
   };
 }
 
-function getShardingOwner () {
+function getShardingOwner() {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
@@ -429,7 +429,7 @@ function getShardingOwner () {
   };
 }
 
-function getWhitelistOwner () {
+function getWhitelistOwner() {
   return {
     [OwnerProperties.OWNER]: {
       [OwnerProperties.OWNERS]: {
@@ -440,7 +440,7 @@ function getWhitelistOwner () {
   };
 }
 
-function buildOwnerPermissions (branchOwner, writeFunction, writeOwner, writeRule) {
+function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
   return {
     [OwnerProperties.BRANCH_OWNER]: branchOwner,
     [OwnerProperties.WRITE_FUNCTION]: writeFunction,

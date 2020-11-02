@@ -13,7 +13,7 @@ const ChainUtil = require('../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
-async function sendTxAndWaitForFinalization (endpoint, tx, keyBuffer) {
+async function sendTxAndWaitForFinalization(endpoint, tx, keyBuffer) {
   const res = await signAndSendTx(endpoint, tx, keyBuffer);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
@@ -23,7 +23,7 @@ async function sendTxAndWaitForFinalization (endpoint, tx, keyBuffer) {
   }
 }
 
-function signTx (tx, keyBuffer) {
+function signTx(tx, keyBuffer) {
   const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
   const sigBuffer = ainUtil.toBuffer(sig);
   const lenHash = sigBuffer.length - 65;
@@ -38,7 +38,7 @@ function signTx (tx, keyBuffer) {
   };
 }
 
-async function sendSignedTx (endpoint, signedTxParams) {
+async function sendSignedTx(endpoint, signedTxParams) {
   return await axios.post(
     endpoint,
     {
@@ -56,7 +56,7 @@ async function sendSignedTx (endpoint, signedTxParams) {
   });
 }
 
-async function signAndSendTx (endpoint, tx, keyBuffer) {
+async function signAndSendTx(endpoint, tx, keyBuffer) {
   const { txHash, signedTx } = signTx(tx, keyBuffer);
   const params = {
     protoVer: CURRENT_PROTOCOL_VERSION,
@@ -67,7 +67,7 @@ async function signAndSendTx (endpoint, tx, keyBuffer) {
   return Object.assign(result, { txHash });
 }
 
-async function waitUntilTxFinalize (endpoint, txHash) {
+async function waitUntilTxFinalize(endpoint, txHash) {
   while (true) {
     const confirmed = await sendGetRequest(
       endpoint,
@@ -88,7 +88,7 @@ async function waitUntilTxFinalize (endpoint, txHash) {
   }
 }
 
-function sendGetRequest (endpoint, method, params) {
+function sendGetRequest(endpoint, method, params) {
   // NOTE(seo): .then() was used here to avoid some unexpected behavior or axios.post()
   //            (see https://github.com/ainblockchain/ain-blockchain/issues/101)
   return axios.post(

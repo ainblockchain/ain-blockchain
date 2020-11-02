@@ -8,47 +8,47 @@ const {
   ShardingProperties,
 } = require('../constants');
 
-function hasConfig (node, label) {
+function hasConfig(node, label) {
   return node && node.hasChild(label);
 }
 
-function getConfig (node, label) {
+function getConfig(node, label) {
   return hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
 }
 
-function hasShardConfig (valueNode) {
+function hasShardConfig(valueNode) {
   return hasConfig(valueNode, ShardingProperties.SHARD);
 }
 
-function getShardConfig (valueNode) {
+function getShardConfig(valueNode) {
   return getConfig(valueNode, ShardingProperties.SHARD);
 }
 
-function hasFunctionConfig (funcNode) {
+function hasFunctionConfig(funcNode) {
   return hasConfig(funcNode, FunctionProperties.FUNCTION);
 }
 
-function getFunctionConfig (funcNode) {
+function getFunctionConfig(funcNode) {
   return getConfig(funcNode, FunctionProperties.FUNCTION);
 }
 
-function hasRuleConfig (ruleNode) {
+function hasRuleConfig(ruleNode) {
   return hasConfig(ruleNode, RuleProperties.WRITE);
 }
 
-function getRuleConfig (ruleNode) {
+function getRuleConfig(ruleNode) {
   return getConfig(ruleNode, RuleProperties.WRITE);
 }
 
-function hasOwnerConfig (ownerNode) {
+function hasOwnerConfig(ownerNode) {
   return hasConfig(ownerNode, OwnerProperties.OWNER);
 }
 
-function getOwnerConfig (ownerNode) {
+function getOwnerConfig(ownerNode) {
   return getConfig(ownerNode, OwnerProperties.OWNER);
 }
 
-function hasEnabledShardConfig (node) {
+function hasEnabledShardConfig(node) {
   let isEnabled = false;
   if (hasShardConfig(node)) {
     const shardConfig = getShardConfig(node);
@@ -57,7 +57,7 @@ function hasEnabledShardConfig (node) {
   return isEnabled;
 }
 
-function isWritablePathWithSharding (fullPath, root) {
+function isWritablePathWithSharding(fullPath, root) {
   let isValid = true;
   const path = [];
   let curNode = root;
@@ -79,28 +79,28 @@ function isWritablePathWithSharding (fullPath, root) {
   return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
-function hasReservedChar (label) {
+function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]/gm;
   return ChainUtil.isString(label) ? reservedCharRegex.test(label) : false;
 }
 
-function hasAllowedPattern (label) {
+function hasAllowedPattern(label) {
   const wildCardPatternRegex = /^\*$/gm;
   const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]+$/gm;
   return ChainUtil.isString(label)
     ? (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
-function isValidStateLabel (label) {
+function isValidStateLabel(label) {
   if (!ChainUtil.isString(label) ||
-      label === '' ||
-      (hasReservedChar(label) && !hasAllowedPattern(label))) {
+    label === '' ||
+    (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
   return true;
 }
 
-function isValidPathForStates (fullPath) {
+function isValidPathForStates(fullPath) {
   let isValid = true;
   const path = [];
   for (const label of fullPath) {
@@ -113,7 +113,7 @@ function isValidPathForStates (fullPath) {
   return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
-function isValidJsObjectForStatesRecursive (obj, path) {
+function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmptyNode(obj)) {
       return false;
@@ -133,17 +133,17 @@ function isValidJsObjectForStatesRecursive (obj, path) {
     return true;
   } else {
     return ChainUtil.isBool(obj) || ChainUtil.isNumber(obj) || ChainUtil.isString(obj) ||
-        obj === null;
+      obj === null;
   }
 }
 
-function isValidJsObjectForStates (obj) {
+function isValidJsObjectForStates(obj) {
   const path = [];
   const isValid = isValidJsObjectForStatesRecursive(obj, path);
   return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
-function jsObjectToStateTree (obj) {
+function jsObjectToStateTree(obj) {
   const node = new StateNode();
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmptyNode(obj)) {
@@ -160,7 +160,7 @@ function jsObjectToStateTree (obj) {
   return node;
 }
 
-function stateTreeToJsObject (root) {
+function stateTreeToJsObject(root) {
   if (root === null) {
     return null;
   }
@@ -175,7 +175,7 @@ function stateTreeToJsObject (root) {
   return obj;
 }
 
-function deleteStateTree (root) {
+function deleteStateTree(root) {
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     root.deleteChild(label);
@@ -185,7 +185,7 @@ function deleteStateTree (root) {
   root = null;
 }
 
-function makeCopyOfStateTree (root) {
+function makeCopyOfStateTree(root) {
   const copy = root.makeCopy();
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
@@ -194,7 +194,7 @@ function makeCopyOfStateTree (root) {
   return copy;
 }
 
-function buildProofHashOfStateNode (StateNode) {
+function buildProofHashOfStateNode(StateNode) {
   let preimage;
   if (StateNode.getIsLeaf()) {
     preimage = StateNode.getValue();
@@ -206,7 +206,7 @@ function buildProofHashOfStateNode (StateNode) {
   return ChainUtil.hashString(ChainUtil.toString(preimage));
 }
 
-function setProofHashForStateTree (stateTree) {
+function setProofHashForStateTree(stateTree) {
   if (!stateTree.getIsLeaf()) {
     stateTree.getChildNodes().forEach(node => {
       setProofHashForStateTree(node);
@@ -215,12 +215,12 @@ function setProofHashForStateTree (stateTree) {
   updateProofHashOfStateNode(stateTree);
 }
 
-function updateProofHashOfStateNode (stateNode) {
+function updateProofHashOfStateNode(stateNode) {
   const proof = buildProofHashOfStateNode(stateNode);
   stateNode.setProofHash(proof);
 }
 
-function updateProofHashForPathRecursive (path, stateTree, idx) {
+function updateProofHashForPathRecursive(path, stateTree, idx) {
   if (idx < 0 || idx > path.length) {
     return;
   }
@@ -231,7 +231,7 @@ function updateProofHashForPathRecursive (path, stateTree, idx) {
   updateProofHashOfStateNode(stateTree);
 }
 
-function updateProofHashForPath (fullPath, root) {
+function updateProofHashForPath(fullPath, root) {
   return updateProofHashForPathRecursive(fullPath, root, 0);
 }
 

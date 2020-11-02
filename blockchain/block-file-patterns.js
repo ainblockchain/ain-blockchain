@@ -8,7 +8,7 @@ class BlockFilePatterns {
   * @param {String} hash - The hash of the block being queried. The hash can be any substring of the complete hash and the function should still work.
   * @return {String} A RegEx statement matching the block corresponding to the hash in the given chainPath directory.
   */
-  static getBlockFilenameByHash (chainPath, hash) {
+  static getBlockFilenameByHash(chainPath, hash) {
     return `${chainPath}/[0-9]*-*${hash}.${FILE_NAME_SUFFIX}`;
   }
 
@@ -18,7 +18,7 @@ class BlockFilePatterns {
   * @param {String} chainPath - The directory containing blockchain files.
   * @return {list} A RegEx statement matching all block files in the given chainPath directory.
   */
-  static getAllBlockFiles (chainPath) {
+  static getAllBlockFiles(chainPath) {
     return `${chainPath}/[0-9]*-*.${FILE_NAME_SUFFIX}`;
   }
 
@@ -30,7 +30,7 @@ class BlockFilePatterns {
   * @param {int} to - The index of the blockchain to query up to (not inclusive).
   * @return {String} A RegEx statement matching the queried range of block files in the given chainPath directory.
   */
-  static getBlockFilesInRange (chainPath, from, to) {
+  static getBlockFilesInRange(chainPath, from, to) {
     return `${chainPath}/{${from}..${to - 1}}-*.${FILE_NAME_SUFFIX}`;
   }
 
@@ -40,7 +40,7 @@ class BlockFilePatterns {
   * @param {Block} block - An instance of a Block
   * @return {String} The name of the corresponding block file.
   */
-  static getBlockFileName (block) {
+  static getBlockFileName(block) {
     return `${block.number}-${block.last_hash}-${block.hash}.${FILE_NAME_SUFFIX}`;
   }
 }

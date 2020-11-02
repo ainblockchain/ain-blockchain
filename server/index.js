@@ -51,7 +51,7 @@ const P2P_PREFIX = 'P2P';
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
-  constructor (node, minProtocolVersion, maxProtocolVersion) {
+  constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.isStarting = true;
     this.internalIpAddress = null;
     this.externalIpAddress = null;
@@ -68,7 +68,7 @@ class P2pServer {
     this.maxProtocolVersion = maxProtocolVersion;
   }
 
-  listen () {
+  listen() {
     this.server = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
@@ -102,7 +102,7 @@ class P2pServer {
       });
   }
 
-  stop () {
+  stop() {
     logger.info(`[${P2P_PREFIX}] Stop consensus interval.`);
     this.consensus.stop();
     logger.info(`[${P2P_PREFIX}] Disconnect from connected peers.`);
@@ -113,31 +113,31 @@ class P2pServer {
     this.server.close(_ => { });
   }
 
-  setIntervalForTrackerConnection () {
+  setIntervalForTrackerConnection() {
     this.connectToTracker();
     this.intervalConnection = setInterval(() => {
       this.connectToTracker();
     }, RECONNECT_INTERVAL_MS)
   }
 
-  clearIntervalForTrackerConnection () {
+  clearIntervalForTrackerConnection() {
     clearInterval(this.intervalConnection);
     this.intervalConnection = null;
   }
 
-  setIntervalForTrackerUpdate () {
+  setIntervalForTrackerUpdate() {
     this.updateNodeStatusToTracker();
     this.intervalUpdate = setInterval(() => {
       this.updateNodeStatusToTracker();
     }, UPDATE_TO_TRACKER_INTERVAL_MS)
   }
 
-  clearIntervalForTrackerUpdate () {
+  clearIntervalForTrackerUpdate() {
     clearInterval(this.intervalUpdate);
     this.intervalUpdate = null;
   }
 
-  connectToTracker () {
+  connectToTracker() {
     logger.info(`[${P2P_PREFIX}] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
     this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
     this.trackerWebSocket.on('open', () => {
@@ -152,11 +152,11 @@ class P2pServer {
     });
   }
 
-  disconnectFromTracker () {
+  disconnectFromTracker() {
     this.trackerWebSocket.close();
   }
 
-  getIpAddress (internal = false) {
+  getIpAddress(internal = false) {
     return Promise.resolve()
       .then(() => {
         if (HOSTING_ENV === 'gcp') {
@@ -197,18 +197,18 @@ class P2pServer {
       });
   }
 
-  async setUpIpAddresses () {
+  async setUpIpAddresses() {
     const ipAddrInternal = await this.getIpAddress(true);
     const ipAddrExternal = await this.getIpAddress(false);
     this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
     return true;
   }
 
-  static getNodeUrl (ipAddr) {
+  static getNodeUrl(ipAddr) {
     return `http://${ipAddr}:${PORT}`;
   }
 
-  async setTrackerEventHandlers () {
+  async setTrackerEventHandlers() {
     this.trackerWebSocket.on('message', async (message) => {
       try {
         const parsedMsg = JSON.parse(message);
@@ -243,7 +243,7 @@ class P2pServer {
   }
 
   // TODO(seo): Add sharding status.
-  updateNodeStatusToTracker () {
+  updateNodeStatusToTracker() {
     const updateToTracker = {
       url: url.format({
         protocol: 'ws',
@@ -285,7 +285,7 @@ class P2pServer {
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
 
-  getDiskUsage () {
+  getDiskUsage() {
     try {
       return disk.checkSync(DISK_USAGE_PATH);
     } catch (err) {
@@ -294,7 +294,7 @@ class P2pServer {
     }
   }
 
-  getMemoryUsage () {
+  getMemoryUsage() {
     const free = os.freemem();
     const total = os.totalmem();
     const usage = total - free;
@@ -305,7 +305,7 @@ class P2pServer {
     };
   }
 
-  connectToPeers (newManagedPeerInfoList) {
+  connectToPeers(newManagedPeerInfoList) {
     let updated = false;
     newManagedPeerInfoList.forEach((peerInfo) => {
       if (this.managedPeersInfo[peerInfo.address]) {
@@ -326,13 +326,13 @@ class P2pServer {
     return updated;
   }
 
-  disconnectFromPeers () {
+  disconnectFromPeers() {
     for (const socket of this.sockets) {
       socket.close();
     }
   }
 
-  setSocket (socket, address) {
+  setSocket(socket, address) {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.node.bc.lastBlock());
@@ -342,7 +342,7 @@ class P2pServer {
     }
   }
 
-  setPeerEventHandlers (socket, address) {
+  setPeerEventHandlers(socket, address) {
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
@@ -500,7 +500,7 @@ class P2pServer {
     });
   }
 
-  removeFromListIfExists (entry) {
+  removeFromListIfExists(entry) {
     const index = this.sockets.indexOf(entry);
 
     if (index >= 0) {
@@ -511,7 +511,7 @@ class P2pServer {
     return false;
   }
 
-  sendChainSubsection (socket, chainSubsection, number, catchUpInfo) {
+  sendChainSubsection(socket, chainSubsection, number, catchUpInfo) {
     socket.send(JSON.stringify({
       type: MessageTypes.CHAIN_SUBSECTION,
       chainSubsection,
@@ -521,7 +521,7 @@ class P2pServer {
     }));
   }
 
-  requestChainSubsection (lastBlock) {
+  requestChainSubsection(lastBlock) {
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
@@ -531,11 +531,11 @@ class P2pServer {
     });
   }
 
-  broadcastChainSubsection (chainSubsection) {
+  broadcastChainSubsection(chainSubsection) {
     this.sockets.forEach((socket) => this.sendChainSubsection(socket, chainSubsection));
   }
 
-  broadcastTransaction (transaction) {
+  broadcastTransaction(transaction) {
     logger.debug(`[${P2P_PREFIX}] SENDING: ${JSON.stringify(transaction)}`);
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -546,7 +546,7 @@ class P2pServer {
     });
   }
 
-  broadcastConsensusMessage (msg) {
+  broadcastConsensusMessage(msg) {
     logger.debug(`[${P2P_PREFIX}] SENDING: ${JSON.stringify(msg)}`);
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -563,7 +563,7 @@ class P2pServer {
    * @param {Object} transactionWithSig An object with a signature and a transaction.
    */
   // TODO(seo): Remove new Transaction() use cases.
-  executeTransaction (transactionWithSig) {
+  executeTransaction(transactionWithSig) {
     if (!transactionWithSig) return null;
     const transaction = transactionWithSig instanceof Transaction
       ? transactionWithSig : new Transaction(transactionWithSig);
@@ -592,7 +592,7 @@ class P2pServer {
     return result;
   }
 
-  executeAndBroadcastTransaction (transactionWithSig) {
+  executeAndBroadcastTransaction(transactionWithSig) {
     if (!transactionWithSig) return null;
     if (Transaction.isBatchTransaction(transactionWithSig)) {
       const resultList = [];
@@ -623,7 +623,7 @@ class P2pServer {
     }
   }
 
-  async tryInitializeShard () {
+  async tryInitializeShard() {
     if (this.node.isShardReporter && this.node.bc.lastBlockNumber() === 0) {
       logger.info(`[${P2P_PREFIX}] Setting up sharding..`);
       await this.setUpDbForSharding();
@@ -631,7 +631,7 @@ class P2pServer {
   }
 
   // TODO(seo): Set .shard config for functions, rules, and owners as well.
-  async setUpDbForSharding () {
+  async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
@@ -675,11 +675,11 @@ class P2pServer {
           {
             type: WriteDbOperations.SET_RULE,
             ref: ChainUtil.appendPath(
-                shardingPath,
-                ShardingProperties.SHARD,
-                ShardingProperties.PROOF_HASH_MAP,
-                '$block_number',
-                ShardingProperties.PROOF_HASH),
+              shardingPath,
+              ShardingProperties.SHARD,
+              ShardingProperties.PROOF_HASH_MAP,
+              '$block_number',
+              ShardingProperties.PROOF_HASH),
             value: {
               [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
             }
@@ -687,11 +687,11 @@ class P2pServer {
           {
             type: WriteDbOperations.SET_FUNCTION,
             ref: ChainUtil.appendPath(
-                shardingPath,
-                ShardingProperties.SHARD,
-                ShardingProperties.PROOF_HASH_MAP,
-                '$block_number',
-                ShardingProperties.PROOF_HASH),
+              shardingPath,
+              ShardingProperties.SHARD,
+              ShardingProperties.PROOF_HASH_MAP,
+              '$block_number',
+              ShardingProperties.PROOF_HASH),
             value: {
               [FunctionProperties.FUNCTION]: {
                 [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
@@ -731,7 +731,7 @@ class P2pServer {
   }
 
   // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
-  heartbeat () {
+  heartbeat() {
     logger.info(`[${P2P_PREFIX}] Start heartbeat`);
     this.intervalHeartbeat = setInterval(() => {
       this.server.clients.forEach(ws => {
@@ -740,7 +740,7 @@ class P2pServer {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-  clearIntervalHeartbeat (address) {
+  clearIntervalHeartbeat(address) {
     clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
     this.managedPeersInfo[address].intervalHeartbeat = null;
   }

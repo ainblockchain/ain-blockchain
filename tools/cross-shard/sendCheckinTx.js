@@ -8,7 +8,7 @@ const ChainUtil = require('../../chain-util');
 const CURRENT_PROTOCOL_VERSION = require('../../package.json').version;
 let config = {};
 
-function buildPayloadTx (fromAddr, toAddr, tokenAmount, timestamp) {
+function buildPayloadTx(fromAddr, toAddr, tokenAmount, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
@@ -21,7 +21,7 @@ function buildPayloadTx (fromAddr, toAddr, tokenAmount, timestamp) {
   }
 }
 
-function buildTriggerTx (address, payload, timestamp) {
+function buildTriggerTx(address, payload, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
@@ -36,7 +36,7 @@ function buildTriggerTx (address, payload, timestamp) {
   }
 }
 
-function signTx (tx, privateKey) {
+function signTx(tx, privateKey) {
   const keyBuffer = Buffer.from(privateKey, 'hex');
   const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
   const sigBuffer = ainUtil.toBuffer(sig);
@@ -53,7 +53,7 @@ function signTx (tx, privateKey) {
   };
 }
 
-function signAndSendTx (endpointUrl, txBody, privateKey) {
+function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
   const { txHash, signedTx } = signTx(txBody, privateKey);
   return axios.post(
@@ -75,7 +75,7 @@ function signAndSendTx (endpointUrl, txBody, privateKey) {
     });
 }
 
-async function sendGetTxByHashRequest (endpointUrl, txHash) {
+async function sendGetTxByHashRequest(endpointUrl, txHash) {
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
@@ -92,7 +92,7 @@ async function sendGetTxByHashRequest (endpointUrl, txHash) {
     });
 }
 
-async function sendTransaction () {
+async function sendTransaction() {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
   const keyBuffer = Buffer.from(config.userPrivateKey, 'hex');
@@ -113,7 +113,7 @@ async function sendTransaction () {
   return { timestamp, txInfo };
 }
 
-async function confirmTransaction (timestamp, txHash) {
+async function confirmTransaction(timestamp, txHash) {
   console.log('\n*** confirmTransaction():');
   console.log(`txHash: ${txHash}`);
   let iteration = 0;
@@ -130,7 +130,7 @@ async function confirmTransaction (timestamp, txHash) {
   console.log(`elapsed time (ms) = ${result.finalized_at - timestamp}`);
 }
 
-async function sendCheckinTransaction () {
+async function sendCheckinTransaction() {
   console.log('\n*** sendTransaction():');
   console.log(`config: ${JSON.stringify(config, null, 2)}`);
   const { timestamp, txInfo } = await sendTransaction();
@@ -139,7 +139,7 @@ async function sendCheckinTransaction () {
   }
 }
 
-async function processArguments () {
+async function processArguments() {
   if (process.argv.length !== 3) {
     usage();
   }
@@ -147,7 +147,7 @@ async function processArguments () {
   await sendCheckinTransaction();
 }
 
-function usage () {
+function usage() {
   console.log('\nExample commandlines:\n  node sendCheckinTx.js config_local.js\n')
   process.exit(0)
 }
