@@ -19,7 +19,7 @@ const NODE_PREFIX = 'NODE';
 const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 
 class BlockchainNode {
-  constructor () {
+  constructor() {
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null
       ? GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
@@ -41,11 +41,11 @@ class BlockchainNode {
   }
 
   // For testing purpose only.
-  setAccountForTesting (accountIndex) {
+  setAccountForTesting(accountIndex) {
     this.account = GenesisAccounts.others[accountIndex];
   }
 
-  setIpAddresses (ipAddrInternal, ipAddrExternal) {
+  setIpAddresses(ipAddrInternal, ipAddrExternal) {
     this.ipAddrInternal = ipAddrInternal;
     this.ipAddrExternal = ipAddrExternal;
     this.urlInternal = BlockchainNode.getNodeUrl(ipAddrInternal);
@@ -55,11 +55,11 @@ class BlockchainNode {
       `'${this.urlExternal}' (external)`);
   }
 
-  static getNodeUrl (ipAddr) {
+  static getNodeUrl(ipAddr) {
     return `http://${ipAddr}:${PORT}`;
   }
 
-  init (isFirstNode) {
+  init(isFirstNode) {
     logger.info(`[${NODE_PREFIX}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
     this.bc.setBackupDb(new DB(this.bc, this.tp, true));
@@ -71,7 +71,7 @@ class BlockchainNode {
     return lastBlockWithoutProposal;
   }
 
-  getNonce () {
+  getNonce() {
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
     //               publicKey
     let nonce = 0;
@@ -96,15 +96,15 @@ class BlockchainNode {
   getSharding() {
     const shardingInfo = {};
     const shards = this.db.getValue(ChainUtil.formatPath(
-        [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
-    for (let encodedPath in shards) {
+      [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
+    for (const encodedPath in shards) {
       const shardPath = ainUtil.decode(encodedPath);
       shardingInfo[encodedPath] = {
         [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
-            shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+          shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
         [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
-            shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
-            ShardingProperties.LATEST)),
+          shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+          ShardingProperties.LATEST)),
       };
     }
     return shardingInfo;
@@ -119,7 +119,7 @@ class BlockchainNode {
     *                                        not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction (txData, isNoncedTransaction = true) {
+  createTransaction(txData, isNoncedTransaction = true) {
     if (Transaction.isBatchTransaction(txData)) {
       const txList = [];
       txData.tx_list.forEach((subData) => {
@@ -130,7 +130,7 @@ class BlockchainNode {
     return this.createSingleTransaction(txData, isNoncedTransaction);
   }
 
-  createSingleTransaction (txData, isNoncedTransaction) {
+  createSingleTransaction(txData, isNoncedTransaction) {
     // Workaround for skip_verif with custom address
     if (txData.address !== undefined) {
       txData.skip_verif = true;
@@ -148,7 +148,7 @@ class BlockchainNode {
     return Transaction.newTransaction(this.account.private_key, txData);
   }
 
-  addNewBlock (block) {
+  addNewBlock(block) {
     if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
       this.db.setDbToSnapshot(this.bc.backupDb);
@@ -159,7 +159,7 @@ class BlockchainNode {
     return false;
   }
 
-  executeChainOnBackupDb () {
+  executeChainOnBackupDb() {
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       if (!this.bc.backupDb.executeTransactionList(block.last_votes)) {

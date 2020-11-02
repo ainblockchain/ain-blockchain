@@ -24,7 +24,7 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods (node, p2pServer, minProtocolVersion, maxProtocolVersion) {
+module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
   return {
     ain_getProtocolVersion: function (args, done) {
       done(null, addProtocolVersion({ result: CURRENT_PROTOCOL_VERSION }));
@@ -257,7 +257,7 @@ module.exports = function getMethods (node, p2pServer, minProtocolVersion, maxPr
     ain_getBalance: function (args, done) {
       const address = args.address;
       const balance =
-          p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
+        p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
       done(null, addProtocolVersion({ result: balance }));
     },
 
@@ -320,7 +320,7 @@ module.exports = function getMethods (node, p2pServer, minProtocolVersion, maxPr
   };
 };
 
-function extractTransactionHashes (block) {
+function extractTransactionHashes(block) {
   if (!block) return [];
   const hashes = [];
   block.transactions.forEach(tx => {
@@ -329,7 +329,7 @@ function extractTransactionHashes (block) {
   return hashes;
 }
 
-function addProtocolVersion (result) {
+function addProtocolVersion(result) {
   result.protoVer = CURRENT_PROTOCOL_VERSION;
   return result;
 }

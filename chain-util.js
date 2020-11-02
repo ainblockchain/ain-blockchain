@@ -7,17 +7,17 @@ const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class ChainUtil {
-  static hashString (stringData) {
+  static hashString(stringData) {
     if (typeof stringData !== 'string') return '';
     return '0x' + ainUtil.hashMessage(stringData).toString('hex');
   }
 
-  static shortenHash (hash) {
+  static shortenHash(hash) {
     if (typeof hash !== 'string' || hash.length < 10) return hash;
     return hash.substring(0, 6) + '...' + hash.substring(hash.length - 4, hash.length);
   }
 
-  static hashSignature (sig) {
+  static hashSignature(sig) {
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);
@@ -25,7 +25,7 @@ class ChainUtil {
   }
 
   // TODO (lia): remove this function
-  static genKeyPair () {
+  static genKeyPair() {
     let keyPair;
     if (PRIVATE_KEY) {
       keyPair = ec.keyFromPrivate(PRIVATE_KEY, 'hex');
@@ -36,64 +36,64 @@ class ChainUtil {
     return keyPair;
   }
 
-  static isBool (value) {
+  static isBool(value) {
     return ruleUtil.isBool(value);
   }
 
-  static isNumber (num) {
+  static isNumber(num) {
     return ruleUtil.isNumber(num);
   }
 
-  static isString (value) {
+  static isString(value) {
     return ruleUtil.isString(value);
   }
 
-  static isArray (value) {
+  static isArray(value) {
     return ruleUtil.isArray(value);
   }
 
-  static isDict (value) {
+  static isDict(value) {
     return ruleUtil.isDict(value);
   }
 
-  static isEmptyNode (value) {
+  static isEmptyNode(value) {
     return ruleUtil.isEmptyNode(value);
   }
 
-  static isValAddr (value) {
+  static isValAddr(value) {
     return ruleUtil.isValAddr(value);
   }
 
-  static isCksumAddr (addr) {
+  static isCksumAddr(addr) {
     return ruleUtil.isCksumAddr(addr);
   }
 
-  static isValShardProto (value) {
+  static isValShardProto(value) {
     return ruleUtil.isValShardProto(value);
   }
 
-  static boolOrFalse (value) {
+  static boolOrFalse(value) {
     return ChainUtil.isBool(value) ? value : false;
   }
 
-  static numberOrZero (num) {
+  static numberOrZero(num) {
     return ChainUtil.isNumber(num) ? num : 0;
   }
 
-  static stringOrEmpty (str) {
+  static stringOrEmpty(str) {
     return ChainUtil.isString(str) ? str : '';
   }
 
-  static toBool (value) {
+  static toBool(value) {
     return ruleUtil.toBool(value);
   }
 
   // TODO(lia): normalize addresses in user inputs using this function.
-  static toCksumAddr (addr) {
+  static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
   }
 
-  static toString (value) {
+  static toString(value) {
     if (ChainUtil.isBool(value)) {
       return value.toString();
     } else if (ChainUtil.isNumber(value)) {
@@ -107,7 +107,7 @@ class ChainUtil {
     }
   }
 
-  static parsePath (path) {
+  static parsePath(path) {
     if (!path) {
       return [];
     }
@@ -116,7 +116,7 @@ class ChainUtil {
     });
   }
 
-  static formatPath (parsedPath) {
+  static formatPath(parsedPath) {
     if (!Array.isArray(parsedPath) || parsedPath.length === 0) {
       return '/';
     }
@@ -131,15 +131,15 @@ class ChainUtil {
     return (formatted.startsWith('/') ? '' : '/') + formatted;
   }
 
-  static appendPath (path, ...pathsToAppend) {
+  static appendPath(path, ...pathsToAppend) {
     const labels = ChainUtil.parsePath(path);
-    for (let toAppend of pathsToAppend) {
+    for (const toAppend of pathsToAppend) {
       labels.push(...ChainUtil.parsePath(toAppend));
     }
     return ChainUtil.formatPath(labels);
   }
 
-  static getJsObject (obj, path) {
+  static getJsObject(obj, path) {
     if (!ChainUtil.isArray(path)) {
       return null;
     }
@@ -154,7 +154,7 @@ class ChainUtil {
     return ref === undefined ? null : ref;
   }
 
-  static setJsObject (obj, path, value) {
+  static setJsObject(obj, path, value) {
     if (!ChainUtil.isArray(path)) {
       return false;
     }
@@ -177,7 +177,7 @@ class ChainUtil {
     return true;
   }
 
-  static transactionFailed (response) {
+  static transactionFailed(response) {
     if (Array.isArray(response)) {
       response.forEach(res => {
         if (ChainUtil.checkForTransactionErrorCode(res)) {
@@ -189,7 +189,7 @@ class ChainUtil {
     return ChainUtil.checkForTransactionErrorCode(response);
   }
 
-  static checkForTransactionErrorCode (response) {
+  static checkForTransactionErrorCode(response) {
     return response === null || (response.code !== undefined && response.code !== 0);
   }
 }

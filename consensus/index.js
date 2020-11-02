@@ -41,7 +41,7 @@ const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 const txSizeThreshold = MAX_TX_BYTES * 0.9;
 
 class Consensus {
-  constructor (server, node) {
+  constructor(server, node) {
     this.server = server;
     this.node = node;
     this.status = null;
@@ -64,7 +64,7 @@ class Consensus {
     this.lastReportedBlockNumberSent = -1;
   }
 
-  init (lastBlockWithoutProposal, isFirstNode = false) {
+  init(lastBlockWithoutProposal, isFirstNode = false) {
     const LOG_SUFFIX = 'init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
     const genesisBlock = this.node.bc.getBlockByNumber(0);
@@ -107,7 +107,7 @@ class Consensus {
     }
   }
 
-  startEpochTransition () {
+  startEpochTransition() {
     const LOG_SUFFIX = 'startEpochTransition';
     const genesisBlock = Block.genesis();
     this.startingTime = genesisBlock.timestamp;
@@ -117,7 +117,7 @@ class Consensus {
     this.setEpochTransition();
   }
 
-  setEpochTransition () {
+  setEpochTransition() {
     const LOG_SUFFIX = 'setEpochTransition';
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
@@ -157,7 +157,7 @@ class Consensus {
     }, ConsensusConsts.EPOCH_MS);
   }
 
-  stop () {
+  stop() {
     logger.info(`[${LOG_PREFIX}] Stop epochInterval.`);
     this.setStatus(ConsensusStatus.STOPPED, 'stop');
     if (this.epochInterval) {
@@ -167,7 +167,7 @@ class Consensus {
     // FIXME: reset consensus state or store last state?
   }
 
-  updateProposer () {
+  updateProposer() {
     const LOG_SUFFIX = 'updateProposer';
     const lastNotarizedBlock = this.getLastNotarizedBlock();
     if (!lastNotarizedBlock) {
@@ -184,7 +184,7 @@ class Consensus {
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
-  handleConsensusMessage (msg) {
+  handleConsensusMessage(msg) {
     const LOG_SUFFIX = 'handleConsensusMessage';
 
     if (this.status !== ConsensusStatus.RUNNING) {
@@ -214,7 +214,7 @@ class Consensus {
       }
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
         logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to sync. Current last block number: ` +
-            `${lastNotarizedBlock.number}, proposal block number ${proposalBlock.number}`);
+          `${lastNotarizedBlock.number}, proposal block number ${proposalBlock.number}`);
         // I might be falling behind. Try to catch up.
         // FIXME(lia): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
@@ -246,7 +246,7 @@ class Consensus {
   //    4. verify block
   //    5. execute propose tx
   //    6. Nth propose tx should be included in the N+1th block's last_votes
-  createProposal () {
+  createProposal() {
     const LOG_SUFFIX = 'createProposal';
     const longestNotarizedChain = this.getLongestNotarizedChain();
     const lastBlock = longestNotarizedChain && longestNotarizedChain.length
@@ -356,7 +356,7 @@ class Consensus {
     return { proposalBlock, proposalTx };
   }
 
-  checkProposal (proposalBlock, proposalTx) {
+  checkProposal(proposalBlock, proposalTx) {
     const LOG_SUFFIX = 'checkProposal';
     if (this.blockPool.hasSeenBlock(proposalBlock)) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Proposal already seen`);
@@ -413,7 +413,7 @@ class Consensus {
         const actualStake = _.get(depositTx, 'operation.value');
         if (actualStake < expectedStake) {
           logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Validator ${depositTx.address} didn't stake enough. ` +
-              `Expected: ${expectedStake} / Actual: ${actualStake}`);
+            `Expected: ${expectedStake} / Actual: ${actualStake}`);
           return false;
         }
       }
@@ -448,7 +448,7 @@ class Consensus {
       proposalBlock.last_votes.forEach(voteTx => {
         if (voteTx.hash === prevBlockProposal.hash) return;
         if (!Consensus.isValidConsensusTx(voteTx) ||
-            ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
+          ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
           logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] voting tx execution for prev block failed`);
           // return;
         }
@@ -517,7 +517,7 @@ class Consensus {
     return true;
   }
 
-  checkVote (vote) {
+  checkVote(vote) {
     const LOG_SUFFIX = 'checkVote';
     const blockHash = vote.operation.value.block_hash;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
@@ -546,7 +546,7 @@ class Consensus {
     return true;
   }
 
-  tryPropose () {
+  tryPropose() {
     const LOG_SUFFIX = 'tryPropose';
     if (this.votedForEpoch(this.state.epoch)) {
       logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Already voted for ${this.blockPool.epochToBlock[this.state.epoch]} at epoch ${this.state.epoch} but trying to propose at the same epoch`);
@@ -567,7 +567,7 @@ class Consensus {
     }
   }
 
-  tryVote (proposalBlock) {
+  tryVote(proposalBlock) {
     const LOG_SUFFIX = 'tryVote';
     logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] Trying to vote for ${proposalBlock.number} / ${proposalBlock.epoch} / ${proposalBlock.hash}`)
     if (this.votedForEpoch(proposalBlock.epoch)) {
@@ -581,7 +581,7 @@ class Consensus {
     this.vote(proposalBlock);
   }
 
-  vote (block) {
+  vote(block) {
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const myStake = this.node.bc.lastBlockNumber() < 1
@@ -611,7 +611,7 @@ class Consensus {
 
   // If there's a notarized chain that ends with 3 blocks, which have 3 consecutive epoch numbers,
   // finalize up to second to the last block of that notarized chain.
-  tryFinalize () {
+  tryFinalize() {
     const LOG_SUFFIX = 'tryFinalize';
     const finalizableChain = this.blockPool.getFinalizableChain();
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] finalizableChain: ${JSON.stringify(finalizableChain, null, 2)}`);
@@ -637,7 +637,7 @@ class Consensus {
     this.reportStateProofHashes();
   }
 
-  catchUp (blockList) {
+  catchUp(blockList) {
     const LOG_SUFFIX = 'catchUp';
     if (!blockList || !blockList.length) return;
     let lastVerifiedBlock;
@@ -668,13 +668,13 @@ class Consensus {
     }
   }
 
-  getLongestNotarizedChain () {
+  getLongestNotarizedChain() {
     const lastNotarizedBlock = this.getLastNotarizedBlock();
     return this.blockPool.getExtendingChain(lastNotarizedBlock.hash);
   }
 
   // Returns the last block of the longest notarized chain that was proposed in the most recent epoch
-  getLastNotarizedBlock () {
+  getLastNotarizedBlock() {
     const LOG_SUFFIX = 'getLastNotarizedBlock';
     let candidate = this.node.bc.lastBlock();
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] longestNotarizedChainTips: ${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)}`);
@@ -686,7 +686,7 @@ class Consensus {
     return candidate;
   }
 
-  getCatchUpInfo () {
+  getCatchUpInfo() {
     let res = [];
     if (!this.blockPool) {
       return res;
@@ -698,14 +698,14 @@ class Consensus {
     return res;
   }
 
-  getStateSnapshot (block) {
+  getStateSnapshot(block) {
     const LOG_SUFFIX = 'getStateSnapshot';
     const lastFinalizedHash = this.node.bc.lastBlock().hash;
     const chain = [];
     let currBlock = block;
     let blockHash = currBlock.hash;
     while (currBlock && blockHash !== '' && blockHash !== lastFinalizedHash &&
-        !this.blockPool.hashToState.has(blockHash)) {
+      !this.blockPool.hashToState.has(blockHash)) {
       chain.unshift(currBlock);
       currBlock = _.get(this.blockPool.hashToBlockInfo[currBlock.last_hash], 'block'); // previous block of currBlock
       blockHash = currBlock ? currBlock.hash : '';
@@ -732,7 +732,7 @@ class Consensus {
   }
 
   // FIXME: check from the corresponding previous state?
-  getValidatorsVotedFor (blockHash) {
+  getValidatorsVotedFor(blockHash) {
     const LOG_SUFFIX = 'getValidatorsVotedFor';
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     if (!blockInfo || !blockInfo.votes || !blockInfo.votes.length) {
@@ -748,14 +748,14 @@ class Consensus {
     return validators;
   }
 
-  getWhitelist () {
+  getWhitelist() {
     return LIGHTWEIGHT ? GenesisWhitelist : this.node.db.getValue(ChainUtil.formatPath([
       ConsensusDbPaths.CONSENSUS,
       ConsensusDbPaths.WHITELIST
     ])) || {};
   }
 
-  getValidConsensusDeposit (address) {
+  getValidConsensusDeposit(address) {
     const deposit = this.node.db.getValue(ChainUtil.formatPath([
       PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
       address
@@ -768,7 +768,7 @@ class Consensus {
     return 0;
   }
 
-  votedForEpoch (epoch) {
+  votedForEpoch(epoch) {
     const blockHash = this.blockPool.epochToBlock[epoch];
     if (!blockHash) return false;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
@@ -777,7 +777,7 @@ class Consensus {
     return blockInfo.votes.filter(vote => vote.address === myAddr).length > 0;
   }
 
-  stake (amount) {
+  stake(amount) {
     const LOG_SUFFIX = 'stake';
     if (!amount || amount <= 0) {
       logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Invalid staking amount received: ${amount}`);
@@ -799,7 +799,7 @@ class Consensus {
     return depositTx;
   }
 
-  async reportStateProofHashes () {
+  async reportStateProofHashes() {
     if (!this.node.isShardReporter) {
       return;
     }
@@ -834,8 +834,8 @@ class Consensus {
         opList.push({
           type: WriteDbOperations.SET_VALUE,
           ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-              `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
-              `${ShardingProperties.PROOF_HASH}`,
+            `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
+            `${ShardingProperties.PROOF_HASH}`,
           value: block.stateProofHash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
@@ -844,9 +844,9 @@ class Consensus {
           opList.push({
             type: WriteDbOperations.SET_VALUE,
             ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-                `${ShardingProperties.PROOF_HASH_MAP}/` +
-                `${blockNumberToReport - MAX_SHARD_REPORT}/` +
-                `${ShardingProperties.PROOF_HASH}`,
+              `${ShardingProperties.PROOF_HASH_MAP}/` +
+              `${blockNumberToReport - MAX_SHARD_REPORT}/` +
+              `${ShardingProperties.PROOF_HASH}`,
             value: null
           });
         }
@@ -875,27 +875,27 @@ class Consensus {
     this.isReporting = false;
   }
 
-  async getLastReportedBlockNumber () {
+  async getLastReportedBlockNumber() {
     const resp = await sendGetRequest(
       parentChainEndpoint,
       'ain_get',
       {
         type: ReadDbOperations.GET_VALUE,
         ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-            `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
+          `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
       }
     );
     return _.get(resp, 'data.result.result', null);
   }
 
-  isRunning () {
+  isRunning() {
     return this.status === ConsensusStatus.RUNNING;
   }
 
-  setStatus (status, setter = '') {
+  setStatus(status, setter = '') {
     const LOG_SUFFIX = 'setStatus';
     logger.info(`[${LOG_PREFIX}:${LOG_SUFFIX}] setting consensus status from ${this.status} to ` +
-        `${status} (setter = ${setter})`);
+      `${status} (setter = ${setter})`);
     this.status = status;
     this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
     this.setter = setter;
@@ -918,7 +918,7 @@ class Consensus {
    *   }
    * }
    */
-  getRawState () {
+  getRawState() {
     const result = {};
     result.consensus = Object.assign({}, this.state, { status: this.status });
     if (this.blockPool) {
@@ -945,7 +945,7 @@ class Consensus {
    *   epoch
    * }
    */
-  getState () {
+  getState() {
     const lastFinalizedBlock = this.node.bc.lastBlock();
     let health;
     if (!lastFinalizedBlock) {
@@ -956,7 +956,7 @@ class Consensus {
     return { health, status: this.status, epoch: this.state.epoch };
   }
 
-  static selectProposer (seed, validators) {
+  static selectProposer(seed, validators) {
     const LOG_SUFFIX = 'selectProposer';
     logger.debug(`[${LOG_PREFIX}:${LOG_SUFFIX}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
     const alphabeticallyOrderedValidators = Object.keys(validators).sort();
@@ -972,11 +972,11 @@ class Consensus {
       }
     }
     logger.error(`[${LOG_PREFIX}:${LOG_SUFFIX}] Failed to get the proposer.\nvalidators: ${alphabeticallyOrderedValidators}\n` +
-        `totalAtStake: ${totalAtStake}\nseed: ${seed}\ntargetValue: ${targetValue}`);
+      `totalAtStake: ${totalAtStake}\nseed: ${seed}\ntargetValue: ${targetValue}`);
     return null;
   }
 
-  static isValidConsensusTx (tx) {
+  static isValidConsensusTx(tx) {
     if (!tx.operation) return false;
     const consensusTxPrefix = ChainUtil.formatPath([ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.NUMBER]);
     if (tx.operation.type === WriteDbOperations.SET_VALUE) {
@@ -995,7 +995,7 @@ class Consensus {
     }
   }
 
-  static filterDepositTxs (txs) {
+  static filterDepositTxs(txs) {
     return txs.filter((tx) => {
       const ref = _.get(tx, 'operation.ref');
       return ref && ref.startsWith(`/${PredefinedDbPaths.DEPOSIT_CONSENSUS}`) &&

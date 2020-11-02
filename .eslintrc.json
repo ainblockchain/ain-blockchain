@@ -13,9 +13,9 @@
     "no-unneeded-ternary": "off",
     "no-control-regex": "off",
     "no-useless-escape": "off",
-    // "no-unused-vars": "off",
-    // "no-multi-spaces": "off",
-    // "new-cap": "off",
+    "space-before-function-paren": [
+      "error", {"anonymous": "always", "named": "never", "asyncArrow": "always"}
+    ],
     "indent": [
       "error",
       2,

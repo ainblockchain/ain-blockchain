@@ -3,39 +3,39 @@ const ainUtil = require('@ainblockchain/ain-util');
 // NOTE(seo): To keep the blockchain deterministic as much as possibble over time,
 // we keep util functions here self-contained as much as possible.
 class RuleUtil {
-  isBool (value) {
+  isBool(value) {
     return typeof value === 'boolean';
   }
 
-  isNumber (value) {
+  isNumber(value) {
     return typeof value === 'number' && isFinite(value);
   }
 
-  isString (value) {
+  isString(value) {
     return typeof value === 'string';
   }
 
-  isArray (value) {
+  isArray(value) {
     return Array.isArray(value);
   }
 
-  isDict (value) {
+  isDict(value) {
     return (typeof value === 'object' && value !== null && !Array.isArray(value));
   }
 
-  isEmptyNode (node) {
+  isEmptyNode(node) {
     return node === null || node === undefined ||
-        (this.isDict(node) && Object.keys(node).length === 0);
+      (this.isDict(node) && Object.keys(node).length === 0);
   }
 
-  keys (value) {
+  keys(value) {
     if (this.isDict(value)) {
       return Object.keys(value);
     }
     return [];
   }
 
-  length (value) {
+  length(value) {
     if (this.isString(value) || this.isArray(value)) {
       return value.length;
     }
@@ -45,25 +45,25 @@ class RuleUtil {
     return 0;
   }
 
-  isValAddr (addr) {
+  isValAddr(addr) {
     return this.isString(addr) && ainUtil.isValidAddress(addr);
   }
 
-  isCksumAddr (addr) {
+  isCksumAddr(addr) {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
-  isValShardProto (value) {
+  isValShardProto(value) {
     const { ShardingProtocols } = require('../constants');
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 
-  toBool (value) {
+  toBool(value) {
     return this.isBool(value) ? value : value === 'true';
   }
 
   // TODO(lia): normalize addresses in rule strings using this function.
-  toCksumAddr (addr) {
+  toCksumAddr(addr) {
     try {
       return ainUtil.toChecksumAddress(addr);
     } catch (e) {

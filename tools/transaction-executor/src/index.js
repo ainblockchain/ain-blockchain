@@ -13,7 +13,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const ec = new EC('secp256k1');
 
 class TransactionExecutorCommand extends Command {
-  async run () {
+  async run() {
     const { flags } = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
@@ -46,7 +46,7 @@ class TransactionExecutorCommand extends Command {
     });
   }
 
-  static createSignedTransactionList (transactionFile, keyPair) {
+  static createSignedTransactionList(transactionFile, keyPair) {
     const transactions = [];
     const privateKey = keyPair.priv
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
@@ -86,7 +86,7 @@ class TransactionExecutorCommand extends Command {
     return transactions;
   }
 
-  static createUnsignedTransactionList (transactionFile) {
+  static createUnsignedTransactionList(transactionFile) {
     const transactions = [];
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       const transactionData = TransactionExecutorCommand.parseLine(line);
@@ -118,11 +118,11 @@ class TransactionExecutorCommand extends Command {
     return transactions;
   }
 
-  static parseLine (line) {
+  static parseLine(line) {
     return JSON.parse(line);
   }
 
-  static sendTransactionList (transactions, jsonRpcClient) {
+  static sendTransactionList(transactions, jsonRpcClient) {
     const transactionResults = [];
     for (let i = 0; i < transactions.length; i++) {
       transactionResults.push(this.sendTransaction(transactions[i], jsonRpcClient));
@@ -131,11 +131,11 @@ class TransactionExecutorCommand extends Command {
     return transactionResults;
   }
 
-  static getFileLines (transactionFile) {
+  static getFileLines(transactionFile) {
     return fs.readFileSync(transactionFile, 'utf-8').split('\n').filter(Boolean);
   }
 
-  static sendTransaction (transaction, jsonRpcClient) {
+  static sendTransaction(transaction, jsonRpcClient) {
     return new Promise(function (resolve, reject) {
       jsonRpcClient.request(JSON_RPC_SEND_TRANSACTION, JSON.parse(JSON.stringify(transaction)),
         function (err, response) {

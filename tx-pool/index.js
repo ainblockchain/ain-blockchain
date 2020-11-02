@@ -18,7 +18,7 @@ const Transaction = require('./transaction');
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
-  constructor (node) {
+  constructor(node) {
     this.node = node;
     // MUST IMPLEMENT WAY TO RESET NONCE WHEN TRANSACTION IS LOST IN NETWORK
     this.transactions = {};
@@ -32,7 +32,7 @@ class TransactionPool {
     this.isChecking = false;
   }
 
-  addTransaction (tx) {
+  addTransaction(tx) {
     // Quick verification of transaction on entry
     // TODO (lia): pull verification out to the very front
     // (closer to the communication layers where the node first receives transactions)
@@ -65,29 +65,29 @@ class TransactionPool {
     return true;
   }
 
-  isTimedOut (txTimestamp, lastBlockTimestamp, timeout) {
+  isTimedOut(txTimestamp, lastBlockTimestamp, timeout) {
     if (lastBlockTimestamp < 0) {
       return false;
     }
     return lastBlockTimestamp >= txTimestamp + timeout;
   }
 
-  isTimedOutFromPool (txTimestamp, lastBlockTimestamp) {
+  isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_POOL_TIME_OUT_MS);
   }
 
-  isTimedOutFromTracker (txTimestamp, lastBlockTimestamp) {
+  isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIME_OUT_MS);
   }
 
-  isNotEligibleTransaction (tx) {
+  isNotEligibleTransaction(tx) {
     return ((tx.address in this.transactions) &&
       (this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined)) ||
       (tx.nonce >= 0 && tx.nonce <= this.committedNonceTracker[tx.address]) ||
       (tx.nonce < 0 && tx.hash in this.transactionTracker);
   }
 
-  getValidTransactions (excludeBlockList) {
+  getValidTransactions(excludeBlockList) {
     let excludeTransactions = [];
     if (excludeBlockList && excludeBlockList.length) {
       excludeBlockList.forEach((block) => {
@@ -159,7 +159,7 @@ class TransactionPool {
     return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0] : [];
   }
 
-  removeTimedOutTxsFromPool (blockTimestamp) {
+  removeTimedOutTxsFromPool(blockTimestamp) {
     // Get timed-out transactions.
     const timedOutTxs = new Set();
     for (const address in this.transactions) {
@@ -178,7 +178,7 @@ class TransactionPool {
     return timedOutTxs.size > 0;
   }
 
-  removeTimedOutTxsFromTracker (blockTimestamp) {
+  removeTimedOutTxsFromTracker(blockTimestamp) {
     // Remove transactions from transactionTracker.
     let removed = false;
     for (const hash in this.transactionTracker) {
@@ -191,7 +191,7 @@ class TransactionPool {
     return removed;
   }
 
-  removeInvalidTxsFromPool (txs) {
+  removeInvalidTxsFromPool(txs) {
     const addrToTxSet = {};
     txs.forEach(tx => {
       const { address, hash } = tx;
@@ -214,7 +214,7 @@ class TransactionPool {
     }
   }
 
-  cleanUpForNewBlock (block) {
+  cleanUpForNewBlock(block) {
     const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
@@ -269,7 +269,7 @@ class TransactionPool {
     }
   }
 
-  updateNonceTrackers (transactions) {
+  updateNonceTrackers(transactions) {
     transactions.forEach((tx) => {
       if (tx.nonce >= 0) {
         if (this.committedNonceTracker[tx.address] === undefined ||
@@ -284,7 +284,7 @@ class TransactionPool {
     });
   }
 
-  rebuildPendingNonceTracker () {
+  rebuildPendingNonceTracker() {
     const newNonceTracker = JSON.parse(JSON.stringify(this.committedNonceTracker));
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
@@ -297,7 +297,7 @@ class TransactionPool {
     this.pendingNonceTracker = newNonceTracker;
   }
 
-  getPoolSize () {
+  getPoolSize() {
     let size = 0;
     for (const address in this.transactions) {
       size += this.transactions[address].length;
@@ -305,7 +305,7 @@ class TransactionPool {
     return size;
   }
 
-  addRemoteTransaction (txHash, action) {
+  addRemoteTransaction(txHash, action) {
     if (!action.ref || !action.valueFunction) {
       logger.debug(
         `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
@@ -320,7 +320,7 @@ class TransactionPool {
     this.remoteTransactionTracker[txHash] = trackingInfo;
   }
 
-  checkRemoteTransactions () {
+  checkRemoteTransactions() {
     if (this.isChecking) {
       return;
     }
@@ -352,7 +352,7 @@ class TransactionPool {
       });
   }
 
-  doAction (action, success) {
+  doAction(action, success) {
     const triggerTx = action.transaction;
     let value = null;
     try {

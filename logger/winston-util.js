@@ -39,7 +39,7 @@ const getWinstonColors = () => {
 };
 
 const getWinstonConsoleTransport = () => {
-  return new (winston.transports.Console) ({
+  return new (winston.transports.Console)({
     name: 'debug-console-log',
     level: DEBUG ? 'debug' : 'info',
     handleExceptions: true,
@@ -55,7 +55,7 @@ const getWinstonConsoleTransport = () => {
 };
 
 const getWinstonDailyDebugFileTransport = () => {
-  return new (winstonDaily) ({
+  return new (winstonDaily)({
     name: 'daily-combined-log',
     level: 'debug',
     filename: `${logDir}/${prefix}-combined-%DATE%.log`,
@@ -73,7 +73,7 @@ const getWinstonDailyDebugFileTransport = () => {
 };
 
 const getWinstonDailyErrorFileTransport = () => {
-  return new (winstonDaily) ({
+  return new (winstonDaily)({
     name: 'daily-error-log',
     level: 'error',
     filename: `${logDir}/${prefix}-error-%DATE%.log`,
