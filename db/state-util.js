@@ -199,7 +199,7 @@ function buildProofHashOfStateNode(StateNode) {
   if (StateNode.getIsLeaf()) {
     preimage = StateNode.getValue();
   } else {
-    preimage = StateNode.getChildLabels().map(label => {
+    preimage = StateNode.getChildLabels().map((label) => {
       return `${label}${HASH_DELIMITER}${StateNode.getChild(label).getProofHash()}`;
     }, '').join(HASH_DELIMITER);
   }
@@ -208,7 +208,7 @@ function buildProofHashOfStateNode(StateNode) {
 
 function setProofHashForStateTree(stateTree) {
   if (!stateTree.getIsLeaf()) {
-    stateTree.getChildNodes().forEach(node => {
+    stateTree.getChildNodes().forEach((node) => {
       setProofHashForStateTree(node);
     });
   }

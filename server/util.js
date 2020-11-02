@@ -40,17 +40,17 @@ function signTx(tx, keyBuffer) {
 
 async function sendSignedTx(endpoint, signedTxParams) {
   return await axios.post(
-    endpoint,
-    {
-      method: 'ain_sendSignedTransaction',
-      params: signedTxParams,
-      jsonrpc: '2.0',
-      id: 0
-    }
-  ).then(resp => {
+      endpoint,
+      {
+        method: 'ain_sendSignedTransaction',
+        params: signedTxParams,
+        jsonrpc: '2.0',
+        id: 0
+      }
+  ).then((resp) => {
     const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
     return { success };
-  }).catch(err => {
+  }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
     return { errMsg: err.message, success: false };
   });
@@ -70,17 +70,17 @@ async function signAndSendTx(endpoint, tx, keyBuffer) {
 async function waitUntilTxFinalize(endpoint, txHash) {
   while (true) {
     const confirmed = await sendGetRequest(
-      endpoint,
-      'ain_getTransactionByHash',
-      { hash: txHash }
+        endpoint,
+        'ain_getTransactionByHash',
+        { hash: txHash }
     )
-      .then(resp => {
-        return (_.get(resp, 'data.result.result.is_finalized', false) === true);
-      })
-      .catch(err => {
-        logger.error(`Failed to confirm transaction: ${err}`);
-        return false;
-      });
+        .then((resp) => {
+          return (_.get(resp, 'data.result.result.is_finalized', false) === true);
+        })
+        .catch((err) => {
+          logger.error(`Failed to confirm transaction: ${err}`);
+          return false;
+        });
     if (confirmed) {
       return true;
     }
@@ -92,16 +92,16 @@ function sendGetRequest(endpoint, method, params) {
   // NOTE(seo): .then() was used here to avoid some unexpected behavior or axios.post()
   //            (see https://github.com/ainblockchain/ain-blockchain/issues/101)
   return axios.post(
-    endpoint,
-    {
-      method,
-      params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
-      jsonrpc: '2.0',
-      id: 0
-    }
-  ).then(resp => {
+      endpoint,
+      {
+        method,
+        params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
+        jsonrpc: '2.0',
+        id: 0
+      }
+  ).then((resp) => {
     return resp;
-  }).catch(err => {
+  }).catch((err) => {
     logger.error(`Failed to send get request: ${err}`);
     return null;
   });

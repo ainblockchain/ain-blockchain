@@ -18,14 +18,14 @@ class RequestManager {
     };
 
     return rp(options)
-      .then(function (parsedBody) {
+        .then(function (parsedBody) {
         // POST succeeded
-        return parsedBody;
-      })
-      .catch(function (err) {
+          return parsedBody;
+        })
+        .catch(function (err) {
         // POST failed
-        console.log(err);
-      });
+          console.log(err);
+        });
   }
 
   getRef(ref) {

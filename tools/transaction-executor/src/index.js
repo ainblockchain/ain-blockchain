@@ -52,10 +52,10 @@ class TransactionExecutorCommand extends Command {
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       if (line.match(ADDRESS_REG_EX)) {
         const publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-          ainUtil.pubToAddress(
-            Buffer.from(keyPair.getPublic().encode('hex'), 'hex'),
-            true
-          )
+            ainUtil.pubToAddress(
+                Buffer.from(keyPair.getPublic().encode('hex'), 'hex'),
+                true
+            )
         ));
         line = line.replace(ADDRESS_REG_EX, `${publicKey}`);
       }
@@ -138,13 +138,13 @@ class TransactionExecutorCommand extends Command {
   static sendTransaction(transaction, jsonRpcClient) {
     return new Promise(function (resolve, reject) {
       jsonRpcClient.request(JSON_RPC_SEND_TRANSACTION, JSON.parse(JSON.stringify(transaction)),
-        function (err, response) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(response);
-          }
-        });
+          function (err, response) {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(response);
+            }
+          });
     });
   }
 }

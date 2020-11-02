@@ -1,7 +1,6 @@
 {
   "extends": [
-    "standard",
-    "eslint:recommended"
+    "google"
   ],
   "plugins": [
     "standard",
@@ -13,13 +12,18 @@
     "no-unneeded-ternary": "off",
     "no-control-regex": "off",
     "no-useless-escape": "off",
-    "space-before-function-paren": [
-      "error", {"anonymous": "always", "named": "never", "asyncArrow": "always"}
-    ],
-    "indent": [
+    "require-jsdoc": "off",
+    "max-len": [
       "error",
-      2,
-      { "SwitchCase": 1 }
+      { "code": 100 }
+    ],
+    "space-before-function-paren": [
+      "error",
+      { "anonymous": "always", "named": "never", "asyncArrow": "always" }
+    ],
+    "object-curly-spacing": [
+      "error",
+      "always"
     ],
     "comma-dangle": [
       "error",

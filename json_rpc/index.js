@@ -232,7 +232,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_evalRule: function (args, done) {
       const result = p2pServer.node.db.evalRule(
-        args.ref, args.value, args.address, args.timestamp || Date.now(), args.is_global);
+          args.ref, args.value, args.address, args.timestamp || Date.now(), args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
@@ -281,7 +281,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       // TODO (lia): update this function after revamping consensus staking
       // FIXME: may need to deprecate or modify this logic for the new consensus
       const deposit = p2pServer.node.db.getValue(
-        `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
+          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
       const stakeValid = deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
       done(null, addProtocolVersion({ result: stakeValid }));
     },
@@ -323,7 +323,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 function extractTransactionHashes(block) {
   if (!block) return [];
   const hashes = [];
-  block.transactions.forEach(tx => {
+  block.transactions.forEach((tx) => {
     hashes.push(tx.hash);
   });
   return hashes;
