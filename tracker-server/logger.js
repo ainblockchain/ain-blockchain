@@ -72,4 +72,3 @@ const logger = new winston.createLogger({
 });
 
 module.exports = logger;
-

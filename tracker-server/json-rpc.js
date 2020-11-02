@@ -7,25 +7,25 @@
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(nodes) {
+module.exports = function getMethods (nodes) {
   return {
-    getNodeInfoList: function(args, done) {
-      let list = [];
+    getNodeInfoList: function (args, done) {
+      const list = [];
       Object.keys(nodes).forEach((key) => {
         list.push(nodes[key].getNodeInfo());
       });
       done(null, list);
     },
 
-    getNodeAddressList: function(args, done) {
-      let list = [];
+    getNodeAddressList: function (args, done) {
+      const list = [];
       Object.keys(nodes).forEach((key) => {
         list.push(nodes[key].address);
       });
       done(null, list);
     },
 
-    getNodeInfoByAddress: function(args, done) {
+    getNodeInfoByAddress: function (args, done) {
       let result = null;
       for (let i = 0; i < nodes.length; i++) {
         if (nodes[i].address === args[0]) {
