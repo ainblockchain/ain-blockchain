@@ -71,5 +71,20 @@ const winstonLogger = new winston.createLogger({
   exitOnError: false
 });
 
-module.exports = winstonLogger;
+const logger = function(prefix) {
+  const prefixedLogger = {
+    error: function(text) {
+      winstonLogger.error(`[${prefix}] ${text}`)
+    },
+    info: function(text) {
+      winstonLogger.info(`[${prefix}] ${text}`)
+    },
+    debug: function(text) {
+      winstonLogger.debug(`[${prefix}] ${text}`)
+    }
+  }
 
+  return prefixedLogger
+}
+
+module.exports = logger;
