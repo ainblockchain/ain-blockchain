@@ -17,7 +17,8 @@ class TransactionExecutorCommand extends Command {
     const { flags } = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
-    const generateKeyPair = flags.generateKeyPair ? flags.generateKeyPair.toLowerCase().startsWith('t') : false;
+    const generateKeyPair = flags.generateKeyPair
+        ? flags.generateKeyPair.toLowerCase().startsWith('t') : false;
     const privateKeyString = flags.privateKey || null;
     if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
@@ -33,17 +34,20 @@ class TransactionExecutorCommand extends Command {
     let transactions;
     if (generateKeyPair) {
       const keyPair = ChainUtil.genKeyPair();
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
+      transactions = TransactionExecutorCommand.createSignedTransactionList(
+          transactionFile, keyPair);
     } else if (privateKeyString) {
       const keyPair = ec.keyFromPrivate(privateKeyString, 'hex')
       keyPair.getPublic()
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
+      transactions = TransactionExecutorCommand.createSignedTransactionList(
+          transactionFile, keyPair);
     } else {
       transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
-    await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient)).then((values) => {
-      console.log(values);
-    });
+    await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient))
+        .then((values) => {
+          console.log(values);
+        });
   }
 
   static createSignedTransactionList(transactionFile, keyPair) {
@@ -149,25 +153,36 @@ class TransactionExecutorCommand extends Command {
   }
 }
 
-TransactionExecutorCommand.description = `Reads transactions from file and sends them to the specified server
-...
-Creates a valid privae/public key pair and uses this pair to send transactions
-to the speified server. Transactions must be specified in valid JSON format, with
-a single transaction written on each line. Nonce must be specified for all transactions.
-Address must be speficied for each transaction if --generateKeyPair=false. Otherise address
-must not be specified for any trasnaction.
-`;
+TransactionExecutorCommand.description =
+    `Reads transactions from file and sends them to the specified server
+    ...
+    Creates a valid privae/public key pair and uses this pair to send transactions
+    to the speified server. Transactions must be specified in valid JSON format, with
+    a single transaction written on each line. Nonce must be specified for all transactions.
+    Address must be speficied for each transaction if --generateKeyPair=false. Otherise address
+    must not be specified for any trasnaction.
+    `;
 
 TransactionExecutorCommand.flags = {
   // add --help flag to show CLI version
   help: flags.help({ char: 'h' }),
-  server: flags.string({ char: 's', description: 'server to send rpc transasction (e.x. http://localhost:8080)' }),
-  transactionFile: flags.string({ char: 't', description: 'File containg one valid josn transaction per line' }),
-  privateKey: flags.string({ char: 'p', description: 'Specific private key to use when sending transactions' }),
+  server: flags.string({
+    char: 's',
+    description: 'server to send rpc transasction (e.x. http://localhost:8080)'
+  }),
+  transactionFile: flags.string({
+    char: 't',
+    description: 'File containg one valid josn transaction per line'
+  }),
+  privateKey: flags.string({
+    char: 'p',
+    description: 'Specific private key to use when sending transactions'
+  }),
   generateKeyPair: flags.string({
     char: 'g',
     description: 'Indicates whether to generate a valid public/private key pair for signing and ' +
-      'sending transactions. Please note that if this value is set to false, any transaction without an address will result in an error.'
+      'sending transactions. Please note that if this value is set to false, ' +
+      'any transaction without an address will result in an error.'
   }),
 };
 

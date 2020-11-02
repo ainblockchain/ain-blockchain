@@ -125,7 +125,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
-        done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.` }));
+        done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ` +
+            `${MAX_TX_BYTES} bytes.` }));
       } else {
         done(null, addProtocolVersion({ result: p2pServer.executeAndBroadcastTransaction(args) }));
       }
@@ -282,7 +283,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       // FIXME: may need to deprecate or modify this logic for the new consensus
       const deposit = p2pServer.node.db.getValue(
           `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
-      const stakeValid = deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
+      const stakeValid = deposit && deposit.value > 0 &&
+          deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
       done(null, addProtocolVersion({ result: stakeValid }));
     },
 

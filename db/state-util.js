@@ -1,3 +1,4 @@
+/* eslint guard-for-in: "off" */
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 const {
@@ -181,7 +182,8 @@ function deleteStateTree(root) {
     root.deleteChild(label);
     deleteStateTree(childNode);
   }
-  // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
+  // reference:
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
   root = null;
 }
 

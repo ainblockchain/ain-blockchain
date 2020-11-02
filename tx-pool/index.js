@@ -1,3 +1,4 @@
+/* eslint guard-for-in: "off" */
 const logger = require('../logger');
 const _ = require('lodash');
 const {
@@ -111,7 +112,8 @@ class TransactionPool {
           ? tx.operation.op_list[0].ref : undefined;
         const type = _.get(tx, 'operation.type');
         return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
-          (ref && !ref.startsWith('/consensus/number')) || (innerRef && !innerRef.startsWith('/consensus/number'));
+            (ref && !ref.startsWith('/consensus/number')) ||
+            (innerRef && !innerRef.startsWith('/consensus/number'));
       });
       if (!tempFilteredTransactions.length) {
         delete unvalidatedTransactions[address];
@@ -151,7 +153,8 @@ class TransactionPool {
         } else {
           const invalidNoncedTransaction = listToTakeValue.shift();
           logger.info('Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction));
-          _.remove(this.transactions[invalidNoncedTransaction.address], (tx) => tx.hash === invalidNoncedTransaction.hash);
+          _.remove(this.transactions[invalidNoncedTransaction.address],
+              (tx) => tx.hash === invalidNoncedTransaction.hash);
           delete this.transactionTracker[invalidNoncedTransaction.hash];
         }
       }

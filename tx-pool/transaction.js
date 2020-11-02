@@ -10,7 +10,8 @@ class Transaction {
 
     const transaction = txWithSig.transaction ? txWithSig.transaction : txWithSig;
     if (!Transaction.hasRequiredFields(transaction)) {
-      logger.info('Transaction must contain timestamp, operation and nonce fields: ' + JSON.stringify(transaction));
+      logger.info('Transaction must contain timestamp, operation and nonce fields: ' +
+          JSON.stringify(transaction));
       return null;
     }
 
@@ -142,13 +143,15 @@ class Transaction {
   }
 
   static verifyTransaction(transaction) {
-    if (transaction.operation.type !== undefined && Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
+    if (transaction.operation.type !== undefined &&
+        Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
       logger.info(`Invalid transaction type: ${transaction.operation.type}`);
       return false;
     }
     // Workaround for skip_verif with custom address
     if (transaction.skip_verif) {
-      logger.info('Skip verifying signature for transaction: ' + JSON.stringify(transaction, null, 2));
+      logger.info('Skip verifying signature for transaction: ' +
+          JSON.stringify(transaction, null, 2));
       return true;
     }
     return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);

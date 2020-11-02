@@ -1,3 +1,4 @@
+/* eslint max-len: "off" */
 const FILE_NAME_SUFFIX = 'json.zip';
 
 class BlockFilePatterns {

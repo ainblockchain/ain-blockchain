@@ -53,7 +53,8 @@ function numLivePeers(address) {
 }
 
 function printNodesInfo() {
-  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()} at ${Date.now()})`);
+  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()}` +
+      `at ${Date.now()})`);
   const nodeList = Object.values(PEER_NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });

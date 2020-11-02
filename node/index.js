@@ -1,3 +1,4 @@
+/* eslint guard-for-in: "off" */
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger');
 const {
@@ -16,7 +17,8 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
 const NODE_PREFIX = 'NODE';
-const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+const isShardChain =
+    GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 
 class BlockchainNode {
   constructor() {
