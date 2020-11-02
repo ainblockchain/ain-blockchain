@@ -261,6 +261,7 @@ class P2pServer {
         { longestNotarizedChainTipsSize: this.consensus.blockPool ?
             this.consensus.blockPool.longestNotarizedChainTips.length : 0 }
       ),
+      shardingStatus: this.node.getSharding(),
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
