@@ -1,5 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const _ = require("lodash");
+const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 // All blockchain nodes in parent chains
@@ -34,14 +34,14 @@ const parentChainPoCList = {
   ]
 };
 
-function writeFile(json, file) {
+function writeFile (json, file) {
   fs.writeFileSync(file, json, 'utf8');
 }
 
-function createAccount(prefix) {
+function createAccount (prefix) {
   console.log(`Creating an account with prefix ${prefix}..`);
   let count = 0;
-  while(true) {
+  while (true) {
     const account = ainUtil.createAccount(); // { private_key, public_key, address }
     const address = account.address.substring(2);
     if (_.startsWith(address, prefix)) {
@@ -55,7 +55,7 @@ function createAccount(prefix) {
   }
 }
 
-function createAccounts(num, _prefix) {
+function createAccounts (num, _prefix) {
   const ownerAccount = createAccount(_prefix + _prefix);
   const otherAccounts = [];
   for (let i = 0; i < num; i++) {
@@ -70,19 +70,19 @@ function createAccounts(num, _prefix) {
   }
 }
 
-function getShardingConfig(env, index) {
+function getShardingConfig (env, index) {
   const pocList = parentChainPoCList[env];
   return {
     sharding_protocol: 'POA',
     sharding_path: `/apps/shard_${index}`,
     parent_chain_poc: pocList[index % pocList.length],
     reporting_period: 5,
-    token_exchange_scheme: "FIXED",
+    token_exchange_scheme: 'FIXED',
     token_exchange_rate: 10,
   };
 }
 
-function getShardingToken(prefix) {
+function getShardingToken (prefix) {
   return {
     name: `ShardCoin${prefix}`,
     symbol: `SHARDCO${prefix}`,
@@ -90,7 +90,7 @@ function getShardingToken(prefix) {
   };
 }
 
-async function processArguments() {
+async function processArguments () {
   if (process.argv.length !== 5) {
     usage();
   }
@@ -113,7 +113,7 @@ async function processArguments() {
 
   // directory for shard genesis files
   const shardDir = path.resolve(__dirname, `../blockchain/shard_${index}`);
-  if (!fs.existsSync(shardDir)){
+  if (!fs.existsSync(shardDir)) {
     fs.mkdirSync(shardDir);
   }
   // genesis_accounts.json
@@ -135,7 +135,7 @@ async function processArguments() {
   writeFile(JSON.stringify(shardingToken, null, 2), tokenFile);
 }
 
-function usage() {
+function usage () {
   console.log('\nExample commandlines:\n  node generateShardGenesisFiles.js dev 10 1\n');
   process.exit(0);
 }
