@@ -1,3 +1,6 @@
+/* eslint new-cap: "off" */
+/* eslint func-call-spacing: "off" */
+/* eslint new-parens: "off" */
 const winston = require('winston');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
@@ -88,12 +91,12 @@ const getWinstonDailyErrorFileTransport = () => {
 };
 
 const getWinstonTransports = () => {
-  const transports = LIGHTWEIGHT ? [ getWinstonDailyErrorFileTransport() ] :
-      [
-        getWinstonConsoleTransport(),
-        getWinstonDailyDebugFileTransport(),
-        getWinstonDailyErrorFileTransport(),
-      ];
+  const transports = LIGHTWEIGHT ? [getWinstonDailyErrorFileTransport()]
+    : [
+      getWinstonConsoleTransport(),
+      getWinstonDailyDebugFileTransport(),
+      getWinstonDailyErrorFileTransport(),
+    ];
   if (HOSTING_ENV === 'gcp') {
     // Add Stackdriver Logging
     transports.push(new LoggingWinston);

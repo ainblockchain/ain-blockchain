@@ -1,3 +1,4 @@
+/* eslint new-cap: "off" */
 const winston = require('winston');
 const { getWinstonLevels, getWinstonColors, getWinstonTransports } = require('./winston-util');
 
