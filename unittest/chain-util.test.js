@@ -96,6 +96,28 @@ describe("ChainUtil", () => {
     })
   })
 
+  describe("appendPath", () => {
+    it("when one input", () => {
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c'), '/a/b/c');
+    })
+
+    it("when two inputs", () => {
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/'), '/a/b/c');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '//'), '/a/b/c');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c/', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c//', '/d/e/f'), '/a/b/c/d/e/f');
+    })
+
+    it("when more than two inputs", () => {
+      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/d/e/f', '/g/h/i'), '/a/b/c/d/e/f/g/h/i');
+      assert.deepEqual(ChainUtil.appendPath('a/b', 'c/d', 'e/f', 'g/h'), '/a/b/c/d/e/f/g/h');
+    })
+  })
+
   describe("getJsObject", () => {
     let obj;
 
