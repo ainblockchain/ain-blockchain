@@ -9,6 +9,9 @@ const {
   MAX_TX_BYTES,
   NETWORK_ID
 } = require('../constants');
+const {
+  ConsensusConsts
+} = require('../consensus/constants');
 const ainUtil = require('@ainblockchain/ain-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -21,18 +24,13 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(
-    node,
-    p2pServer,
-    minProtocolVersion,
-    maxProtocolVersion
-  ) {
+module.exports = function getMethods (node, p2pServer, minProtocolVersion, maxProtocolVersion) {
   return {
-    ain_getProtocolVersion: function(args, done) {
+    ain_getProtocolVersion: function (args, done) {
       done(null, addProtocolVersion({ result: CURRENT_PROTOCOL_VERSION }));
     },
 
-    ain_checkProtocolVersion: function(args, done) {
+    ain_checkProtocolVersion: function (args, done) {
       const version = args.protoVer;
       const coercedVer = semver.coerce(version);
       if (version === undefined) {
@@ -40,7 +38,7 @@ module.exports = function getMethods(
       } else if (!semver.valid(coercedVer)) {
         done(null, addProtocolVersion({ code: 1, message: 'Invalid protocol version.' }));
       } else if (semver.lt(coercedVer, minProtocolVersion) ||
-                (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
+        (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
         done(null, addProtocolVersion({ code: 1, message: 'Incompatible protocol version.' }));
       } else {
         done(null, addProtocolVersion({ code: 0, result: 'Success' }));
@@ -48,21 +46,21 @@ module.exports = function getMethods(
     },
 
     // Bloock API
-    ain_getBlockList: function(args, done) {
+    ain_getBlockList: function (args, done) {
       const blocks = node.bc.getChainSection(args.from, args.to);
       done(null, addProtocolVersion({ result: blocks }));
     },
 
-    ain_getRecentBlock: function(args, done) {
+    ain_getRecentBlock: function (args, done) {
       done(null, addProtocolVersion({ result: node.bc.lastBlock() }));
     },
 
-    ain_getRecentBlockNumber: function(args, done) {
+    ain_getRecentBlockNumber: function (args, done) {
       const block = node.bc.lastBlock();
       done(null, addProtocolVersion({ result: block ? block.number : null }));
     },
 
-    ain_getBlockHeadersList: function(args, done) {
+    ain_getBlockHeadersList: function (args, done) {
       const blocks = node.bc.getChainSection(args.from, args.to);
       const blockHeaders = [];
       blocks.forEach((block) => {
@@ -71,16 +69,16 @@ module.exports = function getMethods(
       done(null, addProtocolVersion({ result: blockHeaders }));
     },
 
-    ain_getBlockByHash: function(args, done) {
-      let block = node.bc.getBlockByHash(args.hash);
+    ain_getBlockByHash: function (args, done) {
+      const block = node.bc.getBlockByHash(args.hash);
       if (block && !args.getFullTransactions) {
         block.transactions = extractTransactionHashes(block);
       }
       done(null, addProtocolVersion({ result: block }));
     },
 
-    ain_getBlockByNumber: function(args, done) {
-      let block = node.bc.getBlockByNumber(args.number);
+    ain_getBlockByNumber: function (args, done) {
+      const block = node.bc.getBlockByNumber(args.number);
       if (!block || args.getFullTransactions) {
         done(null, addProtocolVersion({ result: block }));
       } else {
@@ -89,42 +87,42 @@ module.exports = function getMethods(
       }
     },
 
-    ain_getProposerByHash: function(args, done) {
+    ain_getProposerByHash: function (args, done) {
       const block = node.bc.getBlockByHash(args.hash);
       done(null, addProtocolVersion({ result: block ? block.proposer : null }));
     },
 
-    ain_getProposerByNumber: function(args, done) {
+    ain_getProposerByNumber: function (args, done) {
       const block = node.bc.getBlockByNumber(args.number);
       done(null, addProtocolVersion({ result: block ? block.proposer : null }));
     },
 
-    ain_getValidatorsByNumber: function(args, done) {
+    ain_getValidatorsByNumber: function (args, done) {
       const block = node.bc.getBlockByNumber(args.number);
       done(null, addProtocolVersion({ result: block ? block.validators : null }));
     },
 
-    ain_getValidatorsByHash: function(args, done) {
+    ain_getValidatorsByHash: function (args, done) {
       const block = node.bc.getBlockByHash(args.hash);
       done(null, addProtocolVersion({ result: block ? block.validators : null }));
     },
 
-    ain_getBlockTransactionCountByHash: function(args, done) {
+    ain_getBlockTransactionCountByHash: function (args, done) {
       const block = node.bc.getBlockByHash(args.hash);
       done(null, addProtocolVersion({ result: block ? block.transactions.length : null }));
     },
 
-    ain_getBlockTransactionCountByNumber: function(args, done) {
+    ain_getBlockTransactionCountByNumber: function (args, done) {
       const block = node.bc.getBlockByNumber(args.number);
       done(null, addProtocolVersion({ result: block ? block.transactions.length : null }));
     },
 
     // Transaction API
-    ain_getPendingTransactions: function(args, done) {
+    ain_getPendingTransactions: function (args, done) {
       done(null, addProtocolVersion({ result: node.tp.transactions }));
     },
 
-    ain_sendSignedTransaction: function(args, done) {
+    ain_sendSignedTransaction: function (args, done) {
       // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
         done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.` }));
@@ -133,7 +131,7 @@ module.exports = function getMethods(
       }
     },
 
-    ain_getTransactionByHash: function(args, done) {
+    ain_getTransactionByHash: function (args, done) {
       const transactionInfo = node.tp.transactionTracker[args.hash];
       if (transactionInfo) {
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
@@ -149,7 +147,7 @@ module.exports = function getMethods(
       done(null, addProtocolVersion({ result: transactionInfo }));
     },
 
-    ain_getTransactionByBlockHashAndIndex: function(args, done) {
+    ain_getTransactionByBlockHashAndIndex: function (args, done) {
       let result = null;
       if (args.block_hash && Number.isInteger(args.index)) {
         const index = Number(args.index);
@@ -164,7 +162,7 @@ module.exports = function getMethods(
       done(null, addProtocolVersion({ result }));
     },
 
-    ain_getTransactionByBlockNumberAndIndex: function(args, done) {
+    ain_getTransactionByBlockNumberAndIndex: function (args, done) {
       let result = null;
       if (Number.isInteger(args.block_number) && Number.isInteger(args.index)) {
         const index = Number(args.index);
@@ -180,7 +178,7 @@ module.exports = function getMethods(
     },
 
     // Database API
-    ain_get: function(args, done) { // TODO (lia): split this method
+    ain_get: function (args, done) { // TODO (lia): split this method
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           done(null, addProtocolVersion({
@@ -213,56 +211,57 @@ module.exports = function getMethods(
           }));
           return;
         default:
-          done(null, addProtocolVersion({ code: 1, message: "Invalid get request type" }));
+          done(null, addProtocolVersion({ code: 1, message: 'Invalid get request type' }));
       }
     },
 
-    ain_matchFunction: function(args, done) {
+    ain_matchFunction: function (args, done) {
       const result = p2pServer.node.db.matchFunction(args.ref, args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
-    ain_matchRule: function(args, done) {
+    ain_matchRule: function (args, done) {
       const result = p2pServer.node.db.matchRule(args.ref, args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
-    ain_matchOwner: function(args, done) {
+    ain_matchOwner: function (args, done) {
       const result = p2pServer.node.db.matchOwner(args.ref, args.is_global);
-      done (null, addProtocolVersion({ result }));
-    },
-
-    ain_evalRule: function(args, done) {
-      const result = p2pServer.node.db.evalRule(
-          args.ref, args.value, args.address, args.timestamp || Date.now(), args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
-    ain_evalOwner: function(args, done) {
-      const result =
-          p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
-      done (null, addProtocolVersion({ result }));
+    ain_evalRule: function (args, done) {
+      const result = p2pServer.node.db.evalRule(
+        args.ref, args.value, args.address, args.timestamp || Date.now(), args.is_global);
+      done(null, addProtocolVersion({ result }));
     },
 
-    ain_getProof: function(args, done) {
+    ain_evalOwner: function (args, done) {
+      const result =
+        p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
+      done(null, addProtocolVersion({ result }));
+    },
+
+    ain_getProof: function (args, done) {
       const result = p2pServer.node.db.getProof(args.ref);
-      done (null, addProtocolVersion({ result }));
+      done(null, addProtocolVersion({ result }));
     },
 
     // Account API
-    ain_getAddress: function(args, done) {
-      done(null, addProtocolVersion({ result: p2pServer.node.account ?
-          p2pServer.node.account.address : null }));
+    ain_getAddress: function (args, done) {
+      done(null, addProtocolVersion({
+        result: p2pServer.node.account ? p2pServer.node.account.address : null
+      }));
     },
 
-    ain_getBalance: function(args, done) {
+    ain_getBalance: function (args, done) {
       const address = args.address;
       const balance =
           p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
       done(null, addProtocolVersion({ result: balance }));
     },
 
-    ain_getNonce: function(args, done) {
+    ain_getNonce: function (args, done) {
       const address = args.address;
       if (args.from === 'pending') {
         if (ainUtil.areSameAddresses(p2pServer.node.account.address, address)) {
@@ -278,50 +277,50 @@ module.exports = function getMethods(
       }
     },
 
-    ain_isValidator: function(args, done) {
+    ain_isValidator: function (args, done) {
       // TODO (lia): update this function after revamping consensus staking
       // FIXME: may need to deprecate or modify this logic for the new consensus
       const deposit = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
+        `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
       const stakeValid = deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
       done(null, addProtocolVersion({ result: stakeValid }));
     },
 
     // Network API
-    net_listening: function(args, done) {
+    net_listening: function (args, done) {
       // TODO (lia): Check if this number is lower than max peer number
       const peerCount = p2pServer.sockets.length;
       done(null, addProtocolVersion({ result: !!peerCount }));
     },
 
-    net_peerCount: function(args, done) {
+    net_peerCount: function (args, done) {
       const peerCount = p2pServer.sockets.length;
       done(null, addProtocolVersion({ result: peerCount }));
     },
 
-    net_syncing: function(args, done) {
+    net_syncing: function (args, done) {
       // TODO (lia): return { starting, latest } with block numbers if the node
       // is currently syncing.
       done(null, addProtocolVersion({ result: !node.bc.syncedAfterStartup }));
     },
 
-    net_getNetworkId: function(args, done) {
+    net_getNetworkId: function (args, done) {
       done(null, addProtocolVersion({ result: NETWORK_ID }));
     },
 
-    net_consensusState: function(args, done) {
+    net_consensusState: function (args, done) {
       const result = p2pServer.consensus.getState();
       done(null, addProtocolVersion({ result }));
     },
 
-    net_rawConsensusState: function(args, done) {
+    net_rawConsensusState: function (args, done) {
       const result = p2pServer.consensus.getRawState();
       done(null, addProtocolVersion({ result }));
     }
   };
 };
 
-function extractTransactionHashes(block) {
+function extractTransactionHashes (block) {
   if (!block) return [];
   const hashes = [];
   block.transactions.forEach(tx => {
@@ -330,7 +329,7 @@ function extractTransactionHashes(block) {
   return hashes;
 }
 
-function addProtocolVersion(result) {
-  result['protoVer'] = CURRENT_PROTOCOL_VERSION;
+function addProtocolVersion (result) {
+  result.protoVer = CURRENT_PROTOCOL_VERSION;
   return result;
 }
