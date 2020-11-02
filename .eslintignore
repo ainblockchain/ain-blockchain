@@ -1,0 +1,5 @@
+unittest/
+loadtest/
+integration/
+.github/
+tools/cross-shard/config*
