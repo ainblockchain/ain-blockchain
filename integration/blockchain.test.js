@@ -668,7 +668,7 @@ describe('Blockchain', () => {
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
             {number: 0, protoVer: 'v0.1'}));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: '1'}));
+            {number: 0, protoVer: '0.1.0'}));
         Promise.all(promises).then(res => {
           expect(res[0].code).to.equal(1);
           expect(res[0].message).to.equal("Invalid protocol version.");
