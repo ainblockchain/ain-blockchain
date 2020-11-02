@@ -1,16 +1,13 @@
-const logger = require('../logger');
+const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {
   TRANSACTION_POOL_TIME_OUT_MS,
   TRANSACTION_TRACKER_TIME_OUT_MS,
   LIGHTWEIGHT,
-  PORT,
-  PredefinedDbPaths,
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
   TransactionStatus,
-  FunctionResultCode,
   WriteDbOperations,
   AccountProperties,
 } = require('../constants');

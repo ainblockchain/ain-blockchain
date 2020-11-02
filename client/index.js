@@ -5,7 +5,7 @@ const fs = require('fs');
 const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
-const logger = require('../logger');
+const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pServer = require('../server');
 const ChainUtil = require('../chain-util');
@@ -14,11 +14,10 @@ const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
-const CLIENT_PREFIX = 'CLIENT';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
-  logger.error(`[${CLIENT_PREFIX}]` + err);
+  logger.error(err);
 });
 
 process.on('SIGINT', _ => {
@@ -345,8 +344,8 @@ app.get('/get_consensus_state', (req, res) => {
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 const server = app.listen(PORT, () => {
-  logger.info(`[${CLIENT_PREFIX}] App listening on port ${PORT}`);
-  logger.info(`[${CLIENT_PREFIX}] Press Ctrl+C to quit.`);
+  logger.info(`App listening on port ${PORT}`);
+  logger.info(`Press Ctrl+C to quit.`);
 });
 
 server.keepAliveTimeout = 620 * 1000; // 620 seconds
