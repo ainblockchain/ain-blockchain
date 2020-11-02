@@ -22,7 +22,7 @@ const BlockFilePatterns = require('./block-file-patterns');
 const LOG_PREFIX = 'BLOCK';
 
 class Block {
-  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, stateProofHash, proposer, validators) {
+  constructor (lastHash, lastVotes, transactions, number, epoch, timestamp, stateProofHash, proposer, validators) {
     this.last_votes = lastVotes;
     this.transactions = transactions;
     // Block's header
@@ -41,7 +41,7 @@ class Block {
     this.hash = Block.hash(this);
   }
 
-  get header() {
+  get header () {
     return {
       last_hash: this.last_hash,
       last_votes_hash: this.last_votes_hash,
@@ -56,7 +56,7 @@ class Block {
     };
   }
 
-  toString() {
+  toString () {
     return `Block -
             hash:              ${ChainUtil.shortenHash(this.hash)}
             last_hash:         ${ChainUtil.shortenHash(this.last_hash)}
@@ -75,41 +75,41 @@ class Block {
             transactions:      ${stringify(this.transactions)}`;
   }
 
-  static hash(block) {
+  static hash (block) {
     if (!(block instanceof Block)) block = Block.parse(block);
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, epoch, stateProofHash, proposer, validators) {
+  static createBlock (lastHash, lastVotes, transactions, number, epoch, stateProofHash, proposer, validators) {
     return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), stateProofHash, proposer, validators);
   }
 
-  static getFileName(block) {
+  static getFileName (block) {
     return BlockFilePatterns.getBlockFileName(block);
   }
 
-  static loadBlock(blockZipFile) {
+  static loadBlock (blockZipFile) {
     const unzippedfs = zipper.sync.unzip(blockZipFile).memory();
     const blockInfo = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], 'buffer').toString());
     return Block.parse(blockInfo);
   }
 
-  static parse(blockInfo) {
+  static parse (blockInfo) {
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
-    return new Block(blockInfo['last_hash'], blockInfo['last_votes'],
-        blockInfo['transactions'], blockInfo['number'], blockInfo['epoch'],
-        blockInfo['timestamp'], blockInfo['stateProofHash'], blockInfo['proposer'], blockInfo['validators']);
+    return new Block(blockInfo.last_hash, blockInfo.last_votes,
+      blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
+      blockInfo.stateProofHash, blockInfo.proposer, blockInfo.validators);
   }
 
-  static hasRequiredFields(block) {
+  static hasRequiredFields (block) {
     return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined && block.epoch !== undefined &&
         block.timestamp !== undefined && block.stateProofHash !== undefined &&
         block.proposer !== undefined && block.validators !== undefined);
   }
 
-  static validateHashes(block) {
+  static validateHashes (block) {
     if (block.hash !== Block.hash(block)) {
       logger.error(`[${LOG_PREFIX}] Block hash is incorrect for block ${block.hash}`);
       return false;
@@ -126,11 +126,11 @@ class Block {
     return true;
   }
 
-  static validateProposedBlock(block) {
+  static validateProposedBlock (block) {
     if (!Block.validateHashes(block)) return false;
     const nonceTracker = {};
     let transaction;
-    for (let i=0; i<block.transactions.length; i++) {
+    for (let i = 0; i < block.transactions.length; i++) {
       transaction = block.transactions[i];
       if (transaction.nonce < 0) {
         continue;
@@ -139,7 +139,7 @@ class Block {
         nonceTracker[transaction.address] = transaction.nonce;
         continue;
       }
-      if (transaction.nonce != nonceTracker[transaction.address] + 1) {
+      if (transaction.nonce !== nonceTracker[transaction.address] + 1) {
         logger.error(`[${LOG_PREFIX}] Invalid noncing for ${transaction.address} ` +
                      `Expected ${nonceTracker[transaction.address] + 1} ` +
                      `Received ${transaction.nonce}`);
@@ -152,7 +152,7 @@ class Block {
     return true;
   }
 
-  static getDbSetupTransaction(timestamp, keyBuffer) {
+  static getDbSetupTransaction (timestamp, keyBuffer) {
     const opList = [];
 
     // Values operation
@@ -196,7 +196,7 @@ class Block {
     return (new Transaction({ signature: firstSig, transaction: firstTxData }));
   }
 
-  static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
+  static getAccountsSetupTransaction (ownerAddress, timestamp, keyBuffer) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -227,11 +227,11 @@ class Block {
     return (new Transaction({ signature: secondSig, transaction: secondTxData }));
   }
 
-  static getGenesisBlockData(genesisTime) {
+  static getGenesisBlockData (genesisTime) {
     const ownerAddress = ChainUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const ownerPrivateKey = ChainUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
 
     const firstTx = this.getDbSetupTransaction(genesisTime, keyBuffer);
@@ -240,7 +240,7 @@ class Block {
     return [firstTx, secondTx];
   }
 
-  static getGenesisStateProofHash() {
+  static getGenesisStateProofHash () {
     const tempGenesisState = new DB(null, null, false, -1);
     const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
@@ -253,11 +253,11 @@ class Block {
     return tempGenesisState.getProof('/')[ProofProperties.PROOF_HASH];
   }
 
-  static genesis() {
+  static genesis () {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
     const ownerAddress = ChainUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
     const lastHash = '';
     const lastVotes = [];
@@ -272,4 +272,6 @@ class Block {
   }
 }
 
-module.exports = {Block};
+module.exports = {
+  Block
+};
