@@ -31,9 +31,9 @@ const PushId = {
     const lastRandChars = [];
     return function () {
       let now = Date.now();
-      let duplicateTime = (now === lastPushTime);
+      const duplicateTime = (now === lastPushTime);
       lastPushTime = now;
-      let timeStampChars = new Array(8);
+      const timeStampChars = new Array(8);
       let i;
       for (i = 7; i >= 0; i--) {
         timeStampChars[i] = ASCII_CHARS.charAt(now % 64);
@@ -47,11 +47,10 @@ const PushId = {
         for (i = 0; i < 12; i++) {
           lastRandChars[i] = Math.floor(Math.random() * 64);
         }
-      }
-      // If the timestamp hasn't changed since
-      // last push, use the same random number,
-      // except incremented by 1.
-      else {
+      } else {
+        // If the timestamp hasn't changed since
+        // last push, use the same random number,
+        // except incremented by 1.
         for (i = 11; i >= 0 && lastRandChars[i] === 63; i--) {
           lastRandChars[i] = 0;
         }
