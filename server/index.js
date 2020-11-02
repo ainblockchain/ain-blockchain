@@ -1,3 +1,4 @@
+/* eslint no-mixed-operators: "off" */
 const url = require('url');
 const Websocket = require('ws');
 const ip = require('ip');
@@ -50,7 +51,7 @@ const P2P_PREFIX = 'P2P';
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
-  constructor(node, minProtocolVersion, maxProtocolVersion) {
+  constructor (node, minProtocolVersion, maxProtocolVersion) {
     this.isStarting = true;
     this.internalIpAddress = null;
     this.externalIpAddress = null;
@@ -67,7 +68,7 @@ class P2pServer {
     this.maxProtocolVersion = maxProtocolVersion;
   }
 
-  listen() {
+  listen () {
     this.server = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
@@ -94,14 +95,14 @@ class P2pServer {
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`[${P2P_PREFIX}] Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setUpIpAddresses()
-    .then(() => {
-      this.setIntervalForTrackerConnection();
-      // XXX(minsu): it won't run before updating p2p network.
-      // this.heartbeat();
-    });
+      .then(() => {
+        this.setIntervalForTrackerConnection();
+        // XXX(minsu): it won't run before updating p2p network.
+        // this.heartbeat();
+      });
   }
 
-  stop() {
+  stop () {
     logger.info(`[${P2P_PREFIX}] Stop consensus interval.`);
     this.consensus.stop();
     logger.info(`[${P2P_PREFIX}] Disconnect from connected peers.`);
@@ -112,31 +113,31 @@ class P2pServer {
     this.server.close(_ => { });
   }
 
-  setIntervalForTrackerConnection() {
+  setIntervalForTrackerConnection () {
     this.connectToTracker();
     this.intervalConnection = setInterval(() => {
       this.connectToTracker();
     }, RECONNECT_INTERVAL_MS)
   }
 
-  clearIntervalForTrackerConnection() {
+  clearIntervalForTrackerConnection () {
     clearInterval(this.intervalConnection);
     this.intervalConnection = null;
   }
 
-  setIntervalForTrackerUpdate() {
+  setIntervalForTrackerUpdate () {
     this.updateNodeStatusToTracker();
     this.intervalUpdate = setInterval(() => {
       this.updateNodeStatusToTracker();
     }, UPDATE_TO_TRACKER_INTERVAL_MS)
   }
 
-  clearIntervalForTrackerUpdate() {
+  clearIntervalForTrackerUpdate () {
     clearInterval(this.intervalUpdate);
     this.intervalUpdate = null;
   }
 
-  connectToTracker() {
+  connectToTracker () {
     logger.info(`[${P2P_PREFIX}] Reconnecting to tracker (${TRACKER_WS_ADDR})`);
     this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
     this.trackerWebSocket.on('open', () => {
@@ -147,75 +148,75 @@ class P2pServer {
     });
     this.trackerWebSocket.on('error', (error) => {
       logger.error(`[${P2P_PREFIX}] Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
-                    `${JSON.stringify(error, null, 2)}`);
+        `${JSON.stringify(error, null, 2)}`);
     });
   }
 
-  disconnectFromTracker() {
+  disconnectFromTracker () {
     this.trackerWebSocket.close();
   }
 
-  getIpAddress(internal = false) {
+  getIpAddress (internal = false) {
     return Promise.resolve()
-    .then(() => {
-      if (HOSTING_ENV === 'gcp') {
-        return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
-          headers: {'Metadata-Flavor': 'Google'},
-          timeout: 3000
-        })
-        .then((res) => {
-          return res.data;
-        })
-        .catch((err) => {
-          logger.error(`[${P2P_PREFIX}] Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
-          process.exit(0);
-        });
-      } else if (HOSTING_ENV === 'comcom') {
-        let ipAddr = null;
-        if (internal) {
-          const hostname = _.toLower(os.hostname());
-          logger.info(`[${P2P_PREFIX}] Hostname: ${hostname}`);
-          ipAddr = COMCOM_HOST_INTERNAL_IP_MAP[hostname];
-        } else {
-          ipAddr = COMCOM_HOST_EXTERNAL_IP;
-        }
-        if (ipAddr) {
-          return ipAddr;
-        }
-        logger.error(
+      .then(() => {
+        if (HOSTING_ENV === 'gcp') {
+          return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
+            headers: { 'Metadata-Flavor': 'Google' },
+            timeout: 3000
+          })
+            .then((res) => {
+              return res.data;
+            })
+            .catch((err) => {
+              logger.error(`[${P2P_PREFIX}] Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+              process.exit(0);
+            });
+        } else if (HOSTING_ENV === 'comcom') {
+          let ipAddr = null;
+          if (internal) {
+            const hostname = _.toLower(os.hostname());
+            logger.info(`[${P2P_PREFIX}] Hostname: ${hostname}`);
+            ipAddr = COMCOM_HOST_INTERNAL_IP_MAP[hostname];
+          } else {
+            ipAddr = COMCOM_HOST_EXTERNAL_IP;
+          }
+          if (ipAddr) {
+            return ipAddr;
+          }
+          logger.error(
             `[${P2P_PREFIX}] Failed to get ${internal ? 'internal' : 'external'} ip address.`);
-        process.exit(0);
-      } else if (HOSTING_ENV === 'local') {
-        return ip.address();
-      } else {
-        return publicIp.v4();
-      }
-    })
-    .then((ipAddr) => {
-      return ipAddr;
-    });
+          process.exit(0);
+        } else if (HOSTING_ENV === 'local') {
+          return ip.address();
+        } else {
+          return publicIp.v4();
+        }
+      })
+      .then((ipAddr) => {
+        return ipAddr;
+      });
   }
 
-  async setUpIpAddresses() {
+  async setUpIpAddresses () {
     const ipAddrInternal = await this.getIpAddress(true);
     const ipAddrExternal = await this.getIpAddress(false);
     this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
     return true;
   }
 
-  static getNodeUrl(ipAddr) {
+  static getNodeUrl (ipAddr) {
     return `http://${ipAddr}:${PORT}`;
   }
 
-  async setTrackerEventHandlers() {
+  async setTrackerEventHandlers () {
     this.trackerWebSocket.on('message', async (message) => {
       try {
         const parsedMsg = JSON.parse(message);
         logger.info(`\n$[${P2P_PREFIX}] << Message from [TRACKER]: ` +
-                    `${JSON.stringify(parsedMsg, null, 2)}`)
+          `${JSON.stringify(parsedMsg, null, 2)}`)
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
           logger.info(`[${P2P_PREFIX}] Updated managed peers info: ` +
-                      `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+            `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
         if (this.isStarting) {
           this.isStarting = false;
@@ -241,7 +242,7 @@ class P2pServer {
     });
   }
 
-  updateNodeStatusToTracker() {
+  updateNodeStatusToTracker () {
     const updateToTracker = {
       url: url.format({
         protocol: 'ws',
@@ -259,8 +260,10 @@ class P2pServer {
       consensusStatus: Object.assign(
         {},
         this.consensus.getState(),
-        { longestNotarizedChainTipsSize: this.consensus.blockPool ?
-            this.consensus.blockPool.longestNotarizedChainTips.length : 0 }
+        {
+          longestNotarizedChainTipsSize: this.consensus.blockPool
+            ? this.consensus.blockPool.longestNotarizedChainTips.length : 0
+        }
       ),
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
@@ -277,21 +280,20 @@ class P2pServer {
     const memoryUsage = this.getMemoryUsage();
     updateToTracker.memoryUsage = memoryUsage;
     logger.debug(`\n[${P2P_PREFIX}] >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
-                 `${JSON.stringify(updateToTracker, null, 2)}`);
+      `${JSON.stringify(updateToTracker, null, 2)}`);
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
   }
 
-  getDiskUsage() {
+  getDiskUsage () {
     try {
       return disk.checkSync(DISK_USAGE_PATH);
-    }
-    catch (err) {
+    } catch (err) {
       logger.error(`[${P2P_PREFIX}] ` + err);
       return null;
     }
   }
 
-  getMemoryUsage() {
+  getMemoryUsage () {
     const free = os.freemem();
     const total = os.totalmem();
     const usage = total - free;
@@ -302,12 +304,12 @@ class P2pServer {
     };
   }
 
-  connectToPeers(newManagedPeerInfoList) {
+  connectToPeers (newManagedPeerInfoList) {
     let updated = false;
     newManagedPeerInfoList.forEach((peerInfo) => {
-      if (!!this.managedPeersInfo[peerInfo.address]) {
+      if (this.managedPeersInfo[peerInfo.address]) {
         logger.info(`[${P2P_PREFIX}] Node ${peerInfo.address} is already a managed peer. ` +
-                    `Something is wrong.`)
+          'Something is wrong.')
       } else {
         logger.info(`[${P2P_PREFIX}] Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
         this.managedPeersInfo[peerInfo.address] = peerInfo;
@@ -323,13 +325,13 @@ class P2pServer {
     return updated;
   }
 
-  disconnectFromPeers() {
+  disconnectFromPeers () {
     for (const socket of this.sockets) {
       socket.close();
     }
   }
 
-  setSocket(socket, address) {
+  setSocket (socket, address) {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSubsection(this.node.bc.lastBlock());
@@ -339,7 +341,7 @@ class P2pServer {
     }
   }
 
-  setPeerEventHandlers(socket, address) {
+  setPeerEventHandlers (socket, address) {
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
@@ -348,7 +350,7 @@ class P2pServer {
           return;
         }
         if (semver.gt(this.minProtocolVersion, version) ||
-            (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
+          (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
           return;
         }
 
@@ -376,6 +378,8 @@ class P2pServer {
             logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection: ${JSON.stringify(data.chainSubsection, null, 2)}`);
             if (data.number <= this.node.bc.lastBlockNumber()) {
               if (this.consensus.status === ConsensusStatus.STARTING) {
+                // XXX(minsu): need to be investigated
+                // ref: https://eslint.org/docs/rules/no-mixed-operators
                 if (!data.chainSubsection && !data.catchUpInfo || data.number === this.node.bc.lastBlockNumber()) {
                   this.node.bc.syncedAfterStartup = true;
                   this.consensus.init();
@@ -435,7 +439,7 @@ class P2pServer {
               }
             }
             break;
-          case MessageTypes.CHAIN_SUBSECTION_REQUEST:
+          case MessageTypes.CHAIN_SUBSECTION_REQUEST: {
             logger.debug(`[${P2P_PREFIX}] Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
             if (this.node.bc.chain.length === 0) {
               return;
@@ -444,8 +448,8 @@ class P2pServer {
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSubsection = this.node.bc.requestBlockchainSection(
-                !!data.lastBlock ? Block.parse(data.lastBlock) : null);
-            if (!!chainSubsection) {
+              data.lastBlock ? Block.parse(data.lastBlock) : null);
+            if (chainSubsection) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(`Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)} along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
               this.sendChainSubsection(
@@ -464,6 +468,7 @@ class P2pServer {
               );
             }
             break;
+          }
         }
       } catch (error) {
         logger.error(`[${P2P_PREFIX}] ` + error.stack);
@@ -480,7 +485,7 @@ class P2pServer {
       if (address && this.managedPeersInfo[address]) {
         delete this.managedPeersInfo[address];
         logger.info(`[${P2P_PREFIX}] => Updated managed peers info: ` +
-                    `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+          `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
       }
     });
 
@@ -490,11 +495,11 @@ class P2pServer {
 
     socket.on('error', (error) => {
       logger.error(`[${P2P_PREFIX}] Error in communication with peer ${address}: ` +
-                   `${JSON.stringify(error, null, 2)}`);
+        `${JSON.stringify(error, null, 2)}`);
     });
   }
 
-  removeFromListIfExists(entry) {
+  removeFromListIfExists (entry) {
     const index = this.sockets.indexOf(entry);
 
     if (index >= 0) {
@@ -505,7 +510,7 @@ class P2pServer {
     return false;
   }
 
-  sendChainSubsection(socket, chainSubsection, number, catchUpInfo) {
+  sendChainSubsection (socket, chainSubsection, number, catchUpInfo) {
     socket.send(JSON.stringify({
       type: MessageTypes.CHAIN_SUBSECTION,
       chainSubsection,
@@ -515,7 +520,7 @@ class P2pServer {
     }));
   }
 
-  requestChainSubsection(lastBlock) {
+  requestChainSubsection (lastBlock) {
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
@@ -525,11 +530,11 @@ class P2pServer {
     });
   }
 
-  broadcastChainSubsection(chainSubsection) {
+  broadcastChainSubsection (chainSubsection) {
     this.sockets.forEach((socket) => this.sendChainSubsection(socket, chainSubsection));
   }
 
-  broadcastTransaction(transaction) {
+  broadcastTransaction (transaction) {
     logger.debug(`[${P2P_PREFIX}] SENDING: ${JSON.stringify(transaction)}`);
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -540,7 +545,7 @@ class P2pServer {
     });
   }
 
-  broadcastConsensusMessage(msg) {
+  broadcastConsensusMessage (msg) {
     logger.debug(`[${P2P_PREFIX}] SENDING: ${JSON.stringify(msg)}`);
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
@@ -557,10 +562,10 @@ class P2pServer {
    * @param {Object} transactionWithSig An object with a signature and a transaction.
    */
   // TODO(seo): Remove new Transaction() use cases.
-  executeTransaction(transactionWithSig) {
+  executeTransaction (transactionWithSig) {
     if (!transactionWithSig) return null;
-    const transaction = transactionWithSig instanceof Transaction ?
-        transactionWithSig : new Transaction(transactionWithSig);
+    const transaction = transactionWithSig instanceof Transaction
+      ? transactionWithSig : new Transaction(transactionWithSig);
     logger.debug(`[${P2P_PREFIX}] EXECUTING: ${JSON.stringify(transaction)}`);
     if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
       logger.debug(`[${P2P_PREFIX}] TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
@@ -572,7 +577,7 @@ class P2pServer {
     }
     if (this.node.bc.syncedAfterStartup === false) {
       logger.debug(`[${P2P_PREFIX}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
-          `${JSON.stringify(transaction)}`);
+        `${JSON.stringify(transaction)}`);
       this.node.tp.addTransaction(transaction);
       return null;
     }
@@ -581,12 +586,12 @@ class P2pServer {
       this.node.tp.addTransaction(transaction);
     } else {
       logger.debug(`[${P2P_PREFIX}] FAILED TRANSACTION: ${JSON.stringify(transaction)}\t ` +
-          `RESULT:${JSON.stringify(result)}`);
+        `RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
 
-  executeAndBroadcastTransaction(transactionWithSig) {
+  executeAndBroadcastTransaction (transactionWithSig) {
     if (!transactionWithSig) return null;
     if (Transaction.isBatchTransaction(transactionWithSig)) {
       const resultList = [];
@@ -605,8 +610,8 @@ class P2pServer {
 
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction ?
-          transactionWithSig : new Transaction(transactionWithSig);
+      const transaction = transactionWithSig instanceof Transaction
+        ? transactionWithSig : new Transaction(transactionWithSig);
       const response = this.executeTransaction(transaction);
       logger.debug(`\n[${P2P_PREFIX}] TX RESPONSE: ` + JSON.stringify(response))
       if (!ChainUtil.transactionFailed(response)) {
@@ -617,7 +622,7 @@ class P2pServer {
     }
   }
 
-  async tryInitializeShard() {
+  async tryInitializeShard () {
     if (this.node.isShardReporter && this.node.bc.lastBlockNumber() === 0) {
       logger.info(`[${P2P_PREFIX}] Setting up sharding..`);
       await this.setUpDbForSharding();
@@ -625,7 +630,7 @@ class P2pServer {
   }
 
   // TODO(seo): Set .shard config for functions, rules, and owners as well.
-  async setUpDbForSharding() {
+  async setUpDbForSharding () {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
@@ -636,12 +641,12 @@ class P2pServer {
     const shardingPathRules = `auth === '${shardOwner}'`;
     const proofHashRulesLight = `auth === '${shardReporter}'`;
     const proofHashRules = `auth === '${shardReporter}' && ` +
-        `((newData === null && ` +
-        `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
-            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
-        `(newData !== null && ($block_number === '0' || ` +
-        `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
-            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
+      '((newData === null && ' +
+      `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+      `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
+      '(newData !== null && ($block_number === "0" || ' +
+      `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+      `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
 
     const shardInitTx = {
       operation: {
@@ -727,7 +732,7 @@ class P2pServer {
   }
 
   // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
-  heartbeat() {
+  heartbeat () {
     logger.info(`[${P2P_PREFIX}] Start heartbeat`);
     this.intervalHeartbeat = setInterval(() => {
       this.server.clients.forEach(ws => {
@@ -736,7 +741,7 @@ class P2pServer {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-  clearIntervalHeartbeat(address) {
+  clearIntervalHeartbeat (address) {
     clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
     this.managedPeersInfo[address].intervalHeartbeat = null;
   }
