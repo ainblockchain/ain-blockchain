@@ -1,5 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger');
+const logger = require('../logger')('TRANSACTION');
 const { WriteDbOperations } = require('../constants');
 const ChainUtil = require('../chain-util');
 

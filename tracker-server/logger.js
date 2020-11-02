@@ -66,10 +66,10 @@ function getTransports() {
   return transports;
 }
 
-const logger = new winston.createLogger({
+const winstonLogger = new winston.createLogger({
   transports: getTransports(),
   exitOnError: false
 });
 
-module.exports = logger;
+module.exports = winstonLogger;
 
