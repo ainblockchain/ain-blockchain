@@ -17,16 +17,16 @@ const NODE_PREFIX = 'NODE';
 const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 
 class BlockchainNode {
-  constructor() {
+  constructor () {
     // TODO(lia): Add account importing functionality.
-    this.account = ACCOUNT_INDEX !== null ?
-        GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
+    this.account = ACCOUNT_INDEX !== null
+      ? GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
     logger.info(`[${NODE_PREFIX}] Initializing a new blockchain node with account: ` +
-        `${this.account.address}`);
+      `${this.account.address}`);
     this.isShardReporter =
-        isShardChain &&
-        ainUtil.areSameAddresses(
-            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+      isShardChain &&
+      ainUtil.areSameAddresses(
+        GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
     this.urlInternal = null;
@@ -39,25 +39,25 @@ class BlockchainNode {
   }
 
   // For testing purpose only.
-  setAccountForTesting(accountIndex) {
+  setAccountForTesting (accountIndex) {
     this.account = GenesisAccounts.others[accountIndex];
   }
 
-  setIpAddresses(ipAddrInternal, ipAddrExternal) {
+  setIpAddresses (ipAddrInternal, ipAddrExternal) {
     this.ipAddrInternal = ipAddrInternal;
     this.ipAddrExternal = ipAddrExternal;
     this.urlInternal = BlockchainNode.getNodeUrl(ipAddrInternal);
     this.urlExternal = BlockchainNode.getNodeUrl(ipAddrExternal);
     logger.info(
-        `[${NODE_PREFIX}] Set Node URLs to '${this.urlInternal}' (internal), ` +
-        `'${this.urlExternal}' (external)`);
+      `[${NODE_PREFIX}] Set Node URLs to '${this.urlInternal}' (internal), ` +
+      `'${this.urlExternal}' (external)`);
   }
 
-  static getNodeUrl(ipAddr) {
+  static getNodeUrl (ipAddr) {
     return `http://${ipAddr}:${PORT}`;
   }
 
-  init(isFirstNode) {
+  init (isFirstNode) {
     logger.info(`[${NODE_PREFIX}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
     this.bc.setBackupDb(new DB(this.bc, this.tp, true));
@@ -69,15 +69,14 @@ class BlockchainNode {
     return lastBlockWithoutProposal;
   }
 
-  getNonce() {
+  getNonce () {
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
     //               publicKey
     let nonce = 0;
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
-      for (let j = this.bc.chain[i].transactions.length -1; j > -1; j--) {
+      for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
         if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
-                                     this.account.address)
-            && this.bc.chain[i].transactions[j].nonce > -1) {
+          this.account.address) && this.bc.chain[i].transactions[j].nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
           nonce = this.bc.chain[i].transactions[j].nonce + 1;
           break;
@@ -101,7 +100,7 @@ class BlockchainNode {
     *                                        not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(txData, isNoncedTransaction = true) {
+  createTransaction (txData, isNoncedTransaction = true) {
     if (Transaction.isBatchTransaction(txData)) {
       const txList = [];
       txData.tx_list.forEach((subData) => {
@@ -112,7 +111,7 @@ class BlockchainNode {
     return this.createSingleTransaction(txData, isNoncedTransaction);
   }
 
-  createSingleTransaction(txData, isNoncedTransaction) {
+  createSingleTransaction (txData, isNoncedTransaction) {
     // Workaround for skip_verif with custom address
     if (txData.address !== undefined) {
       txData.skip_verif = true;
@@ -130,7 +129,7 @@ class BlockchainNode {
     return Transaction.newTransaction(this.account.private_key, txData);
   }
 
-  addNewBlock(block) {
+  addNewBlock (block) {
     if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
       this.db.setDbToSnapshot(this.bc.backupDb);
@@ -141,14 +140,14 @@ class BlockchainNode {
     return false;
   }
 
-  executeChainOnBackupDb() {
+  executeChainOnBackupDb () {
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       if (!this.bc.backupDb.executeTransactionList(block.last_votes)) {
-        logger.error(`[node:executeChainOnBackupDb] Failed to execute last_votes`)
+        logger.error('[node:executeChainOnBackupDb] Failed to execute last_votes')
       }
       if (!this.bc.backupDb.executeTransactionList(transactions)) {
-        logger.error(`[node:executeChainOnBackupDb] Failed to execute transactions`)
+        logger.error('[node:executeChainOnBackupDb] Failed to execute transactions')
       }
       this.tp.updateNonceTrackers(transactions);
     });
