@@ -241,6 +241,7 @@ class P2pServer {
     });
   }
 
+  // TODO(seo): Add sharding status.
   updateNodeStatusToTracker() {
     const updateToTracker = {
       url: url.format({
@@ -668,26 +669,24 @@ class P2pServer {
           },
           {
             type: WriteDbOperations.SET_RULE,
-            ref: ChainUtil.formatPath([
-              ...ChainUtil.parsePath(shardingPath),
-              ShardingProperties.SHARD,
-              ShardingProperties.PROOF_HASH_MAP,
-              '$block_number',
-              ShardingProperties.PROOF_HASH
-            ]),
+            ref: ChainUtil.appendPath(
+                shardingPath,
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                '$block_number',
+                ShardingProperties.PROOF_HASH),
             value: {
               [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
             }
           },
           {
             type: WriteDbOperations.SET_FUNCTION,
-            ref: ChainUtil.formatPath([
-              ...ChainUtil.parsePath(shardingPath),
-              ShardingProperties.SHARD,
-              ShardingProperties.PROOF_HASH_MAP,
-              '$block_number',
-              ShardingProperties.PROOF_HASH
-            ]),
+            ref: ChainUtil.appendPath(
+                shardingPath,
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                '$block_number',
+                ShardingProperties.PROOF_HASH),
             value: {
               [FunctionProperties.FUNCTION]: {
                 [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,

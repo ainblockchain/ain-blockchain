@@ -3,11 +3,13 @@ const logger = require('../logger');
 const {
   PORT,
   ACCOUNT_INDEX,
+  PredefinedDbPaths,
   ShardingProperties,
   ShardingProtocols,
   GenesisAccounts,
   GenesisSharding
 } = require('../constants');
+const ChainUtil = require('../chain-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const DB = require('../db');
@@ -90,6 +92,23 @@ class BlockchainNode {
 
     logger.info(`[${NODE_PREFIX}] Setting nonce to ${nonce}`);
     return nonce;
+  }
+
+  getSharding() {
+    const shardingInfo = {};
+    const shards = this.db.getValue(ChainUtil.formatPath(
+        [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
+    for (let encodedPath in shards) {
+      const shardPath = ainUtil.decode(encodedPath);
+      shardingInfo[encodedPath] = {
+        [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
+            shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+        [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
+            shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+            ShardingProperties.LATEST)),
+      };
+    }
+    return shardingInfo;
   }
 
   /**
