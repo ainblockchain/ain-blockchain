@@ -350,7 +350,7 @@ class P2pServer {
           return;
         }
         if (semver.gt(this.minProtocolVersion, version) ||
-          (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
+            (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
           return;
         }
 

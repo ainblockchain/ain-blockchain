@@ -441,7 +441,7 @@ function validateVersion(req, res, next) {
   }
   const coercedVer = semver.coerce(version);
   if (req.body.method === 'ain_getProtocolVersion' ||
-    req.body.method === 'ain_checkProtocolVersion') {
+      req.body.method === 'ain_checkProtocolVersion') {
     next();
   } else if (version === undefined) {
     res.status(200)
