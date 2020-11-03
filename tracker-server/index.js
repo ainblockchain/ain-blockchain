@@ -4,11 +4,7 @@ const geoip = require('geoip-lite');
 const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
-<<<<<<< HEAD
-const logger = require('../logger')('TRACKER');
-=======
-const logger = require('./logger')('TRACKER_SERVER');
->>>>>>> aa04e2ef36bcd15ee51f61c08a9144aa52624d6d
+const logger = require('../logger')('TRACKER_SERVER');
 
 const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
