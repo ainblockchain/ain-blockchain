@@ -15,6 +15,7 @@ const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {
+  isEmptyNode,
   hasFunctionConfig,
   getFunctionConfig,
   hasRuleConfig,
@@ -152,7 +153,7 @@ class DB {
       const parent = this.getRefForWriting(pathToParent);
       parent.setChild(label, stateTree);
     }
-    if (DB.isEmptyNode(stateTree)) {
+    if (isEmptyNode(stateTree)) {
       this.removeEmptyNodes(fullPath);
     } else if (!LIGHTWEIGHT) {
       setProofHashForStateTree(stateTree);
@@ -160,10 +161,6 @@ class DB {
     if (!LIGHTWEIGHT) {
       updateProofHashForPath(pathToParent, this.stateTree);
     }
-  }
-
-  static isEmptyNode(dbNode) {
-    return dbNode.getIsLeaf() && dbNode.getValue() === null;
   }
 
   removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
@@ -177,7 +174,7 @@ class DB {
     }
     for (const label of curDbNode.getChildLabels()) {
       const childNode = curDbNode.getChild(label);
-      if (DB.isEmptyNode(childNode)) {
+      if (isEmptyNode(childNode)) {
         curDbNode.deleteChild(label);
       }
     }

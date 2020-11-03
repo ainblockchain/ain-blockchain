@@ -9,6 +9,10 @@ const {
   ShardingProperties,
 } = require('../constants');
 
+function isEmptyNode(node) {
+  return node.getIsLeaf() && node.getValue() === null;
+}
+
 function hasConfig(node, label) {
   return node && node.hasChild(label);
 }
@@ -238,6 +242,7 @@ function updateProofHashForPath(fullPath, root) {
 }
 
 module.exports = {
+  isEmptyNode,
   hasShardConfig,
   getShardConfig,
   hasFunctionConfig,
