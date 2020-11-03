@@ -94,8 +94,8 @@ function hasAllowedPattern(label) {
 
 function isValidStateLabel(label) {
   if (!ChainUtil.isString(label) ||
-    label === '' ||
-    (hasReservedChar(label) && !hasAllowedPattern(label))) {
+      label === '' ||
+      (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
   return true;

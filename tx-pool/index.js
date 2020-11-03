@@ -58,7 +58,7 @@ class TransactionPool {
       finalized_at: -1,
     };
     if (tx.nonce >= 0 &&
-      (!(tx.address in this.pendingNonceTracker) ||
+        (!(tx.address in this.pendingNonceTracker) ||
         tx.nonce > this.pendingNonceTracker[tx.address])) {
       this.pendingNonceTracker[tx.address] = tx.nonce;
     }
@@ -136,7 +136,7 @@ class TransactionPool {
       let listToTakeValue;
       while (list1.length + list2.length > 0) {
         if ((list2.length === 0 ||
-          (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))) {
+            (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))) {
           listToTakeValue = list1;
         } else {
           listToTakeValue = list2;
@@ -145,7 +145,7 @@ class TransactionPool {
           tempNonceTracker[listToTakeValue[0].address] = listToTakeValue[0].nonce;
           newList.push(listToTakeValue.shift());
         } else if (!(listToTakeValue[0].address in tempNonceTracker) &&
-          listToTakeValue[0].nonce === 0) {
+            listToTakeValue[0].nonce === 0) {
           tempNonceTracker[listToTakeValue[0].address] = 0;
           newList.push(listToTakeValue.shift());
         } else if (listToTakeValue[0].nonce < 0) {
@@ -278,11 +278,11 @@ class TransactionPool {
     transactions.forEach((tx) => {
       if (tx.nonce >= 0) {
         if (this.committedNonceTracker[tx.address] === undefined ||
-          this.committedNonceTracker[tx.address] < tx.nonce) {
+            this.committedNonceTracker[tx.address] < tx.nonce) {
           this.committedNonceTracker[tx.address] = tx.nonce;
         }
         if (this.pendingNonceTracker[tx.address] === undefined ||
-          this.pendingNonceTracker[tx.address] < tx.nonce) {
+            this.pendingNonceTracker[tx.address] < tx.nonce) {
           this.pendingNonceTracker[tx.address] = tx.nonce;
         }
       }
@@ -294,7 +294,7 @@ class TransactionPool {
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
         if (tx.nonce >= 0 &&
-          (!(tx.address in newNonceTracker) || tx.nonce > newNonceTracker[tx.address])) {
+            (!(tx.address in newNonceTracker) || tx.nonce > newNonceTracker[tx.address])) {
           newNonceTracker[tx.address] = tx.nonce;
         }
       });
@@ -343,8 +343,8 @@ class TransactionPool {
             `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
           `with result: ${JSON.stringify(result, null, 2)}`);
         if (result && (result.is_finalized ||
-          result.status === TransactionStatus.FAIL_STATUS ||
-          result.status === TransactionStatus.TIMEOUT_STATUS)) {
+            result.status === TransactionStatus.FAIL_STATUS ||
+            result.status === TransactionStatus.TIMEOUT_STATUS)) {
           this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }

@@ -201,7 +201,7 @@ class Block {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
-      GenesisAccounts[AccountProperties.SHARES] > 0) {
+        GenesisAccounts[AccountProperties.SHARES] > 0) {
       for (let i = 0; i < otherAccounts.length; i++) {
         const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
         // Transfer operation

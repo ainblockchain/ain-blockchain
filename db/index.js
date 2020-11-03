@@ -790,7 +790,7 @@ class DB {
     const subtreeFunctions = this.getSubtreeFunctions(matched.matchedFunctionNode);
     let matchedConfig = null;
     if (matched.matchedFunctionPath.length === parsedValuePath.length &&
-      hasFunctionConfig(matched.matchedFunctionNode)) {
+        hasFunctionConfig(matched.matchedFunctionNode)) {
       matchedConfig = getFunctionConfig(matched.matchedFunctionNode);
     }
     return {

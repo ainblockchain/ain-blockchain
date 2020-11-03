@@ -83,7 +83,7 @@ class Functions {
         }
       } else if (functionConfig.function_type === FunctionTypes.REST) {
         if (functionConfig.event_listener &&
-          functionConfig.event_listener in EventListenerWhitelist) {
+            functionConfig.event_listener in EventListenerWhitelist) {
           logger.info(
               `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
             `of '${functionConfig.event_listener}' ` +
@@ -349,13 +349,13 @@ class Functions {
 
   _validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive) {
     if (!ChainUtil.isNumber(tokenExchRate) || tokenExchRate <= 0 || checkinAmount <= 0 ||
-      tokenToReceive <= 0) {
+        tokenToReceive <= 0) {
       logger.debug('  =>> Invalid exchange rate or checkin amount');
       return false;
     }
     // tokenToReceive = tokenExchRate * checkinAmount
     if (tokenExchRate !== tokenToReceive / checkinAmount ||
-      checkinAmount !== tokenToReceive / tokenExchRate) {
+        checkinAmount !== tokenToReceive / tokenExchRate) {
       logger.debug('  =>> Number overflow');
       return false;
     }

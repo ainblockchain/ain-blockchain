@@ -82,7 +82,7 @@ class BlockPool {
     const finalizedBlock = this.node.bc.lastBlock();
     let currBlockWithInfo = this.hashToBlockInfo[blockHash];
     if (!currBlockWithInfo || !currBlockWithInfo.block ||
-          currBlockWithInfo.block.number <= finalizedBlock.number) {
+        currBlockWithInfo.block.number <= finalizedBlock.number) {
       return [];
     }
     while (currBlockWithInfo && currBlockWithInfo.block &&
