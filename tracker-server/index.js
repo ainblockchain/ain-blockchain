@@ -54,7 +54,7 @@ function numLivePeers(address) {
 
 function printNodesInfo() {
   logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()}` +
-    `at ${Date.now()})`);
+      `at ${Date.now()})`);
   const nodeList = Object.values(PEER_NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
@@ -63,14 +63,14 @@ function printNodesInfo() {
     const diskAvailableMb = Math.floor(node.diskUsage.available / 1000 / 1000);
     const memoryFreeMb = Math.round(node.memoryUsage.free / 1000 / 1000);
     logger.info(`    Node[${i}]: ${node.getNodeSummary()} ` +
-      `LastBlock: ${node.lastBlock.number}, ` +
-      `Disk: ${diskAvailableMb}MB, ` +
-      `Memory: ${memoryFreeMb}MB, ` +
-      `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()}), ` +
-      `UpdatedAt: ${node.updatedAt}`);
+        `LastBlock: ${node.lastBlock.number}, ` +
+        `Disk: ${diskAvailableMb}MB, ` +
+        `Memory: ${memoryFreeMb}MB, ` +
+        `Peers: ${node.numPeers()} (${node.numManagedPeers()}/${node.numUnmanagedPeers()}), ` +
+        `UpdatedAt: ${node.updatedAt}`);
     Object.keys(node.managedPeers).forEach((addr) => {
-      const peerSummary = PEER_NODES[addr]
-        ? PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
+      const peerSummary = PEER_NODES[addr] ?
+          PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
       logger.info(`      Managed peer: ${peerSummary}`);
     });
   }
@@ -120,7 +120,7 @@ server.on('connection', (ws) => {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
         node.assignRandomPeers();
         logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
-          `${JSON.stringify(nodeInfo, null, 2)}`)
+            `${JSON.stringify(nodeInfo, null, 2)}`)
       } else {
         node = new PeerNode(nodeInfo);
         node.assignRandomPeers();
@@ -134,7 +134,7 @@ server.on('connection', (ws) => {
         numLivePeers: numLivePeers(node.address)
       };
       logger.info(`>> Message to node [${abbrAddr(node.address)}]: ` +
-        `${JSON.stringify(msgToNode, null, 2)}`)
+          `${JSON.stringify(msgToNode, null, 2)}`)
       ws.send(JSON.stringify(msgToNode));
       printNodesInfo();
     } catch (error) {
@@ -144,14 +144,14 @@ server.on('connection', (ws) => {
 
   ws.on('close', (code) => {
     logger.info(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
-      `with code: ${code}`);
+        `with code: ${code}`);
     PEER_NODES[node.address].isLive = false;
     printNodesInfo();
   });
 
   ws.on('error', (error) => {
     logger.error(`Error in communication with node [${abbrAddr(node.address)}]: ` +
-      `${JSON.stringify(error, null, 2)}`)
+        `${JSON.stringify(error, null, 2)}`)
   });
 });
 
@@ -258,7 +258,7 @@ class PeerNode {
 
   addPeer(peer) {
     if (peer && peer.address !== this.address && !this.managedPeers[peer.address] &&
-      !this.unmanagedPeers[peer.address]) {
+        !this.unmanagedPeers[peer.address]) {
       this.managedPeers[peer.address] = true;
       peer.unmanagedPeers[this.address] = true;
     }
@@ -267,7 +267,7 @@ class PeerNode {
   getPeerCandidates() {
     return Object.values(PEER_NODES).filter((other) => {
       return other.address !== this.address && other.isLive && !this.managedPeers[other.address] &&
-        !this.unmanagedPeers[other.address];
+          !this.unmanagedPeers[other.address];
     });
   }
 

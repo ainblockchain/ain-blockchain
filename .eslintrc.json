@@ -2,10 +2,6 @@
   "extends": [
     "google"
   ],
-  "plugins": [
-    "standard",
-    "promise"
-  ],
   "rules": {
     "semi": "off",
     "camelcase": "off",
@@ -14,6 +10,7 @@
     "no-useless-escape": "off",
     "require-jsdoc": "off",
     "valid-jsdoc": "off",
+    "indent": "off",
     "max-len": [
       "error",
       { "code": 100 }

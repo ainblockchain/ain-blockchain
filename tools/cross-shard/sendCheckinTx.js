@@ -97,14 +97,14 @@ async function sendTransaction() {
   const timestamp = Date.now();
   const keyBuffer = Buffer.from(config.userPrivateKey, 'hex');
   const payloadTxBody =
-    buildPayloadTx(config.userAddr, config.shardOwnerAddr, config.parentTokenAmount, timestamp);
+      buildPayloadTx(config.userAddr, config.shardOwnerAddr, config.parentTokenAmount, timestamp);
   console.log(`payloadTxBody: ${JSON.stringify(payloadTxBody, null, 2)}`);
   const signedPayloadTx = signTx(payloadTxBody, keyBuffer);
   console.log(`signedPayloadTx: ${JSON.stringify(signedPayloadTx, null, 2)}`);
   console.log(`payloadTxHash: ${signedPayloadTx.txHash}`);
 
   const triggerTxBody =
-    buildTriggerTx(config.userAddr, signedPayloadTx.signedTx, timestamp);
+      buildTriggerTx(config.userAddr, signedPayloadTx.signedTx, timestamp);
   console.log(`triggerTxBody: ${JSON.stringify(triggerTxBody, null, 2)}`);
 
   console.log('Sending job transaction...')

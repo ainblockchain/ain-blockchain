@@ -422,8 +422,8 @@ class DB {
       return { code: 3, error_message: `No write_function permission on: ${functionPath}` };
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    const functionInfoCopy = ChainUtil.isDict(functionInfo)
-      ? JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
+    const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
+        JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
     this.writeDatabase(fullPath, functionInfoCopy);
     return true;
   }
@@ -655,9 +655,9 @@ class DB {
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const value = this.getValue(ChainUtil.formatPath(parsedValuePath));
     const data =
-      this.addPathToValue(value, matched.matchedValuePath, matched.closestRule.path.length);
+        this.addPathToValue(value, matched.matchedValuePath, matched.closestRule.path.length);
     const newData =
-      this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
+        this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
     return !!this.evalRuleString(
         matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
   }
@@ -814,12 +814,12 @@ class DB {
   }
 
   convertFunctionMatch(matched, isGlobal) {
-    const functionPath = (isGlobal === true)
-      ? this.toGlobalPath(matched.matchedFunctionPath) : matched.matchedFunctionPath;
-    const valuePath = (isGlobal === true)
-      ? this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
+    const functionPath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedFunctionPath) : matched.matchedFunctionPath;
+    const valuePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeFunctions =
-      matched.subtreeFunctions.map((entry) => this.convertPathAndConfig(entry, false));
+        matched.subtreeFunctions.map((entry) => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(functionPath),
@@ -948,10 +948,10 @@ class DB {
   }
 
   convertRuleMatch(matched, isGlobal) {
-    const rulePath = (isGlobal === true)
-      ? this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
-    const valuePath = (isGlobal === true)
-      ? this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
+    const rulePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
+    const valuePath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeRules = matched.subtreeRules.map((entry) =>
       this.convertPathAndConfig(entry, false));
     return {
@@ -1034,8 +1034,8 @@ class DB {
   }
 
   convertOwnerMatch(matched, isGlobal) {
-    const ownerPath = (isGlobal === true)
-      ? this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
+    const ownerPath = (isGlobal === true) ?
+        this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(ownerPath),

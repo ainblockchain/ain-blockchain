@@ -27,9 +27,9 @@ class BlockchainNode {
     logger.info(`Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
     this.isShardReporter =
-      isShardChain &&
-      ainUtil.areSameAddresses(
-          GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+        isShardChain &&
+        ainUtil.areSameAddresses(
+            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
     this.urlInternal = null;

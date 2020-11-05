@@ -22,7 +22,7 @@ class TransactionExecutorCommand extends Command {
     const privateKeyString = flags.privateKey || null;
     if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
-        '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
+          '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
     }
 
     if (generateKeyPair && privateKeyString) {

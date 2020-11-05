@@ -38,7 +38,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       } else if (!semver.valid(coercedVer)) {
         done(null, addProtocolVersion({ code: 1, message: 'Invalid protocol version.' }));
       } else if (semver.lt(coercedVer, minProtocolVersion) ||
-        (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
+                (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
         done(null, addProtocolVersion({ code: 1, message: 'Incompatible protocol version.' }));
       } else {
         done(null, addProtocolVersion({ code: 0, result: 'Success' }));
@@ -239,7 +239,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_evalOwner: function(args, done) {
       const result =
-        p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
+          p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
       done(null, addProtocolVersion({ result }));
     },
 
@@ -258,7 +258,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getBalance: function(args, done) {
       const address = args.address;
       const balance =
-        p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
+          p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
       done(null, addProtocolVersion({ result: balance }));
     },
 

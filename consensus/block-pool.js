@@ -86,7 +86,7 @@ class BlockPool {
       return [];
     }
     while (currBlockWithInfo && currBlockWithInfo.block &&
-          currBlockWithInfo.block.number > finalizedBlock.number) {
+        currBlockWithInfo.block.number > finalizedBlock.number) {
       chain.unshift(withInfo ? currBlockWithInfo : currBlockWithInfo.block);
       currBlockWithInfo = this.hashToBlockInfo[currBlockWithInfo.block.last_hash];
     }
@@ -127,9 +127,9 @@ class BlockPool {
     }
     const nextBlockSet = this.hashToNextBlockSet[currentNode.block.hash];
     const blockNumber = currentNode.block.number;
-    let longestNumber = chainList.length ? withInfo
-      ? chainList[0][chainList[0].length - 1].block.number
-      : chainList[0][chainList[0].length - 1].number : 0;
+    let longestNumber = chainList.length ? withInfo ?
+        chainList[0][chainList[0].length - 1].block.number :
+            chainList[0][chainList[0].length - 1].number : 0;
     if (blockNumber > longestNumber) {
       logger.debug('[blockPool:dfsLongest] New longest chain found: ' +
           `${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
@@ -197,7 +197,7 @@ class BlockPool {
     const len = chain.length;
     if (!len || len < 3) return false;
     return chain[len - 3].epoch + 1 === chain[len - 2].epoch &&
-      chain[len - 2].epoch + 1 === chain[len - 1].epoch;
+        chain[len - 2].epoch + 1 === chain[len - 1].epoch;
   }
 
   // FIXME: return block that's on the longest & heaviest notarized chain
@@ -365,10 +365,9 @@ class BlockPool {
           return !blockNumber || blockNumber < number;
         });
     blocksToRemove.forEach((blockInfo) => {
-      const blockHash = blockInfo.block
-        ? blockInfo.block.hash
-        : BlockPool.getBlockHashFromTx(blockInfo.votes && blockInfo.votes.length
-            ? blockInfo.votes[0] : blockInfo.proposal);
+      const blockHash = blockInfo.block ? blockInfo.block.hash
+          : BlockPool.getBlockHashFromTx(blockInfo.votes && blockInfo.votes.length ?
+              blockInfo.votes[0] : blockInfo.proposal);
       if (blockHash) {
         delete this.hashToBlockInfo[blockHash];
         delete this.numberToBlock[number];

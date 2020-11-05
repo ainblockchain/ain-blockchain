@@ -25,7 +25,7 @@ class RuleUtil {
 
   isEmptyNode(node) {
     return node === null || node === undefined ||
-      (this.isDict(node) && Object.keys(node).length === 0);
+        (this.isDict(node) && Object.keys(node).length === 0);
   }
 
   keys(value) {

@@ -24,8 +24,8 @@ class Transaction {
     Object.assign(this, sanitizedTxData);
     this.hash = '0x' + ainUtil.hashTransaction(sanitizedTxData).toString('hex');
     // Workaround for skip_verif with custom address
-    this.address = txData.address !== undefined
-      ? txData.address : Transaction.getAddress(this.hash.slice(2), this.signature);
+    this.address = txData.address !== undefined ?
+        txData.address : Transaction.getAddress(this.hash.slice(2), this.signature);
 
     logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
   }
@@ -34,8 +34,8 @@ class Transaction {
     const transaction = JSON.parse(JSON.stringify(txData));
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address
-    const signature = transaction.address !== undefined
-      ? '' : ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
+    const signature = transaction.address !== undefined ?
+        '' : ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
     return new Transaction({ signature, transaction });
   }
 
@@ -70,7 +70,7 @@ class Transaction {
   get signingData() {
     return Object.assign(
         { operation: this.operation, nonce: this.nonce, timestamp: this.timestamp },
-      this.parent_tx_hash !== undefined ? { parent_tx_hash: this.parent_tx_hash } : {}
+        this.parent_tx_hash !== undefined ? { parent_tx_hash: this.parent_tx_hash } : {}
     );
   }
 
@@ -123,8 +123,8 @@ class Transaction {
    * Sanitize operation.
    */
   static sanitizeOperation(op) {
-    return (op.type === WriteDbOperations.SET)
-      ? this.sanitizeSetOperation(op) : this.sanitizeSimpleOperation(op);
+    return (op.type === WriteDbOperations.SET) ?
+        this.sanitizeSetOperation(op) : this.sanitizeSimpleOperation(op);
   }
 
   /**
@@ -159,7 +159,7 @@ class Transaction {
 
   static hasRequiredFields(transaction) {
     return transaction.timestamp !== undefined && transaction.nonce !== undefined &&
-      transaction.operation !== undefined;
+        transaction.operation !== undefined;
   }
 
   static isBatchTransaction(transaction) {
