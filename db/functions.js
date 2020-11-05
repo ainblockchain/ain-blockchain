@@ -416,7 +416,7 @@ class Functions {
 
   _getWithdrawCreatedAtPath(service, user, withdrawId) {
     return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
-      `${PredefinedDbPaths.WITHDRAW_CREATED_AT}`);
+        `${PredefinedDbPaths.WITHDRAW_CREATED_AT}`);
   }
 
   _getWithdrawResultPath(service, user, withdrawId) {

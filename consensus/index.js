@@ -316,8 +316,7 @@ class Consensus {
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempState.getProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-        blockNumber, this.state.epoch, stateProofHash, myAddr,
-        validators);
+        blockNumber, this.state.epoch, stateProofHash, myAddr, validators);
 
     let proposalTx;
     const txOps = {
@@ -747,7 +746,7 @@ class Consensus {
     let currBlock = block;
     let blockHash = currBlock.hash;
     while (currBlock && blockHash !== '' && blockHash !== lastFinalizedHash &&
-      !this.blockPool.hashToState.has(blockHash)) {
+        !this.blockPool.hashToState.has(blockHash)) {
       chain.unshift(currBlock);
       // previous block of currBlock
       currBlock = _.get(this.blockPool.hashToBlockInfo[currBlock.last_hash], 'block');
@@ -878,8 +877,8 @@ class Consensus {
         opList.push({
           type: WriteDbOperations.SET_VALUE,
           ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-            `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
-            `${ShardingProperties.PROOF_HASH}`,
+              `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
+              `${ShardingProperties.PROOF_HASH}`,
           value: block.stateProofHash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
@@ -888,9 +887,9 @@ class Consensus {
           opList.push({
             type: WriteDbOperations.SET_VALUE,
             ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
-              `${ShardingProperties.PROOF_HASH_MAP}/` +
-              `${blockNumberToReport - MAX_SHARD_REPORT}/` +
-              `${ShardingProperties.PROOF_HASH}`,
+                `${ShardingProperties.PROOF_HASH_MAP}/` +
+                `${blockNumberToReport - MAX_SHARD_REPORT}/` +
+                `${ShardingProperties.PROOF_HASH}`,
             value: null
           });
         }
