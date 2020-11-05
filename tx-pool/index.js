@@ -83,9 +83,9 @@ class TransactionPool {
 
   isNotEligibleTransaction(tx) {
     return ((tx.address in this.transactions) &&
-      (this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined)) ||
-      (tx.nonce >= 0 && tx.nonce <= this.committedNonceTracker[tx.address]) ||
-      (tx.nonce < 0 && tx.hash in this.transactionTracker);
+        (this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined)) ||
+        (tx.nonce >= 0 && tx.nonce <= this.committedNonceTracker[tx.address]) ||
+        (tx.nonce < 0 && tx.hash in this.transactionTracker);
   }
 
   getValidTransactions(excludeBlockList) {
@@ -108,8 +108,8 @@ class TransactionPool {
       );
       tempFilteredTransactions = tempFilteredTransactions.filter((tx) => {
         const ref = _.get(tx, 'operation.ref');
-        const innerRef = tx.operation.op_list && tx.operation.op_list.length
-          ? tx.operation.op_list[0].ref : undefined;
+        const innerRef = tx.operation.op_list && tx.operation.op_list.length ?
+            tx.operation.op_list[0].ref : undefined;
         const type = _.get(tx, 'operation.type');
         return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
             (ref && !ref.startsWith('/consensus/number')) ||
@@ -120,9 +120,9 @@ class TransactionPool {
       } else {
         unvalidatedTransactions[address] = tempFilteredTransactions;
         // Order by noncing if transactions are nonced, else by timestamp
-        unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0)
-          ? ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0))
-          : (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
+        unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0) ?
+            ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
+                (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
       }
     }
     // Secondly transactions are combined and ordered by timestamp, while still remaining
@@ -341,7 +341,7 @@ class TransactionPool {
         const result = _.get(resp, 'data.result.result', null);
         logger.info(
             `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
-          `with result: ${JSON.stringify(result, null, 2)}`);
+            `with result: ${JSON.stringify(result, null, 2)}`);
         if (result && (result.is_finalized ||
             result.status === TransactionStatus.FAIL_STATUS ||
             result.status === TransactionStatus.TIMEOUT_STATUS)) {

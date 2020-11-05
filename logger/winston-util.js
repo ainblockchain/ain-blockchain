@@ -92,11 +92,11 @@ const getWinstonDailyErrorFileTransport = () => {
 
 const getWinstonTransports = () => {
   const transports = LIGHTWEIGHT ? [getWinstonDailyErrorFileTransport()]
-    : [
-      getWinstonConsoleTransport(),
-      getWinstonDailyDebugFileTransport(),
-      getWinstonDailyErrorFileTransport(),
-    ];
+      : [
+        getWinstonConsoleTransport(),
+        getWinstonDailyDebugFileTransport(),
+        getWinstonDailyErrorFileTransport(),
+      ];
   if (HOSTING_ENV === 'gcp') {
     // Add Stackdriver Logging
     transports.push(new LoggingWinston);

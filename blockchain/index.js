@@ -75,7 +75,7 @@ class Blockchain {
   getBlockByHash(hash) {
     if (!hash) return null;
     const blockFileName =
-      glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
+        glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
     if (blockFileName === undefined) {
       const found = this.chain.filter((block) => block.hash === hash);
       return found.length ? found[0] : null;
@@ -294,14 +294,14 @@ class Blockchain {
 
     const firstBlock = Block.parse(chainSubSection[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
-    const overlap = lastBlockHash
-        ? chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
+    const overlap = lastBlockHash ?
+        chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.
       if (overlappingBlock && overlappingBlock.hash !== lastBlockHash) {
         logger.info(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
-          `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
+            `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
         return false;
       }
     } else {

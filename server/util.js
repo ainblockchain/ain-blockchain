@@ -75,13 +75,13 @@ async function waitUntilTxFinalize(endpoint, txHash) {
         'ain_getTransactionByHash',
         { hash: txHash }
     )
-        .then((resp) => {
-          return (_.get(resp, 'data.result.result.is_finalized', false) === true);
-        })
-        .catch((err) => {
-          logger.error(`Failed to confirm transaction: ${err}`);
-          return false;
-        });
+    .then((resp) => {
+      return (_.get(resp, 'data.result.result.is_finalized', false) === true);
+    })
+    .catch((err) => {
+      logger.error(`Failed to confirm transaction: ${err}`);
+      return false;
+    });
     if (confirmed) {
       return true;
     }

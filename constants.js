@@ -8,8 +8,8 @@ const {
 const ChainUtil = require('./chain-util');
 
 const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
-const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR
-  ? process.env.GENESIS_CONFIGS_DIR : null;
+const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
+    process.env.GENESIS_CONFIGS_DIR : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
@@ -21,8 +21,8 @@ const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
 // of which value could be either 'local', 'default', or 'gcp'.
 const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
-const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP
-  ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const COMCOM_HOST_INTERNAL_IP_MAP = {
   aincom1: '192.168.1.13',
   aincom2: '192.168.1.14',
@@ -33,8 +33,8 @@ const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT
-    ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
+    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
 function getPortNumber(defaultValue, baseValue) {
   if (HOSTING_ENV === 'local') {
@@ -342,7 +342,7 @@ function getGenesisSharding() {
     const ownerAddress = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const reporterAddress =
-      GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
+        GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
     ChainUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
     ChainUtil.setJsObject(config, [ShardingProperties.SHARD_REPORTER], reporterAddress);
   }
@@ -405,7 +405,7 @@ function getGenesisOwners() {
 
 function getShardingRule() {
   const ownerAddress =
-    ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
     [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
   };
@@ -413,7 +413,7 @@ function getShardingRule() {
 
 function getWhitelistRule() {
   const ownerAddress =
-    ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
     [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
   };

@@ -88,8 +88,8 @@ function hasReservedChar(label) {
 function hasAllowedPattern(label) {
   const wildCardPatternRegex = /^\*$/gm;
   const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]+$/gm;
-  return ChainUtil.isString(label)
-    ? (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
+  return ChainUtil.isString(label) ?
+      (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
 function isValidStateLabel(label) {
@@ -134,7 +134,7 @@ function isValidJsObjectForStatesRecursive(obj, path) {
     return true;
   } else {
     return ChainUtil.isBool(obj) || ChainUtil.isNumber(obj) || ChainUtil.isString(obj) ||
-      obj === null;
+        obj === null;
   }
 }
 

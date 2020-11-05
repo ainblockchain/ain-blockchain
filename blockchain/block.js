@@ -105,9 +105,10 @@ class Block {
 
   static hasRequiredFields(block) {
     return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
-      block.transactions !== undefined && block.number !== undefined && block.epoch !== undefined &&
-      block.timestamp !== undefined && block.stateProofHash !== undefined &&
-      block.proposer !== undefined && block.validators !== undefined);
+        block.transactions !== undefined && block.number !== undefined &&
+        block.epoch !== undefined && block.timestamp !== undefined &&
+        block.stateProofHash !== undefined && block.proposer !== undefined &&
+        block.validators !== undefined);
   }
 
   static validateHashes(block) {
@@ -208,7 +209,7 @@ class Block {
         const op = {
           type: 'SET_VALUE',
           ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAddress}/` +
-            `${accountAddress}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
+              `${accountAddress}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
           value: GenesisAccounts[AccountProperties.SHARES],
         };
         transferOps.push(op);

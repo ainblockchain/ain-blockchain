@@ -308,7 +308,7 @@ class P2pServer {
   connectToPeers(newManagedPeerInfoList) {
     let updated = false;
     newManagedPeerInfoList.forEach((peerInfo) => {
-      if (!!this.managedPeersInfo[peerInfo.address]) {
+      if (this.managedPeersInfo[peerInfo.address]) {
         logger.info(`Node ${peerInfo.address} is already a managed peer. ` +
                     `Something is wrong.`)
       } else {
@@ -451,7 +451,7 @@ class P2pServer {
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSubsection = this.node.bc.requestBlockchainSection(
-              data.lastBlock ? Block.parse(data.lastBlock) : null);
+                data.lastBlock ? Block.parse(data.lastBlock) : null);
             if (chainSubsection) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(
@@ -614,8 +614,8 @@ class P2pServer {
 
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction
-        ? transactionWithSig : new Transaction(transactionWithSig);
+      const transaction = transactionWithSig instanceof Transaction ?
+          transactionWithSig : new Transaction(transactionWithSig);
       const response = this.executeTransaction(transaction);
       logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response))
       if (!ChainUtil.transactionFailed(response)) {
@@ -645,12 +645,12 @@ class P2pServer {
     const shardingPathRules = `auth === '${shardOwner}'`;
     const proofHashRulesLight = `auth === '${shardReporter}'`;
     const proofHashRules = `auth === '${shardReporter}' && ` +
-      '((newData === null && ' +
-      `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
-      `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
-      '(newData !== null && ($block_number === "0" || ' +
-      `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
-      `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
+        '((newData === null && ' +
+        `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
+        '(newData !== null && ($block_number === "0" || ' +
+        `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
 
     const shardInitTx = {
       operation: {

@@ -146,7 +146,7 @@ class Functions {
     const depositAmountPath = this._getDepositAmountPath(service, user);
     if (this._transferInternal(userBalancePath, depositAmountPath, value)) {
       const lockup = this.db.getValue(this._getDepositLockupDurationPath(service)) ||
-        DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
+          DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       const expirationPath = this._getDepositExpirationPath(service, user);
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
           Number(timestamp) + Number(lockup));
@@ -245,15 +245,15 @@ class Functions {
     }
     // Forward payload tx to parent chain
     sendSignedTx(parentChainEndpoint, payloadTx)
-        .then((result) => {
-          if (!_.get(result, 'success', false) === true) {
-            logger.info(
-                `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
-            return;
-          }
-          logger.info(
-              `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
-        });
+    .then((result) => {
+      if (!_.get(result, 'success', false) === true) {
+        logger.info(
+            `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+        return;
+      }
+      logger.info(
+          `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+    });
     const action = {
       ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
       valueFunction: (success) => !!success,
@@ -391,27 +391,27 @@ class Functions {
 
   _getDepositLockupDurationPath(service) {
     return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/` +
-      `${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
+        `${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
   }
 
   _getDepositAmountPath(service, user) {
     return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
-      `${PredefinedDbPaths.DEPOSIT_VALUE}`);
+        `${PredefinedDbPaths.DEPOSIT_VALUE}`);
   }
 
   _getDepositExpirationPath(service, user) {
     return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
-      `${PredefinedDbPaths.DEPOSIT_EXPIRE_AT}`);
+        `${PredefinedDbPaths.DEPOSIT_EXPIRE_AT}`);
   }
 
   _getDepositCreatedAtPath(service, user, depositId) {
     return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
-      `${PredefinedDbPaths.DEPOSIT_CREATED_AT}`);
+        `${PredefinedDbPaths.DEPOSIT_CREATED_AT}`);
   }
 
   _getDepositResultPath(service, user, depositId) {
     return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
-      `${PredefinedDbPaths.DEPOSIT_RESULT}`);
+        `${PredefinedDbPaths.DEPOSIT_RESULT}`);
   }
 
   _getWithdrawCreatedAtPath(service, user, withdrawId) {
@@ -421,7 +421,7 @@ class Functions {
 
   _getWithdrawResultPath(service, user, withdrawId) {
     return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
-      `${PredefinedDbPaths.WITHDRAW_RESULT}`);
+        `${PredefinedDbPaths.WITHDRAW_RESULT}`);
   }
 
   _getLatestShardReportPath(branchPath) {
@@ -431,12 +431,12 @@ class Functions {
   _getCheckinParentFinalizeResultPath(branchPath, txHash) {
     const shardingPath = this.db.getShardingPath();
     return `${shardingPath}/${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/` +
-      `${txHash}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+        `${txHash}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
   }
 
   _getCheckinPayloadPath(branchPath) {
     return `${branchPath}/${PredefinedDbPaths.CHECKIN_REQUEST}/` +
-      `${PredefinedDbPaths.CHECKIN_PAYLOAD}`;
+        `${PredefinedDbPaths.CHECKIN_PAYLOAD}`;
   }
 
   _getFullValuePath(parsedPath) {
