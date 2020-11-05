@@ -307,16 +307,16 @@ app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
   res.status(200)
-      .set('Content-Type', 'text/plain')
-      .send('Welcome to AIN Blockchain Tracker')
-      .end();
+    .set('Content-Type', 'text/plain')
+    .send('Welcome to AIN Blockchain Tracker')
+    .end();
 });
 
 app.get('/peer_nodes', (req, res, next) => {
   res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ result: PEER_NODES })
-      .end();
+    .set('Content-Type', 'application/json')
+    .send({ result: PEER_NODES })
+    .end();
 });
 
 const trackerServer = app.listen(PORT, () => {

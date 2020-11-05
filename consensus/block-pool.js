@@ -203,8 +203,8 @@ class BlockPool {
   // FIXME: return block that's on the longest & heaviest notarized chain
   getNotarizedBlockListByNumber(number) {
     const blockArr = Object.values(this.hashToBlockInfo)
-        .filter((blockInfo) => !!blockInfo.block && blockInfo.block.number === number &&
-        blockInfo.proposal && blockInfo.notarized);
+      .filter((blockInfo) => !!blockInfo.block && blockInfo.block.number === number &&
+          blockInfo.proposal && blockInfo.notarized);
     return blockArr;
   }
 
@@ -355,15 +355,15 @@ class BlockPool {
   cleanUpAfterFinalization(lastBlock) {
     const number = lastBlock.number;
     const blocksToRemove = Object.values(this.hashToBlockInfo)
-        .filter((val) => {
-          let blockNumber;
-          if (val.block) {
-            blockNumber = val.block.number;
-          } else if (val.votes || val.proposal) {
-            blockNumber = BlockPool.getBlockNumberFromTx(val.votes ? val.votes[0] : val.proposal);
-          }
-          return !blockNumber || blockNumber < number;
-        });
+      .filter((val) => {
+        let blockNumber;
+        if (val.block) {
+          blockNumber = val.block.number;
+        } else if (val.votes || val.proposal) {
+          blockNumber = BlockPool.getBlockNumberFromTx(val.votes ? val.votes[0] : val.proposal);
+        }
+        return !blockNumber || blockNumber < number;
+      });
     blocksToRemove.forEach((blockInfo) => {
       const blockHash = blockInfo.block ? blockInfo.block.hash
           : BlockPool.getBlockHashFromTx(blockInfo.votes && blockInfo.votes.length ?
