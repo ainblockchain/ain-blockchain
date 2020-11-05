@@ -17,8 +17,8 @@ class TransactionExecutorCommand extends Command {
     const { flags } = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
-    const generateKeyPair = flags.generateKeyPair
-        ? flags.generateKeyPair.toLowerCase().startsWith('t') : false;
+    const generateKeyPair = flags.generateKeyPair ?
+        flags.generateKeyPair.toLowerCase().startsWith('t') : false;
     const privateKeyString = flags.privateKey || null;
     if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +

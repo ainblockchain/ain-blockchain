@@ -178,8 +178,8 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.state.epoch})`);
     }
     // Need the block#1 to be finalized to have the deposits reflected in the state
-    const validators = this.node.bc.lastBlockNumber() < 1
-        ? lastNotarizedBlock.validators : this.getWhitelist();
+    const validators = this.node.bc.lastBlockNumber() < 1 ?
+        lastNotarizedBlock.validators : this.getWhitelist();
     // FIXME(lia): make the seeds more secure and unpredictable
     const seed = '' + this.genesisHash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
@@ -257,8 +257,8 @@ class Consensus {
   createProposal() {
     const LOG_HEADER = 'createProposal';
     const longestNotarizedChain = this.getLongestNotarizedChain();
-    const lastBlock = longestNotarizedChain && longestNotarizedChain.length
-      ? longestNotarizedChain[longestNotarizedChain.length - 1] : this.node.bc.lastBlock();
+    const lastBlock = longestNotarizedChain && longestNotarizedChain.length ?
+        longestNotarizedChain[longestNotarizedChain.length - 1] : this.node.bc.lastBlock();
     const blockNumber = lastBlock.number + 1;
 
     if (blockNumber > 1 && LIGHTWEIGHT && this.cache[blockNumber]) {
@@ -269,8 +269,8 @@ class Consensus {
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
     const validTransactions = [];
     const invalidTransactions = [];
-    const prevState = lastBlock.number === this.node.bc.lastBlockNumber()
-      ? this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
+    const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
+        this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
     const tempState = new DB(null, null, false, lastBlock.number - 1);
     tempState.setDbToSnapshot(prevState);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
@@ -308,8 +308,8 @@ class Consensus {
 
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
-    const validators = this.node.bc.lastBlockNumber() < 1
-        ? lastBlock.validators : this.getWhitelist();
+    const validators = this.node.bc.lastBlockNumber() < 1 ?
+        lastBlock.validators : this.getWhitelist();
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) {
       return a + b;
@@ -402,8 +402,8 @@ class Consensus {
     }
     // If I don't have enough votes for prevBlock, see last_votes of proposalBlock if
     // those can notarize the prevBlock (verify, execute and add the missing votes)
-    let prevBlockInfo = number === 1
-        ? this.node.bc.getBlockByNumber(0) : this.blockPool.hashToBlockInfo[last_hash];
+    let prevBlockInfo = number === 1 ?
+        this.node.bc.getBlockByNumber(0) : this.blockPool.hashToBlockInfo[last_hash];
     const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
     logger.debug(`[${LOG_HEADER}] prevBlockInfo: ${JSON.stringify(prevBlockInfo, null, 2)}`);
     if (number !== 1 && (!prevBlockInfo || !prevBlockInfo.block)) {
@@ -456,8 +456,8 @@ class Consensus {
           return false;
         }
       }
-      let prevState = prevBlock.number === this.node.bc.lastBlockNumber()
-        ? this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
+      let prevState = prevBlock.number === this.node.bc.lastBlockNumber() ?
+          this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
       if (!prevState) {
         prevState = this.getStateSnapshot(prevBlock);
         if (!prevState) {
@@ -498,8 +498,8 @@ class Consensus {
     // TODO(lia): Check last_votes if they indeed voted for the previous block
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     // TODO(lia): Implement state version control
-    let prevState = prevBlock.number === this.node.bc.lastBlockNumber()
-      ? this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
+    let prevState = prevBlock.number === this.node.bc.lastBlockNumber() ?
+        this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
     if (!prevState) {
       prevState = this.getStateSnapshot(prevBlock);
       if (!prevState) {
@@ -617,8 +617,8 @@ class Consensus {
   vote(block) {
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
-    const myStake = this.node.bc.lastBlockNumber() < 1
-      ? block.validators[myAddr] : this.getWhitelist()[myAddr];
+    const myStake = this.node.bc.lastBlockNumber() < 1 ?
+        block.validators[myAddr] : this.getWhitelist()[myAddr];
     if (!myStake) {
       return;
     }
@@ -869,8 +869,8 @@ class Consensus {
         if (sizeof(opList) >= txSizeThreshold) {
           break;
         }
-        const block = blockNumberToReport === lastFinalizedBlockNumber
-          ? lastFinalizedBlock : this.node.bc.getBlockByNumber(blockNumberToReport);
+        const block = blockNumberToReport === lastFinalizedBlockNumber ?
+            lastFinalizedBlock : this.node.bc.getBlockByNumber(blockNumberToReport);
         if (!block) {
           logger.error(`Failed to fetch block of number ${blockNumberToReport} while reporting`);
           break;
