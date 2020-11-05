@@ -247,12 +247,10 @@ class Functions {
     sendSignedTx(parentChainEndpoint, payloadTx)
     .then((result) => {
       if (!_.get(result, 'success', false) === true) {
-        logger.info(
-            `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+        logger.info(`  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
         return;
       }
-      logger.info(
-          `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+      logger.info(`  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
     });
     const action = {
       ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),

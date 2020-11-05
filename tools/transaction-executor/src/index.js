@@ -45,9 +45,9 @@ class TransactionExecutorCommand extends Command {
       transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
     await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient))
-        .then((values) => {
-          console.log(values);
-        });
+    .then((values) => {
+      console.log(values);
+    });
   }
 
   static createSignedTransactionList(transactionFile, keyPair) {

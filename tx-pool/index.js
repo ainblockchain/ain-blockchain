@@ -352,9 +352,9 @@ class TransactionPool {
       }));
     }
     return Promise.all(tasks)
-        .then(() => {
-          this.isChecking = false;
-        });
+    .then(() => {
+      this.isChecking = false;
+    });
   }
 
   doAction(action, success) {

@@ -969,9 +969,9 @@ class Consensus {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
         hashToState: Array.from(this.blockPool.hashToState.keys()),
         hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
-            .reduce((acc, curr) => {
-              return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
-            }, {}),
+          .reduce((acc, curr) => {
+            return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
+          }, {}),
         epochToBlock: Object.keys(this.blockPool.epochToBlock),
         numberToBlock: Object.keys(this.blockPool.numberToBlock),
         longestNotarizedChainTips: this.blockPool.longestNotarizedChainTips

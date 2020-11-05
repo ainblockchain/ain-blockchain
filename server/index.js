@@ -96,11 +96,11 @@ class P2pServer {
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setUpIpAddresses()
-        .then(() => {
-          this.setIntervalForTrackerConnection();
-        // XXX(minsu): it won't run before updating p2p network.
-        // this.heartbeat();
-        });
+    .then(() => {
+      this.setIntervalForTrackerConnection();
+    // XXX(minsu): it won't run before updating p2p network.
+    // this.heartbeat();
+    });
   }
 
   stop() {
@@ -159,41 +159,41 @@ class P2pServer {
 
   getIpAddress(internal = false) {
     return Promise.resolve()
-        .then(() => {
-          if (HOSTING_ENV === 'gcp') {
-            return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
-              headers: { 'Metadata-Flavor': 'Google' },
-              timeout: 3000
-            })
-                .then((res) => {
-                  return res.data;
-                })
-                .catch((err) => {
-                  logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
-                  process.exit(0);
-                });
-          } else if (HOSTING_ENV === 'comcom') {
-            let ipAddr = null;
-            if (internal) {
-              const hostname = _.toLower(os.hostname());
-              logger.info(`Hostname: ${hostname}`);
-              ipAddr = COMCOM_HOST_INTERNAL_IP_MAP[hostname];
-            } else {
-              ipAddr = COMCOM_HOST_EXTERNAL_IP;
-            }
-            if (ipAddr) {
-              return ipAddr;
-            }
-            logger.error(`Failed to get ${internal ? 'internal' : 'external'} ip address.`);
-            process.exit(0);
-          } else if (HOSTING_ENV === 'local') {
-            return ip.address();
-          } else {
-            return publicIp.v4();
-          }
-        }).then((ipAddr) => {
-          return ipAddr;
+    .then(() => {
+      if (HOSTING_ENV === 'gcp') {
+        return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
+          headers: { 'Metadata-Flavor': 'Google' },
+          timeout: 3000
+        })
+        .then((res) => {
+          return res.data;
+        })
+        .catch((err) => {
+          logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+          process.exit(0);
         });
+      } else if (HOSTING_ENV === 'comcom') {
+        let ipAddr = null;
+        if (internal) {
+          const hostname = _.toLower(os.hostname());
+          logger.info(`Hostname: ${hostname}`);
+          ipAddr = COMCOM_HOST_INTERNAL_IP_MAP[hostname];
+        } else {
+          ipAddr = COMCOM_HOST_EXTERNAL_IP;
+        }
+        if (ipAddr) {
+          return ipAddr;
+        }
+        logger.error(`Failed to get ${internal ? 'internal' : 'external'} ip address.`);
+        process.exit(0);
+      } else if (HOSTING_ENV === 'local') {
+        return ip.address();
+      } else {
+        return publicIp.v4();
+      }
+    }).then((ipAddr) => {
+      return ipAddr;
+    });
   }
 
   async setUpIpAddresses() {

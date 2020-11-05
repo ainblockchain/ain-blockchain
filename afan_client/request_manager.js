@@ -17,15 +17,13 @@ class RequestManager {
       json: true, // Automatically stringifies the body to JSON
     };
 
-    return rp(options)
-        .then(function(parsedBody) {
-        // POST succeeded
-          return parsedBody;
-        })
-        .catch(function(err) {
-        // POST failed
-          console.log(err);
-        });
+    return rp(options).then(function(parsedBody) {
+      // POST succeeded
+      return parsedBody;
+    }).catch(function(err) {
+      // POST failed
+      console.log(err);
+    });
   }
 
   getRef(ref) {
