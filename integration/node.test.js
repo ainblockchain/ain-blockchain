@@ -578,7 +578,7 @@ describe('Blockchain Node', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           let promises = [];
           promises.push(client.request('ain_checkProtocolVersion', {}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0'}));
+          promises.push(client.request('ain_checkProtocolVersion', {protoVer: 'a.b.c'}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: 0}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: CURRENT_PROTOCOL_VERSION}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0.0.1'}));
@@ -588,7 +588,7 @@ describe('Blockchain Node', () => {
             expect(res[1].result.code).to.equal(1);
             expect(res[1].result.message).to.equal("Invalid protocol version.");
             expect(res[2].result.code).to.equal(1);
-            expect(res[2].result.message).to.equal("Invalid protocol version.");
+            expect(res[2].result.message).to.equal("Incompatible protocol version.");
             expect(res[3].result.code).to.equal(0);
             expect(res[3].result.result).to.equal("Success");
             expect(res[4].result.code).to.equal(1);

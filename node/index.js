@@ -1,19 +1,20 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger');
+const logger = require('../logger')('NODE');
 const {
   PORT,
   ACCOUNT_INDEX,
+  PredefinedDbPaths,
   ShardingProperties,
   ShardingProtocols,
   GenesisAccounts,
   GenesisSharding
 } = require('../constants');
+const ChainUtil = require('../chain-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
-const NODE_PREFIX = 'NODE';
 const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 
 class BlockchainNode {
@@ -21,7 +22,7 @@ class BlockchainNode {
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    logger.info(`[${NODE_PREFIX}] Initializing a new blockchain node with account: ` +
+    logger.info(`Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
     this.isShardReporter =
         isShardChain &&
@@ -49,7 +50,7 @@ class BlockchainNode {
     this.urlInternal = BlockchainNode.getNodeUrl(ipAddrInternal);
     this.urlExternal = BlockchainNode.getNodeUrl(ipAddrExternal);
     logger.info(
-        `[${NODE_PREFIX}] Set Node URLs to '${this.urlInternal}' (internal), ` +
+        `Set Node URLs to '${this.urlInternal}' (internal), ` +
         `'${this.urlExternal}' (external)`);
   }
 
@@ -58,7 +59,7 @@ class BlockchainNode {
   }
 
   init(isFirstNode) {
-    logger.info(`[${NODE_PREFIX}] Initializing node..`);
+    logger.info(`Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
     this.bc.setBackupDb(new DB(this.bc, this.tp, true));
     this.nonce = this.getNonce();
@@ -88,8 +89,25 @@ class BlockchainNode {
       }
     }
 
-    logger.info(`[${NODE_PREFIX}] Setting nonce to ${nonce}`);
+    logger.info(`Setting nonce to ${nonce}`);
     return nonce;
+  }
+
+  getSharding() {
+    const shardingInfo = {};
+    const shards = this.db.getValue(ChainUtil.formatPath(
+        [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
+    for (let encodedPath in shards) {
+      const shardPath = ainUtil.decode(encodedPath);
+      shardingInfo[encodedPath] = {
+        [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
+            shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+        [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
+            shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+            ShardingProperties.LATEST)),
+      };
+    }
+    return shardingInfo;
   }
 
   /**
