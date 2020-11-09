@@ -8,7 +8,7 @@ const { sleep } = require('sleep');
 const axios = require('axios');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const logger = require('../logger');
+const logger = require('../logger')('SERVER_UTIL');
 const ChainUtil = require('../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;

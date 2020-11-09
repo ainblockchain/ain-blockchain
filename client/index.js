@@ -5,7 +5,7 @@ const fs = require('fs');
 const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
-const logger = require('../logger');
+const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pServer = require('../server');
 const ChainUtil = require('../chain-util');
@@ -14,11 +14,10 @@ const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
-const CLIENT_PREFIX = 'CLIENT';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function (err) {
-  logger.error(`[${CLIENT_PREFIX}]` + err);
+  logger.error(err);
 });
 
 process.on('SIGINT', _ => {
@@ -34,17 +33,9 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error("Wrong version format is specified in package.json");
 }
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const MAJOR_MINOR_VERSION =
-    `${semver.major(CURRENT_PROTOCOL_VERSION)}.${semver.minor(CURRENT_PROTOCOL_VERSION)}`;
-if (!semver.valid(semver.coerce(MAJOR_MINOR_VERSION))) {
-  throw Error("Given major and minor version does not correctly setup");
-}
-if (!VERSION_LIST[MAJOR_MINOR_VERSION]) {
-  throw Error("Current protocol version doesn't exist in the protocol versions file");
-}
-const minProtocolVersion =
-    VERSION_LIST[MAJOR_MINOR_VERSION].min || CURRENT_PROTOCOL_VERSION;
-const maxProtocolVersion = VERSION_LIST[MAJOR_MINOR_VERSION].max;
+const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
+const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
+const maxProtocolVersion = max;
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
@@ -326,6 +317,14 @@ app.get('/get_address', (req, res, next) => {
     .end();
 });
 
+app.get('/get_sharding', (req, res, next) => {
+  const result = node.getSharding();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/get_raw_consensus_state', (req, res) => {
   const result = p2pServer.consensus.getRawState();
   res.status(200)
@@ -345,8 +344,8 @@ app.get('/get_consensus_state', (req, res) => {
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 const server = app.listen(PORT, () => {
-  logger.info(`[${CLIENT_PREFIX}] App listening on port ${PORT}`);
-  logger.info(`[${CLIENT_PREFIX}] Press Ctrl+C to quit.`);
+  logger.info(`App listening on port ${PORT}`);
+  logger.info(`Press Ctrl+C to quit.`);
 });
 
 server.keepAliveTimeout = 620 * 1000; // 620 seconds
@@ -410,6 +409,29 @@ function checkIfTransactionShouldBeNonced(input) {
   return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
 }
 
+function isValidVersionMatch(ver) {
+  return ver && semver.valid(semver.coerce(ver.min)) &&
+      (!ver.max || semver.valid(semver.coerce(ver.max)));
+}
+
+function matchVersions(ver) {
+  let match = VERSION_LIST[ver];
+  if (isValidVersionMatch(match)) {
+    return match;
+  }
+  const majorVer = semver.major(ver);
+  const majorMinorVer = `${majorVer}.${semver.minor(ver)}`;
+  match = VERSION_LIST[majorMinorVer];
+  if (isValidVersionMatch(match)) {
+    return match;
+  }
+  match = VERSION_LIST[majorVer];
+  if (isValidVersionMatch(match)) {
+    return match;
+  }
+  return {};
+}
+
 function validateVersion(req, res, next) {
   let version = null;
   if (req.query.protoVer) {
@@ -417,6 +439,7 @@ function validateVersion(req, res, next) {
   } else if (req.body.params) {
     version = req.body.params.protoVer;
   }
+  const coercedVer = semver.coerce(version);
   if (req.body.method === 'ain_getProtocolVersion' ||
       req.body.method === 'ain_checkProtocolVersion') {
     next();
@@ -426,14 +449,14 @@ function validateVersion(req, res, next) {
     .send({code: 1, message: "Protocol version not specified.",
            protoVer: CURRENT_PROTOCOL_VERSION})
     .end();
-  } else if (!semver.valid(version)) {
+  } else if (!semver.valid(coercedVer)) {
     res.status(200)
       .set('Content-Type', 'application/json')
       .send({code: 1, message: "Invalid protocol version.",
              protoVer: CURRENT_PROTOCOL_VERSION})
       .end();
-  } else if (semver.gt(minProtocolVersion, version) ||
-      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
+  } else if (semver.lt(coercedVer, minProtocolVersion) ||
+      (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
     res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 1, message: "Incompatible protocol version.",

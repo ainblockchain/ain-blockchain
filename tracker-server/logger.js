@@ -66,10 +66,25 @@ function getTransports() {
   return transports;
 }
 
-const logger = new winston.createLogger({
+const winstonLogger = new winston.createLogger({
   transports: getTransports(),
   exitOnError: false
 });
 
-module.exports = logger;
+const logger = function(prefix) {
+  const prefixedLogger = {
+    error: function(text) {
+      winstonLogger.error(`[${prefix}] ${text}`);
+    },
+    info: function(text) {
+      winstonLogger.info(`[${prefix}] ${text}`);
+    },
+    debug: function(text) {
+      winstonLogger.debug(`[${prefix}] ${text}`);
+    }
+  }
 
+  return prefixedLogger;
+}
+
+module.exports = logger;
