@@ -1,5 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const _ = require("lodash");
+const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 // All blockchain nodes in parent chains
@@ -41,7 +41,7 @@ function writeFile(json, file) {
 function createAccount(prefix) {
   console.log(`Creating an account with prefix ${prefix}..`);
   let count = 0;
-  while(true) {
+  while (true) {
     const account = ainUtil.createAccount(); // { private_key, public_key, address }
     const address = account.address.substring(2);
     if (_.startsWith(address, prefix)) {
@@ -77,7 +77,7 @@ function getShardingConfig(env, index) {
     sharding_path: `/apps/shard_${index}`,
     parent_chain_poc: pocList[index % pocList.length],
     reporting_period: 5,
-    token_exchange_scheme: "FIXED",
+    token_exchange_scheme: 'FIXED',
     token_exchange_rate: 10,
   };
 }
@@ -113,7 +113,7 @@ async function processArguments() {
 
   // directory for shard genesis files
   const shardDir = path.resolve(__dirname, `../blockchain/shard_${index}`);
-  if (!fs.existsSync(shardDir)){
+  if (!fs.existsSync(shardDir)) {
     fs.mkdirSync(shardDir);
   }
   // genesis_accounts.json

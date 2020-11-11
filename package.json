@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -24,7 +24,8 @@
     "test_dapp": "./node_modules/mocha/bin/mocha --timeout 160000 integration/afan_dapp.test.js",
     "test_sharding": "./node_modules/mocha/bin/mocha --timeout 160000 integration/sharding.test.js",
     "test_integration": "./node_modules/mocha/bin/mocha --timeout 160000 \"integration/**/*.test.js\"",
-    "loadtest": "sh loadtest/load_tester.sh"
+    "loadtest": "sh loadtest/load_tester.sh",
+    "lint": "eslint --ext js -c .eslintrc.json ."
   },
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.6",
@@ -70,7 +71,7 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
-    "eslint": "^6.5.1",
+    "eslint": "^6.8.0",
     "eslint-config-google": "^0.13.0",
     "eslint-config-standard": "^14.1.0",
     "eslint-plugin-import": "^2.18.2",

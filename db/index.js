@@ -79,8 +79,7 @@ class DB {
 
   // For testing purpose only.
   setValuesForTesting(valuesPath, values) {
-    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT,
-      ...ChainUtil.parsePath(valuesPath)], values);
+    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...ChainUtil.parsePath(valuesPath)], values);
   }
 
   // For testing purpose only.
@@ -239,20 +238,19 @@ class DB {
 
   /**
    * Returns a proof of a state node.
-   * 
    * @param {string} fullPath full database path to the state node to be proved.
    */
   // TODO(seo): Consider supporting global path for getProof().
   getProof(fullPath) {
     const parsedPath = ChainUtil.parsePath(fullPath);
     let node = this.stateTree;
-    const rootProof = { [ProofProperties.PROOF_HASH]: node.getProofHash() };
+    const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
     for (const label of parsedPath) {
       if (node.hasChild(label)) {
-        node.getChildLabels().forEach(label => {
+        node.getChildLabels().forEach((label) => {
           Object.assign(proof,
-            { [label]: { [ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash() } });
+              {[label]: {[ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash()}});
         });
         proof = proof[label];
         node = node.getChild(label);
@@ -389,7 +387,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return { code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}` };
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
@@ -399,7 +397,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return { code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}` };
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
@@ -473,7 +471,10 @@ class DB {
       return true;
     }
     if (!this.getPermissionForOwner(localPath, address)) {
-      return {code: 4, error_message: `No write_owner or branch_owner permission on: ${ownerPath}`};
+      return {
+        code: 4,
+        error_message: `No write_owner or branch_owner permission on: ${ownerPath}`
+      };
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
@@ -530,10 +531,10 @@ class DB {
       const operation = tx.operation;
       if (!operation) {
         const message = 'No operation';
-        resultList.push({ code: 1, error_message: message });
+        resultList.push({code: 1, error_message: message});
         logger.info(message);
       } else {
-        switch(operation.type) {
+        switch (operation.type) {
           case undefined:
           case WriteDbOperations.SET_VALUE:
           case WriteDbOperations.INC_VALUE:
@@ -546,7 +547,7 @@ class DB {
             break;
           default:
             const message = `Invalid operation type: ${operation.type}`;
-            resultList.push({ code: 2, error_message: message });
+            resultList.push({code: 2, error_message: message});
             logger.info(message);
         }
       }
@@ -632,7 +633,8 @@ class DB {
       const res = this.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
         // FIXME: remove the failed transaction from tx pool?
-        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}\nresult: ${JSON.stringify(res)}`);
+        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}` +
+            `\nresult: ${JSON.stringify(res)}`);
         return false;
       }
     }
@@ -643,7 +645,7 @@ class DB {
     const pathToAdd = matchedValuePath.slice(closestConfigDepth, matchedValuePath.length);
     let newValue = value;
     for (let i = pathToAdd.length - 1; i >= 0; i--) {
-      newValue = { [pathToAdd[i]]: newValue };
+      newValue = {[pathToAdd[i]]: newValue};
     }
     return newValue;
   }
@@ -817,7 +819,7 @@ class DB {
     const valuePath = (isGlobal === true) ?
         this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeFunctions =
-        matched.subtreeFunctions.map(entry => this.convertPathAndConfig(entry, false));
+        matched.subtreeFunctions.map((entry) => this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(functionPath),
@@ -950,7 +952,8 @@ class DB {
         this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
     const valuePath = (isGlobal === true) ?
         this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
-    const subtreeRules = matched.subtreeRules.map(entry => this.convertPathAndConfig(entry, false));
+    const subtreeRules = matched.subtreeRules.map((entry) =>
+      this.convertPathAndConfig(entry, false));
     return {
       matched_path: {
         target_path: ChainUtil.formatPath(rulePath),
@@ -962,11 +965,11 @@ class DB {
     };
   }
 
+  // XXX(minsu): need to be investigated. Using new Function() is not recommended.
   makeEvalFunction(ruleString, pathVars) {
-    return new Function('auth', 'data', 'newData', 'currentTime',
-                        'getValue', 'getRule', 'getFunction', 'getOwner',
-                        'evalRule', 'evalOwner', 'util', 'lastBlockNumber', ...Object.keys(pathVars),
-                        '"use strict"; return ' + ruleString);
+    return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
+        'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
+        ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
   }
 
   evalRuleString(ruleString, pathVars, data, newData, address, timestamp) {
@@ -977,13 +980,13 @@ class DB {
     }
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
     return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
-                    this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-                    this.evalRule.bind(this), this.evalOwner.bind(this),
-                    new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+        this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
+        this.evalRule.bind(this), this.evalOwner.bind(this),
+        new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
   }
 
   lastBlockNumber() {
-    return !!this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
+    return this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
   }
 
   matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {

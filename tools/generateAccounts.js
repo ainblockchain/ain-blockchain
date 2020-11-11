@@ -1,10 +1,10 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const _ = require("lodash");
+const _ = require('lodash');
 
 function createAccount(prefix) {
   console.log(`Creating an account with prefix ${prefix}..`);
   let count = 0;
-  while(true) {
+  while (true) {
     const account = ainUtil.createAccount(); // { private_key, public_key, address }
     const address = account.address.substring(2);
     if (_.startsWith(address, prefix)) {
@@ -50,4 +50,4 @@ function usage() {
   process.exit(0)
 }
 
-processArguments()
+processArguments();
