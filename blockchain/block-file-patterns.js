@@ -1,3 +1,4 @@
+/* eslint max-len: "off" */
 const FILE_NAME_SUFFIX = 'json.zip';
 
 class BlockFilePatterns {
@@ -11,6 +12,7 @@ class BlockFilePatterns {
   static getBlockFilenameByHash(chainPath, hash) {
     return `${chainPath}/[0-9]*-*${hash}.${FILE_NAME_SUFFIX}`;
   }
+
   /**
   * Returns a RegEx query expression for querying all block files in a given chainPath directory.
   *
@@ -20,6 +22,7 @@ class BlockFilePatterns {
   static getAllBlockFiles(chainPath) {
     return `${chainPath}/[0-9]*-*.${FILE_NAME_SUFFIX}`;
   }
+
   /**
   * Returns a RegEx query expression for querying a range of block files in a given chainPath directory.
   *
@@ -31,6 +34,7 @@ class BlockFilePatterns {
   static getBlockFilesInRange(chainPath, from, to) {
     return `${chainPath}/{${from}..${to - 1}}-*.${FILE_NAME_SUFFIX}`;
   }
+
   /**
   * Returns the name of the block file corresponding to the given block e.g. <last_hash>-<current_hash>.json.zip
   *

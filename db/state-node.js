@@ -1,5 +1,3 @@
-const ChainUtil = require('../chain-util');
-
 class StateNode {
   constructor() {
     this.isLeaf = false;
@@ -73,11 +71,11 @@ class StateNode {
   }
 
   getChildLabels() {
-    return [ ...this.childMap.keys() ];
+    return [...this.childMap.keys()];
   }
 
   getChildNodes() {
-    return [ ...this.childMap.values() ];
+    return [...this.childMap.values()];
   }
 
   getNumChild() {

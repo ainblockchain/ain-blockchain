@@ -24,37 +24,37 @@ class Blockchain {
     let lastBlockWithoutProposal;
     if (this.createBlockchainDir()) {
       if (isFirstNode) {
-        logger.info("\n");
-        logger.info("############################################################");
-        logger.info("## Starting FIRST-NODE blockchain with a GENESIS block... ##");
-        logger.info("############################################################");
-        logger.info("\n");
+        logger.info('\n');
+        logger.info('############################################################');
+        logger.info('## Starting FIRST-NODE blockchain with a GENESIS block... ##');
+        logger.info('############################################################');
+        logger.info('\n');
         this.chain = [Block.genesis()];
         this.writeChain();
       } else {
-        logger.info("\n");
-        logger.info("#############################################################");
-        logger.info("## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##");
-        logger.info("#############################################################");
-        logger.info("\n");
+        logger.info('\n');
+        logger.info('#############################################################');
+        logger.info('## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##');
+        logger.info('#############################################################');
+        logger.info('\n');
         this.chain = [];
         this.writeChain();
       }
     } else {
       if (isFirstNode) {
-        logger.info("\n");
-        logger.info("############################################################");
-        logger.info("## Starting FIRST-NODE blockchain with EXISTING blocks... ##");
-        logger.info("############################################################");
-        logger.info("\n");
+        logger.info('\n');
+        logger.info('############################################################');
+        logger.info('## Starting FIRST-NODE blockchain with EXISTING blocks... ##');
+        logger.info('############################################################');
+        logger.info('\n');
       } else {
-        logger.info("\n");
-        logger.info("################################################################");
-        logger.info("## Starting NON-FIRST-NODE blockchain with EXISTING blocks... ##");
-        logger.info("################################################################");
-        logger.info("\n");
+        logger.info('\n');
+        logger.info('################################################################');
+        logger.info('## Starting NON-FIRST-NODE blockchain with EXISTING blocks... ##');
+        logger.info('################################################################');
+        logger.info('\n');
       }
-      let newChain = Blockchain.loadChain(this._blockchainDir());
+      const newChain = Blockchain.loadChain(this._blockchainDir());
       if (newChain) {
         lastBlockWithoutProposal = newChain.pop();
         const path = this.pathToBlock(lastBlockWithoutProposal);
@@ -77,7 +77,7 @@ class Blockchain {
     const blockFileName =
         glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
     if (blockFileName === undefined) {
-      const found = this.chain.filter(block => block.hash === hash);
+      const found = this.chain.filter((block) => block.hash === hash);
       return found.length ? found[0] : null;
     } else {
       return Block.loadBlock(blockFileName);
@@ -94,7 +94,7 @@ class Blockchain {
     if (number === undefined || number === null) return null;
     const blockFileName = this.getBlockFiles(number, number + 1).pop();
     if (blockFileName === undefined || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
-      const found = this.chain.filter(block => block.number === number);
+      const found = this.chain.filter((block) => block.number === number);
       return found.length ? found[0] : null;
     } else {
       return Block.loadBlock(blockFileName);
@@ -141,10 +141,10 @@ class Blockchain {
 
   addNewBlockToChain(newBlock) {
     if (!newBlock) {
-      logger.error(`[blockchain.addNewBlockToChain] Block is null`);
+      logger.error('[blockchain.addNewBlockToChain] Block is null');
       return false;
     }
-    if (newBlock.number != this.lastBlockNumber() + 1) {
+    if (newBlock.number !== this.lastBlockNumber() + 1) {
       logger.error(`[blockchain.addNewBlockToChain] Invalid blockchain number: ${newBlock.number}`);
       return false;
     }
@@ -152,11 +152,13 @@ class Blockchain {
       newBlock = Block.parse(newBlock);
     }
     if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
-      logger.error(`[blockchain.addNewBlockToChain] Failed to execute last_votes of block ${JSON.stringify(newBlock, null, 2)}`);
+      logger.error('[blockchain.addNewBlockToChain] Failed to execute last_votes of block' +
+          `${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     if (!this.backupDb.executeTransactionList(newBlock.transactions)) {
-      logger.error(`[blockchain.addNewBlockToChain] Failed to execute transactions of block ${JSON.stringify(newBlock, null, 2)}`);
+      logger.error('[blockchain.addNewBlockToChain] Failed to execute transactions of block' +
+          `${JSON.stringify(newBlock, null, 2)}`);
       return false;
     }
     this.chain.push(newBlock);
@@ -236,7 +238,7 @@ class Blockchain {
     *                CHAIN_SUBSECT_LENGTH
     */
   requestBlockchainSection(refBlock) {
-    const refBlockNumber = !!refBlock ? refBlock.number : -1;
+    const refBlockNumber = refBlock ? refBlock.number : -1;
     const nextBlockNumber = refBlockNumber + 1;
 
     logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
@@ -246,7 +248,8 @@ class Blockchain {
 
     if (blockFiles.length > 0 &&
         (!!(refBlock) && Block.loadBlock(blockFiles[0]).last_hash !== refBlock.hash)) {
-      logger.error(`Invalid blockchain request. Requesters last block does not belong to this blockchain`);
+      logger.error('Invalid blockchain request. Requesters last block does not belong to ' +
+          'this blockchain');
       return;
     }
 
@@ -291,7 +294,8 @@ class Blockchain {
 
     const firstBlock = Block.parse(chainSubSection[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
-    const overlap = lastBlockHash ? chainSubSection.filter(block => block.number === this.lastBlockNumber()) : null;
+    const overlap = lastBlockHash ?
+        chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.
@@ -304,7 +308,7 @@ class Blockchain {
       // Case 2: A cold start.
       if (firstBlock.last_hash !== '') {
         logger.info(`First block of hash ${firstBlock.hash.substring(0, 5)} ` +
-                    `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
+            `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
         return false;
       }
     }
@@ -349,11 +353,10 @@ class Blockchain {
     return glob.sync(BlockFilePatterns.getAllBlockFiles(chainPath)).sort(naturalSort());
   }
 
-
   getBlockFiles(from, to) {
     // Here we use (to - 1) so files can be queried like normal array index querying.
     return glob.sync(BlockFilePatterns.getBlockFilesInRange(
-      this._blockchainDir(), from, to)).sort(naturalSort());
+        this._blockchainDir(), from, to)).sort(naturalSort());
   }
 
   getChainSection(from, to) {

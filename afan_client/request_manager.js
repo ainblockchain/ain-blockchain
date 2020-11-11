@@ -13,19 +13,17 @@ class RequestManager {
     const options = {
       method: 'POST',
       uri: this.endpoint + '/set',
-      body: {op_list: this.updates},
+      body: { op_list: this.updates },
       json: true, // Automatically stringifies the body to JSON
     };
 
-    return rp(options)
-        .then(function(parsedBody) {
-          // POST succeeded
-          return parsedBody;
-        })
-        .catch(function(err) {
-          // POST failed
-          console.log(err);
-        });
+    return rp(options).then(function(parsedBody) {
+      // POST succeeded
+      return parsedBody;
+    }).catch(function(err) {
+      // POST failed
+      console.log(err);
+    });
   }
 
   getRef(ref) {
@@ -45,7 +43,7 @@ class RequestManager {
   }
 
   update(ref, value) {
-    this.updates.push({type: 'SET_VALUE', ref: this.root + '/' + ref, value});
+    this.updates.push({ type: 'SET_VALUE', ref: this.root + '/' + ref, value });
   }
 
   setAdState(from, to) {
@@ -55,9 +53,9 @@ class RequestManager {
 
   increase(ref, value) {
     if (value > 0) {
-      this.updates.push({type: 'INC_VALUE', ref: this.root + '/' + ref, value});
+      this.updates.push({ type: 'INC_VALUE', ref: this.root + '/' + ref, value });
     } else {
-      this.updates.push({type: 'DEC_VALUE', ref: this.root + '/' + ref, value: value * -1});
+      this.updates.push({ type: 'DEC_VALUE', ref: this.root + '/' + ref, value: value * -1 });
     }
   }
 
