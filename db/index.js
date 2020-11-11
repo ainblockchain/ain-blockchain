@@ -244,13 +244,13 @@ class DB {
   getProof(fullPath) {
     const parsedPath = ChainUtil.parsePath(fullPath);
     let node = this.stateTree;
-    const rootProof = { [ProofProperties.PROOF_HASH]: node.getProofHash() };
+    const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
     for (const label of parsedPath) {
       if (node.hasChild(label)) {
         node.getChildLabels().forEach((label) => {
           Object.assign(proof,
-              { [label]: { [ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash() } });
+              {[label]: {[ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash()}});
         });
         proof = proof[label];
         node = node.getChild(label);
@@ -349,12 +349,12 @@ class DB {
   setValue(valuePath, value, address, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
-      return { code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}` };
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(valuePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return { code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}` };
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -362,7 +362,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForValue(localPath, value, address, timestamp)) {
-      return { code: 2, error_message: `No .write permission on: ${valuePath}` };
+      return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateTree);
@@ -387,7 +387,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return { code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}` };
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
@@ -397,7 +397,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return { code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}` };
+      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
@@ -406,12 +406,12 @@ class DB {
   setFunction(functionPath, functionInfo, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionInfo);
     if (!isValidObj.isValid) {
-      return { code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}` };
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return { code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}` };
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -419,7 +419,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForFunction(localPath, address)) {
-      return { code: 3, error_message: `No write_function permission on: ${functionPath}` };
+      return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
@@ -433,12 +433,12 @@ class DB {
   setRule(rulePath, rule, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
-      return { code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}` };
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return { code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}` };
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -446,7 +446,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForRule(localPath, address)) {
-      return { code: 3, error_message: `No write_rule permission on: ${rulePath}` };
+      return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
@@ -458,12 +458,12 @@ class DB {
   setOwner(ownerPath, owner, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
-      return { code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}` };
+      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return { code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}` };
+      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -519,7 +519,7 @@ class DB {
         }
       } else {
         // Invalid Operation
-        return { code: 5, error_message: `Invalid opeartion type: ${op.type}` };
+        return {code: 5, error_message: `Invalid opeartion type: ${op.type}`};
       }
     }
     return ret;
@@ -531,7 +531,7 @@ class DB {
       const operation = tx.operation;
       if (!operation) {
         const message = 'No operation';
-        resultList.push({ code: 1, error_message: message });
+        resultList.push({code: 1, error_message: message});
         logger.info(message);
       } else {
         switch (operation.type) {
@@ -547,7 +547,7 @@ class DB {
             break;
           default:
             const message = `Invalid operation type: ${operation.type}`;
-            resultList.push({ code: 2, error_message: message });
+            resultList.push({code: 2, error_message: message});
             logger.info(message);
         }
       }
@@ -645,7 +645,7 @@ class DB {
     const pathToAdd = matchedValuePath.slice(closestConfigDepth, matchedValuePath.length);
     let newValue = value;
     for (let i = pathToAdd.length - 1; i >= 0; i--) {
-      newValue = { [pathToAdd[i]]: newValue };
+      newValue = {[pathToAdd[i]]: newValue};
     }
     return newValue;
   }

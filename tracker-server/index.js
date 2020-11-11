@@ -315,7 +315,7 @@ app.get('/', (req, res, next) => {
 app.get('/peer_nodes', (req, res, next) => {
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ result: PEER_NODES })
+    .send({result: PEER_NODES})
     .end();
 });
 

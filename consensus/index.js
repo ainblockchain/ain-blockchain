@@ -4,7 +4,7 @@ const _ = require('lodash');
 const ntpsync = require('ntpsync');
 const sizeof = require('object-sizeof');
 const logger = require('../logger')('CONSENSUS');
-const { Block } = require('../blockchain/block');
+const {Block} = require('../blockchain/block');
 const BlockPool = require('./block-pool');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
@@ -210,7 +210,7 @@ class Consensus {
     logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
     if (msg.type === ConsensusMessageTypes.PROPOSE) {
       const lastNotarizedBlock = this.getLastNotarizedBlock();
-      const { proposalBlock, proposalTx } = msg.value;
+      const {proposalBlock, proposalTx} = msg.value;
       if (!proposalBlock || !proposalTx) {
         logger.error(`[${LOG_HEADER}] Proposal is missing required fields: ${msg.value}`);
         return;
@@ -340,7 +340,7 @@ class Consensus {
     }
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
-      proposalTx = this.node.createTransaction({ operation: txOps }, false);
+      proposalTx = this.node.createTransaction({operation: txOps}, false);
     } else {
       proposalTx = this.node.createTransaction({
         operation: {
@@ -363,7 +363,7 @@ class Consensus {
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
     }
-    return { proposalBlock, proposalTx };
+    return {proposalBlock, proposalTx};
   }
 
   checkProposal(proposalBlock, proposalTx) {
@@ -388,7 +388,7 @@ class Consensus {
         return false;
       }
     }
-    const { proposer, number, epoch, last_hash } = proposalBlock;
+    const {proposer, number, epoch, last_hash} = proposalBlock;
     if (number <= this.node.bc.lastBlockNumber()) {
       logger.info(`[${LOG_HEADER}] There already is a finalized block of the number`);
       logger.debug(`[${LOG_HEADER}] corresponding block info: ` +
@@ -587,7 +587,7 @@ class Consensus {
       try {
         const proposal = this.createProposal();
         if (proposal !== null) {
-          this.handleConsensusMessage({ value: proposal, type: ConsensusMessageTypes.PROPOSE });
+          this.handleConsensusMessage({value: proposal, type: ConsensusMessageTypes.PROPOSE});
         }
       } catch (e) {
         logger.error(`Error while creating a proposal: ${e}`);
@@ -638,7 +638,7 @@ class Consensus {
       }
     }, false);
 
-    this.handleConsensusMessage({ value: voteTx, type: ConsensusMessageTypes.VOTE });
+    this.handleConsensusMessage({value: voteTx, type: ConsensusMessageTypes.VOTE});
   }
 
   // If there's a notarized chain that ends with 3 blocks, which have 3 consecutive epoch numbers,
@@ -963,14 +963,14 @@ class Consensus {
    */
   getRawState() {
     const result = {};
-    result.consensus = Object.assign({}, this.state, { status: this.status });
+    result.consensus = Object.assign({}, this.state, {status: this.status});
     if (this.blockPool) {
       result.block_pool = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
         hashToState: Array.from(this.blockPool.hashToState.keys()),
         hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
           .reduce((acc, curr) => {
-            return Object.assign(acc, { [curr]: [...this.blockPool.hashToNextBlockSet[curr]] })
+            return Object.assign(acc, {[curr]: [...this.blockPool.hashToNextBlockSet[curr]]})
           }, {}),
         epochToBlock: Object.keys(this.blockPool.epochToBlock),
         numberToBlock: Object.keys(this.blockPool.numberToBlock),
@@ -997,7 +997,7 @@ class Consensus {
       health =
           (this.state.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
     }
-    return { health, status: this.status, epoch: this.state.epoch };
+    return {health, status: this.status, epoch: this.state.epoch};
   }
 
   static selectProposer(seed, validators) {

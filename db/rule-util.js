@@ -54,7 +54,7 @@ class RuleUtil {
   }
 
   isValShardProto(value) {
-    const { ShardingProtocols } = require('../constants');
+    const {ShardingProtocols} = require('../constants');
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 

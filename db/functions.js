@@ -16,7 +16,7 @@ const {
   TokenExchangeSchemes,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendSignedTx, signAndSendTx } = require('../server/util');
+const {sendSignedTx, signAndSendTx} = require('../server/util');
 const Transaction = require('../tx-pool/transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -119,10 +119,10 @@ class Functions {
     const resultPath = this._getTransferResultPath(from, to, key);
     if (this._transferInternal(fromBalancePath, toBalancePath, value)) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.SUCCESS });
+          {code: FunctionResultCode.SUCCESS});
     } else {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
+          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
     }
   }
 
@@ -139,7 +139,7 @@ class Functions {
     // TODO (lia): move this check to when we first receive the transaction
     if (timestamp > currentTime) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.FAILURE });
+          {code: FunctionResultCode.FAILURE});
       return;
     }
     const userBalancePath = this._getBalancePath(user);
@@ -151,10 +151,10 @@ class Functions {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
           Number(timestamp) + Number(lockup));
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.SUCCESS });
+          {code: FunctionResultCode.SUCCESS});
     } else {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
+          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
     }
   }
 
@@ -174,16 +174,16 @@ class Functions {
       const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
       if (expireAt <= currentTime) {
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            { code: FunctionResultCode.SUCCESS });
+            {code: FunctionResultCode.SUCCESS});
       } else {
         // Still in lock-up period.
         this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            { code: FunctionResultCode.IN_LOCKUP_PERIOD });
+            {code: FunctionResultCode.IN_LOCKUP_PERIOD});
       }
     } else {
       // Not enough deposit.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
+          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
     }
   }
 
@@ -238,7 +238,7 @@ class Functions {
       return;
     }
     const tx = new Transaction(
-        { transaction: payloadTx.transaction, signature: payloadTx.signature });
+        {transaction: payloadTx.transaction, signature: payloadTx.signature});
     if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.operation)) {
       logger.debug('  =>> Invalid payloadTx');
       return;
