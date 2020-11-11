@@ -24,8 +24,8 @@ const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const COMCOM_HOST_INTERNAL_IP_MAP = {
-  'aincom1': '192.168.1.13',
-  'aincom2': '192.168.1.14',
+  aincom1: '192.168.1.13',
+  aincom2: '192.168.1.14',
 }
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
@@ -33,10 +33,11 @@ const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
 const MAX_SHARD_REPORT = 100;
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT ? process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
+    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
 function getPortNumber(defaultValue, baseValue) {
-  if (HOSTING_ENV == 'local') {
+  if (HOSTING_ENV === 'local') {
     return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
   }
   return defaultValue;
@@ -58,7 +59,7 @@ const MessageTypes = {
  * Predefined database paths
  * @enum {string}
  */
- // TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
+// TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -353,8 +354,7 @@ function getGenesisWhitelist() {
   const whitelist = {};
   for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
     const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(
-        whitelist, [accountAddress], ConsensusConsts.INITIAL_STAKE);
+    ChainUtil.setJsObject(whitelist, [accountAddress], ConsensusConsts.INITIAL_STAKE);
   }
   return whitelist;
 }
@@ -363,7 +363,7 @@ function getGenesisValues() {
   const values = {};
   ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
   const ownerAddress = ChainUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   ChainUtil.setJsObject(
       values,
       [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],

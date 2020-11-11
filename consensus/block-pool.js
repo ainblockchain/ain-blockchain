@@ -14,7 +14,7 @@ class BlockPool {
     this.hashToBlockInfo = {};
     // Mapping of a block hash to the new db state
     this.hashToState = new Map();
-    // Mapping of a block hash to a set of block hashes that extend the block. 
+    // Mapping of a block hash to a set of block hashes that extend the block.
     // e.g. { block_hash: Set<block_hash> }
     this.hashToNextBlockSet = {};
     // Mapping of an epoch to the hash of a block proposed at the epoch.
@@ -24,9 +24,9 @@ class BlockPool {
     // e.g. { number: Set<block_hash> }
     this.numberToBlock = {};
 
-    this.longestNotarizedChainTips = [ lastFinalizedBlock.hash ];
+    this.longestNotarizedChainTips = [lastFinalizedBlock.hash];
 
-    let lastFinalizedBlockHash, lastFinalizedBlockEpoch, lastFinalizedBlockNumber;
+    let lastFinalizedBlockHash; let lastFinalizedBlockEpoch; let lastFinalizedBlockNumber;
     if (lastFinalizedBlock) {
       lastFinalizedBlockHash = lastFinalizedBlock.hash;
       lastFinalizedBlockEpoch = lastFinalizedBlock.epoch;
@@ -41,35 +41,39 @@ class BlockPool {
         this.hashToBlockInfo[lastFinalizedBlockHash] = {
           block: lastFinalizedBlock,
           proposal,
-          votes: lastBlock.last_votes.filter(val => val.hash !== proposal.hash),
+          votes: lastBlock.last_votes.filter((val) => val.hash !== proposal.hash),
           notarized: true
         };
-        this.hashToNextBlockSet[lastFinalizedBlockHash] = new Set([ lastBlockHash ]);
+        this.hashToNextBlockSet[lastFinalizedBlockHash] = new Set([lastBlockHash]);
         this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
-        this.numberToBlock[lastFinalizedBlockNumber] = new Set([ lastFinalizedBlockHash ]);
+        this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
       }
       this.hashToBlockInfo[lastBlockHash] = { block: lastBlock };
       this.epochToBlock[lastBlockEpoch] = lastBlockHash;
-      this.numberToBlock[lastBlockNumber] = new Set([ lastBlockHash ]);
+      this.numberToBlock[lastBlockNumber] = new Set([lastBlockHash]);
     } else if (lastFinalizedBlock) {
       this.hashToBlockInfo[lastFinalizedBlockHash] = { block: lastFinalizedBlock, notarized: true };
       this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
-      this.numberToBlock[lastFinalizedBlockNumber] = new Set([ lastFinalizedBlockHash ]);
+      this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
     }
   }
 
   updateLongestNotarizedChains() {
     const LOG_HEADER = 'updateLongestNotarizedChains';
-    const currentLongest = this.longestNotarizedChainTips.length ? 
+    const currentLongest = this.longestNotarizedChainTips.length ?
         get(this.hashToBlockInfo[this.longestNotarizedChainTips[0]], 'block.number')
         : this.node.bc.lastBlockNumber();
     if (currentLongest == undefined) {
-      logger.error(`[${LOG_HEADER}] Notarized block's info is missing: ${this.longestNotarizedChainTips[0]}`);
+      logger.error(`[${LOG_HEADER}] Notarized block's info is missing: ` +
+          `${this.longestNotarizedChainTips[0]}`);
       return;
     }
     const longestChains = this.getLongestNotarizedChainList();
     logger.debug(`[${LOG_HEADER}] longestChains: ${JSON.stringify(longestChains, null, 2)}`);
-    this.longestNotarizedChainTips = longestChains.reduce((a, b) => { a.push(b[b.length - 1].hash); return a; }, []);
+    this.longestNotarizedChainTips = longestChains.reduce((a, b) => {
+      a.push(b[b.length - 1].hash);
+      return a;
+    }, []);
   }
 
   getExtendingChain(blockHash, withInfo = false) {
@@ -77,14 +81,18 @@ class BlockPool {
     const chain = [];
     const finalizedBlock = this.node.bc.lastBlock();
     let currBlockWithInfo = this.hashToBlockInfo[blockHash];
-    if (!currBlockWithInfo || !currBlockWithInfo.block || currBlockWithInfo.block.number <= finalizedBlock.number) {
+    if (!currBlockWithInfo || !currBlockWithInfo.block ||
+        currBlockWithInfo.block.number <= finalizedBlock.number) {
       return [];
     }
-    while (currBlockWithInfo && currBlockWithInfo.block && currBlockWithInfo.block.number > finalizedBlock.number) {
+    while (currBlockWithInfo && currBlockWithInfo.block &&
+        currBlockWithInfo.block.number > finalizedBlock.number) {
       chain.unshift(withInfo ? currBlockWithInfo : currBlockWithInfo.block);
       currBlockWithInfo = this.hashToBlockInfo[currBlockWithInfo.block.last_hash];
     }
-    logger.debug(`[${LOG_HEADER}] currBlockWithInfo: ${JSON.stringify(currBlockWithInfo, null, 2)}\nfinalizedBlock: ${JSON.stringify(finalizedBlock, null, 2)}`);
+    logger.debug(`[${LOG_HEADER}] currBlockWithInfo: ` +
+        `${JSON.stringify(currBlockWithInfo, null, 2)}` +
+        `\nfinalizedBlock: ${JSON.stringify(finalizedBlock, null, 2)}`);
     if (!currBlockWithInfo || !currBlockWithInfo.block) {
       logger.error(`[${LOG_HEADER}] Block info is missing`);
       return [];
@@ -119,16 +127,18 @@ class BlockPool {
     }
     const nextBlockSet = this.hashToNextBlockSet[currentNode.block.hash];
     const blockNumber = currentNode.block.number;
-    let longestNumber = chainList.length ? 
-        withInfo ? chainList[0][chainList[0].length - 1].block.number
-            : chainList[0][chainList[0].length - 1].number : 0;
+    let longestNumber = chainList.length ? withInfo ?
+        chainList[0][chainList[0].length - 1].block.number :
+            chainList[0][chainList[0].length - 1].number : 0;
     if (blockNumber > longestNumber) {
-      logger.debug(`[blockPool:dfsLongest] New longest chain found: ${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
+      logger.debug('[blockPool:dfsLongest] New longest chain found: ' +
+          `${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
       chainList.length = 0;
       chainList.push([...currentChain]);
       longestNumber = blockNumber;
     } else if (blockNumber === longestNumber) {
-      logger.debug(`[blockPool:dfsLongest] Another longest chain found: ${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
+      logger.debug('[blockPool:dfsLongest] Another longest chain found: ' +
+          `${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
       chainList.push([...currentChain]);
     }
     if (!nextBlockSet || !nextBlockSet.size) {
@@ -136,11 +146,12 @@ class BlockPool {
       return;
     }
 
-    for (let val of nextBlockSet) {
+    for (const val of nextBlockSet) {
       this.dfsLongest(this.hashToBlockInfo[val], currentChain, chainList, withInfo);
     }
     currentChain.pop();
-    logger.debug(`[blockPool:dfsLongest] returning.. currentChain: ${JSON.stringify(currentChain, null, 2)}`);
+    logger.debug('[blockPool:dfsLongest] returning.. currentChain: ' +
+        `${JSON.stringify(currentChain, null, 2)}`);
   }
 
   // A finalizable chain (extension of current finalized chain):
@@ -172,7 +183,7 @@ class BlockPool {
     }
     let res;
     let longest = [];
-    for (let blockHash of nextBlockSet) {
+    for (const blockHash of nextBlockSet) {
       res = this.dfsFinalizable(this.hashToBlockInfo[blockHash], currentChain);
       if (res && BlockPool.endsWithThreeConsecutiveEpochs(res) && res.length > longest.length) {
         longest = res;
@@ -192,7 +203,7 @@ class BlockPool {
   // FIXME: return block that's on the longest & heaviest notarized chain
   getNotarizedBlockListByNumber(number) {
     const blockArr = Object.values(this.hashToBlockInfo)
-      .filter(blockInfo => !!blockInfo.block && blockInfo.block.number === number && 
+      .filter((blockInfo) => !!blockInfo.block && blockInfo.block.number === number &&
           blockInfo.proposal && blockInfo.notarized);
     return blockArr;
   }
@@ -215,10 +226,12 @@ class BlockPool {
     if (this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
       const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
       if (conflict && conflict.notarized) {
-        logger.error(`[${LOG_HEADER}] multiple blocks proposed for epoch ${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
+        logger.error(`[${LOG_HEADER}] multiple blocks proposed for epoch ` +
+            `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
         return false;
       }
-      logger.info(`[${LOG_HEADER}] multiple blocks proposed for epoch ${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
+      logger.info(`[${LOG_HEADER}] multiple blocks proposed for epoch ` +
+          `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
       // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
     }
     // Update hashToBlockInfo
@@ -233,7 +246,7 @@ class BlockPool {
       // We might have received some votes before the block itself
       if (!blockInfo.tallied && blockInfo.votes) {
         this.hashToBlockInfo[blockHash].tallied = 0;
-        blockInfo.votes.forEach(vote => {
+        blockInfo.votes.forEach((vote) => {
           if (block.validators[vote.address]) {
             this.hashToBlockInfo[blockHash].tallied += get(vote, 'operation.value.stake');
           }
@@ -262,7 +275,7 @@ class BlockPool {
     this.tryUpdateNotarized(blockHash);
     // FIXME: update all descendants, not just the immediate ones
     if (this.hashToNextBlockSet[blockHash]) {
-      for (let val of this.hashToNextBlockSet[blockHash]) {
+      for (const val of this.hashToNextBlockSet[blockHash]) {
         this.tryUpdateNotarized(val);
       }
     }
@@ -273,14 +286,15 @@ class BlockPool {
     const LOG_HEADER = 'addSeenVote';
     const blockHash = get(voteTx, 'operation.value.block_hash');
     const stake = get(voteTx, 'operation.value.stake');
-    logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, blockHash: ${blockHash}, stake: ${stake}`);
+    logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
+        `blockHash: ${blockHash}, stake: ${stake}`);
     if (!this.hashToBlockInfo[blockHash]) {
       this.hashToBlockInfo[blockHash] = {};
     }
     if (!this.hashToBlockInfo[blockHash].votes) {
       this.hashToBlockInfo[blockHash].votes = [];
     }
-    if (this.hashToBlockInfo[blockHash].votes.filter(v => v.hash === voteTx.hash).length) {
+    if (this.hashToBlockInfo[blockHash].votes.filter((v) => v.hash === voteTx.hash).length) {
       logger.info(`[${LOG_HEADER}] we've already seen this vote`);
       return;
     }
@@ -326,8 +340,11 @@ class BlockPool {
       logger.info(`[${LOG_HEADER}] Prev block is unavailable`);
       return;
     }
-    const totalAtStake = Object.values(prevBlock.validators).reduce((a, b) => { return a + b; }, 0);
-    if (currentBlockInfo.tallied && currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
+    const totalAtStake = Object.values(prevBlock.validators).reduce((a, b) => {
+      return a + b;
+    }, 0);
+    if (currentBlockInfo.tallied &&
+        currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
       logger.info(`[${LOG_HEADER}] block ${currentBlockInfo.block.hash} is notarized!`);
       this.hashToBlockInfo[blockHash].notarized = true;
       this.updateLongestNotarizedChains(this.hashToBlockInfo[blockHash]);
@@ -338,7 +355,7 @@ class BlockPool {
   cleanUpAfterFinalization(lastBlock) {
     const number = lastBlock.number;
     const blocksToRemove = Object.values(this.hashToBlockInfo)
-      .filter(val => {
+      .filter((val) => {
         let blockNumber;
         if (val.block) {
           blockNumber = val.block.number;
@@ -347,9 +364,10 @@ class BlockPool {
         }
         return !blockNumber || blockNumber < number;
       });
-    blocksToRemove.forEach(blockInfo => {
+    blocksToRemove.forEach((blockInfo) => {
       const blockHash = blockInfo.block ? blockInfo.block.hash
-          : BlockPool.getBlockHashFromTx(blockInfo.votes && blockInfo.votes.length ? blockInfo.votes[0] : blockInfo.proposal);
+          : BlockPool.getBlockHashFromTx(blockInfo.votes && blockInfo.votes.length ?
+              blockInfo.votes[0] : blockInfo.proposal);
       if (blockHash) {
         delete this.hashToBlockInfo[blockHash];
         delete this.numberToBlock[number];
@@ -357,10 +375,10 @@ class BlockPool {
         this.hashToState.delete(blockHash);
       }
     });
-    Object.keys(this.numberToBlock).forEach(key => {
+    Object.keys(this.numberToBlock).forEach((key) => {
       if (key < number) delete this.numberToBlock[key];
     });
-    Object.keys(this.epochToBlock).forEach(key => {
+    Object.keys(this.epochToBlock).forEach((key) => {
       if (key < lastBlock.epoch) delete this.epochToBlock[key];
     });
     this.updateLongestNotarizedChains();
@@ -369,7 +387,7 @@ class BlockPool {
   static filterProposal(votes) {
     if (!votes) return null;
     const proposalSuffix = 'propose';
-    const proposal = votes.filter(tx => {
+    const proposal = votes.filter((tx) => {
       if (tx.operation.type === WriteDbOperations.SET_VALUE) {
         return tx.operation.ref.endsWith(proposalSuffix);
       } else if (tx.operation.type === WriteDbOperations.SET) {
@@ -382,9 +400,8 @@ class BlockPool {
 
   static getBlockNumberFromTx(tx) {
     if (!tx || !tx.operation) return null;
-    const ref = tx.operation.ref ? tx.operation.ref
-        : get(tx, 'operation.op_list')[0].ref;
-    const refSplit = ref ? ref.split("/") : [];
+    const ref = tx.operation.ref ? tx.operation.ref : get(tx, 'operation.op_list')[0].ref;
+    const refSplit = ref ? ref.split('/') : [];
     return refSplit.length > 3 ? refSplit[3] : null;
   }
 

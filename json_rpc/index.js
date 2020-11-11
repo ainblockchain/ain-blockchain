@@ -9,6 +9,9 @@ const {
   MAX_TX_BYTES,
   NETWORK_ID
 } = require('../constants');
+const {
+  ConsensusConsts
+} = require('../consensus/constants');
 const ainUtil = require('@ainblockchain/ain-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -21,12 +24,7 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(
-    node,
-    p2pServer,
-    minProtocolVersion,
-    maxProtocolVersion
-  ) {
+module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
   return {
     ain_getProtocolVersion: function(args, done) {
       done(null, addProtocolVersion({ result: CURRENT_PROTOCOL_VERSION }));
@@ -72,7 +70,7 @@ module.exports = function getMethods(
     },
 
     ain_getBlockByHash: function(args, done) {
-      let block = node.bc.getBlockByHash(args.hash);
+      const block = node.bc.getBlockByHash(args.hash);
       if (block && !args.getFullTransactions) {
         block.transactions = extractTransactionHashes(block);
       }
@@ -80,7 +78,7 @@ module.exports = function getMethods(
     },
 
     ain_getBlockByNumber: function(args, done) {
-      let block = node.bc.getBlockByNumber(args.number);
+      const block = node.bc.getBlockByNumber(args.number);
       if (!block || args.getFullTransactions) {
         done(null, addProtocolVersion({ result: block }));
       } else {
@@ -127,7 +125,8 @@ module.exports = function getMethods(
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
-        done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.` }));
+        done(null, addProtocolVersion({ code: 1, message: `Transaction size exceeds ` +
+            `${MAX_TX_BYTES} bytes.` }));
       } else {
         done(null, addProtocolVersion({ result: p2pServer.executeAndBroadcastTransaction(args) }));
       }
@@ -213,7 +212,7 @@ module.exports = function getMethods(
           }));
           return;
         default:
-          done(null, addProtocolVersion({ code: 1, message: "Invalid get request type" }));
+          done(null, addProtocolVersion({ code: 1, message: 'Invalid get request type' }));
       }
     },
 
@@ -229,7 +228,7 @@ module.exports = function getMethods(
 
     ain_matchOwner: function(args, done) {
       const result = p2pServer.node.db.matchOwner(args.ref, args.is_global);
-      done (null, addProtocolVersion({ result }));
+      done(null, addProtocolVersion({ result }));
     },
 
     ain_evalRule: function(args, done) {
@@ -241,18 +240,19 @@ module.exports = function getMethods(
     ain_evalOwner: function(args, done) {
       const result =
           p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
-      done (null, addProtocolVersion({ result }));
+      done(null, addProtocolVersion({ result }));
     },
 
     ain_getProof: function(args, done) {
       const result = p2pServer.node.db.getProof(args.ref);
-      done (null, addProtocolVersion({ result }));
+      done(null, addProtocolVersion({ result }));
     },
 
     // Account API
     ain_getAddress: function(args, done) {
-      done(null, addProtocolVersion({ result: p2pServer.node.account ?
-          p2pServer.node.account.address : null }));
+      done(null, addProtocolVersion({
+        result: p2pServer.node.account ? p2pServer.node.account.address : null
+      }));
     },
 
     ain_getBalance: function(args, done) {
@@ -283,7 +283,8 @@ module.exports = function getMethods(
       // FIXME: may need to deprecate or modify this logic for the new consensus
       const deposit = p2pServer.node.db.getValue(
           `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
-      const stakeValid = deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
+      const stakeValid = deposit && deposit.value > 0 &&
+          deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
       done(null, addProtocolVersion({ result: stakeValid }));
     },
 
@@ -324,13 +325,13 @@ module.exports = function getMethods(
 function extractTransactionHashes(block) {
   if (!block) return [];
   const hashes = [];
-  block.transactions.forEach(tx => {
+  block.transactions.forEach((tx) => {
     hashes.push(tx.hash);
   });
   return hashes;
 }
 
 function addProtocolVersion(result) {
-  result['protoVer'] = CURRENT_PROTOCOL_VERSION;
+  result.protoVer = CURRENT_PROTOCOL_VERSION;
   return result;
 }

@@ -1,3 +1,4 @@
+/* eslint no-mixed-operators: "off" */
 const url = require('url');
 const Websocket = require('ws');
 const ip = require('ip');
@@ -38,8 +39,10 @@ const {
 const ChainUtil = require('../chain-util');
 const { sendTxAndWaitForFinalization } = require('./util');
 
-const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
-const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip';
+const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
+    '/network-interfaces/0/access-configs/0/external-ip';
+const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
+    '/network-interfaces/0/ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RECONNECT_INTERVAL_MS = 10000;
 const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
@@ -108,7 +111,7 @@ class P2pServer {
     logger.info(`Disconnect from tracker server.`);
     this.disconnectFromTracker();
     logger.info(`Close server.`);
-    this.server.close(_ => { });
+    this.server.close((_) => { });
   }
 
   setIntervalForTrackerConnection() {
@@ -159,7 +162,7 @@ class P2pServer {
     .then(() => {
       if (HOSTING_ENV === 'gcp') {
         return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
-          headers: {'Metadata-Flavor': 'Google'},
+          headers: { 'Metadata-Flavor': 'Google' },
           timeout: 3000
         })
         .then((res) => {
@@ -188,8 +191,7 @@ class P2pServer {
       } else {
         return publicIp.v4();
       }
-    })
-    .then((ipAddr) => {
+    }).then((ipAddr) => {
       return ipAddr;
     });
   }
@@ -256,10 +258,12 @@ class P2pServer {
         timestamp: this.node.bc.lastBlockTimestamp(),
       },
       consensusStatus: Object.assign(
-        {},
-        this.consensus.getState(),
-        { longestNotarizedChainTipsSize: this.consensus.blockPool ?
-            this.consensus.blockPool.longestNotarizedChainTips.length : 0 }
+          {},
+          this.consensus.getState(),
+          {
+            longestNotarizedChainTipsSize: this.consensus.blockPool ?
+                this.consensus.blockPool.longestNotarizedChainTips.length : 0
+          }
       ),
       shardingStatus: this.node.getSharding(),
       txStatus: {
@@ -284,8 +288,7 @@ class P2pServer {
   getDiskUsage() {
     try {
       return disk.checkSync(DISK_USAGE_PATH);
-    }
-    catch (err) {
+    } catch (err) {
       logger.error(err);
       return null;
     }
@@ -305,7 +308,7 @@ class P2pServer {
   connectToPeers(newManagedPeerInfoList) {
     let updated = false;
     newManagedPeerInfoList.forEach((peerInfo) => {
-      if (!!this.managedPeersInfo[peerInfo.address]) {
+      if (this.managedPeersInfo[peerInfo.address]) {
         logger.info(`Node ${peerInfo.address} is already a managed peer. ` +
                     `Something is wrong.`)
       } else {
@@ -373,10 +376,14 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION:
-            logger.debug(`Receiving a chain subsection: ${JSON.stringify(data.chainSubsection, null, 2)}`);
+            logger.debug(`Receiving a chain subsection: ` +
+                `${JSON.stringify(data.chainSubsection, null, 2)}`);
             if (data.number <= this.node.bc.lastBlockNumber()) {
               if (this.consensus.status === ConsensusStatus.STARTING) {
-                if (!data.chainSubsection && !data.catchUpInfo || data.number === this.node.bc.lastBlockNumber()) {
+                // XXX(minsu): need to be investigated
+                // ref: https://eslint.org/docs/rules/no-mixed-operators
+                if (!data.chainSubsection && !data.catchUpInfo ||
+                    data.number === this.node.bc.lastBlockNumber()) {
                   this.node.bc.syncedAfterStartup = true;
                   this.consensus.init();
                   if (this.consensus.isRunning()) {
@@ -444,23 +451,25 @@ class P2pServer {
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSubsection = this.node.bc.requestBlockchainSection(
-                !!data.lastBlock ? Block.parse(data.lastBlock) : null);
-            if (!!chainSubsection) {
+                data.lastBlock ? Block.parse(data.lastBlock) : null);
+            if (chainSubsection) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
-              logger.debug(`Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)} along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
+              logger.debug(
+                  `Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)}` +
+                  `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
               this.sendChainSubsection(
-                socket,
-                chainSubsection,
-                this.node.bc.lastBlockNumber(),
-                catchUpInfo
+                  socket,
+                  chainSubsection,
+                  this.node.bc.lastBlockNumber(),
+                  catchUpInfo
               );
             } else {
               logger.info(`No chainSubsection to send`);
               this.sendChainSubsection(
-                socket,
-                null,
-                this.node.bc.lastBlockNumber(),
-                null
+                  socket,
+                  null,
+                  this.node.bc.lastBlockNumber(),
+                  null
               );
             }
             break;
@@ -484,7 +493,7 @@ class P2pServer {
       }
     });
 
-    socket.on('pong', _ => {
+    socket.on('pong', (_) => {
       logger.info(`peer(${address}) is alive.`);
     });
 
@@ -629,17 +638,17 @@ class P2pServer {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const shardingPathRules = `auth === '${shardOwner}'`;
     const proofHashRulesLight = `auth === '${shardReporter}'`;
     const proofHashRules = `auth === '${shardReporter}' && ` +
-        `((newData === null && ` +
+        '((newData === null && ' +
         `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
-        `(newData !== null && ($block_number === '0' || ` +
+        '(newData !== null && ($block_number === "0" || ' +
         `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
 
@@ -724,11 +733,12 @@ class P2pServer {
     logger.info(`setUpDbForSharding success`);
   }
 
-  // TODO(minsu): Since the p2p network has not been built completely, it will be updated afterwards.
+  // TODO(minsu): Since the p2p network has not been built completely,
+  // it will be updated afterwards.
   heartbeat() {
     logger.info(`Start heartbeat`);
     this.intervalHeartbeat = setInterval(() => {
-      this.server.clients.forEach(ws => {
+      this.server.clients.forEach((ws) => {
         ws.ping();
       });
     }, HEARTBEAT_INTERVAL_MS);

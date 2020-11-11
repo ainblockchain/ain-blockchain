@@ -1,8 +1,7 @@
-const {Command, flags} = require('@oclif/command');
+const { Command, flags } = require('@oclif/command');
 const ChainUtil = require('../../../chain-util');
 const Transaction = require('../../../tx-pool/transaction');
 const fs = require('fs');
-const BN = require('bn.js');
 const sleep = require('system-sleep');
 const jayson = require('jayson');
 const JSON_RPC_ENDPOINT = '/json-rpc';
@@ -15,14 +14,15 @@ const ec = new EC('secp256k1');
 
 class TransactionExecutorCommand extends Command {
   async run() {
-    const {flags} = this.parse(TransactionExecutorCommand);
+    const { flags } = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
-    const generateKeyPair = flags.generateKeyPair ? flags.generateKeyPair.toLowerCase().startsWith('t') : false;
+    const generateKeyPair = flags.generateKeyPair ?
+        flags.generateKeyPair.toLowerCase().startsWith('t') : false;
     const privateKeyString = flags.privateKey || null;
     if (!(transactionFile) || !(server)) {
       throw Error('Must specify transactionFile and server\nExample: transaction-executor/bin/run' +
-      '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
+          '--server="http://localhost:8080" --transactionFile="./transactions.txt"');
     }
 
     if (generateKeyPair && privateKeyString) {
@@ -34,30 +34,33 @@ class TransactionExecutorCommand extends Command {
     let transactions;
     if (generateKeyPair) {
       const keyPair = ChainUtil.genKeyPair();
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
-    } else if (privateKeyString){
+      transactions = TransactionExecutorCommand.createSignedTransactionList(
+          transactionFile, keyPair);
+    } else if (privateKeyString) {
       const keyPair = ec.keyFromPrivate(privateKeyString, 'hex')
       keyPair.getPublic()
-      transactions = TransactionExecutorCommand.createSignedTransactionList(transactionFile, keyPair);
+      transactions = TransactionExecutorCommand.createSignedTransactionList(
+          transactionFile, keyPair);
     } else {
       transactions = TransactionExecutorCommand.createUnsignedTransactionList(transactionFile);
     }
-    await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient)).then((values) => {
+    await Promise.all(TransactionExecutorCommand.sendTransactionList(transactions, jsonRpcClient))
+    .then((values) => {
       console.log(values);
     });
   }
 
   static createSignedTransactionList(transactionFile, keyPair) {
     const transactions = [];
-    const privateKey =  keyPair.priv
+    const privateKey = keyPair.priv
     TransactionExecutorCommand.getFileLines(transactionFile).forEach((line) => {
       if (line.match(ADDRESS_REG_EX)) {
         const publicKey = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-          ainUtil.pubToAddress(
-              Buffer.from(keyPair.getPublic().encode('hex'), 'hex'),
-              true
-          )
-      ));
+            ainUtil.pubToAddress(
+                Buffer.from(keyPair.getPublic().encode('hex'), 'hex'),
+                true
+            )
+        ));
         line = line.replace(ADDRESS_REG_EX, `${publicKey}`);
       }
       const transactionData = TransactionExecutorCommand.parseLine(line);
@@ -100,7 +103,7 @@ class TransactionExecutorCommand extends Command {
           if (typeof subData.nonce === 'undefined') {
             throw Error(`Nonce field should be specified:\n${line}`);
           }
-          subData['skip_verif'] = true;
+          subData.skip_verif = true;
           txList.push(Transaction.newTransaction('', subData));
         })
         transactions.push({ tx_list: txList });
@@ -111,7 +114,7 @@ class TransactionExecutorCommand extends Command {
         if (typeof transactionData.nonce === 'undefined') {
           throw Error(`Nonce field should be specified:\n${line}`);
         }
-        transactionData['skip_verif'] = true;
+        transactionData.skip_verif = true;
         const trans = Transaction.newTransaction('', transactionData);
         transactions.push(trans);
       }
@@ -150,23 +153,37 @@ class TransactionExecutorCommand extends Command {
   }
 }
 
-TransactionExecutorCommand.description = `Reads transactions from file and sends them to the specified server
-...
-Creates a valid privae/public key pair and uses this pair to send transactions
-to the speified server. Transactions must be specified in valid JSON format, with
-a single transaction written on each line. Nonce must be specified for all transactions.
-Address must be speficied for each transaction if --generateKeyPair=false. Otherise address
-must not be specified for any trasnaction.
-`;
+TransactionExecutorCommand.description =
+    `Reads transactions from file and sends them to the specified server
+    ...
+    Creates a valid privae/public key pair and uses this pair to send transactions
+    to the speified server. Transactions must be specified in valid JSON format, with
+    a single transaction written on each line. Nonce must be specified for all transactions.
+    Address must be speficied for each transaction if --generateKeyPair=false. Otherise address
+    must not be specified for any trasnaction.
+    `;
 
 TransactionExecutorCommand.flags = {
   // add --help flag to show CLI version
-  help: flags.help({char: 'h'}),
-  server: flags.string({char: 's', description: `server to send rpc transasction (e.x. http://localhost:8080)`}),
-  transactionFile: flags.string({char: 't', description: 'File containg one valid josn transaction per line'}),
-  privateKey: flags.string({char: 'p', description: 'Specific private key to use when sending transactions'}),
-  generateKeyPair: flags.string({char: 'g', description: 'Indicates whether to generate a valid public/private key pair for signing and ' +
-      'sending transactions. Please note that if this value is set to false, any transaction without an address will result in an error.'}),
+  help: flags.help({ char: 'h' }),
+  server: flags.string({
+    char: 's',
+    description: 'server to send rpc transasction (e.x. http://localhost:8080)'
+  }),
+  transactionFile: flags.string({
+    char: 't',
+    description: 'File containg one valid josn transaction per line'
+  }),
+  privateKey: flags.string({
+    char: 'p',
+    description: 'Specific private key to use when sending transactions'
+  }),
+  generateKeyPair: flags.string({
+    char: 'g',
+    description: 'Indicates whether to generate a valid public/private key pair for signing and ' +
+      'sending transactions. Please note that if this value is set to false, ' +
+      'any transaction without an address will result in an error.'
+  }),
 };
 
 module.exports = TransactionExecutorCommand;

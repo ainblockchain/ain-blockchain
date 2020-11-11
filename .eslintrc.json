@@ -1,0 +1,38 @@
+{
+  "extends": [
+    "google"
+  ],
+  "rules": {
+    "semi": "off",
+    "camelcase": "off",
+    "no-unneeded-ternary": "off",
+    "no-control-regex": "off",
+    "no-useless-escape": "off",
+    "require-jsdoc": "off",
+    "valid-jsdoc": "off",
+    "indent": "off",
+    "max-len": [
+      "error",
+      { "code": 100 }
+    ],
+    "object-curly-spacing": [
+      "error",
+      "always"
+    ],
+    "comma-dangle": [
+      "error",
+      "only-multiline"
+    ]
+  },
+  "env": {
+    "node": true,
+    "browser": true,
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "ecmaFeatures": {
+      "experimentalObjectRestSpread": true
+    }
+  }
+}

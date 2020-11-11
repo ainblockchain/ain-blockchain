@@ -1,3 +1,4 @@
+/* eslint guard-for-in: "off" */
 const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {
@@ -58,7 +59,7 @@ class TransactionPool {
     };
     if (tx.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
-            tx.nonce > this.pendingNonceTracker[tx.address])) {
+        tx.nonce > this.pendingNonceTracker[tx.address])) {
       this.pendingNonceTracker[tx.address] = tx.nonce;
     }
     logger.debug(`ADDING: ${JSON.stringify(tx)}`);
@@ -95,21 +96,24 @@ class TransactionPool {
         excludeTransactions = excludeTransactions.concat(block.transactions);
       })
     }
-    let unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
+    const unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
     // Transactions are first ordered by nonce in their individual lists by address
     for (const address in unvalidatedTransactions) {
       let tempFilteredTransactions = _.differenceWith(
           unvalidatedTransactions[address],
           excludeTransactions,
-          (a, b) => { return a.hash === b.hash; }
-        );
-      tempFilteredTransactions = tempFilteredTransactions.filter(tx => {
+          (a, b) => {
+            return a.hash === b.hash;
+          }
+      );
+      tempFilteredTransactions = tempFilteredTransactions.filter((tx) => {
         const ref = _.get(tx, 'operation.ref');
         const innerRef = tx.operation.op_list && tx.operation.op_list.length ?
             tx.operation.op_list[0].ref : undefined;
         const type = _.get(tx, 'operation.type');
         return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
-            (ref && !ref.startsWith('/consensus/number')) || (innerRef && !innerRef.startsWith('/consensus/number'));
+            (ref && !ref.startsWith('/consensus/number')) ||
+            (innerRef && !innerRef.startsWith('/consensus/number'));
       });
       if (!tempFilteredTransactions.length) {
         delete unvalidatedTransactions[address];
@@ -117,8 +121,8 @@ class TransactionPool {
         unvalidatedTransactions[address] = tempFilteredTransactions;
         // Order by noncing if transactions are nonced, else by timestamp
         unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0) ?
-              ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
-                  (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
+            ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
+                (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
       }
     }
     // Secondly transactions are combined and ordered by timestamp, while still remaining
@@ -131,7 +135,8 @@ class TransactionPool {
       const newList = [];
       let listToTakeValue;
       while (list1.length + list2.length > 0) {
-        if ((list2.length == 0 || (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))) {
+        if ((list2.length === 0 ||
+            (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))) {
           listToTakeValue = list1;
         } else {
           listToTakeValue = list2;
@@ -148,14 +153,15 @@ class TransactionPool {
         } else {
           const invalidNoncedTransaction = listToTakeValue.shift();
           logger.info('Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction));
-          _.remove(this.transactions[invalidNoncedTransaction.address], (tx) => tx.hash === invalidNoncedTransaction.hash);
+          _.remove(this.transactions[invalidNoncedTransaction.address],
+              (tx) => tx.hash === invalidNoncedTransaction.hash);
           delete this.transactionTracker[invalidNoncedTransaction.hash];
         }
       }
 
       orderedUnvalidatedTransactions.push(newList);
     }
-    return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0]: [];
+    return orderedUnvalidatedTransactions.length > 0 ? orderedUnvalidatedTransactions[0] : [];
   }
 
   removeTimedOutTxsFromPool(blockTimestamp) {
@@ -192,7 +198,7 @@ class TransactionPool {
 
   removeInvalidTxsFromPool(txs) {
     const addrToTxSet = {};
-    txs.forEach(tx => {
+    txs.forEach((tx) => {
       const { address, hash } = tx;
       if (!addrToTxSet[address]) {
         addrToTxSet[address] = new Set();
@@ -206,7 +212,7 @@ class TransactionPool {
     })
     for (const address in addrToTxSet) {
       if (this.transactions[address]) {
-        this.transactions[address] = this.transactions[address].filter(tx => {
+        this.transactions[address] = this.transactions[address].filter((tx) => {
           return !(addrToTxSet[address].has(tx.hash));
         })
       }
@@ -217,7 +223,7 @@ class TransactionPool {
     const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
-    block.last_votes.forEach(voteTx => {
+    block.last_votes.forEach((voteTx) => {
       // voting txs are loosely ordered.
       this.transactionTracker[voteTx.hash] = {
         status: TransactionStatus.BLOCK_STATUS,
@@ -325,13 +331,12 @@ class TransactionPool {
     }
     this.isChecking = true;
     const tasks = [];
-    for (let txHash in this.remoteTransactionTracker) {
+    for (const txHash in this.remoteTransactionTracker) {
       tasks.push(sendGetRequest(
-        parentChainEndpoint,
-        'ain_getTransactionByHash',
-        { hash: txHash }
-      )
-      .then(resp => {
+          parentChainEndpoint,
+          'ain_getTransactionByHash',
+          { hash: txHash }
+      ).then((resp) => {
         const trackingInfo = this.remoteTransactionTracker[txHash];
         const result = _.get(resp, 'data.result.result', null);
         logger.info(
@@ -347,9 +352,9 @@ class TransactionPool {
       }));
     }
     return Promise.all(tasks)
-      .then(() => {
-        this.isChecking = false;
-      });
+    .then(() => {
+      this.isChecking = false;
+    });
   }
 
   doAction(action, success) {
@@ -372,7 +377,7 @@ class TransactionPool {
       nonce: -1
     };
     const ownerPrivateKey = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const endpoint = `${this.node.urlInternal}/json-rpc`;
     signAndSendTx(endpoint, actionTx, keyBuffer);

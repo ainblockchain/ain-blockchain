@@ -64,11 +64,11 @@ class Functions {
           const functionPath = matched.matchedFunction.path;
           const params = Functions.convertPathVars2Params(matched.pathVars);
           logger.info(
-            `  ==> Running native function '${functionConfig.function_id}' with\n` +
-            `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
-            `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-            `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
-            `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
+              `  ==> Running native function '${functionConfig.function_id}' with\n` +
+              `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
+              `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
+              `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
+              `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
           // Execute the matched native function.
           nativeFunction(
               value,
@@ -85,9 +85,9 @@ class Functions {
         if (functionConfig.event_listener &&
             functionConfig.event_listener in EventListenerWhitelist) {
           logger.info(
-            `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
-            `of '${functionConfig.event_listener}' ` +
-            `with transaction: ${JSON.stringify(transaction, null, 2)}`)
+              `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
+              `of '${functionConfig.event_listener}' ` +
+              `with transaction: ${JSON.stringify(transaction, null, 2)}`)
           return axios.post(functionConfig.event_listener, {
             transaction,
             function: functionConfig
@@ -234,24 +234,23 @@ class Functions {
       return;
     }
     if (!payloadTx || !payloadTx.transaction || !payloadTx.signature) {
-      logger.debug(`  =>> payloadTx is missing required fields`);
+      logger.debug('  =>> payloadTx is missing required fields');
       return;
     }
-    const tx = new Transaction({ transaction: payloadTx.transaction, signature: payloadTx.signature });
+    const tx = new Transaction(
+        { transaction: payloadTx.transaction, signature: payloadTx.signature });
     if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.operation)) {
-      logger.debug(`  =>> Invalid payloadTx`);
+      logger.debug('  =>> Invalid payloadTx');
       return;
     }
     // Forward payload tx to parent chain
     sendSignedTx(parentChainEndpoint, payloadTx)
-    .then(result => {
+    .then((result) => {
       if (!_.get(result, 'success', false) === true) {
-        logger.info(
-            `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+        logger.info(`  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
         return;
       }
-      logger.info(
-          `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+      logger.info(`  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
     });
     const action = {
       ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
@@ -270,7 +269,7 @@ class Functions {
   _closeCheckin(value, context) {
     if (!this.tp || !this.db.isFinalizedState) {
       // It's not the backupDb
-      logger.info(`  =>> Skip sending transfer transaction to the shard blockchain`);
+      logger.info('  =>> Skip sending transfer transaction to the shard blockchain');
       return;
     }
     if (!this._validateCheckinParams(context.params)) {
@@ -295,26 +294,26 @@ class Functions {
     }
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardingPath = this.db.shardingPath;
     const transferTx = {
-          operation: {
-            type: WriteDbOperations.SET_VALUE,
-            ref: ChainUtil.formatPath([
-              ...shardingPath,
-              PredefinedDbPaths.TRANSFER,
-              shardOwner,
-              user,
-              `checkin_${checkinId}`,
-              PredefinedDbPaths.TRANSFER_VALUE
-            ]),
-            value: tokenToReceive,
-            is_global: true
-          },
-          timestamp: Date.now(),
-          nonce: -1
-        };
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: ChainUtil.formatPath([
+          ...shardingPath,
+          PredefinedDbPaths.TRANSFER,
+          shardOwner,
+          user,
+          `checkin_${checkinId}`,
+          PredefinedDbPaths.TRANSFER_VALUE
+        ]),
+        value: tokenToReceive,
+        is_global: true
+      },
+      timestamp: Date.now(),
+      nonce: -1
+    };
     // Sign and send transferTx to the node itself
     const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
     signAndSendTx(endpoint, transferTx, keyBuffer);
@@ -324,11 +323,11 @@ class Functions {
     const user = params.user_addr;
     const checkInId = params.checkin_id;
     if (!user || !ChainUtil.isCksumAddr(user)) {
-      logger.debug(`  =>> Invalid user_addr param`);
+      logger.debug('  =>> Invalid user_addr param');
       return false;
     }
     if (checkInId == null) {
-      logger.debug(`  =>> Invalid checkin_id param`);
+      logger.debug('  =>> Invalid checkin_id param');
       return false;
     }
     return true;
@@ -336,11 +335,11 @@ class Functions {
 
   _validateShardConfig() {
     if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
-      logger.debug(`  =>> Not a shard`);
+      logger.debug('  =>> Not a shard');
       return false;
     }
     if (GenesisSharding[ShardingProperties.TOKEN_EXCH_SCHEME] !== TokenExchangeSchemes.FIXED) {
-      logger.debug(`  =>> Unsupported token exchange scheme`);
+      logger.debug('  =>> Unsupported token exchange scheme');
       return false;
     }
     return true;
@@ -349,13 +348,13 @@ class Functions {
   _validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive) {
     if (!ChainUtil.isNumber(tokenExchRate) || tokenExchRate <= 0 || checkinAmount <= 0 ||
         tokenToReceive <= 0) {
-      logger.debug(`  =>> Invalid exchange rate or checkin amount`);
+      logger.debug('  =>> Invalid exchange rate or checkin amount');
       return false;
     }
     // tokenToReceive = tokenExchRate * checkinAmount
     if (tokenExchRate !== tokenToReceive / checkinAmount ||
         checkinAmount !== tokenToReceive / tokenExchRate) {
-      logger.debug(`  =>> Number overflow`);
+      logger.debug('  =>> Number overflow');
       return false;
     }
     return true;

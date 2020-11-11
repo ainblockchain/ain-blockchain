@@ -57,7 +57,7 @@ class Ref {
   }
 
   portfolio_profit(to, from) {
-    return 'portfolio/' + to+ '/' + from + '/profit';
+    return 'portfolio/' + to + '/' + from + '/profit';
   }
 
   portfolio_invest(from, to) {

@@ -10,7 +10,8 @@ class Transaction {
 
     const transaction = txWithSig.transaction ? txWithSig.transaction : txWithSig;
     if (!Transaction.hasRequiredFields(transaction)) {
-      logger.info('Transaction must contain timestamp, operation and nonce fields: ' + JSON.stringify(transaction));
+      logger.info('Transaction must contain timestamp, operation and nonce fields: ' +
+          JSON.stringify(transaction));
       return null;
     }
 
@@ -23,8 +24,8 @@ class Transaction {
     Object.assign(this, sanitizedTxData);
     this.hash = '0x' + ainUtil.hashTransaction(sanitizedTxData).toString('hex');
     // Workaround for skip_verif with custom address
-    this.address = txData.address !== undefined ? txData.address :
-        Transaction.getAddress(this.hash.slice(2), this.signature);
+    this.address = txData.address !== undefined ?
+        txData.address : Transaction.getAddress(this.hash.slice(2), this.signature);
 
     logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
   }
@@ -33,8 +34,8 @@ class Transaction {
     const transaction = JSON.parse(JSON.stringify(txData));
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address
-    const signature = transaction.address !== undefined ? '' :
-        ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
+    const signature = transaction.address !== undefined ?
+        '' : ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
     return new Transaction({ signature, transaction });
   }
 
@@ -46,7 +47,7 @@ class Transaction {
             timestamp:  ${this.timestamp},
             operation:  ${JSON.stringify(this.operation)},
             address:    ${this.address},
-            ${this.parent_tx_hash !== undefined ? 'parent_tx_hash: '+this.parent_tx_hash : ''}
+            ${this.parent_tx_hash !== undefined ? 'parent_tx_hash: ' + this.parent_tx_hash : ''}
         `;
   }
 
@@ -68,8 +69,8 @@ class Transaction {
    */
   get signingData() {
     return Object.assign(
-        {operation: this.operation, nonce: this.nonce, timestamp: this.timestamp},
-        this.parent_tx_hash !== undefined ? {parent_tx_hash: this.parent_tx_hash} : {}
+        { operation: this.operation, nonce: this.nonce, timestamp: this.timestamp },
+        this.parent_tx_hash !== undefined ? { parent_tx_hash: this.parent_tx_hash } : {}
     );
   }
 
@@ -94,7 +95,7 @@ class Transaction {
    */
   static sanitizeSimpleOperation(op) {
     const sanitized = {}
-    switch(op.type) {
+    switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
       case WriteDbOperations.SET_RULE:
@@ -142,13 +143,15 @@ class Transaction {
   }
 
   static verifyTransaction(transaction) {
-    if (transaction.operation.type !== undefined && Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
+    if (transaction.operation.type !== undefined &&
+        Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
       logger.info(`Invalid transaction type: ${transaction.operation.type}`);
       return false;
     }
     // Workaround for skip_verif with custom address
     if (transaction.skip_verif) {
-      logger.info('Skip verifying signature for transaction: ' + JSON.stringify(transaction, null, 2));
+      logger.info('Skip verifying signature for transaction: ' +
+          JSON.stringify(transaction, null, 2));
       return true;
     }
     return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);

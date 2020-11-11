@@ -1,3 +1,6 @@
+/* eslint new-cap: "off" */
+/* eslint func-call-spacing: "off" */
+/* eslint new-parens: "off" */
 const winston = require('winston');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
@@ -36,23 +39,23 @@ const getWinstonColors = () => {
 };
 
 const getWinstonConsoleTransport = () => {
-  return new (winston.transports.Console) ({
+  return new (winston.transports.Console)({
     name: 'debug-console-log',
     level: DEBUG ? 'debug' : 'info',
     handleExceptions: true,
     json: false,
     colorize: true,
     format: combine(
-      colorize(),
-      label({ label: prefix }),
-      timestamp(),
-      logFormat
+        colorize(),
+        label({ label: prefix }),
+        timestamp(),
+        logFormat
     ),
   });
 };
 
 const getWinstonDailyDebugFileTransport = () => {
-  return new (winstonDaily) ({
+  return new (winstonDaily)({
     name: 'daily-combined-log',
     level: 'debug',
     filename: `${logDir}/${prefix}-combined-%DATE%.log`,
@@ -62,15 +65,15 @@ const getWinstonDailyDebugFileTransport = () => {
     maxFiles: '14d',
     colorize: false,
     format: combine(
-      label({ label: prefix }),
-      timestamp(),
-      logFormat
+        label({ label: prefix }),
+        timestamp(),
+        logFormat
     ),
   });
 };
 
 const getWinstonDailyErrorFileTransport = () => {
-  return new (winstonDaily) ({
+  return new (winstonDaily)({
     name: 'daily-error-log',
     level: 'error',
     filename: `${logDir}/${prefix}-error-%DATE%.log`,
@@ -80,16 +83,16 @@ const getWinstonDailyErrorFileTransport = () => {
     maxFiles: '180d',
     colorize: false,
     format: combine(
-      label({ label: prefix }),
-      timestamp(),
-      logFormat
+        label({ label: prefix }),
+        timestamp(),
+        logFormat
     )
   });
 };
 
 const getWinstonTransports = () => {
-  const transports = LIGHTWEIGHT ? [ getWinstonDailyErrorFileTransport() ] :
-      [
+  const transports = LIGHTWEIGHT ? [getWinstonDailyErrorFileTransport()]
+      : [
         getWinstonConsoleTransport(),
         getWinstonDailyDebugFileTransport(),
         getWinstonDailyErrorFileTransport(),

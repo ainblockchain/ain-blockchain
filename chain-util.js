@@ -14,7 +14,7 @@ class ChainUtil {
 
   static shortenHash(hash) {
     if (typeof hash !== 'string' || hash.length < 10) return hash;
-    return hash.substring(0,6) + '...' + hash.substring(hash.length - 4, hash.length);
+    return hash.substring(0, 6) + '...' + hash.substring(hash.length - 4, hash.length);
   }
 
   static hashSignature(sig) {
@@ -133,7 +133,7 @@ class ChainUtil {
 
   static appendPath(path, ...pathsToAppend) {
     const labels = ChainUtil.parsePath(path);
-    for (let toAppend of pathsToAppend) {
+    for (const toAppend of pathsToAppend) {
       labels.push(...ChainUtil.parsePath(toAppend));
     }
     return ChainUtil.formatPath(labels);
@@ -161,7 +161,7 @@ class ChainUtil {
     if (!ChainUtil.isDict(obj)) {
       return false;
     }
-    if (path.length == 0) {
+    if (path.length === 0) {
       return false;
     }
     let ref = obj;
@@ -179,7 +179,7 @@ class ChainUtil {
 
   static transactionFailed(response) {
     if (Array.isArray(response)) {
-      response.forEach(res => {
+      response.forEach((res) => {
         if (ChainUtil.checkForTransactionErrorCode(res)) {
           return true;
         }
