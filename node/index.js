@@ -126,7 +126,7 @@ class BlockchainNode {
       txData.tx_list.forEach((subData) => {
         txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
       })
-      return { tx_list: txList };
+      return {tx_list: txList};
     }
     return this.createSingleTransaction(txData, isNoncedTransaction);
   }

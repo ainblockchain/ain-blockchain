@@ -195,7 +195,7 @@ class Block {
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
-    return (new Transaction({ signature: firstSig, transaction: firstTxData }));
+    return (new Transaction({signature: firstSig, transaction: firstTxData}));
   }
 
   static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
@@ -226,7 +226,7 @@ class Block {
       }
     };
     const secondSig = ainUtil.ecSignTransaction(secondTxData, keyBuffer);
-    return (new Transaction({ signature: secondSig, transaction: secondTxData }));
+    return (new Transaction({signature: secondSig, transaction: secondTxData}));
   }
 
   static getGenesisBlockData(genesisTime) {

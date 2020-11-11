@@ -13,7 +13,7 @@ const {
   AccountProperties,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendGetRequest, signAndSendTx } = require('../server/util');
+const {sendGetRequest, signAndSendTx} = require('../server/util');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -199,7 +199,7 @@ class TransactionPool {
   removeInvalidTxsFromPool(txs) {
     const addrToTxSet = {};
     txs.forEach((tx) => {
-      const { address, hash } = tx;
+      const {address, hash} = tx;
       if (!addrToTxSet[address]) {
         addrToTxSet[address] = new Set();
       }
@@ -335,7 +335,7 @@ class TransactionPool {
       tasks.push(sendGetRequest(
           parentChainEndpoint,
           'ain_getTransactionByHash',
-          { hash: txHash }
+          {hash: txHash}
       ).then((resp) => {
         const trackingInfo = this.remoteTransactionTracker[txHash];
         const result = _.get(resp, 'data.result.result', null);

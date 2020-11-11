@@ -17,7 +17,7 @@
     ],
     "object-curly-spacing": [
       "error",
-      "always"
+      "never"
     ],
     "comma-dangle": [
       "error",

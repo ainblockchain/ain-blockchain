@@ -1,4 +1,4 @@
-const { Command, flags } = require('@oclif/command');
+const {Command, flags} = require('@oclif/command');
 const ChainUtil = require('../../../chain-util');
 const Transaction = require('../../../tx-pool/transaction');
 const fs = require('fs');
@@ -14,7 +14,7 @@ const ec = new EC('secp256k1');
 
 class TransactionExecutorCommand extends Command {
   async run() {
-    const { flags } = this.parse(TransactionExecutorCommand);
+    const {flags} = this.parse(TransactionExecutorCommand);
     const transactionFile = flags.transactionFile;
     const server = flags.server || null;
     const generateKeyPair = flags.generateKeyPair ?
@@ -75,7 +75,7 @@ class TransactionExecutorCommand extends Command {
           }
           txList.push(Transaction.newTransaction(privateKey, subData));
         })
-        transactions.push({ tx_list: txList });
+        transactions.push({tx_list: txList});
       } else {
         if (typeof transactionData.address !== 'undefined') {
           throw Error(`Address field should NOT be specified:\n${line}`);
@@ -106,7 +106,7 @@ class TransactionExecutorCommand extends Command {
           subData.skip_verif = true;
           txList.push(Transaction.newTransaction('', subData));
         })
-        transactions.push({ tx_list: txList });
+        transactions.push({tx_list: txList});
       } else {
         if (typeof transactionData.address === 'undefined') {
           throw Error(`Address field should be specified:\n${line}`);
@@ -165,7 +165,7 @@ TransactionExecutorCommand.description =
 
 TransactionExecutorCommand.flags = {
   // add --help flag to show CLI version
-  help: flags.help({ char: 'h' }),
+  help: flags.help({char: 'h'}),
   server: flags.string({
     char: 's',
     description: 'server to send rpc transasction (e.x. http://localhost:8080)'
