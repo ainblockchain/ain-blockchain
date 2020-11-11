@@ -1,6 +1,6 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
-const { WriteDbOperations } = require('../constants');
+const {WriteDbOperations} = require('../constants');
 const ChainUtil = require('../chain-util');
 
 // TODO(seo): Remove 'txWithSig.transaction ?' use cases.
@@ -36,7 +36,7 @@ class Transaction {
     // Workaround for skip_verif with custom address
     const signature = transaction.address !== undefined ?
         '' : ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
-    return new Transaction({ signature, transaction });
+    return new Transaction({signature, transaction});
   }
 
   toString() {
@@ -58,7 +58,7 @@ class Transaction {
     const sigBuffer = ainUtil.toBuffer(signature);
     const len = sigBuffer.length;
     const lenHash = len - 65;
-    const { r, s, v } = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
+    const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
     const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
     return ainUtil.toChecksumAddress(ainUtil.bufferToHex(
         ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
@@ -69,8 +69,8 @@ class Transaction {
    */
   get signingData() {
     return Object.assign(
-        { operation: this.operation, nonce: this.nonce, timestamp: this.timestamp },
-        this.parent_tx_hash !== undefined ? { parent_tx_hash: this.parent_tx_hash } : {}
+        {operation: this.operation, nonce: this.nonce, timestamp: this.timestamp},
+        this.parent_tx_hash !== undefined ? {parent_tx_hash: this.parent_tx_hash} : {}
     );
   }
 

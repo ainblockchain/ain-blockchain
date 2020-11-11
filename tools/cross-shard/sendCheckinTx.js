@@ -1,7 +1,7 @@
 const path = require('path');
 const _ = require('lodash');
 const axios = require('axios');
-const { sleep } = require('sleep');
+const {sleep} = require('sleep');
 const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../../chain-util');
 
@@ -55,7 +55,7 @@ function signTx(tx, privateKey) {
 
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const { txHash, signedTx } = signTx(txBody, privateKey);
+  const {txHash, signedTx} = signTx(txBody, privateKey);
   return axios.post(
       `${endpointUrl}/json-rpc`,
       {
@@ -67,11 +67,11 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
       .then((resp) => {
         const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
         console.log(`result: ${JSON.stringify(success, null, 2)}`);
-        return { txHash, signedTx, success };
+        return {txHash, signedTx, success};
       })
       .catch((err) => {
         console.log(`Failed to send transaction: ${err}`);
-        return { errMsg: err.message };
+        return {errMsg: err.message};
       });
 }
 
@@ -110,7 +110,7 @@ async function sendTransaction() {
   console.log('Sending job transaction...')
   const txInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, keyBuffer);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
-  return { timestamp, txInfo };
+  return {timestamp, txInfo};
 }
 
 async function confirmTransaction(timestamp, txHash) {
@@ -133,7 +133,7 @@ async function confirmTransaction(timestamp, txHash) {
 async function sendCheckinTransaction() {
   console.log('\n*** sendTransaction():');
   console.log(`config: ${JSON.stringify(config, null, 2)}`);
-  const { timestamp, txInfo } = await sendTransaction();
+  const {timestamp, txInfo} = await sendTransaction();
   if (txInfo.success) {
     await confirmTransaction(timestamp, txInfo.txHash);
   }

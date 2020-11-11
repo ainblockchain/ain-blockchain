@@ -63,7 +63,7 @@ class AfanClient {
     try {
       const state = await requestManager.getAdState(from, to);
       if (state.result && state.result !== 3) {
-        return { code: -4, message: 'Already proposed' };
+        return {code: -4, message: 'Already proposed'};
       }
     } catch (err) {
       if (!(err instanceof errors.StatusCodeError)) {

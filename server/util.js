@@ -4,7 +4,7 @@
  * into a module, or replaced with another protocol for cross-shard communication.
  */
 
-const { sleep } = require('sleep');
+const {sleep} = require('sleep');
 const axios = require('axios');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
@@ -50,22 +50,22 @@ async function sendSignedTx(endpoint, signedTxParams) {
       }
   ).then((resp) => {
     const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
-    return { success };
+    return {success};
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
-    return { errMsg: err.message, success: false };
+    return {errMsg: err.message, success: false};
   });
 }
 
 async function signAndSendTx(endpoint, tx, keyBuffer) {
-  const { txHash, signedTx } = signTx(tx, keyBuffer);
+  const {txHash, signedTx} = signTx(tx, keyBuffer);
   const params = {
     protoVer: CURRENT_PROTOCOL_VERSION,
     signature: signedTx.signature,
     transaction: signedTx.transaction,
   };
   const result = await sendSignedTx(endpoint, params);
-  return Object.assign(result, { txHash });
+  return Object.assign(result, {txHash});
 }
 
 async function waitUntilTxFinalize(endpoint, txHash) {
@@ -73,7 +73,7 @@ async function waitUntilTxFinalize(endpoint, txHash) {
     const confirmed = await sendGetRequest(
         endpoint,
         'ain_getTransactionByHash',
-        { hash: txHash }
+        {hash: txHash}
     )
     .then((resp) => {
       return (_.get(resp, 'data.result.result.is_finalized', false) === true);
@@ -96,7 +96,7 @@ function sendGetRequest(endpoint, method, params) {
       endpoint,
       {
         method,
-        params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
+        params: Object.assign(params, {protoVer: CURRENT_PROTOCOL_VERSION}),
         jsonrpc: '2.0',
         id: 0
       }
