@@ -90,8 +90,8 @@ class BlockPool {
       chain.unshift(withInfo ? currBlockWithInfo : currBlockWithInfo.block);
       currBlockWithInfo = this.hashToBlockInfo[currBlockWithInfo.block.last_hash];
     }
-    logger.debug(`[${LOG_HEADER}]
-        currBlockWithInfo: ${JSON.stringify(currBlockWithInfo, null, 2)}` +
+    logger.debug(`[${LOG_HEADER}] currBlockWithInfo: ` +
+        `${JSON.stringify(currBlockWithInfo, null, 2)}` +
         `\nfinalizedBlock: ${JSON.stringify(finalizedBlock, null, 2)}`);
     if (!currBlockWithInfo || !currBlockWithInfo.block) {
       logger.error(`[${LOG_HEADER}] Block info is missing`);
