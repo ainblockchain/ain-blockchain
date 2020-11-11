@@ -11,8 +11,8 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
 const Consensus = require('../consensus');
-const { ConsensusStatus } = require('../consensus/constants');
-const { Block } = require('../blockchain/block');
+const {ConsensusStatus} = require('../consensus/constants');
+const {Block} = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
   PORT,
@@ -37,7 +37,7 @@ const {
   LIGHTWEIGHT
 } = require('../constants');
 const ChainUtil = require('../chain-util');
-const { sendTxAndWaitForFinalization } = require('./util');
+const {sendTxAndWaitForFinalization} = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
@@ -162,7 +162,7 @@ class P2pServer {
     .then(() => {
       if (HOSTING_ENV === 'gcp') {
         return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
-          headers: { 'Metadata-Flavor': 'Google' },
+          headers: {'Metadata-Flavor': 'Google'},
           timeout: 3000
         })
         .then((res) => {
@@ -609,7 +609,7 @@ class P2pServer {
         }
       })
       if (txListSucceeded.length > 0) {
-        this.broadcastTransaction({ tx_list: txListSucceeded });
+        this.broadcastTransaction({tx_list: txListSucceeded});
       }
 
       return resultList;

@@ -1,7 +1,7 @@
 const get = require('lodash/get');
 const logger = require('../logger')('BLOCK_POOL');
-const { ConsensusConsts } = require('./constants');
-const { WriteDbOperations } = require('../constants');
+const {ConsensusConsts} = require('./constants');
+const {WriteDbOperations} = require('../constants');
 const ChainUtil = require('../chain-util');
 
 class BlockPool {
@@ -48,11 +48,11 @@ class BlockPool {
         this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
         this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
       }
-      this.hashToBlockInfo[lastBlockHash] = { block: lastBlock };
+      this.hashToBlockInfo[lastBlockHash] = {block: lastBlock};
       this.epochToBlock[lastBlockEpoch] = lastBlockHash;
       this.numberToBlock[lastBlockNumber] = new Set([lastBlockHash]);
     } else if (lastFinalizedBlock) {
-      this.hashToBlockInfo[lastFinalizedBlockHash] = { block: lastFinalizedBlock, notarized: true };
+      this.hashToBlockInfo[lastFinalizedBlockHash] = {block: lastFinalizedBlock, notarized: true};
       this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
       this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
     }
@@ -108,7 +108,7 @@ class BlockPool {
     const LOG_HEADER = 'getLongestNotarizedChainList';
     const lastBlockNumber = this.node.bc.lastBlockNumber();
     const lastFinalized = fromBlock ? fromBlock
-        : lastBlockNumber < 1 ? { block: this.node.bc.lastBlock(), notarized: true }
+        : lastBlockNumber < 1 ? {block: this.node.bc.lastBlock(), notarized: true}
             : this.hashToBlockInfo[this.node.bc.lastBlock().hash];
     logger.debug(`[${LOG_HEADER}] lastFinalized: ${JSON.stringify(lastFinalized, null, 2)}`);
     const chainList = [];
@@ -158,7 +158,7 @@ class BlockPool {
   //  1. all of its blocks are notarized
   //  2. ends with three blocks that have consecutive epoch numbers
   getFinalizableChain() {
-    const lastFinalized = { block: this.node.bc.lastBlock(), notarized: true };
+    const lastFinalized = {block: this.node.bc.lastBlock(), notarized: true};
     return this.dfsFinalizable(lastFinalized, []);
   }
 

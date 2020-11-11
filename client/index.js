@@ -9,8 +9,8 @@ const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pServer = require('../server');
 const ChainUtil = require('../chain-util');
-const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus } = require('../constants');
-const { ConsensusStatus } = require('../consensus/constants');
+const {PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus} = require('../constants');
+const {ConsensusStatus} = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
@@ -33,7 +33,7 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
+const {min, max} = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
@@ -61,7 +61,7 @@ app.get('/get_value', (req, res, next) => {
   const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -69,7 +69,7 @@ app.get('/get_function', (req, res, next) => {
   const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -77,7 +77,7 @@ app.get('/get_rule', (req, res, next) => {
   const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -85,7 +85,7 @@ app.get('/get_owner', (req, res, next) => {
   const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -96,7 +96,7 @@ app.get('/get_proof', (req, res, next) => {
   const result = node.db.getProof(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -104,7 +104,7 @@ app.get('/match_function', (req, res, next) => {
   const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -112,7 +112,7 @@ app.get('/match_rule', (req, res, next) => {
   const result = node.db.matchRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -120,7 +120,7 @@ app.get('/match_owner', (req, res, next) => {
   const result = node.db.matchOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -131,7 +131,7 @@ app.post('/eval_rule', (req, res, next) => {
       ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -141,7 +141,7 @@ app.post('/eval_owner', (req, res, next) => {
       body.ref, body.permission, body.address, ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -149,7 +149,7 @@ app.post('/get', (req, res, next) => {
   const result = node.db.get(req.body.op_list);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -159,7 +159,7 @@ app.post('/set_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result.result === true ? 0 : 1, result })
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -169,7 +169,7 @@ app.post('/inc_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result.result === true ? 0 : 1, result })
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -179,7 +179,7 @@ app.post('/dec_value', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result.result === true ? 0 : 1, result })
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -189,7 +189,7 @@ app.post('/set_function', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result.result === true ? 0 : 1, result })
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -199,7 +199,7 @@ app.post('/set_rule', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result.result === true ? 0 : 1, result })
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -209,7 +209,7 @@ app.post('/set_owner', (req, res, next) => {
       createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result.result === true ? 0 : 1, result })
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -219,7 +219,7 @@ app.post('/set', (req, res, next) => {
   const result = createAndExecuteTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result.result === true ? 0 : 1, result })
+    .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
@@ -228,7 +228,7 @@ app.post('/batch', (req, res, next) => {
   const result = createAndExecuteTransaction(createBatchTxData(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -238,7 +238,7 @@ app.get('/blocks', (req, res, next) => {
   const result = node.bc.getChainSection(blockBegin, blockEnd);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -246,7 +246,7 @@ app.get('/last_block', (req, res, next) => {
   const result = node.bc.lastBlock();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -254,7 +254,7 @@ app.get('/last_block_number', (req, res, next) => {
   const result = node.bc.lastBlockNumber();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -262,7 +262,7 @@ app.get('/tx_pool', (req, res, next) => {
   const result = node.tp.transactions;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -270,7 +270,7 @@ app.get('/tx_tracker', (req, res, next) => {
   const result = node.tp.transactionTracker;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -278,7 +278,7 @@ app.get('/committed_nonce_tracker', (req, res, next) => {
   const result = node.tp.committedNonceTracker;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -286,7 +286,7 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
   const result = node.tp.pendingNonceTracker;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -305,7 +305,7 @@ app.get('/get_transaction', (req, res, next) => {
   }
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: transactionInfo })
+    .send({code: 0, result: transactionInfo})
     .end();
 });
 
@@ -313,7 +313,7 @@ app.get('/get_address', (req, res, next) => {
   const result = node.account.address;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -321,7 +321,7 @@ app.get('/get_sharding', (req, res, next) => {
   const result = node.getSharding();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({code: result !== null ? 0 : 1, result})
     .end();
 });
 
@@ -329,7 +329,7 @@ app.get('/get_raw_consensus_state', (req, res) => {
   const result = p2pServer.consensus.getRawState();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -337,7 +337,7 @@ app.get('/get_consensus_state', (req, res) => {
   const result = p2pServer.consensus.getState();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({code: 0, result})
     .end();
 });
 
@@ -366,7 +366,7 @@ function createSingleSetTxData(input, opType) {
   if (input.is_global !== undefined) {
     op.is_global = input.is_global;
   }
-  const txData = { operation: op };
+  const txData = {operation: op};
   if (input.address !== undefined) {
     txData.address = input.address;
   }
@@ -393,7 +393,7 @@ function createMultiSetTxData(input) {
 }
 
 function createBatchTxData(input) {
-  return { tx_list: input.tx_list };
+  return {tx_list: input.tx_list};
 }
 
 function createAndExecuteTransaction(txData, isNoncedTransaction) {

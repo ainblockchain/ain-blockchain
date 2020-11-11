@@ -77,7 +77,7 @@ function isWritablePathWithSharding(fullPath, root) {
   if (hasEnabledShardConfig(curNode)) {
     isValid = false;
   }
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
 function hasReservedChar(label) {
@@ -111,7 +111,7 @@ function isValidPathForStates(fullPath) {
       break;
     }
   }
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
 function isValidJsObjectForStatesRecursive(obj, path) {
@@ -141,7 +141,7 @@ function isValidJsObjectForStatesRecursive(obj, path) {
 function isValidJsObjectForStates(obj) {
   const path = [];
   const isValid = isValidJsObjectForStatesRecursive(obj, path);
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
 function jsObjectToStateTree(obj) {
