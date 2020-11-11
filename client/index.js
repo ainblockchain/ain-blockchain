@@ -9,19 +9,19 @@ const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pServer = require('../server');
 const ChainUtil = require('../chain-util');
-const { PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus } = require('../constants');
-const { ConsensusStatus } = require('../consensus/constants');
+const {PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus} = require('../constants');
+const {ConsensusStatus} = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
 
 // NOTE(seo): This is very useful when the server dies without any logs.
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', function(err) {
   logger.error(err);
 });
 
-process.on('SIGINT', _ => {
-  logger.info("Stopping the blockchain client....");
+process.on('SIGINT', (_) => {
+  logger.info('Stopping the blockchain client....');
   p2pServer.stop();
   process.exit();
 });
@@ -30,10 +30,10 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
-  throw Error("Wrong version format is specified in package.json");
+  throw Error('Wrong version format is specified in package.json');
 }
 const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
+const {min, max} = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
@@ -366,7 +366,7 @@ function createSingleSetTxData(input, opType) {
   if (input.is_global !== undefined) {
     op.is_global = input.is_global;
   }
-  const txData = { operation: op };
+  const txData = {operation: op};
   if (input.address !== undefined) {
     txData.address = input.address;
   }
@@ -393,7 +393,7 @@ function createMultiSetTxData(input) {
 }
 
 function createBatchTxData(input) {
-  return { tx_list: input.tx_list };
+  return {tx_list: input.tx_list};
 }
 
 function createAndExecuteTransaction(txData, isNoncedTransaction) {
@@ -445,23 +445,32 @@ function validateVersion(req, res, next) {
     next();
   } else if (version === undefined) {
     res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 1, message: "Protocol version not specified.",
-           protoVer: CURRENT_PROTOCOL_VERSION})
-    .end();
+      .set('Content-Type', 'application/json')
+      .send({
+        code: 1,
+        message: 'Protocol version not specified.',
+        protoVer: CURRENT_PROTOCOL_VERSION
+      })
+      .end();
   } else if (!semver.valid(coercedVer)) {
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: 1, message: "Invalid protocol version.",
-             protoVer: CURRENT_PROTOCOL_VERSION})
+      .send({
+        code: 1,
+        message: 'Invalid protocol version.',
+        protoVer: CURRENT_PROTOCOL_VERSION
+      })
       .end();
   } else if (semver.lt(coercedVer, minProtocolVersion) ||
-      (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
+    (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
     res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 1, message: "Incompatible protocol version.",
-            protoVer: CURRENT_PROTOCOL_VERSION})
-    .end();
+      .set('Content-Type', 'application/json')
+      .send({
+        code: 1,
+        message: 'Incompatible protocol version.',
+        protoVer: CURRENT_PROTOCOL_VERSION
+      })
+      .end();
   } else {
     next();
   }

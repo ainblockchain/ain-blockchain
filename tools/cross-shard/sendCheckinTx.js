@@ -1,7 +1,7 @@
 const path = require('path');
-const _ = require("lodash");
+const _ = require('lodash');
 const axios = require('axios');
-const { sleep } = require('sleep');
+const {sleep} = require('sleep');
 const ainUtil = require('@ainblockchain/ain-util');
 const ChainUtil = require('../../chain-util');
 
@@ -11,7 +11,7 @@ let config = {};
 function buildPayloadTx(fromAddr, toAddr, tokenAmount, timestamp) {
   return {
     operation: {
-      type: "SET_VALUE",
+      type: 'SET_VALUE',
       ref: `/transfer/${fromAddr}/${toAddr}/${timestamp}/value`,
       value: tokenAmount,
       is_global: true,
@@ -24,7 +24,7 @@ function buildPayloadTx(fromAddr, toAddr, tokenAmount, timestamp) {
 function buildTriggerTx(address, payload, timestamp) {
   return {
     operation: {
-      type: "SET_VALUE",
+      type: 'SET_VALUE',
       ref: `${config.shardingPath}/checkin/${address}/${timestamp}/request`,
       value: {
         payload,
@@ -54,25 +54,25 @@ function signTx(tx, privateKey) {
 }
 
 function signAndSendTx(endpointUrl, txBody, privateKey) {
-  console.log(`\n*** signAndSendTx():`);
-  const { txHash, signedTx } = signTx(txBody, privateKey);
+  console.log('\n*** signAndSendTx():');
+  const {txHash, signedTx} = signTx(txBody, privateKey);
   return axios.post(
       `${endpointUrl}/json-rpc`,
       {
-        method: "ain_sendSignedTransaction",
+        method: 'ain_sendSignedTransaction',
         params: signedTx,
-        jsonrpc: "2.0",
+        jsonrpc: '2.0',
         id: 0
       })
-  .then(resp => {
-    const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
-    console.log(`result: ${JSON.stringify(success, null, 2)}`);
-    return { txHash, signedTx, success };
-  })
-  .catch(err => {
-    console.log(`Failed to send transaction: ${err}`);
-    return { errMsg: err.message };
-  });
+      .then((resp) => {
+        const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
+        console.log(`result: ${JSON.stringify(success, null, 2)}`);
+        return {txHash, signedTx, success};
+      })
+      .catch((err) => {
+        console.log(`Failed to send transaction: ${err}`);
+        return {errMsg: err.message};
+      });
 }
 
 async function sendGetTxByHashRequest(endpointUrl, txHash) {
@@ -84,16 +84,16 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
           protoVer: CURRENT_PROTOCOL_VERSION,
           hash: txHash,
         },
-        jsonrpc: "2.0",
+        jsonrpc: '2.0',
         id: 0
       })
-  .then(function (resp) {
-    return _.get(resp, 'data.result.result', null);
-  });
+      .then(function(resp) {
+        return _.get(resp, 'data.result.result', null);
+      });
 }
 
 async function sendTransaction() {
-  console.log(`\n*** sendTransaction():`);
+  console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
   const keyBuffer = Buffer.from(config.userPrivateKey, 'hex');
   const payloadTxBody =
@@ -110,15 +110,15 @@ async function sendTransaction() {
   console.log('Sending job transaction...')
   const txInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, keyBuffer);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
-  return { timestamp, txInfo };
+  return {timestamp, txInfo};
 }
 
 async function confirmTransaction(timestamp, txHash) {
-  console.log(`\n*** confirmTransaction():`);
+  console.log('\n*** confirmTransaction():');
   console.log(`txHash: ${txHash}`);
   let iteration = 0;
   let result = null;
-  while(true) {
+  while (true) {
     iteration++;
     result = await sendGetTxByHashRequest(config.endpointUrl, txHash);
     sleep(1);
@@ -131,9 +131,9 @@ async function confirmTransaction(timestamp, txHash) {
 }
 
 async function sendCheckinTransaction() {
-  console.log(`\n*** sendTransaction():`);
+  console.log('\n*** sendTransaction():');
   console.log(`config: ${JSON.stringify(config, null, 2)}`);
-  const { timestamp, txInfo } = await sendTransaction();
+  const {timestamp, txInfo} = await sendTransaction();
   if (txInfo.success) {
     await confirmTransaction(timestamp, txInfo.txHash);
   }
@@ -152,4 +152,4 @@ function usage() {
   process.exit(0)
 }
 
-processArguments()
+processArguments();

@@ -1,3 +1,4 @@
+/* eslint guard-for-in: "off" */
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 const {
@@ -76,7 +77,7 @@ function isWritablePathWithSharding(fullPath, root) {
   if (hasEnabledShardConfig(curNode)) {
     isValid = false;
   }
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
 function hasReservedChar(label) {
@@ -110,7 +111,7 @@ function isValidPathForStates(fullPath) {
       break;
     }
   }
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
 function isValidJsObjectForStatesRecursive(obj, path) {
@@ -140,7 +141,7 @@ function isValidJsObjectForStatesRecursive(obj, path) {
 function isValidJsObjectForStates(obj) {
   const path = [];
   const isValid = isValidJsObjectForStatesRecursive(obj, path);
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
 function jsObjectToStateTree(obj) {
@@ -181,7 +182,9 @@ function deleteStateTree(root) {
     root.deleteChild(label);
     deleteStateTree(childNode);
   }
-  delete root;
+  // reference:
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
+  root = null;
 }
 
 function makeCopyOfStateTree(root) {
@@ -198,7 +201,7 @@ function buildProofHashOfStateNode(StateNode) {
   if (StateNode.getIsLeaf()) {
     preimage = StateNode.getValue();
   } else {
-    preimage = StateNode.getChildLabels().map(label => {
+    preimage = StateNode.getChildLabels().map((label) => {
       return `${label}${HASH_DELIMITER}${StateNode.getChild(label).getProofHash()}`;
     }, '').join(HASH_DELIMITER);
   }
@@ -207,7 +210,7 @@ function buildProofHashOfStateNode(StateNode) {
 
 function setProofHashForStateTree(stateTree) {
   if (!stateTree.getIsLeaf()) {
-    stateTree.getChildNodes().forEach(node => {
+    stateTree.getChildNodes().forEach((node) => {
       setProofHashForStateTree(node);
     });
   }
@@ -257,4 +260,4 @@ module.exports = {
   buildProofHashOfStateNode,
   setProofHashForStateTree,
   updateProofHashForPath,
-}
+};

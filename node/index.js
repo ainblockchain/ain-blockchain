@@ -1,3 +1,4 @@
+/* eslint guard-for-in: "off" */
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('NODE');
 const {
@@ -15,7 +16,8 @@ const TransactionPool = require('../tx-pool');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
-const isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+const isShardChain =
+    GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
 
 class BlockchainNode {
   constructor() {
@@ -75,10 +77,9 @@ class BlockchainNode {
     //               publicKey
     let nonce = 0;
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
-      for (let j = this.bc.chain[i].transactions.length -1; j > -1; j--) {
+      for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
         if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
-                                     this.account.address)
-            && this.bc.chain[i].transactions[j].nonce > -1) {
+            this.account.address) && this.bc.chain[i].transactions[j].nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
           nonce = this.bc.chain[i].transactions[j].nonce + 1;
           break;
@@ -97,7 +98,7 @@ class BlockchainNode {
     const shardingInfo = {};
     const shards = this.db.getValue(ChainUtil.formatPath(
         [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
-    for (let encodedPath in shards) {
+    for (const encodedPath in shards) {
       const shardPath = ainUtil.decode(encodedPath);
       shardingInfo[encodedPath] = {
         [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
@@ -125,7 +126,7 @@ class BlockchainNode {
       txData.tx_list.forEach((subData) => {
         txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
       })
-      return { tx_list: txList };
+      return {tx_list: txList};
     }
     return this.createSingleTransaction(txData, isNoncedTransaction);
   }
@@ -163,10 +164,10 @@ class BlockchainNode {
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       if (!this.bc.backupDb.executeTransactionList(block.last_votes)) {
-        logger.error(`[node:executeChainOnBackupDb] Failed to execute last_votes`)
+        logger.error('[node:executeChainOnBackupDb] Failed to execute last_votes')
       }
       if (!this.bc.backupDb.executeTransactionList(transactions)) {
-        logger.error(`[node:executeChainOnBackupDb] Failed to execute transactions`)
+        logger.error('[node:executeChainOnBackupDb] Failed to execute transactions')
       }
       this.tp.updateNonceTrackers(transactions);
     });

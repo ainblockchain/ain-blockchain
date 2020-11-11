@@ -1,9 +1,10 @@
+/* eslint no-unused-vars: "off" */
 const WebSocketServer = require('ws').Server;
 const geoip = require('geoip-lite');
 const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
-const logger = require('./logger')('TRACKER_SERVER');
+const logger = require('../logger')('TRACKER_SERVER');
 
 const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
@@ -13,18 +14,18 @@ const WS_LIST = [];
 const MASK = 'xxx';
 
 // NOTE(seo): This is very useful when the server dies without any logs.
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', function(err) {
   logger.error(err);
 });
 
-process.on('SIGINT', _ => {
-  logger.info("Stopping tracking server....");
-  logger.info("Gracefully close websokets....");
+process.on('SIGINT', (_) => {
+  logger.info('Stopping tracking server....');
+  logger.info('Gracefully close websokets....');
   for (const ws of WS_LIST) {
     ws.close();
   }
-  logger.info("Gracefully close websoket server....");
-  server.close(_ => {
+  logger.info('Gracefully close websoket server....');
+  server.close((_) => {
     process.exit(0);
   });
 });
@@ -52,7 +53,8 @@ function numLivePeers(address) {
 }
 
 function printNodesInfo() {
-  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()} at ${Date.now()})`);
+  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()}` +
+      `at ${Date.now()})`);
   const nodeList = Object.values(PEER_NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
@@ -74,6 +76,7 @@ function printNodesInfo() {
   }
 }
 
+// XXX(minsu): need to be inverstigated. This is not using it now.
 // A util function for testing/debugging.
 function setTimer(ws, timeSec) {
   setTimeout(() => {
@@ -234,8 +237,9 @@ class PeerNode {
   static constructUnmanagedPeers(address) {
     const unmanagedPeers = {};
     Object.values(PEER_NODES).forEach((node) => {
-      if (node.address != address && node.managedPeers[address])
-      unmanagedPeers[node.address] = true;
+      if (node.address !== address && node.managedPeers[address]) {
+        unmanagedPeers[node.address] = true;
+      }
     });
     return unmanagedPeers;
   }
@@ -311,7 +315,7 @@ app.get('/', (req, res, next) => {
 app.get('/peer_nodes', (req, res, next) => {
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ result: PEER_NODES })
+    .send({result: PEER_NODES})
     .end();
 });
 

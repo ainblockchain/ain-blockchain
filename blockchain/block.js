@@ -20,7 +20,8 @@ const {
 const BlockFilePatterns = require('./block-file-patterns');
 
 class Block {
-  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp, stateProofHash, proposer, validators) {
+  constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
+      stateProofHash, proposer, validators) {
     this.last_votes = lastVotes;
     this.transactions = transactions;
     // Block's header
@@ -78,8 +79,10 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, epoch, stateProofHash, proposer, validators) {
-    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(), stateProofHash, proposer, validators);
+  static createBlock(lastHash, lastVotes, transactions, number, epoch,
+      stateProofHash, proposer, validators) {
+    return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(),
+        stateProofHash, proposer, validators);
   }
 
   static getFileName(block) {
@@ -95,16 +98,17 @@ class Block {
   static parse(blockInfo) {
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
-    return new Block(blockInfo['last_hash'], blockInfo['last_votes'],
-        blockInfo['transactions'], blockInfo['number'], blockInfo['epoch'],
-        blockInfo['timestamp'], blockInfo['stateProofHash'], blockInfo['proposer'], blockInfo['validators']);
+    return new Block(blockInfo.last_hash, blockInfo.last_votes,
+        blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
+        blockInfo.stateProofHash, blockInfo.proposer, blockInfo.validators);
   }
 
   static hasRequiredFields(block) {
     return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
-        block.transactions !== undefined && block.number !== undefined && block.epoch !== undefined &&
-        block.timestamp !== undefined && block.stateProofHash !== undefined &&
-        block.proposer !== undefined && block.validators !== undefined);
+        block.transactions !== undefined && block.number !== undefined &&
+        block.epoch !== undefined && block.timestamp !== undefined &&
+        block.stateProofHash !== undefined && block.proposer !== undefined &&
+        block.validators !== undefined);
   }
 
   static validateHashes(block) {
@@ -128,7 +132,7 @@ class Block {
     if (!Block.validateHashes(block)) return false;
     const nonceTracker = {};
     let transaction;
-    for (let i=0; i<block.transactions.length; i++) {
+    for (let i = 0; i < block.transactions.length; i++) {
       transaction = block.transactions[i];
       if (transaction.nonce < 0) {
         continue;
@@ -139,8 +143,8 @@ class Block {
       }
       if (transaction.nonce != nonceTracker[transaction.address] + 1) {
         logger.error(`Invalid noncing for ${transaction.address} ` +
-                     `Expected ${nonceTracker[transaction.address] + 1} ` +
-                     `Received ${transaction.nonce}`);
+            `Expected ${nonceTracker[transaction.address] + 1} ` +
+            `Received ${transaction.nonce}`);
         return false;
       }
       nonceTracker[transaction.address] = transaction.nonce;
@@ -191,7 +195,7 @@ class Block {
       }
     };
     const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
-    return (new Transaction({ signature: firstSig, transaction: firstTxData }));
+    return (new Transaction({signature: firstSig, transaction: firstTxData}));
   }
 
   static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
@@ -222,7 +226,7 @@ class Block {
       }
     };
     const secondSig = ainUtil.ecSignTransaction(secondTxData, keyBuffer);
-    return (new Transaction({ signature: secondSig, transaction: secondTxData }));
+    return (new Transaction({signature: secondSig, transaction: secondTxData}));
   }
 
   static getGenesisBlockData(genesisTime) {
@@ -240,11 +244,13 @@ class Block {
 
   static getGenesisStateProofHash() {
     const tempGenesisState = new DB(null, null, false, -1);
-    const genesisTransactions = Block.getGenesisBlockData(GenesisAccounts[AccountProperties.TIMESTAMP]);
+    const genesisTransactions = Block.getGenesisBlockData(
+        GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
       const res = tempGenesisState.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
-        logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}\nRESULT: ${JSON.stringify(res)}`)
+        logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
+            `\nRESULT: ${JSON.stringify(res)}`)
         return null;
       }
     }
@@ -266,8 +272,10 @@ class Block {
     const validators = GenesisWhitelist;
     const stateProofHash = Block.getGenesisStateProofHash();
     return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
-      stateProofHash, proposer, validators);
+        stateProofHash, proposer, validators);
   }
 }
 
-module.exports = {Block};
+module.exports = {
+  Block
+};
