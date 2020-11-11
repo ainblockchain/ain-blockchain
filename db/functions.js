@@ -65,10 +65,10 @@ class Functions {
           const params = Functions.convertPathVars2Params(matched.pathVars);
           logger.info(
               `  ==> Running native function '${functionConfig.function_id}' with\n` +
-            `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
-            `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-            `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
-            `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
+              `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
+              `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
+              `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
+              `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
           // Execute the matched native function.
           nativeFunction(
               value,
@@ -86,8 +86,8 @@ class Functions {
             functionConfig.event_listener in EventListenerWhitelist) {
           logger.info(
               `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
-            `of '${functionConfig.event_listener}' ` +
-            `with transaction: ${JSON.stringify(transaction, null, 2)}`)
+              `of '${functionConfig.event_listener}' ` +
+              `with transaction: ${JSON.stringify(transaction, null, 2)}`)
           return axios.post(functionConfig.event_listener, {
             transaction,
             function: functionConfig

@@ -98,8 +98,8 @@ class P2pServer {
     this.setUpIpAddresses()
     .then(() => {
       this.setIntervalForTrackerConnection();
-    // XXX(minsu): it won't run before updating p2p network.
-    // this.heartbeat();
+      // XXX(minsu): it won't run before updating p2p network.
+      // this.heartbeat();
     });
   }
 
