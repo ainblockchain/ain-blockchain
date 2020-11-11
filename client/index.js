@@ -411,7 +411,7 @@ function checkIfTransactionShouldBeNonced(input) {
 
 function isValidVersionMatch(ver) {
   return ver && semver.valid(semver.coerce(ver.min)) &&
-    (!ver.max || semver.valid(semver.coerce(ver.max)));
+      (!ver.max || semver.valid(semver.coerce(ver.max)));
 }
 
 function matchVersions(ver) {
