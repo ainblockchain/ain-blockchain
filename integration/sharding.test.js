@@ -4,7 +4,7 @@ const assert = chai.assert;
 const expect = chai.expect;
 const spawn = require("child_process").spawn;
 const ainUtil = require('@ainblockchain/ain-util');
-const sleep = require('system-sleep');
+const sleep = require('sleep').msleep;
 const syncRequest = require('sync-request');
 const jayson = require('jayson/promise');
 const rimraf = require("rimraf")
@@ -408,7 +408,7 @@ describe('Sharding', () => {
         expect(body.result['.write']).to.have.string(accounts.owner.address);
       })
     })
-  
+
     describe('DB owners', () => {
       it('sharding', () => {
         const body = JSON.parse(syncRequest('GET', server4 + '/get_owner?ref=/sharding/config')
@@ -1528,11 +1528,11 @@ describe('Sharding', () => {
           op_list: [
             {
               ref: `${shardingPath}/15/proof_hash`,
-              value: "0xPROOF_HASH_15" 
+              value: "0xPROOF_HASH_15"
             },
             {
               ref: `${shardingPath}/10/proof_hash`,
-              value: "0xPROOF_HASH_10" 
+              value: "0xPROOF_HASH_10"
             }
           ]
         }
