@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require("fs");
 const syncRequest = require('sync-request');
-const sleep = require('system-sleep');
+const sleep = require('sleep').msleep;
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;

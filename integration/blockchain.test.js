@@ -7,7 +7,7 @@ const jayson = require('jayson/promise');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
-const sleep = require('system-sleep');
+const sleep = require('sleep').msleep;
 const expect = chai.expect;
 // eslint-disable-next-line no-unused-vars
 const path = require('path');
@@ -328,7 +328,7 @@ describe('Blockchain', () => {
       });
     });
     */
-   
+
     // TODO(seo): Uncomment this. It's flaky.
     /*
     it('all having correct number of blocks', () => {
