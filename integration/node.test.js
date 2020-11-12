@@ -3,7 +3,7 @@ const assert = chai.assert;
 const expect = chai.expect;
 const _ = require("lodash");
 const spawn = require("child_process").spawn;
-const sleep = require('system-sleep');
+const sleep = require('sleep').msleep;
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
@@ -952,7 +952,7 @@ describe('Blockchain Node', () => {
       let res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
       waitUntilTxFinalized(SERVERS, res.tx_hash);
-      res = JSON.parse(syncRequest('POST', server1+'/set_value', 
+      res = JSON.parse(syncRequest('POST', server1+'/set_value',
                   {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
       waitUntilTxFinalized(SERVERS, res.tx_hash);
       res = JSON.parse(syncRequest('POST', server1+'/set_value',
