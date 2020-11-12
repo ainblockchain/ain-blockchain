@@ -2,7 +2,7 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const rimraf = require('rimraf');
-const sleep = require('system-sleep');
+const sleep = require('sleep').msleep;
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
@@ -214,7 +214,7 @@ describe('aFan DApp Test', () => {
       return set_value('afan', null)
       .then((res) => waitUntilTxFinalized(servers, res.result.tx_hash));
     });
-    
+
     it('ad propose', () => {
       const afanClient = new AfanClient(server2);
       const op_list = [
