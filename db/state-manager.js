@@ -18,15 +18,14 @@ class StateManager {
   }
 
   /**
-   * Returns the finalized version.
+   * Returns the finalized state root.
    */
   getFinalizedRoot() {
     return this.getRoot(this.finalizedVersion);
   }
 
   /**
-   * Returns the corresponding state root of the given version if available.
-   * Otherwise, returns null.
+   * Returns the state root of the given version if available, otherwise null.
    * 
    * @param {string} version 
    */
@@ -52,13 +51,31 @@ class StateManager {
   }
 
   /**
-   * Clones the state root of the given version to create a new root with the given new version.
+   * Clones the finalized version to create a new version.
+   * 
+   * @param {string} newVersion 
+   */
+  cloneFinalizedVersion(newVersion) {
+    if (this.hasVersion(newVersion)) {
+      return false;
+    }
+    const root = this.getFinalizedRoot();
+    const newRoot = makeCopyOfStateTree(root);
+    this.rootMap.set(newVersion, newRoot);
+    return true;
+  }
+
+  /**
+   * Clones the given version to create a new version.
    * 
    * @param {string} version 
    * @param {string} newVersion 
    */
   cloneVersion(version, newVersion) {
     if (!this.hasVersion(version)) {
+      return false;
+    }
+    if (this.hasVersion(newVersion)) {
       return false;
     }
     const root = this.getRoot(version);
@@ -68,7 +85,7 @@ class StateManager {
   }
 
   /**
-   * Deletes the state roots of the given version.
+   * Deletes the given version.
    * 
    * @param {string} version 
    */
@@ -76,15 +93,14 @@ class StateManager {
     if (!this.hasVersion(version)) {
       return false;
     }
-    this.rootMap.delete(version);
     const root = this.getRoot(version);
     deleteStateTree(root);
+    this.rootMap.delete(version);
     return true;
   }
 
   /**
-   * Finalize the given version by deleting all state roots of versions lower than
-   * the given version.
+   * Finalizes the given version.
    * 
    * @param {string} version 
    */
