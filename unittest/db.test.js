@@ -2873,12 +2873,12 @@ describe("Test proof with database", () => {
 
   describe("getProof", () => {
     it("tests proof with a null case", () => {
-      const rootNode = node.db.stateTree;
+      const rootNode = node.db.stateRoot;
       assert.deepEqual(null, node.db.getProof('/test/test'));
     });
 
     it("tests proof with owners, rules, values and functions", () => {
-      const rootNode = node.db.stateTree;
+      const rootNode = node.db.stateRoot;
       const ownersNode = node.db.getRefForReading(['owners']);
       const rulesNode = node.db.getRefForReading(['rules']);
       const valuesNode = node.db.getRefForReading(['values']);
