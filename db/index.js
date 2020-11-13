@@ -38,7 +38,7 @@ class DB {
   constructor(bc, tp, isFinalizedState, blockNumberSnapshot) {
     this.shardingPath = null;
     this.isRoot = null;
-    this.stateTree = new StateNode();
+    this.stateRoot = new StateNode();
     this.initDbData();
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this, tp);
@@ -110,7 +110,7 @@ class DB {
    * Returns reference to the input path for reading if exists, otherwise null.
    */
   getRefForReading(fullPath) {
-    let node = this.stateTree;
+    let node = this.stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
@@ -126,7 +126,7 @@ class DB {
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
   getRefForWriting(fullPath) {
-    let node = this.stateTree;
+    let node = this.stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
@@ -147,7 +147,7 @@ class DB {
     const stateTree = jsObjectToStateTree(stateObj);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
-      this.stateTree = stateTree;
+      this.stateRoot = stateTree;
     } else {
       const label = fullPath[fullPath.length - 1];
       const parent = this.getRefForWriting(pathToParent);
@@ -159,7 +159,7 @@ class DB {
       setProofHashForStateTree(stateTree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForPath(pathToParent, this.stateTree);
+      updateProofHashForPath(pathToParent, this.stateRoot);
     }
   }
 
@@ -181,7 +181,7 @@ class DB {
   }
 
   removeEmptyNodes(fullPath) {
-    return this.removeEmptyNodesRecursive(fullPath, 0, this.stateTree);
+    return this.removeEmptyNodesRecursive(fullPath, 0, this.stateRoot);
   }
 
   readDatabase(fullPath) {
@@ -240,7 +240,7 @@ class DB {
   // TODO(seo): Consider supporting global path for getProof().
   getProof(fullPath) {
     const parsedPath = ChainUtil.parsePath(fullPath);
-    let node = this.stateTree;
+    let node = this.stateRoot;
     const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
     for (const label of parsedPath) {
@@ -362,7 +362,7 @@ class DB {
       return {code: 2, error_message: `No .write permission on: ${valuePath}`};
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
-    const isWritablePath = isWritablePathWithSharding(fullPath, this.stateTree);
+    const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
     if (!isWritablePath.isValid) {
       if (isGlobal) {
         // There is nothing to do.
@@ -592,7 +592,7 @@ class DB {
   }
 
   setDbToSnapshot(snapshot) {
-    this.stateTree = makeCopyOfStateTree(snapshot.stateTree);
+    this.stateRoot = makeCopyOfStateTree(snapshot.stateRoot);
   }
 
   executeOperation(op, address, timestamp, tx) {
@@ -741,7 +741,7 @@ class DB {
 
   matchFunctionPath(parsedValuePath) {
     return this.matchFunctionPathRecursive(
-        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
+        parsedValuePath, 0, this.stateRoot.getChild(PredefinedDbPaths.FUNCTIONS_ROOT));
   }
 
   getSubtreeFunctionsRecursive(depth, curFuncNode) {
@@ -888,7 +888,7 @@ class DB {
 
   matchRulePath(parsedValuePath) {
     return this.matchRulePathRecursive(
-        parsedValuePath, 0, this.stateTree.getChild(PredefinedDbPaths.RULES_ROOT));
+        parsedValuePath, 0, this.stateRoot.getChild(PredefinedDbPaths.RULES_ROOT));
   }
 
   getSubtreeRulesRecursive(depth, curRuleNode) {
@@ -1016,7 +1016,7 @@ class DB {
 
   matchOwnerPath(parsedRefPath) {
     return this.matchOwnerPathRecursive(
-        parsedRefPath, 0, this.stateTree.getChild(PredefinedDbPaths.OWNERS_ROOT));
+        parsedRefPath, 0, this.stateRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
   matchOwnerForParsedPath(parsedRefPath) {
