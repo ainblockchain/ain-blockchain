@@ -106,6 +106,7 @@ class Blockchain {
       throw Error('Already set backupdb');
     }
     this.backupDb = backupDb;
+    this.backupDb.initDbData();
   }
 
   lastBlock() {

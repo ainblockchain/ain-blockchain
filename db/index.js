@@ -39,7 +39,6 @@ class DB {
     this.shardingPath = null;
     this.isRoot = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
-    this.initDbData();
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this, tp);
     this.bc = bc;
@@ -593,6 +592,10 @@ class DB {
 
   setDbToSnapshot(snapshot) {
     this.stateRoot = makeCopyOfStateTree(snapshot.stateRoot);
+  }
+
+  setDbToSnapshot2(stateRoot) {
+    this.stateRoot = makeCopyOfStateTree(stateRoot);
   }
 
   executeOperation(op, address, timestamp, tx) {
