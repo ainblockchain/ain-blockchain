@@ -1,18 +1,28 @@
 const Functions = require('../db/functions');
-const StateNode = require('../db/state-node');
-const DB = require('../db');
+const rimraf = require('rimraf');
 const chai = require('chai');
-const nock = require('nock');
-
 const assert = chai.assert;
 const expect = chai.expect;
+const nock = require('nock');
+const {
+  BLOCKCHAINS_DIR,
+} = require('../constants')
+const BlockchainNode = require('../node')
+const {
+  setNodeForTesting,
+} = require('./test-util');
 
 describe("Functions", () => {
   describe("triggerFunctions", () => {
+    let node;
     let functions;
 
     beforeEach(() => {
-      const db = new DB(new StateNode(), null, null, false, 0);
+      rimraf.sync(BLOCKCHAINS_DIR);
+
+      node = new BlockchainNode();
+      setNodeForTesting(node);
+
       const functionConfig = {
         ".function": {
           "function_type": "REST",
@@ -21,13 +31,18 @@ describe("Functions", () => {
           "function_id": "0x12345"
         }
       };
-      db.setFunction("test/test_function/some/path", functionConfig);
-      functions = new Functions(db, null);
+      const result = node.db.setFunction("test/test_function/some/path", functionConfig);
+      expect(result).to.equal(true);
+      functions = new Functions(node.db, null);
       const response = { 'success': true };
       nock('https://events.ainetwork.ai')
         .post('/trigger')
         .reply(200, response);
     })
+
+    afterEach(() => {
+      rimraf.sync(BLOCKCHAINS_DIR);
+    });
 
     it("when trigger event", () => {
       transaction = {
@@ -39,8 +54,9 @@ describe("Functions", () => {
           "value": 1000
         }
       }
-      return functions.triggerFunctions(["test", "test_function", "some", "path"], null, null, null,
-          {transaction}).then((response) => {
+      return functions.triggerFunctions(
+        ["test", "test_function", "some", "path"], null, null, null, {transaction}
+      ).then((response) => {
         expect(response.data.success).to.equal(true);
       });
     })

@@ -486,21 +486,6 @@ describe('Blockchain', () => {
   });
 
   describe('Block APIs', () => {
-    let db;
-
-    before(() => {
-      address = JSON.parse(syncRequest('GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
-    });
-
-    beforeEach(() =>{
-      rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-      db = new DB(new StateNode(), null, null, false, 0);
-      sentOperations.forEach((op) => {
-        const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
-        db.executeTransaction({ operation });
-      });
-    });
-
     it('ain_getBlockHeadersList', () => {
       sendTransactions(sentOperations);
       waitForNewBlocks(server1);

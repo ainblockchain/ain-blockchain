@@ -8,12 +8,13 @@ const {
   ShardingProperties,
   ShardingProtocols,
   GenesisAccounts,
-  GenesisSharding
+  GenesisSharding,
+  StateVersions,
 } = require('../constants');
 const ChainUtil = require('../chain-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
-const StateNode = require('../db/state-node');
+const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
@@ -37,7 +38,8 @@ class BlockchainNode {
     this.urlExternal = null;
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
-    this.db = new DB(new StateNode(), this.bc, this.tp, false);
+    this.stateManager = new StateManager();
+    this.db = null;
     this.nonce = null;
     this.initialized = false;
   }
@@ -64,10 +66,11 @@ class BlockchainNode {
   init(isFirstNode) {
     logger.info(`Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.bc.setBackupDb(new DB(new StateNode(), this.bc, this.tp, true));
+    this.bc.setBackupDb(new DB(this.stateManager.getFinalizedRoot(), this.bc, this.tp, true));
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
-    this.db.setDbToSnapshot(this.bc.backupDb);
+    const clonedRoot = this.stateManager.cloneFinalizedVersion(StateVersions.NODE);
+    this.db = new DB(clonedRoot, this.bc, this.tp, false);
     this.db.executeTransactionList(this.tp.getValidTransactions());
     this.initialized = true;
     return lastBlockWithoutProposal;
@@ -97,17 +100,19 @@ class BlockchainNode {
 
   getSharding() {
     const shardingInfo = {};
-    const shards = this.db.getValue(ChainUtil.formatPath(
-        [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
-    for (const encodedPath in shards) {
-      const shardPath = ainUtil.decode(encodedPath);
-      shardingInfo[encodedPath] = {
-        [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
-            shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
-        [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
-            shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
-            ShardingProperties.LATEST)),
-      };
+    if (this.db) {
+      const shards = this.db.getValue(ChainUtil.formatPath(
+          [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
+      for (const encodedPath in shards) {
+        const shardPath = ainUtil.decode(encodedPath);
+        shardingInfo[encodedPath] = {
+          [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
+              shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+          [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
+              shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+              ShardingProperties.LATEST)),
+        };
+      }
     }
     return shardingInfo;
   }
