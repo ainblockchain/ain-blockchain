@@ -13,6 +13,7 @@ const {
 const ChainUtil = require('../chain-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
+const StateNode = require('../db/state-node');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
@@ -36,7 +37,7 @@ class BlockchainNode {
     this.urlExternal = null;
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
-    this.db = new DB(this.bc, this.tp, false);
+    this.db = new DB(new StateNode(), this.bc, this.tp, false);
     this.nonce = null;
     this.initialized = false;
   }
@@ -63,7 +64,7 @@ class BlockchainNode {
   init(isFirstNode) {
     logger.info(`Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.bc.setBackupDb(new DB(this.bc, this.tp, true));
+    this.bc.setBackupDb(new DB(new StateNode(), this.bc, this.tp, true));
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
     this.db.setDbToSnapshot(this.bc.backupDb);

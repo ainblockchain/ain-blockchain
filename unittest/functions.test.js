@@ -1,4 +1,5 @@
 const Functions = require('../db/functions');
+const StateNode = require('../db/state-node');
 const DB = require('../db');
 const chai = require('chai');
 const nock = require('nock');
@@ -11,7 +12,7 @@ describe("Functions", () => {
     let functions;
 
     beforeEach(() => {
-      const db = new DB(null, null, false, 0);
+      const db = new DB(new StateNode(), null, null, false, 0);
       const functionConfig = {
         ".function": {
           "function_type": "REST",

@@ -7,7 +7,7 @@ class StateManager {
   constructor() {
     this.rootMap = new Map();
     this.finalizedVersion = INITIAL_VERSION;
-    this.rootMap.set(INITIAL_VERSION, new StateNode());
+    this.setRoot(INITIAL_VERSION, new StateNode());
   }
 
   /**
@@ -27,7 +27,7 @@ class StateManager {
   /**
    * Returns the state root of the given version if available, otherwise null.
    * 
-   * @param {string} version 
+   * @param {string} version state version
    */
   getRoot(version) {
     const root = this.rootMap.get(version);
@@ -35,9 +35,19 @@ class StateManager {
   }
 
   /**
+   * Sets the state root of the given version.
+   * 
+   * @param {string} version state version
+   * @param {StateNode} root state root
+   */
+  setRoot(version, root) {
+    this.rootMap.set(version, root);
+  }
+
+  /**
    * Returns true if the given version exists, otherwise false.
    * 
-   * @param {string} version 
+   * @param {string} version state version
    */
   hasVersion(version) {
     return this.rootMap.has(version);
@@ -63,8 +73,8 @@ class StateManager {
   /**
    * Clones the given version to create a new version.
    * 
-   * @param {string} version 
-   * @param {string} newVersion 
+   * @param {string} version state version
+   * @param {string} newVersion new state version
    */
   cloneVersion(version, newVersion) {
     if (!this.hasVersion(version)) {
@@ -85,7 +95,7 @@ class StateManager {
   /**
    * Deletes the given version.
    * 
-   * @param {string} version 
+   * @param {string} version state version 
    */
   deleteVersion(version) {
     if (!this.hasVersion(version)) {
@@ -103,7 +113,7 @@ class StateManager {
   /**
    * Finalizes the given version.
    * 
-   * @param {string} version 
+   * @param {string} version state version
    */
   finalizeVersion(version) {
     if (!this.hasVersion(version)) {
