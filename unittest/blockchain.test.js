@@ -6,7 +6,7 @@ const { BLOCKCHAINS_DIR } = require('../constants');
 const Blockchain = require('../blockchain/');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const { setDbForTesting, getTransaction } = require('./test-util')
+const { setNodeForTesting, getTransaction } = require('./test-util')
 
 describe('Blockchain', () => {
   let node1, node2;
@@ -15,9 +15,9 @@ describe('Blockchain', () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node1 = new BlockchainNode();
-    setDbForTesting(node1, 0);
+    setNodeForTesting(node1, 0);
     node2 = new BlockchainNode();
-    setDbForTesting(node2, 1);
+    setNodeForTesting(node2, 1);
   });
 
   afterEach(() => {

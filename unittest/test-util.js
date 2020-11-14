@@ -13,7 +13,7 @@ function readConfigFile(filePath) {
   return JSON.parse(fs.readFileSync(filePath));
 }
 
-function setDbForTesting(
+function setNodeForTesting(
     node, accountIndex = 0, skipTestingConfig = false, skipShardingConfig = true) {
   node.setAccountForTesting(accountIndex);
 
@@ -107,7 +107,7 @@ function waitUntilNodeSyncs(server) {
 
 module.exports = {
   readConfigFile,
-  setDbForTesting,
+  setNodeForTesting,
   getTransaction,
   addBlock,
   waitUntilTxFinalized,
