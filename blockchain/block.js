@@ -5,6 +5,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../chain-util');
 const Transaction = require('../tx-pool/transaction');
+const StateNode = require('../db/state-node');
 const DB = require('../db');
 const {
   PredefinedDbPaths,
@@ -243,7 +244,7 @@ class Block {
   }
 
   static getGenesisStateProofHash() {
-    const tempGenesisState = new DB(null, null, false, -1);
+    const tempGenesisState = new DB(new StateNode(), null, null, false, -1);
     const genesisTransactions = Block.getGenesisBlockData(
         GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
