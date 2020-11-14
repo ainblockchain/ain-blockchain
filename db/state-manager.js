@@ -56,13 +56,8 @@ class StateManager {
    * @param {string} newVersion 
    */
   cloneFinalizedVersion(newVersion) {
-    if (this.hasVersion(newVersion)) {
-      return false;
-    }
-    const root = this.getFinalizedRoot();
-    const newRoot = makeCopyOfStateTree(root);
-    this.rootMap.set(newVersion, newRoot);
-    return true;
+    const finalizedVersion = this.getFinalizedVersion();
+    return this.cloneVersion(finalizedVersion, newVersion);
   }
 
   /**
@@ -79,6 +74,9 @@ class StateManager {
       return false;
     }
     const root = this.getRoot(version);
+    if (root === null) {
+      return false;
+    }
     const newRoot = makeCopyOfStateTree(root);
     this.rootMap.set(newVersion, newRoot);
     return true;
@@ -94,6 +92,9 @@ class StateManager {
       return false;
     }
     const root = this.getRoot(version);
+    if (root === null) {
+      return false;
+    }
     deleteStateTree(root);
     this.rootMap.delete(version);
     return true;
@@ -105,7 +106,11 @@ class StateManager {
    * @param {string} version 
    */
   finalizeVersion(version) {
+    if (!this.hasVersion(version)) {
+      return false;
+    }
     this.finalizeVersion = version;
+    return true;
   }
 }
 
