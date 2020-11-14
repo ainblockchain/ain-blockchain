@@ -298,6 +298,15 @@ const DefaultValues = {
 }
 
 /**
+ * State versions.
+ * @enum {string}
+ */
+const StateVersions = {
+  INIT: 'INIT',
+  NODE: 'NODE',
+};
+
+/**
  * Feature flags.
  */
 const FeatureFlags = {
@@ -493,6 +502,7 @@ module.exports = {
   WriteDbOperations,
   TransactionStatus,
   DefaultValues,
+  StateVersions,
   FeatureFlags,
   GenesisToken,
   GenesisAccounts,

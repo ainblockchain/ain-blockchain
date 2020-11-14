@@ -1,13 +1,15 @@
 const StateNode = require('./state-node');
-const { deleteStateTree } = require('./state-util');
-
-const INITIAL_VERSION = "init";
+const {
+  makeCopyOfStateTree,
+  deleteStateTree,
+} = require('./state-util');
+const { StateVersions } = require('../constants');
 
 class StateManager {
   constructor() {
     this.rootMap = new Map();
-    this.finalizedVersion = INITIAL_VERSION;
-    this.setRoot(INITIAL_VERSION, new StateNode());
+    this.setRoot(StateVersions.INIT, new StateNode());
+    this.finalizeVersion(StateVersions.INIT);
   }
 
   /**
@@ -66,8 +68,7 @@ class StateManager {
    * @param {string} newVersion 
    */
   cloneFinalizedVersion(newVersion) {
-    const finalizedVersion = this.getFinalizedVersion();
-    return this.cloneVersion(finalizedVersion, newVersion);
+    return this.cloneVersion(this.getFinalizedVersion(), newVersion);
   }
 
   /**
@@ -78,18 +79,18 @@ class StateManager {
    */
   cloneVersion(version, newVersion) {
     if (!this.hasVersion(version)) {
-      return false;
+      return null;
     }
     if (this.hasVersion(newVersion)) {
-      return false;
+      return null;
     }
     const root = this.getRoot(version);
     if (root === null) {
-      return false;
+      return null;
     }
     const newRoot = makeCopyOfStateTree(root);
-    this.rootMap.set(newVersion, newRoot);
-    return true;
+    this.setRoot(newVersion, newRoot);
+    return newRoot;
   }
 
   /**
@@ -99,27 +100,35 @@ class StateManager {
    */
   deleteVersion(version) {
     if (!this.hasVersion(version)) {
-      return false;
+      return null;
+    }
+    if (version === this.finalizedVersion) {
+      return null;
     }
     const root = this.getRoot(version);
     if (root === null) {
-      return false;
+      return null;
     }
     deleteStateTree(root);
     this.rootMap.delete(version);
-    return true;
+    return root;
   }
 
   /**
-   * Finalizes the given version.
+   * Sets a the given version finalized and deletes the existing finalized version.
    * 
    * @param {string} version state version
    */
   finalizeVersion(version) {
+    if (version === this.finalizedVersion) {
+      return false;
+    }
     if (!this.hasVersion(version)) {
       return false;
     }
-    this.finalizeVersion = version;
+    const finalizedVersion = this.getFinalizedVersion();
+    this.finalizedVersion = version;
+    this.deleteVersion(finalizedVersion);
     return true;
   }
 }
