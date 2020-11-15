@@ -8,6 +8,7 @@ const {
   ProofProperties,
   ShardingProperties,
   GenesisSharding,
+  FeatureFlags,
   LIGHTWEIGHT,
   buildOwnerPermissions,
 } = require('../constants');
@@ -27,7 +28,6 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
-  makeCopyOfStateTree,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('./state-util');
@@ -126,40 +126,49 @@ class DB {
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
   getRefForWriting(fullPath) {
-    let node = this.stateRoot;
-    for (let i = 0; i < fullPath.length; i++) {
-      const label = fullPath[i];
-      if (node.hasChild(label)) {
-        node = node.getChild(label);
-        if (node.getIsLeaf()) {
-          node.resetValue();
+    let node = null;
+    if (FeatureFlags.enableStateVersionOpt) {
+      // TODO(): Implement this.
+    } else {
+      node = this.stateRoot;
+      for (let i = 0; i < fullPath.length; i++) {
+        const label = fullPath[i];
+        if (node.hasChild(label)) {
+          node = node.getChild(label);
+          if (node.getIsLeaf()) {
+            node.resetValue();
+          }
+        } else {
+          const child = new StateNode();
+          node.setChild(label, child);
+          node = child;
         }
-      } else {
-        const child = new StateNode();
-        node.setChild(label, child);
-        node = child;
       }
     }
     return node;
   }
 
   writeDatabase(fullPath, stateObj) {
-    const stateTree = jsObjectToStateTree(stateObj);
-    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
-    if (fullPath.length === 0) {
-      this.stateRoot = stateTree;
+    if (FeatureFlags.enableStateVersionOpt) {
+      // TODO(): Implement this.
     } else {
-      const label = fullPath[fullPath.length - 1];
-      const parent = this.getRefForWriting(pathToParent);
-      parent.setChild(label, stateTree);
-    }
-    if (isEmptyNode(stateTree)) {
-      this.removeEmptyNodes(fullPath);
-    } else if (!LIGHTWEIGHT) {
-      setProofHashForStateTree(stateTree);
-    }
-    if (!LIGHTWEIGHT) {
-      updateProofHashForPath(pathToParent, this.stateRoot);
+      const stateTree = jsObjectToStateTree(stateObj);
+      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
+      if (fullPath.length === 0) {
+        this.stateRoot = stateTree;
+      } else {
+        const label = fullPath[fullPath.length - 1];
+        const parent = this.getRefForWriting(pathToParent);
+        parent.setChild(label, stateTree);
+      }
+      if (isEmptyNode(stateTree)) {
+        this.removeEmptyNodes(fullPath);
+      } else if (!LIGHTWEIGHT) {
+        setProofHashForStateTree(stateTree);
+      }
+      if (!LIGHTWEIGHT) {
+        updateProofHashForPath(pathToParent, this.stateRoot);
+      }
     }
   }
 
