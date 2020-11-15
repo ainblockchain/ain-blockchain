@@ -311,7 +311,8 @@ const StateVersions = {
  * Feature flags.
  */
 const FeatureFlags = {
-  enableStateManager: true,
+  // Enables state version optimization.
+  enableStateVersionOpt: false,
 }
 
 const GenesisToken = getGenesisConfig('genesis_token.json');

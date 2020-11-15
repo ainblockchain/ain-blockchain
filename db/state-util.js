@@ -192,7 +192,7 @@ function deleteStateTree(root) {
 }
 
 function makeCopyOfStateTree(root) {
-  const copy = root.makeCopy();
+  const copy = root.clone();
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     copy.setChild(label, makeCopyOfStateTree(childNode));
