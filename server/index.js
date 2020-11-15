@@ -33,6 +33,7 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
+  StateVersions,
   buildOwnerPermissions,
   LIGHTWEIGHT
 } = require('../constants');
@@ -397,7 +398,8 @@ class P2pServer {
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
             if (this.node.bc.merge(data.chainSubsection)) {
-              this.node.db.setDbToSnapshot(this.node.bc.backupDb);
+              const newVersion = `${StateVersions.NODE}:${this.node.bc.lastBlockNumber()}`;
+              this.node.syncDb(newVersion);
               data.chainSubsection.forEach((block) => {
                 this.node.tp.cleanUpForNewBlock(block);
                 this.node.tp.updateNonceTrackers(block.transactions);

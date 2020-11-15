@@ -35,10 +35,11 @@ const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor(stateRoot, bc, tp, isFinalizedState, blockNumberSnapshot) {
+  constructor(stateRoot, stateVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
     this.shardingPath = null;
     this.isRoot = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
+    this.stateVersion = stateVersion;
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this, tp);
     this.bc = bc;
@@ -594,8 +595,9 @@ class DB {
     this.stateRoot = makeCopyOfStateTree(snapshot.stateRoot);
   }
 
-  setDbToSnapshot2(stateRoot) {
-    this.stateRoot = makeCopyOfStateTree(stateRoot);
+  setStateVersion(stateRoot, stateVersion) {
+    this.stateRoot = stateRoot;
+    this.stateVersion = stateVersion;
   }
 
   executeOperation(op, address, timestamp, tx) {

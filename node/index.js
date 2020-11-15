@@ -39,7 +39,7 @@ class BlockchainNode {
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
-    this.db = null;
+    this.db = new DB(null, null, this.bc, this.tp, false);
     this.nonce = null;
     this.initialized = false;
   }
@@ -66,14 +66,29 @@ class BlockchainNode {
   init(isFirstNode) {
     logger.info(`Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.bc.setBackupDb(new DB(this.stateManager.getFinalizedRoot(), this.bc, this.tp, true));
+    this.bc.setBackupDb(
+        new DB(this.stateManager.getFinalizedRoot(), this.stateManager.getFinalizedVersion(),
+            this.bc, this.tp, true));
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
-    const clonedRoot = this.stateManager.cloneFinalizedVersion(StateVersions.NODE);
-    this.db = new DB(clonedRoot, this.bc, this.tp, false);
+    const newVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
+    this.syncDb(newVersion);
     this.db.executeTransactionList(this.tp.getValidTransactions());
     this.initialized = true;
     return lastBlockWithoutProposal;
+  }
+
+  syncDb(newVersion) {
+    const oldVersion = this.db.stateVersion;
+    if (newVersion === oldVersion) {
+      return false;
+    }
+    const clonedRoot = this.stateManager.cloneFinalizedVersion(newVersion);
+    this.db.setStateVersion(clonedRoot, newVersion);
+    if (oldVersion) {
+      this.stateManager.deleteVersion(oldVersion);
+    }
+    return true;
   }
 
   getNonce() {
@@ -100,7 +115,7 @@ class BlockchainNode {
 
   getSharding() {
     const shardingInfo = {};
-    if (this.db) {
+    if (this.db && this.db.stateRoot) {
       const shards = this.db.getValue(ChainUtil.formatPath(
           [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
       for (const encodedPath in shards) {
@@ -158,7 +173,8 @@ class BlockchainNode {
   addNewBlock(block) {
     if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
-      this.db.setDbToSnapshot(this.bc.backupDb);
+      const newVersion = `${StateVersions.NODE}:${block.number}`;
+      this.syncDb(newVersion);
       this.tp.updateNonceTrackers(block.transactions);
       this.tp.checkRemoteTransactions();
       return true;
