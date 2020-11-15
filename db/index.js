@@ -603,8 +603,8 @@ class DB {
   /**
    * Sets state version with its state root.
    * 
-   * @param {*} stateRoot state root
-   * @param {*} stateVersion state version
+   * @param {StateNode} stateRoot state root
+   * @param {string} stateVersion state version
    */
   setStateVersion(stateRoot, stateVersion) {
     this.stateRoot = stateRoot;
