@@ -8,8 +8,8 @@ const { StateVersions } = require('../constants');
 class StateManager {
   constructor() {
     this.rootMap = new Map();
-    this.setRoot(StateVersions.INIT, new StateNode());
-    this.finalizeVersion(StateVersions.INIT);
+    this.setRoot(StateVersions.FINAL, new StateNode());
+    this.finalizeVersion(StateVersions.FINAL);
   }
 
   /**
