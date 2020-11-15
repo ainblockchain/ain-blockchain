@@ -25,6 +25,13 @@ describe("state-manager", () => {
   });
 
   describe("Get APIs", () => {
+    it("numVersions", () => {
+      expect(manager.numVersions()).to.equal(1);
+      const newRoot = new StateNode();
+      manager.setRoot('new version', newRoot);
+      expect(manager.numVersions()).to.equal(2);
+    });
+
     it("getFinalizedVersion", () => {
       expect(manager.getFinalizedVersion()).to.equal(StateVersions.FINAL);
     });
@@ -51,11 +58,11 @@ describe("state-manager", () => {
     it("setRoot", () => {
       const newRoot = new StateNode();
       newRoot.setValue('some value');
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
 
       manager.setRoot('new version', newRoot);
 
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
@@ -67,13 +74,13 @@ describe("state-manager", () => {
       const finalizedRoot = manager.getFinalizedRoot();
       finalizedRoot.setValue('some value');
       assert.deepEqual(stateTreeToJsObject(manager.getFinalizedRoot()), 'some value');
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
 
       const clonedRoot = manager.cloneFinalizedVersion('new version');
 
       expect(clonedRoot).to.not.equal(null);
       assert.deepEqual(clonedRoot, manager.getRoot('new version'));
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
@@ -85,14 +92,14 @@ describe("state-manager", () => {
       const newRoot = new StateNode();
       newRoot.setValue('some value');
       manager.setRoot('new version', newRoot);
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
 
       const clonedRoot = manager.cloneVersion('new version', 'new new version');
 
       expect(clonedRoot).to.not.equal(null);
       assert.deepEqual(clonedRoot, manager.getRoot('new new version'));
-      expect(manager.rootMap.size).to.equal(3);
+      expect(manager.numVersions()).to.equal(3);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new new version')).to.equal(true);
       assert.deepEqual(
@@ -104,9 +111,9 @@ describe("state-manager", () => {
     it("deleteVersion w/ non-finalized version", () => {
       const newRoot = new StateNode();
       newRoot.setValue('some value');
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
       manager.setRoot('new version', newRoot);
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
@@ -114,7 +121,7 @@ describe("state-manager", () => {
 
       expect(manager.deleteVersion('new version')).to.not.equal(null);
 
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(false);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL]);
@@ -124,9 +131,9 @@ describe("state-manager", () => {
     it("deleteVersion w/ finalized version", () => {
       const newRoot = new StateNode();
       newRoot.setValue('some value');
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
       manager.setRoot('new version', newRoot);
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
@@ -134,7 +141,7 @@ describe("state-manager", () => {
 
       expect(manager.deleteVersion(StateVersions.FINAL)).to.equal(null);
 
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
@@ -144,9 +151,9 @@ describe("state-manager", () => {
     it("finalizeVersion w/ non-finalized version", () => {
       const newRoot = new StateNode();
       newRoot.setValue('some value');
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
       manager.setRoot('new version', newRoot);
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
@@ -154,7 +161,7 @@ describe("state-manager", () => {
 
       expect(manager.finalizeVersion('new version')).to.equal(true);
 
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(false);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), ['new version']);
@@ -164,9 +171,9 @@ describe("state-manager", () => {
     it("finalizeVersion w/ finalized version", () => {
       const newRoot = new StateNode();
       newRoot.setValue('some value');
-      expect(manager.rootMap.size).to.equal(1);
+      expect(manager.numVersions()).to.equal(1);
       manager.setRoot('new version', newRoot);
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
@@ -174,7 +181,7 @@ describe("state-manager", () => {
 
       expect(manager.finalizeVersion(StateVersions.FINAL)).to.equal(false);
 
-      expect(manager.rootMap.size).to.equal(2);
+      expect(manager.numVersions()).to.equal(2);
       expect(manager.hasVersion(StateVersions.FINAL)).to.equal(true);
       expect(manager.hasVersion('new version')).to.equal(true);
       assert.deepEqual(manager.getVersionList(), [StateVersions.FINAL, 'new version']);
