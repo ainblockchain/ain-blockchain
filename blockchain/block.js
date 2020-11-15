@@ -244,19 +244,19 @@ class Block {
   }
 
   static getGenesisStateProofHash() {
-    const tempGenesisState = new DB(new StateNode(), null, null, null, false, -1);
-    tempGenesisState.initDbStates();
+    const tempGenesisDb = new DB(new StateNode(), null, null, null, false, -1);
+    tempGenesisDb.initDbStates();
     const genesisTransactions = Block.getGenesisBlockData(
         GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
-      const res = tempGenesisState.executeTransaction(tx);
+      const res = tempGenesisDb.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)
         return null;
       }
     }
-    return tempGenesisState.getProof('/')[ProofProperties.PROOF_HASH];
+    return tempGenesisDb.getProof('/')[ProofProperties.PROOF_HASH];
   }
 
   static genesis() {
