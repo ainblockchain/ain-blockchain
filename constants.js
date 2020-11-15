@@ -304,6 +304,7 @@ const DefaultValues = {
 const StateVersions = {
   FINAL: 'FINAL',
   NODE: 'NODE',
+  CONSENSUS: 'CONSENSUS',
 };
 
 /**

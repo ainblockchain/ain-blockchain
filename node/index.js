@@ -23,10 +23,11 @@ const isShardChain =
 
 class BlockchainNode {
   constructor() {
+    const LOG_HEADER = 'constructor';
     // TODO(lia): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    logger.info(`Initializing a new blockchain node with account: ` +
+    logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
     this.isShardReporter =
         isShardChain &&
@@ -50,12 +51,13 @@ class BlockchainNode {
   }
 
   setIpAddresses(ipAddrInternal, ipAddrExternal) {
+    const LOG_HEADER = 'setIpAddresses';
     this.ipAddrInternal = ipAddrInternal;
     this.ipAddrExternal = ipAddrExternal;
     this.urlInternal = BlockchainNode.getNodeUrl(ipAddrInternal);
     this.urlExternal = BlockchainNode.getNodeUrl(ipAddrExternal);
     logger.info(
-        `Set Node URLs to '${this.urlInternal}' (internal), ` +
+        `[${LOG_HEADER}] Set Node URLs to '${this.urlInternal}' (internal), ` +
         `'${this.urlExternal}' (external)`);
   }
 
@@ -64,7 +66,8 @@ class BlockchainNode {
   }
 
   init(isFirstNode) {
-    logger.info(`Initializing node..`);
+    const LOG_HEADER = 'init';
+    logger.info(`[${LOG_HEADER}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
     this.bc.setBackupDb(
         new DB(this.stateManager.getFinalizedRoot(), this.stateManager.getFinalizedVersion(),
@@ -79,8 +82,10 @@ class BlockchainNode {
   }
 
   syncDb(newVersion) {
+    const LOG_HEADER = 'syncDb';
     const oldVersion = this.db.stateVersion;
     if (newVersion === oldVersion) {
+      logger.info(`[${LOG_HEADER}] Already sync'ed.`);
       return false;
     }
     const clonedRoot = this.stateManager.cloneFinalizedVersion(newVersion);
@@ -92,6 +97,7 @@ class BlockchainNode {
   }
 
   getNonce() {
+    const LOG_HEADER = 'getNonce';
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
     //               publicKey
     let nonce = 0;
@@ -109,7 +115,7 @@ class BlockchainNode {
       }
     }
 
-    logger.info(`Setting nonce to ${nonce}`);
+    logger.info(`[${LOG_HEADER}] Setting nonce to ${nonce}`);
     return nonce;
   }
 
@@ -183,13 +189,14 @@ class BlockchainNode {
   }
 
   executeChainOnBackupDb() {
+    const LOG_HEADER = 'executeChainOnBackupDb';
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       if (!this.bc.backupDb.executeTransactionList(block.last_votes)) {
-        logger.error('[node:executeChainOnBackupDb] Failed to execute last_votes')
+        logger.error(`[${LOG_HEADER}] Failed to execute last_votes`)
       }
       if (!this.bc.backupDb.executeTransactionList(transactions)) {
-        logger.error('[node:executeChainOnBackupDb] Failed to execute transactions')
+        logger.error(`[${LOG_HEADER}] Failed to execute transactions`)
       }
       this.tp.updateNonceTrackers(transactions);
     });

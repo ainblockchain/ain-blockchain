@@ -149,9 +149,11 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] non-existing version: ${version}`);
       return false;
     }
-    const finalizedVersion = this.getFinalizedVersion();
+    const oldVersion = this.getFinalizedVersion();
     this.finalizedVersion = version;
-    this.deleteVersion(finalizedVersion);
+    if (this.hasVersion(oldVersion)) {
+      this.deleteVersion(oldVersion);
+    }
     return true;
   }
 }
