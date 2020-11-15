@@ -271,7 +271,7 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
+        this.node.bc.backupDb : this.blockPool.hashToDb.get(lastBlock.hash);
     const tempState = new DB(new StateNode(), null, null, null, false, lastBlock.number - 1);
     tempState.setDbToSnapshot(prevState);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
@@ -457,7 +457,7 @@ class Consensus {
         }
       }
       let prevState = prevBlock.number === this.node.bc.lastBlockNumber() ?
-          this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
+          this.node.bc.backupDb : this.blockPool.hashToDb.get(last_hash);
       if (!prevState) {
         prevState = this.getStateSnapshot(prevBlock);
         if (!prevState) {
@@ -499,7 +499,7 @@ class Consensus {
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     // TODO(lia): Implement state version control
     let prevState = prevBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
+        this.node.bc.backupDb : this.blockPool.hashToDb.get(last_hash);
     if (!prevState) {
       prevState = this.getStateSnapshot(prevBlock);
       if (!prevState) {
@@ -532,7 +532,7 @@ class Consensus {
         return false;
       }
     }
-    this.blockPool.hashToState.set(proposalBlock.hash, newState);
+    this.blockPool.hashToDb.set(proposalBlock.hash, newState);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;
     }
@@ -747,7 +747,7 @@ class Consensus {
     let currBlock = block;
     let blockHash = currBlock.hash;
     while (currBlock && blockHash !== '' && blockHash !== lastFinalizedHash &&
-        !this.blockPool.hashToState.has(blockHash)) {
+        !this.blockPool.hashToDb.has(blockHash)) {
       chain.unshift(currBlock);
       // previous block of currBlock
       currBlock = _.get(this.blockPool.hashToBlockInfo[currBlock.last_hash], 'block');
@@ -759,8 +759,8 @@ class Consensus {
     }
     const snapshot = new DB(new StateNode(), null, null, null, false,
         (chain.length ? chain[0].number : block.number));
-    if (this.blockPool.hashToState.has(blockHash)) {
-      snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
+    if (this.blockPool.hashToDb.has(blockHash)) {
+      snapshot.setDbToSnapshot(this.blockPool.hashToDb.get(blockHash));
     } else if (blockHash === lastFinalizedHash) {
       snapshot.setDbToSnapshot(this.node.bc.backupDb);
     }
@@ -955,7 +955,7 @@ class Consensus {
    *   },
    *   block_pool: {
    *     hashToBlockInfo,
-   *     hashToState,
+   *     hashToDb,
    *     hashToNextBlockSet,
    *     epochToBlock,
    *     numberToBlock,
@@ -969,7 +969,7 @@ class Consensus {
     if (this.blockPool) {
       result.block_pool = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
-        hashToState: Array.from(this.blockPool.hashToState.keys()),
+        hashToDb: Array.from(this.blockPool.hashToDb.keys()),
         hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
           .reduce((acc, curr) => {
             return Object.assign(acc, {[curr]: [...this.blockPool.hashToNextBlockSet[curr]]})
