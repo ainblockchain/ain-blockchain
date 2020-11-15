@@ -372,7 +372,11 @@ class BlockPool {
         delete this.hashToBlockInfo[blockHash];
         delete this.numberToBlock[number];
         delete this.hashToNextBlockSet[blockHash];
-        this.hashToDb.delete(blockHash);
+        if (this.hashToDb.has(blockHash)) {
+          const stateVersion = this.hashToDb.get(blockHash).stateVersion;
+          this.node.stateManager.deleteVersion(stateVersion);
+          this.hashToDb.delete(blockHash);
+        }
       }
     });
     Object.keys(this.numberToBlock).forEach((key) => {

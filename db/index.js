@@ -591,10 +591,12 @@ class DB {
     return globalPath;
   }
 
-  setDbToSnapshot(snapshot) {
-    this.stateRoot = makeCopyOfStateTree(snapshot.stateRoot);
-  }
-
+  /**
+   * Sets state version with its state root.
+   * 
+   * @param {*} stateRoot state root
+   * @param {*} stateVersion state version
+   */
   setStateVersion(stateRoot, stateVersion) {
     this.stateRoot = stateRoot;
     this.stateVersion = stateVersion;
