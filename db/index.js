@@ -47,7 +47,7 @@ class DB {
     this.isFinalizedState = isFinalizedState;
   }
 
-  initDbData() {
+  initDbStates() {
     // Initialize DB owners.
     this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
       [OwnerProperties.OWNER]: {
