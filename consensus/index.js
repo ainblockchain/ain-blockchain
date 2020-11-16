@@ -776,18 +776,19 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
-    const stateVersion = `${StateVersions.SNAP}:${Date.now()}`;
-    const snapDb = new DB(new StateNode(), stateVersion, null, null, false,
-        (chain.length ? chain[0].number : block.number));
+
+    // Create a DB for executing the block on.
+    let baseVersion = null;
     if (this.blockPool.hashToDb.has(blockHash)) {
-      const baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
-      const snapRoot = this.node.stateManager.cloneVersion(baseVersion, stateVersion);
-      snapDb.setStateVersion(snapRoot, stateVersion);
+      baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
     } else if (blockHash === lastFinalizedHash) {
-      const baseVersion = this.node.backupDb.stateVersion;
-      const snapRoot = this.node.stateManager.cloneVersion(baseVersion, stateVersion);
-      snapDb.setStateVersion(snapRoot, stateVersion);
+      baseVersion = this.node.backupDb.stateVersion;
     }
+    const snapVersion = `${StateVersions.SNAP}:${Date.now()}`;
+    const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
+    const snapDb = baseVersion ? this.node.cloneDb(baseVersion, snapVersion, blockNumberSnapshot) :
+        new DB(new StateNode(), snapVersion, null, null, false, blockNumberSnapshot);
+
     while (chain.length) {
       // apply last_votes and transactions
       const block = chain.shift();
