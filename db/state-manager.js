@@ -12,8 +12,8 @@ const {
 class StateManager {
   constructor() {
     this.rootMap = new Map();
-    this.setRoot(StateVersions.INIT, new StateNode());
-    this.finalizeVersion(StateVersions.INIT);
+    this._setRoot(StateVersions.EMPTY, new StateNode());
+    this.finalizedVersion = null;
   }
 
   /**
@@ -56,11 +56,12 @@ class StateManager {
 
   /**
    * Sets the state root of the given version.
+   * This is priviate method. Use clone methods instead.
    * 
    * @param {string} version state version
    * @param {StateNode} root state root
    */
-  setRoot(version, root) {
+  _setRoot(version, root) {
     this.rootMap.set(version, root);
   }
 
@@ -118,7 +119,7 @@ class StateManager {
     } else {
       newRoot = makeCopyOfStateTree(root);
     }
-    this.setRoot(newVersion, newRoot);
+    this._setRoot(newVersion, newRoot);
     return newRoot;
   }
 
@@ -171,11 +172,7 @@ class StateManager {
     if (FeatureFlags.enableStateVersionOpt) {
       // TODO(): Implement this.
     } else {
-      const oldVersion = this.getFinalizedVersion();
       this.finalizedVersion = version;
-      if (this.hasVersion(oldVersion)) {
-        this.deleteVersion(oldVersion);
-      }
     }
     return true;
   }
