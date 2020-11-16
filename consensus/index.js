@@ -531,7 +531,7 @@ class Consensus {
     }
     this.node.destroyDb(tempDb);
     this.node.tp.addTransaction(new Transaction(proposalTx));
-    const newVersion = `${StateVersions.CONSENSUS}:${proposalBlock.number}`;
+    const newVersion = `${StateVersions.BLOCK}:${proposalBlock.number}`;
     const newDb = this.node.cloneDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);

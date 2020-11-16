@@ -12,8 +12,8 @@ const {
 class StateManager {
   constructor() {
     this.rootMap = new Map();
-    this.setRoot(StateVersions.FINAL, new StateNode());
-    this.finalizeVersion(StateVersions.FINAL);
+    this.setRoot(StateVersions.INIT, new StateNode());
+    this.finalizeVersion(StateVersions.INIT);
   }
 
   /**
@@ -28,6 +28,13 @@ class StateManager {
    */
   getFinalizedVersion() {
     return this.finalizedVersion;
+  }
+
+  /**
+   * Returns whether the given version is finalized.
+   */
+  isFinalizedVersion(version) {
+    return this.getFinalizedVersion() === version;
   }
 
   /**
