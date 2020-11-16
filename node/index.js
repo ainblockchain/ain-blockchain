@@ -188,6 +188,19 @@ class BlockchainNode {
     return false;
   }
 
+  mergeChainSubsection(chainSubsection) {
+    if (this.bc.merge(chainSubsection)) {
+      const newVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
+      this.syncDb(newVersion);
+      chainSubsection.forEach((block) => {
+        this.tp.cleanUpForNewBlock(block);
+        this.tp.updateNonceTrackers(block.transactions);
+      });
+      return true;
+    }
+    return false;
+  }
+
   executeChainOnBackupDb() {
     const LOG_HEADER = 'executeChainOnBackupDb';
     this.bc.chain.forEach((block) => {
