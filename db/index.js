@@ -37,7 +37,7 @@ const RuleUtil = require('./rule-util');
 class DB {
   constructor(stateRoot, stateVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
     this.shardingPath = null;
-    this.isRoot = null;  // Is this the database of the root blockchain?
+    this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
     this.stateVersion = stateVersion;
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
@@ -96,7 +96,7 @@ class DB {
    */
   setShardingPath(shardingPath) {
     this.shardingPath = ChainUtil.parsePath(shardingPath);
-    this.isRoot = (this.shardingPath.length === 0);
+    this.isRootBlockchain = (this.shardingPath.length === 0);
   }
 
   /**
@@ -574,7 +574,7 @@ class DB {
    * Converts to local path by removing the sharding path part of the given parsed path.
    */
   toLocalPath(parsedPath) {
-    if (this.isRoot) {
+    if (this.isRootBlockchain) {
       return parsedPath;
     }
     if (parsedPath.length < this.shardingPath.length) {
@@ -592,7 +592,7 @@ class DB {
    * Converts to global path by adding the sharding path to the front of the given parsed path.
    */
   toGlobalPath(parsedPath) {
-    if (this.isRoot) {
+    if (this.isRootBlockchain) {
       return parsedPath;
     }
     const globalPath = parsedPath.slice();

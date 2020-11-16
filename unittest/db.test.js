@@ -40,8 +40,8 @@ describe("DB initialization", () => {
       expect(node.db.getShardingPath()).to.equal(GenesisSharding.sharding_path);
     })
 
-    it("isRoot", () => {
-      expect(node.db.isRoot).to.equal(GenesisSharding.sharding_protocol === 'NONE');
+    it("isRootBlockchain", () => {
+      expect(node.db.isRootBlockchain).to.equal(GenesisSharding.sharding_protocol === 'NONE');
     })
   })
 
@@ -2255,8 +2255,8 @@ describe("DB sharding config", () => {
       expect(node.db.getShardingPath()).to.equal("/apps/another_app");
     })
 
-    it("isRoot", () => {
-      expect(node.db.isRoot).to.equal(false);
+    it("isRootBlockchain", () => {
+      expect(node.db.isRootBlockchain).to.equal(false);
     })
   })
 
