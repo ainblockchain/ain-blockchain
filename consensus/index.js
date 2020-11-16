@@ -275,7 +275,7 @@ class Consensus {
         this.node.backupDb : this.blockPool.hashToDb.get(lastBlock.hash);
     const baseVersion = prevDb.stateVersion;
     const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
-    const tempDb = this.node.cloneDb(baseVersion, tempVersion, lastBlock.number - 1);
+    const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
@@ -471,7 +471,7 @@ class Consensus {
       }
       const baseVersion = prevDb.stateVersion;
       const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
-      const tempDb = this.node.cloneDb(baseVersion, tempVersion, prevBlock.number - 1);
+      const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
       }
@@ -521,7 +521,7 @@ class Consensus {
     }
     const baseVersion = prevDb.stateVersion;
     const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
-    const tempDb = this.node.cloneDb(baseVersion, tempVersion, prevBlock.number - 1);
+    const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
@@ -532,7 +532,7 @@ class Consensus {
     this.node.destroyDb(tempDb);
     this.node.tp.addTransaction(new Transaction(proposalTx));
     const newVersion = `${StateVersions.BLOCK}:${proposalBlock.number}`;
-    const newDb = this.node.cloneDb(baseVersion, newVersion, prevBlock.number);
+    const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       return false;
@@ -786,7 +786,8 @@ class Consensus {
     }
     const snapVersion = `${StateVersions.SNAP}:${Date.now()}`;
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
-    const snapDb = baseVersion ? this.node.cloneDb(baseVersion, snapVersion, blockNumberSnapshot) :
+    const snapDb = baseVersion ?
+        this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot) :
         new DB(new StateNode(), snapVersion, null, null, false, blockNumberSnapshot);
 
     while (chain.length) {

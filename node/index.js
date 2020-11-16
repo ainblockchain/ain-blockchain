@@ -40,8 +40,8 @@ class BlockchainNode {
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
-    this.backupDb = new DB(null, null, this.bc, this.tp, true);
-    this.db = new DB(null, null, this.bc, this.tp, false);
+    this.backupDb = null;
+    this.db = null;
     this.nonce = null;
     this.initialized = false;
   }
@@ -70,21 +70,28 @@ class BlockchainNode {
     const LOG_HEADER = 'init';
     logger.info(`[${LOG_HEADER}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.backupDb.setStateVersion(
-        this.stateManager.getFinalizedRoot(), this.stateManager.getFinalizedVersion());
+    this.backupDb =
+        this.createDb(StateVersions.EMPTY, StateVersions.BACKUP, this.bc, this.tp, true);
     this.backupDb.initDbStates();
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
     const newVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
-    this.syncDb(newVersion);
+    this.db = this.createDb(StateVersions.BACKUP, newVersion, this.bc, this.tp, false);
     this.db.executeTransactionList(this.tp.getValidTransactions());
     this.initialized = true;
     return lastBlockWithoutProposal;
   }
 
-  cloneDb(baseVersion, newVersion, blockNumberSnapshot) {
-    const tempRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
-    return new DB(tempRoot, newVersion, null, null, false, blockNumberSnapshot);
+  createTempDb(baseVersion, newVersion, blockNumberSnapshot) {
+    return this.createDb(baseVersion, newVersion, null, null, false, blockNumberSnapshot);
+  }
+
+  createDb(baseVersion, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
+    const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
+    if (isFinalizedState) {
+      this.stateManager.finalizeVersion(newVersion);
+    }
+    return new DB(newRoot, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot);
   }
 
   destroyDb(tempDb) {
