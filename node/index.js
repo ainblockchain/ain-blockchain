@@ -40,6 +40,7 @@ class BlockchainNode {
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
+    this.backupDb = new DB(null, null, this.bc, this.tp, true);
     this.db = new DB(null, null, this.bc, this.tp, false);
     this.nonce = null;
     this.initialized = false;
@@ -69,9 +70,9 @@ class BlockchainNode {
     const LOG_HEADER = 'init';
     logger.info(`[${LOG_HEADER}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.bc.setBackupDb(
-        new DB(this.stateManager.getFinalizedRoot(), this.stateManager.getFinalizedVersion(),
-            this.bc, this.tp, true));
+    this.backupDb.setStateVersion(
+        this.stateManager.getFinalizedRoot(), this.stateManager.getFinalizedVersion());
+    this.backupDb.initDbStates();
     this.nonce = this.getNonce();
     this.executeChainOnBackupDb();
     const newVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
@@ -177,7 +178,7 @@ class BlockchainNode {
   }
 
   addNewBlock(block) {
-    if (this.bc.addNewBlockToChain(block)) {
+    if (this.bc.addNewBlockToChain(block, this.backupDb)) {
       this.tp.cleanUpForNewBlock(block);
       const newVersion = `${StateVersions.NODE}:${block.number}`;
       this.syncDb(newVersion);
@@ -189,7 +190,7 @@ class BlockchainNode {
   }
 
   mergeChainSubsection(chainSubsection) {
-    if (this.bc.merge(chainSubsection)) {
+    if (this.bc.merge(chainSubsection, this.backupDb)) {
       const newVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
       this.syncDb(newVersion);
       chainSubsection.forEach((block) => {
@@ -205,10 +206,10 @@ class BlockchainNode {
     const LOG_HEADER = 'executeChainOnBackupDb';
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
-      if (!this.bc.backupDb.executeTransactionList(block.last_votes)) {
+      if (!this.backupDb.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes`)
       }
-      if (!this.bc.backupDb.executeTransactionList(transactions)) {
+      if (!this.backupDb.executeTransactionList(transactions)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions`)
       }
       this.tp.updateNonceTrackers(transactions);

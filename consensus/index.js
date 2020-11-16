@@ -272,7 +272,7 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     const prevDb = lastBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.bc.backupDb : this.blockPool.hashToDb.get(lastBlock.hash);
+        this.node.backupDb : this.blockPool.hashToDb.get(lastBlock.hash);
     const baseVersion = prevDb.stateVersion;
     const tempVersion = `${StateVersions.CONSENSUS}:temp:${Date.now()}`;
     const tempRoot = this.node.stateManager.cloneVersion(baseVersion, tempVersion);
@@ -460,7 +460,7 @@ class Consensus {
         }
       }
       let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
-          this.node.bc.backupDb : this.blockPool.hashToDb.get(last_hash);
+          this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
       const snapVersion = `${StateVersions.CONSENSUS}:snapshot:${Date.now()}`;
       if (!prevDb) {
         prevDb = this.getSnapDb(prevBlock, snapVersion);
@@ -510,7 +510,7 @@ class Consensus {
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     // TODO(lia): Implement state version control
     let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.bc.backupDb : this.blockPool.hashToDb.get(last_hash);
+        this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
     const snapVersion = `${StateVersions.CONSENSUS}:snapshot:${Date.now()}`;
     if (!prevDb) {
       prevDb = this.getSnapDb(prevBlock, snapVersion);
@@ -786,7 +786,7 @@ class Consensus {
       const snapRoot = this.node.stateManager.cloneVersion(baseVersion, stateVersion);
       snapDb.setStateVersion(snapRoot, stateVersion);
     } else if (blockHash === lastFinalizedHash) {
-      const baseVersion = this.node.bc.backupDb.stateVersion;
+      const baseVersion = this.node.backupDb.stateVersion;
       const snapRoot = this.node.stateManager.cloneVersion(baseVersion, stateVersion);
       snapDb.setStateVersion(snapRoot, stateVersion);
     }
