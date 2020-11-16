@@ -373,8 +373,8 @@ class BlockPool {
         delete this.numberToBlock[number];
         delete this.hashToNextBlockSet[blockHash];
         if (this.hashToDb.has(blockHash)) {
-          const stateVersion = this.hashToDb.get(blockHash).stateVersion;
-          this.node.stateManager.deleteVersion(stateVersion);
+          const db = this.hashToDb.get(blockHash);
+          this.node.destroyDb(db);
           this.hashToDb.delete(blockHash);
         }
       }

@@ -274,9 +274,8 @@ class Consensus {
     const prevDb = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.backupDb : this.blockPool.hashToDb.get(lastBlock.hash);
     const baseVersion = prevDb.stateVersion;
-    const tempVersion = `${StateVersions.CONSENSUS}:temp:${Date.now()}`;
-    const tempRoot = this.node.stateManager.cloneVersion(baseVersion, tempVersion);
-    const tempDb = new DB(tempRoot, tempVersion, null, null, false, lastBlock.number - 1);
+    const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+    const tempDb = this.node.cloneDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
@@ -367,7 +366,7 @@ class Consensus {
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
     }
-    this.node.stateManager.deleteVersion(tempVersion);
+    this.node.destroyDb(tempDb);
     return {proposalBlock, proposalTx};
   }
 
@@ -461,21 +460,21 @@ class Consensus {
       }
       let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
           this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
-      const snapVersion = `${StateVersions.CONSENSUS}:snapshot:${Date.now()}`;
+      let isSnapDb = false;
       if (!prevDb) {
-        prevDb = this.getSnapDb(prevBlock, snapVersion);
+        prevDb = this.getSnapDb(prevBlock);
+        isSnapDb = true;
         if (!prevDb) {
           logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
           return false;
         }
       }
       const baseVersion = prevDb.stateVersion;
-      const tempVersion = `${StateVersions.CONSENSUS}:temp:${Date.now()}`;
-      const tempRoot = this.node.stateManager.cloneVersion(baseVersion, tempVersion);
-      if (baseVersion === snapVersion) {
-        this.node.stateManager.deleteVersion(snapVersion);
+      const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+      const tempDb = this.node.cloneDb(baseVersion, tempVersion, prevBlock.number - 1);
+      if (isSnapDb) {
+        this.node.destroyDb(prevDb);
       }
-      const tempDb = new DB(tempRoot, tempVersion, null, null, false, prevBlock.number - 1);
       proposalBlock.last_votes.forEach((voteTx) => {
         if (voteTx.hash === prevBlockProposal.hash) return;
         if (!Consensus.isValidConsensusTx(voteTx) ||
@@ -492,7 +491,7 @@ class Consensus {
             `${last_hash}:\n${JSON.stringify(this.blockPool.hashToBlockInfo[last_hash], null, 2)}`);
         return false;
       }
-      this.node.stateManager.deleteVersion(tempVersion);
+      this.node.destroyDb(tempDb);
     }
     if (prevBlock.epoch >= epoch) {
       logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) is greater than` +
@@ -511,30 +510,29 @@ class Consensus {
     // TODO(lia): Implement state version control
     let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
-    const snapVersion = `${StateVersions.CONSENSUS}:snapshot:${Date.now()}`;
+    let isSnapDb = false;
     if (!prevDb) {
-      prevDb = this.getSnapDb(prevBlock, snapVersion);
+      prevDb = this.getSnapDb(prevBlock);
+      isSnapDb = true;
       if (!prevDb) {
         logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
         return false;
       }
     }
     const baseVersion = prevDb.stateVersion;
-    const tempVersion = `${StateVersions.CONSENSUS}:temp:${Date.now()}`;
-    const tempRoot = this.node.stateManager.cloneVersion(baseVersion, tempVersion);
-    if (baseVersion === snapVersion) {
-      this.node.stateManager.deleteVersion(snapVersion);
+    const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+    const tempDb = this.node.cloneDb(baseVersion, tempVersion, prevBlock.number - 1);
+    if (isSnapDb) {
+      this.node.destroyDb(prevDb);
     }
-    const tempDb = new DB(tempRoot, tempVersion, null, null, false, prevBlock.number - 1);
     if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
       return false;
     }
-    this.node.stateManager.deleteVersion(tempVersion);
+    this.node.destroyDb(tempDb);
     this.node.tp.addTransaction(new Transaction(proposalTx));
     const newVersion = `${StateVersions.CONSENSUS}:${proposalBlock.number}`;
-    const newRoot = this.node.stateManager.cloneVersion(baseVersion, newVersion);
-    const newDb = new DB(newRoot, newVersion, null, null, false, prevBlock.number);
+    const newDb = this.node.cloneDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       return false;
@@ -581,8 +579,7 @@ class Consensus {
       // FIXME: ask for the block from peers
       return false;
     }
-    const snapVersion = `${StateVersions.CONSENSUS}:snapshot:${Date.now()}`;
-    const tempDb = this.getSnapDb(block, snapVersion);
+    const tempDb = this.getSnapDb(block);
     if (!tempDb) {
       logger.debug(`[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(vote)}`);
       return false;
@@ -591,7 +588,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx`);
       return false;
     }
-    this.node.stateManager.deleteVersion(snapVersion);
+    this.node.destroyDb(tempDb);
     this.node.tp.addTransaction(new Transaction(vote));
     this.blockPool.addSeenVote(vote, this.state.epoch);
     return true;
@@ -762,7 +759,7 @@ class Consensus {
     return res;
   }
 
-  getSnapDb(block, stateVersion) {
+  getSnapDb(block) {
     const LOG_HEADER = 'getSnapDb';
     const lastFinalizedHash = this.node.bc.lastBlock().hash;
     const chain = [];
@@ -779,6 +776,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
+    const stateVersion = `${StateVersions.SNAP}:${Date.now()}`;
     const snapDb = new DB(new StateNode(), stateVersion, null, null, false,
         (chain.length ? chain[0].number : block.number));
     if (this.blockPool.hashToDb.has(blockHash)) {

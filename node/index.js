@@ -82,6 +82,15 @@ class BlockchainNode {
     return lastBlockWithoutProposal;
   }
 
+  cloneDb(baseVersion, newVersion, blockNumberSnapshot) {
+    const tempRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
+    return new DB(tempRoot, newVersion, null, null, false, blockNumberSnapshot);
+  }
+
+  destroyDb(tempDb) {
+    return this.stateManager.deleteVersion(tempDb.stateVersion);
+  }
+
   syncDb(newVersion) {
     const LOG_HEADER = 'syncDb';
     const oldVersion = this.db.stateVersion;
