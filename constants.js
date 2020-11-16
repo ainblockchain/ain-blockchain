@@ -302,8 +302,8 @@ const DefaultValues = {
  * @enum {string}
  */
 const StateVersions = {
-  CONSENSUS: 'CONSENSUS',
-  FINAL: 'FINAL',
+  BLOCK: 'BLOCK',
+  INIT: 'INIT',
   NODE: 'NODE',
   SNAP: 'SNAP',
   TEMP: 'TEMP',
