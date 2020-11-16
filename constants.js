@@ -302,9 +302,11 @@ const DefaultValues = {
  * @enum {string}
  */
 const StateVersions = {
+  CONSENSUS: 'CONSENSUS',
   FINAL: 'FINAL',
   NODE: 'NODE',
-  CONSENSUS: 'CONSENSUS',
+  SNAP: 'SNAP',
+  TEMP: 'TEMP',
 };
 
 /**
