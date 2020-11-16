@@ -397,13 +397,7 @@ class P2pServer {
 
             // Check if chain subsection is valid and can be
             // merged ontop of your local blockchain
-            if (this.node.bc.merge(data.chainSubsection)) {
-              const newVersion = `${StateVersions.NODE}:${this.node.bc.lastBlockNumber()}`;
-              this.node.syncDb(newVersion);
-              data.chainSubsection.forEach((block) => {
-                this.node.tp.cleanUpForNewBlock(block);
-                this.node.tp.updateNonceTrackers(block.transactions);
-              });
+            if (this.node.mergeChainSubsection(data.chainSubsection)) {
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
                 if (!this.node.bc.syncedAfterStartup) {
