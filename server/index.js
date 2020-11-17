@@ -33,7 +33,6 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-  StateVersions,
   buildOwnerPermissions,
   LIGHTWEIGHT
 } = require('../constants');
