@@ -6,6 +6,7 @@ const sizeof = require('object-sizeof');
 const logger = require('../logger')('CONSENSUS');
 const {Block} = require('../blockchain/block');
 const BlockPool = require('./block-pool');
+const StateNode = require('../db/state-node');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
@@ -18,6 +19,7 @@ const {
   GenesisSharding,
   ShardingProperties,
   ProofProperties,
+  StateVersions,
   MAX_TX_BYTES,
   MAX_SHARD_REPORT,
   GenesisWhitelist,
@@ -27,7 +29,7 @@ const {
   ConsensusMessageTypes,
   ConsensusConsts,
   ConsensusStatus,
-  ConsensusDbPaths
+  ConsensusDbPaths,
 } = require('./constants');
 const {
   signAndSendTx,
@@ -269,10 +271,11 @@ class Consensus {
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
     const validTransactions = [];
     const invalidTransactions = [];
-    const prevState = lastBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.bc.backupDb : this.blockPool.hashToState.get(lastBlock.hash);
-    const tempState = new DB(null, null, false, lastBlock.number - 1);
-    tempState.setDbToSnapshot(prevState);
+    const prevDb = lastBlock.number === this.node.bc.lastBlockNumber() ?
+        this.node.backupDb : this.blockPool.hashToDb.get(lastBlock.hash);
+    const baseVersion = prevDb.stateVersion;
+    const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+    const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
@@ -284,7 +287,7 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
     lastVotes.forEach((voteTx) => {
-      if (!ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
+      if (!ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
         logger.debug(`[${LOG_HEADER}] last vote: success`);
       } else {
         logger.error(`[${LOG_HEADER}] last vote: failed`);
@@ -293,7 +296,7 @@ class Consensus {
 
     transactions.forEach((tx) => {
       logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
-      if (!ChainUtil.transactionFailed(tempState.executeTransaction(tx))) {
+      if (!ChainUtil.transactionFailed(tempDb.executeTransaction(tx))) {
         logger.debug(`[${LOG_HEADER}] tx: success`);
         validTransactions.push(tx);
       } else {
@@ -314,7 +317,7 @@ class Consensus {
     const totalAtStake = Object.values(validators).reduce(function(a, b) {
       return a + b;
     }, 0);
-    const stateProofHash = LIGHTWEIGHT ? '' : tempState.getProof('/')[ProofProperties.PROOF_HASH];
+    const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
         blockNumber, this.state.epoch, stateProofHash, myAddr, validators);
 
@@ -363,6 +366,7 @@ class Consensus {
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
     }
+    this.node.destroyDb(tempDb);
     return {proposalBlock, proposalTx};
   }
 
@@ -437,7 +441,6 @@ class Consensus {
         }
       }
     }
-    const tempState = new DB(null, null, false, prevBlock.number - 1);
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
@@ -455,20 +458,27 @@ class Consensus {
           return false;
         }
       }
-      let prevState = prevBlock.number === this.node.bc.lastBlockNumber() ?
-          this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
-      if (!prevState) {
-        prevState = this.getStateSnapshot(prevBlock);
-        if (!prevState) {
+      let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
+          this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
+      let isSnapDb = false;
+      if (!prevDb) {
+        prevDb = this.getSnapDb(prevBlock);
+        isSnapDb = true;
+        if (!prevDb) {
           logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
           return false;
         }
       }
-      tempState.setDbToSnapshot(prevState);
+      const baseVersion = prevDb.stateVersion;
+      const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+      const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
+      if (isSnapDb) {
+        this.node.destroyDb(prevDb);
+      }
       proposalBlock.last_votes.forEach((voteTx) => {
         if (voteTx.hash === prevBlockProposal.hash) return;
         if (!Consensus.isValidConsensusTx(voteTx) ||
-            ChainUtil.transactionFailed(tempState.executeTransaction(voteTx))) {
+            ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
           logger.info(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           // return;
         }
@@ -481,6 +491,7 @@ class Consensus {
             `${last_hash}:\n${JSON.stringify(this.blockPool.hashToBlockInfo[last_hash], null, 2)}`);
         return false;
       }
+      this.node.destroyDb(tempDb);
     }
     if (prevBlock.epoch >= epoch) {
       logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) is greater than` +
@@ -497,41 +508,49 @@ class Consensus {
     // TODO(lia): Check last_votes if they indeed voted for the previous block
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     // TODO(lia): Implement state version control
-    let prevState = prevBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.bc.backupDb : this.blockPool.hashToState.get(last_hash);
-    if (!prevState) {
-      prevState = this.getStateSnapshot(prevBlock);
-      if (!prevState) {
+    let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
+        this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
+    let isSnapDb = false;
+    if (!prevDb) {
+      prevDb = this.getSnapDb(prevBlock);
+      isSnapDb = true;
+      if (!prevDb) {
         logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
         return false;
       }
     }
-    tempState.setDbToSnapshot(prevState);
-    if (ChainUtil.transactionFailed(tempState.executeTransaction(proposalTx))) {
+    const baseVersion = prevDb.stateVersion;
+    const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+    const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
+    if (isSnapDb) {
+      this.node.destroyDb(prevDb);
+    }
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
       return false;
     }
+    this.node.destroyDb(tempDb);
     this.node.tp.addTransaction(new Transaction(proposalTx));
-    const newState = new DB(null, null, false, prevBlock.number);
-    newState.setDbToSnapshot(prevState);
-    if (!newState.executeTransactionList(proposalBlock.last_votes)) {
+    const newVersion = `${StateVersions.BLOCK}:${proposalBlock.number}`;
+    const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
+    if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       return false;
     }
-    if (!newState.executeTransactionList(proposalBlock.transactions)) {
+    if (!newDb.executeTransactionList(proposalBlock.transactions)) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
       return false;
     }
-    newState.blockNumberSnapshot += 1;
+    newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
-      if (newState.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
+      if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
-            `${newState.getProof('/')[ProofProperties.PROOF_HASH]} / ` +
+            `${newDb.getProof('/')[ProofProperties.PROOF_HASH]} / ` +
             `${proposalBlock.stateProofHash}`);
         return false;
       }
     }
-    this.blockPool.hashToState.set(proposalBlock.hash, newState);
+    this.blockPool.hashToDb.set(proposalBlock.hash, newDb);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;
     }
@@ -560,15 +579,16 @@ class Consensus {
       // FIXME: ask for the block from peers
       return false;
     }
-    const tempState = this.getStateSnapshot(block);
-    if (!tempState) {
+    const tempDb = this.getSnapDb(block);
+    if (!tempDb) {
       logger.debug(`[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(vote)}`);
       return false;
     }
-    if (ChainUtil.transactionFailed(tempState.executeTransaction(vote))) {
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(vote))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx`);
       return false;
     }
+    this.node.destroyDb(tempDb);
     this.node.tp.addTransaction(new Transaction(vote));
     this.blockPool.addSeenVote(vote, this.state.epoch);
     return true;
@@ -739,14 +759,14 @@ class Consensus {
     return res;
   }
 
-  getStateSnapshot(block) {
-    const LOG_HEADER = 'getStateSnapshot';
+  getSnapDb(block) {
+    const LOG_HEADER = 'getSnapDb';
     const lastFinalizedHash = this.node.bc.lastBlock().hash;
     const chain = [];
     let currBlock = block;
     let blockHash = currBlock.hash;
     while (currBlock && blockHash !== '' && blockHash !== lastFinalizedHash &&
-        !this.blockPool.hashToState.has(blockHash)) {
+        !this.blockPool.hashToDb.has(blockHash)) {
       chain.unshift(currBlock);
       // previous block of currBlock
       currBlock = _.get(this.blockPool.hashToBlockInfo[currBlock.last_hash], 'block');
@@ -756,21 +776,29 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] No currBlock (${currBlock}) or blockHash (${blockHash})`);
       return null;
     }
-    const snapshot = new DB(null, null, false, (chain.length ? chain[0].number : block.number));
-    if (this.blockPool.hashToState.has(blockHash)) {
-      snapshot.setDbToSnapshot(this.blockPool.hashToState.get(blockHash));
+
+    // Create a DB for executing the block on.
+    let baseVersion = null;
+    if (this.blockPool.hashToDb.has(blockHash)) {
+      baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
     } else if (blockHash === lastFinalizedHash) {
-      snapshot.setDbToSnapshot(this.node.bc.backupDb);
+      baseVersion = this.node.backupDb.stateVersion;
     }
+    const snapVersion = `${StateVersions.SNAP}:${Date.now()}`;
+    const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
+    const snapDb = baseVersion ?
+        this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot) :
+        new DB(new StateNode(), snapVersion, null, null, false, blockNumberSnapshot);
+
     while (chain.length) {
       // apply last_votes and transactions
       const block = chain.shift();
       logger.debug(`[[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
-      snapshot.executeTransactionList(block.last_votes);
-      snapshot.executeTransactionList(block.transactions);
-      snapshot.blockNumberSnapshot = block.number;
+      snapDb.executeTransactionList(block.last_votes);
+      snapDb.executeTransactionList(block.transactions);
+      snapDb.blockNumberSnapshot = block.number;
     }
-    return snapshot;
+    return snapDb;
   }
 
   // FIXME: check from the corresponding previous state?
@@ -953,7 +981,7 @@ class Consensus {
    *   },
    *   block_pool: {
    *     hashToBlockInfo,
-   *     hashToState,
+   *     hashToDb,
    *     hashToNextBlockSet,
    *     epochToBlock,
    *     numberToBlock,
@@ -967,7 +995,7 @@ class Consensus {
     if (this.blockPool) {
       result.block_pool = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
-        hashToState: Array.from(this.blockPool.hashToState.keys()),
+        hashToDb: Array.from(this.blockPool.hashToDb.keys()),
         hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
           .reduce((acc, curr) => {
             return Object.assign(acc, {[curr]: [...this.blockPool.hashToNextBlockSet[curr]]})

@@ -17,7 +17,7 @@ class StateNode {
     return node;
   }
 
-  makeCopy() {
+  clone() {
     return StateNode.create(this.isLeaf, this.childMap, this.value, this.proof);
   }
 

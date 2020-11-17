@@ -9,6 +9,10 @@ const {
   ShardingProperties,
 } = require('../constants');
 
+function isEmptyNode(node) {
+  return node.getIsLeaf() && node.getValue() === null;
+}
+
 function hasConfig(node, label) {
   return node && node.hasChild(label);
 }
@@ -188,7 +192,7 @@ function deleteStateTree(root) {
 }
 
 function makeCopyOfStateTree(root) {
-  const copy = root.makeCopy();
+  const copy = root.clone();
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     copy.setChild(label, makeCopyOfStateTree(childNode));
@@ -238,6 +242,7 @@ function updateProofHashForPath(fullPath, root) {
 }
 
 module.exports = {
+  isEmptyNode,
   hasShardConfig,
   getShardConfig,
   hasFunctionConfig,

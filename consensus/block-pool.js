@@ -13,7 +13,7 @@ class BlockPool {
     // e.g. { block_hash: { block, proposal, votes: { address: stake } } }
     this.hashToBlockInfo = {};
     // Mapping of a block hash to the new db state
-    this.hashToState = new Map();
+    this.hashToDb = new Map();
     // Mapping of a block hash to a set of block hashes that extend the block.
     // e.g. { block_hash: Set<block_hash> }
     this.hashToNextBlockSet = {};
@@ -372,7 +372,11 @@ class BlockPool {
         delete this.hashToBlockInfo[blockHash];
         delete this.numberToBlock[number];
         delete this.hashToNextBlockSet[blockHash];
-        this.hashToState.delete(blockHash);
+        if (this.hashToDb.has(blockHash)) {
+          const db = this.hashToDb.get(blockHash);
+          this.node.destroyDb(db);
+          this.hashToDb.delete(blockHash);
+        }
       }
     });
     Object.keys(this.numberToBlock).forEach((key) => {
