@@ -297,6 +297,27 @@ const DefaultValues = {
   DEPOSIT_LOCKUP_DURATION_MS: 2592000000 // 30 days
 }
 
+/**
+ * State versions.
+ * @enum {string}
+ */
+const StateVersions = {
+  BACKUP: 'BACKUP',
+  BLOCK: 'BLOCK',
+  EMPTY: 'EMPTY',
+  NODE: 'NODE',
+  SNAP: 'SNAP',
+  TEMP: 'TEMP',
+};
+
+/**
+ * Feature flags.
+ */
+const FeatureFlags = {
+  // Enables state version optimization.
+  enableStateVersionOpt: false,
+}
+
 const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 const GenesisSharding = getGenesisSharding();
@@ -467,6 +488,7 @@ module.exports = {
   TRACKER_WS_ADDR,
   MAX_SHARD_REPORT,
   LIGHTWEIGHT,
+  HASH_DELIMITER,
   MessageTypes,
   PredefinedDbPaths,
   TokenProperties,
@@ -485,6 +507,8 @@ module.exports = {
   WriteDbOperations,
   TransactionStatus,
   DefaultValues,
+  StateVersions,
+  FeatureFlags,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
@@ -493,6 +517,5 @@ module.exports = {
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
-  HASH_DELIMITER,
   buildOwnerPermissions,
 };

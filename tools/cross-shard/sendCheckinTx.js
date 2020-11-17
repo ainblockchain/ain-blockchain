@@ -95,11 +95,10 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
 async function sendTransaction() {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
-  const keyBuffer = Buffer.from(config.userPrivateKey, 'hex');
   const payloadTxBody =
       buildPayloadTx(config.userAddr, config.shardOwnerAddr, config.parentTokenAmount, timestamp);
   console.log(`payloadTxBody: ${JSON.stringify(payloadTxBody, null, 2)}`);
-  const signedPayloadTx = signTx(payloadTxBody, keyBuffer);
+  const signedPayloadTx = signTx(payloadTxBody, config.userPrivateKey);
   console.log(`signedPayloadTx: ${JSON.stringify(signedPayloadTx, null, 2)}`);
   console.log(`payloadTxHash: ${signedPayloadTx.txHash}`);
 
@@ -108,7 +107,7 @@ async function sendTransaction() {
   console.log(`triggerTxBody: ${JSON.stringify(triggerTxBody, null, 2)}`);
 
   console.log('Sending job transaction...')
-  const txInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, keyBuffer);
+  const txInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, config.userPrivateKey);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   return {timestamp, txInfo};
 }
