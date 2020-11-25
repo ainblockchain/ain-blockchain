@@ -188,7 +188,7 @@ function deleteStateTree(root) {
   }
   // reference:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
-  root = null;
+  root.reset();
 }
 
 function makeCopyOfStateTree(root) {

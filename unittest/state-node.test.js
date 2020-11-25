@@ -11,24 +11,82 @@ describe("state-node", () => {
   })
 
   describe("Initialization", () => {
-    it("versionSet", () => {
+    it("initial", () => {
+      expect(node.isLeaf).to.equal(true);
+      expect(node.childMap).to.not.be.null;
+      expect(node.value).to.equal(null);
+      expect(node.proofHash).to.equal(null);
       expect(node.versionSet).to.not.be.null;
     });
+  });
 
-    it("isLeaf", () => {
-      expect(node.isLeaf).to.equal(true);
+  describe("clone", () => {
+    it("leaf node", () => {
+      node.setValue('value0');
+      node.setProofHash('hash');
+      node.addVersion('version1');
+      const clone = node.clone();
+      expect(clone.getIsLeaf()).to.equal(true);
+      assert.deepEqual(clone.getChildNodes(), node.getChildNodes());
+      expect(clone.getValue()).to.equal('value0');
+      expect(clone.getProofHash()).to.equal('hash');
+      assert.deepEqual(clone.getVersions(), node.getVersions());
     });
 
-    it("childMap", () => {
+    it("internal node", () => {
+      const label1 = 'label1';
+      const label2 = 'label2';
+      const child1 = new StateNode();
+      const child2 = new StateNode();
+      child1.setValue('value1');
+      child2.setValue('value2');
+      node.setChild(label1, child1);
+      node.setChild(label2, child2);
+      node.setProofHash('hash');
+      node.addVersion('version1');
+      const clone = node.clone();
+      expect(clone.getIsLeaf()).to.equal(false);
+      assert.deepEqual(clone.getChildNodes(), node.getChildNodes());
+      expect(clone.getValue()).to.equal(null);
+      expect(clone.getProofHash()).to.equal('hash');
+      assert.deepEqual(clone.getVersions(), node.getVersions());
+    });
+  });
+
+  describe("reset", () => {
+    it("leaf node", () => {
+      node.setValue('value0');
+      node.setProofHash('hash');
+      node.addVersion('version1');
+      node.reset();
+      expect(node.getIsLeaf()).to.equal(true);
       expect(node.childMap).to.not.be.null;
+      expect(node.numChildren()).to.equal(0);
+      expect(node.getValue()).to.equal(null);
+      expect(node.getProofHash()).to.equal(null);
+      expect(node.versionSet).to.not.be.null;
+      expect(node.numVersions()).to.equal(0);
     });
 
-    it("value", () => {
-      expect(node.value).to.equal(null);
-    });
-
-    it("proofHash", () => {
-      expect(node.proofHash).to.equal(null);
+    it("internal node", () => {
+      const label1 = 'label1';
+      const label2 = 'label2';
+      const child1 = new StateNode();
+      const child2 = new StateNode();
+      child1.setValue('value1');
+      child2.setValue('value2');
+      node.setChild(label1, child1);
+      node.setChild(label2, child2);
+      node.setProofHash('hash');
+      node.addVersion('version1');
+      node.reset();
+      expect(node.getIsLeaf()).to.equal(true);
+      expect(node.childMap).to.not.be.null;
+      expect(node.numChildren()).to.equal(0);
+      expect(node.getValue()).to.equal(null);
+      expect(node.getProofHash()).to.equal(null);
+      expect(node.versionSet).to.not.be.null;
+      expect(node.numVersions()).to.equal(0);
     });
   });
 
@@ -45,12 +103,16 @@ describe("state-node", () => {
   describe("value", () => {
     it("get / set / reset", () => {
       expect(node.getValue()).to.equal(null);
-      node.setValue(3);
-      expect(node.getValue()).to.equal(3);
-      node.setValue('str');
-      expect(node.getValue()).to.equal('str');
+      expect(node.getIsLeaf()).to.equal(true);
+      node.setValue('value1');
+      expect(node.getValue()).to.equal('value1');
+      expect(node.getIsLeaf()).to.equal(true);
+      node.setValue('value2');
+      expect(node.getValue()).to.equal('value2');
+      expect(node.getIsLeaf()).to.equal(true);
       node.resetValue();
       expect(node.getValue()).to.equal(null);
+      expect(node.getIsLeaf()).to.equal(true);
     });
   });
 
@@ -151,7 +213,7 @@ describe("state-node", () => {
       expect(node.hasVersion(version2)).to.equal(false);
     });
 
-    it("getVersions / numVersion", () => {
+    it("getVersions / numVersions", () => {
       const version1 = 'version1';
       const version2 = 'version2';
       assert.deepEqual(node.getVersions(), []);
@@ -166,6 +228,18 @@ describe("state-node", () => {
       assert.deepEqual(node.getVersions(), ['version1']);
       expect(node.numVersions()).to.equal(1);
       node.deleteVersion(version1);
+      assert.deepEqual(node.getVersions(), []);
+      expect(node.numVersions()).to.equal(0);
+    });
+
+    it("resetVersions", () => {
+      const version1 = 'version1';
+      const version2 = 'version2';
+      node.addVersion(version1);
+      node.addVersion(version2);
+      assert.deepEqual(node.getVersions(), ['version1', 'version2']);
+      expect(node.numVersions()).to.equal(2);
+      node.resetVersions();
       assert.deepEqual(node.getVersions(), []);
       expect(node.numVersions()).to.equal(0);
     });
