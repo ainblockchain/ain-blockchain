@@ -24,6 +24,14 @@ class StateNode {
         this.isLeaf, this.childMap, this.value, this.proofHash, this.versionSet);
   }
 
+  reset() {
+    this.isLeaf = true;
+    this.childMap.clear();
+    this.value = null;
+    this.proofHash = null;
+    this.versionSet.clear();
+  }
+
   getIsLeaf() {
     return this.isLeaf;
   }
@@ -34,12 +42,10 @@ class StateNode {
 
   resetValue() {
     this.setValue(null);
-    this.setIsLeaf(false);
   }
 
   setValue(value) {
     this.value = value;
-    this.setIsLeaf(true);
   }
 
   getValue() {
@@ -70,7 +76,6 @@ class StateNode {
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
-    this.setProofHash(null);
   }
 
   getChildLabels() {
@@ -111,6 +116,10 @@ class StateNode {
 
   numVersions() {
     return this.versionSet.size;
+  }
+
+  resetVersions() {
+    return this.versionSet.clear();
   }
 }
 
