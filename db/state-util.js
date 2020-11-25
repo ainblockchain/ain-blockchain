@@ -120,7 +120,7 @@ function isValidPathForStates(fullPath) {
 
 function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
-    if (ChainUtil.isEmptyNode(obj)) {
+    if (ChainUtil.isEmpty(obj)) {
       return false;
     }
     for (const key in obj) {
@@ -151,7 +151,7 @@ function isValidJsObjectForStates(obj) {
 function jsObjectToStateTree(obj) {
   const node = new StateNode();
   if (ChainUtil.isDict(obj)) {
-    if (ChainUtil.isEmptyNode(obj)) {
+    if (ChainUtil.isEmpty(obj)) {
       node.setIsLeaf(true);
     } else {
       for (const key in obj) {

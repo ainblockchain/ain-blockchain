@@ -240,7 +240,7 @@ class BlockPool {
       this.hashToBlockInfo[blockHash] = {};
     }
     const blockInfo = this.hashToBlockInfo[blockHash];
-    if (ChainUtil.isEmptyNode(blockInfo.block)) {
+    if (ChainUtil.isEmpty(blockInfo.block)) {
       this.hashToBlockInfo[blockHash].block = block;
       this.hashToBlockInfo[blockHash].proposal = proposalTx;
       // We might have received some votes before the block itself

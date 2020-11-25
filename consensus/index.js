@@ -203,7 +203,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Invalid message type: ${msg.type}`);
       return;
     }
-    if (ChainUtil.isEmptyNode(msg.value)) {
+    if (ChainUtil.isEmpty(msg.value)) {
       logger.error(`[${LOG_HEADER}] Invalid message value: ${msg.value}`);
       return;
     }
