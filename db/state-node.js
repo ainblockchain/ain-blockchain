@@ -1,24 +1,27 @@
 class StateNode {
   constructor() {
-    this.isLeaf = false;
+    this.isLeaf = true;
     // Used for internal nodes only.
     this.childMap = new Map();
     // Used for leaf nodes only.
     this.value = null;
-    this.proof = null;
+    this.proofHash = null;
+    this.versionSet = new Set();
   }
 
-  static create(isLeaf, childMap, value, proof) {
+  static create(isLeaf, childMap, value, proofHash, versionSet) {
     const node = new StateNode();
     node.isLeaf = isLeaf;
     node.childMap = new Map(childMap);
     node.value = value;
-    node.proof = proof;
+    node.proofHash = proofHash;
+    node.versionSet = new Set(versionSet);
     return node;
   }
 
   clone() {
-    return StateNode.create(this.isLeaf, this.childMap, this.value, this.proof);
+    return StateNode.create(
+        this.isLeaf, this.childMap, this.value, this.proofHash, this.versionSet);
   }
 
   getIsLeaf() {
@@ -64,7 +67,7 @@ class StateNode {
 
   deleteChild(label) {
     this.childMap.delete(label);
-    if (this.getNumChild() === 0) {
+    if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
     this.setProofHash(null);
@@ -78,36 +81,36 @@ class StateNode {
     return [...this.childMap.values()];
   }
 
-  getNumChild() {
+  numChildren() {
     return this.childMap.size;
   }
 
   getProofHash() {
-    return this.proof;
+    return this.proofHash;
   }
 
-  setProofHash(hash) {
-    this.proof = hash;
+  setProofHash(proofHash) {
+    this.proofHash = proofHash;
   }
 
-  addVersion() {
-    // TODO(lia): Implement this.
+  addVersion(version) {
+    return this.versionSet.add(version);
   }
 
-  hasVersion() {
-    // TODO(lia): Implement this.
+  hasVersion(version) {
+    return this.versionSet.has(version);
   }
 
-  deleteVersion() {
-    // TODO(lia): Implement this.
+  deleteVersion(version) {
+    return this.versionSet.delete(version);
   }
 
   getVersions() {
-    // TODO(lia): Implement this.
+    return [...this.versionSet.keys()];
   }
 
-  resetVersions() {
-    // TODO(lia): Implement this.
+  numVersions() {
+    return this.versionSet.size;
   }
 }
 
