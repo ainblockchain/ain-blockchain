@@ -7,6 +7,3 @@ sudo chmod 777 ../ain-blockchain
 mv * ../ain-blockchain
 cd ../ain-blockchain
 npm install
-cd ./tracker-server
-npm install
-cd ..
