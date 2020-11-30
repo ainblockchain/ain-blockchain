@@ -8,6 +8,7 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
+  stateTreeVersionToJsObject,
   deleteStateTree,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
@@ -532,6 +533,74 @@ describe("state-util", () => {
           empty_obj: null,
         },
         subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+    })
+  })
+
+  describe("jsObjectToStateTree with version / stateTreeVersionToJsObject", () => {
+    it("when valid input", () => {
+      const ver1 = 'ver1';
+      expect(stateTreeVersionToJsObject(jsObjectToStateTree(true, ver1))).to.equal(true);
+      expect(stateTreeVersionToJsObject(jsObjectToStateTree(false, ver1))).to.equal(false);
+      expect(stateTreeVersionToJsObject(jsObjectToStateTree(10, ver1))).to.equal(10);
+      expect(stateTreeVersionToJsObject(jsObjectToStateTree('str', ver1))).to.equal('str');
+      expect(stateTreeVersionToJsObject(jsObjectToStateTree(null, ver1))).to.equal(null);
+      const stateObj = {
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: {},
+        subobj1: {
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        },
+        subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        }
+      };
+      assert.deepEqual(stateTreeVersionToJsObject(jsObjectToStateTree(stateObj, ver1)), {
+        ".version": "ver1",
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".version": "ver1",
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".version": "ver1",
           bool: true,
           number: -10,
           str: 'str3',

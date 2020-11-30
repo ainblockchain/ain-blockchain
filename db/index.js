@@ -28,7 +28,7 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
-  stateTreeToJsObjectWithVersion,
+  stateTreeVersionToJsObject,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('./state-util');
@@ -64,7 +64,7 @@ class DB {
   }
 
   dumpDbStates() {
-    return stateTreeToJsObjectWithVersion(this.stateRoot);
+    return stateTreeVersionToJsObject(this.stateRoot);
   }
 
   // For testing purpose only.
@@ -173,8 +173,7 @@ class DB {
   }
 
   writeDatabase(fullPath, stateObj) {
-    const stateTree = jsObjectToStateTree(
-        stateObj, this.stateVersion);
+    const stateTree = jsObjectToStateTree(stateObj, this.stateVersion);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       this.stateRoot = stateTree;
