@@ -1,7 +1,7 @@
 const ConsensusConsts = {
   MAJORITY: 2 / 3,
   DAY_MS: 86400000,
-  EPOCH_MS: 3000,
+  EPOCH_MS: 1000,
   MAX_CONSENSUS_STATE_DB: 1000,
   INITIAL_NUM_VALIDATORS: process.env.NUM_VALIDATORS ? Number(process.env.NUM_VALIDATORS) : 5,
   INITIAL_STAKE: 250,
