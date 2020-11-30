@@ -1,5 +1,5 @@
 class StateNode {
-  constructor() {
+  constructor(version) {
     this.isLeaf = true;
     // Used for internal nodes only.
     this.childMap = new Map();
@@ -7,6 +7,9 @@ class StateNode {
     this.value = null;
     this.proofHash = null;
     this.versionSet = new Set();
+    if (version) {
+      this.addVersion(version);
+    }
   }
 
   static create(isLeaf, childMap, value, proofHash, versionSet) {
@@ -19,9 +22,10 @@ class StateNode {
     return node;
   }
 
-  clone() {
+  clone(version) {
     return StateNode.create(
-        this.isLeaf, this.childMap, this.value, this.proofHash, this.versionSet);
+        this.isLeaf, this.childMap, this.value, this.proofHash,
+        version ? [version] : this.versionSet);
   }
 
   reset() {
