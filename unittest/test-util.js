@@ -5,6 +5,7 @@ const sleep = require('sleep').msleep;
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const { StateVersions } = require('../constants');
 
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -59,6 +60,10 @@ function getTransaction(node, txData) {
 
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
+  const finalizedDb = node.createDb(node.stateManager.getFinalizedVersion(),
+      `${StateVersions.BACKUP}:${lastBlock.number + 1}`, node.bc, node.tp, true);
+  finalizedDb.executeTransactionList(txs);
+  node.syncDb(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.createBlock(lastBlock.hash, votes, txs, lastBlock.number + 1,
     lastBlock.epoch + 1, '', node.account.address, validators));
 }
