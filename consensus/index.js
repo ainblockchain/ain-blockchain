@@ -795,7 +795,7 @@ class Consensus {
     }
 
     // Create a DB for executing the block on.
-    let baseVersion = null;
+    let baseVersion = StateVersions.EMPTY;
     if (this.blockPool.hashToDb.has(blockHash)) {
       baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
     } else if (blockHash === lastFinalizedHash) {
@@ -803,9 +803,7 @@ class Consensus {
     }
     const snapVersion = `${StateVersions.SNAP}:${Date.now()}`;
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
-    const snapDb = baseVersion ?
-        this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot) :
-        new DB(new StateNode(), snapVersion, null, null, false, blockNumberSnapshot);
+    const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
 
     while (chain.length) {
       // apply last_votes and transactions

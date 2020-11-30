@@ -3,6 +3,7 @@ const StateNode = require('./state-node');
 const {
   makeCopyOfStateTree,
   deleteStateTree,
+  deleteStateTreeVersion,
 } = require('./state-util');
 const {
   FeatureFlags,
@@ -12,7 +13,7 @@ const {
 class StateManager {
   constructor() {
     this.rootMap = new Map();
-    this._setRoot(StateVersions.EMPTY, new StateNode());
+    this._setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
     this.finalizedVersion = null;
   }
 
@@ -115,7 +116,7 @@ class StateManager {
     }
     let newRoot = null;
     if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
+      newRoot = root.clone(newVersion);
     } else {
       newRoot = makeCopyOfStateTree(root);
     }
@@ -145,11 +146,11 @@ class StateManager {
       return null;
     }
     if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
+      deleteStateTreeVersion(root, version);
     } else {
       deleteStateTree(root);
-      this.rootMap.delete(version);
     }
+    this.rootMap.delete(version);
     return root;
   }
 
@@ -169,11 +170,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] non-existing version: ${version}`);
       return false;
     }
-    if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
-    } else {
-      this.finalizedVersion = version;
-    }
+    this.finalizedVersion = version;
     return true;
   }
 }

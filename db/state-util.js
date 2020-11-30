@@ -148,15 +148,15 @@ function isValidJsObjectForStates(obj) {
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
-function jsObjectToStateTree(obj) {
-  const node = new StateNode();
+function jsObjectToStateTree(obj, version) {
+  const node = new StateNode(version);
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmpty(obj)) {
       node.setIsLeaf(true);
     } else {
       for (const key in obj) {
         const childObj = obj[key];
-        node.setChild(key, jsObjectToStateTree(childObj));
+        node.setChild(key, jsObjectToStateTree(childObj, version));
       }
     }
   } else {
@@ -180,14 +180,48 @@ function stateTreeToJsObject(root) {
   return obj;
 }
 
+function stateTreeToJsObjectWithVersions(root) {
+  if (root === null) {
+    return null;
+  }
+  if (root.getIsLeaf()) {
+    return root.getValue();
+  }
+  const obj = {};
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    obj[label] = stateTreeToJsObject(childNode);
+  }
+  obj['.versions'] = JSON.stringify(root.getVersions());
+  return obj;
+}
+
 function deleteStateTree(root) {
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    root.deleteChild(label);
     deleteStateTree(childNode);
+    root.deleteChild(label);
   }
   // reference:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
+  root.reset();
+}
+
+function deleteStateTreeVersion(root, version) {
+  if (!root.hasVersion(version)) {
+    // Does nothing.
+    return;
+  }
+
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    deleteStateTreeVersion(childNode, version);
+    /*
+    if (childNode.numVersions() === 0) {
+      root.deleteChild(label);
+    }
+    */
+  }
   root.reset();
 }
 
@@ -260,7 +294,9 @@ module.exports = {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
+  stateTreeToJsObjectWithVersions,
   deleteStateTree,
+  deleteStateTreeVersion,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
   setProofHashForStateTree,
