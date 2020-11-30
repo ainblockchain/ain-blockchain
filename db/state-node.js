@@ -9,7 +9,7 @@ class StateNode {
     this.version = version ? version : null;
   }
 
-  static create(isLeaf, childMap, value, proofHash, version) {
+  static _create(isLeaf, childMap, value, proofHash, version) {
     const node = new StateNode();
     node.setIsLeaf(isLeaf);
     node.childMap = new Map(childMap);
@@ -20,7 +20,7 @@ class StateNode {
   }
 
   clone(version) {
-    return StateNode.create(
+    return StateNode._create(
         this.isLeaf, this.childMap, this.value, this.proofHash,
         version ? version : this.version);
   }
