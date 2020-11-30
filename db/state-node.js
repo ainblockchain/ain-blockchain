@@ -6,26 +6,23 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.proofHash = null;
-    this.versionSet = new Set();
-    if (version) {
-      this.addVersion(version);
-    }
+    this.version = version ? version : null;
   }
 
-  static create(isLeaf, childMap, value, proofHash, versionSet) {
+  static create(isLeaf, childMap, value, proofHash, version) {
     const node = new StateNode();
-    node.isLeaf = isLeaf;
+    node.setIsLeaf(isLeaf);
     node.childMap = new Map(childMap);
-    node.value = value;
-    node.proofHash = proofHash;
-    node.versionSet = new Set(versionSet);
+    node.setValue(value);
+    node.setProofHash(proofHash);
+    node.setVersion(version);
     return node;
   }
 
   clone(version) {
     return StateNode.create(
         this.isLeaf, this.childMap, this.value, this.proofHash,
-        version ? [version] : this.versionSet);
+        version ? version : this.version);
   }
 
   reset() {
@@ -33,7 +30,7 @@ class StateNode {
     this.childMap.clear();
     this.value = null;
     this.proofHash = null;
-    this.versionSet.clear();
+    this.version = null;
   }
 
   getIsLeaf() {
@@ -102,28 +99,16 @@ class StateNode {
     this.proofHash = proofHash;
   }
 
-  addVersion(version) {
-    return this.versionSet.add(version);
+  setVersion(version) {
+    return this.version = version;
   }
 
-  hasVersion(version) {
-    return this.versionSet.has(version);
+  getVersion() {
+    return this.version;
   }
 
-  deleteVersion(version) {
-    return this.versionSet.delete(version);
-  }
-
-  getVersions() {
-    return [...this.versionSet.keys()];
-  }
-
-  numVersions() {
-    return this.versionSet.size;
-  }
-
-  resetVersions() {
-    return this.versionSet.clear();
+  resetVersion() {
+    return this.version = null;
   }
 }
 

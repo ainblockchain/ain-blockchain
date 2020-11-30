@@ -16,7 +16,7 @@ describe("state-node", () => {
       expect(node.childMap).to.not.be.null;
       expect(node.value).to.equal(null);
       expect(node.proofHash).to.equal(null);
-      expect(node.versionSet).to.not.be.null;
+      expect(node.version).to.equal(null);
     });
   });
 
@@ -24,13 +24,13 @@ describe("state-node", () => {
     it("leaf node", () => {
       node.setValue('value0');
       node.setProofHash('hash');
-      node.addVersion('version1');
+      node.setVersion('version1');
       const clone = node.clone();
       expect(clone.getIsLeaf()).to.equal(true);
       assert.deepEqual(clone.getChildNodes(), node.getChildNodes());
       expect(clone.getValue()).to.equal('value0');
       expect(clone.getProofHash()).to.equal('hash');
-      assert.deepEqual(clone.getVersions(), node.getVersions());
+      expect(clone.getVersion()).to.equal(node.getVersion());
     });
 
     it("internal node", () => {
@@ -43,13 +43,13 @@ describe("state-node", () => {
       node.setChild(label1, child1);
       node.setChild(label2, child2);
       node.setProofHash('hash');
-      node.addVersion('version1');
+      node.setVersion('version1');
       const clone = node.clone();
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(clone.getChildNodes(), node.getChildNodes());
       expect(clone.getValue()).to.equal(null);
       expect(clone.getProofHash()).to.equal('hash');
-      assert.deepEqual(clone.getVersions(), node.getVersions());
+      expect(clone.getVersion()).to.equal(node.getVersion());
     });
   });
 
@@ -57,15 +57,14 @@ describe("state-node", () => {
     it("leaf node", () => {
       node.setValue('value0');
       node.setProofHash('hash');
-      node.addVersion('version1');
+      node.setVersion('version1');
       node.reset();
       expect(node.getIsLeaf()).to.equal(true);
       expect(node.childMap).to.not.be.null;
       expect(node.numChildren()).to.equal(0);
       expect(node.getValue()).to.equal(null);
       expect(node.getProofHash()).to.equal(null);
-      expect(node.versionSet).to.not.be.null;
-      expect(node.numVersions()).to.equal(0);
+      expect(node.getVersion()).to.equal(null);
     });
 
     it("internal node", () => {
@@ -78,15 +77,14 @@ describe("state-node", () => {
       node.setChild(label1, child1);
       node.setChild(label2, child2);
       node.setProofHash('hash');
-      node.addVersion('version1');
+      node.setVersion('version1');
       node.reset();
       expect(node.getIsLeaf()).to.equal(true);
       expect(node.childMap).to.not.be.null;
       expect(node.numChildren()).to.equal(0);
       expect(node.getValue()).to.equal(null);
       expect(node.getProofHash()).to.equal(null);
-      expect(node.versionSet).to.not.be.null;
-      expect(node.numVersions()).to.equal(0);
+      expect(node.getVersion()).to.equal(null);
     });
   });
 
@@ -194,54 +192,16 @@ describe("state-node", () => {
   });
 
   describe("version", () => {
-    it("add / has / delete", () => {
+    it("set / get / reset", () => {
       const version1 = 'version1';
       const version2 = 'version2';
-      expect(node.hasVersion(version1)).to.equal(false);
-      expect(node.hasVersion(version2)).to.equal(false);
-      node.addVersion(version1);
-      expect(node.hasVersion(version1)).to.equal(true);
-      expect(node.hasVersion(version2)).to.equal(false);
-      node.addVersion(version2);
-      expect(node.hasVersion(version1)).to.equal(true);
-      expect(node.hasVersion(version2)).to.equal(true);
-      node.deleteVersion(version2);
-      expect(node.hasVersion(version1)).to.equal(true);
-      expect(node.hasVersion(version2)).to.equal(false);
-      node.deleteVersion(version1);
-      expect(node.hasVersion(version1)).to.equal(false);
-      expect(node.hasVersion(version2)).to.equal(false);
-    });
-
-    it("getVersions / numVersions", () => {
-      const version1 = 'version1';
-      const version2 = 'version2';
-      assert.deepEqual(node.getVersions(), []);
-      expect(node.numVersions()).to.equal(0);
-      node.addVersion(version1);
-      assert.deepEqual(node.getVersions(), ['version1']);
-      expect(node.numVersions()).to.equal(1);
-      node.addVersion(version2);
-      assert.deepEqual(node.getVersions(), ['version1', 'version2']);
-      expect(node.numVersions()).to.equal(2);
-      node.deleteVersion(version2);
-      assert.deepEqual(node.getVersions(), ['version1']);
-      expect(node.numVersions()).to.equal(1);
-      node.deleteVersion(version1);
-      assert.deepEqual(node.getVersions(), []);
-      expect(node.numVersions()).to.equal(0);
-    });
-
-    it("resetVersions", () => {
-      const version1 = 'version1';
-      const version2 = 'version2';
-      node.addVersion(version1);
-      node.addVersion(version2);
-      assert.deepEqual(node.getVersions(), ['version1', 'version2']);
-      expect(node.numVersions()).to.equal(2);
-      node.resetVersions();
-      assert.deepEqual(node.getVersions(), []);
-      expect(node.numVersions()).to.equal(0);
+      expect(node.getVersion()).to.equal(null);
+      node.setVersion(version1);
+      expect(node.getVersion()).to.equal(version1);
+      node.setVersion(version2);
+      expect(node.getVersion()).to.equal(version2);
+      node.resetVersion();
+      expect(node.getVersion()).to.equal(null);
     });
   });
 });
