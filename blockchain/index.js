@@ -143,15 +143,17 @@ class Blockchain {
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
-    if (!db.executeTransactionList(newBlock.last_votes)) {
-      logger.error('[blockchain.addNewBlockToChain] Failed to execute last_votes of block' +
-          `${JSON.stringify(newBlock, null, 2)}`);
-      return false;
-    }
-    if (!db.executeTransactionList(newBlock.transactions)) {
-      logger.error('[blockchain.addNewBlockToChain] Failed to execute transactions of block' +
-          `${JSON.stringify(newBlock, null, 2)}`);
-      return false;
+    if (db) {
+      if (!db.executeTransactionList(newBlock.last_votes)) {
+        logger.error('[blockchain.addNewBlockToChain] Failed to execute last_votes of block' +
+            `${JSON.stringify(newBlock, null, 2)}`);
+        return false;
+      }
+      if (!db.executeTransactionList(newBlock.transactions)) {
+        logger.error('[blockchain.addNewBlockToChain] Failed to execute transactions of block' +
+            `${JSON.stringify(newBlock, null, 2)}`);
+        return false;
+      }
     }
     this.chain.push(newBlock);
     this.writeChain();

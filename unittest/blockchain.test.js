@@ -93,7 +93,8 @@ describe('Blockchain', () => {
       while (!node1.bc.lastBlock() || !node2.bc.lastBlock() || node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
         const blockSection = node1.bc.requestBlockchainSection(node2.bc.lastBlock());
         if (blockSection) {
-          node2.bc.merge(blockSection, node2.backupDb);
+          node2.bc.merge(blockSection, node2.createDb(node2.stateManager.getFinalizedVersion(),
+              `NODE:${blockSection[blockSection.length - 1].number}`, this.bc, this.tp, true));
         }
       }
       assert.deepEqual(JSON.stringify(node1.bc.chain), JSON.stringify(node2.bc.chain));
