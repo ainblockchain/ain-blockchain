@@ -28,7 +28,7 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
-  stateTreeToJsObjectWithVersions,
+  stateTreeToJsObjectWithVersion,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('./state-util');
@@ -64,7 +64,7 @@ class DB {
   }
 
   dumpDbStates() {
-    return stateTreeToJsObjectWithVersions(this.stateRoot);
+    return stateTreeToJsObjectWithVersion(this.stateRoot);
   }
 
   // For testing purpose only.
@@ -137,7 +137,7 @@ class DB {
       if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
-          if (child.hasVersion(this.stateVersion)) {
+          if (child.getVersion() === this.stateVersion) {
             if (child.getIsLeaf()) {
               child.resetValue();
             }
