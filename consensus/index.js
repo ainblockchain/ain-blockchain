@@ -271,9 +271,9 @@ class Consensus {
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
     const validTransactions = [];
     const invalidTransactions = [];
-    const prevDb = lastBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.backupDb : this.blockPool.hashToDb.get(lastBlock.hash);
-    const baseVersion = prevDb.stateVersion;
+    const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
+        this.node.stateManager.getFinalizedVersion() :
+            this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
     const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
@@ -458,18 +458,22 @@ class Consensus {
           return false;
         }
       }
-      let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
-          this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
+      let baseVersion;
+      let prevDb;
       let isSnapDb = false;
-      if (!prevDb) {
+      if (prevBlock.number === this.node.bc.lastBlockNumber()) {
+        baseVersion = this.node.stateManager.getFinalizedVersion();
+      } else if (this.blockPool.hashToDb.has(last_hash)) {
+        baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
+      } else {
         prevDb = this.getSnapDb(prevBlock);
         isSnapDb = true;
         if (!prevDb) {
           logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
           return false;
         }
+        baseVersion = prevDb.stateVersion;
       }
-      const baseVersion = prevDb.stateVersion;
       const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
       const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
       if (isSnapDb) {
@@ -508,18 +512,22 @@ class Consensus {
     // TODO(lia): Check last_votes if they indeed voted for the previous block
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     // TODO(lia): Implement state version control
-    let prevDb = prevBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.backupDb : this.blockPool.hashToDb.get(last_hash);
+    let baseVersion;
+    let prevDb;
     let isSnapDb = false;
-    if (!prevDb) {
+    if (prevBlock.number === this.node.bc.lastBlockNumber()) {
+      baseVersion = this.node.stateManager.getFinalizedVersion();
+    } else if (this.blockPool.hashToDb.has(last_hash)) {
+      baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
+    } else {
       prevDb = this.getSnapDb(prevBlock);
       isSnapDb = true;
       if (!prevDb) {
         logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
         return false;
       }
+      baseVersion = prevDb.stateVersion;
     }
-    const baseVersion = prevDb.stateVersion;
     const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
     if (isSnapDb) {
@@ -531,7 +539,7 @@ class Consensus {
     }
     this.node.destroyDb(tempDb);
     this.node.tp.addTransaction(new Transaction(proposalTx));
-    const newVersion = `${StateVersions.BLOCK}:${proposalBlock.number}`;
+    const newVersion = `${StateVersions.TEMP}:${Date.now()}`;
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
@@ -677,12 +685,21 @@ class Consensus {
       if (blockToFinalize.number <= this.node.bc.lastBlockNumber()) {
         continue;
       }
-      if (this.node.addNewBlock(blockToFinalize)) {
+      const versionToFinalize = `${StateVersions.BACKUP}:${blockToFinalize.number}`;
+      // blockToFinalize's state version will be removed in BlockPool's cleanUpAfterFinalization()
+      this.node.stateManager.cloneVersion(
+          this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion, versionToFinalize);
+      if (!this.node.stateManager.finalizeVersion(versionToFinalize)) {
+        logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
+            JSON.stringify(blockToFinalize, null, 2));
+        return;
+      }
+      if (this.node.addNewBlock(blockToFinalize, versionToFinalize)) {
         logger.info(`[${LOG_HEADER}] Finalizing a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
-            `${JSON.stringify(this.state.blockToFinalize, null, 2)}`);
+            `${JSON.stringify(blockToFinalize, null, 2)}`);
         // FIXME: Stop consensus?
         return;
       }
@@ -782,7 +799,7 @@ class Consensus {
     if (this.blockPool.hashToDb.has(blockHash)) {
       baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
     } else if (blockHash === lastFinalizedHash) {
-      baseVersion = this.node.backupDb.stateVersion;
+      baseVersion = this.node.stateManager.getFinalizedVersion();
     }
     const snapVersion = `${StateVersions.SNAP}:${Date.now()}`;
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;

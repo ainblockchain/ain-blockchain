@@ -40,7 +40,6 @@ class BlockchainNode {
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
-    this.backupDb = null;
     this.db = null;
     this.nonce = null;
     this.initialized = false;
@@ -70,11 +69,10 @@ class BlockchainNode {
     const LOG_HEADER = 'init';
     logger.info(`[${LOG_HEADER}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
-    this.backupDb =
-        this.createDb(StateVersions.EMPTY, StateVersions.BACKUP, this.bc, this.tp, true);
-    this.backupDb.initDbStates();
+    const startingDb = this.createDb(StateVersions.EMPTY, StateVersions.BACKUP, this.bc, this.tp, true);
+    startingDb.initDbStates();
+    this.executeChainOnDb(startingDb);
     this.nonce = this.getNonce();
-    this.executeChainOnBackupDb();
     const newVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = this.createDb(StateVersions.BACKUP, newVersion, this.bc, this.tp, false);
     this.db.executeTransactionList(this.tp.getValidTransactions());
@@ -203,7 +201,7 @@ class BlockchainNode {
   }
 
   addNewBlock(block) {
-    if (this.bc.addNewBlockToChain(block, this.backupDb)) {
+    if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
       const newVersion = `${StateVersions.NODE}:${block.number}`;
       this.syncDb(newVersion);
@@ -215,26 +213,36 @@ class BlockchainNode {
   }
 
   mergeChainSubsection(chainSubsection) {
-    if (this.bc.merge(chainSubsection, this.backupDb)) {
-      const newVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
+    const tempDb = this.createTempDb(
+        this.stateManager.getFinalizedVersion(),
+        `${StateVersions.TEMP}:${Date.now()}`,
+        this.bc.lastBlockNumber()
+      );
+    if (this.bc.merge(chainSubsection, tempDb)) {
+      const lastBlockNumber = this.bc.lastBlockNumber();
+      const backupVersion = `${StateVersions.BACKUP}:${lastBlockNumber}`;
+      const newVersion = `${StateVersions.NODE}:${lastBlockNumber}`;
+      this.createDb(tempDb.stateVersion, backupVersion, this.bc, this.tp, true);
       this.syncDb(newVersion);
       chainSubsection.forEach((block) => {
         this.tp.cleanUpForNewBlock(block);
         this.tp.updateNonceTrackers(block.transactions);
       });
+      this.stateManager.deleteVersion(tempDb.stateVersion);
       return true;
     }
+    this.stateManager.deleteVersion(tempDb.stateVersion);
     return false;
   }
 
-  executeChainOnBackupDb() {
-    const LOG_HEADER = 'executeChainOnBackupDb';
+  executeChainOnDb(db) {
+    const LOG_HEADER = 'executeChainOnDb';
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
-      if (!this.backupDb.executeTransactionList(block.last_votes)) {
+      if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes`)
       }
-      if (!this.backupDb.executeTransactionList(transactions)) {
+      if (!db.executeTransactionList(transactions)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions`)
       }
       this.tp.updateNonceTrackers(transactions);
