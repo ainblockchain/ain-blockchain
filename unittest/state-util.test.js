@@ -8,7 +8,8 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
-  stateTreeVersionToJsObject,
+  stateTreeVersionsToJsObject,
+  setStateTreeVersion,
   deleteStateTree,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
@@ -419,9 +420,12 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
+      // leaf nodes
       assert.deepEqual(isValidJsObjectForStates(10), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidJsObjectForStates("str"), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidJsObjectForStates(null), {isValid: true, invalidPath: ''});
+
+      // internal node
       assert.deepEqual(isValidJsObjectForStates({
         bool: false,
         number: 10,
@@ -483,11 +487,14 @@ describe("state-util", () => {
 
   describe("jsObjectToStateTree / stateTreeToJsObject", () => {
     it("when valid input", () => {
+      // leaf nodes
       expect(stateTreeToJsObject(jsObjectToStateTree(true))).to.equal(true);
       expect(stateTreeToJsObject(jsObjectToStateTree(false))).to.equal(false);
       expect(stateTreeToJsObject(jsObjectToStateTree(10))).to.equal(10);
       expect(stateTreeToJsObject(jsObjectToStateTree('str'))).to.equal('str');
       expect(stateTreeToJsObject(jsObjectToStateTree(null))).to.equal(null);
+
+      // internal node
       const stateObj = {
         bool: false,
         number: 10,
@@ -545,14 +552,18 @@ describe("state-util", () => {
     })
   })
 
-  describe("jsObjectToStateTree with version / stateTreeVersionToJsObject", () => {
+  describe("jsObjectToStateTree with version / stateTreeVersionsToJsObject", () => {
     it("when valid input", () => {
       const ver1 = 'ver1';
-      expect(stateTreeVersionToJsObject(jsObjectToStateTree(true, ver1))).to.equal(true);
-      expect(stateTreeVersionToJsObject(jsObjectToStateTree(false, ver1))).to.equal(false);
-      expect(stateTreeVersionToJsObject(jsObjectToStateTree(10, ver1))).to.equal(10);
-      expect(stateTreeVersionToJsObject(jsObjectToStateTree('str', ver1))).to.equal('str');
-      expect(stateTreeVersionToJsObject(jsObjectToStateTree(null, ver1))).to.equal(null);
+
+      // leaf nodes
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(true, ver1))).to.equal(true);
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(false, ver1))).to.equal(false);
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(10, ver1))).to.equal(10);
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree('str', ver1))).to.equal('str');
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(null, ver1))).to.equal(null);
+
+      // internal node
       const stateObj = {
         bool: false,
         number: 10,
@@ -580,7 +591,79 @@ describe("state-util", () => {
           empty_obj: {},
         }
       };
-      assert.deepEqual(stateTreeVersionToJsObject(jsObjectToStateTree(stateObj, ver1)), {
+      assert.deepEqual(stateTreeVersionsToJsObject(jsObjectToStateTree(stateObj, ver1)), {
+        ".version": "ver1",
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".version": "ver1",
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".version": "ver1",
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+    })
+  })
+
+  describe("setStateTreeVersion", () => {
+    it("when valid input", () => {
+      const ver1 = 'ver1';
+
+      // leaf node
+      const stateNode = jsObjectToStateTree(true);
+      setStateTreeVersion(stateNode, ver1);
+      expect(stateNode.getVersion()).to.equal(ver1);
+
+      // internal node
+      const stateObj = {
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: {},
+        subobj1: {
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        },
+        subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        }
+      };
+      const stateTree = jsObjectToStateTree(stateObj);
+      setStateTreeVersion(stateTree, ver1);
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
         ".version": "ver1",
         bool: false,
         number: 10,
