@@ -178,7 +178,7 @@ function stateTreeToJsObject(root) {
   return obj;
 }
 
-function stateTreeVersionToJsObject(root) {
+function stateTreeVersionsToJsObject(root) {
   if (root === null) {
     return null;
   }
@@ -188,10 +188,23 @@ function stateTreeVersionToJsObject(root) {
   const obj = {};
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    obj[label] = stateTreeVersionToJsObject(childNode);
+    obj[label] = stateTreeVersionsToJsObject(childNode);
   }
   obj['.version'] = root.getVersion();
   return obj;
+}
+
+function setStateTreeVersion(root, version) {
+  if (root === null) {
+    return;
+  }
+  if (root.getVersion() !== version) {
+    root.setVersion(version);
+  }
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    setStateTreeVersion(childNode, version);
+  }
 }
 
 function deleteStateTree(root) {
@@ -288,7 +301,8 @@ module.exports = {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
-  stateTreeVersionToJsObject,
+  stateTreeVersionsToJsObject,
+  setStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,

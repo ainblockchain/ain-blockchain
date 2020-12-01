@@ -2,6 +2,7 @@ const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
   makeCopyOfStateTree,
+  setStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
 } = require('./state-util');
@@ -171,6 +172,7 @@ class StateManager {
       return false;
     }
     this.finalizedVersion = version;
+    setStateTreeVersion(this.getFinalizedRoot(), this.getFinalizedVersion());
     return true;
   }
 }

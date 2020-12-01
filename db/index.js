@@ -28,7 +28,7 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
-  stateTreeVersionToJsObject,
+  stateTreeVersionsToJsObject,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('./state-util');
@@ -64,7 +64,7 @@ class DB {
   }
 
   dumpDbStates() {
-    return stateTreeVersionToJsObject(this.stateRoot);
+    return stateTreeVersionsToJsObject(this.stateRoot);
   }
 
   // For testing purpose only.
