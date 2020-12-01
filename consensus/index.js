@@ -689,10 +689,14 @@ class Consensus {
       // blockToFinalize's state version will be removed in BlockPool's cleanUpAfterFinalization()
       this.node.stateManager.cloneVersion(
           this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion, versionToFinalize);
+      const finalizedVersion = this.node.stateManager.getFinalizedVersion();
       if (!this.node.stateManager.finalizeVersion(versionToFinalize)) {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             JSON.stringify(blockToFinalize, null, 2));
         return;
+      }
+      if (finalizedVersion !== versionToFinalize) {
+        this.node.stateManager.deleteVersion(finalizedVersion);
       }
       if (this.node.addNewBlock(blockToFinalize, versionToFinalize)) {
         logger.info(`[${LOG_HEADER}] Finalizing a block of number ${blockToFinalize.number} and ` +
