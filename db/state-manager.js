@@ -160,6 +160,7 @@ class StateManager {
    * 
    * @param {string} version state version
    */
+  // TODO(seo): Come up with a more efficient method.
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
     logger.info(`[${LOG_HEADER}] Finalizing version ${version} (${this.numVersions()})`);
