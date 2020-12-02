@@ -241,7 +241,7 @@ describe("state-node", () => {
   });
 
   describe("version", () => {
-    it("set / get / reset", () => {
+    it("set / get", () => {
       const version1 = 'version1';
       const version2 = 'version2';
       expect(node.getVersion()).to.equal(null);
@@ -249,8 +249,6 @@ describe("state-node", () => {
       expect(node.getVersion()).to.equal(version1);
       node.setVersion(version2);
       expect(node.getVersion()).to.equal(version2);
-      node.resetVersion();
-      expect(node.getVersion()).to.equal(null);
     });
   });
 });
