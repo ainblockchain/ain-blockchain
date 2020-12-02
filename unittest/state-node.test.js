@@ -290,30 +290,63 @@ describe("state-node", () => {
       assert.deepEqual(node.getChildLabels(), []);
       assert.deepEqual(node.getChildNodes(), []);
       expect(node.numChildren()).to.equal(0);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
       expect(node.getIsLeaf()).to.equal(true);
 
       node.setChild(label1, child1);
       assert.deepEqual(node.getChildLabels(), ['label1']);
       assert.deepEqual(node.getChildNodes(), [child1]);
       expect(node.numChildren()).to.equal(1);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
       expect(node.getIsLeaf()).to.equal(false);
 
       node.setChild(label2, child2);
       assert.deepEqual(node.getChildLabels(), ['label1', 'label2']);
       assert.deepEqual(node.getChildNodes(), [child1, child2]);
       expect(node.numChildren()).to.equal(2);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
       expect(node.getIsLeaf()).to.equal(false);
 
       node.deleteChild(label2);
       assert.deepEqual(node.getChildLabels(), ['label1']);
       assert.deepEqual(node.getChildNodes(), [child1]);
       expect(node.numChildren()).to.equal(1);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
       expect(node.getIsLeaf()).to.equal(false);
 
       node.deleteChild(label1);
       assert.deepEqual(node.getChildLabels(), []);
       assert.deepEqual(node.getChildNodes(), []);
       expect(node.numChildren()).to.equal(0);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
+      expect(node.getIsLeaf()).to.equal(true);
+    });
+
+    it("resetChildren", () => {
+      const label1 = 'label1';
+      const label2 = 'label2';
+      const child1 = new StateNode();
+      const child2 = new StateNode();
+      child1.setValue('value1');
+      child2.setValue('value2');
+      node.setChild(label1, child1);
+      node.setChild(label2, child2);
+      assert.deepEqual(node.getChildLabels(), ['label1', 'label2']);
+      assert.deepEqual(node.getChildNodes(), [child1, child2]);
+      expect(node.numChildren()).to.equal(2);
+      expect(node.getIsLeaf()).to.equal(false);
+
+      node.resetChildren();
+      assert.deepEqual(node.getChildLabels(), []);
+      assert.deepEqual(node.getChildNodes(), []);
+      expect(node.numChildren()).to.equal(0);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
       expect(node.getIsLeaf()).to.equal(true);
     });
   });
