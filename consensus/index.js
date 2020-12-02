@@ -684,10 +684,7 @@ class Consensus {
         continue;
       }
       const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
-      const oldFinalizedVersion = this.node.stateManager.getFinalizedVersion();
       this.node.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
-      logger.info(`[${LOG_HEADER}] Deleting previously finalized version: ${oldFinalizedVersion}`);
-      this.node.stateManager.deleteVersion(oldFinalizedVersion);
       if (this.node.addNewBlock(blockToFinalize)) {
         logger.info(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);

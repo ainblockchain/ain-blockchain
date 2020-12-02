@@ -303,10 +303,10 @@ const DefaultValues = {
  */
 const StateVersions = {
   BACKUP: 'BACKUP',
-  BLOCK: 'BLOCK',
   EMPTY: 'EMPTY',
   NODE: 'NODE',
   SNAP: 'SNAP',
+  START: 'START',
   TEMP: 'TEMP',
 };
 
