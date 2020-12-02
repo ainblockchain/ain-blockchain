@@ -226,7 +226,9 @@ function deleteStateTreeVersion(root, version) {
 
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    deleteStateTreeVersion(childNode, version);
+    if (childNode.getNumRef() == 1) {
+      deleteStateTreeVersion(childNode, version);
+    }
     root.deleteChild(label);
   }
   root.reset();

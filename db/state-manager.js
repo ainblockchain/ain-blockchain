@@ -160,7 +160,6 @@ class StateManager {
    * 
    * @param {string} version state version
    */
-  // TODO(seo): Come up with a more efficient method.
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
     logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
@@ -175,7 +174,6 @@ class StateManager {
       return false;
     }
     this.finalizedVersion = version;
-    setStateTreeVersion(this.getFinalizedRoot(), this.getFinalizedVersion());
     return true;
   }
 }
