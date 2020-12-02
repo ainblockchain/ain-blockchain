@@ -683,23 +683,13 @@ class Consensus {
       if (blockToFinalize.number <= this.node.bc.lastBlockNumber()) {
         continue;
       }
-      const versionToFinalize = `${StateVersions.BACKUP}:${blockToFinalize.number}`;
-      // blockToFinalize's state version will be removed in BlockPool's cleanUpAfterFinalization()
-      this.node.stateManager.cloneVersion(
-          this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion, versionToFinalize);
-      const finalizedVersion = this.node.stateManager.getFinalizedVersion();
-      if (!this.node.stateManager.finalizeVersion(versionToFinalize)) {
-        logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
-            JSON.stringify(blockToFinalize, null, 2));
-        return;
-      }
-      this.node.syncDb(`${StateVersions.NODE}:${blockToFinalize.number}`);
-      if (finalizedVersion !== versionToFinalize) {
-        logger.error(`[${LOG_HEADER}] Deleting previous finalized-version: ${finalizedVersion}`);
-        this.node.stateManager.deleteVersion(finalizedVersion);
-      }
-      if (this.node.addNewBlock(blockToFinalize, versionToFinalize)) {
-        logger.info(`[${LOG_HEADER}] Finalizing a block of number ${blockToFinalize.number} and ` +
+      const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
+      const oldFinalizedVersion = this.node.stateManager.getFinalizedVersion();
+      this.node.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
+      logger.info(`[${LOG_HEADER}] Deleting previously finalized version: ${oldFinalizedVersion}`);
+      this.node.stateManager.deleteVersion(oldFinalizedVersion);
+      if (this.node.addNewBlock(blockToFinalize)) {
+        logger.info(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
