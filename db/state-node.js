@@ -7,6 +7,7 @@ class StateNode {
     this.value = null;
     this.proofHash = null;
     this.version = version ? version : null;
+    this.numRef = 0;
   }
 
   static _create(isLeaf, childMap, value, proofHash, version) {
@@ -26,10 +27,11 @@ class StateNode {
 
   reset() {
     this.setIsLeaf(true);
-    this.childMap.clear();
+    this.resetChildren();
     this.resetValue();
     this.setProofHash(null);
     this.setVersion(null);
+    this.resetNumRef();
   }
 
   getIsLeaf() {
@@ -40,23 +42,16 @@ class StateNode {
     this.isLeaf = isLeaf;
   }
 
-  resetValue() {
-    this.setValue(null);
+  getValue() {
+    return this.value;
   }
 
   setValue(value) {
     this.value = value;
   }
 
-  getValue() {
-    return this.value;
-  }
-
-  setChild(label, stateNode) {
-    this.childMap.set(label, stateNode);
-    if (this.getIsLeaf()) {
-      this.setIsLeaf(false);
-    }
+  resetValue() {
+    this.setValue(null);
   }
 
   getChild(label) {
@@ -67,14 +62,34 @@ class StateNode {
     return child;
   }
 
+  setChild(label, stateNode) {
+    if (this.hasChild(label)) {
+      if (this.getChild(label) === stateNode) {
+        // Does nothing.
+        return;
+      }
+      const child = this.getChild(label);
+      child.decreaseNumRef();
+    }
+    this.childMap.set(label, stateNode);
+    stateNode.increaseNumRef();
+    if (this.getIsLeaf()) {
+      this.setIsLeaf(false);
+    }
+  }
+
   hasChild(label) {
     return this.childMap.has(label);
   }
 
   deleteChild(label) {
-    this.childMap.delete(label);
-    if (this.numChildren() === 0) {
-      this.setIsLeaf(true);
+    if (this.hasChild(label)) {
+      const child = this.getChild(label);
+      child.decreaseNumRef();
+      this.childMap.delete(label);
+      if (this.numChildren() === 0) {
+        this.setIsLeaf(true);
+      }
     }
   }
 
@@ -90,6 +105,12 @@ class StateNode {
     return this.childMap.size;
   }
 
+  resetChildren() {
+    this.getChildLabels().forEach((label) => {
+      this.deleteChild(label);
+    });
+  }
+
   getProofHash() {
     return this.proofHash;
   }
@@ -98,12 +119,30 @@ class StateNode {
     this.proofHash = proofHash;
   }
 
+  getVersion() {
+    return this.version;
+  }
+
   setVersion(version) {
     this.version = version;
   }
 
-  getVersion() {
-    return this.version;
+  getNumRef() {
+    return this.numRef;
+  }
+
+  increaseNumRef() {
+    this.numRef++;
+  }
+
+  decreaseNumRef() {
+    if (this.numRef > 0) {
+      this.numRef--;
+    }
+  }
+
+  resetNumRef() {
+    this.numRef = 0;
   }
 }
 
