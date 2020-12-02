@@ -20,9 +20,13 @@ class StateNode {
   }
 
   clone(version) {
-    return StateNode._create(
+    const clonedNode = StateNode._create(
         this.isLeaf, this.childMap, this.value, this.proofHash,
         version ? version : this.version);
+    this.getChildNodes().forEach((child) => {
+      child.increaseNumRef();
+    });
+    return clonedNode;
   }
 
   reset() {
