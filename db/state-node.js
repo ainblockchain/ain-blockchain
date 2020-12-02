@@ -1,24 +1,35 @@
 class StateNode {
-  constructor() {
-    this.isLeaf = false;
+  constructor(version) {
+    this.isLeaf = true;
     // Used for internal nodes only.
     this.childMap = new Map();
     // Used for leaf nodes only.
     this.value = null;
-    this.proof = null;
+    this.proofHash = null;
+    this.version = version ? version : null;
   }
 
-  static create(isLeaf, childMap, value, proof) {
-    const node = new StateNode();
-    node.isLeaf = isLeaf;
+  static _create(isLeaf, childMap, value, proofHash, version) {
+    const node = new StateNode(version);
+    node.setIsLeaf(isLeaf);
     node.childMap = new Map(childMap);
-    node.value = value;
-    node.proof = proof;
+    node.setValue(value);
+    node.setProofHash(proofHash);
     return node;
   }
 
-  clone() {
-    return StateNode.create(this.isLeaf, this.childMap, this.value, this.proof);
+  clone(version) {
+    return StateNode._create(
+        this.isLeaf, this.childMap, this.value, this.proofHash,
+        version ? version : this.version);
+  }
+
+  reset() {
+    this.setIsLeaf(true);
+    this.childMap.clear();
+    this.resetValue();
+    this.setProofHash(null);
+    this.setVersion(null);
   }
 
   getIsLeaf() {
@@ -31,12 +42,10 @@ class StateNode {
 
   resetValue() {
     this.setValue(null);
-    this.setIsLeaf(false);
   }
 
   setValue(value) {
     this.value = value;
-    this.setIsLeaf(true);
   }
 
   getValue() {
@@ -64,10 +73,9 @@ class StateNode {
 
   deleteChild(label) {
     this.childMap.delete(label);
-    if (this.getNumChild() === 0) {
+    if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
-    this.setProofHash(null);
   }
 
   getChildLabels() {
@@ -78,36 +86,24 @@ class StateNode {
     return [...this.childMap.values()];
   }
 
-  getNumChild() {
+  numChildren() {
     return this.childMap.size;
   }
 
   getProofHash() {
-    return this.proof;
+    return this.proofHash;
   }
 
-  setProofHash(hash) {
-    this.proof = hash;
+  setProofHash(proofHash) {
+    this.proofHash = proofHash;
   }
 
-  addVersion() {
-    // TODO(lia): Implement this.
+  setVersion(version) {
+    this.version = version;
   }
 
-  hasVersion() {
-    // TODO(lia): Implement this.
-  }
-
-  deleteVersion() {
-    // TODO(lia): Implement this.
-  }
-
-  getVersions() {
-    // TODO(lia): Implement this.
-  }
-
-  resetVersions() {
-    // TODO(lia): Implement this.
+  getVersion() {
+    return this.version;
   }
 }
 

@@ -203,7 +203,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Invalid message type: ${msg.type}`);
       return;
     }
-    if (ChainUtil.isEmptyNode(msg.value)) {
+    if (ChainUtil.isEmpty(msg.value)) {
       logger.error(`[${LOG_HEADER}] Invalid message value: ${msg.value}`);
       return;
     }
@@ -689,10 +689,14 @@ class Consensus {
       // blockToFinalize's state version will be removed in BlockPool's cleanUpAfterFinalization()
       this.node.stateManager.cloneVersion(
           this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion, versionToFinalize);
+      const finalizedVersion = this.node.stateManager.getFinalizedVersion();
       if (!this.node.stateManager.finalizeVersion(versionToFinalize)) {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             JSON.stringify(blockToFinalize, null, 2));
         return;
+      }
+      if (finalizedVersion !== versionToFinalize) {
+        this.node.stateManager.deleteVersion(finalizedVersion);
       }
       if (this.node.addNewBlock(blockToFinalize, versionToFinalize)) {
         logger.info(`[${LOG_HEADER}] Finalizing a block of number ${blockToFinalize.number} and ` +
@@ -795,7 +799,7 @@ class Consensus {
     }
 
     // Create a DB for executing the block on.
-    let baseVersion = null;
+    let baseVersion = StateVersions.EMPTY;
     if (this.blockPool.hashToDb.has(blockHash)) {
       baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
     } else if (blockHash === lastFinalizedHash) {
@@ -803,9 +807,7 @@ class Consensus {
     }
     const snapVersion = `${StateVersions.SNAP}:${Date.now()}`;
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
-    const snapDb = baseVersion ?
-        this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot) :
-        new DB(new StateNode(), snapVersion, null, null, false, blockNumberSnapshot);
+    const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
 
     while (chain.length) {
       // apply last_votes and transactions

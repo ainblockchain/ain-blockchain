@@ -2,7 +2,9 @@ const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
   makeCopyOfStateTree,
+  setStateTreeVersion,
   deleteStateTree,
+  deleteStateTreeVersion,
 } = require('./state-util');
 const {
   FeatureFlags,
@@ -12,7 +14,7 @@ const {
 class StateManager {
   constructor() {
     this.rootMap = new Map();
-    this._setRoot(StateVersions.EMPTY, new StateNode());
+    this._setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
     this.finalizedVersion = null;
   }
 
@@ -115,7 +117,7 @@ class StateManager {
     }
     let newRoot = null;
     if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
+      newRoot = root.clone(newVersion);
     } else {
       newRoot = makeCopyOfStateTree(root);
     }
@@ -145,11 +147,11 @@ class StateManager {
       return null;
     }
     if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
+      deleteStateTreeVersion(root, version);
     } else {
       deleteStateTree(root);
-      this.rootMap.delete(version);
     }
+    this.rootMap.delete(version);
     return root;
   }
 
@@ -158,9 +160,12 @@ class StateManager {
    * 
    * @param {string} version state version
    */
+  // TODO(seo): Come up with a more efficient method.
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
-    logger.info(`[${LOG_HEADER}] Finalizing version ${version} (${this.numVersions()})`);
+    logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
+        `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
+        ` with latest finalized version: '${this.getFinalizedVersion()}'`);
     if (version === this.finalizedVersion) {
       logger.error(`[${LOG_HEADER}] already finalized version: ${version}`);
       return false;
@@ -169,11 +174,8 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] non-existing version: ${version}`);
       return false;
     }
-    if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
-    } else {
-      this.finalizedVersion = version;
-    }
+    this.finalizedVersion = version;
+    setStateTreeVersion(this.getFinalizedRoot(), this.getFinalizedVersion());
     return true;
   }
 }
