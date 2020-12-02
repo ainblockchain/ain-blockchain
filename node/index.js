@@ -110,7 +110,7 @@ class BlockchainNode {
     }
     const clonedRoot = this.stateManager.cloneFinalizedVersion(newVersion);
     if (!clonedRoot) {
-      logger.info(`[${LOG_HEADER}] Failed to clone finalized state version: ` +
+      logger.error(`[${LOG_HEADER}] Failed to clone finalized state version: ` +
           `${this.stateManager.getFinalizedVersion()}`);
     }
     this.db.setStateVersion(clonedRoot, newVersion);
@@ -221,8 +221,12 @@ class BlockchainNode {
     if (this.bc.merge(chainSubsection, tempDb)) {
       const lastBlockNumber = this.bc.lastBlockNumber();
       const backupVersion = `${StateVersions.BACKUP}:${lastBlockNumber}`;
+      const clonedRoot = this.stateManager.cloneVersion(tempDb.stateVersion, backupVersion);
+      if (!clonedRoot) {
+        logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempDb.stateVersion}`);
+      }
+      this.stateManager.finalizeVersion(backupVersion);
       const newVersion = `${StateVersions.NODE}:${lastBlockNumber}`;
-      this.createDb(tempDb.stateVersion, backupVersion, this.bc, this.tp, true);
       this.syncDb(newVersion);
       chainSubsection.forEach((block) => {
         this.tp.cleanUpForNewBlock(block);
