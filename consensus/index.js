@@ -6,8 +6,6 @@ const sizeof = require('object-sizeof');
 const logger = require('../logger')('CONSENSUS');
 const {Block} = require('../blockchain/block');
 const BlockPool = require('./block-pool');
-const StateNode = require('../db/state-node');
-const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../chain-util');
@@ -695,7 +693,9 @@ class Consensus {
             JSON.stringify(blockToFinalize, null, 2));
         return;
       }
+      this.node.syncDb(`${StateVersions.NODE}:${blockToFinalize.number}`);
       if (finalizedVersion !== versionToFinalize) {
+        logger.error(`[${LOG_HEADER}] Deleting previous finalized-version: ${finalizedVersion}`);
         this.node.stateManager.deleteVersion(finalizedVersion);
       }
       if (this.node.addNewBlock(blockToFinalize, versionToFinalize)) {
