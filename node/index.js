@@ -120,6 +120,18 @@ class BlockchainNode {
     return true;
   }
 
+  cloneAndFinalizeVersion(version, blockNumber) {
+    const LOG_HEADER = 'cloneAndFinalizeVersion';
+    const backupVersion = `${StateVersions.BACKUP}:${blockNumber}`;
+    const clonedRoot = this.stateManager.cloneVersion(version, backupVersion);
+    if (!clonedRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${version}`);
+    }
+    this.stateManager.finalizeVersion(backupVersion);
+    const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
+    this.syncDb(nodeVersion)
+  }
+
   getNonce() {
     const LOG_HEADER = 'getNonce';
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
@@ -213,30 +225,25 @@ class BlockchainNode {
   }
 
   mergeChainSubsection(chainSubsection) {
+    const LOG_HEADER = 'mergeChainSubsection';
     const tempDb = this.createTempDb(
         this.stateManager.getFinalizedVersion(),
         `${StateVersions.TEMP}:${Date.now()}`,
         this.bc.lastBlockNumber()
       );
-    if (this.bc.merge(chainSubsection, tempDb)) {
-      const lastBlockNumber = this.bc.lastBlockNumber();
-      const backupVersion = `${StateVersions.BACKUP}:${lastBlockNumber}`;
-      const clonedRoot = this.stateManager.cloneVersion(tempDb.stateVersion, backupVersion);
-      if (!clonedRoot) {
-        logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempDb.stateVersion}`);
-      }
-      this.stateManager.finalizeVersion(backupVersion);
-      const newVersion = `${StateVersions.NODE}:${lastBlockNumber}`;
-      this.syncDb(newVersion);
-      chainSubsection.forEach((block) => {
-        this.tp.cleanUpForNewBlock(block);
-        this.tp.updateNonceTrackers(block.transactions);
-      });
+    if (!this.bc.merge(chainSubsection, tempDb)) {
+      logger.error(`[${LOG_HEADER}] Failed to merge chain subsection: ` +
+          `${JSON.stringify(chainSubsection, null, 2)}`);
       this.stateManager.deleteVersion(tempDb.stateVersion);
-      return true;
+      return false;
     }
-    this.stateManager.deleteVersion(tempDb.stateVersion);
-    return false;
+    const lastBlockNumber = this.bc.lastBlockNumber();
+    this.cloneAndFinalizeVersion(tempDb.stateVersion, lastBlockNumber);
+    chainSubsection.forEach((block) => {
+      this.tp.cleanUpForNewBlock(block);
+      this.tp.updateNonceTrackers(block.transactions);
+    });
+    return true;
   }
 
   executeChainOnDb(db) {
