@@ -164,7 +164,8 @@ class StateManager {
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
     logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
-        `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}`);
+        `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
+        ` with latest finalized version: '${this.getFinalizedVersion()}'`);
     if (version === this.finalizedVersion) {
       logger.error(`[${LOG_HEADER}] already finalized version: ${version}`);
       return false;
