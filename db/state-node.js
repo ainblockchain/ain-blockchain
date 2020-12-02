@@ -26,11 +26,11 @@ class StateNode {
   }
 
   reset() {
-    this.isLeaf = true;
+    this.setIsLeaf(true);
     this.childMap.clear();
-    this.value = null;
-    this.proofHash = null;
-    this.version = null;
+    this.resetValue();
+    this.setProofHash(null);
+    this.setVersion(null);
   }
 
   getIsLeaf() {
@@ -105,10 +105,6 @@ class StateNode {
 
   getVersion() {
     return this.version;
-  }
-
-  resetVersion() {
-    return this.version = null;
   }
 }
 
