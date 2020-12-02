@@ -194,44 +194,65 @@ function stateTreeVersionsToJsObject(root) {
   return obj;
 }
 
+/**
+ * Returns affected nodes number.
+ */
 function setStateTreeVersion(root, version) {
+  let numNodes = 0;
   if (root === null) {
-    return;
+    return numNodes;
   }
   if (root.getVersion() !== version) {
     root.setVersion(version);
+    numNodes++;
   }
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    setStateTreeVersion(childNode, version);
+    numNodes += setStateTreeVersion(childNode, version);
   }
+
+  return numNodes;
 }
 
+/**
+ * Returns affected nodes number.
+ */
 function deleteStateTree(root) {
+  let numNodes = 0;
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    deleteStateTree(childNode);
+    numNodes += deleteStateTree(childNode);
     root.deleteChild(label);
   }
   // reference:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
   root.reset();
+  numNodes++;
+
+  return numNodes;
 }
 
+/**
+ * Returns affected nodes number.
+ */
 function deleteStateTreeVersion(root, version) {
+  let numNodes = 0;
   if (root.getVersion() !== version) {
     // Does nothing.
-    return;
+    return numNodes;
   }
 
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     if (childNode.getNumRef() == 1) {
-      deleteStateTreeVersion(childNode, version);
+      numNodes += deleteStateTreeVersion(childNode, version);
     }
     root.deleteChild(label);
   }
   root.reset();
+  numNodes++;
+
+  return numNodes;
 }
 
 function makeCopyOfStateTree(root) {
