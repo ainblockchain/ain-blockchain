@@ -138,15 +138,11 @@ class DB {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
           if (child.getVersion() === this.stateVersion) {
-            if (child.getIsLeaf()) {
-              child.resetValue();
-            }
+            child.resetValue();
             node = child;
           } else {
             const clonedChild = child.clone(this.stateVersion);
-            if (clonedChild.getIsLeaf()) {
-              clonedChild.resetValue();
-            }
+            clonedChild.resetValue();
             node.setChild(label, clonedChild);
             node = clonedChild;
           }
@@ -158,9 +154,7 @@ class DB {
       } else {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
-          if (child.getIsLeaf()) {
-            child.resetValue();
-          }
+          child.resetValue();
           node = child;
         } else {
           const newChild = new StateNode(this.stateVersion);
