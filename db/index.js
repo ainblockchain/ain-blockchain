@@ -28,6 +28,7 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
+  stateTreeVersionsToJsObject,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('./state-util');
@@ -60,6 +61,10 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
       [RuleProperties.WRITE]: true
     });
+  }
+
+  dumpDbStates() {
+    return stateTreeVersionsToJsObject(this.stateRoot);
   }
 
   // For testing purpose only.
@@ -126,22 +131,35 @@ class DB {
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
   getRefForWriting(fullPath) {
-    let node = null;
-    if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
-    } else {
-      node = this.stateRoot;
-      for (let i = 0; i < fullPath.length; i++) {
-        const label = fullPath[i];
+    let node = this.stateRoot;
+    for (let i = 0; i < fullPath.length; i++) {
+      const label = fullPath[i];
+      if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
-          node = node.getChild(label);
-          if (node.getIsLeaf()) {
-            node.resetValue();
+          const child = node.getChild(label);
+          if (child.getVersion() === this.stateVersion) {
+            child.resetValue();
+            node = child;
+          } else {
+            const clonedChild = child.clone(this.stateVersion);
+            clonedChild.resetValue();
+            node.setChild(label, clonedChild);
+            node = clonedChild;
           }
         } else {
-          const child = new StateNode();
-          node.setChild(label, child);
+          const newChild = new StateNode(this.stateVersion);
+          node.setChild(label, newChild);
+          node = newChild;
+        }
+      } else {
+        if (node.hasChild(label)) {
+          const child = node.getChild(label);
+          child.resetValue();
           node = child;
+        } else {
+          const newChild = new StateNode(this.stateVersion);
+          node.setChild(label, newChild);
+          node = newChild;
         }
       }
     }
@@ -149,26 +167,22 @@ class DB {
   }
 
   writeDatabase(fullPath, stateObj) {
-    if (FeatureFlags.enableStateVersionOpt) {
-      // TODO(): Implement this.
+    const stateTree = jsObjectToStateTree(stateObj, this.stateVersion);
+    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
+    if (fullPath.length === 0) {
+      this.stateRoot = stateTree;
     } else {
-      const stateTree = jsObjectToStateTree(stateObj);
-      const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
-      if (fullPath.length === 0) {
-        this.stateRoot = stateTree;
-      } else {
-        const label = fullPath[fullPath.length - 1];
-        const parent = this.getRefForWriting(pathToParent);
-        parent.setChild(label, stateTree);
-      }
-      if (isEmptyNode(stateTree)) {
-        this.removeEmptyNodes(fullPath);
-      } else if (!LIGHTWEIGHT) {
-        setProofHashForStateTree(stateTree);
-      }
-      if (!LIGHTWEIGHT) {
-        updateProofHashForPath(pathToParent, this.stateRoot);
-      }
+      const label = fullPath[fullPath.length - 1];
+      const parent = this.getRefForWriting(pathToParent);
+      parent.setChild(label, stateTree);
+    }
+    if (isEmptyNode(stateTree)) {
+      this.removeEmptyNodes(fullPath);
+    } else if (!LIGHTWEIGHT) {
+      setProofHashForStateTree(stateTree);
+    }
+    if (!LIGHTWEIGHT) {
+      updateProofHashForPath(pathToParent, this.stateRoot);
     }
   }
 

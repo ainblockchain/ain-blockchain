@@ -120,7 +120,7 @@ function isValidPathForStates(fullPath) {
 
 function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
-    if (ChainUtil.isEmptyNode(obj)) {
+    if (ChainUtil.isEmpty(obj)) {
       return false;
     }
     for (const key in obj) {
@@ -148,15 +148,13 @@ function isValidJsObjectForStates(obj) {
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
-function jsObjectToStateTree(obj) {
-  const node = new StateNode();
+function jsObjectToStateTree(obj, version) {
+  const node = new StateNode(version);
   if (ChainUtil.isDict(obj)) {
-    if (ChainUtil.isEmptyNode(obj)) {
-      node.setIsLeaf(true);
-    } else {
+    if (!ChainUtil.isEmpty(obj)) {
       for (const key in obj) {
         const childObj = obj[key];
-        node.setChild(key, jsObjectToStateTree(childObj));
+        node.setChild(key, jsObjectToStateTree(childObj, version));
       }
     }
   } else {
@@ -180,15 +178,58 @@ function stateTreeToJsObject(root) {
   return obj;
 }
 
+function stateTreeVersionsToJsObject(root) {
+  if (root === null) {
+    return null;
+  }
+  if (root.getIsLeaf()) {
+    return root.getValue();
+  }
+  const obj = {};
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    obj[label] = stateTreeVersionsToJsObject(childNode);
+  }
+  obj['.version'] = root.getVersion();
+  return obj;
+}
+
+function setStateTreeVersion(root, version) {
+  if (root === null) {
+    return;
+  }
+  if (root.getVersion() !== version) {
+    root.setVersion(version);
+  }
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    setStateTreeVersion(childNode, version);
+  }
+}
+
 function deleteStateTree(root) {
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    root.deleteChild(label);
     deleteStateTree(childNode);
+    root.deleteChild(label);
   }
   // reference:
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
-  root = null;
+  root.reset();
+}
+
+function deleteStateTreeVersion(root, version) {
+  if (root.getVersion() !== version) {
+    // Does nothing.
+    return;
+  }
+
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    deleteStateTreeVersion(childNode, version);
+    root.deleteChild(label);
+  }
+  root.reset();
 }
 
 function makeCopyOfStateTree(root) {
@@ -260,7 +301,10 @@ module.exports = {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
+  stateTreeVersionsToJsObject,
+  setStateTreeVersion,
   deleteStateTree,
+  deleteStateTreeVersion,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
   setProofHashForStateTree,

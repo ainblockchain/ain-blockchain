@@ -17,6 +17,7 @@ const {
   GenesisOwners,
   AccountProperties,
   ProofProperties,
+  StateVersions,
 } = require('../constants');
 const BlockFilePatterns = require('./block-file-patterns');
 
@@ -244,7 +245,8 @@ class Block {
   }
 
   static getGenesisStateProofHash() {
-    const tempGenesisDb = new DB(new StateNode(), null, null, null, false, -1);
+    const tempGenesisDb =
+        new DB(new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, null, false, -1);
     tempGenesisDb.initDbStates();
     const genesisTransactions = Block.getGenesisBlockData(
         GenesisAccounts[AccountProperties.TIMESTAMP]);

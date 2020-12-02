@@ -123,26 +123,26 @@ describe("RuleUtil", () => {
     })
   })
 
-  describe("isEmptyNode", () => {
+  describe("isEmpty", () => {
     it("when invalid input", () => {
-      expect(util.isEmptyNode(true)).to.equal(false);
-      expect(util.isEmptyNode(false)).to.equal(false);
-      expect(util.isEmptyNode(0)).to.equal(false);
-      expect(util.isEmptyNode(10)).to.equal(false);
-      expect(util.isEmptyNode(Infinity)).to.equal(false);
-      expect(util.isEmptyNode(NaN)).to.equal(false);
-      expect(util.isEmptyNode('')).to.equal(false);
-      expect(util.isEmptyNode('abc')).to.equal(false);
-      expect(util.isEmptyNode('0')).to.equal(false);
-      expect(util.isEmptyNode([])).to.equal(false);
-      expect(util.isEmptyNode([10])).to.equal(false);
-      expect(util.isEmptyNode({a: 'A'})).to.equal(false);
+      expect(util.isEmpty(true)).to.equal(false);
+      expect(util.isEmpty(false)).to.equal(false);
+      expect(util.isEmpty(0)).to.equal(false);
+      expect(util.isEmpty(10)).to.equal(false);
+      expect(util.isEmpty(Infinity)).to.equal(false);
+      expect(util.isEmpty(NaN)).to.equal(false);
+      expect(util.isEmpty('')).to.equal(false);
+      expect(util.isEmpty('abc')).to.equal(false);
+      expect(util.isEmpty('0')).to.equal(false);
+      expect(util.isEmpty([])).to.equal(false);
+      expect(util.isEmpty([10])).to.equal(false);
+      expect(util.isEmpty({a: 'A'})).to.equal(false);
     })
 
     it("when valid input", () => {
-      expect(util.isEmptyNode(null)).to.equal(true);
-      expect(util.isEmptyNode(undefined)).to.equal(true);
-      expect(util.isEmptyNode({})).to.equal(true);
+      expect(util.isEmpty(null)).to.equal(true);
+      expect(util.isEmpty(undefined)).to.equal(true);
+      expect(util.isEmpty({})).to.equal(true);
     })
   })
 
