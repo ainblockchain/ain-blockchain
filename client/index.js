@@ -290,6 +290,17 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
     .end();
 });
 
+app.get('/state_versions', (req, res) => {
+  const result = {
+    version_list: node.stateManager.getVersionList(),
+    finalized_version: node.stateManager.getFinalizedVersion(),
+  };
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
