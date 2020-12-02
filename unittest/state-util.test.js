@@ -769,18 +769,26 @@ describe("state-util", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
+      // Delete a leaf node without version.
       const stateNode1 = jsObjectToStateTree(true);
       deleteStateTreeVersion(stateNode1, ver1);
       expect(stateNode1.getVersion()).to.equal(null);
       expect(stateNode1.getValue()).to.equal(true);
 
+      // Delete a leaf node with version.
       const stateNode2 = jsObjectToStateTree(true, ver1);
       deleteStateTreeVersion(stateNode2, ver1);
       expect(stateNode2.getVersion()).to.equal(null);
       expect(stateNode2.getValue()).to.equal(null);
+
+      // Delete a leaf node with a different version.
+      const stateNode3 = jsObjectToStateTree(true, 'ver2');
+      deleteStateTreeVersion(stateNode2, ver1);
+      expect(stateNode3.getVersion()).to.equal('ver2');
+      expect(stateNode3.getValue()).to.equal(true);
     })
 
-    it("internal node", () => {
+    it("internal node with a different version", () => {
       deleteStateTreeVersion(stateTree, 'ver4');
       // State tree is not deleted.
       assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
@@ -788,8 +796,12 @@ describe("state-util", () => {
         label1: "value1",
         label2: "value2"
       });
+    })
 
+    it("internal node with the same version", () => {
+      // Set versions of the state tree.
       setStateTreeVersion(stateTree, ver3);
+
       deleteStateTreeVersion(stateTree, ver3);
       // State tree is deleted.
       assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
@@ -800,14 +812,7 @@ describe("state-util", () => {
       expect(child2.getVersion()).to.equal(null);
     })
 
-    it("internal node with different versions", () => {
-      deleteStateTreeVersion(stateTree, ver1);
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
-        ".version": "ver3",
-        label1: "value1",
-        label2: "value2"
-      });
-
+    it("internal node with the same version but with sub-node of different versions", () => {
       deleteStateTreeVersion(stateTree, ver3);
       // Root node is deleted.
       assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
@@ -816,6 +821,27 @@ describe("state-util", () => {
       expect(child1.getVersion()).to.equal(ver1);
       expect(child2.getValue()).to.equal('value2');
       expect(child2.getVersion()).to.equal(ver2);
+    })
+
+    it("internal node with the same version but with sub-nodes of > 1 numRef values", () => {
+      // Set versions of the state tree.
+      setStateTreeVersion(stateTree, ver3);
+      stateTree2 = new StateNode('ver99');
+      stateTree2.setChild('label1', child1);
+      stateTree2.setChild('label2', child2);
+      expect(child1.getNumRef()).to.equal(2);
+      expect(child2.getNumRef()).to.equal(2);
+
+      deleteStateTreeVersion(stateTree, ver3);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      // But child nodes are not deleted.
+      expect(child1.getValue()).to.equal('value1');
+      expect(child1.getVersion()).to.equal(ver3);
+      expect(child1.getNumRef()).to.equal(1);
+      expect(child2.getValue()).to.equal('value2');
+      expect(child2.getVersion()).to.equal(ver3);
+      expect(child2.getNumRef()).to.equal(1);
     })
   })
 
