@@ -10,12 +10,11 @@ class StateNode {
   }
 
   static _create(isLeaf, childMap, value, proofHash, version) {
-    const node = new StateNode();
+    const node = new StateNode(version);
     node.setIsLeaf(isLeaf);
     node.childMap = new Map(childMap);
     node.setValue(value);
     node.setProofHash(proofHash);
-    node.setVersion(version);
     return node;
   }
 
@@ -100,7 +99,7 @@ class StateNode {
   }
 
   setVersion(version) {
-    return this.version = version;
+    this.version = version;
   }
 
   getVersion() {
