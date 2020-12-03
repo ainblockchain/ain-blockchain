@@ -2,7 +2,6 @@ const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
   makeCopyOfStateTree,
-  setStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
 } = require('./state-util');
@@ -103,16 +102,16 @@ class StateManager {
     logger.info(`[${LOG_HEADER}] Cloning version ${version} to version ${newVersion} ` +
         `(${this.numVersions()})`);
     if (!this.hasVersion(version)) {
-      logger.error(`[${LOG_HEADER}] non-existing version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return null;
     }
     if (this.hasVersion(newVersion)) {
-      logger.error(`[${LOG_HEADER}] already existing new version: ${newVersion}`);
+      logger.error(`[${LOG_HEADER}] Already existing new version: ${newVersion}`);
       return null;
     }
     const root = this.getRoot(version);
     if (root === null) {
-      logger.error(`[${LOG_HEADER}] null root of version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Null root of version: ${version}`);
       return null;
     }
     let newRoot = null;
@@ -134,23 +133,25 @@ class StateManager {
     const LOG_HEADER = 'deleteVersion';
     logger.info(`[${LOG_HEADER}] Deleting version ${version} (${this.numVersions()})`);
     if (!this.hasVersion(version)) {
-      logger.error(`[${LOG_HEADER}] non-existing version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return null;
     }
     if (version === this.finalizedVersion) {
-      logger.error(`[${LOG_HEADER}] not allowed to delete finalized version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Not allowed to delete finalized version: ${version}`);
       return null;
     }
     const root = this.getRoot(version);
     if (root === null) {
-      logger.error(`[${LOG_HEADER}] null root of version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Null root of version: ${version}`);
       return null;
     }
+    let numDeletedNodes = null;
     if (FeatureFlags.enableStateVersionOpt) {
-      deleteStateTreeVersion(root, version);
+      numDeletedNodes = deleteStateTreeVersion(root, version);
     } else {
-      deleteStateTree(root);
+      numDeletedNodes = deleteStateTree(root);
     }
+    logger.info(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
     this.rootMap.delete(version);
     return root;
   }
@@ -160,22 +161,20 @@ class StateManager {
    * 
    * @param {string} version state version
    */
-  // TODO(seo): Come up with a more efficient method.
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
     logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
         `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
         ` with latest finalized version: '${this.getFinalizedVersion()}'`);
     if (version === this.finalizedVersion) {
-      logger.error(`[${LOG_HEADER}] already finalized version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Already finalized version: ${version}`);
       return false;
     }
     if (!this.hasVersion(version)) {
-      logger.error(`[${LOG_HEADER}] non-existing version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return false;
     }
     this.finalizedVersion = version;
-    setStateTreeVersion(this.getFinalizedRoot(), this.getFinalizedVersion());
     return true;
   }
 }
