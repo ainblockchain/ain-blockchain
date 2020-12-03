@@ -1,3 +1,5 @@
+const logger = require('../logger')('STATE_NODE');
+
 class StateNode {
   constructor(version) {
     this.isLeaf = true;
@@ -140,8 +142,12 @@ class StateNode {
   }
 
   decreaseNumRef() {
+    const LOG_HEADER = 'decreaseNumRef';
     if (this.numRef > 0) {
       this.numRef--;
+    } else {
+      // This shouldn't happen.
+      logger.error(`[${LOG_HEADER}] Failed to decrease numRef value: ${this.numRef}.`);
     }
   }
 
