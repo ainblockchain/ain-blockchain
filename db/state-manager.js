@@ -151,7 +151,7 @@ class StateManager {
     } else {
       numDeletedNodes = deleteStateTree(root);
     }
-    logger.info(`[${LOG_HEADER}] Deleted ${numDeletedNodes} sate nodes.`);
+    logger.info(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
     this.rootMap.delete(version);
     return root;
   }
