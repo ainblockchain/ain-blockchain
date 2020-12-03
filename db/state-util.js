@@ -1,4 +1,6 @@
 /* eslint guard-for-in: "off" */
+const logger = require('../logger')('STATE_UTIL');
+
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 const {
@@ -189,8 +191,13 @@ function stateTreeVersionsToJsObject(root) {
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     obj[label] = stateTreeVersionsToJsObject(childNode);
+    if (childNode.getIsLeaf()) {
+      obj[`.version:${label}`] = childNode.getVersion();
+      obj[`.numRef:${label}`] = childNode.getNumRef();
+    }
   }
   obj['.version'] = root.getVersion();
+  obj['.numRef'] = root.getNumRef();
   return obj;
 }
 
@@ -224,9 +231,8 @@ function deleteStateTree(root) {
     numNodes += deleteStateTree(childNode);
     root.deleteChild(label);
   }
-  // reference:
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
-  root.reset();
+  root.resetValue();
+  root.resetProofHash();
   numNodes++;
 
   return numNodes;
@@ -236,6 +242,7 @@ function deleteStateTree(root) {
  * Returns affected nodes number.
  */
 function deleteStateTreeVersion(root, version) {
+  const LOG_HEADER = 'deleteStateTreeVersion';
   let numNodes = 0;
   if (root.getVersion() !== version) {
     // Does nothing.
@@ -246,10 +253,15 @@ function deleteStateTreeVersion(root, version) {
     const childNode = root.getChild(label);
     if (childNode.getNumRef() == 1) {
       numNodes += deleteStateTreeVersion(childNode, version);
+    } else if (childNode.getNumRef() < 1) {
+      // This shouldn't happen.
+      logger.error(
+          `[${LOG_HEADER}] Invalid numRef value: ${childNode.getNumRef()} with label: ${label}.`);
     }
     root.deleteChild(label);
   }
-  root.reset();
+  root.resetValue();
+  root.resetProofHash();
   numNodes++;
 
   return numNodes;
