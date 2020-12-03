@@ -248,17 +248,25 @@ function deleteStateTreeVersion(root, version) {
     // Does nothing.
     return numNodes;
   }
+  if (root.getNumRef() > 0) {
+    // This shouldn't happen.
+    logger.error(
+        `[${LOG_HEADER}] Trying to delete a node with invalid numRef value: ${root.getNumRef()} ` +
+        `with version: ${version}.`);
+    return numNodes;
+  }
 
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    if (childNode.getNumRef() == 1) {
+    root.deleteChild(label);
+    if (childNode.getNumRef() == 0) {
       numNodes += deleteStateTreeVersion(childNode, version);
-    } else if (childNode.getNumRef() < 1) {
+    } else if (childNode.getNumRef() < 0) {
       // This shouldn't happen.
       logger.error(
-          `[${LOG_HEADER}] Invalid numRef value: ${childNode.getNumRef()} with label: ${label}.`);
+          `[${LOG_HEADER}] Deleted a child node with ` +
+          `invalid numRef value: ${childNode.getNumRef()} with label: ${label}.`);
     }
-    root.deleteChild(label);
   }
   root.resetValue();
   root.resetProofHash();
