@@ -113,47 +113,6 @@ describe("state-node", () => {
     });
   });
 
-  describe("reset", () => {
-    it("leaf node", () => {
-      node.setValue('value0');
-      node.setProofHash('hash');
-      node.setVersion('version1');
-      node.increaseNumRef();
-      node.reset();
-      expect(node.getIsLeaf()).to.equal(true);
-      expect(node.childMap).to.not.be.null;
-      expect(node.numChildren()).to.equal(0);
-      expect(node.getValue()).to.equal(null);
-      expect(node.getProofHash()).to.equal(null);
-      expect(node.getVersion()).to.equal(null);
-      expect(node.getNumRef()).to.equal(0);
-    });
-
-    it("internal node", () => {
-      const label1 = 'label1';
-      const label2 = 'label2';
-      const child1 = new StateNode();
-      const child2 = new StateNode();
-      child1.setValue('value1');
-      child2.setValue('value2');
-      node.setChild(label1, child1);
-      node.setChild(label2, child2);
-      node.setProofHash('hash');
-      node.setVersion('version1');
-      node.increaseNumRef();
-      node.reset();
-      expect(node.getIsLeaf()).to.equal(true);
-      expect(node.childMap).to.not.be.null;
-      expect(node.numChildren()).to.equal(0);
-      expect(node.getValue()).to.equal(null);
-      expect(node.getProofHash()).to.equal(null);
-      expect(node.getVersion()).to.equal(null);
-      expect(node.getNumRef()).to.equal(0);
-      expect(child1.getNumRef()).to.equal(0);
-      expect(child2.getNumRef()).to.equal(0);
-    });
-  });
-
   describe("isLeaf", () => {
     it("get / set", () => {
       expect(node.getIsLeaf()).to.equal(true);
@@ -344,36 +303,15 @@ describe("state-node", () => {
       expect(child2.getIsLeaf()).to.equal(true);
       expect(node.getIsLeaf()).to.equal(true);
     });
-
-    it("resetChildren", () => {
-      const label1 = 'label1';
-      const label2 = 'label2';
-      const child1 = new StateNode();
-      const child2 = new StateNode();
-      child1.setValue('value1');
-      child2.setValue('value2');
-      node.setChild(label1, child1);
-      node.setChild(label2, child2);
-      assert.deepEqual(node.getChildLabels(), ['label1', 'label2']);
-      assert.deepEqual(node.getChildNodes(), [child1, child2]);
-      expect(node.numChildren()).to.equal(2);
-      expect(node.getIsLeaf()).to.equal(false);
-
-      node.resetChildren();
-      assert.deepEqual(node.getChildLabels(), []);
-      assert.deepEqual(node.getChildNodes(), []);
-      expect(node.numChildren()).to.equal(0);
-      expect(child1.getIsLeaf()).to.equal(true);
-      expect(child2.getIsLeaf()).to.equal(true);
-      expect(node.getIsLeaf()).to.equal(true);
-    });
   });
 
   describe("proofHash", () => {
-    it("get / set", () => {
+    it("get / set / reset", () => {
       expect(node.getProofHash()).to.equal(null);
       node.setProofHash('hash');
       expect(node.getProofHash()).to.equal('hash');
+      node.resetProofHash();
+      expect(node.getProofHash()).to.equal(null);
     });
   });
 
@@ -390,7 +328,7 @@ describe("state-node", () => {
   });
 
   describe("numRef", () => {
-    it("get / increase / decrease / reset", () => {
+    it("get / increase / decrease", () => {
       expect(node.getNumRef()).to.equal(0);
       node.increaseNumRef();
       expect(node.getNumRef()).to.equal(1);
@@ -402,10 +340,6 @@ describe("state-node", () => {
       expect(node.getNumRef()).to.equal(0);
       // Not actually decrease to minus values.
       node.decreaseNumRef();
-      expect(node.getNumRef()).to.equal(0);
-      node.increaseNumRef();
-      expect(node.getNumRef()).to.equal(1);
-      node.resetNumRef();
       expect(node.getNumRef()).to.equal(0);
     });
   });

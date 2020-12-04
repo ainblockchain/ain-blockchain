@@ -31,15 +31,6 @@ class StateNode {
     return clonedNode;
   }
 
-  reset() {
-    this.setIsLeaf(true);
-    this.resetChildren();
-    this.resetValue();
-    this.setProofHash(null);
-    this.setVersion(null);
-    this.resetNumRef();
-  }
-
   getIsLeaf() {
     return this.isLeaf;
   }
@@ -111,18 +102,16 @@ class StateNode {
     return this.childMap.size;
   }
 
-  resetChildren() {
-    this.getChildLabels().forEach((label) => {
-      this.deleteChild(label);
-    });
-  }
-
   getProofHash() {
     return this.proofHash;
   }
 
   setProofHash(proofHash) {
     this.proofHash = proofHash;
+  }
+
+  resetProofHash() {
+    this.setProofHash(null);
   }
 
   getVersion() {
@@ -149,10 +138,6 @@ class StateNode {
       // This shouldn't happen.
       logger.error(`[${LOG_HEADER}] Failed to decrease numRef value: ${this.numRef}.`);
     }
-  }
-
-  resetNumRef() {
-    this.numRef = 0;
   }
 }
 
