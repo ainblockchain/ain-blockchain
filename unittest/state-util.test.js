@@ -8,12 +8,16 @@ const {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
+  stateTreeVersionsToJsObject,
+  setStateTreeVersion,
   deleteStateTree,
+  deleteStateTreeVersion,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('../db/state-util');
+const StateNode = require('../db/state-node');
 const { HASH_DELIMITER } = require('../constants');
 const ChainUtil = require('../chain-util');
 const chai = require('chai');
@@ -418,9 +422,12 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
+      // leaf nodes
       assert.deepEqual(isValidJsObjectForStates(10), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidJsObjectForStates("str"), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidJsObjectForStates(null), {isValid: true, invalidPath: ''});
+
+      // internal node
       assert.deepEqual(isValidJsObjectForStates({
         bool: false,
         number: 10,
@@ -481,12 +488,15 @@ describe("state-util", () => {
   })
 
   describe("jsObjectToStateTree / stateTreeToJsObject", () => {
-    it("when valid input", () => {
+    it("leaf node", () => {
       expect(stateTreeToJsObject(jsObjectToStateTree(true))).to.equal(true);
       expect(stateTreeToJsObject(jsObjectToStateTree(false))).to.equal(false);
       expect(stateTreeToJsObject(jsObjectToStateTree(10))).to.equal(10);
       expect(stateTreeToJsObject(jsObjectToStateTree('str'))).to.equal('str');
       expect(stateTreeToJsObject(jsObjectToStateTree(null))).to.equal(null);
+    })
+
+    it("internal node", () => {
       const stateObj = {
         bool: false,
         number: 10,
@@ -541,6 +551,461 @@ describe("state-util", () => {
           empty_obj: null,
         }
       });
+    })
+  })
+
+  describe("jsObjectToStateTree with version / stateTreeVersionsToJsObject", () => {
+    it("leaf node", () => {
+      const ver1 = 'ver1';
+
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(true, ver1))).to.equal(true);
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(false, ver1))).to.equal(false);
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(10, ver1))).to.equal(10);
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree('str', ver1))).to.equal('str');
+      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(null, ver1))).to.equal(null);
+    })
+
+    it("internal node", () => {
+      const ver1 = 'ver1';
+
+      const stateObj = {
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: {},
+        subobj1: {
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        },
+        subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        }
+      };
+      assert.deepEqual(stateTreeVersionsToJsObject(jsObjectToStateTree(stateObj, ver1)), {
+        ".version": "ver1",
+        ".version:bool": "ver1",
+        ".version:empty_obj": "ver1",
+        ".version:empty_str": "ver1",
+        ".version:null": "ver1",
+        ".version:number": "ver1",
+        ".version:str": "ver1",
+        ".version:undef": "ver1",
+        ".numRef": 0,
+        ".numRef:bool": 1,
+        ".numRef:empty_obj": 1,
+        ".numRef:empty_str": 1,
+        ".numRef:null": 1,
+        ".numRef:number": 1,
+        ".numRef:str": 1,
+        ".numRef:undef": 1,
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".version": "ver1",
+          ".version:bool": "ver1",
+          ".version:empty_obj": "ver1",
+          ".version:empty_str": "ver1",
+          ".version:null": "ver1",
+          ".version:number": "ver1",
+          ".version:str": "ver1",
+          ".version:undef": "ver1",
+          ".numRef": 1,
+          ".numRef:bool": 1,
+          ".numRef:empty_obj": 1,
+          ".numRef:empty_str": 1,
+          ".numRef:null": 1,
+          ".numRef:number": 1,
+          ".numRef:str": 1,
+          ".numRef:undef": 1,
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".version": "ver1",
+          ".version:bool": "ver1",
+          ".version:empty_obj": "ver1",
+          ".version:empty_str": "ver1",
+          ".version:null": "ver1",
+          ".version:number": "ver1",
+          ".version:str": "ver1",
+          ".version:undef": "ver1",
+          ".numRef": 1,
+          ".numRef:bool": 1,
+          ".numRef:empty_obj": 1,
+          ".numRef:empty_str": 1,
+          ".numRef:null": 1,
+          ".numRef:number": 1,
+          ".numRef:str": 1,
+          ".numRef:undef": 1,
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+    })
+  })
+
+  describe("setStateTreeVersion", () => {
+    it("leaf node", () => {
+      const ver1 = 'ver1';
+
+      const stateNode = jsObjectToStateTree(true);
+      const numNodes = setStateTreeVersion(stateNode, ver1);
+      expect(numNodes).to.equal(1);
+      expect(stateNode.getVersion()).to.equal(ver1);
+    })
+
+    it("internal node", () => {
+      const ver1 = 'ver1';
+
+      const stateObj = {
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: {},
+        subobj1: {
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        },
+        subobj2: {
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: {},
+        }
+      };
+      const stateTree = jsObjectToStateTree(stateObj);
+      const numNodes = setStateTreeVersion(stateTree, ver1);
+      expect(numNodes).to.equal(24);
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
+        ".version": "ver1",
+        ".version:bool": "ver1",
+        ".version:empty_obj": "ver1",
+        ".version:empty_str": "ver1",
+        ".version:null": "ver1",
+        ".version:number": "ver1",
+        ".version:str": "ver1",
+        ".version:undef": "ver1",
+        ".numRef": 0,
+        ".numRef:bool": 1,
+        ".numRef:empty_obj": 1,
+        ".numRef:empty_str": 1,
+        ".numRef:null": 1,
+        ".numRef:number": 1,
+        ".numRef:str": 1,
+        ".numRef:undef": 1,
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".version": "ver1",
+          ".version:bool": "ver1",
+          ".version:empty_obj": "ver1",
+          ".version:empty_str": "ver1",
+          ".version:null": "ver1",
+          ".version:number": "ver1",
+          ".version:str": "ver1",
+          ".version:undef": "ver1",
+          ".numRef": 1,
+          ".numRef:bool": 1,
+          ".numRef:empty_obj": 1,
+          ".numRef:empty_str": 1,
+          ".numRef:null": 1,
+          ".numRef:number": 1,
+          ".numRef:str": 1,
+          ".numRef:undef": 1,
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".version": "ver1",
+          ".version:bool": "ver1",
+          ".version:empty_obj": "ver1",
+          ".version:empty_str": "ver1",
+          ".version:null": "ver1",
+          ".version:number": "ver1",
+          ".version:str": "ver1",
+          ".version:undef": "ver1",
+          ".numRef": 1,
+          ".numRef:bool": 1,
+          ".numRef:empty_obj": 1,
+          ".numRef:empty_str": 1,
+          ".numRef:null": 1,
+          ".numRef:number": 1,
+          ".numRef:str": 1,
+          ".numRef:undef": 1,
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+    })
+  })
+
+  describe("deleteStateTree", () => {
+    const ver1 = 'ver1';
+    const ver2 = 'ver2';
+    const ver3 = 'ver3';
+
+    let child1 = null;
+    let child2 = null;
+    let stateTree = null;
+
+    beforeEach(() => {
+      child1 = new StateNode(ver1);
+      child2 = new StateNode(ver2);
+      child1.setValue('value1');
+      child2.setValue('value2');
+      stateTree = new StateNode(ver3);
+      stateTree.setChild('label1', child1);
+      stateTree.setChild('label2', child2);
+      setProofHashForStateTree(stateTree);
+    })
+
+    it("leaf node", () => {
+      const ver1 = 'ver1';
+
+      // Delete a leaf node without version.
+      const stateNode1 = jsObjectToStateTree(true);
+      setProofHashForStateTree(stateNode1);
+      const numNodes1 = deleteStateTree(stateNode1);
+      expect(numNodes1).to.equal(1);
+      expect(stateNode1.numChildren()).to.equal(0);
+      expect(stateNode1.getValue()).to.equal(null);
+      expect(stateNode1.getProofHash()).to.equal(null);
+      expect(stateNode1.getNumRef()).to.equal(0);
+
+      // Delete a leaf node with version.
+      const stateNode2 = jsObjectToStateTree(true, ver1);
+      setProofHashForStateTree(stateNode2);
+      const numNodes2 = deleteStateTree(stateNode2);
+      expect(numNodes2).to.equal(1);
+      expect(stateNode2.numChildren()).to.equal(0);
+      expect(stateNode2.getValue()).to.equal(null);
+      expect(stateNode2.getProofHash()).to.equal(null);
+      expect(stateNode2.getNumRef()).to.equal(0);
+    })
+
+    it("internal node", () => {
+      const numNodes = deleteStateTree(stateTree);
+      expect(numNodes).to.equal(3);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      // And child nodes are deleted as well.
+      expect(child1.getValue()).to.equal(null);
+      expect(child1.getProofHash()).to.equal(null);
+      expect(child1.getNumRef()).to.equal(0);
+      expect(child2.getValue()).to.equal(null);
+      expect(child2.getProofHash()).to.equal(null);
+      expect(child2.getNumRef()).to.equal(0);
+    })
+  })
+
+  describe("deleteStateTreeVersion", () => {
+    const ver1 = 'ver1';
+    const ver2 = 'ver2';
+    const ver3 = 'ver3';
+
+    let child1 = null;
+    let child2 = null;
+    let stateTree = null;
+
+    beforeEach(() => {
+      child1 = new StateNode(ver1);
+      child2 = new StateNode(ver2);
+      child1.setValue('value1');
+      child2.setValue('value2');
+      stateTree = new StateNode(ver3);
+      stateTree.setChild('label1', child1);
+      stateTree.setChild('label2', child2);
+      setProofHashForStateTree(stateTree);
+    })
+
+    it("leaf node", () => {
+      const ver1 = 'ver1';
+
+      // Delete a leaf node without version.
+      const stateNode1 = jsObjectToStateTree(true);
+      setProofHashForStateTree(stateNode1);
+      const numNodes1 = deleteStateTreeVersion(stateNode1, ver1);
+      expect(numNodes1).to.equal(0);
+      expect(stateNode1.getValue()).to.equal(true);
+      expect(stateNode1.getProofHash()).to.not.equal(null);
+      expect(stateNode1.getNumRef()).to.equal(0);
+
+      // Delete a leaf node with a different version.
+      const stateNode2 = jsObjectToStateTree(true, 'ver2');
+      setProofHashForStateTree(stateNode2);
+      const numNodes2 = deleteStateTreeVersion(stateNode2, ver1);
+      expect(numNodes2).to.equal(0);
+      expect(stateNode2.getValue()).to.equal(true);
+      expect(stateNode2.getProofHash()).to.not.equal(null);
+      expect(stateNode2.getNumRef()).to.equal(0);
+
+      // Delete a leaf node with the same version.
+      const stateNode3 = jsObjectToStateTree(true, ver1);
+      setProofHashForStateTree(stateNode3);
+      const numNodes3 = deleteStateTreeVersion(stateNode3, ver1);
+      expect(numNodes3).to.equal(1);
+      expect(stateNode3.getValue()).to.equal(null);
+      expect(stateNode3.getProofHash()).to.equal(null);
+      expect(stateNode3.getNumRef()).to.equal(0);
+
+      // Delete a leaf node with the same version but with non-zero numRef value.
+      const stateNode4 = jsObjectToStateTree(true, ver1);
+      stateNode4.increaseNumRef();
+      setProofHashForStateTree(stateNode4);
+      const numNodes4 = deleteStateTreeVersion(stateNode4, ver1);
+      expect(numNodes4).to.equal(0);
+      expect(stateNode4.getValue()).to.equal(true);
+      expect(stateNode4.getProofHash()).to.not.equal(null);
+      expect(stateNode4.getNumRef()).to.equal(1);
+    })
+
+    it("internal node with a different version", () => {
+      const numNodes = deleteStateTreeVersion(stateTree, 'ver4');
+      expect(numNodes).to.equal(0);
+      // State tree is not deleted.
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
+        ".version": "ver3",
+        ".version:label1": "ver1",
+        ".version:label2": "ver2",
+        ".numRef": 0,
+        ".numRef:label1": 1,
+        ".numRef:label2": 1,
+        label1: "value1",
+        label2: "value2"
+      });
+    })
+
+    it("internal node with the same version", () => {
+      // Set versions of the state tree.
+      setStateTreeVersion(stateTree, ver3);
+
+      const numNodes = deleteStateTreeVersion(stateTree, ver3);
+      expect(numNodes).to.equal(3);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      // And child nodes are deleted as well.
+      expect(child1.getValue()).to.equal(null);
+      expect(child1.getProofHash()).to.equal(null);
+      expect(child1.getVersion()).to.equal(ver3);
+      expect(child1.getNumRef()).to.equal(0);
+      expect(child2.getValue()).to.equal(null);
+      expect(child2.getProofHash()).to.equal(null);
+      expect(child1.getVersion()).to.equal(ver3);
+      expect(child2.getNumRef()).to.equal(0);
+    })
+
+    it("internal node with the same version but with non-zero numRef value", () => {
+      // Increase the numRef of the root node.
+      stateTree.increaseNumRef();
+
+      const numNodes = deleteStateTreeVersion(stateTree, ver3);
+      expect(numNodes).to.equal(0);
+      // State tree is not deleted.
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
+        ".version": "ver3",
+        ".version:label1": "ver1",
+        ".version:label2": "ver2",
+        ".numRef": 1,
+        ".numRef:label1": 1,
+        ".numRef:label2": 1,
+        label1: "value1",
+        label2: "value2"
+      });
+    })
+
+    it("internal node with the same version but with sub-node of different versions", () => {
+      const numNodes = deleteStateTreeVersion(stateTree, ver3);
+      expect(numNodes).to.equal(1);
+      // Root node is deleted.
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      // But child nodes are not deleted.
+      expect(child1.getValue()).to.equal('value1');
+      expect(child1.getProofHash()).to.not.equal(null);
+      expect(child1.getVersion()).to.equal(ver1);
+      expect(child1.getNumRef()).to.equal(0);
+      expect(child2.getValue()).to.equal('value2');
+      expect(child2.getProofHash()).to.not.equal(null);
+      expect(child2.getVersion()).to.equal(ver2);
+      expect(child2.getNumRef()).to.equal(0);
+    })
+
+    it("internal node with the same version but with sub-nodes of > 1 numRef values", () => {
+      // Set versions of the state tree.
+      setStateTreeVersion(stateTree, ver3);
+      stateTree2 = new StateNode('ver99');
+      stateTree2.setChild('label1', child1);
+      stateTree2.setChild('label2', child2);
+      expect(child1.getNumRef()).to.equal(2);
+      expect(child2.getNumRef()).to.equal(2);
+
+      const numNodes = deleteStateTreeVersion(stateTree, ver3);
+      expect(numNodes).to.equal(1);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      // But child nodes are not deleted.
+      expect(child1.getValue()).to.equal('value1');
+      expect(child1.getProofHash()).to.not.equal(null);
+      expect(child1.getVersion()).to.equal(ver3);
+      expect(child1.getNumRef()).to.equal(1);
+      expect(child2.getValue()).to.equal('value2');
+      expect(child2.getProofHash()).to.not.equal(null);
+      expect(child2.getVersion()).to.equal(ver3);
+      expect(child2.getNumRef()).to.equal(1);
     })
   })
 

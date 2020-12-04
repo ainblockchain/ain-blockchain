@@ -56,8 +56,8 @@ class ChainUtil {
     return ruleUtil.isDict(value);
   }
 
-  static isEmptyNode(value) {
-    return ruleUtil.isEmptyNode(value);
+  static isEmpty(value) {
+    return ruleUtil.isEmpty(value);
   }
 
   static isValAddr(value) {

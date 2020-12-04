@@ -1,8 +1,8 @@
+const BlockchainNode = require('../node')
 const rimraf = require('rimraf');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const BlockchainNode = require('../node')
 const {
   BLOCKCHAINS_DIR,
   GenesisToken,
@@ -15,7 +15,7 @@ const {
   ProofProperties,
 } = require('../constants')
 const {
-  setDbForTesting,
+  setNodeForTesting,
 } = require('./test-util');
 const {
   buildProofHashOfStateNode
@@ -28,7 +28,7 @@ describe("DB initialization", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new BlockchainNode();
-    setDbForTesting(node, 0, true);
+    setNodeForTesting(node, 0, true);
   })
 
   afterEach(() => {
@@ -40,8 +40,8 @@ describe("DB initialization", () => {
       expect(node.db.getShardingPath()).to.equal(GenesisSharding.sharding_path);
     })
 
-    it("isRoot", () => {
-      expect(node.db.isRoot).to.equal(GenesisSharding.sharding_protocol === 'NONE');
+    it("isRootBlockchain", () => {
+      expect(node.db.isRootBlockchain).to.equal(GenesisSharding.sharding_protocol === 'NONE');
     })
   })
 
@@ -100,7 +100,7 @@ describe("DB operations", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new BlockchainNode();
-    setDbForTesting(node);
+    setNodeForTesting(node);
 
     dbValues = {
       "ai": {
@@ -1736,9 +1736,9 @@ describe("DB rule config", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node1 = new BlockchainNode();
-    setDbForTesting(node1, 0);
+    setNodeForTesting(node1, 0);
     node2 = new BlockchainNode();
-    setDbForTesting(node2, 1);
+    setNodeForTesting(node2, 1);
     dbValues = {
       "comcom": "unreadable value",
       "unspecified": {
@@ -1853,7 +1853,7 @@ describe("DB owner config", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new BlockchainNode();
-    setDbForTesting(node);
+    setNodeForTesting(node);
     node.db.setOwner("test/test_owner/mixed/true/true/true",
       {
         ".owner": {
@@ -2153,7 +2153,7 @@ describe("DB sharding config", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new BlockchainNode();
-    setDbForTesting(node, 0, false, false);
+    setNodeForTesting(node, 0, false, false);
 
     dbValues = {
       "some": {
@@ -2255,8 +2255,8 @@ describe("DB sharding config", () => {
       expect(node.db.getShardingPath()).to.equal("/apps/another_app");
     })
 
-    it("isRoot", () => {
-      expect(node.db.isRoot).to.equal(false);
+    it("isRootBlockchain", () => {
+      expect(node.db.isRootBlockchain).to.equal(false);
     })
   })
 
@@ -2783,7 +2783,7 @@ describe("Test proof with database", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new BlockchainNode();
-    setDbForTesting(node);
+    setNodeForTesting(node);
 
     valuesObject = {
       level0: {
@@ -2873,12 +2873,12 @@ describe("Test proof with database", () => {
 
   describe("getProof", () => {
     it("tests proof with a null case", () => {
-      const rootNode = node.db.stateTree;
+      const rootNode = node.db.stateRoot;
       assert.deepEqual(null, node.db.getProof('/test/test'));
     });
 
     it("tests proof with owners, rules, values and functions", () => {
-      const rootNode = node.db.stateTree;
+      const rootNode = node.db.stateRoot;
       const ownersNode = node.db.getRefForReading(['owners']);
       const rulesNode = node.db.getRefForReading(['rules']);
       const valuesNode = node.db.getRefForReading(['values']);
