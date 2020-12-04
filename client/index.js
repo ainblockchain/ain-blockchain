@@ -100,6 +100,17 @@ app.get('/get_proof', (req, res, next) => {
     .end();
 });
 
+/**
+ * Returns the size of the state tree in the given full database path.
+ */
+app.get('/get_tree_size', (req, res, next) => {
+  const result = node.db.getTreeSize(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/match_function', (req, res, next) => {
   const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
