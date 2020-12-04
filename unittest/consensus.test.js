@@ -3,7 +3,7 @@ const expect = chai.expect;
 const rimraf = require('rimraf');
 const { BLOCKCHAINS_DIR } = require('../constants');
 const BlockchainNode = require('../node');
-const { setDbForTesting, getTransaction, addBlock } = require('./test-util')
+const { setNodeForTesting, getTransaction, addBlock } = require('./test-util')
 
 describe("Consensus", () => {
   let node1, node2;
@@ -12,9 +12,9 @@ describe("Consensus", () => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node1 = new BlockchainNode();
-    setDbForTesting(node1, 0);
+    setNodeForTesting(node1, 0);
     node2 = new BlockchainNode();
-    setDbForTesting(node2, 1);
+    setNodeForTesting(node2, 1);
   });
 
   afterEach(() => {

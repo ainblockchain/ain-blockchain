@@ -1,24 +1,34 @@
+const logger = require('../logger')('STATE_NODE');
+
 class StateNode {
-  constructor() {
-    this.isLeaf = false;
+  constructor(version) {
+    this.isLeaf = true;
     // Used for internal nodes only.
     this.childMap = new Map();
     // Used for leaf nodes only.
     this.value = null;
-    this.proof = null;
+    this.proofHash = null;
+    this.version = version ? version : null;
+    this.numRef = 0;
   }
 
-  static create(isLeaf, childMap, value, proof) {
-    const node = new StateNode();
-    node.isLeaf = isLeaf;
+  static _create(isLeaf, childMap, value, proofHash, version) {
+    const node = new StateNode(version);
+    node.setIsLeaf(isLeaf);
     node.childMap = new Map(childMap);
-    node.value = value;
-    node.proof = proof;
+    node.setValue(value);
+    node.setProofHash(proofHash);
     return node;
   }
 
-  makeCopy() {
-    return StateNode.create(this.isLeaf, this.childMap, this.value, this.proof);
+  clone(version) {
+    const clonedNode = StateNode._create(
+        this.isLeaf, this.childMap, this.value, this.proofHash,
+        version ? version : this.version);
+    this.getChildNodes().forEach((child) => {
+      child.increaseNumRef();
+    });
+    return clonedNode;
   }
 
   getIsLeaf() {
@@ -29,25 +39,16 @@ class StateNode {
     this.isLeaf = isLeaf;
   }
 
-  resetValue() {
-    this.setValue(null);
-    this.setIsLeaf(false);
-  }
-
-  setValue(value) {
-    this.value = value;
-    this.setIsLeaf(true);
-  }
-
   getValue() {
     return this.value;
   }
 
-  setChild(label, stateNode) {
-    this.childMap.set(label, stateNode);
-    if (this.getIsLeaf()) {
-      this.setIsLeaf(false);
-    }
+  setValue(value) {
+    this.value = value;
+  }
+
+  resetValue() {
+    this.setValue(null);
   }
 
   getChild(label) {
@@ -58,16 +59,35 @@ class StateNode {
     return child;
   }
 
+  setChild(label, stateNode) {
+    if (this.hasChild(label)) {
+      if (this.getChild(label) === stateNode) {
+        // Does nothing.
+        return;
+      }
+      const child = this.getChild(label);
+      child.decreaseNumRef();
+    }
+    this.childMap.set(label, stateNode);
+    stateNode.increaseNumRef();
+    if (this.getIsLeaf()) {
+      this.setIsLeaf(false);
+    }
+  }
+
   hasChild(label) {
     return this.childMap.has(label);
   }
 
   deleteChild(label) {
-    this.childMap.delete(label);
-    if (this.getNumChild() === 0) {
-      this.setIsLeaf(true);
+    if (this.hasChild(label)) {
+      const child = this.getChild(label);
+      child.decreaseNumRef();
+      this.childMap.delete(label);
+      if (this.numChildren() === 0) {
+        this.setIsLeaf(true);
+      }
     }
-    this.setProofHash(null);
   }
 
   getChildLabels() {
@@ -78,36 +98,46 @@ class StateNode {
     return [...this.childMap.values()];
   }
 
-  getNumChild() {
+  numChildren() {
     return this.childMap.size;
   }
 
   getProofHash() {
-    return this.proof;
+    return this.proofHash;
   }
 
-  setProofHash(hash) {
-    this.proof = hash;
+  setProofHash(proofHash) {
+    this.proofHash = proofHash;
   }
 
-  addVersion() {
-    // TODO(lia): Implement this.
+  resetProofHash() {
+    this.setProofHash(null);
   }
 
-  hasVersion() {
-    // TODO(lia): Implement this.
+  getVersion() {
+    return this.version;
   }
 
-  deleteVersion() {
-    // TODO(lia): Implement this.
+  setVersion(version) {
+    this.version = version;
   }
 
-  getVersions() {
-    // TODO(lia): Implement this.
+  getNumRef() {
+    return this.numRef;
   }
 
-  resetVersions() {
-    // TODO(lia): Implement this.
+  increaseNumRef() {
+    this.numRef++;
+  }
+
+  decreaseNumRef() {
+    const LOG_HEADER = 'decreaseNumRef';
+    if (this.numRef > 0) {
+      this.numRef--;
+    } else {
+      // This shouldn't happen.
+      logger.error(`[${LOG_HEADER}] Failed to decrease numRef value: ${this.numRef}.`);
+    }
   }
 }
 

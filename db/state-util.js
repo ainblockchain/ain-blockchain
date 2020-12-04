@@ -1,4 +1,6 @@
 /* eslint guard-for-in: "off" */
+const logger = require('../logger')('STATE_UTIL');
+
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 const {
@@ -8,6 +10,10 @@ const {
   OwnerProperties,
   ShardingProperties,
 } = require('../constants');
+
+function isEmptyNode(node) {
+  return node.getIsLeaf() && node.getValue() === null;
+}
 
 function hasConfig(node, label) {
   return node && node.hasChild(label);
@@ -116,7 +122,7 @@ function isValidPathForStates(fullPath) {
 
 function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
-    if (ChainUtil.isEmptyNode(obj)) {
+    if (ChainUtil.isEmpty(obj)) {
       return false;
     }
     for (const key in obj) {
@@ -144,15 +150,13 @@ function isValidJsObjectForStates(obj) {
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
-function jsObjectToStateTree(obj) {
-  const node = new StateNode();
+function jsObjectToStateTree(obj, version) {
+  const node = new StateNode(version);
   if (ChainUtil.isDict(obj)) {
-    if (ChainUtil.isEmptyNode(obj)) {
-      node.setIsLeaf(true);
-    } else {
+    if (!ChainUtil.isEmpty(obj)) {
       for (const key in obj) {
         const childObj = obj[key];
-        node.setChild(key, jsObjectToStateTree(childObj));
+        node.setChild(key, jsObjectToStateTree(childObj, version));
       }
     }
   } else {
@@ -176,19 +180,103 @@ function stateTreeToJsObject(root) {
   return obj;
 }
 
+function stateTreeVersionsToJsObject(root) {
+  if (root === null) {
+    return null;
+  }
+  if (root.getIsLeaf()) {
+    return root.getValue();
+  }
+  const obj = {};
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    obj[label] = stateTreeVersionsToJsObject(childNode);
+    if (childNode.getIsLeaf()) {
+      obj[`.version:${label}`] = childNode.getVersion();
+      obj[`.numRef:${label}`] = childNode.getNumRef();
+    }
+  }
+  obj['.version'] = root.getVersion();
+  obj['.numRef'] = root.getNumRef();
+  return obj;
+}
+
+/**
+ * Returns affected nodes number.
+ */
+function setStateTreeVersion(root, version) {
+  let numNodes = 0;
+  if (root === null) {
+    return numNodes;
+  }
+  if (root.getVersion() !== version) {
+    root.setVersion(version);
+    numNodes++;
+  }
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    numNodes += setStateTreeVersion(childNode, version);
+  }
+
+  return numNodes;
+}
+
+/**
+ * Returns affected nodes number.
+ */
 function deleteStateTree(root) {
+  let numNodes = 0;
+  for (const label of root.getChildLabels()) {
+    const childNode = root.getChild(label);
+    numNodes += deleteStateTree(childNode);
+    root.deleteChild(label);
+  }
+  root.resetValue();
+  root.resetProofHash();
+  numNodes++;
+
+  return numNodes;
+}
+
+/**
+ * Returns affected nodes number.
+ */
+function deleteStateTreeVersion(root, version) {
+  const LOG_HEADER = 'deleteStateTreeVersion';
+  let numNodes = 0;
+  if (root.getVersion() !== version) {
+    // Does nothing.
+    return numNodes;
+  }
+  if (root.getNumRef() > 0) {
+    // This shouldn't happen.
+    logger.error(
+        `[${LOG_HEADER}] Trying to delete a node with invalid numRef value: ${root.getNumRef()} ` +
+        `with version: ${version}.`);
+    return numNodes;
+  }
+
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     root.deleteChild(label);
-    deleteStateTree(childNode);
+    if (childNode.getNumRef() == 0) {
+      numNodes += deleteStateTreeVersion(childNode, version);
+    } else if (childNode.getNumRef() < 0) {
+      // This shouldn't happen.
+      logger.error(
+          `[${LOG_HEADER}] Deleted a child node with ` +
+          `invalid numRef value: ${childNode.getNumRef()} with label: ${label}.`);
+    }
   }
-  // reference:
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Delete_in_strict_mode
-  root = null;
+  root.resetValue();
+  root.resetProofHash();
+  numNodes++;
+
+  return numNodes;
 }
 
 function makeCopyOfStateTree(root) {
-  const copy = root.makeCopy();
+  const copy = root.clone();
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     copy.setChild(label, makeCopyOfStateTree(childNode));
@@ -238,6 +326,7 @@ function updateProofHashForPath(fullPath, root) {
 }
 
 module.exports = {
+  isEmptyNode,
   hasShardConfig,
   getShardConfig,
   hasFunctionConfig,
@@ -255,7 +344,10 @@ module.exports = {
   isValidJsObjectForStates,
   jsObjectToStateTree,
   stateTreeToJsObject,
+  stateTreeVersionsToJsObject,
+  setStateTreeVersion,
   deleteStateTree,
+  deleteStateTreeVersion,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
   setProofHashForStateTree,

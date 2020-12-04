@@ -16,7 +16,6 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainDir = blockchainDir;
-    this.backupDb = null;
     this.syncedAfterStartup = false;
   }
 
@@ -101,13 +100,6 @@ class Blockchain {
     }
   }
 
-  setBackupDb(backupDb) {
-    if (this.backupDb !== null) {
-      throw Error('Already set backupdb');
-    }
-    this.backupDb = backupDb;
-  }
-
   lastBlock() {
     if (this.chain.length === 0) {
       return null;
@@ -139,7 +131,7 @@ class Blockchain {
     return lastBlock.timestamp;
   }
 
-  addNewBlockToChain(newBlock) {
+  addNewBlockToChain(newBlock, db) {
     if (!newBlock) {
       logger.error('[blockchain.addNewBlockToChain] Block is null');
       return false;
@@ -151,15 +143,17 @@ class Blockchain {
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
-    if (!this.backupDb.executeTransactionList(newBlock.last_votes)) {
-      logger.error('[blockchain.addNewBlockToChain] Failed to execute last_votes of block' +
-          `${JSON.stringify(newBlock, null, 2)}`);
-      return false;
-    }
-    if (!this.backupDb.executeTransactionList(newBlock.transactions)) {
-      logger.error('[blockchain.addNewBlockToChain] Failed to execute transactions of block' +
-          `${JSON.stringify(newBlock, null, 2)}`);
-      return false;
+    if (db) {
+      if (!db.executeTransactionList(newBlock.last_votes)) {
+        logger.error('[blockchain.addNewBlockToChain] Failed to execute last_votes of block' +
+            `${JSON.stringify(newBlock, null, 2)}`);
+        return false;
+      }
+      if (!db.executeTransactionList(newBlock.transactions)) {
+        logger.error('[blockchain.addNewBlockToChain] Failed to execute transactions of block' +
+            `${JSON.stringify(newBlock, null, 2)}`);
+        return false;
+      }
     }
     this.chain.push(newBlock);
     this.writeChain();
@@ -266,7 +260,7 @@ class Blockchain {
     return chainSubSection.length > 0 ? chainSubSection : [];
   }
 
-  merge(chainSubSection) {
+  merge(chainSubSection, db) {
     // Call to shift here is important as it removes the first element from the list !!
     logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
     if (!chainSubSection || chainSubSection.length === 0) {
@@ -323,7 +317,7 @@ class Blockchain {
         continue;
       }
       // TODO(lia): validate the state proof of each block
-      if (!this.addNewBlockToChain(block)) {
+      if (!this.addNewBlockToChain(block, db)) {
         logger.error(`Failed to add block ` + block);
         return false;
       }

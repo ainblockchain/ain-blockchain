@@ -16,6 +16,7 @@ const itParam = require('mocha-param');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
 const Blockchain = require('../blockchain');
+const StateNode = require('../db/state-node');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
 const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../constants');
@@ -485,21 +486,6 @@ describe('Blockchain', () => {
   });
 
   describe('Block APIs', () => {
-    let db;
-
-    before(() => {
-      address = JSON.parse(syncRequest('GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
-    });
-
-    beforeEach(() =>{
-      rimraf.sync(path.join(BLOCKCHAINS_DIR, 'test-integration'));
-      db = new DB(null, null, false, 0);
-      sentOperations.forEach((op) => {
-        const operation = Object.assign({}, {type: op[0].toUpperCase()}, op[1]);
-        db.executeTransaction({ operation });
-      });
-    });
-
     it('ain_getBlockHeadersList', () => {
       sendTransactions(sentOperations);
       waitForNewBlocks(server1);

@@ -23,9 +23,9 @@ class RuleUtil {
     return (typeof value === 'object' && value !== null && !Array.isArray(value));
   }
 
-  isEmptyNode(node) {
-    return node === null || node === undefined ||
-        (this.isDict(node) && Object.keys(node).length === 0);
+  isEmpty(value) {
+    return value === null || value === undefined ||
+        (this.isDict(value) && Object.keys(value).length === 0);
   }
 
   keys(value) {
