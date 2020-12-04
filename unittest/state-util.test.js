@@ -14,6 +14,7 @@ const {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
+  computeTreeSizeOfStateNode,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('../db/state-util');
@@ -1118,6 +1119,34 @@ describe("state-util: a part of state Proof", () => {
     });
   });
 
+  describe("computeTreeSizeOfStateNode", () => {
+    it("tests a leaf node case", () => {
+      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(true))).to.equal(1);
+      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(10))).to.equal(1);
+      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(-200))).to.equal(1);
+      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(''))).to.equal(1);
+      expect(computeTreeSizeOfStateNode(jsObjectToStateTree('unittest'))).to.equal(1);
+      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(null))).to.equal(1);
+      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(undefined))).to.equal(1);
+    });
+
+    it("tests a NON-leaf node case", () => {
+      const jsObject = {
+        child1: 'value1',
+        child2: 'value2',
+        child3: 'value3'
+      };
+      const stateTree = jsObjectToStateTree(jsObject);
+      const child1Node = stateTree.getChild('child1');
+      const child2Node = stateTree.getChild('child2');
+      const child3Node = stateTree.getChild('child3');
+      child1Node.setTreeSize(2);
+      child2Node.setTreeSize(3);
+      child3Node.setTreeSize(5);
+      expect(computeTreeSizeOfStateNode(stateTree)).to.equal(11);
+    });
+  });
+
   describe("setProofHashForStateTree", () => {
     it("generates a proof hash along with the given stateTree", () => {
       const jsObject = {
@@ -1136,7 +1165,10 @@ describe("state-util: a part of state Proof", () => {
       const level1Node = level0Node.getChild('level1');
       const fooNode = level1Node.getChild('foo');
       const bazNode = level1Node.getChild('baz');
+      const anotherNode = stateTree.getChild('another_route');
+      const testNode = anotherNode.getChild('test');
       setProofHashForStateTree(level0Node);
+      // Checks proof hashes.
       expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
       expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
       expect(fooNode.getProofHash()).to.equal(buildProofHashOfStateNode(fooNode));
@@ -1144,6 +1176,13 @@ describe("state-util: a part of state Proof", () => {
       expect(stateTree.getChild('another_route').getChild('test').getProofHash()).to.equal(null);
       expect(stateTree.getChild('another_route').getProofHash()).to.equal(null);
       expect(stateTree.getProofHash()).to.equal(null);
+      // Checks tree sizes.
+      expect(fooNode.getTreeSize()).to.equal(1);
+      expect(bazNode.getTreeSize()).to.equal(1);
+      expect(level1Node.getTreeSize()).to.equal(3);
+      expect(level0Node.getTreeSize()).to.equal(4);
+      expect(anotherNode.getTreeSize()).to.equal(1);
+      expect(testNode.getTreeSize()).to.equal(1);
     });
   });
 
@@ -1168,14 +1207,19 @@ describe("state-util: a part of state Proof", () => {
       const level2Node = level1Node.getChild('level2');
       const anotherNode = level0Node.getChild('another_route');
       updateProofHashForPath(['level0', 'level1'], stateTree);
+      // Checks proof hashes.
       expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
       expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
       expect(level2Node.getProofHash()).to.equal(null);
       expect(anotherNode.getProofHash()).to.equal(null);
       expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
-      expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
       expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
+      expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
       expect(stateTree.getProofHash()).to.equal(buildProofHashOfStateNode(stateTree));
+      // Checks tree sizes.
+      expect(level1Node.getTreeSize()).to.equal(2);
+      expect(level0Node.getTreeSize()).to.equal(4);
+      expect(stateTree.getTreeSize()).to.equal(5);
     });
   });
 

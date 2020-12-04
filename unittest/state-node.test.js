@@ -343,4 +343,14 @@ describe("state-node", () => {
       expect(node.getNumRef()).to.equal(0);
     });
   });
+
+  describe("treeSize", () => {
+    it("get / set", () => {
+      expect(node.getTreeSize()).to.equal(1);
+      node.setTreeSize(10);
+      expect(node.getTreeSize()).to.equal(10);
+      node.setTreeSize(5);
+      expect(node.getTreeSize()).to.equal(5);
+    });
+  });
 });
