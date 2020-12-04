@@ -258,11 +258,11 @@ class DB {
 
   /**
    * Returns a proof of a state node.
-   * @param {string} fullPath full database path to the state node to be proved.
+   * @param {string} treePath full database path to the state node to be proved.
    */
   // TODO(seo): Consider supporting global path for getProof().
-  getProof(fullPath) {
-    const parsedPath = ChainUtil.parsePath(fullPath);
+  getProof(treePath) {
+    const parsedPath = ChainUtil.parsePath(treePath);
     let node = this.stateRoot;
     const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
@@ -279,6 +279,15 @@ class DB {
       }
     }
     return rootProof;
+  }
+
+  getTreeSize(treePath) {
+    const parsedPath = ChainUtil.parsePath(treePath);
+    const stateNode = this.getRefForReading(parsedPath);
+    if (stateNode === null) {
+      return 0;
+    }
+    return stateNode.getTreeSize();
   }
 
   matchFunction(funcPath, isGlobal) {
