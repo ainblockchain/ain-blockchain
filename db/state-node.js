@@ -10,6 +10,7 @@ class StateNode {
     this.proofHash = null;
     this.version = version ? version : null;
     this.numRef = 0;
+    this.treeSize = 1;
   }
 
   static _create(isLeaf, childMap, value, proofHash, version) {
@@ -138,6 +139,14 @@ class StateNode {
       // This shouldn't happen.
       logger.error(`[${LOG_HEADER}] Failed to decrease numRef value: ${this.numRef}.`);
     }
+  }
+
+  getTreeSize() {
+    return this.treeSize;
+  }
+
+  setTreeSize(treeSize) {
+    this.treeSize = treeSize;
   }
 }
 

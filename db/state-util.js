@@ -296,6 +296,14 @@ function buildProofHashOfStateNode(StateNode) {
   return ChainUtil.hashString(ChainUtil.toString(preimage));
 }
 
+function computeTreeSizeOfStateNode(StateNode) {
+  if (StateNode.getIsLeaf()) {
+    return 1;
+  } else {
+    return StateNode.getChildNodes().reduce((acc, cur) => acc + cur.getTreeSize(), 1);
+  }
+}
+
 function setProofHashForStateTree(stateTree) {
   if (!stateTree.getIsLeaf()) {
     stateTree.getChildNodes().forEach((node) => {
@@ -306,8 +314,8 @@ function setProofHashForStateTree(stateTree) {
 }
 
 function updateProofHashOfStateNode(stateNode) {
-  const proof = buildProofHashOfStateNode(stateNode);
-  stateNode.setProofHash(proof);
+  stateNode.setProofHash(buildProofHashOfStateNode(stateNode));
+  stateNode.setTreeSize(computeTreeSizeOfStateNode(stateNode));
 }
 
 function updateProofHashForPathRecursive(path, stateTree, idx) {
@@ -350,6 +358,7 @@ module.exports = {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   buildProofHashOfStateNode,
+  computeTreeSizeOfStateNode,
   setProofHashForStateTree,
   updateProofHashForPath,
 };
