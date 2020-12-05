@@ -266,6 +266,10 @@ class P2pServer {
           }
       ),
       shardingStatus: this.node.getSharding(),
+      dbStatus: {
+        treeSize: this.node.db.getTreeSize('/'),
+        proof: this.node.db.getProof('/'),
+      },
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
