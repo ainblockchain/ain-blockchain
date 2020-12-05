@@ -13,6 +13,7 @@ const {
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
+  equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('../db/state-util');
@@ -1036,16 +1037,24 @@ describe("state-util", () => {
         }
       };
       const root = jsObjectToStateTree(stateObj);
+      const convertedObj = stateTreeToJsObject(root);
       const copy = makeCopyOfStateTree(root);
+      expect(equalStateTrees(copy, root)).to.equal(true);
       deleteStateTree(root);
-      assert.deepEqual(stateTreeToJsObject(copy), {
+      assert.deepEqual(stateTreeToJsObject(copy), convertedObj);
+    })
+  })
+
+  describe("equalStateTrees", () => {
+    it("when valid input", () => {
+      const stateObj = {
         bool: false,
         number: 10,
         str: 'str',
         empty_str: '',
         null: null,
         undef: undefined,
-        empty_obj: null,
+        empty_obj: {},
         subobj1: {
           bool: true,
           number: 20,
@@ -1053,7 +1062,7 @@ describe("state-util", () => {
           empty_str: '',
           null: null,
           undef: undefined,
-          empty_obj: null,
+          empty_obj: {},
         },
         subobj2: {
           bool: true,
@@ -1062,14 +1071,15 @@ describe("state-util", () => {
           empty_str: '',
           null: null,
           undef: undefined,
-          empty_obj: null,
+          empty_obj: {},
         }
-      });
+      };
+      const root1 = jsObjectToStateTree(stateObj);
+      const root2 = jsObjectToStateTree(stateObj);
+      expect(equalStateTrees(root1, root2)).to.equal(true);
     })
   })
-})
 
-describe("state-util: a part of state Proof", () => {
   describe("setProofHashForStateTree", () => {
     it("generates a proof hash along with the given stateTree", () => {
       const jsObject = {
@@ -1145,46 +1155,4 @@ describe("state-util: a part of state Proof", () => {
       expect(stateTree.getTreeSize()).to.equal(5);
     });
   });
-
-  describe("makeCopyOfStateTree and deleteStateTree", () => {
-    it("copy with proof", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const stateTree = jsObjectToStateTree(jsObject);
-      setProofHashForStateTree(stateTree);
-      const copyTree = makeCopyOfStateTree(stateTree);
-      expect(copyTree.getProofHash()).to.equal(stateTree.getProofHash());
-    });
-
-    it("delete with proof", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const stateTree = jsObjectToStateTree(jsObject);
-      setProofHashForStateTree(stateTree);
-      deleteStateTree(stateTree);
-      expect(stateTree.getProofHash()).to.equal(null);
-    });
-  });
-});
+})

@@ -204,37 +204,37 @@ function stateTreeVersionsToJsObject(root) {
  * Returns affected nodes number.
  */
 function setStateTreeVersion(root, version) {
-  let numNodes = 0;
+  let numAffectedNodes = 0;
   if (root === null) {
-    return numNodes;
+    return numAffectedNodes;
   }
   if (root.getVersion() !== version) {
     root.setVersion(version);
-    numNodes++;
+    numAffectedNodes++;
   }
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    numNodes += setStateTreeVersion(childNode, version);
+    numAffectedNodes += setStateTreeVersion(childNode, version);
   }
 
-  return numNodes;
+  return numAffectedNodes;
 }
 
 /**
  * Returns affected nodes number.
  */
 function deleteStateTree(root) {
-  let numNodes = 0;
+  let numAffectedNodes = 0;
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    numNodes += deleteStateTree(childNode);
+    numAffectedNodes += deleteStateTree(childNode);
     root.deleteChild(label);
   }
   root.resetValue();
   root.resetProofHash();
-  numNodes++;
+  numAffectedNodes++;
 
-  return numNodes;
+  return numAffectedNodes;
 }
 
 /**
@@ -242,24 +242,24 @@ function deleteStateTree(root) {
  */
 function deleteStateTreeVersion(root, version) {
   const LOG_HEADER = 'deleteStateTreeVersion';
-  let numNodes = 0;
+  let numAffectedNodes = 0;
   if (root.getVersion() !== version) {
     // Does nothing.
-    return numNodes;
+    return numAffectedNodes;
   }
   if (root.getNumRef() > 0) {
     // This shouldn't happen.
     logger.error(
         `[${LOG_HEADER}] Trying to delete a node with invalid numRef value: ${root.getNumRef()} ` +
         `with version: ${version}.`);
-    return numNodes;
+    return numAffectedNodes;
   }
 
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     root.deleteChild(label);
     if (childNode.getNumRef() == 0) {
-      numNodes += deleteStateTreeVersion(childNode, version);
+      numAffectedNodes += deleteStateTreeVersion(childNode, version);
     } else if (childNode.getNumRef() < 0) {
       // This shouldn't happen.
       logger.error(
@@ -269,9 +269,9 @@ function deleteStateTreeVersion(root, version) {
   }
   root.resetValue();
   root.resetProofHash();
-  numNodes++;
+  numAffectedNodes++;
 
-  return numNodes;
+  return numAffectedNodes;
 }
 
 function makeCopyOfStateTree(root) {
@@ -283,24 +283,53 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
+function equalStateTrees(root1, root2) {
+  if (!root1 && !root2) {
+    return true;
+  }
+  if (!root1 || !root2) {
+    return false;
+  }
+  if (!root1.equal(root2)) {
+    return false;
+  }
+  root1.getChildLabels().forEach((label) => {
+    const child1 = root1.getChild(label);
+    const child2 = root2.getChild(label);
+    if (!equalStateTrees(child1, child2)) {
+      return false;
+    }
+  });
+
+  return true;
+}
+
 function setProofHashForStateTree(stateTree) {
+  let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     stateTree.getChildNodes().forEach((node) => {
-      setProofHashForStateTree(node);
+      numAffectedNodes += setProofHashForStateTree(node);
     });
   }
   stateTree.updateProofHashAndTreeSize();
+  numAffectedNodes++;
+
+  return numAffectedNodes;
 }
 
 function updateProofHashForPathRecursive(path, stateTree, idx) {
+  let numAffectedNodes = 0;
   if (idx < 0 || idx > path.length) {
-    return;
+    return numAffectedNodes;
   }
   const child = stateTree.getChild(path[idx]);
   if (child != null) {
-    updateProofHashForPathRecursive(path, child, idx + 1);
+    numAffectedNodes += updateProofHashForPathRecursive(path, child, idx + 1);
   }
   stateTree.updateProofHashAndTreeSize();
+  numAffectedNodes++;
+
+  return numAffectedNodes;
 }
 
 function updateProofHashForPath(fullPath, root) {
@@ -331,6 +360,7 @@ module.exports = {
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
+  equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForPath,
 };
