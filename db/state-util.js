@@ -317,23 +317,35 @@ function setProofHashForStateTree(stateTree) {
   return numAffectedNodes;
 }
 
-function updateProofHashForPathRecursive(path, stateTree, idx) {
+function updateProofHashForAllRootPathsRecursive(node) {
   let numAffectedNodes = 0;
-  if (idx < 0 || idx > path.length) {
-    return numAffectedNodes;
-  }
-  const child = stateTree.getChild(path[idx]);
-  if (child != null) {
-    numAffectedNodes += updateProofHashForPathRecursive(path, child, idx + 1);
-  }
-  stateTree.updateProofHashAndTreeSize();
+  node.updateProofHashAndTreeSize();
   numAffectedNodes++;
-
+  node.getParentNodes().forEach((parent) => {
+    numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);
+  })
   return numAffectedNodes;
 }
 
-function updateProofHashForPath(fullPath, root) {
-  return updateProofHashForPathRecursive(fullPath, root, 0);
+function updateProofHashForAllRootPaths(fullPath, root) {
+  const LOG_HEADER = 'updateProofHashForAllRootPaths';
+  if (!root) {
+    logger.error(`[${LOG_HEADER}] Trying to update proof hash for invalid root: ${root}.`);
+    return 0;
+  }
+  let node = root;
+  for (let i = 0; i < fullPath.length; i++) {
+    const label = fullPath[i];
+    const child = node.getChild(label);
+    if (child === null) {
+      logger.error(
+          `[${LOG_HEADER}] Trying to update proof hash for ` +
+          `non-existing path: ${ChainUtil.formatPath(fullPath.slice(0, i + 1))}.`);
+      return 0;
+    }
+    node = child;
+  }
+  return updateProofHashForAllRootPathsRecursive(node);
 }
 
 module.exports = {
@@ -362,5 +374,5 @@ module.exports = {
   makeCopyOfStateTree,
   equalStateTrees,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHashForAllRootPaths,
 };
