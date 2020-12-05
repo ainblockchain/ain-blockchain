@@ -17,9 +17,6 @@ const {
 const {
   setNodeForTesting,
 } = require('./test-util');
-const {
-  buildProofHashOfStateNode
-} = require('../db/state-util');
 
 describe("DB initialization", () => {
   let node;
@@ -2818,10 +2815,10 @@ describe("Test proof with database", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
-      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
-      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
-      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
+      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
+      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
+      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
+      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
     });
 
     it("checks newly setup proof hash", () => {
@@ -2864,10 +2861,10 @@ describe("Test proof with database", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
-      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
-      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
-      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
+      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
+      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
+      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
+      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
     });
   });
 
