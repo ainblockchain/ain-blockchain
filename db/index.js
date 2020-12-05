@@ -30,7 +30,7 @@ const {
   stateTreeToJsObject,
   stateTreeVersionsToJsObject,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHashForAllRootPaths,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -182,7 +182,7 @@ class DB {
       setProofHashForStateTree(stateTree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForPath(pathToParent, this.stateRoot);
+      updateProofHashForAllRootPaths(pathToParent, this.stateRoot);
     }
   }
 

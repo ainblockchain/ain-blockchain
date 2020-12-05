@@ -15,7 +15,7 @@ const {
   makeCopyOfStateTree,
   equalStateTrees,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHashForAllRootPaths,
 } = require('../db/state-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
@@ -1119,8 +1119,8 @@ describe("state-util", () => {
     });
   });
 
-  describe("updateProofHashForPath", () => {
-    it("updates proof hashes to the root", () => {
+  describe("updateProofHashForAllRootPaths", () => {
+    it("updates proof hashes for a single path to a root", () => {
       const jsObject = {
         level0: {
           level1: {
@@ -1134,25 +1134,79 @@ describe("state-util", () => {
           }
         }
       };
-      const stateTree = jsObjectToStateTree(jsObject);
-      const level0Node = stateTree.getChild('level0');
+      const rootNode = jsObjectToStateTree(jsObject);
+      const level0Node = rootNode.getChild('level0');
       const level1Node = level0Node.getChild('level1');
       const level2Node = level1Node.getChild('level2');
       const anotherNode = level0Node.getChild('another_route');
-      updateProofHashForPath(['level0', 'level1'], stateTree);
+
+      const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
+      expect(numAffectedNodes).to.equal(3);
+
       // Checks proof hashes.
       expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
       expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
       expect(level2Node.getProofHash()).to.equal(null);
-      expect(anotherNode.getProofHash()).to.equal(null);
       expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
-      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(anotherNode.getProofHash()).to.equal(null);
       expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
-      expect(stateTree.getProofHash()).to.equal(stateTree.buildProofHash());
+      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
+
       // Checks tree sizes.
       expect(level1Node.getTreeSize()).to.equal(2);
       expect(level0Node.getTreeSize()).to.equal(4);
-      expect(stateTree.getTreeSize()).to.equal(5);
+      expect(rootNode.getTreeSize()).to.equal(5);
+    });
+
+    it("updates proof hashes for multiple paths to all the roots", () => {
+      const jsObject = {
+        level0: {
+          level1: {
+            level2: {
+              foo: 'bar',
+              baz: 'caz'
+            }
+          },
+          another_route: {
+            test: -1000
+          }
+        }
+      };
+      const rootNode = jsObjectToStateTree(jsObject);
+      const level0Node = rootNode.getChild('level0');
+      const level1Node = level0Node.getChild('level1');
+      const level2Node = level1Node.getChild('level2');
+      const anotherNode = level0Node.getChild('another_route');
+      const rootClone = rootNode.clone();
+      const level0Clone = level0Node.clone();
+      const level1Clone = level1Node.clone();
+      const level2Clone = level2Node.clone();
+      const anotherClone = anotherNode.clone();
+
+      const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
+      expect(numAffectedNodes).to.equal(5);
+
+      // Checks proof hashes.
+      expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
+      expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
+      expect(level2Node.getProofHash()).to.equal(null);
+      expect(level2Clone.getProofHash()).to.equal(null);
+
+      expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
+      expect(anotherNode.getProofHash()).to.equal(null);
+      expect(anotherClone.getProofHash()).to.equal(null);
+
+      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
+      expect(level1Clone.getProofHash()).to.equal(null);
+
+      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(level0Clone.getProofHash()).to.equal(level0Clone.buildProofHash());
+      expect(level0Clone.getProofHash()).to.equal(level0Node.getProofHash());
+
+      expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
+      expect(rootClone.getProofHash()).to.equal(rootClone.buildProofHash());
+      expect(rootClone.getProofHash()).to.equal(rootNode.getProofHash());
     });
   });
 })
