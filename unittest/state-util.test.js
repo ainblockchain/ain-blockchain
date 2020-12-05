@@ -17,8 +17,6 @@ const {
   updateProofHashForPath,
 } = require('../db/state-util');
 const StateNode = require('../db/state-node');
-const { HASH_DELIMITER } = require('../constants');
-const ChainUtil = require('../chain-util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;

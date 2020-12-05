@@ -6,6 +6,7 @@ const { HASH_DELIMITER } = require('../constants');
 class StateNode {
   constructor(version) {
     this.isLeaf = true;
+    this.parentSet = new Set();
     // Used for internal nodes only.
     this.childMap = new Map();
     // Used for leaf nodes only.
@@ -55,6 +56,36 @@ class StateNode {
     this.setValue(null);
   }
 
+  addParent(parent) {
+    const LOG_HEADER = 'addParent';
+    if (this.parentSet.has(parent)) {
+      logger.error(
+          `[${LOG_HEADER}] Adding an existing parent: ${JSON.stringify(parent, null, 2)}.`);
+      // Does nothing.
+      return;
+    }
+    this.parentSet.add(parent);
+  }
+
+  hasParent(parent) {
+    return this.parentSet.has(parent);
+  }
+
+  deleteParent(parent) {
+    const LOG_HEADER = 'deleteParent';
+    if (!this.parentSet.has(parent)) {
+      logger.error(
+          `[${LOG_HEADER}] Deleting a non-existing parent: ${JSON.stringify(parent, null, 2)}.`);
+      // Does nothing.
+      return;
+    }
+    this.parentSet.delete(parent);
+  }
+
+  getParentNodes() {
+    return Array.from(this.parentSet);
+  }
+
   getChild(label) {
     const child = this.childMap.get(label);
     if (child === undefined) {
@@ -64,8 +95,11 @@ class StateNode {
   }
 
   setChild(label, stateNode) {
+    const LOG_HEADER = 'setChild';
     if (this.hasChild(label)) {
       if (this.getChild(label) === stateNode) {
+        logger.error(
+            `[${LOG_HEADER}] Setting a child with label ${label} which is already a child.`);
         // Does nothing.
         return;
       }
@@ -84,13 +118,17 @@ class StateNode {
   }
 
   deleteChild(label) {
-    if (this.hasChild(label)) {
-      const child = this.getChild(label);
-      child.decreaseNumRef();
-      this.childMap.delete(label);
-      if (this.numChildren() === 0) {
-        this.setIsLeaf(true);
-      }
+    const LOG_HEADER = 'deleteChild';
+    if (!this.hasChild(label)) {
+      logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${label}.`);
+      // Does nothing.
+      return;
+    }
+    const child = this.getChild(label);
+    child.decreaseNumRef();
+    this.childMap.delete(label);
+    if (this.numChildren() === 0) {
+      this.setIsLeaf(true);
     }
   }
 
