@@ -28,13 +28,29 @@ class StateNode {
   }
 
   clone(version) {
-    const clonedNode = StateNode._create(version ? version : this.version,
+    const clone = StateNode._create(version ? version : this.version,
         this.isLeaf, this.childMap, this.value, this.proofHash, this.treeSize);
     this.getChildNodes().forEach((child) => {
-      child._addParent(clonedNode);
+      child._addParent(clone);
       child.increaseNumRef();
     });
-    return clonedNode;
+    return clone;
+  }
+
+  equal(that) {
+    if (!that) {
+      return false;
+    }
+    return (that.isLeaf === this.isLeaf &&
+        that.parentSet && that.parentSet.size !== undefined &&
+        that.parentSet.size === this.parentSet.size &&
+        that.getChildLabels && typeof that.getChildLabels === 'function' &&
+        JSON.stringify(that.getChildLabels()) === JSON.stringify(this.getChildLabels()) &&
+        that.value === this.value &&
+        that.proofHash === this.proofHash &&
+        that.version === this.version &&
+        that.numRef === this.numRef &&
+        that.treeSize === this.treeSize);
   }
 
   getIsLeaf() {
@@ -87,6 +103,10 @@ class StateNode {
     return Array.from(this.parentSet);
   }
 
+  numParents() {
+    return this.parentSet.size;
+  }
+
   getChild(label) {
     const child = this.childMap.get(label);
     if (child === undefined) {
@@ -95,10 +115,10 @@ class StateNode {
     return child;
   }
 
-  setChild(label, stateNode) {
+  setChild(label, node) {
     const LOG_HEADER = 'setChild';
     if (this.hasChild(label)) {
-      if (this.getChild(label) === stateNode) {
+      if (this.getChild(label) === node) {
         logger.error(
             `[${LOG_HEADER}] Setting a child with label ${label} which is already a child.`);
         // Does nothing.
@@ -108,9 +128,9 @@ class StateNode {
       child._deleteParent(this);
       child.decreaseNumRef();
     }
-    this.childMap.set(label, stateNode);
-    stateNode._addParent(this);
-    stateNode.increaseNumRef();
+    this.childMap.set(label, node);
+    node._addParent(this);
+    node.increaseNumRef();
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
     }
