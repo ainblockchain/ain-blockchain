@@ -4,7 +4,6 @@ const logger = require('../logger')('STATE_UTIL');
 const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 const {
-  HASH_DELIMITER,
   FunctionProperties,
   RuleProperties,
   OwnerProperties,
@@ -284,38 +283,13 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
-function buildProofHashOfStateNode(stateNode) {
-  let preimage;
-  if (stateNode.getIsLeaf()) {
-    preimage = stateNode.getValue();
-  } else {
-    preimage = stateNode.getChildLabels().map((label) => {
-      return `${label}${HASH_DELIMITER}${stateNode.getChild(label).getProofHash()}`;
-    }, '').join(HASH_DELIMITER);
-  }
-  return ChainUtil.hashString(ChainUtil.toString(preimage));
-}
-
-function computeTreeSizeOfStateNode(stateNode) {
-  if (stateNode.getIsLeaf()) {
-    return 1;
-  } else {
-    return stateNode.getChildNodes().reduce((acc, cur) => acc + cur.getTreeSize(), 1);
-  }
-}
-
 function setProofHashForStateTree(stateTree) {
   if (!stateTree.getIsLeaf()) {
     stateTree.getChildNodes().forEach((node) => {
       setProofHashForStateTree(node);
     });
   }
-  updateProofHashOfStateNode(stateTree);
-}
-
-function updateProofHashOfStateNode(stateNode) {
-  stateNode.setProofHash(buildProofHashOfStateNode(stateNode));
-  stateNode.setTreeSize(computeTreeSizeOfStateNode(stateNode));
+  stateTree.updateProofHashAndTreeSize();
 }
 
 function updateProofHashForPathRecursive(path, stateTree, idx) {
@@ -326,7 +300,7 @@ function updateProofHashForPathRecursive(path, stateTree, idx) {
   if (child != null) {
     updateProofHashForPathRecursive(path, child, idx + 1);
   }
-  updateProofHashOfStateNode(stateTree);
+  stateTree.updateProofHashAndTreeSize();
 }
 
 function updateProofHashForPath(fullPath, root) {
@@ -357,8 +331,6 @@ module.exports = {
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
-  buildProofHashOfStateNode,
-  computeTreeSizeOfStateNode,
   setProofHashForStateTree,
   updateProofHashForPath,
 };

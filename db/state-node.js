@@ -1,5 +1,8 @@
 const logger = require('../logger')('STATE_NODE');
 
+const ChainUtil = require('../chain-util');
+const { HASH_DELIMITER } = require('../constants');
+
 class StateNode {
   constructor(version) {
     this.isLeaf = true;
@@ -147,6 +150,31 @@ class StateNode {
 
   setTreeSize(treeSize) {
     this.treeSize = treeSize;
+  }
+
+  buildProofHash() {
+    let preimage;
+    if (this.getIsLeaf()) {
+      preimage = this.getValue();
+    } else {
+      preimage = this.getChildLabels().map((label) => {
+        return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
+      }, '').join(HASH_DELIMITER);
+    }
+    return ChainUtil.hashString(ChainUtil.toString(preimage));
+  }
+  
+  computeTreeSize() {
+    if (this.getIsLeaf()) {
+      return 1;
+    } else {
+      return this.getChildNodes().reduce((acc, cur) => acc + cur.getTreeSize(), 1);
+    }
+  }
+
+  updateProofHashAndTreeSize() {
+    this.setProofHash(this.buildProofHash());
+    this.setTreeSize(this.computeTreeSize());
   }
 }
 

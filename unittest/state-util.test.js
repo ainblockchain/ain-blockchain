@@ -13,8 +13,6 @@ const {
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
-  buildProofHashOfStateNode,
-  computeTreeSizeOfStateNode,
   setProofHashForStateTree,
   updateProofHashForPath,
 } = require('../db/state-util');
@@ -1074,79 +1072,6 @@ describe("state-util", () => {
 })
 
 describe("state-util: a part of state Proof", () => {
-  describe("buildProofHashOfStateNode", () => {
-    it("tests a leaf node case", () => {
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(true)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(true)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(10)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(10)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(-200)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(-200)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree('')))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString('')));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree('unittest')))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString('unittest')));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(null)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(null)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(undefined)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(undefined)));
-    });
-
-    it("tests a NON-leaf node case", () => {
-      const jsObject = {
-        level0: {
-          child1: 'value1',
-          child2: 'value2',
-          child3: 'value3'
-        }
-      };
-      const level0Node = jsObjectToStateTree(jsObject).getChild('level0');
-      const childLabels = level0Node.getChildLabels();
-      const child1Node = level0Node.getChild(childLabels[0]);
-      const child2Node = level0Node.getChild(childLabels[1]);
-      const child3Node = level0Node.getChild(childLabels[2]);
-      child1Node.setProofHash('proofHash1');
-      child2Node.setProofHash('proofHash2');
-      child3Node.setProofHash('proofHash3');
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${child1Node.getProofHash()}${HASH_DELIMITER}`
-          + `${childLabels[1]}${HASH_DELIMITER}`
-          + `${child2Node.getProofHash()}${HASH_DELIMITER}`
-          + `${childLabels[2]}${HASH_DELIMITER}`
-          + `${child3Node.getProofHash()}`;
-      expect(buildProofHashOfStateNode(level0Node))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(preimage)));
-    });
-  });
-
-  describe("computeTreeSizeOfStateNode", () => {
-    it("tests a leaf node case", () => {
-      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(true))).to.equal(1);
-      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(10))).to.equal(1);
-      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(-200))).to.equal(1);
-      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(''))).to.equal(1);
-      expect(computeTreeSizeOfStateNode(jsObjectToStateTree('unittest'))).to.equal(1);
-      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(null))).to.equal(1);
-      expect(computeTreeSizeOfStateNode(jsObjectToStateTree(undefined))).to.equal(1);
-    });
-
-    it("tests a NON-leaf node case", () => {
-      const jsObject = {
-        child1: 'value1',
-        child2: 'value2',
-        child3: 'value3'
-      };
-      const stateTree = jsObjectToStateTree(jsObject);
-      const child1Node = stateTree.getChild('child1');
-      const child2Node = stateTree.getChild('child2');
-      const child3Node = stateTree.getChild('child3');
-      child1Node.setTreeSize(2);
-      child2Node.setTreeSize(3);
-      child3Node.setTreeSize(5);
-      expect(computeTreeSizeOfStateNode(stateTree)).to.equal(11);
-    });
-  });
-
   describe("setProofHashForStateTree", () => {
     it("generates a proof hash along with the given stateTree", () => {
       const jsObject = {
@@ -1169,10 +1094,10 @@ describe("state-util: a part of state Proof", () => {
       const testNode = anotherNode.getChild('test');
       setProofHashForStateTree(level0Node);
       // Checks proof hashes.
-      expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
-      expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
-      expect(fooNode.getProofHash()).to.equal(buildProofHashOfStateNode(fooNode));
-      expect(bazNode.getProofHash()).to.equal(buildProofHashOfStateNode(bazNode));
+      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
+      expect(fooNode.getProofHash()).to.equal(fooNode.buildProofHash());
+      expect(bazNode.getProofHash()).to.equal(bazNode.buildProofHash());
       expect(stateTree.getChild('another_route').getChild('test').getProofHash()).to.equal(null);
       expect(stateTree.getChild('another_route').getProofHash()).to.equal(null);
       expect(stateTree.getProofHash()).to.equal(null);
@@ -1213,9 +1138,9 @@ describe("state-util: a part of state Proof", () => {
       expect(level2Node.getProofHash()).to.equal(null);
       expect(anotherNode.getProofHash()).to.equal(null);
       expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
-      expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
-      expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
-      expect(stateTree.getProofHash()).to.equal(buildProofHashOfStateNode(stateTree));
+      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
+      expect(stateTree.getProofHash()).to.equal(stateTree.buildProofHash());
       // Checks tree sizes.
       expect(level1Node.getTreeSize()).to.equal(2);
       expect(level0Node.getTreeSize()).to.equal(4);
