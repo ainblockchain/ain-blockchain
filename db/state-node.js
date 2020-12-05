@@ -13,19 +13,19 @@ class StateNode {
     this.treeSize = 1;
   }
 
-  static _create(isLeaf, childMap, value, proofHash, version) {
+  static _create(version, isLeaf, childMap, value, proofHash, treeSize) {
     const node = new StateNode(version);
     node.setIsLeaf(isLeaf);
     node.childMap = new Map(childMap);
     node.setValue(value);
     node.setProofHash(proofHash);
+    node.setTreeSize(treeSize);
     return node;
   }
 
   clone(version) {
-    const clonedNode = StateNode._create(
-        this.isLeaf, this.childMap, this.value, this.proofHash,
-        version ? version : this.version);
+    const clonedNode = StateNode._create(version ? version : this.version,
+        this.isLeaf, this.childMap, this.value, this.proofHash, this.treeSize);
     this.getChildNodes().forEach((child) => {
       child.increaseNumRef();
     });

@@ -284,23 +284,23 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
-function buildProofHashOfStateNode(StateNode) {
+function buildProofHashOfStateNode(stateNode) {
   let preimage;
-  if (StateNode.getIsLeaf()) {
-    preimage = StateNode.getValue();
+  if (stateNode.getIsLeaf()) {
+    preimage = stateNode.getValue();
   } else {
-    preimage = StateNode.getChildLabels().map((label) => {
-      return `${label}${HASH_DELIMITER}${StateNode.getChild(label).getProofHash()}`;
+    preimage = stateNode.getChildLabels().map((label) => {
+      return `${label}${HASH_DELIMITER}${stateNode.getChild(label).getProofHash()}`;
     }, '').join(HASH_DELIMITER);
   }
   return ChainUtil.hashString(ChainUtil.toString(preimage));
 }
 
-function computeTreeSizeOfStateNode(StateNode) {
-  if (StateNode.getIsLeaf()) {
+function computeTreeSizeOfStateNode(stateNode) {
+  if (stateNode.getIsLeaf()) {
     return 1;
   } else {
-    return StateNode.getChildNodes().reduce((acc, cur) => acc + cur.getTreeSize(), 1);
+    return stateNode.getChildNodes().reduce((acc, cur) => acc + cur.getTreeSize(), 1);
   }
 }
 
