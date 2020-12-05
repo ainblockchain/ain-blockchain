@@ -31,6 +31,7 @@ class StateNode {
     const clonedNode = StateNode._create(version ? version : this.version,
         this.isLeaf, this.childMap, this.value, this.proofHash, this.treeSize);
     this.getChildNodes().forEach((child) => {
+      child._addParent(clonedNode);
       child.increaseNumRef();
     });
     return clonedNode;
@@ -56,7 +57,7 @@ class StateNode {
     this.setValue(null);
   }
 
-  addParent(parent) {
+  _addParent(parent) {
     const LOG_HEADER = 'addParent';
     if (this.parentSet.has(parent)) {
       logger.error(
@@ -71,7 +72,7 @@ class StateNode {
     return this.parentSet.has(parent);
   }
 
-  deleteParent(parent) {
+  _deleteParent(parent) {
     const LOG_HEADER = 'deleteParent';
     if (!this.parentSet.has(parent)) {
       logger.error(
@@ -104,9 +105,11 @@ class StateNode {
         return;
       }
       const child = this.getChild(label);
+      child._deleteParent(this);
       child.decreaseNumRef();
     }
     this.childMap.set(label, stateNode);
+    stateNode._addParent(this);
     stateNode.increaseNumRef();
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
@@ -125,6 +128,7 @@ class StateNode {
       return;
     }
     const child = this.getChild(label);
+    child._deleteParent(this);
     child.decreaseNumRef();
     this.childMap.delete(label);
     if (this.numChildren() === 0) {
