@@ -1,7 +1,6 @@
 /* eslint guard-for-in: "off" */
 const logger = require('../logger')('STATE_UTIL');
 
-const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 const {
   FunctionProperties,
