@@ -77,12 +77,16 @@ class StateNode {
         if (withDetails) {
           obj[`.version:${label}`] = childNode.getVersion();
           obj[`.numParents:${label}`] = childNode.numParents();
+          obj[`.proofHash:${label}`] = childNode.getProofHash();
+          obj[`.treeSize:${label}`] = childNode.getTreeSize();
         }
       }
     }
     if (withDetails) {
       obj['.version'] = this.getVersion();
       obj['.numParents'] = this.numParents();
+      obj[`.proofHash`] = this.getProofHash();
+      obj[`.treeSize`] = this.getTreeSize();
     }
 
     return obj;
