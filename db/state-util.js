@@ -192,11 +192,11 @@ function stateTreeVersionsToJsObject(root) {
     obj[label] = stateTreeVersionsToJsObject(childNode);
     if (childNode.getIsLeaf()) {
       obj[`.version:${label}`] = childNode.getVersion();
-      obj[`.numRef:${label}`] = childNode.getNumRef();
+      obj[`.numParents:${label}`] = childNode.numParents();
     }
   }
   obj['.version'] = root.getVersion();
-  obj['.numRef'] = root.getNumRef();
+  obj['.numParents'] = root.numParents();
   return obj;
 }
 
@@ -247,24 +247,24 @@ function deleteStateTreeVersion(root, version) {
     // Does nothing.
     return numAffectedNodes;
   }
-  if (root.getNumRef() > 0) {
+  if (root.numParents() > 0) {
     // This shouldn't happen.
     logger.error(
-        `[${LOG_HEADER}] Trying to delete a node with invalid numRef value: ${root.getNumRef()} ` +
-        `with version: ${version}.`);
+        `[${LOG_HEADER}] Trying to delete a node with ` +
+        `invalid numParents() value: ${root.numParents()} with version: ${version}.`);
     return numAffectedNodes;
   }
 
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     root.deleteChild(label);
-    if (childNode.getNumRef() == 0) {
+    if (childNode.numParents() == 0) {
       numAffectedNodes += deleteStateTreeVersion(childNode, version);
-    } else if (childNode.getNumRef() < 0) {
+    } else if (childNode.numParents() < 0) {
       // This shouldn't happen.
       logger.error(
           `[${LOG_HEADER}] Deleted a child node with ` +
-          `invalid numRef value: ${childNode.getNumRef()} with label: ${label}.`);
+          `invalid numParents() value: ${childNode.numParents()} with label: ${label}.`);
     }
   }
   root.resetValue();

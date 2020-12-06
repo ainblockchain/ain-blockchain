@@ -13,7 +13,6 @@ class StateNode {
     this.value = null;
     this.proofHash = null;
     this.version = version ? version : null;
-    this.numRef = 0;
     this.treeSize = 1;
   }
 
@@ -32,7 +31,6 @@ class StateNode {
         this.isLeaf, this.childMap, this.value, this.proofHash, this.treeSize);
     this.getChildNodes().forEach((child) => {
       child._addParent(clone);
-      child.increaseNumRef();
     });
     return clone;
   }
@@ -49,7 +47,6 @@ class StateNode {
         that.value === this.value &&
         that.proofHash === this.proofHash &&
         that.version === this.version &&
-        that.numRef === this.numRef &&
         that.treeSize === this.treeSize);
   }
 
@@ -126,11 +123,9 @@ class StateNode {
       }
       const child = this.getChild(label);
       child._deleteParent(this);
-      child.decreaseNumRef();
     }
     this.childMap.set(label, node);
     node._addParent(this);
-    node.increaseNumRef();
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
     }
@@ -149,7 +144,6 @@ class StateNode {
     }
     const child = this.getChild(label);
     child._deleteParent(this);
-    child.decreaseNumRef();
     this.childMap.delete(label);
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
@@ -186,24 +180,6 @@ class StateNode {
 
   setVersion(version) {
     this.version = version;
-  }
-
-  getNumRef() {
-    return this.numRef;
-  }
-
-  increaseNumRef() {
-    this.numRef++;
-  }
-
-  decreaseNumRef() {
-    const LOG_HEADER = 'decreaseNumRef';
-    if (this.numRef > 0) {
-      this.numRef--;
-    } else {
-      // This shouldn't happen.
-      logger.error(`[${LOG_HEADER}] Failed to decrease numRef value: ${this.numRef}.`);
-    }
   }
 
   getTreeSize() {
