@@ -241,7 +241,7 @@ function equalStateTrees(root1, root2) {
   if (!root1.equal(root2)) {
     return false;
   }
-  // NOTE: The child labels order matters.
+  // NOTE: The child label order matters.
   for (const label of root1.getChildLabels()) {
     const child1 = root1.getChild(label);
     const child2 = root2.getChild(label);

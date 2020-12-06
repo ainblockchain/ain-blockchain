@@ -40,9 +40,11 @@ class StateNode {
       return false;
     }
     return (that.isLeaf === this.isLeaf &&
-        that.parentSet && that.parentSet.size !== undefined &&
-        that.parentSet.size === this.parentSet.size &&
+        that.numParents && typeof that.numParents === 'function' &&
+        // NOTE: Compare only numParents() values.
+        that.numParents() === this.numParents() &&
         that.getChildLabels && typeof that.getChildLabels === 'function' &&
+        // NOTE: The child label order matters.
         JSON.stringify(that.getChildLabels()) === JSON.stringify(this.getChildLabels()) &&
         that.value === this.value &&
         that.proofHash === this.proofHash &&
