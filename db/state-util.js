@@ -242,13 +242,14 @@ function equalStateTrees(root1, root2) {
   if (!root1.equal(root2)) {
     return false;
   }
-  root1.getChildLabels().forEach((label) => {
+  // NOTE: The child labels order matters.
+  for (const label of root1.getChildLabels()) {
     const child1 = root1.getChild(label);
     const child2 = root2.getChild(label);
     if (!equalStateTrees(child1, child2)) {
       return false;
     }
-  });
+  }
 
   return true;
 }
