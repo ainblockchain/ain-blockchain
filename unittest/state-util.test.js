@@ -890,6 +890,117 @@ describe("state-util", () => {
       const root2 = StateNode.fromJsObject(stateObj);
       expect(equalStateTrees(root1, root2)).to.equal(true);
     })
+
+    it("state trees with grandchildren in different orders", () => {
+      const stateObj1 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const stateObj2 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          // different order
+          label3: 'value3',
+          label2: 'value2',
+          label1: 'value1',
+        },
+        subobj2: {
+          // different order
+          label3: 'value3',
+          label2: 'value2',
+          label1: 'value1',
+        }
+      };
+      const root1 = StateNode.fromJsObject(stateObj1);
+      const root2 = StateNode.fromJsObject(stateObj2);
+      expect(equalStateTrees(root1, root2)).to.equal(false);
+    })
+
+    it("state trees with a grandchild of a different label", () => {
+      const stateObj1 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const stateObj2 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label4: 'value3',  // different label
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const root1 = StateNode.fromJsObject(stateObj1);
+      const root2 = StateNode.fromJsObject(stateObj2);
+      expect(equalStateTrees(root1, root2)).to.equal(false);
+    })
+
+    it("state trees with an extra grandchild", () => {
+      const stateObj1 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const stateObj2 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+          label4: 'value4',  // extra node
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const root1 = StateNode.fromJsObject(stateObj1);
+      const root2 = StateNode.fromJsObject(stateObj2);
+      expect(equalStateTrees(root1, root2)).to.equal(false);
+    })
   })
 
   describe("setProofHashForStateTree", () => {
