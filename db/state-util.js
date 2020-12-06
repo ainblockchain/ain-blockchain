@@ -19,7 +19,7 @@ function hasConfig(node, label) {
 }
 
 function getConfig(node, label) {
-  return hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
+  return hasConfig(node, label) ? node.getChild(label).toJsObject() : null;
 }
 
 function hasShardConfig(valueNode) {
@@ -147,57 +147,6 @@ function isValidJsObjectForStates(obj) {
   const path = [];
   const isValid = isValidJsObjectForStatesRecursive(obj, path);
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
-}
-
-function jsObjectToStateTree(obj, version) {
-  const node = new StateNode(version);
-  if (ChainUtil.isDict(obj)) {
-    if (!ChainUtil.isEmpty(obj)) {
-      for (const key in obj) {
-        const childObj = obj[key];
-        node.setChild(key, jsObjectToStateTree(childObj, version));
-      }
-    }
-  } else {
-    node.setValue(obj);
-  }
-  return node;
-}
-
-function stateTreeToJsObject(root) {
-  if (root === null) {
-    return null;
-  }
-  if (root.getIsLeaf()) {
-    return root.getValue();
-  }
-  const obj = {};
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
-    obj[label] = stateTreeToJsObject(childNode);
-  }
-  return obj;
-}
-
-function stateTreeVersionsToJsObject(root) {
-  if (root === null) {
-    return null;
-  }
-  if (root.getIsLeaf()) {
-    return root.getValue();
-  }
-  const obj = {};
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
-    obj[label] = stateTreeVersionsToJsObject(childNode);
-    if (childNode.getIsLeaf()) {
-      obj[`.version:${label}`] = childNode.getVersion();
-      obj[`.numParents:${label}`] = childNode.numParents();
-    }
-  }
-  obj['.version'] = root.getVersion();
-  obj['.numParents'] = root.numParents();
-  return obj;
 }
 
 /**
@@ -365,9 +314,6 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
-  jsObjectToStateTree,
-  stateTreeToJsObject,
-  stateTreeVersionsToJsObject,
   setStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,

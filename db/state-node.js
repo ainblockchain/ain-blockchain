@@ -5,6 +5,7 @@ const { HASH_DELIMITER } = require('../constants');
 
 class StateNode {
   constructor(version) {
+    this.version = version || null;
     this.isLeaf = true;
     this.parentSet = new Set();
     // Used for internal nodes only.
@@ -12,7 +13,6 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.proofHash = null;
-    this.version = version ? version : null;
     this.treeSize = 1;
   }
 
@@ -50,6 +50,44 @@ class StateNode {
         that.treeSize === this.treeSize);
   }
 
+  static fromJsObject(obj, version) {
+    const node = new StateNode(version);
+    if (ChainUtil.isDict(obj)) {
+      if (!ChainUtil.isEmpty(obj)) {
+        for (const key in obj) {
+          const childObj = obj[key];
+          node.setChild(key, StateNode.fromJsObject(childObj, version));
+        }
+      }
+    } else {
+      node.setValue(obj);
+    }
+    return node;
+  }
+
+  toJsObject(withDetails) {
+    if (this.getIsLeaf()) {
+      return this.getValue();
+    }
+    const obj = {};
+    for (const label of this.getChildLabels()) {
+      const childNode = this.getChild(label);
+      obj[label] = childNode.toJsObject(withDetails);
+      if (childNode.getIsLeaf()) {
+        if (withDetails) {
+          obj[`.version:${label}`] = childNode.getVersion();
+          obj[`.numParents:${label}`] = childNode.numParents();
+        }
+      }
+    }
+    if (withDetails) {
+      obj['.version'] = this.getVersion();
+      obj['.numParents'] = this.numParents();
+    }
+
+    return obj;
+  }
+
   getIsLeaf() {
     return this.isLeaf;
   }
@@ -72,7 +110,7 @@ class StateNode {
 
   _addParent(parent) {
     const LOG_HEADER = 'addParent';
-    if (this.parentSet.has(parent)) {
+    if (this._hasParent(parent)) {
       logger.error(
           `[${LOG_HEADER}] Adding an existing parent: ${JSON.stringify(parent, null, 2)}.`);
       // Does nothing.
@@ -81,7 +119,7 @@ class StateNode {
     this.parentSet.add(parent);
   }
 
-  hasParent(parent) {
+  _hasParent(parent) {
     return this.parentSet.has(parent);
   }
 

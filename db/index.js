@@ -26,9 +26,6 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
-  jsObjectToStateTree,
-  stateTreeToJsObject,
-  stateTreeVersionsToJsObject,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -64,7 +61,10 @@ class DB {
   }
 
   dumpDbStates() {
-    return stateTreeVersionsToJsObject(this.stateRoot);
+    if (this.stateRoot === null) {
+      return null;
+    }
+    return this.stateRoot.toJsObject(true);
   }
 
   // For testing purpose only.
@@ -167,7 +167,7 @@ class DB {
   }
 
   writeDatabase(fullPath, stateObj) {
-    const stateTree = jsObjectToStateTree(stateObj, this.stateVersion);
+    const stateTree = StateNode.fromJsObject(stateObj, this.stateVersion);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       this.stateRoot = stateTree;
@@ -209,7 +209,10 @@ class DB {
 
   readDatabase(fullPath) {
     const stateNode = this.getRefForReading(fullPath);
-    return stateTreeToJsObject(stateNode);
+    if (stateNode === null) {
+      return null;
+    }
+    return stateNode.toJsObject();
   }
 
   getValue(valuePath, isGlobal) {
