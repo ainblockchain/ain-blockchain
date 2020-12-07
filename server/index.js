@@ -211,11 +211,14 @@ class P2pServer {
     this.trackerWebSocket.on('message', async (message) => {
       try {
         const parsedMsg = JSON.parse(message);
-        logger.info(`\n << Message from [TRACKER]: ` +
-                    `${JSON.stringify(parsedMsg, null, 2)}`)
+        logger.info(`\n << Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-          logger.info(`Updated managed peers info: ` +
-                      `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+          logger.debug(`Updated MANAGED peers info: ` +
+              `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+        }
+        if (this.connectToPeers(parsedMsg.newUnmanagedPeerInfoList)) {
+          logger.debug(`Updated UNMANAGED peers info: ` +
+              `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
         if (this.isStarting) {
           this.isStarting = false;
@@ -305,9 +308,9 @@ class P2pServer {
     };
   }
 
-  connectToPeers(newManagedPeerInfoList) {
+  connectToPeers(newPeerInfoList) {
     let updated = false;
-    newManagedPeerInfoList.forEach((peerInfo) => {
+    newPeerInfoList.forEach((peerInfo) => {
       if (this.managedPeersInfo[peerInfo.address]) {
         logger.info(`Node ${peerInfo.address} is already a managed peer. ` +
                     `Something is wrong.`)
