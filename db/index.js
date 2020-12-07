@@ -26,11 +26,8 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
-  jsObjectToStateTree,
-  stateTreeToJsObject,
-  stateTreeVersionsToJsObject,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHashForAllRootPaths,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -64,7 +61,10 @@ class DB {
   }
 
   dumpDbStates() {
-    return stateTreeVersionsToJsObject(this.stateRoot);
+    if (this.stateRoot === null) {
+      return null;
+    }
+    return this.stateRoot.toJsObject(true);
   }
 
   // For testing purpose only.
@@ -167,7 +167,7 @@ class DB {
   }
 
   writeDatabase(fullPath, stateObj) {
-    const stateTree = jsObjectToStateTree(stateObj, this.stateVersion);
+    const stateTree = StateNode.fromJsObject(stateObj, this.stateVersion);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       this.stateRoot = stateTree;
@@ -182,7 +182,7 @@ class DB {
       setProofHashForStateTree(stateTree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForPath(pathToParent, this.stateRoot);
+      updateProofHashForAllRootPaths(pathToParent, this.stateRoot);
     }
   }
 
@@ -209,9 +209,13 @@ class DB {
 
   readDatabase(fullPath) {
     const stateNode = this.getRefForReading(fullPath);
-    return stateTreeToJsObject(stateNode);
+    if (stateNode === null) {
+      return null;
+    }
+    return stateNode.toJsObject();
   }
 
+  // TODO(seo): Support lookups on the finalized version.
   getValue(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
@@ -258,11 +262,11 @@ class DB {
 
   /**
    * Returns a proof of a state node.
-   * @param {string} fullPath full database path to the state node to be proved.
+   * @param {string} treePath full database path to the state node to be proved.
    */
   // TODO(seo): Consider supporting global path for getProof().
-  getProof(fullPath) {
-    const parsedPath = ChainUtil.parsePath(fullPath);
+  getProof(treePath) {
+    const parsedPath = ChainUtil.parsePath(treePath);
     let node = this.stateRoot;
     const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
@@ -279,6 +283,15 @@ class DB {
       }
     }
     return rootProof;
+  }
+
+  getTreeSize(treePath) {
+    const parsedPath = ChainUtil.parsePath(treePath);
+    const stateNode = this.getRefForReading(parsedPath);
+    if (stateNode === null) {
+      return 0;
+    }
+    return stateNode.getTreeSize();
   }
 
   matchFunction(funcPath, isGlobal) {

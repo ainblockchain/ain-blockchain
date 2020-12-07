@@ -100,6 +100,17 @@ app.get('/get_proof', (req, res, next) => {
     .end();
 });
 
+/**
+ * Returns the size of the state tree in the given full database path.
+ */
+app.get('/get_tree_size', (req, res, next) => {
+  const result = node.db.getTreeSize(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/match_function', (req, res, next) => {
   const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
@@ -295,6 +306,15 @@ app.get('/state_versions', (req, res) => {
     version_list: node.stateManager.getVersionList(),
     finalized_version: node.stateManager.getFinalizedVersion(),
   };
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+// TODO(seo): Support for subtree dumping (i.e. with ref path).
+app.get('/dump_finalized_version', (req, res) => {
+  const result = node.dumpFinalizedVersion(true);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
