@@ -1,10 +1,8 @@
 /* eslint guard-for-in: "off" */
 const logger = require('../logger')('STATE_UTIL');
 
-const StateNode = require('./state-node');
 const ChainUtil = require('../chain-util');
 const {
-  HASH_DELIMITER,
   FunctionProperties,
   RuleProperties,
   OwnerProperties,
@@ -20,7 +18,7 @@ function hasConfig(node, label) {
 }
 
 function getConfig(node, label) {
-  return hasConfig(node, label) ? stateTreeToJsObject(node.getChild(label)) : null;
+  return hasConfig(node, label) ? node.getChild(label).toJsObject() : null;
 }
 
 function hasShardConfig(valueNode) {
@@ -150,92 +148,41 @@ function isValidJsObjectForStates(obj) {
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
-function jsObjectToStateTree(obj, version) {
-  const node = new StateNode(version);
-  if (ChainUtil.isDict(obj)) {
-    if (!ChainUtil.isEmpty(obj)) {
-      for (const key in obj) {
-        const childObj = obj[key];
-        node.setChild(key, jsObjectToStateTree(childObj, version));
-      }
-    }
-  } else {
-    node.setValue(obj);
-  }
-  return node;
-}
-
-function stateTreeToJsObject(root) {
-  if (root === null) {
-    return null;
-  }
-  if (root.getIsLeaf()) {
-    return root.getValue();
-  }
-  const obj = {};
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
-    obj[label] = stateTreeToJsObject(childNode);
-  }
-  return obj;
-}
-
-function stateTreeVersionsToJsObject(root) {
-  if (root === null) {
-    return null;
-  }
-  if (root.getIsLeaf()) {
-    return root.getValue();
-  }
-  const obj = {};
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
-    obj[label] = stateTreeVersionsToJsObject(childNode);
-    if (childNode.getIsLeaf()) {
-      obj[`.version:${label}`] = childNode.getVersion();
-      obj[`.numRef:${label}`] = childNode.getNumRef();
-    }
-  }
-  obj['.version'] = root.getVersion();
-  obj['.numRef'] = root.getNumRef();
-  return obj;
-}
-
 /**
  * Returns affected nodes number.
  */
 function setStateTreeVersion(root, version) {
-  let numNodes = 0;
+  let numAffectedNodes = 0;
   if (root === null) {
-    return numNodes;
+    return numAffectedNodes;
   }
   if (root.getVersion() !== version) {
     root.setVersion(version);
-    numNodes++;
+    numAffectedNodes++;
   }
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    numNodes += setStateTreeVersion(childNode, version);
+    numAffectedNodes += setStateTreeVersion(childNode, version);
   }
 
-  return numNodes;
+  return numAffectedNodes;
 }
 
 /**
  * Returns affected nodes number.
  */
 function deleteStateTree(root) {
-  let numNodes = 0;
+  let numAffectedNodes = 0;
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
-    numNodes += deleteStateTree(childNode);
+    numAffectedNodes += deleteStateTree(childNode);
     root.deleteChild(label);
   }
   root.resetValue();
   root.resetProofHash();
-  numNodes++;
+  numAffectedNodes++;
 
-  return numNodes;
+  return numAffectedNodes;
 }
 
 /**
@@ -243,36 +190,36 @@ function deleteStateTree(root) {
  */
 function deleteStateTreeVersion(root, version) {
   const LOG_HEADER = 'deleteStateTreeVersion';
-  let numNodes = 0;
+  let numAffectedNodes = 0;
   if (root.getVersion() !== version) {
     // Does nothing.
-    return numNodes;
+    return numAffectedNodes;
   }
-  if (root.getNumRef() > 0) {
+  if (root.numParents() > 0) {
     // This shouldn't happen.
     logger.error(
-        `[${LOG_HEADER}] Trying to delete a node with invalid numRef value: ${root.getNumRef()} ` +
-        `with version: ${version}.`);
-    return numNodes;
+        `[${LOG_HEADER}] Trying to delete a node with ` +
+        `invalid numParents() value: ${root.numParents()} with version: ${version}.`);
+    return numAffectedNodes;
   }
 
   for (const label of root.getChildLabels()) {
     const childNode = root.getChild(label);
     root.deleteChild(label);
-    if (childNode.getNumRef() == 0) {
-      numNodes += deleteStateTreeVersion(childNode, version);
-    } else if (childNode.getNumRef() < 0) {
+    if (childNode.numParents() == 0) {
+      numAffectedNodes += deleteStateTreeVersion(childNode, version);
+    } else if (childNode.numParents() < 0) {
       // This shouldn't happen.
       logger.error(
           `[${LOG_HEADER}] Deleted a child node with ` +
-          `invalid numRef value: ${childNode.getNumRef()} with label: ${label}.`);
+          `invalid numParents() value: ${childNode.numParents()} with label: ${label}.`);
     }
   }
   root.resetValue();
   root.resetProofHash();
-  numNodes++;
+  numAffectedNodes++;
 
-  return numNodes;
+  return numAffectedNodes;
 }
 
 function makeCopyOfStateTree(root) {
@@ -284,45 +231,70 @@ function makeCopyOfStateTree(root) {
   return copy;
 }
 
-function buildProofHashOfStateNode(StateNode) {
-  let preimage;
-  if (StateNode.getIsLeaf()) {
-    preimage = StateNode.getValue();
-  } else {
-    preimage = StateNode.getChildLabels().map((label) => {
-      return `${label}${HASH_DELIMITER}${StateNode.getChild(label).getProofHash()}`;
-    }, '').join(HASH_DELIMITER);
+function equalStateTrees(root1, root2) {
+  if (!root1 && !root2) {
+    return true;
   }
-  return ChainUtil.hashString(ChainUtil.toString(preimage));
+  if (!root1 || !root2) {
+    return false;
+  }
+  if (!root1.equal(root2)) {
+    return false;
+  }
+  // NOTE: The child label order matters.
+  for (const label of root1.getChildLabels()) {
+    const child1 = root1.getChild(label);
+    const child2 = root2.getChild(label);
+    if (!equalStateTrees(child1, child2)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function setProofHashForStateTree(stateTree) {
+  let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     stateTree.getChildNodes().forEach((node) => {
-      setProofHashForStateTree(node);
+      numAffectedNodes += setProofHashForStateTree(node);
     });
   }
-  updateProofHashOfStateNode(stateTree);
+  stateTree.updateProofHashAndTreeSize();
+  numAffectedNodes++;
+
+  return numAffectedNodes;
 }
 
-function updateProofHashOfStateNode(stateNode) {
-  const proof = buildProofHashOfStateNode(stateNode);
-  stateNode.setProofHash(proof);
+function updateProofHashForAllRootPathsRecursive(node) {
+  let numAffectedNodes = 0;
+  node.updateProofHashAndTreeSize();
+  numAffectedNodes++;
+  node.getParentNodes().forEach((parent) => {
+    numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);
+  })
+  return numAffectedNodes;
 }
 
-function updateProofHashForPathRecursive(path, stateTree, idx) {
-  if (idx < 0 || idx > path.length) {
-    return;
+function updateProofHashForAllRootPaths(fullPath, root) {
+  const LOG_HEADER = 'updateProofHashForAllRootPaths';
+  if (!root) {
+    logger.error(`[${LOG_HEADER}] Trying to update proof hash for invalid root: ${root}.`);
+    return 0;
   }
-  const child = stateTree.getChild(path[idx]);
-  if (child != null) {
-    updateProofHashForPathRecursive(path, child, idx + 1);
+  let node = root;
+  for (let i = 0; i < fullPath.length; i++) {
+    const label = fullPath[i];
+    const child = node.getChild(label);
+    if (child === null) {
+      logger.error(
+          `[${LOG_HEADER}] Trying to update proof hash for ` +
+          `non-existing path: ${ChainUtil.formatPath(fullPath.slice(0, i + 1))}.`);
+      return 0;
+    }
+    node = child;
   }
-  updateProofHashOfStateNode(stateTree);
-}
-
-function updateProofHashForPath(fullPath, root) {
-  return updateProofHashForPathRecursive(fullPath, root, 0);
+  return updateProofHashForAllRootPathsRecursive(node);
 }
 
 module.exports = {
@@ -342,14 +314,11 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
-  jsObjectToStateTree,
-  stateTreeToJsObject,
-  stateTreeVersionsToJsObject,
   setStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
-  buildProofHashOfStateNode,
+  equalStateTrees,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHashForAllRootPaths,
 };

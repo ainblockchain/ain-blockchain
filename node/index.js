@@ -139,6 +139,10 @@ class BlockchainNode {
     this.syncDb(nodeVersion)
   }
 
+  dumpFinalizedVersion(withDetails) {
+    return this.stateManager.getFinalizedRoot().toJsObject(withDetails);
+  }
+
   getNonce() {
     const LOG_HEADER = 'getNonce';
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
