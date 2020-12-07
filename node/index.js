@@ -139,7 +139,7 @@ class BlockchainNode {
     this.syncDb(nodeVersion)
   }
 
-  dumpFinalizedStates(withDetails) {
+  dumpFinalizedVersion(withDetails) {
     return this.stateManager.getFinalizedRoot().toJsObject(withDetails);
   }
 

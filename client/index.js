@@ -312,8 +312,9 @@ app.get('/state_versions', (req, res) => {
     .end();
 });
 
-app.get('/finalized_states', (req, res) => {
-  const result = node.dumpFinalizedStates(ChainUtil.toBool(req.query.with_details));
+// TODO(seo): Support for subtree dumping (i.e. with ref path).
+app.get('/dump_finalized_version', (req, res) => {
+  const result = node.dumpFinalizedVersion(true);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
