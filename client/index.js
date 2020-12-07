@@ -312,6 +312,14 @@ app.get('/state_versions', (req, res) => {
     .end();
 });
 
+app.get('/finalized_states', (req, res) => {
+  const result = node.dumpFinalizedStates(ChainUtil.toBool(req.query.with_details));
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
