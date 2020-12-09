@@ -54,10 +54,10 @@ const getWinstonConsoleTransport = () => {
   });
 };
 
-const getWinstonDailyDebugFileTransport = () => {
+const getWinstonDailyCombinedFileTransport = () => {
   return new (winstonDaily)({
     name: 'daily-combined-log',
-    level: 'debug',
+    level: DEBUG ? 'debug' : 'info',
     filename: `${logDir}/${prefix}-combined-%DATE%.log`,
     handleExceptions: true,
     json: false,
@@ -94,7 +94,7 @@ const getWinstonTransports = () => {
   const transports = LIGHTWEIGHT ? [getWinstonDailyErrorFileTransport()]
       : [
         getWinstonConsoleTransport(),
-        getWinstonDailyDebugFileTransport(),
+        getWinstonDailyCombinedFileTransport(),
         getWinstonDailyErrorFileTransport(),
       ];
   if (HOSTING_ENV === 'gcp') {
