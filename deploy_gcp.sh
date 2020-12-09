@@ -75,6 +75,20 @@ gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project 
 printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID
 
+# set up ubuntu, set the shard chain up (ONLY NEEDED FOR THE FIRST TIME)
+# printf "\n\n##########################\n# Setting up parent tracker #\n###########################\n\n"
+# gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# printf "\n\n##########################\n# Setting up parent node 0 #\n##########################\n\n"
+# gcloud compute ssh $NODE_0_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# printf "\n\n##########################\n# Setting up parent node 1 #\n##########################\n\n"
+# gcloud compute ssh $NODE_1_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# printf "\n\n##########################\n# Setting up parent node 2 #\n##########################\n\n"
+# gcloud compute ssh $NODE_2_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# printf "\n\n##########################\n# Setting up parent node 3 #\n##########################\n\n"
+# gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# printf "\n\n##########################\n# Setting up parent node 4 #\n##########################\n\n"
+# gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+
 # ssh into each instance, set the parent chain up, and start running the nodes
 printf "\n\n############################\n# Running parent tracker #\n############################\n\n"
 gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_tracker_gcp.sh && . start_tracker_gcp.sh" --project $PROJECT_ID
@@ -115,13 +129,13 @@ if [ "$3" -gt 0 ]; then
 
             # set up ubuntu, set the shard chain up (ONLY NEEDED FOR THE FIRST TIME)
             # printf "\n\n###########################\n# Setting up shard_$i tracker #\n###########################\n\n"
-            # gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_ubuntu.sh && . setup_tracker_gcp.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
             # printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
-            # gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_ubuntu.sh && . setup_node_gcp.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
             # printf "\n\n##########################\n# Setting up  shard_$i node 1 #\n##########################\n\n"
-            # gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_ubuntu.sh && . setup_node_gcp.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
             # printf "\n\n##########################\n# Setting up  shard_$i node 2 #\n##########################\n\n"
-            # gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_ubuntu.sh && . setup_node_gcp.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
 
             # ssh into each instance, set the shard chain up, and start running the nodes
             printf "\n\n###########################\n# Running shard_$i tracker #\n###########################\n\n"
