@@ -29,7 +29,7 @@ class Transaction {
     logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
   }
 
-  static newTransaction(privateKey, txData) {
+  static newTransaction(txData, privateKey) {
     const transaction = JSON.parse(JSON.stringify(txData));
     transaction.timestamp = Date.now();
     // Workaround for skip_verif with custom address
