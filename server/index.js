@@ -378,13 +378,11 @@ class P2pServer {
               if (Transaction.isBatchTransaction(transaction)) {
                 const batchTxWithSig = [];
                 transaction.tx_list.forEach((tx) => {
-                  batchTxWithSig.push(
-                      new Transaction({ signature: tx.signature, transaction: tx }));
+                  batchTxWithSig.push(new Transaction(tx, tx.signature));
                 })
                 this.executeAndBroadcastTransaction(batchTxWithSig, MessageTypes.TRANSACTION);
               } else {
-                const txWithSig =
-                    new Transaction({ signature: transaction.signature, transaction: transaction });
+                const txWithSig = new Transaction(transaction, transaction.signature);
                 this.executeAndBroadcastTransaction(txWithSig, MessageTypes.TRANSACTION);
               }
             } else {
