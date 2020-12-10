@@ -52,10 +52,10 @@ function setNodeForTesting(
   }
 }
 
-function getTransaction(node, txData) {
-  txData.nonce = node.nonce;
+function getTransaction(node, txBody) {
+  txBody.nonce = node.nonce;
   node.nonce++;
-  return Transaction.signTxBody(txData, node.account.private_key);
+  return Transaction.signTxBody(txBody, node.account.private_key);
 }
 
 function addBlock(node, txs, votes, validators) {

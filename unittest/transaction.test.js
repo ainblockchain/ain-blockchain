@@ -90,7 +90,7 @@ describe('Transaction', () => {
   });
 
   it('invalidates an invalid transaction signed with keys of others', () => {
-    // transaction data has been changed
+    // transaction body has been changed
     const transaction = new Transaction(
       {
         nonce: 0,
