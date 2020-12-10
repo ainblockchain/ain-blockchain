@@ -596,7 +596,7 @@ class P2pServer {
     if (!ChainUtil.transactionFailed(result)) {
       this.node.tp.addTransaction(txWithSig);
     } else {
-      logger.debug(`FAILED TRANSACTION: ${JSON.stringify(txWithSig)}\t ` +
+      logger.info(`FAILED TRANSACTION: ${JSON.stringify(txWithSig)}\t ` +
           `RESULT:${JSON.stringify(result)}`);
     }
     return result;

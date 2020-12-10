@@ -188,7 +188,7 @@ class Block {
     });
 
     // Transaction
-    const firstTxData = {
+    const firstTxBody = {
       nonce: -1,
       timestamp,
       operation: {
@@ -196,8 +196,8 @@ class Block {
         op_list: opList,
       }
     };
-    const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
-    return (new Transaction({signature: firstSig, transaction: firstTxData}));
+    const firstSig = ainUtil.ecSignTransaction(firstTxBody, keyBuffer);
+    return (new Transaction({signature: firstSig, transaction: firstTxBody}));
   }
 
   static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
@@ -219,7 +219,7 @@ class Block {
     }
 
     // Transaction
-    const secondTxData = {
+    const secondTxBody = {
       nonce: -1,
       timestamp,
       operation: {
@@ -227,8 +227,8 @@ class Block {
         op_list: transferOps
       }
     };
-    const secondSig = ainUtil.ecSignTransaction(secondTxData, keyBuffer);
-    return (new Transaction({signature: secondSig, transaction: secondTxData}));
+    const secondSig = ainUtil.ecSignTransaction(secondTxBody, keyBuffer);
+    return (new Transaction({signature: secondSig, transaction: secondTxBody}));
   }
 
   static getGenesisBlockData(genesisTime) {
