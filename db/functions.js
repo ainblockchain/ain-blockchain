@@ -238,7 +238,7 @@ class Functions {
       return;
     }
     const tx =
-        new Transaction({ signature: payloadTx.signature, transaction: payloadTx.transaction });
+        new Transaction(payloadTx.transaction, payloadTx.signature);
     if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.operation)) {
       logger.debug('  =>> Invalid payloadTx');
       return;
