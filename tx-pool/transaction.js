@@ -4,36 +4,36 @@ const {WriteDbOperations} = require('../constants');
 const ChainUtil = require('../chain-util');
 
 class Transaction {
-  constructor(transaction, signature) {
+  constructor(inputTxBody, signature) {
     this.signature = signature;
-    if (!Transaction.hasRequiredFields(transaction)) {
+    if (!Transaction.hasRequiredFields(inputTxBody)) {
       logger.info('Transaction must contain timestamp, operation and nonce fields: ' +
-          JSON.stringify(transaction));
+          JSON.stringify(inputTxBody));
       return null;
     }
 
-    const txData = JSON.parse(JSON.stringify(transaction));
-    const sanitizedTxData = Transaction.sanitizeTxData(txData);
+    const txBody = JSON.parse(JSON.stringify(inputTxBody));
+    const sanitized = Transaction.sanitizeTxBody(txBody);
     // Workaround for skip_verif with custom address
-    if (txData.skip_verif !== undefined) {
-      this.skip_verif = txData.skip_verif;
+    if (txBody.skip_verif !== undefined) {
+      this.skip_verif = txBody.skip_verif;
     }
-    Object.assign(this, sanitizedTxData);
-    this.hash = '0x' + ainUtil.hashTransaction(sanitizedTxData).toString('hex');
+    Object.assign(this, sanitized);
+    this.hash = '0x' + ainUtil.hashTransaction(sanitized).toString('hex');
     // Workaround for skip_verif with custom address
-    this.address = txData.address !== undefined ?
-        txData.address : Transaction.getAddress(this.hash.slice(2), this.signature);
+    this.address = txBody.address !== undefined ?
+        txBody.address : Transaction.getAddress(this.hash.slice(2), this.signature);
 
     logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
   }
 
-  static signTxBody(txData, privateKey) {
-    const transaction = JSON.parse(JSON.stringify(txData));
-    transaction.timestamp = Date.now();
+  static signTxBody(inputTxBody, privateKey) {
+    const txBody = JSON.parse(JSON.stringify(inputTxBody));
+    txBody.timestamp = Date.now();
     // Workaround for skip_verif with custom address
-    const signature = transaction.address !== undefined ?
-        '' : ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
-    return new Transaction(transaction, signature);
+    const signature = txBody.address !== undefined ?
+        '' : ainUtil.ecSignTransaction(txBody, Buffer.from(privateKey, 'hex'));
+    return new Transaction(txBody, signature);
   }
 
   toString() {
@@ -125,16 +125,16 @@ class Transaction {
   }
 
   /**
-   * Sanitize transaction data.
+   * Sanitize transaction body.
    */
-  static sanitizeTxData(txData) {
+  static sanitizeTxBody(txBody) {
     const sanitized = {
-      nonce: ChainUtil.numberOrZero(txData.nonce),
-      timestamp: ChainUtil.numberOrZero(txData.timestamp),
-      operation: Transaction.sanitizeOperation(txData.operation),
+      nonce: ChainUtil.numberOrZero(txBody.nonce),
+      timestamp: ChainUtil.numberOrZero(txBody.timestamp),
+      operation: Transaction.sanitizeOperation(txBody.operation),
     };
-    if (txData.parent_tx_hash !== undefined) {
-      sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txData.parent_tx_hash);
+    if (txBody.parent_tx_hash !== undefined) {
+      sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
     }
     return sanitized;
   }
