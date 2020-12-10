@@ -536,7 +536,8 @@ class Consensus {
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(proposalTx));
+    this.node.tp.addTransaction(
+        new Transaction({ signature: proposalTx.signature, transaction: proposalTx }));
     const newVersion = `${StateVersions.TEMP}:${Date.now()}`;
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
@@ -595,7 +596,7 @@ class Consensus {
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(vote));
+    this.node.tp.addTransaction(new Transaction({ signature: vote.signature, transaction: vote }));
     this.blockPool.addSeenVote(vote, this.state.epoch);
     return true;
   }
