@@ -194,23 +194,23 @@ class BlockchainNode {
     *                                        not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(txData, isNoncedTransaction = true) {
-    if (Transaction.isBatchTransaction(txData)) {
+  createTransaction(txBody, isNoncedTransaction = true) {
+    if (Transaction.isBatchTransaction(txBody)) {
       const txList = [];
-      txData.tx_list.forEach((subData) => {
+      txBody.tx_list.forEach((subData) => {
         txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
       })
       return {tx_list: txList};
     }
-    return this.createSingleTransaction(txData, isNoncedTransaction);
+    return this.createSingleTransaction(txBody, isNoncedTransaction);
   }
 
-  createSingleTransaction(txData, isNoncedTransaction) {
+  createSingleTransaction(txBody, isNoncedTransaction) {
     // Workaround for skip_verif with custom address
-    if (txData.address !== undefined) {
-      txData.skip_verif = true;
+    if (txBody.address !== undefined) {
+      txBody.skip_verif = true;
     }
-    if (txData.nonce === undefined) {
+    if (txBody.nonce === undefined) {
       let nonce;
       if (isNoncedTransaction) {
         nonce = this.nonce;
@@ -218,9 +218,9 @@ class BlockchainNode {
       } else {
         nonce = -1;
       }
-      txData.nonce = nonce;
+      txBody.nonce = nonce;
     }
-    return Transaction.newTransaction(txData, this.account.private_key);
+    return Transaction.signTxBody(txBody, this.account.private_key);
   }
 
   addNewBlock(block) {
