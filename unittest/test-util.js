@@ -55,7 +55,7 @@ function setNodeForTesting(
 function getTransaction(node, txData) {
   txData.nonce = node.nonce;
   node.nonce++;
-  return Transaction.newTransaction(node.account.private_key, txData);
+  return Transaction.newTransaction(txData, node.account.private_key);
 }
 
 function addBlock(node, txs, votes, validators) {

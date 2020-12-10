@@ -220,7 +220,7 @@ class BlockchainNode {
       }
       txData.nonce = nonce;
     }
-    return Transaction.newTransaction(this.account.private_key, txData);
+    return Transaction.newTransaction(txData, this.account.private_key);
   }
 
   addNewBlock(block) {
