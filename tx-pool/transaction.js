@@ -3,7 +3,6 @@ const logger = require('../logger')('TRANSACTION');
 const {WriteDbOperations} = require('../constants');
 const ChainUtil = require('../chain-util');
 
-// TODO(seo): Remove 'txWithSig.transaction ?' use cases.
 class Transaction {
   constructor(txWithSig) {
     this.signature = txWithSig.signature;
