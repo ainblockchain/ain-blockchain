@@ -562,13 +562,12 @@ class P2pServer {
   /**
    * Adds transaction to the transactionPool and executes the operations specified
    * in the transaction.
-   * @param {Object} transactionWithSig An object with a signature and a transaction.
+   * @param {Object} txWithSig An object with a signature and a transaction.
    */
   // TODO(seo): Remove new Transaction() use cases.
-  executeTransaction(transactionWithSig) {
-    if (!transactionWithSig) return null;
-    const transaction = transactionWithSig instanceof Transaction ?
-        transactionWithSig : new Transaction(transactionWithSig);
+  executeTransaction(txWithSig) {
+    if (!txWithSig) return null;
+    const transaction = txWithSig instanceof Transaction ? txWithSig : new Transaction(txWithSig);
     logger.debug(`EXECUTING: ${JSON.stringify(transaction)}`);
     if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
       logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
@@ -594,13 +593,13 @@ class P2pServer {
     return result;
   }
 
-  executeAndBroadcastTransaction(transactionWithSig) {
-    if (!transactionWithSig) return null;
-    if (Transaction.isBatchTransaction(transactionWithSig)) {
+  executeAndBroadcastTransaction(txWithSig) {
+    if (!txWithSig) return null;
+    if (Transaction.isBatchTransaction(txWithSig)) {
       const resultList = [];
       const txListSucceeded = [];
-      transactionWithSig.tx_list.forEach((tx) => {
-        const transaction = tx instanceof Transaction ? tx : new Transaction(tx);
+      txWithSig.tx_list.forEach((tx) => {
+        const transaction = new Transaction({ signature: tx.signature, transaction: tx });
         const response = this.executeTransaction(transaction);
         resultList.push(response);
         if (!ChainUtil.transactionFailed(response)) {
@@ -613,8 +612,8 @@ class P2pServer {
 
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction ?
-          transactionWithSig : new Transaction(transactionWithSig);
+      const transaction = txWithSig instanceof Transaction ?
+          txWithSig : new Transaction({ signature: txWithSig.signature, transaction: txWithSig });
       const response = this.executeTransaction(transaction);
       logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response))
       if (!ChainUtil.transactionFailed(response)) {

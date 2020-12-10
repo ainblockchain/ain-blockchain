@@ -8,7 +8,7 @@ class Transaction {
   constructor(txWithSig) {
     this.signature = txWithSig.signature;
 
-    const transaction = txWithSig.transaction ? txWithSig.transaction : txWithSig;
+    const transaction = txWithSig.transaction;
     if (!Transaction.hasRequiredFields(transaction)) {
       logger.info('Transaction must contain timestamp, operation and nonce fields: ' +
           JSON.stringify(transaction));
@@ -36,7 +36,7 @@ class Transaction {
     // Workaround for skip_verif with custom address
     const signature = transaction.address !== undefined ?
         '' : ainUtil.ecSignTransaction(transaction, Buffer.from(privateKey, 'hex'));
-    return new Transaction({signature, transaction});
+    return new Transaction({ signature, transaction });
   }
 
   toString() {
