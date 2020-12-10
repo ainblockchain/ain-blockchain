@@ -374,7 +374,19 @@ class P2pServer {
               logger.debug(`Already have the transaction in my tx tracker`);
               break;
             } else if (this.node.initialized) {
-              this.executeAndBroadcastTransaction(data.transaction, MessageTypes.TRANSACTION);
+              const transaction = data.transaction;
+              if (Transaction.isBatchTransaction(transaction)) {
+                const batchTxWithSig = [];
+                transaction.tx_list.forEach((tx) => {
+                  batchTxWithSig.push(
+                      new Transaction({ signature: tx.signature, transaction: tx }));
+                })
+                this.executeAndBroadcastTransaction(batchTxWithSig, MessageTypes.TRANSACTION);
+              } else {
+                const txWithSig =
+                    new Transaction({ signature: transaction.signature, transaction: transaction });
+                this.executeAndBroadcastTransaction(txWithSig, MessageTypes.TRANSACTION);
+              }
             } else {
               // Put the tx in the txPool?
             }
@@ -564,30 +576,27 @@ class P2pServer {
    * in the transaction.
    * @param {Object} txWithSig An object with a signature and a transaction.
    */
-  // TODO(seo): Remove new Transaction() use cases.
   executeTransaction(txWithSig) {
-    if (!txWithSig) return null;
-    const transaction = txWithSig instanceof Transaction ? txWithSig : new Transaction(txWithSig);
-    logger.debug(`EXECUTING: ${JSON.stringify(transaction)}`);
-    if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
-      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
+    logger.debug(`EXECUTING: ${JSON.stringify(txWithSig)}`);
+    if (this.node.tp.isTimedOutFromPool(txWithSig.timestamp, this.node.bc.lastBlockTimestamp())) {
+      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(txWithSig)}`);
       return null;
     }
-    if (this.node.tp.isNotEligibleTransaction(transaction)) {
-      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
+    if (this.node.tp.isNotEligibleTransaction(txWithSig)) {
+      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(txWithSig)}`);
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
       logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
-          `${JSON.stringify(transaction)}`);
-      this.node.tp.addTransaction(transaction);
+          `${JSON.stringify(txWithSig)}`);
+      this.node.tp.addTransaction(txWithSig);
       return null;
     }
-    const result = this.node.db.executeTransaction(transaction);
+    const result = this.node.db.executeTransaction(txWithSig);
     if (!ChainUtil.transactionFailed(result)) {
-      this.node.tp.addTransaction(transaction);
+      this.node.tp.addTransaction(txWithSig);
     } else {
-      logger.debug(`FAILED TRANSACTION: ${JSON.stringify(transaction)}\t ` +
+      logger.debug(`FAILED TRANSACTION: ${JSON.stringify(txWithSig)}\t ` +
           `RESULT:${JSON.stringify(result)}`);
     }
     return result;
@@ -599,8 +608,7 @@ class P2pServer {
       const resultList = [];
       const txListSucceeded = [];
       txWithSig.tx_list.forEach((tx) => {
-        const transaction = new Transaction({ signature: tx.signature, transaction: tx });
-        const response = this.executeTransaction(transaction);
+        const response = this.executeTransaction(tx);
         resultList.push(response);
         if (!ChainUtil.transactionFailed(response)) {
           txListSucceeded.push(tx);
@@ -612,12 +620,10 @@ class P2pServer {
 
       return resultList;
     } else {
-      const transaction = txWithSig instanceof Transaction ?
-          txWithSig : new Transaction({ signature: txWithSig.signature, transaction: txWithSig });
-      const response = this.executeTransaction(transaction);
+      const response = this.executeTransaction(txWithSig);
       logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response))
       if (!ChainUtil.transactionFailed(response)) {
-        this.broadcastTransaction(transaction);
+        this.broadcastTransaction(txWithSig);
       }
 
       return response;
