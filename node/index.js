@@ -206,10 +206,6 @@ class BlockchainNode {
   }
 
   createSingleTransaction(txBody, isNoncedTransaction) {
-    // Workaround for skip_verif with custom address
-    if (txBody.address !== undefined) {
-      txBody.skip_verif = true;
-    }
     if (txBody.nonce === undefined) {
       let nonce;
       if (isNoncedTransaction) {

@@ -224,7 +224,8 @@ app.post('/set_owner', (req, res, next) => {
     .end();
 });
 
-// TODO(seo): Replace skip_verif with real signature.
+// A custom address can be used as a workaround for the trasaction verification.
+// TODO(seo): Replace custom address with real signature.
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(createMultiSetTxBody(req.body), isNoncedTransaction);
