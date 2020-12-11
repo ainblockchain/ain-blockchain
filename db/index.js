@@ -33,7 +33,7 @@ const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
+  constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -41,8 +41,8 @@ class DB {
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this, tp);
     this.bc = bc;
+    this.isNodeDb = isNodeDb;
     this.blockNumberSnapshot = blockNumberSnapshot;
-    this.isFinalizedState = isFinalizedState;
   }
 
   initDbStates() {

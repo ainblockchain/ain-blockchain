@@ -222,7 +222,7 @@ class Functions {
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
-    if (!this.tp || !this.db.isFinalizedState) {
+    if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
       return;
@@ -257,7 +257,7 @@ class Functions {
       ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
       valueFunction: (success) => !!success,
       is_global: true,
-      transaction: payloadTx.transaction,
+      tx_body: payloadTx.tx_body,
     };
     this.tp.addRemoteTransaction(txHash, action);
   }
@@ -268,7 +268,7 @@ class Functions {
   }
 
   _closeCheckin(value, context) {
-    if (!this.tp || !this.db.isFinalizedState) {
+    if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info('  =>> Skip sending transfer transaction to the shard blockchain');
       return;
@@ -429,13 +429,16 @@ class Functions {
 
   _getCheckinParentFinalizeResultPath(branchPath, txHash) {
     const shardingPath = this.db.getShardingPath();
-    return `${shardingPath}/${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/` +
-        `${txHash}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+    return ChainUtil.appendPath(
+        shardingPath,
+        `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/${txHash}/` +
+            `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`);
   }
 
   _getCheckinPayloadPath(branchPath) {
-    return `${branchPath}/${PredefinedDbPaths.CHECKIN_REQUEST}/` +
-        `${PredefinedDbPaths.CHECKIN_PAYLOAD}`;
+    return ChainUtil.appendPath(
+        branchPath,
+        `${PredefinedDbPaths.CHECKIN_REQUEST}/${PredefinedDbPaths.CHECKIN_PAYLOAD}`);
   }
 
   _getFullValuePath(parsedPath) {
