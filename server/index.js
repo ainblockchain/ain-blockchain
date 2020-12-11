@@ -644,7 +644,6 @@ class P2pServer {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const shardingPathRules = `auth === '${shardOwner}'`;
@@ -734,7 +733,7 @@ class P2pServer {
       nonce: -1
     };
 
-    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, keyBuffer);
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
   }
 

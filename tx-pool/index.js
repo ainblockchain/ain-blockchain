@@ -386,9 +386,8 @@ class TransactionPool {
     logger.info(`  =>> Doing action with actionTxBody: ${JSON.stringify(actionTxBody, null, 2)}`);
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const endpoint = `${this.node.urlInternal}/json-rpc`;
-    signAndSendTx(endpoint, actionTxBody, keyBuffer);
+    signAndSendTx(endpoint, actionTxBody, ownerPrivateKey);
   }
 }
 
