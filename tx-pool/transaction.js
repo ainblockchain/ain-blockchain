@@ -138,9 +138,11 @@ class Transaction {
   }
 
   static verifyTransaction(tx) {
-    if (tx.operation.type !== undefined &&
-        Object.keys(WriteDbOperations).indexOf(tx.operation.type) === -1) {
-      logger.info(`Invalid transaction type: ${tx.operation.type}`);
+    if (tx.tx_body !== undefined &&
+        tx.tx_body.operation !== undefined &&
+        tx.tx_body.operation.type !== undefined &&
+        Object.keys(WriteDbOperations).indexOf(tx.tx_body.operation.type) === -1) {
+      logger.info(`Invalid transaction type: ${tx.tx_body.operation.type}`);
       return false;
     }
     // Workaround for the transaction verification.

@@ -108,8 +108,8 @@ class TransactionPool {
       );
       tempFilteredTransactions = tempFilteredTransactions.filter((tx) => {
         const ref = _.get(tx, 'operation.ref');
-        const innerRef = tx.operation.op_list && tx.operation.op_list.length ?
-            tx.operation.op_list[0].ref : undefined;
+        const innerRef = tx.tx_body.operation.op_list && tx.tx_body.operation.op_list.length ?
+            tx.tx_body.operation.op_list[0].ref : undefined;
         const type = _.get(tx, 'operation.type');
         return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
             (ref && !ref.startsWith('/consensus/number')) ||

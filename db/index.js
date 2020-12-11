@@ -560,31 +560,38 @@ class DB {
 
   batch(txList) {
     const resultList = [];
-    txList.forEach((tx) => {
-      const operation = tx.operation;
-      if (!operation) {
-        const message = 'No operation';
+    for (const tx of txList) {
+      const txBody = tx.tx_body;
+      if (!txBody) {
+        const message = 'No tx_body';
         resultList.push({code: 1, error_message: message});
         logger.info(message);
-      } else {
-        switch (operation.type) {
-          case undefined:
-          case WriteDbOperations.SET_VALUE:
-          case WriteDbOperations.INC_VALUE:
-          case WriteDbOperations.DEC_VALUE:
-          case WriteDbOperations.SET_FUNCTION:
-          case WriteDbOperations.SET_RULE:
-          case WriteDbOperations.SET_OWNER:
-          case WriteDbOperations.SET:
-            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
-            break;
-          default:
-            const message = `Invalid operation type: ${operation.type}`;
-            resultList.push({code: 2, error_message: message});
-            logger.info(message);
-        }
+        continue;
       }
-    });
+      const operation = txBody.operation;
+      if (!operation) {
+        const message = 'No operation';
+        resultList.push({code: 2, error_message: message});
+        logger.info(message);
+        continue;
+      }
+      switch (operation.type) {
+        case undefined:
+        case WriteDbOperations.SET_VALUE:
+        case WriteDbOperations.INC_VALUE:
+        case WriteDbOperations.DEC_VALUE:
+        case WriteDbOperations.SET_FUNCTION:
+        case WriteDbOperations.SET_RULE:
+        case WriteDbOperations.SET_OWNER:
+        case WriteDbOperations.SET:
+          resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
+          break;
+        default:
+          const message = `Invalid operation type: ${operation.type}`;
+          resultList.push({code: 3, error_message: message});
+          logger.info(message);
+      }
+    }
     return resultList;
   }
 
@@ -662,18 +669,24 @@ class DB {
   }
 
   executeTransaction(tx) {
+    const LOG_HEADER = 'executeTransaction';
     if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
-    return this.executeOperation(tx.operation, tx.address, tx.timestamp, tx);
+    if (!tx.tx_body) {
+      logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
+      return false;
+    }
+    return this.executeOperation(tx.tx_body.operation, tx.address, tx.tx_body.timestamp, tx);
   }
 
   executeTransactionList(txList) {
+    const LOG_HEADER = 'executeTransactionList';
     for (const tx of txList) {
       const res = this.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
         // FIXME: remove the failed transaction from tx pool?
-        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}` +
+        logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(tx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
         return false;
       }

@@ -358,12 +358,12 @@ describe('Blockchain', () => {
             if (!blocks[j - 1].validators[vote.address]) {
               assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
             }
-            if (vote.operation.value.block_hash !== blocks[j - 1].hash) {
+            if (vote.tx_body.operation.value.block_hash !== blocks[j - 1].hash) {
               assert.fail('Invalid vote included in last_votes');
             }
-            if (vote.operation.type === 'SET_VALUE' && vote.operation.value.stake &&
+            if (vote.tx_body.operation.type === 'SET_VALUE' && vote.tx_body.operation.value.stake &&
                 blocks[j - 1].validators[vote.address]) {
-              voteSum += vote.operation.value.stake;
+              voteSum += vote.tx_body.operation.value.stake;
             }
           }
           if (voteSum < majority) {
@@ -442,12 +442,12 @@ describe('Blockchain', () => {
           .to.equal(transactionsOnBlockChain.length);
         for (let i = 0; i < transactionsOnBlockChain.length; i++) {
           const sentOp = sentOperations[i][1];
-          const blockchainOp = transactionsOnBlockChain[i].operation;
+          const blockchainOp = transactionsOnBlockChain[i].tx_body.operation;
           if (sentOperations[i][0].toUpperCase() === "BATCH") {
             expect(sentOp.tx_list).to.not.equal(undefined);
-            expect(sentOp.tx_list[0].operation.type).to.equal(blockchainOp.type);
-            expect(sentOp.tx_list[0].operation.ref).to.equal(blockchainOp.ref);
-            assert.deepEqual(sentOp.tx_list[0].operation.value, blockchainOp.value);
+            expect(sentOp.tx_list[0].tx_body.operation.type).to.equal(blockchainOp.type);
+            expect(sentOp.tx_list[0].tx_body.operation.ref).to.equal(blockchainOp.ref);
+            assert.deepEqual(sentOp.tx_list[0].tx_body.operation.value, blockchainOp.value);
           } else {
             expect(sentOperations[i][0].toUpperCase()).to.equal(blockchainOp.type);
             expect(sentOp.ref).to.equal(blockchainOp.ref);
