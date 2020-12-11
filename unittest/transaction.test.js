@@ -53,7 +53,7 @@ describe('Transaction', () => {
   });
 
   it('validates a valid transaction signed with keys of others', () => {
-    const transaction = new Transaction(
+    const signedTx = new Transaction(
       {
         nonce: 0,
         timestamp: 1568798344000,
@@ -65,9 +65,9 @@ describe('Transaction', () => {
       },
       '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
     );
-    expect(Transaction.verifyTransaction(transaction)).to.equal(true);
+    expect(Transaction.verifyTransaction(signedTx)).to.equal(true);
 
-    const transaction_triggered = new Transaction(
+    const signedTxTriggered = new Transaction(
       {
         nonce: 0,
         timestamp: 1568798344000,
@@ -80,7 +80,7 @@ describe('Transaction', () => {
       },
       '0x0a3770aeb2c758fef3491c9270b18157c3fc4401c411ca18170698ea02deea2edc29a1ae00ea83e64a43d5f3cac21e78713824f42a52f6555948a28ab4bf4f056caf3699871f4c72d0ac2072038dbaa1c6e19690504087afa3c69a0dba97693e1c',
     );
-    expect(Transaction.verifyTransaction(transaction_triggered)).to.equal(true);
+    expect(Transaction.verifyTransaction(signedTxTriggered)).to.equal(true);
   });
 
   it('invalidates an invalid transaction', () => {
@@ -90,7 +90,7 @@ describe('Transaction', () => {
 
   it('invalidates an invalid transaction signed with keys of others', () => {
     // transaction body has been changed
-    const transaction = new Transaction(
+    const signedTx = new Transaction(
       {
         nonce: 0,
         timestamp: 1568798344000,
@@ -102,9 +102,9 @@ describe('Transaction', () => {
       },
       '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
     );
-    expect(Transaction.verifyTransaction(transaction)).to.equal(false);
+    expect(Transaction.verifyTransaction(signedTx)).to.equal(false);
 
-    const transaction_flattend = new Transaction(
+    const signedTxFlattened = new Transaction(
       {
         signature: '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
         nonce: 0,
@@ -117,9 +117,9 @@ describe('Transaction', () => {
       },
       '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
     );
-    expect(Transaction.verifyTransaction(transaction_flattend)).to.equal(false);
+    expect(Transaction.verifyTransaction(signedTxFlattened)).to.equal(false);
 
-    const transaction_triggered = new Transaction(
+    const signedTxTriggered = new Transaction(
       {
         signature: '0x0a3770aeb2c758fef3491c9270b18157c3fc4401c411ca18170698ea02deea2edc29a1ae00ea83e64a43d5f3cac21e78713824f42a52f6555948a28ab4bf4f056caf3699871f4c72d0ac2072038dbaa1c6e19690504087afa3c69a0dba97693e1c',
         nonce: 0,
@@ -133,7 +133,7 @@ describe('Transaction', () => {
       },
       '0x0a3770aeb2c758fef3491c9270b18157c3fc4401c411ca18170698ea02deea2edc29a1ae00ea83e64a43d5f3cac21e78713824f42a52f6555948a28ab4bf4f056caf3699871f4c72d0ac2072038dbaa1c6e19690504087afa3c69a0dba97693e1c',
     );
-    expect(Transaction.verifyTransaction(transaction_triggered)).to.equal(false);
+    expect(Transaction.verifyTransaction(signedTxTriggered)).to.equal(false);
   });
 
   it('creates transaction with skip_verif and custom address', () => {
