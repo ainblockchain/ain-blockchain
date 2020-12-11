@@ -233,15 +233,15 @@ class Functions {
     if (!this._validateShardConfig()) {
       return;
     }
-    if (!payloadTx || !payloadTx.transaction || !payloadTx.signature) {
-      logger.debug('  =>> payloadTx is missing required fields');
+    if (!payloadTx || !payloadTx.tx_body || !payloadTx.signature) {
+      logger.info('  =>> payloadTx is missing required fields');
       return;
     }
-    const signedTx = new Transaction(payloadTx.transaction.tx_body, payloadTx.signature);
+    const signedTx = new Transaction(payloadTx.tx_body, payloadTx.signature);
     if (!signedTx ||
         !Transaction.verifyTransaction(signedTx) ||
         !this._isTransferTx(signedTx.tx_body.operation)) {
-      logger.debug('  =>> Invalid payloadTx');
+      logger.info('  =>> Invalid payloadTx');
       return;
     }
     // Forward payload tx to parent chain
