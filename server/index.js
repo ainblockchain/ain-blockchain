@@ -374,15 +374,18 @@ class P2pServer {
               logger.debug(`Already have the transaction in my tx tracker`);
               break;
             } else if (this.node.initialized) {
-              const transaction = data.transaction;
-              if (Transaction.isBatchTransaction(transaction)) {
-                const batchTxWithSig = [];
-                transaction.tx_list.forEach((tx) => {
-                  batchTxWithSig.push(new Transaction(tx, tx.signature));
+              const tx = data.transaction;
+              if (Transaction.isBatchTransaction(tx)) {
+                const newTxList = [];
+                tx.tx_list.forEach((tx) => {
+                  newTxList.push(new Transaction(tx, tx.signature));
                 })
-                this.executeAndBroadcastTransaction(batchTxWithSig, MessageTypes.TRANSACTION);
+                if (newTxList.length > 0) {
+                  this.executeAndBroadcastTransaction(
+                      { tx_list: newTxList }, MessageTypes.TRANSACTION);
+                }
               } else {
-                const txWithSig = new Transaction(transaction, transaction.signature);
+                const txWithSig = new Transaction(tx, tx.signature);
                 this.executeAndBroadcastTransaction(txWithSig, MessageTypes.TRANSACTION);
               }
             } else {
@@ -576,7 +579,7 @@ class P2pServer {
    */
   executeTransaction(txWithSig) {
     logger.debug(`EXECUTING: ${JSON.stringify(txWithSig)}`);
-    if (this.node.tp.isTimedOutFromPool(txWithSig.timestamp, this.node.bc.lastBlockTimestamp())) {
+    if (this.node.tp.isTimedOutFromPool(txWithSig.tx_body.timestamp, this.node.bc.lastBlockTimestamp())) {
       logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(txWithSig)}`);
       return null;
     }

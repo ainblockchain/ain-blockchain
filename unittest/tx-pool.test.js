@@ -79,28 +79,28 @@ describe('TransactionPool', () => {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       const sortedNonces2 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node2.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       const sortedNonces3 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node3.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       const sortedNonces4 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node4.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       assert.deepEqual(sortedNonces1, [...Array(11).keys()]);
       assert.deepEqual(sortedNonces2, [...Array(11).keys()]);

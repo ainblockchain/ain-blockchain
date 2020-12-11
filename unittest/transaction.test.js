@@ -8,7 +8,7 @@ const {setNodeForTesting, getTransaction} = require('./test-util')
 
 describe('Transaction', () => {
   let txData, transaction, node;
-  let txDataSkipVerif; let txSkipVerif;
+  let txDataCustomAddress; let txCustomAddress;
 
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
@@ -39,12 +39,12 @@ describe('Transaction', () => {
   });
 
   it('assigns nonces correctly', () => {
-    let t;
+    let tx;
     let currentNonce;
     for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
-      t = getTransaction(node, txData);
+      tx = getTransaction(node, txData);
     }
-    expect(t.nonce).to.equal(currentNonce);
+    expect(tx.tx_body.nonce).to.equal(currentNonce);
   });
 
 
@@ -84,7 +84,7 @@ describe('Transaction', () => {
   });
 
   it('invalidates an invalid transaction', () => {
-    transaction.operation.ref = 'different_path';
+    transaction.tx_body.operation.ref = 'different_path';
     expect(Transaction.verifyTransaction(transaction)).to.equal(false);
   });
 
