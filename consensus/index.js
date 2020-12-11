@@ -432,7 +432,7 @@ class Consensus {
       // TODO(lia): make sure each validator staked only once at this point
       for (const depositTx of depositTxs) {
         const expectedStake = validators[depositTx.address];
-        const actualStake = _.get(depositTx, 'operation.value');
+        const actualStake = _.get(depositTx, 'tx_body.operation.value');
         if (actualStake < expectedStake) {
           logger.error(`[${LOG_HEADER}] Validator ${depositTx.address} didn't stake enough. ` +
               `Expected: ${expectedStake} / Actual: ${actualStake}`);
@@ -537,7 +537,7 @@ class Consensus {
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(proposalTx, proposalTx.signature));
+    this.node.tp.addTransaction(new Transaction(proposalTx.tx_body, proposalTx.signature));
     const newVersion = `${StateVersions.TEMP}:${Date.now()}`;
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
@@ -597,7 +597,7 @@ class Consensus {
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(tx, tx.signature));
+    this.node.tp.addTransaction(new Transaction(tx.tx_body, tx.signature));
     this.blockPool.addSeenVote(tx, this.state.epoch);
     return true;
   }
@@ -820,8 +820,8 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] current epoch: ${this.state.epoch}\nblock hash: ${blockHash}` +
         `\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`);
     const validators = {};
-    blockInfo.votes.forEach((vote) => {
-      validators[vote.address] = _.get(vote, 'operation.value.stake');
+    blockInfo.votes.forEach((voteTx) => {
+      validators[voteTx.address] = _.get(voteTx, 'tx_body.operation.value.stake');
     });
 
     return validators;
@@ -1081,9 +1081,9 @@ class Consensus {
 
   static filterDepositTxs(txs) {
     return txs.filter((tx) => {
-      const ref = _.get(tx, 'operation.ref');
+      const ref = _.get(tx, 'tx_body.operation.ref');
       return ref && ref.startsWith(`/${PredefinedDbPaths.DEPOSIT_CONSENSUS}`) &&
-        _.get(tx, 'operation.type') === WriteDbOperations.SET_VALUE;
+        _.get(tx, 'tx_body.operation.type') === WriteDbOperations.SET_VALUE;
     });
   }
 }

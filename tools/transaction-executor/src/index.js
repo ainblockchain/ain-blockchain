@@ -66,14 +66,14 @@ class TransactionExecutorCommand extends Command {
       const transactionData = TransactionExecutorCommand.parseLine(line);
       if (Transaction.isBatchTransaction(transactionData)) {
         const txList = [];
-        transactionData.tx_list.forEach((subData) => {
-          if (typeof subData.address !== 'undefined') {
+        transactionData.tx_list.forEach((subTx) => {
+          if (typeof subTx.address !== 'undefined') {
             throw Error(`Address field should NOT be specified:\n${line}`);
           }
-          if (typeof subData.nonce === 'undefined') {
+          if (typeof subTx.tx_body.nonce === 'undefined') {
             throw Error(`Nonce field should be specified:\n${line}`);
           }
-          txList.push(Transaction.signTxBody(subData, privateKey));
+          txList.push(Transaction.signTxBody(subTx, privateKey));
         })
         transactions.push({tx_list: txList});
       } else {

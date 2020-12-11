@@ -139,17 +139,17 @@ class Block {
       if (tx.tx_body.nonce < 0) {
         continue;
       }
-      if (!(tx.tx_body.address in nonceTracker)) {
-        nonceTracker[tx.tx_body.address] = tx.tx_body.nonce;
+      if (!(tx.address in nonceTracker)) {
+        nonceTracker[tx.address] = tx.tx_body.nonce;
         continue;
       }
-      if (tx.tx_body.nonce != nonceTracker[tx.tx_body.address] + 1) {
-        logger.error(`Invalid noncing for ${tx.tx_body.address} ` +
-            `Expected ${nonceTracker[tx.tx_body.address] + 1} ` +
+      if (tx.tx_body.nonce != nonceTracker[tx.address] + 1) {
+        logger.error(`Invalid noncing for ${tx.address} ` +
+            `Expected ${nonceTracker[tx.address] + 1} ` +
             `Received ${tx.tx_body.nonce}`);
         return false;
       }
-      nonceTracker[tx.tx_body.address] = tx.tx_body.nonce;
+      nonceTracker[tx.address] = tx.tx_body.nonce;
     }
 
     logger.info(`Valid block of number ${block.number}`);

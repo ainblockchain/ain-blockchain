@@ -107,10 +107,10 @@ class TransactionPool {
           }
       );
       tempFilteredTransactions = tempFilteredTransactions.filter((tx) => {
-        const ref = _.get(tx, 'operation.ref');
+        const ref = _.get(tx, 'tx_body.operation.ref');
         const innerRef = tx.tx_body.operation.op_list && tx.tx_body.operation.op_list.length ?
             tx.tx_body.operation.op_list[0].ref : undefined;
-        const type = _.get(tx, 'operation.type');
+        const type = _.get(tx, 'tx_body.operation.type');
         return (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) ||
             (ref && !ref.startsWith('/consensus/number')) ||
             (innerRef && !innerRef.startsWith('/consensus/number'));
@@ -172,7 +172,7 @@ class TransactionPool {
     const timedOutTxs = new Set();
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
-        if (this.isTimedOutFromPool(tx.timestamp, blockTimestamp)) {
+        if (this.isTimedOutFromPool(tx.tx_body.timestamp, blockTimestamp)) {
           timedOutTxs.add(tx.hash);
         }
       });
@@ -241,7 +241,7 @@ class TransactionPool {
     for (let i = 0; i < block.transactions.length; i++) {
       const tx = block.transactions[i];
       // Update committed nonce tracker.
-      if (tx.nonce >= 0) {
+      if (tx.tx_body.nonce >= 0) {
         this.committedNonceTracker[tx.address] = tx.tx_body.nonce;
       }
       // Update transaction tracker.
@@ -369,7 +369,7 @@ class TransactionPool {
       logger.debug(`  =>> valueFunction failed: ${e}`);
       return;
     }
-    const actionTx = {
+    const actionTxBody = {
       operation: {
         type: WriteDbOperations.SET_VALUE,
         ref: ChainUtil.formatPath(ChainUtil.parsePath(action.ref)),
@@ -383,7 +383,7 @@ class TransactionPool {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const endpoint = `${this.node.urlInternal}/json-rpc`;
-    signAndSendTx(endpoint, actionTx, keyBuffer);
+    signAndSendTx(endpoint, actionTxBody, keyBuffer);
   }
 }
 

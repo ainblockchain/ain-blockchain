@@ -11,7 +11,7 @@ class Transaction {
     if (!Transaction.hasRequiredFields(this.tx_body)) {
       logger.info(
           `Transaction body with missing timestamp, operation or nonce: ` +
-          `${JSON.stringify(this.tx_body)}`);
+          `${JSON.stringify(this.tx_body, null, 2)}`);
       return null;
     }
     // TODO(seo): Enable stricter input format checking.
@@ -21,7 +21,7 @@ class Transaction {
     //   return null;
     // }
 
-    Object.assign(this, JSON.parse(JSON.stringify(this.tx_body)));
+    //Object.assign(this, JSON.parse(JSON.stringify(this.tx_body)));
     this.hash = '0x' + ainUtil.hashTransaction(this.tx_body).toString('hex');
 
     // Workaround for the transaction verification.

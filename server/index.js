@@ -378,14 +378,14 @@ class P2pServer {
               if (Transaction.isBatchTransaction(tx)) {
                 const newTxList = [];
                 tx.tx_list.forEach((tx) => {
-                  newTxList.push(new Transaction(tx, tx.signature));
+                  newTxList.push(new Transaction(tx.tx_body, tx.signature));
                 })
                 if (newTxList.length > 0) {
                   this.executeAndBroadcastTransaction(
                       { tx_list: newTxList }, MessageTypes.TRANSACTION);
                 }
               } else {
-                const txWithSig = new Transaction(tx, tx.signature);
+                const txWithSig = new Transaction(tx.tx_body, tx.signature);
                 this.executeAndBroadcastTransaction(txWithSig, MessageTypes.TRANSACTION);
               }
             } else {
@@ -575,44 +575,44 @@ class P2pServer {
   /**
    * Adds transaction to the transactionPool and executes the operations specified
    * in the transaction.
-   * @param {Object} txWithSig An object with a signature and a transaction.
+   * @param {Object} tx An object with a signature and a transaction.
    */
-  executeTransaction(txWithSig) {
-    logger.debug(`EXECUTING: ${JSON.stringify(txWithSig)}`);
-    if (this.node.tp.isTimedOutFromPool(txWithSig.tx_body.timestamp, this.node.bc.lastBlockTimestamp())) {
-      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(txWithSig)}`);
+  executeTransaction(tx) {
+    logger.debug(`EXECUTING: ${JSON.stringify(tx)}`);
+    if (this.node.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.node.bc.lastBlockTimestamp())) {
+      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(tx)}`);
       return null;
     }
-    if (this.node.tp.isNotEligibleTransaction(txWithSig)) {
-      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(txWithSig)}`);
+    if (this.node.tp.isNotEligibleTransaction(tx)) {
+      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(tx)}`);
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
       logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
-          `${JSON.stringify(txWithSig)}`);
-      this.node.tp.addTransaction(txWithSig);
+          `${JSON.stringify(tx)}`);
+      this.node.tp.addTransaction(tx);
       return null;
     }
-    const result = this.node.db.executeTransaction(txWithSig);
+    const result = this.node.db.executeTransaction(tx);
     if (!ChainUtil.transactionFailed(result)) {
-      this.node.tp.addTransaction(txWithSig);
+      this.node.tp.addTransaction(tx);
     } else {
-      logger.info(`FAILED TRANSACTION: ${JSON.stringify(txWithSig)}\t ` +
+      logger.info(`FAILED TRANSACTION: ${JSON.stringify(tx)}\t ` +
           `RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
 
-  executeAndBroadcastTransaction(txWithSig) {
-    if (!txWithSig) return null;
-    if (Transaction.isBatchTransaction(txWithSig)) {
+  executeAndBroadcastTransaction(tx) {
+    if (!tx) return null;
+    if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
       const txListSucceeded = [];
-      txWithSig.tx_list.forEach((tx) => {
-        const response = this.executeTransaction(tx);
+      tx.tx_list.forEach((subTx) => {
+        const response = this.executeTransaction(subTx);
         resultList.push(response);
         if (!ChainUtil.transactionFailed(response)) {
-          txListSucceeded.push(tx);
+          txListSucceeded.push(subTx);
         }
       })
       if (txListSucceeded.length > 0) {
@@ -621,10 +621,10 @@ class P2pServer {
 
       return resultList;
     } else {
-      const response = this.executeTransaction(txWithSig);
+      const response = this.executeTransaction(tx);
       logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response))
       if (!ChainUtil.transactionFailed(response)) {
-        this.broadcastTransaction(txWithSig);
+        this.broadcastTransaction(tx);
       }
 
       return response;
