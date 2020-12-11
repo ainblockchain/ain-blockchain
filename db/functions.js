@@ -237,8 +237,10 @@ class Functions {
       logger.debug('  =>> payloadTx is missing required fields');
       return;
     }
-    const tx = new Transaction(payloadTx.transaction.tx_body, payloadTx.signature);
-    if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.tx_body.operation)) {
+    const signedTx = new Transaction(payloadTx.transaction.tx_body, payloadTx.signature);
+    if (!signedTx ||
+        !Transaction.verifyTransaction(signedTx) ||
+        !this._isTransferTx(signedTx.tx_body.operation)) {
       logger.debug('  =>> Invalid payloadTx');
       return;
     }

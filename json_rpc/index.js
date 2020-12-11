@@ -2,6 +2,7 @@
 
 const semver = require('semver');
 const sizeof = require('object-sizeof');
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   ReadDbOperations,
   PredefinedDbPaths,
@@ -12,7 +13,7 @@ const {
 const {
   ConsensusConsts
 } = require('../consensus/constants');
-const ainUtil = require('@ainblockchain/ain-util');
+const Transaction = require('../tx-pool/transaction');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 /**
@@ -128,7 +129,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         done(null, addProtocolVersion({code: 1, message: `Transaction size exceeds ` +
             `${MAX_TX_BYTES} bytes.`}));
       } else {
-        done(null, addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(args)}));
+        const signedTx = new Transaction(args.tx_body, args.signature);
+        done(null,
+            addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(signedTx)}));
       }
     },
 

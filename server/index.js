@@ -385,8 +385,8 @@ class P2pServer {
                       { tx_list: newTxList }, MessageTypes.TRANSACTION);
                 }
               } else {
-                const txWithSig = new Transaction(tx.tx_body, tx.signature);
-                this.executeAndBroadcastTransaction(txWithSig, MessageTypes.TRANSACTION);
+                const signedTx = new Transaction(tx.tx_body, tx.signature);
+                this.executeAndBroadcastTransaction(signedTx, MessageTypes.TRANSACTION);
               }
             } else {
               // Put the tx in the txPool?

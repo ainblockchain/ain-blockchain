@@ -44,28 +44,28 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9091, P2P_PORT: 6001, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9092, P2P_PORT: 6002, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9093, P2P_PORT: 6003, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9094, P2P_PORT: 6004, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
