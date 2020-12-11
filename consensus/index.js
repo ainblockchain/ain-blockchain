@@ -241,7 +241,7 @@ class Consensus {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
       }
-      if (Consensus.isValidConsensusTx(msg.value) && this.checkVote(msg.value)) {
+      if (Consensus.isValidConsensusTx(msg.value) && this.checkVoteTx(msg.value)) {
         this.server.broadcastConsensusMessage(msg);
       }
     }
@@ -422,7 +422,7 @@ class Consensus {
       }, 0);
       const depositTxs = Consensus.filterDepositTxs(proposalBlock.transactions);
       const depositSum = depositTxs.reduce((a, b) => {
-        return a + b.operation.value;
+        return a + b.tx_body.operation.value;
       }, 0);
       if (depositSum < majority) {
         logger.info(`[${LOG_HEADER}] We don't have enough deposits yet`)
@@ -570,9 +570,9 @@ class Consensus {
     return true;
   }
 
-  checkVote(vote) {
-    const LOG_HEADER = 'checkVote';
-    const blockHash = vote.operation.value.block_hash;
+  checkVoteTx(tx) {
+    const LOG_HEADER = 'checkVoteTx';
+    const blockHash = tx.tx_body.operation.value.block_hash;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     let block;
     if (blockInfo && blockInfo.block) {
@@ -588,16 +588,17 @@ class Consensus {
     }
     const tempDb = this.getSnapDb(block);
     if (!tempDb) {
-      logger.debug(`[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(vote)}`);
+      logger.debug(
+          `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(tx)}`);
       return false;
     }
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(vote))) {
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(tx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx`);
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(vote, vote.signature));
-    this.blockPool.addSeenVote(vote, this.state.epoch);
+    this.node.tp.addTransaction(new Transaction(tx, tx.signature));
+    this.blockPool.addSeenVote(tx, this.state.epoch);
     return true;
   }
 
@@ -1059,13 +1060,13 @@ class Consensus {
   }
 
   static isValidConsensusTx(tx) {
-    if (!tx.operation) return false;
+    if (!tx.tx_body.operation) return false;
     const consensusTxPrefix = ChainUtil.formatPath(
         [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.NUMBER]);
-    if (tx.operation.type === WriteDbOperations.SET_VALUE) {
-      return tx.operation.ref.startsWith(consensusTxPrefix);
-    } else if (tx.operation.type === WriteDbOperations.SET) {
-      const opList = tx.operation.op_list;
+    if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
+      return tx.tx_body.operation.ref.startsWith(consensusTxPrefix);
+    } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
+      const opList = tx.tx_body.operation.op_list;
       if (!opList || opList.length !== 2) {
         return false;
       }

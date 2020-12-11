@@ -392,10 +392,10 @@ class BlockPool {
     if (!votes) return null;
     const proposalSuffix = 'propose';
     const proposal = votes.filter((tx) => {
-      if (tx.operation.type === WriteDbOperations.SET_VALUE) {
-        return tx.operation.ref.endsWith(proposalSuffix);
-      } else if (tx.operation.type === WriteDbOperations.SET) {
-        return tx.operation.op_list[0].ref.endsWith(proposalSuffix);
+      if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
+        return tx.tx_body.operation.ref.endsWith(proposalSuffix);
+      } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
+        return tx.tx_body.operation.op_list[0].ref.endsWith(proposalSuffix);
       }
       return false;
     });
@@ -403,18 +403,18 @@ class BlockPool {
   }
 
   static getBlockNumberFromTx(tx) {
-    if (!tx || !tx.operation) return null;
-    const ref = tx.operation.ref ? tx.operation.ref : get(tx, 'operation.op_list')[0].ref;
+    if (!tx || !tx.tx_body.operation) return null;
+    const ref = tx.tx_body.operation.ref ? tx.operation.ref : get(tx, 'operation.op_list')[0].ref;
     const refSplit = ref ? ref.split('/') : [];
     return refSplit.length > 3 ? refSplit[3] : null;
   }
 
   static getBlockHashFromTx(tx) {
-    if (!tx || !tx.operation) return null;
-    if (tx.operation.type === WriteDbOperations.SET_VALUE) {
-      return get(tx.operation, 'value.block_hash');
-    } else if (tx.operation.type === WriteDbOperations.SET) {
-      return get(tx.operation.op_list[0], 'value.block_hash');
+    if (!tx || !tx.tx_body.operation) return null;
+    if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
+      return get(tx.tx_body.operation, 'value.block_hash');
+    } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
+      return get(tx.tx_body.operation.op_list[0], 'value.block_hash');
     } else {
       return null;
     }

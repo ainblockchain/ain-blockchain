@@ -238,7 +238,7 @@ class Functions {
       return;
     }
     const tx = new Transaction(payloadTx.transaction, payloadTx.signature);
-    if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.operation)) {
+    if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.tx_body.operation)) {
       logger.debug('  =>> Invalid payloadTx');
       return;
     }
@@ -285,7 +285,7 @@ class Functions {
     const checkinId = context.params.checkin_id;
     const valuePath = context.valuePath;
     const checkinPayload = this.db.getValue(this.getCheckinPayloadPathFromValuePath(valuePath));
-    const checkinAmount = _.get(checkinPayload, 'transaction.operation.value', 0);
+    const checkinAmount = _.get(checkinPayload, 'transaction.tx_body.operation.value', 0);
     const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
     const tokenToReceive = checkinAmount * tokenExchRate;
     if (!this._validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
