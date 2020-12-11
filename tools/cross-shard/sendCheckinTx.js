@@ -8,7 +8,7 @@ const ChainUtil = require('../../chain-util');
 const CURRENT_PROTOCOL_VERSION = require('../../package.json').version;
 let config = {};
 
-function buildPayloadTx(fromAddr, toAddr, tokenAmount, timestamp) {
+function buildPayloadTxBody(fromAddr, toAddr, tokenAmount, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
@@ -21,7 +21,7 @@ function buildPayloadTx(fromAddr, toAddr, tokenAmount, timestamp) {
   }
 }
 
-function buildTriggerTx(address, payload, timestamp) {
+function buildTriggerTxBody(address, payload, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
@@ -36,9 +36,9 @@ function buildTriggerTx(address, payload, timestamp) {
   }
 }
 
-function signTx(tx, privateKey) {
+function signTx(txBody, privateKey) {
   const keyBuffer = Buffer.from(privateKey, 'hex');
-  const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
+  const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
   const sigBuffer = ainUtil.toBuffer(sig);
   const lenHash = sigBuffer.length - 65;
   const hashedData = sigBuffer.slice(0, lenHash);
@@ -46,9 +46,9 @@ function signTx(tx, privateKey) {
   return {
     txHash,
     signedTx: {
+      tx_body: txBody,
+      signature: sig,
       protoVer: CURRENT_PROTOCOL_VERSION,
-      transaction: tx,
-      signature: sig
     }
   };
 }
@@ -95,15 +95,14 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
 async function sendTransaction() {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
-  const payloadTxBody =
-      buildPayloadTx(config.userAddr, config.shardOwnerAddr, config.parentTokenAmount, timestamp);
+  const payloadTxBody = buildPayloadTxBody(
+      config.userAddr, config.shardOwnerAddr, config.parentTokenAmount, timestamp);
   console.log(`payloadTxBody: ${JSON.stringify(payloadTxBody, null, 2)}`);
   const signedPayloadTx = signTx(payloadTxBody, config.userPrivateKey);
   console.log(`signedPayloadTx: ${JSON.stringify(signedPayloadTx, null, 2)}`);
   console.log(`payloadTxHash: ${signedPayloadTx.txHash}`);
 
-  const triggerTxBody =
-      buildTriggerTx(config.userAddr, signedPayloadTx.signedTx, timestamp);
+  const triggerTxBody = buildTriggerTxBody(config.userAddr, signedPayloadTx.signedTx, timestamp);
   console.log(`triggerTxBody: ${JSON.stringify(triggerTxBody, null, 2)}`);
 
   console.log('Sending job transaction...')

@@ -4,7 +4,7 @@
  * into a module, or replaced with another protocol for cross-shard communication.
  */
 
-const {sleep} = require('sleep');
+const { sleep } = require('sleep');
 const axios = require('axios');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
@@ -33,18 +33,18 @@ function signTx(tx, keyBuffer) {
   return {
     txHash,
     signedTx: {
-      signature: sig,
-      transaction: tx
+      tx_body: tx,
+      signature: sig
     }
   };
 }
 
-async function sendSignedTx(endpoint, signedTxParams) {
+async function sendSignedTx(endpoint, params) {
   return await axios.post(
       endpoint,
       {
         method: 'ain_sendSignedTransaction',
-        params: signedTxParams,
+        params,
         jsonrpc: '2.0',
         id: 0
       }
@@ -60,9 +60,9 @@ async function sendSignedTx(endpoint, signedTxParams) {
 async function signAndSendTx(endpoint, tx, keyBuffer) {
   const {txHash, signedTx} = signTx(tx, keyBuffer);
   const params = {
-    protoVer: CURRENT_PROTOCOL_VERSION,
+    tx_body: signedTx.tx_body,
     signature: signedTx.signature,
-    transaction: signedTx.transaction,
+    protoVer: CURRENT_PROTOCOL_VERSION,
   };
   const result = await sendSignedTx(endpoint, params);
   return Object.assign(result, {txHash});
