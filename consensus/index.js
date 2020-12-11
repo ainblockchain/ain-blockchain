@@ -316,8 +316,9 @@ class Consensus {
       return a + b;
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getProof('/')[ProofProperties.PROOF_HASH];
-    const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-        blockNumber, this.state.epoch, stateProofHash, myAddr, validators);
+    const proposalBlock = Block.create(
+        lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch,
+        stateProofHash, myAddr, validators);
 
     let proposalTx;
     const txOps = {

@@ -64,8 +64,9 @@ function addBlock(node, txs, votes, validators) {
       `${StateVersions.BACKUP}:${lastBlock.number + 1}`, node.bc, node.tp, true);
   finalizedDb.executeTransactionList(txs);
   node.syncDb(`${StateVersions.NODE}:${lastBlock.number + 1}`);
-  node.addNewBlock(Block.createBlock(lastBlock.hash, votes, txs, lastBlock.number + 1,
-    lastBlock.epoch + 1, '', node.account.address, validators));
+  node.addNewBlock(Block.create(
+      lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
+      node.account.address, validators));
 }
 
 function waitUntilTxFinalized(servers, txHash) {

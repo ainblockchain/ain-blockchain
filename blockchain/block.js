@@ -81,7 +81,7 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, epoch,
+  static create(lastHash, lastVotes, transactions, number, epoch,
       stateProofHash, proposer, validators) {
     return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(),
         stateProofHash, proposer, validators);
