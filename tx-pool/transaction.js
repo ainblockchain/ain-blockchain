@@ -22,14 +22,15 @@ class Transaction {
     // }
 
     Object.assign(this, JSON.parse(JSON.stringify(this.tx_body)));
-    // Workaround for skip_verif with custom address
-    if (this.tx_body.skip_verif !== undefined) {
-      this.skip_verif = this.tx_body.skip_verif;
-    }
     this.hash = '0x' + ainUtil.hashTransaction(this.tx_body).toString('hex');
-    // Workaround for skip_verif with custom address
-    this.address = this.tx_body.address !== undefined ?
-        this.tx_body.address : Transaction.getAddress(this.hash.slice(2), this.signature);
+
+    // Workaround for the transaction verification.
+    if (this.tx_body.address !== undefined) {
+      this.address = this.tx_body.address;
+      this.skip_verif = true;
+    } else {
+      this.address = Transaction.getAddress(this.hash.slice(2), this.signature);
+    }
 
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
@@ -37,7 +38,7 @@ class Transaction {
   static signTxBody(inputTxBody, privateKey) {
     const txBody = JSON.parse(JSON.stringify(inputTxBody));
     txBody.timestamp = Date.now();
-    // Workaround for skip_verif with custom address
+    // Workaround for the transaction verification.
     const signature = txBody.address !== undefined ?
         '' : ainUtil.ecSignTransaction(txBody, Buffer.from(privateKey, 'hex'));
     return new Transaction(txBody, signature);
@@ -152,7 +153,7 @@ class Transaction {
       logger.info(`Invalid transaction type: ${transaction.operation.type}`);
       return false;
     }
-    // Workaround for skip_verif with custom address
+    // Workaround for the transaction verification.
     if (transaction.skip_verif) {
       logger.info('Skip verifying signature for transaction: ' +
           JSON.stringify(transaction, null, 2));

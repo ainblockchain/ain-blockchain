@@ -23,16 +23,15 @@ describe('Transaction', () => {
       }
     };
     transaction = getTransaction(node, txData);
-    txDataSkipVerif = {
+    txDataCustomAddress = {
       operation: {
         type: 'SET_VALUE',
         ref: 'path',
         value: 'val',
       },
-      skip_verif: true,
       address: 'abcd'
     };
-    txSkipVerif = getTransaction(node, txDataSkipVerif);
+    txCustomAddress = getTransaction(node, txDataCustomAddress);
   });
 
   afterEach(() => {
@@ -138,12 +137,12 @@ describe('Transaction', () => {
   });
 
   it('creates transaction with skip_verif and custom address', () => {
-    expect(txSkipVerif.skip_verif).to.equal(true);
-    expect(txSkipVerif.address).to.equal('abcd');
-    expect(txSkipVerif.signature).to.equal('');
+    expect(txCustomAddress.skip_verif).to.equal(true);
+    expect(txCustomAddress.address).to.equal('abcd');
+    expect(txCustomAddress.signature).to.equal('');
   });
 
   it('validates a transaction with skip_verif and custom address', () => {
-    expect(Transaction.verifyTransaction(txSkipVerif)).to.equal(true);
+    expect(Transaction.verifyTransaction(txCustomAddress)).to.equal(true);
   });
 });
