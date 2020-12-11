@@ -296,7 +296,6 @@ class Functions {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardingPath = this.db.shardingPath;
     const transferTx = {
       operation: {
@@ -317,7 +316,7 @@ class Functions {
     };
     // Sign and send transferTx to the node itself
     const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
-    signAndSendTx(endpoint, transferTx, keyBuffer);
+    return signAndSendTx(endpoint, transferTx, ownerPrivateKey);
   }
 
   _validateCheckinParams(params) {

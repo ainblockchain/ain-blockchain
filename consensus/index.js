@@ -942,11 +942,7 @@ class Consensus {
           nonce: -1
         };
         // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
-        await signAndSendTx(
-            parentChainEndpoint,
-            tx,
-            Buffer.from(this.node.account.private_key, 'hex')
-        );
+        await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
       }
     } catch (e) {
       logger.error(`Failed to report state proof hashes: ${e}`);

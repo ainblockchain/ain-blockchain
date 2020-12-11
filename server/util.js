@@ -13,8 +13,8 @@ const ChainUtil = require('../chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
-async function sendTxAndWaitForFinalization(endpoint, tx, keyBuffer) {
-  const res = await signAndSendTx(endpoint, tx, keyBuffer);
+async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
+  const res = await signAndSendTx(endpoint, tx, privateKey);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
   }
@@ -24,7 +24,8 @@ async function sendTxAndWaitForFinalization(endpoint, tx, keyBuffer) {
   }
 }
 
-function signTx(tx, keyBuffer) {
+function signTx(tx, privateKey) {
+  const keyBuffer = Buffer.from(privateKey, 'hex');
   const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
   const sigBuffer = ainUtil.toBuffer(sig);
   const lenHash = sigBuffer.length - 65;
@@ -57,8 +58,8 @@ async function sendSignedTx(endpoint, params) {
   });
 }
 
-async function signAndSendTx(endpoint, tx, keyBuffer) {
-  const {txHash, signedTx} = signTx(tx, keyBuffer);
+async function signAndSendTx(endpoint, tx, privateKey) {
+  const {txHash, signedTx} = signTx(tx, privateKey);
   const params = {
     tx_body: signedTx.tx_body,
     signature: signedTx.signature,
