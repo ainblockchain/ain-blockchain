@@ -361,24 +361,29 @@ class TransactionPool {
   }
 
   doAction(action, success) {
-    const triggerTx = action.transaction;
+    const triggerTxBody = action.tx_body;
     let value = null;
+    if (!action.valueFunction) {
+      logger.info(`  =>> No valueFunction in action: ${JSON.stringify(action, null, 2)}`);
+      return;
+    }
     try {
       value = action.valueFunction(success);
     } catch (e) {
-      logger.debug(`  =>> valueFunction failed: ${e}`);
+      logger.info(`  =>> valueFunction() failed: ${e}`);
       return;
     }
     const actionTxBody = {
       operation: {
         type: WriteDbOperations.SET_VALUE,
-        ref: ChainUtil.formatPath(ChainUtil.parsePath(action.ref)),
+        ref: action.ref,
         value: value,
         is_global: action.is_global
       },
-      timestamp: triggerTx.tx_body.timestamp,
+      timestamp: triggerTxBody.timestamp,
       nonce: -1
     };
+    logger.info(`  =>> Doing action with actionTxBody: ${JSON.stringify(actionTxBody, null, 2)}`);
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');

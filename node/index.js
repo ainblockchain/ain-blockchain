@@ -41,7 +41,7 @@ class BlockchainNode {
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}}`;
-    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false);
+    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;
     this.initialized = false;
   }
@@ -82,20 +82,20 @@ class BlockchainNode {
   }
 
   createTempDb(baseVersion, newVersion, blockNumberSnapshot) {
-    return this.createDb(baseVersion, newVersion, null, null, false, blockNumberSnapshot);
+    return this.createDb(baseVersion, newVersion, null, null, false, false, blockNumberSnapshot);
   }
 
-  createDb(baseVersion, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
+  createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
     const LOG_HEADER = 'createDb';
     const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
     if (!newRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`)
       return null;
     }
-    if (isFinalizedState) {
+    if (finalizeVersion) {
       this.stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot);
+    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot);
   }
 
   destroyDb(db) {
