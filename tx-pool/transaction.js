@@ -4,27 +4,34 @@ const {WriteDbOperations} = require('../constants');
 const ChainUtil = require('../chain-util');
 
 class Transaction {
-  constructor(inputTxBody, signature) {
+  constructor(txBody, signature) {
+    this.tx_body = JSON.parse(JSON.stringify(txBody));
     this.signature = signature;
-    if (!Transaction.hasRequiredFields(inputTxBody)) {
-      logger.info('Transaction must contain timestamp, operation and nonce fields: ' +
-          JSON.stringify(inputTxBody));
+
+    if (!Transaction.hasRequiredFields(this.tx_body)) {
+      logger.info(
+          `Transaction body with missing timestamp, operation or nonce: ` +
+          `${JSON.stringify(this.tx_body)}`);
       return null;
     }
+    // TODO(seo): Enable stricter input format checking.
+    // const sanitized = Transaction.sanitizeTxBody(this.tx_body);
+    // if (JSON.stringify(sanitized) !== JSON.stringify(this.tx_body)) {
+    //   logger.info(`Transaction body in non-standard format: ${JSON.stringify(this.tx_body)}`);
+    //   return null;
+    // }
 
-    const txBody = JSON.parse(JSON.stringify(inputTxBody));
-    const sanitized = Transaction.sanitizeTxBody(txBody);
+    Object.assign(this, JSON.parse(JSON.stringify(this.tx_body)));
     // Workaround for skip_verif with custom address
-    if (txBody.skip_verif !== undefined) {
-      this.skip_verif = txBody.skip_verif;
+    if (this.tx_body.skip_verif !== undefined) {
+      this.skip_verif = this.tx_body.skip_verif;
     }
-    Object.assign(this, sanitized);
-    this.hash = '0x' + ainUtil.hashTransaction(sanitized).toString('hex');
+    this.hash = '0x' + ainUtil.hashTransaction(this.tx_body).toString('hex');
     // Workaround for skip_verif with custom address
-    this.address = txBody.address !== undefined ?
-        txBody.address : Transaction.getAddress(this.hash.slice(2), this.signature);
+    this.address = this.tx_body.address !== undefined ?
+        this.tx_body.address : Transaction.getAddress(this.hash.slice(2), this.signature);
 
-    logger.debug(`CREATING TRANSACTION: ${JSON.stringify(this)}`);
+    logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
 
   static signTxBody(inputTxBody, privateKey) {
