@@ -151,9 +151,9 @@ class BlockchainNode {
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
       for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
         if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
-            this.account.address) && this.bc.chain[i].transactions[j].nonce > -1) {
+            this.account.address) && this.bc.chain[i].transactions[j].tx_body.nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
-          nonce = this.bc.chain[i].transactions[j].nonce + 1;
+          nonce = this.bc.chain[i].transactions[j].tx_body.nonce + 1;
           break;
         }
       }
@@ -195,7 +195,7 @@ class BlockchainNode {
     * @return {Transaction} Instance of the transaction class
     */
   createTransaction(txBody, isNoncedTransaction = true) {
-    if (Transaction.isBatchTransaction(txBody)) {
+    if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
       txBody.tx_list.forEach((subData) => {
         txList.push(this.createSingleTransaction(subData, isNoncedTransaction));

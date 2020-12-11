@@ -53,14 +53,14 @@ class TransactionPool {
       status: TransactionStatus.POOL_STATUS,
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
-      timestamp: tx.timestamp,
+      timestamp: tx.tx_body.timestamp,
       is_finalized: false,
       finalized_at: -1,
     };
-    if (tx.nonce >= 0 &&
+    if (tx.tx_body.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
-        tx.nonce > this.pendingNonceTracker[tx.address])) {
-      this.pendingNonceTracker[tx.address] = tx.nonce;
+        tx.tx_body.nonce > this.pendingNonceTracker[tx.address])) {
+      this.pendingNonceTracker[tx.address] = tx.tx_body.nonce;
     }
     logger.debug(`ADDING: ${JSON.stringify(tx)}`);
     return true;
@@ -84,8 +84,8 @@ class TransactionPool {
   isNotEligibleTransaction(tx) {
     return ((tx.address in this.transactions) &&
         (this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined)) ||
-        (tx.nonce >= 0 && tx.nonce <= this.committedNonceTracker[tx.address]) ||
-        (tx.nonce < 0 && tx.hash in this.transactionTracker);
+        (tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= this.committedNonceTracker[tx.address]) ||
+        (tx.tx_body.nonce < 0 && tx.hash in this.transactionTracker);
   }
 
   getValidTransactions(excludeBlockList) {
@@ -120,9 +120,12 @@ class TransactionPool {
       } else {
         unvalidatedTransactions[address] = tempFilteredTransactions;
         // Order by noncing if transactions are nonced, else by timestamp
-        unvalidatedTransactions[address].sort((a, b) => (a.nonce < 0 || b.nonce < 0) ?
-            ((a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0)) :
-                (a.nonce > b.nonce) ? 1 : ((b.nonce > a.nonce) ? -1 : 0));
+        unvalidatedTransactions[address].sort((a, b) =>
+            (a.tx_body.nonce < 0 || b.tx_body.nonce < 0) ?
+                ((a.tx_body.timestamp > b.tx_body.timestamp) ?
+                     1 : ((b.tx_body.timestamp > a.tx_body.timestamp) ? -1 : 0)) :
+                (a.tx_body.nonce > b.tx_body.nonce) ?
+                    1 : ((b.tx_body.nonce > a.tx_body.nonce) ? -1 : 0));
       }
     }
     // Secondly transactions are combined and ordered by timestamp, while still remaining
@@ -136,19 +139,19 @@ class TransactionPool {
       let listToTakeValue;
       while (list1.length + list2.length > 0) {
         if ((list2.length === 0 ||
-            (list1.length > 0 && list1[0].timestamp <= list2[0].timestamp))) {
+            (list1.length > 0 && list1[0].tx_body.timestamp <= list2[0].tx_body.timestamp))) {
           listToTakeValue = list1;
         } else {
           listToTakeValue = list2;
         }
-        if (listToTakeValue[0].nonce === tempNonceTracker[listToTakeValue[0].address] + 1) {
-          tempNonceTracker[listToTakeValue[0].address] = listToTakeValue[0].nonce;
+        if (listToTakeValue[0].tx_body.nonce === tempNonceTracker[listToTakeValue[0].address] + 1) {
+          tempNonceTracker[listToTakeValue[0].address] = listToTakeValue[0].tx_body.nonce;
           newList.push(listToTakeValue.shift());
         } else if (!(listToTakeValue[0].address in tempNonceTracker) &&
-            listToTakeValue[0].nonce === 0) {
+            listToTakeValue[0].tx_body.nonce === 0) {
           tempNonceTracker[listToTakeValue[0].address] = 0;
           newList.push(listToTakeValue.shift());
-        } else if (listToTakeValue[0].nonce < 0) {
+        } else if (listToTakeValue[0].tx_body.nonce < 0) {
           newList.push(listToTakeValue.shift());
         } else {
           const invalidNoncedTransaction = listToTakeValue.shift();
@@ -229,7 +232,7 @@ class TransactionPool {
         status: TransactionStatus.BLOCK_STATUS,
         number: block.number,
         index: -1,
-        timestamp: voteTx.timestamp,
+        timestamp: voteTx.tx_body.timestamp,
         is_finalized: true,
         finalized_at: finalizedAt,
       };
@@ -239,14 +242,14 @@ class TransactionPool {
       const tx = block.transactions[i];
       // Update committed nonce tracker.
       if (tx.nonce >= 0) {
-        this.committedNonceTracker[tx.address] = tx.nonce;
+        this.committedNonceTracker[tx.address] = tx.tx_body.nonce;
       }
       // Update transaction tracker.
       this.transactionTracker[tx.hash] = {
         status: TransactionStatus.BLOCK_STATUS,
         number: block.number,
         index: i,
-        timestamp: tx.timestamp,
+        timestamp: tx.tx_body.timestamp,
         is_finalized: true,
         finalized_at: finalizedAt,
       };
@@ -276,14 +279,14 @@ class TransactionPool {
 
   updateNonceTrackers(transactions) {
     transactions.forEach((tx) => {
-      if (tx.nonce >= 0) {
+      if (tx.tx_body.nonce >= 0) {
         if (this.committedNonceTracker[tx.address] === undefined ||
-            this.committedNonceTracker[tx.address] < tx.nonce) {
-          this.committedNonceTracker[tx.address] = tx.nonce;
+            this.committedNonceTracker[tx.address] < tx.tx_body.nonce) {
+          this.committedNonceTracker[tx.address] = tx.tx_body.nonce;
         }
         if (this.pendingNonceTracker[tx.address] === undefined ||
-            this.pendingNonceTracker[tx.address] < tx.nonce) {
-          this.pendingNonceTracker[tx.address] = tx.nonce;
+            this.pendingNonceTracker[tx.address] < tx.tx_body.nonce) {
+          this.pendingNonceTracker[tx.address] = tx.tx_body.nonce;
         }
       }
     });
@@ -293,9 +296,9 @@ class TransactionPool {
     const newNonceTracker = JSON.parse(JSON.stringify(this.committedNonceTracker));
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
-        if (tx.nonce >= 0 &&
-            (!(tx.address in newNonceTracker) || tx.nonce > newNonceTracker[tx.address])) {
-          newNonceTracker[tx.address] = tx.nonce;
+        if (tx.tx_body.nonce >= 0 &&
+            (!(tx.address in newNonceTracker) || tx.tx_body.nonce > newNonceTracker[tx.address])) {
+          newNonceTracker[tx.address] = tx.tx_body.nonce;
         }
       });
     }
@@ -373,7 +376,7 @@ class TransactionPool {
         value: value,
         is_global: action.is_global
       },
-      timestamp: triggerTx.timestamp,
+      timestamp: triggerTx.tx_body.timestamp,
       nonce: -1
     };
     const ownerPrivateKey = ChainUtil.getJsObject(

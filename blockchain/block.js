@@ -133,23 +133,23 @@ class Block {
   static validateProposedBlock(block) {
     if (!Block.validateHashes(block)) return false;
     const nonceTracker = {};
-    let transaction;
+    let tx;
     for (let i = 0; i < block.transactions.length; i++) {
-      transaction = block.transactions[i];
-      if (transaction.nonce < 0) {
+      tx = block.transactions[i];
+      if (tx.tx_body.nonce < 0) {
         continue;
       }
-      if (!(transaction.address in nonceTracker)) {
-        nonceTracker[transaction.address] = transaction.nonce;
+      if (!(tx.tx_body.address in nonceTracker)) {
+        nonceTracker[tx.tx_body.address] = tx.tx_body.nonce;
         continue;
       }
-      if (transaction.nonce != nonceTracker[transaction.address] + 1) {
-        logger.error(`Invalid noncing for ${transaction.address} ` +
-            `Expected ${nonceTracker[transaction.address] + 1} ` +
-            `Received ${transaction.nonce}`);
+      if (tx.tx_body.nonce != nonceTracker[tx.tx_body.address] + 1) {
+        logger.error(`Invalid noncing for ${tx.tx_body.address} ` +
+            `Expected ${nonceTracker[tx.tx_body.address] + 1} ` +
+            `Received ${tx.tx_body.nonce}`);
         return false;
       }
-      nonceTracker[transaction.address] = transaction.nonce;
+      nonceTracker[tx.tx_body.address] = tx.tx_body.nonce;
     }
 
     logger.info(`Valid block of number ${block.number}`);

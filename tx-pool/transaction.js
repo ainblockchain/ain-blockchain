@@ -48,9 +48,9 @@ class Transaction {
     // TODO (lia): change JSON.stringify to 'fast-json-stable-stringify' or add
     // an utility function to ain-util.
     return `hash:       ${this.hash},
-            nonce:      ${this.nonce},
-            timestamp:  ${this.timestamp},
-            operation:  ${JSON.stringify(this.operation)},
+            nonce:      ${this.tx_body.nonce},
+            timestamp:  ${this.tx_body.timestamp},
+            operation:  ${JSON.stringify(this.tx_body.operation)},
             address:    ${this.address},
             ${this.parent_tx_hash !== undefined ? 'parent_tx_hash: ' + this.parent_tx_hash : ''}
         `;
@@ -67,16 +67,6 @@ class Transaction {
     const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
     return ainUtil.toChecksumAddress(ainUtil.bufferToHex(
         ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
-  }
-
-  /**
-   * Returns the data object used for signing the transaction.
-   */
-  get signingData() {
-    return Object.assign(
-        {operation: this.operation, nonce: this.nonce, timestamp: this.timestamp},
-        this.parent_tx_hash !== undefined ? {parent_tx_hash: this.parent_tx_hash} : {}
-    );
   }
 
   /**
@@ -147,28 +137,32 @@ class Transaction {
     return sanitized;
   }
 
-  static verifyTransaction(transaction) {
-    if (transaction.operation.type !== undefined &&
-        Object.keys(WriteDbOperations).indexOf(transaction.operation.type) === -1) {
-      logger.info(`Invalid transaction type: ${transaction.operation.type}`);
+  static verifyTransaction(tx) {
+    if (tx.operation.type !== undefined &&
+        Object.keys(WriteDbOperations).indexOf(tx.operation.type) === -1) {
+      logger.info(`Invalid transaction type: ${tx.operation.type}`);
       return false;
     }
     // Workaround for the transaction verification.
-    if (transaction.skip_verif) {
+    if (tx.skip_verif) {
       logger.info('Skip verifying signature for transaction: ' +
-          JSON.stringify(transaction, null, 2));
+          JSON.stringify(tx, null, 2));
       return true;
     }
-    return ainUtil.ecVerifySig(transaction.signingData, transaction.signature, transaction.address);
+    return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address);
   }
 
-  static hasRequiredFields(transaction) {
-    return transaction.timestamp !== undefined && transaction.nonce !== undefined &&
-        transaction.operation !== undefined;
+  static hasRequiredFields(txBody) {
+    return txBody.timestamp !== undefined && txBody.nonce !== undefined &&
+        txBody.operation !== undefined;
   }
 
-  static isBatchTransaction(transaction) {
-    return Array.isArray(transaction.tx_list);
+  static isBatchTxBody(txBody) {
+    return Array.isArray(txBody.tx_list);
+  }
+
+  static isBatchTransaction(tx) {
+    return Array.isArray(tx.tx_list);
   }
 }
 
