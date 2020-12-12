@@ -132,12 +132,12 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       } else if (!args.tx_body || !args.signature) {
         done(null, addProtocolVersion({code: 2, message: `Missing tx_body or signature.`}));
       } else {
-        const signedTx = new Transaction(args.tx_body, args.signature);
-        if (signedTx === null) {
+        const createdTx = Transaction.create(args.tx_body, args.signature);
+        if (createdTx === null) {
           done(null, addProtocolVersion({code: 3, message: `Invalid transaction.`}));
         } else {
           done(null,
-              addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(signedTx)}));
+              addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(createdTx)}));
           }
       }
     },

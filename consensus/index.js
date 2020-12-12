@@ -537,7 +537,13 @@ class Consensus {
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(proposalTx.tx_body, proposalTx.signature));
+    const createdTx = Transaction.create(proposalTx.tx_body, proposalTx.signature);
+    if (!createdTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
+          `${JSON.stringify(proposalTx, null, 2)}`);
+      return false;
+    }
+    this.node.tp.addTransaction(createdTx);
     const newVersion = `${StateVersions.TEMP}:${Date.now()}`;
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
@@ -570,9 +576,9 @@ class Consensus {
     return true;
   }
 
-  checkVoteTx(tx) {
+  checkVoteTx(voteTx) {
     const LOG_HEADER = 'checkVoteTx';
-    const blockHash = tx.tx_body.operation.value.block_hash;
+    const blockHash = voteTx.tx_body.operation.value.block_hash;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     let block;
     if (blockInfo && blockInfo.block) {
@@ -589,16 +595,22 @@ class Consensus {
     const tempDb = this.getSnapDb(block);
     if (!tempDb) {
       logger.debug(
-          `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(tx)}`);
+          `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(voteTx)}`);
       return false;
     }
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(tx))) {
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx`);
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(tx.tx_body, tx.signature));
-    this.blockPool.addSeenVote(tx, this.state.epoch);
+    const createdTx = Transaction.create(voteTx.tx_body, voteTx.signature);
+    if (!createdTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a vote: ` +
+          `${JSON.stringify(voteTx, null, 2)}`);
+      return false;
+    }
+    this.node.tp.addTransaction(createdTx);
+    this.blockPool.addSeenVote(voteTx, this.state.epoch);
     return true;
   }
 
