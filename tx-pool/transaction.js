@@ -1,6 +1,7 @@
+const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
-const {WriteDbOperations} = require('../constants');
+const { WriteDbOperations } = require('../constants');
 const ChainUtil = require('../chain-util');
 
 class Transaction {
@@ -8,18 +9,9 @@ class Transaction {
     this.tx_body = JSON.parse(JSON.stringify(txBody));
     this.signature = signature;
 
-    if (!Transaction.hasRequiredFields(this.tx_body)) {
-      logger.info(
-          `Transaction body with missing timestamp, operation or nonce: ` +
-          `${JSON.stringify(this.tx_body, null, 2)}`);
-      return null;
+    if (!Transaction.isValidTxBody(this.tx_body)) {
+      return;
     }
-    // TODO(seo): Enable stricter input format checking.
-    // const sanitized = Transaction.sanitizeTxBody(this.tx_body);
-    // if (JSON.stringify(sanitized) !== JSON.stringify(this.tx_body)) {
-    //   logger.info(`Transaction body in non-standard format: ${JSON.stringify(this.tx_body)}`);
-    //   return null;
-    // }
 
     this.hash = '0x' + ainUtil.hashTransaction(this.tx_body).toString('hex');
 
@@ -34,9 +26,13 @@ class Transaction {
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
 
-  static signTxBody(inputTxBody, privateKey) {
-    const txBody = JSON.parse(JSON.stringify(inputTxBody));
-    txBody.timestamp = Date.now();
+  static signTxBody(txBody, privateKey) {
+    if (txBody.timestamp === undefined) {
+      txBody.timestamp = Date.now();
+    }
+    if (!Transaction.isValidTxBody(txBody)) {
+      return null;
+    }
     // Workaround for the transaction verification.
     const signature = txBody.address !== undefined ?
         '' : ainUtil.ecSignTransaction(txBody, Buffer.from(privateKey, 'hex'));
@@ -46,12 +42,15 @@ class Transaction {
   toString() {
     // TODO (lia): change JSON.stringify to 'fast-json-stable-stringify' or add
     // an utility function to ain-util.
-    return `hash:       ${this.hash},
-            nonce:      ${this.tx_body.nonce},
-            timestamp:  ${this.tx_body.timestamp},
-            operation:  ${JSON.stringify(this.tx_body.operation)},
-            address:    ${this.address},
-            ${this.parent_tx_hash !== undefined ? 'parent_tx_hash: ' + this.parent_tx_hash : ''}
+    return `hash:               ${this.hash},
+            address:            ${this.address},
+            tx_body.nonce:      ${this.tx_body.nonce},
+            tx_body.timestamp:  ${this.tx_body.timestamp},
+            tx_body.operation:  ${JSON.stringify(this.tx_body.operation)},
+            ${this.tx_body.skip_verif !== undefined ?
+                'tx_body.skip_verif:     ' + this.tx_body.skip_verif + ',' : ''}
+            ${this.parent_tx_hash !== undefined ?
+                'parent_tx_hash:         ' + this.parent_tx_hash : ''}
         `;
   }
 
@@ -133,6 +132,10 @@ class Transaction {
     if (txBody.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
     }
+    // Workaround for the transaction verification.
+    if (txBody.address !== undefined) {
+      sanitized.address = ChainUtil.stringOrEmpty(txBody.address);
+    }
     return sanitized;
   }
 
@@ -153,9 +156,32 @@ class Transaction {
     return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address);
   }
 
+  static isValidTxBody(txBody) {
+    if (!Transaction.hasRequiredFields(txBody)) {
+      logger.info(
+          `Transaction body with missing timestamp, operation or nonce: ` +
+          `${JSON.stringify(txBody, null, 2)}`);
+      return false;
+    }
+    const sanitized = Transaction.sanitizeTxBody(txBody);
+    if (!Transaction.hasValidFormat(txBody)) {
+      logger.info(
+          `Transaction body in a non-standard format ` +
+          `- input:\n${JSON.stringify(txBody, null, 2)}\n\n` +
+          `- sanitized:\n${JSON.stringify(sanitized, null, 2)}\n\n`);
+      return false;
+    }
+    return true;
+  }
+
   static hasRequiredFields(txBody) {
     return txBody.timestamp !== undefined && txBody.nonce !== undefined &&
         txBody.operation !== undefined;
+  }
+
+  static hasValidFormat(txBody) {
+    const sanitized = Transaction.sanitizeTxBody(txBody);
+    return _.isEqual(sanitized, txBody);
   }
 
   static isBatchTxBody(txBody) {
