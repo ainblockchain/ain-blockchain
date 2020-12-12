@@ -321,7 +321,7 @@ class Consensus {
         stateProofHash, myAddr, validators);
 
     let proposalTx;
-    const txOps = {
+    const operation = {
       type: WriteDbOperations.SET_VALUE,
       ref: ChainUtil.formatPath([
         ConsensusDbPaths.CONSENSUS,
@@ -342,25 +342,24 @@ class Consensus {
     }
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
-      proposalTx = this.node.createTransaction({operation: txOps}, false);
+      proposalTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
     } else {
-      proposalTx = this.node.createTransaction({
-        operation: {
-          type: WriteDbOperations.SET,
-          op_list: [
-            txOps,
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: ChainUtil.formatPath([
-                ConsensusDbPaths.CONSENSUS,
-                ConsensusDbPaths.NUMBER,
-                blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
-              ]),
-              value: null
-            }
-          ]
-        }
-      }, false);
+      const operation = {
+        type: WriteDbOperations.SET,
+        op_list: [
+          txOps,
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: ChainUtil.formatPath([
+              ConsensusDbPaths.CONSENSUS,
+              ConsensusDbPaths.NUMBER,
+              blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
+            ]),
+            value: null
+          }
+        ]
+      };
+      proposalTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
     }
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
@@ -661,22 +660,21 @@ class Consensus {
     if (!myStake) {
       return;
     }
-    const voteTx = this.node.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: ChainUtil.formatPath([
-          ConsensusDbPaths.CONSENSUS,
-          ConsensusDbPaths.NUMBER,
-          block.number,
-          ConsensusDbPaths.VOTE,
-          myAddr
-        ]),
-        value: {
-          [ConsensusDbPaths.BLOCK_HASH]: block.hash,
-          [ConsensusDbPaths.STAKE]: myStake
-        }
+    const operation = {
+      type: WriteDbOperations.SET_VALUE,
+      ref: ChainUtil.formatPath([
+        ConsensusDbPaths.CONSENSUS,
+        ConsensusDbPaths.NUMBER,
+        block.number,
+        ConsensusDbPaths.VOTE,
+        myAddr
+      ]),
+      value: {
+        [ConsensusDbPaths.BLOCK_HASH]: block.hash,
+        [ConsensusDbPaths.STAKE]: myStake
       }
-    }, false);
+    };
+    const voteTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
 
     this.handleConsensusMessage({value: voteTx, type: ConsensusMessageTypes.VOTE});
   }
@@ -875,18 +873,17 @@ class Consensus {
       return null;
     }
 
-    const depositTx = this.node.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: ChainUtil.formatPath([
-          PredefinedDbPaths.DEPOSIT_CONSENSUS,
-          this.node.account.address,
-          PushId.generate(),
-          PredefinedDbPaths.DEPOSIT_VALUE
-        ]),
-        value: amount
-      }
-    }, false);
+    const operation = {
+      type: WriteDbOperations.SET_VALUE,
+      ref: ChainUtil.formatPath([
+        PredefinedDbPaths.DEPOSIT_CONSENSUS,
+        this.node.account.address,
+        PushId.generate(),
+        PredefinedDbPaths.DEPOSIT_VALUE
+      ]),
+      value: amount
+    };
+    const depositTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
     return depositTx;
   }
 

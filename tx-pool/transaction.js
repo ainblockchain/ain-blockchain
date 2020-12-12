@@ -38,9 +38,6 @@ class Transaction {
   }
 
   static signTxBody(txBody, privateKey) {
-    if (txBody.timestamp === undefined) {
-      txBody.timestamp = Date.now();
-    }
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }

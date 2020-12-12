@@ -98,13 +98,11 @@ describe('Transaction', () => {
       expect(txParentHash.address).to.equal(node.account.address);
     });
 
-    /*
     it('fail with missing timestamp', () => {
       delete txBody.timestamp;
       tx2 = Transaction.signTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
     });
-    */
 
     it('fail with missing nonce', () => {
       delete txBody.nonce;
