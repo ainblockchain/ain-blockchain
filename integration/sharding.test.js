@@ -1411,7 +1411,7 @@ describe('Sharding', () => {
         it('ain_sendSignedTransaction with is_global = false', () => {
           const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
-          const transaction = {
+          const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
@@ -1421,8 +1421,8 @@ describe('Sharding', () => {
             nonce: -1
           }
           const signature =
-              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
@@ -1432,7 +1432,7 @@ describe('Sharding', () => {
         it('ain_sendSignedTransaction with is_global = false (explicit)', () => {
           const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
-          const transaction = {
+          const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
@@ -1443,8 +1443,8 @@ describe('Sharding', () => {
             nonce: -1
           }
           const signature =
-              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
@@ -1454,7 +1454,7 @@ describe('Sharding', () => {
         it('ain_sendSignedTransaction with is_global = true', () => {
           const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
-          const transaction = {
+          const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
@@ -1465,8 +1465,8 @@ describe('Sharding', () => {
             nonce: -1
           }
           const signature =
-              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
