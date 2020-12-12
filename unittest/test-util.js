@@ -53,6 +53,9 @@ function setNodeForTesting(
 }
 
 function getTransaction(node, txBody) {
+  if (txBody.timestamp === undefined) {
+    txBody.timestamp = Date.now();
+  }
   txBody.nonce = node.nonce;
   node.nonce++;
   return Transaction.signTxBody(txBody, node.account.private_key);

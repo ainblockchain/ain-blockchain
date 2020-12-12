@@ -130,11 +130,15 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         done(null, addProtocolVersion({code: 1, message: `Transaction size exceeds ` +
             `${MAX_TX_BYTES} bytes.`}));
       } else if (!args.tx_body || !args.signature) {
-        done(null, addProtocolVersion({code: 2, message: `Invalid input format.`}));
+        done(null, addProtocolVersion({code: 2, message: `Missing tx_body or signature.`}));
       } else {
         const signedTx = new Transaction(args.tx_body, args.signature);
-        done(null,
-            addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(signedTx)}));
+        if (signedTx === null) {
+          done(null, addProtocolVersion({code: 3, message: `Invalid transaction.`}));
+        } else {
+          done(null,
+              addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(signedTx)}));
+          }
       }
     },
 
