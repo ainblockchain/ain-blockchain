@@ -115,24 +115,6 @@ describe('Transaction', () => {
       const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
     });
-
-    it('fail with missing operation.type', () => {
-      delete txBody.operation.type;
-      const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
-    });
-
-    it('fail with missing operation.ref', () => {
-      delete txBody.operation.ref;
-      const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
-    });
-
-    it('fail with missing operation.value', () => {
-      delete txBody.operation.value;
-      const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
-    });
   });
 
   describe('getTransaction', () => {
@@ -150,6 +132,7 @@ describe('Transaction', () => {
       let tx2;
       let currentNonce;
       for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
+        delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
       }
       expect(tx2).to.not.equal(null);

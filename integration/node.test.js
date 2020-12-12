@@ -739,7 +739,7 @@ describe('Blockchain Node', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
+        assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
       })
     })
@@ -871,9 +871,11 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-            protoVer: CURRENT_PROTOCOL_VERSION })
-          .then((res) => {
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
             assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
           })
       })
@@ -909,7 +911,7 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('rejects a transaction in an invalid format.', () => {
+      it('rejects a transaction of missing properties.', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
@@ -930,7 +932,34 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             code: 2,
-            message: `Invalid input format.`,
+            message: `Missing properties.`,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          });
+        })
+      })
+
+      it('rejects a transaction in an invalid format.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now()
+          // missing nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            code: 3,
+            message: `Invalid transaction format.`,
             protoVer: CURRENT_PROTOCOL_VERSION
           });
         })

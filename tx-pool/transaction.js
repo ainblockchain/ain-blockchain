@@ -19,7 +19,7 @@ class Transaction {
 
   static create(txBody, signature) {
     if (!Transaction.isValidTxBody(txBody)) {
-      return;
+      return null;
     }
 
     const hash = '0x' + ainUtil.hashTransaction(txBody).toString('hex');
@@ -78,16 +78,16 @@ class Transaction {
   /**
    * Sanitize SET operation.
    */
-  static sanitizeSetOperation(op) {
-    const sanitizedOpList = []
-    if (Array.isArray(op.op_list)) {
-      op.op_list.forEach((op) => {
-        sanitizedOpList.push(this.sanitizeSimpleOperation(op));
-      });
+  static sanitizeSetOperation(setOp) {
+    const opList = [];
+    if (Array.isArray(setOp.op_list)) {
+      for (const op of setOp.op_list) {
+        opList.push(this.sanitizeSimpleOperation(op));
+      }
     }
     return {
-      type: op.type,
-      op_list: sanitizedOpList,
+      type: setOp.type === WriteDbOperations.SET ? setOp.type : null,
+      op_list: opList,
     };
   }
 
@@ -102,18 +102,27 @@ class Transaction {
       case WriteDbOperations.SET_RULE:
       case WriteDbOperations.SET_FUNCTION:
       case WriteDbOperations.SET_OWNER:
-        sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
-        sanitized.value = op.value;
+        if (op.ref) {
+          sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
+        }
+        if (op.value !== undefined) {
+          sanitized.value = op.value;
+        }
         break;
       case WriteDbOperations.INC_VALUE:
       case WriteDbOperations.DEC_VALUE:
-        sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
-        sanitized.value = ChainUtil.numberOrZero(op.value);
+        if (op.ref) {
+          sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
+        }
+        if (op.value !== undefined) {
+          sanitized.value = ChainUtil.numberOrZero(op.value);
+        }
         break;
       default:
-        return sanitized;
     }
-    sanitized.type = op.type;
+    if (op.type) {
+      sanitized.type = ChainUtil.stringOrEmpty(op.type);
+    }
     if (op.is_global !== undefined) {
       sanitized.is_global = ChainUtil.boolOrFalse(op.is_global);
     }
@@ -133,9 +142,9 @@ class Transaction {
    */
   static sanitizeTxBody(txBody) {
     const sanitized = {
+      operation: Transaction.sanitizeOperation(txBody.operation),
       nonce: ChainUtil.numberOrZero(txBody.nonce),
       timestamp: ChainUtil.numberOrZero(txBody.timestamp),
-      operation: Transaction.sanitizeOperation(txBody.operation),
     };
     if (txBody.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
@@ -189,7 +198,7 @@ class Transaction {
 
   static isValidFormat(txBody) {
     const sanitized = Transaction.sanitizeTxBody(txBody);
-    return _.isEqual(sanitized, txBody);
+    return _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, { strict: true });
   }
 
   static isBatchTxBody(txBody) {
