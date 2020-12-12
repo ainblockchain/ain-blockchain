@@ -195,14 +195,27 @@ class BlockchainNode {
     * @return {Transaction} Instance of the transaction class
     */
   createTransaction(txBody, isNoncedTransaction = true) {
+    const LOG_HEADER = 'createTransaction';
     if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
-      txBody.tx_list.forEach((subData) => {
-        txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
+      txBody.tx_list.forEach((subTxBody) => {
+        const createdTx = this.createSingleTransaction(subTxBody, isNoncedTransaction);
+        if (createdTx === null) {
+          logger.info(`[${LOG_HEADER}] Failed to create a transaction with subTx: ` +
+              `${JSON.stringify(subTxBody, null, 2)}`);
+        } else {
+          txList.push(createdTx);
+        }
       })
       return {tx_list: txList};
     }
-    return this.createSingleTransaction(txBody, isNoncedTransaction);
+    const createdTx = this.createSingleTransaction(txBody, isNoncedTransaction);
+    if (createdTx === null) {
+      logger.info(`[${LOG_HEADER}] Failed to create a transaction with txBody: ` +
+          `${JSON.stringify(txBody, null, 2)}`);
+      return null;
+    }
+    return createdTx;
   }
 
   createSingleTransaction(txBody, isNoncedTransaction) {

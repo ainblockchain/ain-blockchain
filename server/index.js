@@ -619,21 +619,22 @@ class P2pServer {
     if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
       const txListSucceeded = [];
-      tx.tx_list.forEach((subTx) => {
+      for (const subTx of tx.tx_list) {
         const response = this.executeTransaction(subTx);
         resultList.push(response);
         if (!ChainUtil.transactionFailed(response)) {
           txListSucceeded.push(subTx);
         }
-      })
+      }
+      logger.debug(`\n BATCH TX RESPONSE: ` + JSON.stringify(resultList));
       if (txListSucceeded.length > 0) {
-        this.broadcastTransaction({tx_list: txListSucceeded});
+        this.broadcastTransaction({ tx_list: txListSucceeded });
       }
 
       return resultList;
     } else {
       const response = this.executeTransaction(tx);
-      logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response))
+      logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response));
       if (!ChainUtil.transactionFailed(response)) {
         this.broadcastTransaction(tx);
       }

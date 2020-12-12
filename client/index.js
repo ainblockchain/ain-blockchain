@@ -435,14 +435,27 @@ function createMultiSetTxBody(input) {
 }
 
 function createBatchTxBody(input) {
-  return {tx_list: input.tx_list};
+  const txList = [];
+  for (const tx of input.tx_list) {
+    if (tx.timestamp === undefined) {
+      tx.timestamp = Date.now();
+    }
+    txList.push(tx);
+  }
+  return { tx_list: txList };
 }
 
 function createAndExecuteTransaction(txBody, isNoncedTransaction) {
-  const transaction = node.createTransaction(txBody, isNoncedTransaction);
+  const tx = node.createTransaction(txBody, isNoncedTransaction);
+  if (!tx) {
+    return {
+      tx_hash: null,
+      result: false,
+    };
+  }
   return {
-    tx_hash: transaction.hash,
-    result: p2pServer.executeAndBroadcastTransaction(transaction)
+    tx_hash: tx.hash,
+    result: p2pServer.executeAndBroadcastTransaction(tx)
   };
 }
 
