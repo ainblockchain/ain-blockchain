@@ -172,7 +172,7 @@ class Transaction {
       return false;
     }
     const sanitized = Transaction.sanitizeTxBody(txBody);
-    if (!Transaction.hasValidFormat(txBody)) {
+    if (!Transaction.isValidFormat(txBody)) {
       logger.info(
           `Transaction body in a non-standard format ` +
           `- input:\n${JSON.stringify(txBody, null, 2)}\n\n` +
@@ -187,7 +187,7 @@ class Transaction {
         txBody.operation !== undefined;
   }
 
-  static hasValidFormat(txBody) {
+  static isValidFormat(txBody) {
     const sanitized = Transaction.sanitizeTxBody(txBody);
     return _.isEqual(sanitized, txBody);
   }

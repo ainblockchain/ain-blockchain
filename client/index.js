@@ -405,6 +405,11 @@ function createSingleSetTxBody(input, opType) {
   if (input.nonce !== undefined) {
     txBody.nonce = input.nonce;
   }
+  if (input.timestamp !== undefined) {
+    txBody.timestamp = input.timestamp;
+  } else {
+    txBody.timestamp = Date.now();
+  }
   return txBody;
 }
 
@@ -420,6 +425,11 @@ function createMultiSetTxBody(input) {
   }
   if (input.nonce !== undefined) {
     txBody.nonce = input.nonce;
+  }
+  if (input.timestamp !== undefined) {
+    txBody.timestamp = input.timestamp;
+  } else {
+    txBody.timestamp = Date.now();
   }
   return txBody;
 }
