@@ -12,7 +12,6 @@ const expect = chai.expect;
 // eslint-disable-next-line no-unused-vars
 const path = require('path');
 const syncRequest = require('sync-request');
-const itParam = require('mocha-param');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
 const Blockchain = require('../blockchain');
