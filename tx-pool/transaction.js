@@ -5,25 +5,36 @@ const { WriteDbOperations } = require('../constants');
 const ChainUtil = require('../chain-util');
 
 class Transaction {
-  constructor(txBody, signature) {
+  constructor(txBody, signature, hash, address, skipVerif) {
     this.tx_body = JSON.parse(JSON.stringify(txBody));
     this.signature = signature;
-
-    if (!Transaction.isValidTxBody(this.tx_body)) {
-      return;
-    }
-
-    this.hash = '0x' + ainUtil.hashTransaction(this.tx_body).toString('hex');
-
-    // Workaround for the transaction verification.
-    if (this.tx_body.address !== undefined) {
-      this.address = this.tx_body.address;
-      this.skip_verif = true;
-    } else {
-      this.address = Transaction.getAddress(this.hash.slice(2), this.signature);
+    this.hash = hash;
+    this.address = address;
+    if (skipVerif) {
+      this.skip_verif = skipVerif;
     }
 
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
+  }
+
+  static create(txBody, signature) {
+    if (!Transaction.isValidTxBody(txBody)) {
+      return;
+    }
+
+    const hash = '0x' + ainUtil.hashTransaction(txBody).toString('hex');
+
+    let address = null;
+    let skipVerif = null;
+    // Workaround for the transaction verification.
+    if (txBody.address !== undefined) {
+      address = txBody.address;
+      skipVerif = true;
+    } else {
+      address = Transaction.getAddress(hash.slice(2), signature);
+    }
+
+    return new Transaction(txBody, signature, hash, address, skipVerif);
   }
 
   static signTxBody(txBody, privateKey) {
@@ -36,7 +47,7 @@ class Transaction {
     // Workaround for the transaction verification.
     const signature = txBody.address !== undefined ?
         '' : ainUtil.ecSignTransaction(txBody, Buffer.from(privateKey, 'hex'));
-    return new Transaction(txBody, signature);
+    return Transaction.create(txBody, signature);
   }
 
   toString() {

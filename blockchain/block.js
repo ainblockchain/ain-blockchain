@@ -156,7 +156,7 @@ class Block {
     return true;
   }
 
-  static getDbSetupTransaction(timestamp, keyBuffer) {
+  static buildDbSetupTx(timestamp, privateKey) {
     const opList = [];
 
     // Values operation
@@ -196,11 +196,10 @@ class Block {
         op_list: opList,
       }
     };
-    const firstSig = ainUtil.ecSignTransaction(firstTxBody, keyBuffer);
-    return new Transaction(firstTxBody, firstSig);
+    return Transaction.signTxBody(firstTxBody, privateKey);
   }
 
-  static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
+  static buildAccountsSetupTx(ownerAddress, timestamp, privateKey) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -227,8 +226,7 @@ class Block {
         op_list: transferOps
       }
     };
-    const secondSig = ainUtil.ecSignTransaction(secondTxBody, keyBuffer);
-    return new Transaction(secondTxBody, secondSig);
+    return Transaction.signTxBody(secondTxBody, privateKey);
   }
 
   static getGenesisBlockData(genesisTime) {
@@ -236,10 +234,9 @@ class Block {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
 
-    const firstTx = this.getDbSetupTransaction(genesisTime, keyBuffer);
-    const secondTx = this.getAccountsSetupTransaction(ownerAddress, genesisTime, keyBuffer);
+    const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
+    const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
 
     return [firstTx, secondTx];
   }

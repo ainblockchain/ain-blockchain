@@ -377,16 +377,27 @@ class P2pServer {
               const tx = data.transaction;
               if (Transaction.isBatchTransaction(tx)) {
                 const newTxList = [];
-                tx.tx_list.forEach((tx) => {
-                  newTxList.push(new Transaction(tx.tx_body, tx.signature));
-                })
+                for (const subTx of tx.tx_list) {
+                  const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
+                  if (!createdTx) {
+                    logger.info(`Failed to create a transaction for subTx: ` +
+                        `${JSON.stringify(subTx, null, 2)}`);
+                    continue;
+                  }
+                  newTxList.push(createdTx);
+                }
                 if (newTxList.length > 0) {
                   this.executeAndBroadcastTransaction(
                       { tx_list: newTxList }, MessageTypes.TRANSACTION);
                 }
               } else {
-                const signedTx = new Transaction(tx.tx_body, tx.signature);
-                this.executeAndBroadcastTransaction(signedTx, MessageTypes.TRANSACTION);
+                const createdTx = Transaction.create(tx.tx_body, tx.signature);
+                if (!createdTx) {
+                  logger.info(`Failed to create a transaction for tx: ` +
+                      `${JSON.stringify(tx, null, 2)}`);
+                } else {
+                  this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                }
               }
             } else {
               // Put the tx in the txPool?
