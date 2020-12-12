@@ -123,11 +123,14 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
+    // TODO(seo): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
         done(null, addProtocolVersion({code: 1, message: `Transaction size exceeds ` +
             `${MAX_TX_BYTES} bytes.`}));
+      } else if (!args.tx_body || !args.signature) {
+        done(null, addProtocolVersion({code: 2, message: `Invalid input format.`}));
       } else {
         const signedTx = new Transaction(args.tx_body, args.signature);
         done(null,

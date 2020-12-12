@@ -868,7 +868,7 @@ describe('Blockchain Node', () => {
           },
           timestamp: Date.now(),
           nonce: -1
-        }
+        };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
         return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
@@ -904,6 +904,33 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             code: 1,
             message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          });
+        })
+      })
+
+      it('rejects a transaction in an invalid format.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          transaction: txBody,  // wrong field name
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            code: 2,
+            message: `Invalid input format.`,
             protoVer: CURRENT_PROTOCOL_VERSION
           });
         })
