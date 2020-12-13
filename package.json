@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -78,8 +78,7 @@
     "eslint-plugin-node": "^10.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "mocha": "^6.2.2",
-    "mocha-param": "^2.0.0",
+    "mocha": "^8.2.1",
     "nock": "^12.0.0",
     "semistandard": "^12.0.1",
     "shelljs": "^0.8.3",

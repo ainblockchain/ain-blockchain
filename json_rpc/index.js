@@ -2,6 +2,7 @@
 
 const semver = require('semver');
 const sizeof = require('object-sizeof');
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   ReadDbOperations,
   PredefinedDbPaths,
@@ -12,7 +13,7 @@ const {
 const {
   ConsensusConsts
 } = require('../consensus/constants');
-const ainUtil = require('@ainblockchain/ain-util');
+const Transaction = require('../tx-pool/transaction');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 /**
@@ -122,13 +123,22 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
+    // TODO(seo): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
         done(null, addProtocolVersion({code: 1, message: `Transaction size exceeds ` +
             `${MAX_TX_BYTES} bytes.`}));
+      } else if (!args.tx_body || !args.signature) {
+        done(null, addProtocolVersion({code: 2, message: `Missing properties.`}));
       } else {
-        done(null, addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(args)}));
+        const createdTx = Transaction.create(args.tx_body, args.signature);
+        if (!createdTx) {
+          done(null, addProtocolVersion({code: 3, message: `Invalid transaction format.`}));
+        } else {
+          done(null,
+              addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(createdTx)}));
+          }
       }
     },
 
