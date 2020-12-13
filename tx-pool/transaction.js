@@ -29,7 +29,7 @@ class Transaction {
 
     let address = null;
     let skipVerif = null;
-    // Workaround for the transaction verification.
+    // A devel method for bypassing the transaction verification.
     if (txBody.address !== undefined) {
       address = txBody.address;
       skipVerif = true;
@@ -44,7 +44,7 @@ class Transaction {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
-    // Workaround for the transaction verification.
+    // A devel method for bypassing the transaction verification.
     const signature = txBody.address !== undefined ?
         '' : ainUtil.ecSignTransaction(txBody, Buffer.from(privateKey, 'hex'));
     return Transaction.create(txBody, signature);
@@ -152,7 +152,7 @@ class Transaction {
     if (txBody.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
     }
-    // Workaround for the transaction verification.
+    // A devel method for bypassing the transaction verification.
     if (txBody.address !== undefined) {
       sanitized.address = ChainUtil.stringOrEmpty(txBody.address);
     }
@@ -167,7 +167,7 @@ class Transaction {
       logger.info(`Invalid transaction type: ${tx.tx_body.operation.type}`);
       return false;
     }
-    // Workaround for the transaction verification.
+    // A devel method for bypassing the transaction verification.
     if (tx.skip_verif) {
       logger.info('Skip verifying signature for transaction: ' +
           JSON.stringify(tx, null, 2));

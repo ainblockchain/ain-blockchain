@@ -224,7 +224,7 @@ app.post('/set_owner', (req, res, next) => {
     .end();
 });
 
-// A custom address can be used as a workaround for the trasaction verification.
+// A custom address can be used as a devel method for bypassing the trasaction verification.
 // TODO(seo): Replace custom address with real signature.
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
