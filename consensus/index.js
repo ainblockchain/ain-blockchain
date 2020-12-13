@@ -321,7 +321,7 @@ class Consensus {
         stateProofHash, myAddr, validators);
 
     let proposalTx;
-    const operation = {
+    const proposeOp = {
       type: WriteDbOperations.SET_VALUE,
       ref: ChainUtil.formatPath([
         ConsensusDbPaths.CONSENSUS,
@@ -342,12 +342,13 @@ class Consensus {
     }
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
-      proposalTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
+      proposalTx =
+          this.node.createTransaction({ operation: proposeOp, timestamp: Date.now() }, false);
     } else {
-      const operation = {
+      const setOp = {
         type: WriteDbOperations.SET,
         op_list: [
-          txOps,
+          proposeOp,
           {
             type: WriteDbOperations.SET_VALUE,
             ref: ChainUtil.formatPath([
@@ -359,7 +360,7 @@ class Consensus {
           }
         ]
       };
-      proposalTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
+      proposalTx = this.node.createTransaction({ operation: setOp, timestamp: Date.now() }, false);
     }
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
