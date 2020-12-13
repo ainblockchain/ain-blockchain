@@ -26,22 +26,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
@@ -739,7 +739,7 @@ describe('Blockchain Node', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
+        assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
       })
     })
@@ -860,7 +860,7 @@ describe('Blockchain Node', () => {
       it('accepts a transaction', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        const transaction = {
+        const txBody = {
           operation: {
             type: 'SET_VALUE',
             value: 'some other value',
@@ -868,12 +868,14 @@ describe('Blockchain Node', () => {
           },
           timestamp: Date.now(),
           nonce: -1
-        }
+        };
         const signature =
-            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', { transaction, signature,
-            protoVer: CURRENT_PROTOCOL_VERSION })
-          .then((res) => {
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
             assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
           })
       })
@@ -885,7 +887,7 @@ describe('Blockchain Node', () => {
         for (let i = 0; i < MAX_TX_BYTES / 2; i++) {
           longText += 'a'
         }
-        const transaction = {
+        const txBody = {
           operation: {
             type: 'SET_VALUE',
             value: longText,
@@ -893,18 +895,74 @@ describe('Blockchain Node', () => {
           },
           timestamp: Date.now() + 100000,
           nonce: -1
-        }
+        };
         const signature =
-            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', { transaction, signature,
-            protoVer: CURRENT_PROTOCOL_VERSION })
-          .then((res) => {
-            assert.deepEqual(res.result, {
-              code: 1,
-              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
-              protoVer: CURRENT_PROTOCOL_VERSION
-            });
-          })
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            code: 1,
+            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          });
+        })
+      })
+
+      it('rejects a transaction of missing properties.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          transaction: txBody,  // wrong field name
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            code: 2,
+            message: `Missing properties.`,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          });
+        })
+      })
+
+      it('rejects a transaction in an invalid format.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now()
+          // missing nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            code: 3,
+            message: `Invalid transaction format.`,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          });
+        })
       })
     })
   })
@@ -1171,10 +1229,14 @@ describe('Blockchain Node', () => {
       // TODO (lia): update test code after fixing timestamp verification logic.
       it('deposit with invalid timestamp', () => {
         const account = ainUtil.createAccount();
-        const res = JSON.parse(syncRequest('POST', server2+'/set_value',
-                    {json: {ref: `/accounts/${account.address}/balance`, value: 1000}}).body.toString('utf-8')).result;
+        const res = JSON.parse(syncRequest('POST', server2 + '/set_value', {
+          json: {
+            ref: `/accounts/${account.address}/balance`,
+            value: 1000
+          }
+        }).body.toString('utf-8')).result;
         waitUntilTxFinalized(SERVERS, res.tx_hash);
-        const transaction = {
+        const txBody = {
           operation: {
             type: 'SET_VALUE',
             value: depositAmount,
@@ -1184,12 +1246,14 @@ describe('Blockchain Node', () => {
           nonce: 0
         }
         const signature =
-            ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
 
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_sendSignedTransaction', { transaction, signature,
-          protoVer: CURRENT_PROTOCOL_VERSION })
-        .then(res => {
+        return jsonRpcClient.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then(res => {
           const depositResult = JSON.parse(syncRequest('GET',
               server2 + `/get_value?ref=/deposit/test_service/${account.address}/1/result/code`)
             .body.toString('utf-8')).result;

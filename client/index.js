@@ -167,7 +167,7 @@ app.post('/get', (req, res, next) => {
 app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -177,7 +177,7 @@ app.post('/set_value', (req, res, next) => {
 app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -187,7 +187,7 @@ app.post('/inc_value', (req, res, next) => {
 app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -197,7 +197,7 @@ app.post('/dec_value', (req, res, next) => {
 app.post('/set_function', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -207,7 +207,7 @@ app.post('/set_function', (req, res, next) => {
 app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -217,17 +217,18 @@ app.post('/set_rule', (req, res, next) => {
 app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
-// TODO(seo): Replace skip_verif with real signature.
+// A custom address can be used as a devel method for bypassing the trasaction verification.
+// TODO(seo): Replace custom address with real signature.
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createMultiSetTxBody(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -236,7 +237,7 @@ app.post('/set', (req, res, next) => {
 
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(createBatchTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createBatchTxBody(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -388,7 +389,7 @@ p2pServer.listen();
 
 module.exports = app;
 
-function createSingleSetTxData(input, opType) {
+function createSingleSetTxBody(input, opType) {
   const op = {
     type: opType,
     ref: input.ref,
@@ -397,41 +398,64 @@ function createSingleSetTxData(input, opType) {
   if (input.is_global !== undefined) {
     op.is_global = input.is_global;
   }
-  const txData = {operation: op};
+  const txBody = {operation: op};
   if (input.address !== undefined) {
-    txData.address = input.address;
+    txBody.address = input.address;
   }
   if (input.nonce !== undefined) {
-    txData.nonce = input.nonce;
+    txBody.nonce = input.nonce;
   }
-  return txData;
+  if (input.timestamp !== undefined) {
+    txBody.timestamp = input.timestamp;
+  } else {
+    txBody.timestamp = Date.now();
+  }
+  return txBody;
 }
 
-function createMultiSetTxData(input) {
-  const txData = {
+function createMultiSetTxBody(input) {
+  const txBody = {
     operation: {
       type: WriteDbOperations.SET,
       op_list: input.op_list,
     }
   };
   if (input.address !== undefined) {
-    txData.address = input.address;
+    txBody.address = input.address;
   }
   if (input.nonce !== undefined) {
-    txData.nonce = input.nonce;
+    txBody.nonce = input.nonce;
   }
-  return txData;
+  if (input.timestamp !== undefined) {
+    txBody.timestamp = input.timestamp;
+  } else {
+    txBody.timestamp = Date.now();
+  }
+  return txBody;
 }
 
-function createBatchTxData(input) {
-  return {tx_list: input.tx_list};
+function createBatchTxBody(input) {
+  const txList = [];
+  for (const tx of input.tx_list) {
+    if (tx.timestamp === undefined) {
+      tx.timestamp = Date.now();
+    }
+    txList.push(tx);
+  }
+  return { tx_list: txList };
 }
 
-function createAndExecuteTransaction(txData, isNoncedTransaction) {
-  const transaction = node.createTransaction(txData, isNoncedTransaction);
+function createAndExecuteTransaction(txBody, isNoncedTransaction) {
+  const tx = node.createTransaction(txBody, isNoncedTransaction);
+  if (!tx) {
+    return {
+      tx_hash: null,
+      result: false,
+    };
+  }
   return {
-    tx_hash: transaction.hash,
-    result: p2pServer.executeAndBroadcastTransaction(transaction)
+    tx_hash: tx.hash,
+    result: p2pServer.executeAndBroadcastTransaction(tx)
   };
 }
 

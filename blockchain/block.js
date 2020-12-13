@@ -81,7 +81,7 @@ class Block {
     return ChainUtil.hashString(stringify(block.header));
   }
 
-  static createBlock(lastHash, lastVotes, transactions, number, epoch,
+  static create(lastHash, lastVotes, transactions, number, epoch,
       stateProofHash, proposer, validators) {
     return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(),
         stateProofHash, proposer, validators);
@@ -133,30 +133,30 @@ class Block {
   static validateProposedBlock(block) {
     if (!Block.validateHashes(block)) return false;
     const nonceTracker = {};
-    let transaction;
+    let tx;
     for (let i = 0; i < block.transactions.length; i++) {
-      transaction = block.transactions[i];
-      if (transaction.nonce < 0) {
+      tx = block.transactions[i];
+      if (tx.tx_body.nonce < 0) {
         continue;
       }
-      if (!(transaction.address in nonceTracker)) {
-        nonceTracker[transaction.address] = transaction.nonce;
+      if (!(tx.address in nonceTracker)) {
+        nonceTracker[tx.address] = tx.tx_body.nonce;
         continue;
       }
-      if (transaction.nonce != nonceTracker[transaction.address] + 1) {
-        logger.error(`Invalid noncing for ${transaction.address} ` +
-            `Expected ${nonceTracker[transaction.address] + 1} ` +
-            `Received ${transaction.nonce}`);
+      if (tx.tx_body.nonce != nonceTracker[tx.address] + 1) {
+        logger.error(`Invalid noncing for ${tx.address} ` +
+            `Expected ${nonceTracker[tx.address] + 1} ` +
+            `Received ${tx.tx_body.nonce}`);
         return false;
       }
-      nonceTracker[transaction.address] = transaction.nonce;
+      nonceTracker[tx.address] = tx.tx_body.nonce;
     }
 
     logger.info(`Valid block of number ${block.number}`);
     return true;
   }
 
-  static getDbSetupTransaction(timestamp, keyBuffer) {
+  static buildDbSetupTx(timestamp, privateKey) {
     const opList = [];
 
     // Values operation
@@ -188,7 +188,7 @@ class Block {
     });
 
     // Transaction
-    const firstTxData = {
+    const firstTxBody = {
       nonce: -1,
       timestamp,
       operation: {
@@ -196,11 +196,10 @@ class Block {
         op_list: opList,
       }
     };
-    const firstSig = ainUtil.ecSignTransaction(firstTxData, keyBuffer);
-    return (new Transaction({signature: firstSig, transaction: firstTxData}));
+    return Transaction.signTxBody(firstTxBody, privateKey);
   }
 
-  static getAccountsSetupTransaction(ownerAddress, timestamp, keyBuffer) {
+  static buildAccountsSetupTx(ownerAddress, timestamp, privateKey) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -219,7 +218,7 @@ class Block {
     }
 
     // Transaction
-    const secondTxData = {
+    const secondTxBody = {
       nonce: -1,
       timestamp,
       operation: {
@@ -227,8 +226,7 @@ class Block {
         op_list: transferOps
       }
     };
-    const secondSig = ainUtil.ecSignTransaction(secondTxData, keyBuffer);
-    return (new Transaction({signature: secondSig, transaction: secondTxData}));
+    return Transaction.signTxBody(secondTxBody, privateKey);
   }
 
   static getGenesisBlockData(genesisTime) {
@@ -236,10 +234,9 @@ class Block {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
 
-    const firstTx = this.getDbSetupTransaction(genesisTime, keyBuffer);
-    const secondTx = this.getAccountsSetupTransaction(ownerAddress, genesisTime, keyBuffer);
+    const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
+    const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
 
     return [firstTx, secondTx];
   }
