@@ -32,7 +32,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
-const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
+const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const {min, max} = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
@@ -302,6 +302,17 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
     .end();
 });
 
+app.get('/protocol_versions', (req, res) => {
+  const result = {
+    version_map: VERSION_MAP,
+    current_version: CURRENT_PROTOCOL_VERSION,
+  };
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/state_versions', (req, res) => {
   const result = {
     version_list: node.stateManager.getVersionList(),
@@ -470,17 +481,17 @@ function isValidVersionMatch(ver) {
 }
 
 function matchVersions(ver) {
-  let match = VERSION_LIST[ver];
+  let match = VERSION_MAP[ver];
   if (isValidVersionMatch(match)) {
     return match;
   }
   const majorVer = semver.major(ver);
   const majorMinorVer = `${majorVer}.${semver.minor(ver)}`;
-  match = VERSION_LIST[majorMinorVer];
+  match = VERSION_MAP[majorMinorVer];
   if (isValidVersionMatch(match)) {
     return match;
   }
-  match = VERSION_LIST[majorVer];
+  match = VERSION_MAP[majorVer];
   if (isValidVersionMatch(match)) {
     return match;
   }
