@@ -152,7 +152,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         done(null, addProtocolVersion({code: 2, message: `Missing properties.`}));
       } else {
         const batchTx = [];
-        args.tx_list.forEach((tx) => {
+        for (const tx of args.tx_list) {
           const createdTx = Transaction.create(tx.tx_body, tx.signature);
           if (!createdTx) {
             done(null, addProtocolVersion({code: 3, message: `Invalid transaction format.`}));
@@ -160,7 +160,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
           } else {
             batchTx.push(createdTx);
           }
-        });
+        }
         done(null, addProtocolVersion({result:
             p2pServer.executeAndBroadcastTransaction({tx_list: batchTx})}));
       }
