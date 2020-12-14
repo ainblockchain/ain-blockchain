@@ -142,6 +142,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       }
     },
 
+    // TODO(lia): add test cases
     ain_sendSignedTransactionBatch: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
