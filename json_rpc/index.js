@@ -138,7 +138,30 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         } else {
           done(null,
               addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(createdTx)}));
+        }
+      }
+    },
+
+    ain_sendSignedTransactionBatch: function(args, done) {
+      // TODO (lia): return the transaction hash or an error message
+      if (sizeof(args) > MAX_TX_BYTES) {
+        done(null, addProtocolVersion({code: 1, message: `Transaction size exceeds ` +
+            `${MAX_TX_BYTES} bytes.`}));
+      } else if (!args.tx_list) {
+        done(null, addProtocolVersion({code: 2, message: `Missing properties.`}));
+      } else {
+        const batchTx = [];
+        args.tx_list.forEach((tx) => {
+          const createdTx = Transaction.create(tx.tx_body, tx.signature);
+          if (!createdTx) {
+            done(null, addProtocolVersion({code: 3, message: `Invalid transaction format.`}));
+            return;
+          } else {
+            batchTx.push(createdTx);
           }
+        });
+        done(null, addProtocolVersion({result:
+            p2pServer.executeAndBroadcastTransaction({tx_list: batchTx})}));
       }
     },
 
