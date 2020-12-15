@@ -2,7 +2,7 @@ const StateManager = require('../db/state-manager');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const { StateVersions } = require('../constants');
+const { StateVersions } = require('../common/constants');
 const StateNode = require('../db/state-node');
 
 describe("state-manager", () => {

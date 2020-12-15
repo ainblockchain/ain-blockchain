@@ -11,8 +11,8 @@ const {
   FeatureFlags,
   LIGHTWEIGHT,
   buildOwnerPermissions,
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {

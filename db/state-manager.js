@@ -8,7 +8,7 @@ const {
 const {
   FeatureFlags,
   StateVersions,
-} = require('../constants');
+} = require('../common/constants');
 
 class StateManager {
   constructor() {

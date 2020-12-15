@@ -10,8 +10,8 @@ const {
   GenesisAccounts,
   GenesisSharding,
   StateVersions,
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');

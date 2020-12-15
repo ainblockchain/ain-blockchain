@@ -7,7 +7,7 @@ const naturalSort = require('node-natural-sort');
 const logger = require('../logger')('BLOCKCHAIN');
 const {Block} = require('./block');
 const BlockFilePatterns = require('./block-file-patterns');
-const {BLOCKCHAINS_DIR} = require('../constants');
+const {BLOCKCHAINS_DIR} = require('../common/constants');
 const CHAIN_SUBSECT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 

@@ -11,8 +11,8 @@ const {
   TransactionStatus,
   WriteDbOperations,
   AccountProperties,
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const {sendGetRequest, signAndSendTx} = require('../server/util');
 const Transaction = require('./transaction');
 
