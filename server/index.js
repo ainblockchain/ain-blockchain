@@ -583,44 +583,13 @@ class P2pServer {
     });
   }
 
-  /**
-   * Adds transaction to the transactionPool and executes the operations specified
-   * in the transaction.
-   * @param {Object} tx An object with a signature and a transaction.
-   */
-  executeTransaction(tx) {
-    logger.debug(`EXECUTING: ${JSON.stringify(tx)}`);
-    if (this.node.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.node.bc.lastBlockTimestamp())) {
-      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(tx)}`);
-      return null;
-    }
-    if (this.node.tp.isNotEligibleTransaction(tx)) {
-      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(tx)}`);
-      return null;
-    }
-    if (this.node.bc.syncedAfterStartup === false) {
-      logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
-          `${JSON.stringify(tx)}`);
-      this.node.tp.addTransaction(tx);
-      return null;
-    }
-    const result = this.node.db.executeTransaction(tx);
-    if (!ChainUtil.transactionFailed(result)) {
-      this.node.tp.addTransaction(tx);
-    } else {
-      logger.info(`FAILED TRANSACTION: ${JSON.stringify(tx)}\t ` +
-          `RESULT:${JSON.stringify(result)}`);
-    }
-    return result;
-  }
-
   executeAndBroadcastTransaction(tx) {
     if (!tx) return null;
     if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
       const txListSucceeded = [];
       for (const subTx of tx.tx_list) {
-        const response = this.executeTransaction(subTx);
+        const response = this.node.addToPoolAndExecuteTransaction(subTx);
         resultList.push(response);
         if (!ChainUtil.transactionFailed(response)) {
           txListSucceeded.push(subTx);
@@ -633,7 +602,7 @@ class P2pServer {
 
       return resultList;
     } else {
-      const response = this.executeTransaction(tx);
+      const response = this.node.addToPoolAndExecuteTransaction(tx);
       logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response));
       if (!ChainUtil.transactionFailed(response)) {
         this.broadcastTransaction(tx);
