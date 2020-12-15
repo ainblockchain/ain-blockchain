@@ -625,8 +625,8 @@ describe('Blockchain Node', () => {
         const request = {ref: 'test/test_value/some/path', value: "some value"};
         const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
       })
     })
 
@@ -635,8 +635,8 @@ describe('Blockchain Node', () => {
         const request = {ref: "test/test_value/some/path", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
       })
     })
 
@@ -645,8 +645,8 @@ describe('Blockchain Node', () => {
         const request = {ref: "test/test_value/some/path", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
       })
     })
 
@@ -660,8 +660,8 @@ describe('Blockchain Node', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
       })
     })
 
@@ -675,8 +675,8 @@ describe('Blockchain Node', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
       })
     })
 
@@ -690,19 +690,84 @@ describe('Blockchain Node', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
           .body.toString('utf-8'));
-        assert.equal(body.result.result, true);
-        assert.equal(body.code, 0);
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
       })
     })
 
     describe('/set', () => {
       it('set', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other100/path')
+            .body.toString('utf-8')).result;
+        expect(resultBefore).to.equal(null);
+
         const request = {
           op_list: [
             {
               // Default type: SET_VALUE
-              ref: "test/test_value/other2/path",
-              value: "some other2 value",
+              ref: "test/test_value/other100/path",
+              value: "some other100 value",
+            },
+            {
+              type: 'INC_VALUE',
+              ref: "test/test_value/some/path",
+              value: 10
+            },
+            {
+              type: 'DEC_VALUE',
+              ref: "test/test_value/some/path100",
+              value: 10
+            },
+            {
+              type: 'SET_FUNCTION',
+              ref: "/test/test_function/other100/path",
+              value: {
+                ".function": "some other100 function config"
+              }
+            },
+            {
+              type: 'SET_RULE',
+              ref: "/test/test_rule/other100/path",
+              value: {
+                ".write": "some other100 rule config"
+              }
+            },
+            {
+              type: 'SET_OWNER',
+              ref: "/test/test_owner/other100/path",
+              value: {
+                ".owner": "some other100 owner config"
+              }
+            }
+          ]
+        };
+        const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
+          .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the original value is set properly.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other100/path')
+            .body.toString('utf-8')).result;
+        expect(resultAfter).to.equal('some other100 value');
+      })
+
+      it('set with a failed operation', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other101/path')
+            .body.toString('utf-8')).result;
+        expect(resultBefore).to.equal(null);
+
+        const request = {
+          op_list: [
+            {
+              // Default type: SET_VALUE
+              ref: "test/test_value/other101/path",
+              value: "some other101 value",
             },
             {
               type: 'INC_VALUE',
@@ -716,43 +781,58 @@ describe('Blockchain Node', () => {
             },
             {
               type: 'SET_FUNCTION',
-              ref: "/test/test_function/other2/path",
+              ref: "/test/test_function/other101/path",
               value: {
-                ".function": "some other2 function config"
+                ".function": "some other101 function config"
               }
             },
             {
               type: 'SET_RULE',
-              ref: "/test/test_rule/other2/path",
+              ref: "/test/test_rule/other101/path",
               value: {
-                ".write": "some other2 rule config"
+                ".write": "some other101 rule config"
               }
             },
             {
               type: 'SET_OWNER',
-              ref: "/test/test_owner/other2/path",
+              ref: "/",  // a path with no permission
               value: {
-                ".owner": "some other2 owner config"
+                ".owner": "some other101 owner config"
               }
             }
           ]
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
           .body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
+        expect(body.code).to.equal(1);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 4,
+          "error_message": "No write_owner or branch_owner permission on: /"
+        });
+
+        // Confirm that the original value is not altered.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other101/path')
+            .body.toString('utf-8')).result;
+        expect(resultAfter).to.equal(null);
       })
     })
 
     describe('/batch', () => {
       it('batch', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other200/path')
+            .body.toString('utf-8')).result;
+        expect(resultBefore).to.equal(null);
+
         const request = {
           tx_list: [
             {
               operation: {
                 // Default type: SET_VALUE
-                ref: "test/test_value/other3/path",
-                value: "some other3 value",
+                ref: "test/test_value/other200/path",
+                value: "some other200 value",
               }
             },
             {
@@ -772,27 +852,27 @@ describe('Blockchain Node', () => {
             {
               operation: {
                 type: 'SET_FUNCTION',
-                ref: "/test/test_function/other3/path",
+                ref: "/test/test_function/other200/path",
                 value: {
-                  ".function": "some other3 function config"
+                  ".function": "some other200 function config"
                 }
               }
             },
             {
               operation: {
                 type: 'SET_RULE',
-                ref: "/test/test_rule/other3/path",
+                ref: "/test/test_rule/other200/path",
                 value: {
-                  ".write": "some other3 rule config"
+                  ".write": "some other200 rule config"
                 }
               }
             },
             {
               operation: {
                 type: 'SET_OWNER',
-                ref: "/test/test_owner/other3/path",
+                ref: "/test/test_owner/other200/path",
                 value: {
-                  ".owner": "some other3 owner config"
+                  ".owner": "some other200 owner config"
                 }
               }
             },
@@ -802,8 +882,8 @@ describe('Blockchain Node', () => {
                 op_list: [
                   {
                     type: "SET_VALUE",
-                    ref: "test/test_value/other4/path",
-                    value: "some other4 value",
+                    ref: "test/test_value/other201/path",
+                    value: "some other201 value",
                   },
                   {
                     type: 'INC_VALUE',
@@ -817,23 +897,23 @@ describe('Blockchain Node', () => {
                   },
                   {
                     type: 'SET_FUNCTION',
-                    ref: "/test/test_function/other4/path",
+                    ref: "/test/test_function/other201/path",
                     value: {
-                      ".function": "some other4 function config"
+                      ".function": "some other201 function config"
                     }
                   },
                   {
                     type: 'SET_RULE',
-                    ref: "/test/test_rule/other4/path",
+                    ref: "/test/test_rule/other201/path",
                     value: {
-                      ".write": "some other4 rule config"
+                      ".write": "some other201 rule config"
                     }
                   },
                   {
                     type: 'SET_OWNER',
-                    ref: "/test/test_owner/other4/path",
+                    ref: "/test/test_owner/other201/path",
                     value: {
-                      ".owner": "some other4 owner config"
+                      ".owner": "some other201 owner config"
                     }
                   }
                 ]
@@ -843,7 +923,8 @@ describe('Blockchain Node', () => {
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
-        assert.deepEqual(body.result.result, [
+        expect(body.code).to.equal(0);
+        assert.deepEqual(_.get(body, 'result.result'), [
           true,
           true,
           true,
@@ -852,7 +933,137 @@ describe('Blockchain Node', () => {
           true,
           true,
         ]);
-        assert.equal(body.code, 0);
+
+        // Confirm that the value is set properly.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other200/path')
+            .body.toString('utf-8')).result;
+        expect(resultAfter).to.equal('some other200 value');
+      })
+
+      it('batch with a failed transaction', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other202/path')
+            .body.toString('utf-8')).result;
+        expect(resultBefore).to.equal(null);
+
+        const request = {
+          tx_list: [
+            {
+              operation: {
+                // Default type: SET_VALUE
+                ref: "test/test_value/other202/path",
+                value: "some other202 value",
+              }
+            },
+            {
+              operation: {
+                type: 'INC_VALUE',
+                ref: "test/test_value/some/path",
+                value: 10
+              }
+            },
+            {
+              operation: {
+                type: 'DEC_VALUE',
+                ref: "test/test_value/some/path2",
+                value: 10
+              }
+            },
+            {
+              operation: {
+                type: 'SET_FUNCTION',
+                ref: "/test/test_function/other202/path",
+                value: {
+                  ".function": "some other202 function config"
+                }
+              }
+            },
+            {
+              operation: {
+                type: 'SET_RULE',
+                ref: "/test/test_rule/other202/path",
+                value: {
+                  ".write": "some other202 rule config"
+                }
+              }
+            },
+            {
+              operation: {
+                type: 'SET_OWNER',
+                ref: "/",  // a path with no permission
+                value: {
+                  ".owner": "some other202 owner config"
+                }
+              }
+            },
+            {
+              operation: {
+                type: 'SET',
+                op_list: [
+                  {
+                    type: "SET_VALUE",
+                    ref: "test/test_value/other203/path",
+                    value: "some other203 value",
+                  },
+                  {
+                    type: 'INC_VALUE',
+                    ref: "test/test_value/some/path",
+                    value: 5
+                  },
+                  {
+                    type: 'DEC_VALUE',
+                    ref: "test/test_value/some/path2",
+                    value: 5
+                  },
+                  {
+                    type: 'SET_FUNCTION',
+                    ref: "/test/test_function/other203/path",
+                    value: {
+                      ".function": "some other203 function config"
+                    }
+                  },
+                  {
+                    type: 'SET_RULE',
+                    ref: "/test/test_rule/other203/path",
+                    value: {
+                      ".write": "some other203 rule config"
+                    }
+                  },
+                  {
+                    type: 'SET_OWNER',
+                    ref: "/test/test_owner/other203/path",
+                    value: {
+                      ".owner": "some other203 owner config"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        };
+        const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
+            .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.deepEqual(_.get(body, 'result.result'), [
+          true,
+          true,
+          true,
+          true,
+          true,
+          {
+            "code": 4,
+            "error_message": "No write_owner or branch_owner permission on: /"
+          },
+          true,
+        ]);
+
+        // Confirm that the value is set properly.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/other202/path')
+            .body.toString('utf-8')).result;
+        expect(resultAfter).to.equal('some other202 value');
       })
     })
 

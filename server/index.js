@@ -589,26 +589,26 @@ class P2pServer {
       const resultList = [];
       const txListSucceeded = [];
       for (const subTx of tx.tx_list) {
-        const response = this.node.addToPoolAndExecuteTransaction(subTx);
-        resultList.push(response);
-        if (!ChainUtil.transactionFailed(response)) {
+        const result = this.node.executeTransactionAndAddToPool(subTx);
+        resultList.push(result);
+        if (!ChainUtil.transactionFailed(result)) {
           txListSucceeded.push(subTx);
         }
       }
-      logger.debug(`\n BATCH TX RESPONSE: ` + JSON.stringify(resultList));
+      logger.debug(`\n BATCH TX RESULT: ` + JSON.stringify(resultList));
       if (txListSucceeded.length > 0) {
         this.broadcastTransaction({ tx_list: txListSucceeded });
       }
 
       return resultList;
     } else {
-      const response = this.node.addToPoolAndExecuteTransaction(tx);
-      logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response));
-      if (!ChainUtil.transactionFailed(response)) {
+      const result = this.node.executeTransactionAndAddToPool(tx);
+      logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
+      if (!ChainUtil.transactionFailed(result)) {
         this.broadcastTransaction(tx);
       }
 
-      return response;
+      return result;
     }
   }
 
