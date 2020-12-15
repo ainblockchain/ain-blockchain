@@ -515,7 +515,6 @@ class DB {
     return true;
   }
 
-  // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   set(opList, address, timestamp, transaction) {
     let ret = true;
     for (let i = 0; i < opList.length; i++) {
