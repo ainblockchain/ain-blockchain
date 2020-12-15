@@ -232,6 +232,38 @@ class BlockchainNode {
     return Transaction.signTxBody(txBody, this.account.private_key);
   }
 
+    /**
+   * Adds transaction to the transactionPool and executes the operations specified
+   * in the transaction.
+   * @param {Object} tx An object with a signature and a transaction.
+   */
+  addToPoolAndExecuteTransaction(tx) {
+    const LOG_HEADER = 'addToPoolAndExecuteTransaction';
+    logger.debug(`[${LOG_HEADER}] EXECUTING: ${JSON.stringify(tx)}`);
+    if (this.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.bc.lastBlockTimestamp())) {
+      logger.debug(`[${LOG_HEADER}] TIMED-OUT TRANSACTION: ${JSON.stringify(tx)}`);
+      return null;
+    }
+    if (this.tp.isNotEligibleTransaction(tx)) {
+      logger.debug(`[${LOG_HEADER}] ALREADY RECEIVED: ${JSON.stringify(tx)}`);
+      return null;
+    }
+    if (this.bc.syncedAfterStartup === false) {
+      logger.debug(`[${LOG_HEADER}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
+          `${JSON.stringify(tx)}`);
+      this.tp.addTransaction(tx);
+      return null;
+    }
+    const result = this.db.executeTransaction(tx);
+    if (!ChainUtil.transactionFailed(result)) {
+      this.tp.addTransaction(tx);
+    } else {
+      logger.info(`[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(tx)}\t ` +
+          `RESULT:${JSON.stringify(result)}`);
+    }
+    return result;
+  }
+
   addNewBlock(block) {
     if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
