@@ -8,7 +8,7 @@ const {Block} = require('../blockchain/block');
 const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
-const ChainUtil = require('../chain-util');
+const ChainUtil = require('../common/chain-util');
 const {
   WriteDbOperations,
   ReadDbOperations,
@@ -22,7 +22,7 @@ const {
   MAX_SHARD_REPORT,
   GenesisWhitelist,
   LIGHTWEIGHT,
-} = require('../constants');
+} = require('../common/constants');
 const {
   ConsensusMessageTypes,
   ConsensusConsts,

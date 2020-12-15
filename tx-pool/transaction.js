@@ -1,8 +1,8 @@
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
-const { WriteDbOperations } = require('../constants');
-const ChainUtil = require('../chain-util');
+const { WriteDbOperations } = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 
 class Transaction {
   constructor(txBody, signature, hash, address, skipVerif) {

@@ -4,14 +4,14 @@ const moment = require('moment');
 const {
   ConsensusConsts,
   ConsensusDbPaths,
-} = require('./consensus/constants');
+} = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
-const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
+const DEFAULT_GENESIS_CONFIGS_DIR = '../blockchain';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
-const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
-const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
+const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
+const PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
 const TRANSACTION_POOL_TIME_OUT_MS = moment.duration(1, 'hours').as('milliseconds');

@@ -19,8 +19,8 @@ const {
   HASH_DELIMITER,
   PredefinedDbPaths,
   ProofProperties,
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized } = require('../unittest/test-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 

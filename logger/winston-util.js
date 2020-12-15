@@ -5,7 +5,7 @@ const winston = require('winston');
 const {LoggingWinston} = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
-const {DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT} = require('../constants');
+const {DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT} = require('../common/constants');
 
 const {combine, timestamp, label, printf, colorize} = winston.format;
 

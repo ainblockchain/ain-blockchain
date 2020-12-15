@@ -1,4 +1,4 @@
-const ChainUtil = require('../chain-util');
+const ChainUtil = require('../common/chain-util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;

@@ -5,7 +5,7 @@ const sleep = require('sleep').msleep;
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { StateVersions } = require('../constants');
+const { StateVersions } = require('../common/constants');
 
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {

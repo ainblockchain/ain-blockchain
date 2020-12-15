@@ -35,8 +35,8 @@ const {
   NativeFunctionIds,
   buildOwnerPermissions,
   LIGHTWEIGHT
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const {sendTxAndWaitForFinalization} = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +

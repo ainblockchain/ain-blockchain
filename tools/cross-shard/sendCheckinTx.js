@@ -3,7 +3,7 @@ const _ = require('lodash');
 const axios = require('axios');
 const {sleep} = require('sleep');
 const ainUtil = require('@ainblockchain/ain-util');
-const ChainUtil = require('../../chain-util');
+const ChainUtil = require('../../common/chain-util');
 
 const CURRENT_PROTOCOL_VERSION = require('../../package.json').version;
 let config = {};

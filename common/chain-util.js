@@ -2,7 +2,7 @@ const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
-const RuleUtil = require('./db/rule-util');
+const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 

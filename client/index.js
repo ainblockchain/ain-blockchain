@@ -8,8 +8,13 @@ const jayson = require('jayson');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pServer = require('../server');
-const ChainUtil = require('../chain-util');
-const {PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus} = require('../constants');
+const ChainUtil = require('../common/chain-util');
+const {
+  PORT,
+  PROTOCOL_VERSIONS,
+  WriteDbOperations,
+  TransactionStatus
+} = require('../common/constants');
 const {ConsensusStatus} = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 

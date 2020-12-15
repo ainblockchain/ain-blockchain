@@ -9,7 +9,7 @@ const {
   TransactionStatus,
   MAX_TX_BYTES,
   NETWORK_ID
-} = require('../constants');
+} = require('../common/constants');
 const {
   ConsensusConsts
 } = require('../consensus/constants');

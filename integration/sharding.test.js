@@ -22,8 +22,8 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const {
   readConfigFile,
   waitForNewBlocks,
