@@ -52,10 +52,23 @@ function setNodeForTesting(
   }
 }
 
-function getTransaction(node, txData) {
-  txData.nonce = node.nonce;
-  node.nonce++;
-  return Transaction.newTransaction(node.account.private_key, txData);
+function getTransaction(node, inputTxBody) {
+  const txBody = JSON.parse(JSON.stringify(inputTxBody));
+  if (Transaction.isBatchTxBody(txBody)) {
+    const txList = [];
+    for (const tx of txBody.tx_list) {
+      if (tx.timestamp === undefined) {
+        tx.timestamp = Date.now();
+      }
+      txList.push(tx);
+    }
+    txBody.tx_list = txList;
+  } else {
+    if (txBody.timestamp === undefined) {
+      txBody.timestamp = Date.now();
+    }
+  }
+  return node.createTransaction(txBody);
 }
 
 function addBlock(node, txs, votes, validators) {
@@ -64,8 +77,9 @@ function addBlock(node, txs, votes, validators) {
       `${StateVersions.BACKUP}:${lastBlock.number + 1}`, node.bc, node.tp, true);
   finalizedDb.executeTransactionList(txs);
   node.syncDb(`${StateVersions.NODE}:${lastBlock.number + 1}`);
-  node.addNewBlock(Block.createBlock(lastBlock.hash, votes, txs, lastBlock.number + 1,
-    lastBlock.epoch + 1, '', node.account.address, validators));
+  node.addNewBlock(Block.create(
+      lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
+      node.account.address, validators));
 }
 
 function waitUntilTxFinalized(servers, txHash) {

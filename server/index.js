@@ -266,6 +266,10 @@ class P2pServer {
           }
       ),
       shardingStatus: this.node.getSharding(),
+      dbStatus: {
+        treeSize: this.node.db.getTreeSize('/'),
+        proof: this.node.db.getProof('/'),
+      },
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
@@ -370,7 +374,31 @@ class P2pServer {
               logger.debug(`Already have the transaction in my tx tracker`);
               break;
             } else if (this.node.initialized) {
-              this.executeAndBroadcastTransaction(data.transaction, MessageTypes.TRANSACTION);
+              const tx = data.transaction;
+              if (Transaction.isBatchTransaction(tx)) {
+                const newTxList = [];
+                for (const subTx of tx.tx_list) {
+                  const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
+                  if (!createdTx) {
+                    logger.info(`Failed to create a transaction for subTx: ` +
+                        `${JSON.stringify(subTx, null, 2)}`);
+                    continue;
+                  }
+                  newTxList.push(createdTx);
+                }
+                if (newTxList.length > 0) {
+                  this.executeAndBroadcastTransaction(
+                      { tx_list: newTxList }, MessageTypes.TRANSACTION);
+                }
+              } else {
+                const createdTx = Transaction.create(tx.tx_body, tx.signature);
+                if (!createdTx) {
+                  logger.info(`Failed to create a transaction for tx: ` +
+                      `${JSON.stringify(tx, null, 2)}`);
+                } else {
+                  this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                }
+              }
             } else {
               // Put the tx in the txPool?
             }
@@ -558,63 +586,57 @@ class P2pServer {
   /**
    * Adds transaction to the transactionPool and executes the operations specified
    * in the transaction.
-   * @param {Object} transactionWithSig An object with a signature and a transaction.
+   * @param {Object} tx An object with a signature and a transaction.
    */
-  // TODO(seo): Remove new Transaction() use cases.
-  executeTransaction(transactionWithSig) {
-    if (!transactionWithSig) return null;
-    const transaction = transactionWithSig instanceof Transaction ?
-        transactionWithSig : new Transaction(transactionWithSig);
-    logger.debug(`EXECUTING: ${JSON.stringify(transaction)}`);
-    if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
-      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
+  executeTransaction(tx) {
+    logger.debug(`EXECUTING: ${JSON.stringify(tx)}`);
+    if (this.node.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.node.bc.lastBlockTimestamp())) {
+      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(tx)}`);
       return null;
     }
-    if (this.node.tp.isNotEligibleTransaction(transaction)) {
-      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
+    if (this.node.tp.isNotEligibleTransaction(tx)) {
+      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(tx)}`);
       return null;
     }
     if (this.node.bc.syncedAfterStartup === false) {
       logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
-          `${JSON.stringify(transaction)}`);
-      this.node.tp.addTransaction(transaction);
+          `${JSON.stringify(tx)}`);
+      this.node.tp.addTransaction(tx);
       return null;
     }
-    const result = this.node.db.executeTransaction(transaction);
+    const result = this.node.db.executeTransaction(tx);
     if (!ChainUtil.transactionFailed(result)) {
-      this.node.tp.addTransaction(transaction);
+      this.node.tp.addTransaction(tx);
     } else {
-      logger.debug(`FAILED TRANSACTION: ${JSON.stringify(transaction)}\t ` +
+      logger.info(`FAILED TRANSACTION: ${JSON.stringify(tx)}\t ` +
           `RESULT:${JSON.stringify(result)}`);
     }
     return result;
   }
 
-  executeAndBroadcastTransaction(transactionWithSig) {
-    if (!transactionWithSig) return null;
-    if (Transaction.isBatchTransaction(transactionWithSig)) {
+  executeAndBroadcastTransaction(tx) {
+    if (!tx) return null;
+    if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
       const txListSucceeded = [];
-      transactionWithSig.tx_list.forEach((tx) => {
-        const transaction = tx instanceof Transaction ? tx : new Transaction(tx);
-        const response = this.executeTransaction(transaction);
+      for (const subTx of tx.tx_list) {
+        const response = this.executeTransaction(subTx);
         resultList.push(response);
         if (!ChainUtil.transactionFailed(response)) {
-          txListSucceeded.push(tx);
+          txListSucceeded.push(subTx);
         }
-      })
+      }
+      logger.debug(`\n BATCH TX RESPONSE: ` + JSON.stringify(resultList));
       if (txListSucceeded.length > 0) {
-        this.broadcastTransaction({tx_list: txListSucceeded});
+        this.broadcastTransaction({ tx_list: txListSucceeded });
       }
 
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction ?
-          transactionWithSig : new Transaction(transactionWithSig);
-      const response = this.executeTransaction(transaction);
-      logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response))
+      const response = this.executeTransaction(tx);
+      logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response));
       if (!ChainUtil.transactionFailed(response)) {
-        this.broadcastTransaction(transaction);
+        this.broadcastTransaction(tx);
       }
 
       return response;
@@ -634,7 +656,6 @@ class P2pServer {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const shardingPathRules = `auth === '${shardOwner}'`;
@@ -724,7 +745,7 @@ class P2pServer {
       nonce: -1
     };
 
-    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, keyBuffer);
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
   }
 

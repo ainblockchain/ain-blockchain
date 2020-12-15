@@ -241,7 +241,7 @@ class Consensus {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
       }
-      if (Consensus.isValidConsensusTx(msg.value) && this.checkVote(msg.value)) {
+      if (Consensus.isValidConsensusTx(msg.value) && this.checkVoteTx(msg.value)) {
         this.server.broadcastConsensusMessage(msg);
       }
     }
@@ -316,11 +316,12 @@ class Consensus {
       return a + b;
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getProof('/')[ProofProperties.PROOF_HASH];
-    const proposalBlock = Block.createBlock(lastBlock.hash, lastVotes, validTransactions,
-        blockNumber, this.state.epoch, stateProofHash, myAddr, validators);
+    const proposalBlock = Block.create(
+        lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch,
+        stateProofHash, myAddr, validators);
 
     let proposalTx;
-    const txOps = {
+    const proposeOp = {
       type: WriteDbOperations.SET_VALUE,
       ref: ChainUtil.formatPath([
         ConsensusDbPaths.CONSENSUS,
@@ -341,25 +342,25 @@ class Consensus {
     }
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
-      proposalTx = this.node.createTransaction({operation: txOps}, false);
+      proposalTx =
+          this.node.createTransaction({ operation: proposeOp, timestamp: Date.now() }, false);
     } else {
-      proposalTx = this.node.createTransaction({
-        operation: {
-          type: WriteDbOperations.SET,
-          op_list: [
-            txOps,
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: ChainUtil.formatPath([
-                ConsensusDbPaths.CONSENSUS,
-                ConsensusDbPaths.NUMBER,
-                blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
-              ]),
-              value: null
-            }
-          ]
-        }
-      }, false);
+      const setOp = {
+        type: WriteDbOperations.SET,
+        op_list: [
+          proposeOp,
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: ChainUtil.formatPath([
+              ConsensusDbPaths.CONSENSUS,
+              ConsensusDbPaths.NUMBER,
+              blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
+            ]),
+            value: null
+          }
+        ]
+      };
+      proposalTx = this.node.createTransaction({ operation: setOp, timestamp: Date.now() }, false);
     }
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
@@ -421,7 +422,7 @@ class Consensus {
       }, 0);
       const depositTxs = Consensus.filterDepositTxs(proposalBlock.transactions);
       const depositSum = depositTxs.reduce((a, b) => {
-        return a + b.operation.value;
+        return a + b.tx_body.operation.value;
       }, 0);
       if (depositSum < majority) {
         logger.info(`[${LOG_HEADER}] We don't have enough deposits yet`)
@@ -431,7 +432,7 @@ class Consensus {
       // TODO(lia): make sure each validator staked only once at this point
       for (const depositTx of depositTxs) {
         const expectedStake = validators[depositTx.address];
-        const actualStake = _.get(depositTx, 'operation.value');
+        const actualStake = _.get(depositTx, 'tx_body.operation.value');
         if (actualStake < expectedStake) {
           logger.error(`[${LOG_HEADER}] Validator ${depositTx.address} didn't stake enough. ` +
               `Expected: ${expectedStake} / Actual: ${actualStake}`);
@@ -536,7 +537,13 @@ class Consensus {
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(proposalTx));
+    const createdTx = Transaction.create(proposalTx.tx_body, proposalTx.signature);
+    if (!createdTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
+          `${JSON.stringify(proposalTx, null, 2)}`);
+      return false;
+    }
+    this.node.tp.addTransaction(createdTx);
     const newVersion = `${StateVersions.TEMP}:${Date.now()}`;
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
@@ -569,9 +576,9 @@ class Consensus {
     return true;
   }
 
-  checkVote(vote) {
-    const LOG_HEADER = 'checkVote';
-    const blockHash = vote.operation.value.block_hash;
+  checkVoteTx(voteTx) {
+    const LOG_HEADER = 'checkVoteTx';
+    const blockHash = voteTx.tx_body.operation.value.block_hash;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     let block;
     if (blockInfo && blockInfo.block) {
@@ -587,16 +594,23 @@ class Consensus {
     }
     const tempDb = this.getSnapDb(block);
     if (!tempDb) {
-      logger.debug(`[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(vote)}`);
+      logger.debug(
+          `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(voteTx)}`);
       return false;
     }
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(vote))) {
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx`);
       return false;
     }
     this.node.destroyDb(tempDb);
-    this.node.tp.addTransaction(new Transaction(vote));
-    this.blockPool.addSeenVote(vote, this.state.epoch);
+    const createdTx = Transaction.create(voteTx.tx_body, voteTx.signature);
+    if (!createdTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a vote: ` +
+          `${JSON.stringify(voteTx, null, 2)}`);
+      return false;
+    }
+    this.node.tp.addTransaction(createdTx);
+    this.blockPool.addSeenVote(voteTx, this.state.epoch);
     return true;
   }
 
@@ -647,22 +661,21 @@ class Consensus {
     if (!myStake) {
       return;
     }
-    const voteTx = this.node.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: ChainUtil.formatPath([
-          ConsensusDbPaths.CONSENSUS,
-          ConsensusDbPaths.NUMBER,
-          block.number,
-          ConsensusDbPaths.VOTE,
-          myAddr
-        ]),
-        value: {
-          [ConsensusDbPaths.BLOCK_HASH]: block.hash,
-          [ConsensusDbPaths.STAKE]: myStake
-        }
+    const operation = {
+      type: WriteDbOperations.SET_VALUE,
+      ref: ChainUtil.formatPath([
+        ConsensusDbPaths.CONSENSUS,
+        ConsensusDbPaths.NUMBER,
+        block.number,
+        ConsensusDbPaths.VOTE,
+        myAddr
+      ]),
+      value: {
+        [ConsensusDbPaths.BLOCK_HASH]: block.hash,
+        [ConsensusDbPaths.STAKE]: myStake
       }
-    }, false);
+    };
+    const voteTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
 
     this.handleConsensusMessage({value: voteTx, type: ConsensusMessageTypes.VOTE});
   }
@@ -818,8 +831,8 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] current epoch: ${this.state.epoch}\nblock hash: ${blockHash}` +
         `\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`);
     const validators = {};
-    blockInfo.votes.forEach((vote) => {
-      validators[vote.address] = _.get(vote, 'operation.value.stake');
+    blockInfo.votes.forEach((voteTx) => {
+      validators[voteTx.address] = _.get(voteTx, 'tx_body.operation.value.stake');
     });
 
     return validators;
@@ -861,18 +874,17 @@ class Consensus {
       return null;
     }
 
-    const depositTx = this.node.createTransaction({
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: ChainUtil.formatPath([
-          PredefinedDbPaths.DEPOSIT_CONSENSUS,
-          this.node.account.address,
-          PushId.generate(),
-          PredefinedDbPaths.DEPOSIT_VALUE
-        ]),
-        value: amount
-      }
-    }, false);
+    const operation = {
+      type: WriteDbOperations.SET_VALUE,
+      ref: ChainUtil.formatPath([
+        PredefinedDbPaths.DEPOSIT_CONSENSUS,
+        this.node.account.address,
+        PushId.generate(),
+        PredefinedDbPaths.DEPOSIT_VALUE
+      ]),
+      value: amount
+    };
+    const depositTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
     return depositTx;
   }
 
@@ -940,11 +952,7 @@ class Consensus {
           nonce: -1
         };
         // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
-        await signAndSendTx(
-            parentChainEndpoint,
-            tx,
-            Buffer.from(this.node.account.private_key, 'hex')
-        );
+        await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
       }
     } catch (e) {
       logger.error(`Failed to report state proof hashes: ${e}`);
@@ -1058,13 +1066,13 @@ class Consensus {
   }
 
   static isValidConsensusTx(tx) {
-    if (!tx.operation) return false;
+    if (!tx.tx_body.operation) return false;
     const consensusTxPrefix = ChainUtil.formatPath(
         [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.NUMBER]);
-    if (tx.operation.type === WriteDbOperations.SET_VALUE) {
-      return tx.operation.ref.startsWith(consensusTxPrefix);
-    } else if (tx.operation.type === WriteDbOperations.SET) {
-      const opList = tx.operation.op_list;
+    if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
+      return tx.tx_body.operation.ref.startsWith(consensusTxPrefix);
+    } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
+      const opList = tx.tx_body.operation.op_list;
       if (!opList || opList.length !== 2) {
         return false;
       }
@@ -1079,9 +1087,9 @@ class Consensus {
 
   static filterDepositTxs(txs) {
     return txs.filter((tx) => {
-      const ref = _.get(tx, 'operation.ref');
+      const ref = _.get(tx, 'tx_body.operation.ref');
       return ref && ref.startsWith(`/${PredefinedDbPaths.DEPOSIT_CONSENSUS}`) &&
-        _.get(tx, 'operation.type') === WriteDbOperations.SET_VALUE;
+        _.get(tx, 'tx_body.operation.type') === WriteDbOperations.SET_VALUE;
     });
   }
 }

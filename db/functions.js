@@ -222,7 +222,7 @@ class Functions {
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
-    if (!this.tp || !this.db.isFinalizedState) {
+    if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
       return;
@@ -233,14 +233,15 @@ class Functions {
     if (!this._validateShardConfig()) {
       return;
     }
-    if (!payloadTx || !payloadTx.transaction || !payloadTx.signature) {
-      logger.debug('  =>> payloadTx is missing required fields');
+    if (!payloadTx || !payloadTx.tx_body || !payloadTx.signature) {
+      logger.info('  =>> payloadTx is missing required fields');
       return;
     }
-    const tx = new Transaction(
-        {transaction: payloadTx.transaction, signature: payloadTx.signature});
-    if (!tx || !Transaction.verifyTransaction(tx) || !this._isTransferTx(tx.operation)) {
-      logger.debug('  =>> Invalid payloadTx');
+    const createdTx = Transaction.create(payloadTx.tx_body, payloadTx.signature);
+    if (!createdTx ||
+        !Transaction.verifyTransaction(createdTx) ||
+        !this._isTransferTx(createdTx.tx_body.operation)) {
+      logger.info('  =>> Invalid payloadTx');
       return;
     }
     // Forward payload tx to parent chain
@@ -256,7 +257,7 @@ class Functions {
       ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
       valueFunction: (success) => !!success,
       is_global: true,
-      transaction: payloadTx.transaction,
+      tx_body: payloadTx.tx_body,
     };
     this.tp.addRemoteTransaction(txHash, action);
   }
@@ -267,7 +268,7 @@ class Functions {
   }
 
   _closeCheckin(value, context) {
-    if (!this.tp || !this.db.isFinalizedState) {
+    if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info('  =>> Skip sending transfer transaction to the shard blockchain');
       return;
@@ -286,7 +287,7 @@ class Functions {
     const checkinId = context.params.checkin_id;
     const valuePath = context.valuePath;
     const checkinPayload = this.db.getValue(this.getCheckinPayloadPathFromValuePath(valuePath));
-    const checkinAmount = _.get(checkinPayload, 'transaction.operation.value', 0);
+    const checkinAmount = _.get(checkinPayload, 'transaction.tx_body.operation.value', 0);
     const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
     const tokenToReceive = checkinAmount * tokenExchRate;
     if (!this._validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
@@ -295,7 +296,6 @@ class Functions {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardingPath = this.db.shardingPath;
     const transferTx = {
       operation: {
@@ -316,7 +316,7 @@ class Functions {
     };
     // Sign and send transferTx to the node itself
     const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
-    signAndSendTx(endpoint, transferTx, keyBuffer);
+    return signAndSendTx(endpoint, transferTx, ownerPrivateKey);
   }
 
   _validateCheckinParams(params) {
@@ -428,13 +428,16 @@ class Functions {
 
   _getCheckinParentFinalizeResultPath(branchPath, txHash) {
     const shardingPath = this.db.getShardingPath();
-    return `${shardingPath}/${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/` +
-        `${txHash}/${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`;
+    return ChainUtil.appendPath(
+        shardingPath,
+        `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/${txHash}/` +
+            `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`);
   }
 
   _getCheckinPayloadPath(branchPath) {
-    return `${branchPath}/${PredefinedDbPaths.CHECKIN_REQUEST}/` +
-        `${PredefinedDbPaths.CHECKIN_PAYLOAD}`;
+    return ChainUtil.appendPath(
+        branchPath,
+        `${PredefinedDbPaths.CHECKIN_REQUEST}/${PredefinedDbPaths.CHECKIN_PAYLOAD}`);
   }
 
   _getFullValuePath(parsedPath) {

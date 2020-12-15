@@ -26,17 +26,14 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
-  jsObjectToStateTree,
-  stateTreeToJsObject,
-  stateTreeVersionsToJsObject,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHashForAllRootPaths,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
+  constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -44,8 +41,8 @@ class DB {
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this, tp);
     this.bc = bc;
+    this.isNodeDb = isNodeDb;
     this.blockNumberSnapshot = blockNumberSnapshot;
-    this.isFinalizedState = isFinalizedState;
   }
 
   initDbStates() {
@@ -64,7 +61,10 @@ class DB {
   }
 
   dumpDbStates() {
-    return stateTreeVersionsToJsObject(this.stateRoot);
+    if (this.stateRoot === null) {
+      return null;
+    }
+    return this.stateRoot.toJsObject(true);
   }
 
   // For testing purpose only.
@@ -167,7 +167,7 @@ class DB {
   }
 
   writeDatabase(fullPath, stateObj) {
-    const stateTree = jsObjectToStateTree(stateObj, this.stateVersion);
+    const stateTree = StateNode.fromJsObject(stateObj, this.stateVersion);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       this.stateRoot = stateTree;
@@ -182,7 +182,7 @@ class DB {
       setProofHashForStateTree(stateTree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForPath(pathToParent, this.stateRoot);
+      updateProofHashForAllRootPaths(pathToParent, this.stateRoot);
     }
   }
 
@@ -209,9 +209,13 @@ class DB {
 
   readDatabase(fullPath) {
     const stateNode = this.getRefForReading(fullPath);
-    return stateTreeToJsObject(stateNode);
+    if (stateNode === null) {
+      return null;
+    }
+    return stateNode.toJsObject();
   }
 
+  // TODO(seo): Support lookups on the finalized version.
   getValue(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
@@ -258,11 +262,11 @@ class DB {
 
   /**
    * Returns a proof of a state node.
-   * @param {string} fullPath full database path to the state node to be proved.
+   * @param {string} treePath full database path to the state node to be proved.
    */
   // TODO(seo): Consider supporting global path for getProof().
-  getProof(fullPath) {
-    const parsedPath = ChainUtil.parsePath(fullPath);
+  getProof(treePath) {
+    const parsedPath = ChainUtil.parsePath(treePath);
     let node = this.stateRoot;
     const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
@@ -279,6 +283,15 @@ class DB {
       }
     }
     return rootProof;
+  }
+
+  getTreeSize(treePath) {
+    const parsedPath = ChainUtil.parsePath(treePath);
+    const stateNode = this.getRefForReading(parsedPath);
+    if (stateNode === null) {
+      return 0;
+    }
+    return stateNode.getTreeSize();
   }
 
   matchFunction(funcPath, isGlobal) {
@@ -547,31 +560,38 @@ class DB {
 
   batch(txList) {
     const resultList = [];
-    txList.forEach((tx) => {
-      const operation = tx.operation;
-      if (!operation) {
-        const message = 'No operation';
+    for (const tx of txList) {
+      const txBody = tx.tx_body;
+      if (!txBody) {
+        const message = 'No tx_body';
         resultList.push({code: 1, error_message: message});
         logger.info(message);
-      } else {
-        switch (operation.type) {
-          case undefined:
-          case WriteDbOperations.SET_VALUE:
-          case WriteDbOperations.INC_VALUE:
-          case WriteDbOperations.DEC_VALUE:
-          case WriteDbOperations.SET_FUNCTION:
-          case WriteDbOperations.SET_RULE:
-          case WriteDbOperations.SET_OWNER:
-          case WriteDbOperations.SET:
-            resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
-            break;
-          default:
-            const message = `Invalid operation type: ${operation.type}`;
-            resultList.push({code: 2, error_message: message});
-            logger.info(message);
-        }
+        continue;
       }
-    });
+      const operation = txBody.operation;
+      if (!operation) {
+        const message = 'No operation';
+        resultList.push({code: 2, error_message: message});
+        logger.info(message);
+        continue;
+      }
+      switch (operation.type) {
+        case undefined:
+        case WriteDbOperations.SET_VALUE:
+        case WriteDbOperations.INC_VALUE:
+        case WriteDbOperations.DEC_VALUE:
+        case WriteDbOperations.SET_FUNCTION:
+        case WriteDbOperations.SET_RULE:
+        case WriteDbOperations.SET_OWNER:
+        case WriteDbOperations.SET:
+          resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
+          break;
+        default:
+          const message = `Invalid operation type: ${operation.type}`;
+          resultList.push({code: 3, error_message: message});
+          logger.info(message);
+      }
+    }
     return resultList;
   }
 
@@ -649,18 +669,24 @@ class DB {
   }
 
   executeTransaction(tx) {
+    const LOG_HEADER = 'executeTransaction';
     if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
-    return this.executeOperation(tx.operation, tx.address, tx.timestamp, tx);
+    if (!tx.tx_body) {
+      logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
+      return false;
+    }
+    return this.executeOperation(tx.tx_body.operation, tx.address, tx.tx_body.timestamp, tx);
   }
 
   executeTransactionList(txList) {
+    const LOG_HEADER = 'executeTransactionList';
     for (const tx of txList) {
       const res = this.executeTransaction(tx);
       if (ChainUtil.transactionFailed(res)) {
         // FIXME: remove the failed transaction from tx pool?
-        logger.error(`[executeTransactionList] tx failed: ${JSON.stringify(tx, null, 2)}` +
+        logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(tx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
         return false;
       }

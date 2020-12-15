@@ -1,157 +1,181 @@
 const rimraf = require('rimraf');
 const chai = require('chai');
+const assert = chai.assert;
 const expect = chai.expect;
+const ainUtil = require('@ainblockchain/ain-util');
 const { BLOCKCHAINS_DIR } = require('../constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
-const {setNodeForTesting, getTransaction} = require('./test-util')
+const {setNodeForTesting, getTransaction} = require('./test-util');
 
 describe('Transaction', () => {
-  let txData, transaction, node;
-  let txDataSkipVerif; let txSkipVerif;
+  let node;
+  let txBody;
+  let tx;
+  let txBodyCustomAddress;
+  let txCustomAddress;
+  let txBodyParentHash;
+  let txParentHash;
+  let txBodyForNode;
+  let txForNode;
 
   beforeEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
-    txData = {
+
+    txBody = {
+      nonce: 10,
+      timestamp: 1568798344000,
+      operation: {
+        type: 'SET_VALUE',
+        ref: 'path',
+        value: 'val',
+      }
+    };
+    tx = Transaction.signTxBody(txBody, node.account.private_key);
+
+    txBodyCustomAddress = {
+      nonce: 10,
+      timestamp: 1568798344000,
+      operation: {
+        type: 'SET_VALUE',
+        ref: 'path',
+        value: 'val',
+      },
+      address: 'abcd',
+    };
+    txCustomAddress = Transaction.signTxBody(txBodyCustomAddress, node.account.private_key);
+
+    txBodyParentHash = {
+      nonce: 10,
+      timestamp: 1568798344000,
+      operation: {
+        type: 'SET_VALUE',
+        ref: 'path',
+        value: 'val',
+      },
+      parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
+    };
+    txParentHash = Transaction.signTxBody(txBodyParentHash, node.account.private_key);
+
+    txBodyForNode = {
       operation: {
         type: 'SET_VALUE',
         ref: 'path',
         value: 'val'
       }
     };
-    transaction = getTransaction(node, txData);
-    txDataSkipVerif = {
-      operation: {
-        type: 'SET_VALUE',
-        ref: 'path',
-        value: 'val',
-      },
-      skip_verif: true,
-      address: 'abcd'
-    };
-    txSkipVerif = getTransaction(node, txDataSkipVerif);
+    txForNode = getTransaction(node, txBodyForNode);
   });
 
   afterEach(() => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  it('assigns nonces correctly', () => {
-    let t;
-    let currentNonce;
-    for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
-      t = getTransaction(node, txData);
-    }
-    expect(t.nonce).to.equal(currentNonce);
+  describe('signTxBody', () => {
+    it('succeed', () => {
+      expect(tx).to.not.equal(null);
+      expect(tx.tx_body.nonce).to.equal(txBody.nonce);
+      expect(tx.tx_body.timestamp).to.equal(txBody.timestamp);
+      expect(tx.hash).to.equal(
+          '0x' + ainUtil.hashTransaction(txBody).toString('hex'));
+      expect(tx.address).to.equal(node.account.address);
+
+      expect(txCustomAddress).to.not.equal(null);
+      expect(txCustomAddress.tx_body.address).to.equal(txBodyCustomAddress.address);
+      expect(txCustomAddress.hash).to.equal(
+          '0x' + ainUtil.hashTransaction(txBodyCustomAddress).toString('hex'));
+      expect(txCustomAddress.address).to.equal(txBodyCustomAddress.address);
+      expect(txCustomAddress.skip_verif).to.equal(true);
+      expect(txCustomAddress.signature).to.equal('');
+
+      expect(txParentHash).to.not.equal(null);
+      expect(txParentHash.tx_body.parent_tx_hash).to.equal(txBodyParentHash.parent_tx_hash);
+      expect(txParentHash.hash).to.equal(
+          '0x' + ainUtil.hashTransaction(txBodyParentHash).toString('hex'));
+      expect(txParentHash.address).to.equal(node.account.address);
+    });
+
+    it('fail with missing timestamp', () => {
+      delete txBody.timestamp;
+      tx2 = Transaction.signTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+    });
+
+    it('fail with missing nonce', () => {
+      delete txBody.nonce;
+      const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+    });
+
+    it('fail with missing operation', () => {
+      delete txBody.operation;
+      const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+    });
   });
 
+  describe('getTransaction', () => {
+    it('construction', () => {
+      expect(txForNode).to.not.equal(null);
+      expect(txForNode.tx_body.operation.type).to.equal(txBodyForNode.operation.type);
+      expect(txForNode.tx_body.operation.ref).to.equal(txBodyForNode.operation.ref);
+      expect(txForNode.tx_body.operation.value).to.equal(txBodyForNode.operation.value);
+      expect(txForNode.hash).to.equal(
+          '0x' + ainUtil.hashTransaction(txForNode.tx_body).toString('hex'));
+      expect(txForNode.address).to.equal(node.account.address);
+    });
 
-  it('validates a valid transaction', () => {
-    expect(Transaction.verifyTransaction(transaction)).to.equal(true);
+    it('assigns nonces correctly', () => {
+      let tx2;
+      let currentNonce;
+      for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
+        delete txBodyForNode.nonce;
+        tx2 = getTransaction(node, txBodyForNode);
+      }
+      expect(tx2).to.not.equal(null);
+      expect(tx2.tx_body.nonce).to.equal(currentNonce);
+    });
   });
 
-  it('validates a valid transaction signed with keys of others', () => {
-    const transaction = new Transaction({
-      signature: '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
-      transaction: {
-        nonce: 0,
-        timestamp: 1568798344000,
-        operation: {
-          type: 'SET_VALUE',
-          ref: 'afan/test',
-          value: 100,
-        },
-      },
+  describe('verifyTransaction', () => {
+    it('succeed to verify a valid transaction', () => {
+      expect(Transaction.verifyTransaction(tx)).to.equal(true);
+      expect(Transaction.verifyTransaction(txCustomAddress)).to.equal(true);
+      expect(Transaction.verifyTransaction(txParentHash)).to.equal(true);
+      expect(Transaction.verifyTransaction(txForNode)).to.equal(true);
     });
-    expect(Transaction.verifyTransaction(transaction)).to.equal(true);
 
-    const transaction_flattend = new Transaction({
-      signature: '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
-      nonce: 0,
-      timestamp: 1568798344000,
-      operation: {
-        type: 'SET_VALUE',
-        ref: 'afan/test',
-        value: 100,
-      },
+    it('failed to verify an invalid transaction with altered operation.type', () => {
+      tx.tx_body.operation.type = 'SET_RULE';
+      expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
-    expect(Transaction.verifyTransaction(transaction_flattend)).to.equal(true);
 
-    const transaction_triggered = new Transaction({
-      signature: '0x0a3770aeb2c758fef3491c9270b18157c3fc4401c411ca18170698ea02deea2edc29a1ae00ea83e64a43d5f3cac21e78713824f42a52f6555948a28ab4bf4f056caf3699871f4c72d0ac2072038dbaa1c6e19690504087afa3c69a0dba97693e1c',
-      transaction: {
-        nonce: 0,
-        timestamp: 1568798344000,
-        operation: {
-          type: 'SET_VALUE',
-          ref: 'afan/test',
-          value: 100,
-        },
-        parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
-      },
+    it('failed to verify an invalid transaction with altered operation.ref', () => {
+      tx.tx_body.operation.ref = 'path2';
+      expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
-    expect(Transaction.verifyTransaction(transaction_triggered)).to.equal(true);
-  });
 
-  it('invalidates an invalid transaction', () => {
-    transaction.operation.ref = 'different_path';
-    expect(Transaction.verifyTransaction(transaction)).to.equal(false);
-  });
-
-  it('invalidates an invalid transaction signed with keys of others', () => {
-    // transaction data has been changed
-    const transaction = new Transaction({
-      signature: '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
-      transaction: {
-        nonce: 0,
-        timestamp: 1568798344000,
-        operation: {
-          type: 'SET_VALUE',
-          ref: 'afan/test',
-          value: 101,
-        },
-      },
+    it('failed to verify an invalid transaction with altered operation.value', () => {
+      tx.tx_body.operation.value = 'val2';
+      expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
-    expect(Transaction.verifyTransaction(transaction)).to.equal(false);
 
-    const transaction_flattend = new Transaction({
-      signature: '0x230beb11b8f20a8629bdc1cf45ba921222c72cfcc5066633c3edd9ff32d72d0ca61aaa70ecc92a12829028439b896c2a8b7b58754a01d37226336e3a0eae877251542df124dbaba39371024dc1fc65bdffc10e0e1982e530b3a9cb8d93a14f6d1b',
-      nonce: 0,
-      timestamp: 1568798344000,
-      operation: {
-        type: 'SET_VALUE',
-        ref: 'afan/test',
-        value: 101,
-      },
+    it('failed to verify an invalid transaction with altered nonce', () => {
+      tx.tx_body.nonce++;
+      expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
-    expect(Transaction.verifyTransaction(transaction_flattend)).to.equal(false);
 
-    const transaction_triggered = new Transaction({
-      signature: '0x0a3770aeb2c758fef3491c9270b18157c3fc4401c411ca18170698ea02deea2edc29a1ae00ea83e64a43d5f3cac21e78713824f42a52f6555948a28ab4bf4f056caf3699871f4c72d0ac2072038dbaa1c6e19690504087afa3c69a0dba97693e1c',
-      transaction: {
-        nonce: 0,
-        timestamp: 1568798344000,
-        operation: {
-          type: 'SET_VALUE',
-          ref: 'afan/test',
-          value: 101,
-        },
-        parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
-      },
+    it('failed to verify an invalid transaction with altered timestamp', () => {
+      tx.tx_body.timestamp++;
+      expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
-    expect(Transaction.verifyTransaction(transaction_triggered)).to.equal(false);
-  });
 
-  it('creates transaction with skip_verif and custom address', () => {
-    expect(txSkipVerif.skip_verif).to.equal(true);
-    expect(txSkipVerif.address).to.equal('abcd');
-    expect(txSkipVerif.signature).to.equal('');
-  });
-
-  it('validates a transaction with skip_verif and custom address', () => {
-    expect(Transaction.verifyTransaction(txSkipVerif)).to.equal(true);
+    it('failed to verify an invalid transaction with altered parent_tx_hash', () => {
+      txParentHash.tx_body.parent_tx_hash = '';
+      expect(Transaction.verifyTransaction(txParentHash)).to.equal(false);
+    });
   });
 });

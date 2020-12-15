@@ -3,7 +3,6 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const { StateVersions } = require('../constants');
-const { stateTreeToJsObject } = require('../db/state-util');
 const StateNode = require('../db/state-node');
 
 describe("state-manager", () => {
@@ -93,13 +92,13 @@ describe("state-manager", () => {
       assert.deepEqual(
           manager.getVersionList(), [StateVersions.EMPTY, 'final version', 'new version']);
       expect(manager.isFinalizedVersion('final version')).to.equal(true);
-      assert.deepEqual(stateTreeToJsObject(manager.getRoot('new version')), 'some value');
+      assert.deepEqual(manager.getRoot('new version').toJsObject(), 'some value');
     });
 
     it("cloneFinalizedVersion", () => {
       const finalizedRoot = manager.getFinalizedRoot();
       finalizedRoot.setValue('final value');
-      assert.deepEqual(stateTreeToJsObject(manager.getFinalizedRoot()), 'final value');
+      assert.deepEqual(manager.getFinalizedRoot().toJsObject(), 'final value');
       expect(manager.numVersions()).to.equal(2);
 
       const clonedRoot = manager.cloneFinalizedVersion('new version');
@@ -112,7 +111,7 @@ describe("state-manager", () => {
       assert.deepEqual(
           manager.getVersionList(), [StateVersions.EMPTY, 'final version', 'new version']);
       expect(manager.isFinalizedVersion('final version')).to.equal(true);
-      assert.deepEqual(stateTreeToJsObject(clonedRoot), 'final value');
+      assert.deepEqual(clonedRoot.toJsObject(), 'final value');
     });
 
     it("cloneVersion", () => {
@@ -135,7 +134,7 @@ describe("state-manager", () => {
           manager.getVersionList(),
           [StateVersions.EMPTY, 'final version', 'new version', 'new new version']);
       expect(manager.isFinalizedVersion('final version')).to.equal(true);
-      assert.deepEqual(stateTreeToJsObject(clonedRoot), 'some value');
+      assert.deepEqual(clonedRoot.toJsObject(), 'some value');
     });
 
     it("deleteVersion w/ non-finalized version", () => {
