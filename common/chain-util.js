@@ -179,18 +179,18 @@ class ChainUtil {
 
   static transactionFailed(response) {
     if (Array.isArray(response)) {
-      response.forEach((res) => {
-        if (ChainUtil.checkForTransactionErrorCode(res)) {
+      for (const result of response) {
+        if (ChainUtil.checkForTransactionErrorCode(result)) {
           return true;
         }
-      });
+      }
       return false;
     }
     return ChainUtil.checkForTransactionErrorCode(response);
   }
 
-  static checkForTransactionErrorCode(response) {
-    return response === null || (response.code !== undefined && response.code !== 0);
+  static checkForTransactionErrorCode(result) {
+    return result === null || (result.code !== undefined && result.code !== 0);
   }
 }
 

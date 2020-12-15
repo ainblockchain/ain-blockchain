@@ -232,13 +232,36 @@ class BlockchainNode {
     return Transaction.signTxBody(txBody, this.account.private_key);
   }
 
-    /**
-   * Adds transaction to the transactionPool and executes the operations specified
-   * in the transaction.
-   * @param {Object} tx An object with a signature and a transaction.
+  /**
+   * Try to executes a transaction on the node database. If it was not successful, all changes are
+   * rolled back from the database states.
+   * @param {Object} tx transaction
    */
-  addToPoolAndExecuteTransaction(tx) {
-    const LOG_HEADER = 'addToPoolAndExecuteTransaction';
+  executeOrRollbackTransaction(tx) {
+    const backupVersion = `${StateVersions.NODE}:${Date.now()}`;
+    const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
+    if (!backupRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`);
+    }
+    const result = this.db.executeTransaction(tx);
+    if (ChainUtil.transactionFailed(result)) {
+      // Changes are rolled back.
+      if (this.stateManager.isFinalizedVersion(this.db.stateVersion)) {
+        this.stateManager.finalizeVersion(backupVersion);
+      }
+      this.db.setStateVersion(backupRoot, backupVersion);
+    } else {
+      this.stateManager.deleteVersion(backupVersion);
+    }
+    return result;
+  }
+
+  /**
+   * Executes a transaction and add it to the transaction pool if the execution was successful.
+   * @param {Object} tx transaction
+   */
+  executeTransactionAndAddToPool(tx) {
+    const LOG_HEADER = 'executeTransactionAndAddToPool';
     logger.debug(`[${LOG_HEADER}] EXECUTING: ${JSON.stringify(tx)}`);
     if (this.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.bc.lastBlockTimestamp())) {
       logger.debug(`[${LOG_HEADER}] TIMED-OUT TRANSACTION: ${JSON.stringify(tx)}`);
@@ -254,12 +277,12 @@ class BlockchainNode {
       this.tp.addTransaction(tx);
       return null;
     }
-    const result = this.db.executeTransaction(tx);
-    if (!ChainUtil.transactionFailed(result)) {
-      this.tp.addTransaction(tx);
-    } else {
+    const result = this.executeOrRollbackTransaction(tx);
+    if (ChainUtil.transactionFailed(result)) {
       logger.info(`[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(tx)}\t ` +
           `RESULT:${JSON.stringify(result)}`);
+    } else {
+      this.tp.addTransaction(tx);
     }
     return result;
   }
