@@ -73,9 +73,9 @@ function getTransaction(node, inputTxBody) {
 
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
-  const finalizedDb = node.createDb(node.stateManager.getFinalizedVersion(),
-      `${StateVersions.BACKUP}:${lastBlock.number + 1}`, node.bc, node.tp, true);
-  finalizedDb.executeTransactionList(txs);
+  const finalDb = node.createDb(node.stateManager.getFinalizedVersion(),
+      `${StateVersions.FINAL}:${lastBlock.number + 1}`, node.bc, node.tp, true);
+  finalDb.executeTransactionList(txs);
   node.syncDb(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
       lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
