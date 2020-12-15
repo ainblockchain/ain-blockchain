@@ -124,13 +124,13 @@ class BlockchainNode {
   cloneAndFinalizeVersion(version, blockNumber) {
     const LOG_HEADER = 'cloneAndFinalizeVersion';
     const oldVersion = this.stateManager.getFinalizedVersion();
-    const backupVersion = `${StateVersions.BACKUP}:${blockNumber}`;
-    const clonedRoot = this.stateManager.cloneVersion(version, backupVersion);
+    const finalVersion = `${StateVersions.FINAL}:${blockNumber}`;
+    const clonedRoot = this.stateManager.cloneVersion(version, finalVersion);
     if (!clonedRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${version}`);
       return;
     }
-    this.stateManager.finalizeVersion(backupVersion);
+    this.stateManager.finalizeVersion(finalVersion);
     if (oldVersion) {
       logger.info(`[${LOG_HEADER}] Deleting previously finalized version: ${oldVersion}`);
       this.stateManager.deleteVersion(oldVersion);
