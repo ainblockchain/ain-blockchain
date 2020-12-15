@@ -17,9 +17,6 @@ const {
 const {
   setNodeForTesting,
 } = require('./test-util');
-const {
-  buildProofHashOfStateNode
-} = require('../db/state-util');
 
 describe("DB initialization", () => {
   let node;
@@ -1333,52 +1330,64 @@ describe("DB operations", () => {
     it("when batch applied successfully", () => {
       assert.deepEqual(node.db.batch([
         {
-          operation: {
-            // Default type: SET_VALUE
-            ref: "test/nested/far/down",
-            value: {
-              "new": 12345
+          tx_body: {
+            operation: {
+              // Default type: SET_VALUE
+              ref: "test/nested/far/down",
+              value: {
+                "new": 12345
+              }
             }
           }
         },
         {
-          operation: {
-            type: "INC_VALUE",
-            ref: "test/increment/value",
-            value: 10
-          }
-        },
-        {
-          operation: {
-            type: "DEC_VALUE",
-            ref: "test/decrement/value",
-            value: 10
-          }
-        },
-        {
-          operation: {
-            type: "SET_FUNCTION",
-            ref: "/test/test_function/some/path",
-            value: {
-              ".function": "other function config"
+          tx_body: {
+            operation: {
+              type: "INC_VALUE",
+              ref: "test/increment/value",
+              value: 10
             }
           }
         },
         {
-          operation: {
-            type: "SET_RULE",
-            ref: "/test/test_rule/some/path",
-            value: {
-              ".write": "other rule config"
+          tx_body: {
+            operation: {
+              type: "DEC_VALUE",
+              ref: "test/decrement/value",
+              value: 10
             }
           }
         },
         {
-          operation: {
-            type: "SET_OWNER",
-            ref: "/test/test_owner/some/path",
-            value: {
-              ".owner": "other owner config"
+          tx_body: {
+            operation: {
+              type: "SET_FUNCTION",
+              ref: "/test/test_function/some/path",
+              value: {
+                ".function": "other function config"
+              }
+            }
+          }
+        },
+        {
+          tx_body: {
+            operation: {
+              type: "SET_RULE",
+              ref: "/test/test_rule/some/path",
+              value: {
+                ".write": "other rule config"
+              }
+            }
+          }
+        },
+        {
+          tx_body: {
+            operation: {
+              type: "SET_OWNER",
+              ref: "/test/test_owner/some/path",
+              value: {
+                ".owner": "other owner config"
+              }
             }
           },
           address: 'abcd'
@@ -1398,29 +1407,31 @@ describe("DB operations", () => {
     it("returning error code and leaving value unchanged if no operation is given", () => {
       assert.deepEqual(node.db.batch([
         {
-          operation: {
-            type: "SET_VALUE",
-            ref: "test/nested/far/down",
-            value: {
-              "new": 12345
+          tx_body: {
+            operation: {
+              type: "SET_VALUE",
+              ref: "test/nested/far/down",
+              value: {
+                "new": 12345
+              }
             }
           }
         },
         {},
         {
-          operation: {
-            type: "DEC_VALUE",
-            ref: "test/decrement/value",
-            value: 10
-          }
+          tx_body: {}
         }
       ]), [
         true,
         {
           "code": 1,
-          "error_message": "No operation"
+          "error_message": "No tx_body"
         },
-        true])
+        {
+          "code": 2,
+          "error_message": "No operation"
+        }
+      ])
       expect(node.db.getValue("test/ai/foo")).to.equal("bar")
     })
 
@@ -1428,32 +1439,38 @@ describe("DB operations", () => {
         () => {
       assert.deepEqual(node.db.batch([
         {
-          operation: {
-            type: "SET_VALUE",
-            ref: "test/nested/far/down",
-            value: {
-              "new": 12345
+          tx_body: {
+            operation: {
+              type: "SET_VALUE",
+              ref: "test/nested/far/down",
+              value: {
+                "new": 12345
+              }
             }
           }
         },
         {
-          operation: {
-            type: "GET_VALUE",
-            ref: "test/ai/foo",
-            value: 10
+          tx_body: {
+            operation: {
+              type: "GET_VALUE",
+              ref: "test/ai/foo",
+              value: 10
+            }
           }
         },
         {
-          operation: {
-            type: "DEC_VALUE",
-            ref: "test/decrement/value",
-            value: 10
+          tx_body: {
+            operation: {
+              type: "DEC_VALUE",
+              ref: "test/decrement/value",
+              value: 10
+            }
           }
         }
       ]), [
         true,
         {
-          "code": 2,
+          "code": 3,
           "error_message": "Invalid operation type: GET_VALUE"
         },
         true])
@@ -1463,26 +1480,32 @@ describe("DB operations", () => {
     it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
       assert.deepEqual(node.db.batch([
         {
-          operation: {
-            type: "SET_VALUE",
-            ref: "test/nested/far/down",
-            value: {
-              "new": 12345
+          tx_body: {
+            operation: {
+              type: "SET_VALUE",
+              ref: "test/nested/far/down",
+              value: {
+                "new": 12345
+              }
             }
           }
         },
         {
-          operation: {
-            type: "INC_VALUE",
-            ref: "test/ai/foo",
-            value: 10
+          tx_body: {
+            operation: {
+              type: "INC_VALUE",
+              ref: "test/ai/foo",
+              value: 10
+            }
           }
         },
         {
-          operation: {
-            type: "DEC_VALUE",
-            ref: "test/decrement/value",
-            value: 10
+          tx_body: {
+            operation: {
+              type: "DEC_VALUE",
+              ref: "test/decrement/value",
+              value: 10
+            }
           }
         }
       ]), [
@@ -1498,26 +1521,32 @@ describe("DB operations", () => {
     it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
       assert.deepEqual(node.db.batch([
         {
-          operation: {
-            type: "SET_VALUE",
-            ref: "test/nested/far/down",
-            value: {
-              "new": 12345
+          tx_body: {
+            operation: {
+              type: "SET_VALUE",
+              ref: "test/nested/far/down",
+              value: {
+                "new": 12345
+              }
             }
           }
         },
         {
-          operation: {
-            type: "DEC_VALUE",
-            ref: "test/ai/foo",
-            value: 10
+          tx_body: {
+            operation: {
+              type: "DEC_VALUE",
+              ref: "test/ai/foo",
+              value: 10
+            }
           }
         },
         {
-          operation: {
-            type: "INC_VALUE",
-            ref: "test/increment/value",
-            value: 10
+          tx_body: {
+            operation: {
+              type: "INC_VALUE",
+              ref: "test/increment/value",
+              value: 10
+            }
           }
         }
       ]), [
@@ -2818,10 +2847,10 @@ describe("Test proof with database", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
-      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
-      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
-      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
+      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
+      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
+      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
+      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
     });
 
     it("checks newly setup proof hash", () => {
@@ -2864,10 +2893,10 @@ describe("Test proof with database", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(buildProofHashOfStateNode(valuesNode));
-      expect(ownersNode.getProofHash()).to.equal(buildProofHashOfStateNode(ownersNode));
-      expect(rulesNode.getProofHash()).to.equal(buildProofHashOfStateNode(rulesNode));
-      expect(functionNode.getProofHash()).to.equal(buildProofHashOfStateNode(functionNode));
+      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
+      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
+      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
+      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
     });
   });
 

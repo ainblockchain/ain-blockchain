@@ -32,7 +32,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
-const VERSION_LIST = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
+const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const {min, max} = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
@@ -100,6 +100,17 @@ app.get('/get_proof', (req, res, next) => {
     .end();
 });
 
+/**
+ * Returns the size of the state tree in the given full database path.
+ */
+app.get('/get_tree_size', (req, res, next) => {
+  const result = node.db.getTreeSize(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/match_function', (req, res, next) => {
   const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
   res.status(200)
@@ -156,7 +167,7 @@ app.post('/get', (req, res, next) => {
 app.post('/set_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -166,7 +177,7 @@ app.post('/set_value', (req, res, next) => {
 app.post('/inc_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -176,7 +187,7 @@ app.post('/inc_value', (req, res, next) => {
 app.post('/dec_value', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -186,7 +197,7 @@ app.post('/dec_value', (req, res, next) => {
 app.post('/set_function', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -196,7 +207,7 @@ app.post('/set_function', (req, res, next) => {
 app.post('/set_rule', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -206,17 +217,18 @@ app.post('/set_rule', (req, res, next) => {
 app.post('/set_owner', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
   const result = createAndExecuteTransaction(
-      createSingleSetTxData(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
+      createSingleSetTxBody(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
     .end();
 });
 
-// TODO(seo): Replace skip_verif with real signature.
+// A custom address can be used as a devel method for bypassing the trasaction verification.
+// TODO(seo): Replace custom address with real signature.
 app.post('/set', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(createMultiSetTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createMultiSetTxBody(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -225,7 +237,7 @@ app.post('/set', (req, res, next) => {
 
 app.post('/batch', (req, res, next) => {
   const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(createBatchTxData(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createBatchTxBody(req.body), isNoncedTransaction);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -290,11 +302,31 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
     .end();
 });
 
+app.get('/protocol_versions', (req, res) => {
+  const result = {
+    version_map: VERSION_MAP,
+    current_version: CURRENT_PROTOCOL_VERSION,
+  };
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/state_versions', (req, res) => {
   const result = {
     version_list: node.stateManager.getVersionList(),
     finalized_version: node.stateManager.getFinalizedVersion(),
   };
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+// TODO(seo): Support for subtree dumping (i.e. with ref path).
+app.get('/dump_finalized_version', (req, res) => {
+  const result = node.dumpFinalizedVersion(true);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -368,7 +400,7 @@ p2pServer.listen();
 
 module.exports = app;
 
-function createSingleSetTxData(input, opType) {
+function createSingleSetTxBody(input, opType) {
   const op = {
     type: opType,
     ref: input.ref,
@@ -377,41 +409,64 @@ function createSingleSetTxData(input, opType) {
   if (input.is_global !== undefined) {
     op.is_global = input.is_global;
   }
-  const txData = {operation: op};
+  const txBody = {operation: op};
   if (input.address !== undefined) {
-    txData.address = input.address;
+    txBody.address = input.address;
   }
   if (input.nonce !== undefined) {
-    txData.nonce = input.nonce;
+    txBody.nonce = input.nonce;
   }
-  return txData;
+  if (input.timestamp !== undefined) {
+    txBody.timestamp = input.timestamp;
+  } else {
+    txBody.timestamp = Date.now();
+  }
+  return txBody;
 }
 
-function createMultiSetTxData(input) {
-  const txData = {
+function createMultiSetTxBody(input) {
+  const txBody = {
     operation: {
       type: WriteDbOperations.SET,
       op_list: input.op_list,
     }
   };
   if (input.address !== undefined) {
-    txData.address = input.address;
+    txBody.address = input.address;
   }
   if (input.nonce !== undefined) {
-    txData.nonce = input.nonce;
+    txBody.nonce = input.nonce;
   }
-  return txData;
+  if (input.timestamp !== undefined) {
+    txBody.timestamp = input.timestamp;
+  } else {
+    txBody.timestamp = Date.now();
+  }
+  return txBody;
 }
 
-function createBatchTxData(input) {
-  return {tx_list: input.tx_list};
+function createBatchTxBody(input) {
+  const txList = [];
+  for (const tx of input.tx_list) {
+    if (tx.timestamp === undefined) {
+      tx.timestamp = Date.now();
+    }
+    txList.push(tx);
+  }
+  return { tx_list: txList };
 }
 
-function createAndExecuteTransaction(txData, isNoncedTransaction) {
-  const transaction = node.createTransaction(txData, isNoncedTransaction);
+function createAndExecuteTransaction(txBody, isNoncedTransaction) {
+  const tx = node.createTransaction(txBody, isNoncedTransaction);
+  if (!tx) {
+    return {
+      tx_hash: null,
+      result: false,
+    };
+  }
   return {
-    tx_hash: transaction.hash,
-    result: p2pServer.executeAndBroadcastTransaction(transaction)
+    tx_hash: tx.hash,
+    result: p2pServer.executeAndBroadcastTransaction(tx)
   };
 }
 
@@ -426,17 +481,17 @@ function isValidVersionMatch(ver) {
 }
 
 function matchVersions(ver) {
-  let match = VERSION_LIST[ver];
+  let match = VERSION_MAP[ver];
   if (isValidVersionMatch(match)) {
     return match;
   }
   const majorVer = semver.major(ver);
   const majorMinorVer = `${majorVer}.${semver.minor(ver)}`;
-  match = VERSION_LIST[majorMinorVer];
+  match = VERSION_MAP[majorMinorVer];
   if (isValidVersionMatch(match)) {
     return match;
   }
-  match = VERSION_LIST[majorVer];
+  match = VERSION_MAP[majorVer];
   if (isValidVersionMatch(match)) {
     return match;
   }

@@ -44,28 +44,28 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9091, P2P_PORT: 6001, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9092, P2P_PORT: 6002, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9093, P2P_PORT: 6003, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
     PORT: 9094, P2P_PORT: 6004, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
@@ -1411,7 +1411,7 @@ describe('Sharding', () => {
         it('ain_sendSignedTransaction with is_global = false', () => {
           const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
-          const transaction = {
+          const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
@@ -1421,8 +1421,8 @@ describe('Sharding', () => {
             nonce: -1
           }
           const signature =
-              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
@@ -1432,7 +1432,7 @@ describe('Sharding', () => {
         it('ain_sendSignedTransaction with is_global = false (explicit)', () => {
           const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
-          const transaction = {
+          const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
@@ -1443,8 +1443,8 @@ describe('Sharding', () => {
             nonce: -1
           }
           const signature =
-              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
@@ -1454,7 +1454,7 @@ describe('Sharding', () => {
         it('ain_sendSignedTransaction with is_global = true', () => {
           const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
-          const transaction = {
+          const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
@@ -1465,8 +1465,8 @@ describe('Sharding', () => {
             nonce: -1
           }
           const signature =
-              ainUtil.ecSignTransaction(transaction, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { transaction, signature,
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });

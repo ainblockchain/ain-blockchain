@@ -41,7 +41,7 @@ class BlockchainNode {
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}}`;
-    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false);
+    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;
     this.initialized = false;
   }
@@ -82,20 +82,20 @@ class BlockchainNode {
   }
 
   createTempDb(baseVersion, newVersion, blockNumberSnapshot) {
-    return this.createDb(baseVersion, newVersion, null, null, false, blockNumberSnapshot);
+    return this.createDb(baseVersion, newVersion, null, null, false, false, blockNumberSnapshot);
   }
 
-  createDb(baseVersion, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
+  createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
     const LOG_HEADER = 'createDb';
     const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
     if (!newRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`)
       return null;
     }
-    if (isFinalizedState) {
+    if (finalizeVersion) {
       this.stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot);
+    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot);
   }
 
   destroyDb(db) {
@@ -139,6 +139,10 @@ class BlockchainNode {
     this.syncDb(nodeVersion)
   }
 
+  dumpFinalizedVersion(withDetails) {
+    return this.stateManager.getFinalizedRoot().toJsObject(withDetails);
+  }
+
   getNonce() {
     const LOG_HEADER = 'getNonce';
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
@@ -147,9 +151,9 @@ class BlockchainNode {
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
       for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
         if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
-            this.account.address) && this.bc.chain[i].transactions[j].nonce > -1) {
+            this.account.address) && this.bc.chain[i].transactions[j].tx_body.nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
-          nonce = this.bc.chain[i].transactions[j].nonce + 1;
+          nonce = this.bc.chain[i].transactions[j].tx_body.nonce + 1;
           break;
         }
       }
@@ -190,23 +194,32 @@ class BlockchainNode {
     *                                        not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(txData, isNoncedTransaction = true) {
-    if (Transaction.isBatchTransaction(txData)) {
+  createTransaction(txBody, isNoncedTransaction = true) {
+    const LOG_HEADER = 'createTransaction';
+    if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
-      txData.tx_list.forEach((subData) => {
-        txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
+      txBody.tx_list.forEach((subTxBody) => {
+        const createdTx = this.createSingleTransaction(subTxBody, isNoncedTransaction);
+        if (createdTx === null) {
+          logger.info(`[${LOG_HEADER}] Failed to create a transaction with subTx: ` +
+              `${JSON.stringify(subTxBody, null, 2)}`);
+        } else {
+          txList.push(createdTx);
+        }
       })
       return {tx_list: txList};
     }
-    return this.createSingleTransaction(txData, isNoncedTransaction);
+    const createdTx = this.createSingleTransaction(txBody, isNoncedTransaction);
+    if (createdTx === null) {
+      logger.info(`[${LOG_HEADER}] Failed to create a transaction with txBody: ` +
+          `${JSON.stringify(txBody, null, 2)}`);
+      return null;
+    }
+    return createdTx;
   }
 
-  createSingleTransaction(txData, isNoncedTransaction) {
-    // Workaround for skip_verif with custom address
-    if (txData.address !== undefined) {
-      txData.skip_verif = true;
-    }
-    if (txData.nonce === undefined) {
+  createSingleTransaction(txBody, isNoncedTransaction) {
+    if (txBody.nonce === undefined) {
       let nonce;
       if (isNoncedTransaction) {
         nonce = this.nonce;
@@ -214,9 +227,9 @@ class BlockchainNode {
       } else {
         nonce = -1;
       }
-      txData.nonce = nonce;
+      txBody.nonce = nonce;
     }
-    return Transaction.newTransaction(this.account.private_key, txData);
+    return Transaction.signTxBody(txBody, this.account.private_key);
   }
 
   addNewBlock(block) {
