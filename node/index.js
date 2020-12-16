@@ -238,7 +238,7 @@ class BlockchainNode {
    * @param {Object} tx transaction
    */
   executeOrRollbackTransaction(tx) {
-    const backupVersion = `${StateVersions.NODE}:${Date.now()}`;
+    const backupVersion = StateManager.createRandomVersion(`${StateVersions.BACKUP}`);
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`);
@@ -301,11 +301,9 @@ class BlockchainNode {
 
   mergeChainSubsection(chainSubsection) {
     const LOG_HEADER = 'mergeChainSubsection';
+    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.createTempDb(
-        this.stateManager.getFinalizedVersion(),
-        `${StateVersions.TEMP}:${Date.now()}`,
-        this.bc.lastBlockNumber()
-      );
+        this.stateManager.getFinalizedVersion(), tempVersion, this.bc.lastBlockNumber());
     if (!this.bc.merge(chainSubsection, tempDb)) {
       logger.error(`[${LOG_HEADER}] Failed to merge chain subsection: ` +
           `${JSON.stringify(chainSubsection, null, 2)}`);

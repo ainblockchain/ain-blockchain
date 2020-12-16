@@ -622,38 +622,157 @@ describe('Blockchain Node', () => {
 
     describe('/set_value', () => {
       it('set_value', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
         const request = {ref: 'test/test_value/some/path', value: "some value"};
         const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value");
+      })
+
+      it('set_value with a failing operation', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {ref: 'some/wrong/path', value: "some other value"};
+        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
+          .body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 2,
+          "error_message": "No .write permission on: some/wrong/path"
+        });
+
+        // Confirm that the original value is not altered.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
       })
     })
 
     describe('/inc_value', () => {
       it('inc_value', () => {
-        const request = {ref: "test/test_value/some/path", value: 10};
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path2')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {ref: "test/test_value/some/path2", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path2')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, 10);
+      })
+
+      it('inc_value with a failing operation', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path2')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {ref: "some/wrong/path2", value: 10};
+        const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
+          .body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 2,
+          "error_message": "No .write permission on: some/wrong/path2"
+        });
+
+        // Confirm that the original value is not altered.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path2')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
       })
     })
 
     describe('/dec_value', () => {
       it('dec_value', () => {
-        const request = {ref: "test/test_value/some/path", value: 10};
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path3')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {ref: "test/test_value/some/path3", value: 10};
         const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path3')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, -10);
+      })
+
+      it('dec_value with a failing operation', () => {
+        // Check the original value.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path3')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {ref: "some/wrong/path3", value: 10};
+        const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
+          .body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 2,
+          "error_message": "No .write permission on: some/wrong/path3"
+        });
+
+        // Confirm that the original value is not altered.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path3')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
       })
     })
 
     describe('/set_function', () => {
       it('set_function', () => {
+        // Check the original function.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_function?ref=test/test_function/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, {
+          ".function": "some function config"
+        });
+
         const request = {
-          ref: "/test/test_function/other/path",
+          ref: "/test/test_function/some/path",
           value: {
             ".function": "some other function config"
           }
@@ -662,13 +781,59 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_function?ref=test/test_function/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, {
+          ".function": "some other function config"
+        });
+      })
+
+      it('set_function with a failing operation', () => {
+        // Check the original function.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_function?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {
+          ref: "/some/wrong/path",
+          value: {
+            ".function": "some other function config"
+          }
+        };
+        const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
+          .body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 3,
+          "error_message": "No write_function permission on: /some/wrong/path"
+        });
+
+        // Confirm that the original function is not altered.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_function?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
       })
     })
 
     describe('/set_rule', () => {
       it('set_rule', () => {
+        // Check the original rule.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, {
+          ".write": "auth === 'abcd'"
+        });
+
         const request = {
-          ref: "/test/test_rule/other/path",
+          ref: "/test/test_rule/some/path",
           value: {
             ".write": "some other rule config"
           }
@@ -677,21 +842,132 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, {
+          ".write": "some other rule config"
+        });
+      })
+
+      it('set_rule with a failing operation', () => {
+        // Check the original rule.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_rule?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {
+          ref: "/some/wrong/path",
+          value: {
+            ".write": "some other rule config"
+          }
+        };
+        const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
+          .body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 3,
+          "error_message": "No write_rule permission on: /some/wrong/path"
+        });
+
+        // Confirm that the original rule is not altered.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_rule?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
       })
     })
 
     describe('/set_owner', () => {
       it('set_owner', () => {
+        // Check the original owner.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_owner?ref=test/test_owner/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": false,
+              }
+            }
+          }
+        });
+
         const request = {
-          ref: "/test/test_owner/other/path",
+          ref: "/test/test_owner/some/path",
           value: {
-            ".owner": "some other owner config"
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false,
+                }
+              }
+            }
           }
         };
         const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_owner?ref=test/test_owner/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false,
+              }
+            }
+          }
+        });
+      })
+
+      it('set_owner with a failing operation', () => {
+        // Check the original owner.
+        const resultBefore = JSON.parse(syncRequest(
+            'GET', server1 + '/get_owner?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = {
+          ref: "/some/wrong/path",
+          value: {
+            ".owner": "some other owner config"
+          }
+        };
+        const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
+          .body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 4,
+          "error_message": "No write_owner or branch_owner permission on: /some/wrong/path"
+        });
+
+        // Confirm that the original owner is not altered.
+        const resultAfter = JSON.parse(syncRequest(
+            'GET', server1 + '/get_owner?ref=some/wrong/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
       })
     })
 
@@ -699,25 +975,25 @@ describe('Blockchain Node', () => {
       it('set', () => {
         // Check the original value.
         const resultBefore = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other100/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some100/path')
             .body.toString('utf-8')).result;
-        expect(resultBefore).to.equal(null);
+        assert.deepEqual(resultBefore, null);
 
         const request = {
           op_list: [
             {
               // Default type: SET_VALUE
-              ref: "test/test_value/other100/path",
+              ref: "test/test_value/some100/path",
               value: "some other100 value",
             },
             {
               type: 'INC_VALUE',
-              ref: "test/test_value/some/path",
+              ref: "test/test_value/some100/path1",
               value: 10
             },
             {
               type: 'DEC_VALUE',
-              ref: "test/test_value/some/path100",
+              ref: "test/test_value/some100/path2",
               value: 10
             },
             {
@@ -749,35 +1025,42 @@ describe('Blockchain Node', () => {
         assert.equal(_.get(body, 'result.result'), true);
 
         // Confirm that the original value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
         const resultAfter = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other100/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some100/path')
             .body.toString('utf-8')).result;
-        expect(resultAfter).to.equal('some other100 value');
+        assert.deepEqual(resultAfter, 'some other100 value');
       })
 
-      it('set with a failed operation', () => {
+      it('set with a failing operation', () => {
         // Check the original value.
         const resultBefore = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other101/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some101/path')
             .body.toString('utf-8')).result;
-        expect(resultBefore).to.equal(null);
+        assert.deepEqual(resultBefore, null);
 
         const request = {
           op_list: [
             {
               // Default type: SET_VALUE
-              ref: "test/test_value/other101/path",
+              ref: "test/test_value/some101/path",
               value: "some other101 value",
             },
             {
               type: 'INC_VALUE',
-              ref: "test/test_value/some/path",
+              ref: "test/test_value/some101/path2",
               value: 10
             },
             {
               type: 'DEC_VALUE',
-              ref: "test/test_value/some/path2",
+              ref: "test/test_value/some101/path3",
               value: 10
+            },
+            {
+              type: 'SET_VALUE',
+              ref: "some/wrong/path",
+              value: "some other101 value",
             },
             {
               type: 'SET_FUNCTION',
@@ -795,7 +1078,7 @@ describe('Blockchain Node', () => {
             },
             {
               type: 'SET_OWNER',
-              ref: "/",  // a path with no permission
+              ref: "/test/test_owner/other101/path",
               value: {
                 ".owner": "some other101 owner config"
               }
@@ -806,15 +1089,15 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 4,
-          "error_message": "No write_owner or branch_owner permission on: /"
+          "code": 2,
+          "error_message": "No .write permission on: some/wrong/path"
         });
 
         // Confirm that the original value is not altered.
         const resultAfter = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other101/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some101/path')
             .body.toString('utf-8')).result;
-        expect(resultAfter).to.equal(null);
+        assert.deepEqual(resultAfter, null);
       })
     })
 
@@ -822,30 +1105,34 @@ describe('Blockchain Node', () => {
       it('batch', () => {
         // Check the original value.
         const resultBefore = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other200/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
-        expect(resultBefore).to.equal(null);
+        assert.deepEqual(resultBefore, null);
+        const resultBefore2 = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some201/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore2, null);
 
         const request = {
           tx_list: [
             {
               operation: {
                 // Default type: SET_VALUE
-                ref: "test/test_value/other200/path",
+                ref: "test/test_value/some200/path",
                 value: "some other200 value",
               }
             },
             {
               operation: {
                 type: 'INC_VALUE',
-                ref: "test/test_value/some/path",
+                ref: "test/test_value/some200/path2",
                 value: 10
               }
             },
             {
               operation: {
                 type: 'DEC_VALUE',
-                ref: "test/test_value/some/path2",
+                ref: "test/test_value/some200/path3",
                 value: 10
               }
             },
@@ -882,17 +1169,17 @@ describe('Blockchain Node', () => {
                 op_list: [
                   {
                     type: "SET_VALUE",
-                    ref: "test/test_value/other201/path",
+                    ref: "test/test_value/some201/path",
                     value: "some other201 value",
                   },
                   {
                     type: 'INC_VALUE',
-                    ref: "test/test_value/some/path",
+                    ref: "test/test_value/some201/path2",
                     value: 5
                   },
                   {
                     type: 'DEC_VALUE',
-                    ref: "test/test_value/some/path2",
+                    ref: "test/test_value/some201/path3",
                     value: 5
                   },
                   {
@@ -935,40 +1222,56 @@ describe('Blockchain Node', () => {
         ]);
 
         // Confirm that the value is set properly.
+        sleep(3);
         const resultAfter = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other200/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
-        expect(resultAfter).to.equal('some other200 value');
+        assert.deepEqual(resultAfter, 'some other200 value');
+        const resultAfter2 = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some201/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter2, 'some other201 value');
       })
 
-      it('batch with a failed transaction', () => {
-        // Check the original value.
+      it('batch with a failing transaction', () => {
+        // Check the original values.
         const resultBefore = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other202/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
-        expect(resultBefore).to.equal(null);
+        assert.deepEqual(resultBefore, null);
+        const resultBefore2 = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some203/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore2, null);
 
         const request = {
           tx_list: [
             {
               operation: {
                 // Default type: SET_VALUE
-                ref: "test/test_value/other202/path",
+                ref: "test/test_value/some202/path",
                 value: "some other202 value",
               }
             },
             {
               operation: {
                 type: 'INC_VALUE',
-                ref: "test/test_value/some/path",
+                ref: "test/test_value/some202/path2",
                 value: 10
               }
             },
             {
               operation: {
                 type: 'DEC_VALUE',
-                ref: "test/test_value/some/path2",
+                ref: "test/test_value/some202/path3",
                 value: 10
+              }
+            },
+            {
+              operation: {
+                type: 'SET_VALUE',
+                ref: "some/wrong/path",
+                value: "some other202 value",
               }
             },
             {
@@ -992,7 +1295,7 @@ describe('Blockchain Node', () => {
             {
               operation: {
                 type: 'SET_OWNER',
-                ref: "/",  // a path with no permission
+                ref: "/test/test_owner/other202/path",
                 value: {
                   ".owner": "some other202 owner config"
                 }
@@ -1004,17 +1307,17 @@ describe('Blockchain Node', () => {
                 op_list: [
                   {
                     type: "SET_VALUE",
-                    ref: "test/test_value/other203/path",
+                    ref: "test/test_value/some203/path",
                     value: "some other203 value",
                   },
                   {
                     type: 'INC_VALUE',
-                    ref: "test/test_value/some/path",
+                    ref: "test/test_value/some203/path2",
                     value: 5
                   },
                   {
                     type: 'DEC_VALUE',
-                    ref: "test/test_value/some/path2",
+                    ref: "test/test_value/some203/path3",
                     value: 5
                   },
                   {
@@ -1050,20 +1353,25 @@ describe('Blockchain Node', () => {
           true,
           true,
           true,
-          true,
-          true,
           {
-            "code": 4,
-            "error_message": "No write_owner or branch_owner permission on: /"
+            "code": 2,
+            "error_message": "No .write permission on: some/wrong/path"
           },
+          true,
+          true,
+          true,
           true,
         ]);
 
         // Confirm that the value is set properly.
         const resultAfter = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=test/test_value/other202/path')
+            'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
-        expect(resultAfter).to.equal('some other202 value');
+        assert.deepEqual(resultAfter, 'some other202 value');
+        const resultAfter2 = JSON.parse(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some203/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter2, 'some other203 value');
       })
     })
 
