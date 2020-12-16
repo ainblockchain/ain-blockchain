@@ -109,10 +109,10 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Already sync'ed.`);
       return false;
     }
-    const clonedRoot = this.stateManager.cloneFinalizedVersion(newVersion);
+    const clonedRoot = this.stateManager.cloneFinalVersion(newVersion);
     if (!clonedRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone finalized state version: ` +
-          `${this.stateManager.getFinalizedVersion()}`);
+          `${this.stateManager.getFinalVersion()}`);
     }
     this.db.setStateVersion(clonedRoot, newVersion);
     if (oldVersion) {
@@ -123,7 +123,7 @@ class BlockchainNode {
 
   cloneAndFinalizeVersion(version, blockNumber) {
     const LOG_HEADER = 'cloneAndFinalizeVersion';
-    const oldVersion = this.stateManager.getFinalizedVersion();
+    const oldVersion = this.stateManager.getFinalVersion();
     const finalVersion = `${StateVersions.FINAL}:${blockNumber}`;
     const clonedRoot = this.stateManager.cloneVersion(version, finalVersion);
     if (!clonedRoot) {
@@ -139,8 +139,8 @@ class BlockchainNode {
     this.syncDb(nodeVersion)
   }
 
-  dumpFinalizedVersion(withDetails) {
-    return this.stateManager.getFinalizedRoot().toJsObject(withDetails);
+  dumpFinalVersion(withDetails) {
+    return this.stateManager.getFinalRoot().toJsObject(withDetails);
   }
 
   getNonce() {
@@ -247,7 +247,7 @@ class BlockchainNode {
     const result = this.db.executeTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
       // Changes are rolled back.
-      if (this.stateManager.isFinalizedVersion(this.db.stateVersion)) {
+      if (this.stateManager.isFinalVersion(this.db.stateVersion)) {
         this.stateManager.finalizeVersion(backupVersion);
       }
       this.db.setStateVersion(backupRoot, backupVersion);
@@ -304,7 +304,7 @@ class BlockchainNode {
     const LOG_HEADER = 'mergeChainSubsection';
     const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.createTempDb(
-        this.stateManager.getFinalizedVersion(), tempVersion, this.bc.lastBlockNumber());
+        this.stateManager.getFinalVersion(), tempVersion, this.bc.lastBlockNumber());
     if (!this.bc.merge(chainSubsection, tempDb)) {
       logger.error(`[${LOG_HEADER}] Failed to merge chain subsection: ` +
           `${JSON.stringify(chainSubsection, null, 2)}`);
