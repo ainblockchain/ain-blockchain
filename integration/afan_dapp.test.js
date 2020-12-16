@@ -7,7 +7,7 @@ const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
 const { BLOCKCHAINS_DIR } = require('../common/constants');
-const { waitUntilTxFinalized } = require('../unittest/test-util');
+const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -86,18 +86,18 @@ describe('aFan DApp Test', () => {
   });
 
   set_value = (ref, value) => {
-    return Promise.resolve(JSON.parse(syncRequest('POST', server1 + '/set_value',
-                           {json: {ref, value}}).body.toString('utf-8')));
+    return Promise.resolve(parseOrLog(syncRequest(
+        'POST', server1 + '/set_value', {json: {ref, value}}).body.toString('utf-8')));
   };
 
   set = (op_list) => {
-    return Promise.resolve(JSON.parse(syncRequest('POST', server2 + '/set',
-                           {json: {op_list}}).body.toString('utf-8')));
+    return Promise.resolve(parseOrLog(syncRequest(
+        'POST', server2 + '/set', {json: {op_list}}).body.toString('utf-8')));
   };
 
   get_value = (ref) => {
-    return Promise.resolve(JSON.parse(syncRequest('GET',
-                           server3 + `/get_value?ref=${ref}`).body.toString('utf-8')));
+    return Promise.resolve(parseOrLog(syncRequest(
+        'GET', server3 + `/get_value?ref=${ref}`).body.toString('utf-8')));
   };
 
   describe('tx_invest', () => {

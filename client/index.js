@@ -469,10 +469,7 @@ function createAndExecuteTransaction(txBody, isNoncedTransaction) {
       result: false,
     };
   }
-  return {
-    tx_hash: tx.hash,
-    result: p2pServer.executeAndBroadcastTransaction(tx)
-  };
+  return p2pServer.executeAndBroadcastTransaction(tx);
 }
 
 function checkIfTransactionShouldBeNonced(input) {
