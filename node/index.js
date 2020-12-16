@@ -242,6 +242,7 @@ class BlockchainNode {
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`);
+      return null;
     }
     const result = this.db.executeTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
