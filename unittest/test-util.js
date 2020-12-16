@@ -87,17 +87,14 @@ function waitUntilTxFinalized(servers, txHash) {
   while (true) {
     if (!unchecked.size) return;
     unchecked.forEach(server => {
-      const txStatus = JSON.parse(
-        syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
-        .body
-        .toString('utf-8')
-      )
-      .result;
+      const txStatus = JSON.parse(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
+          .body
+          .toString('utf-8')).result;
       if (txStatus && txStatus.is_finalized === true) {
         unchecked.delete(server);
       }
     });
-    sleep(1000);
+    sleep(200);
   }
 }
 

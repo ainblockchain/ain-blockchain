@@ -302,6 +302,7 @@ const DefaultValues = {
  * @enum {string}
  */
 const StateVersions = {
+  BACKUP: 'BACKUP',
   EMPTY: 'EMPTY',
   FINAL: 'FINAL',
   NODE: 'NODE',

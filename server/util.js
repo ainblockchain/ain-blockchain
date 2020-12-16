@@ -86,7 +86,7 @@ async function waitUntilTxFinalize(endpoint, txHash) {
     if (confirmed) {
       return true;
     }
-    sleep(1);
+    sleep(200);
   }
 }
 

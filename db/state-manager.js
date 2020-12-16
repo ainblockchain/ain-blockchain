@@ -177,6 +177,14 @@ class StateManager {
     this.finalizedVersion = version;
     return true;
   }
+
+  /**
+   * Returns a random state version with the given previs.
+   * @param {*} versionPrefix state version prefix
+   */
+  static createRandomVersion(versionPrefix) {
+    return `${versionPrefix}:${Date.now()}:${Math.floor(Math.random()*10000)}`;
+  }
 }
 
 module.exports = StateManager;
