@@ -271,7 +271,7 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.stateManager.getFinalizedVersion() :
+        this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
     const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
@@ -462,7 +462,7 @@ class Consensus {
       let prevDb;
       let isSnapDb = false;
       if (prevBlock.number === this.node.bc.lastBlockNumber()) {
-        baseVersion = this.node.stateManager.getFinalizedVersion();
+        baseVersion = this.node.stateManager.getFinalVersion();
       } else if (this.blockPool.hashToDb.has(last_hash)) {
         baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
       } else {
@@ -516,7 +516,7 @@ class Consensus {
     let prevDb;
     let isSnapDb = false;
     if (prevBlock.number === this.node.bc.lastBlockNumber()) {
-      baseVersion = this.node.stateManager.getFinalizedVersion();
+      baseVersion = this.node.stateManager.getFinalVersion();
     } else if (this.blockPool.hashToDb.has(last_hash)) {
       baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
     } else {
@@ -804,7 +804,7 @@ class Consensus {
     if (this.blockPool.hashToDb.has(blockHash)) {
       baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
     } else if (blockHash === lastFinalizedHash) {
-      baseVersion = this.node.stateManager.getFinalizedVersion();
+      baseVersion = this.node.stateManager.getFinalVersion();
     }
     const snapVersion = StateManager.createRandomVersion(`${StateVersions.SNAP}`);
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
