@@ -107,6 +107,20 @@ class ChainUtil {
     }
   }
 
+  static parseJsonOrNull(str) {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(str);
+    } catch (e) {
+      // parsed is not set
+    }
+    return parsed;
+  }
+
+  static isJson(str) {
+    return ChainUtil.parseJsonOrNull(str) !== null;
+  }
+
   static parsePath(path) {
     if (!path) {
       return [];

@@ -60,6 +60,31 @@ describe("ChainUtil", () => {
     })
   })
 
+  describe("parseJsonOrNull", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.parseJsonOrNull(''), null);
+      assert.deepEqual(ChainUtil.parseJsonOrNull('<!DOCTYPE html>'), null);
+    })
+
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.parseJsonOrNull('{}'), {});
+      assert.deepEqual(ChainUtil.parseJsonOrNull(
+          '{ "a": true, "b": { "c": 10 }, "d": "d" }'), { a: true, b: { c: 10 }, d: "d" });
+    })
+  })
+
+  describe("isJson", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.isJson(''), false);
+      assert.deepEqual(ChainUtil.isJson('<!DOCTYPE html>'), false);
+    })
+
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.isJson('{}'), true);
+      assert.deepEqual(ChainUtil.isJson('{ "a": true, "b": { "c": 10 }, "d": "d" }'), true);
+    })
+  })
+
   describe("parsePath", () => {
     it("when abnormal input", () => {
       assert.deepEqual(ChainUtil.parsePath('//a/b/c'), ['a', 'b', 'c']);

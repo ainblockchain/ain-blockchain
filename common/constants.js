@@ -14,8 +14,8 @@ const BLOCKCHAINS_DIR = path.resolve(process.cwd(), 'blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(process.cwd(), 'client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
-const TRANSACTION_POOL_TIME_OUT_MS = moment.duration(1, 'hours').as('milliseconds');
-const TRANSACTION_TRACKER_TIME_OUT_MS = moment.duration(24, 'hours').as('milliseconds');
+const TRANSACTION_POOL_TIMEOUT_MS = moment.duration(1, 'hours').as('milliseconds');
+const TRANSACTION_TRACKER_TIMEOUT_MS = moment.duration(24, 'hours').as('milliseconds');
 // TODO (lia): Check network id in all messages
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
@@ -477,8 +477,8 @@ module.exports = {
   PROTOCOL_VERSIONS,
   DEBUG,
   MAX_TX_BYTES,
-  TRANSACTION_POOL_TIME_OUT_MS,
-  TRANSACTION_TRACKER_TIME_OUT_MS,
+  TRANSACTION_POOL_TIMEOUT_MS,
+  TRANSACTION_TRACKER_TIMEOUT_MS,
   NETWORK_ID,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,

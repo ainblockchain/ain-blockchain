@@ -21,7 +21,7 @@ const {
   ProofProperties,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const { waitUntilTxFinalized } = require('../unittest/test-util');
+const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
@@ -70,7 +70,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 function setUp() {
-  let res = JSON.parse(syncRequest('POST', server2 + '/set', {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
@@ -115,7 +115,7 @@ function setUp() {
 }
 
 function cleanUp() {
-  let res = JSON.parse(syncRequest('POST', server2 + '/set', {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
@@ -183,18 +183,18 @@ describe('Blockchain Node', () => {
 
     describe('/get_value', () => {
       it('get_value', () => {
-        const body = JSON.parse(
-            syncRequest('GET', server1 + '/get_value?ref=test/test_value/some/path')
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: 100});
       })
     })
 
     describe('/get_function', () => {
       it('get_function', () => {
-        const body = JSON.parse(
-            syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest(
+            'GET', server1 + '/get_function?ref=/test/test_function/some/path')
+            .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: {
@@ -206,9 +206,9 @@ describe('Blockchain Node', () => {
 
     describe('/get_rule', () => {
       it('get_rule', () => {
-        const body =
-            JSON.parse(syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
-              .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest(
+            'GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
+            .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: {
@@ -220,9 +220,9 @@ describe('Blockchain Node', () => {
 
     describe('/get_owner', () => {
       it('get_owner', () => {
-        const body = JSON.parse(syncRequest('GET', server1 +
-                                            '/get_owner?ref=/test/test_owner/some/path')
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest(
+            'GET', server1 + '/get_owner?ref=/test/test_owner/some/path')
+            .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: {
@@ -243,28 +243,28 @@ describe('Blockchain Node', () => {
 
     describe('/get_proof', () => {
       it('get_proof', () => {
-        const body = JSON.parse(syncRequest('GET', server1 + '/get_proof?ref=/')
-          .body.toString('utf-8'));
-        const ownersBody = JSON.parse(
-          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.OWNERS_ROOT}`)
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof?ref=/')
             .body.toString('utf-8'));
-        const rulesBody = JSON.parse(
-          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.RULES_ROOT}`)
+        const ownersBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.OWNERS_ROOT}`)
             .body.toString('utf-8'));
-        const valuesBody = JSON.parse(
-          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.VALUES_ROOT}`)
+        const rulesBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.RULES_ROOT}`)
             .body.toString('utf-8'));
-        const functionsBody = JSON.parse(
-          syncRequest('GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
+        const valuesBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.VALUES_ROOT}`)
+            .body.toString('utf-8'));
+        const functionsBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
             .body.toString('utf-8'));
         const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
         const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
         const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
         const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}`
-          + `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}`
-          + `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}`
-          + `functions${HASH_DELIMITER}${functionProof}`;
+        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
+            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
+            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
+            `functions${HASH_DELIMITER}${functionProof}`;
         const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
         assert.deepEqual(body, { code: 0, result: { [ProofProperties.PROOF_HASH]: proofHash } });
       });
@@ -273,8 +273,8 @@ describe('Blockchain Node', () => {
     describe('/match_function', () => {
       it('match_function', () => {
         const ref = "/test/test_function/some/path";
-        const body = JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
+            .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
           "matched_path": {
             "target_path": "/test/test_function/some/path",
@@ -293,8 +293,8 @@ describe('Blockchain Node', () => {
     describe('/match_rule', () => {
       it('match_rule', () => {
         const ref = "/test/test_rule/some/path";
-        const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+            .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
           "matched_path": {
             "target_path": "/test/test_rule/some/path",
@@ -313,8 +313,8 @@ describe('Blockchain Node', () => {
     describe('/match_owner', () => {
       it('match_owner', () => {
         const ref = "/test/test_owner/some/path";
-        const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
+            .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
           "matched_path": {
             "target_path": "/test/test_owner/some/path"
@@ -342,8 +342,8 @@ describe('Blockchain Node', () => {
         const value = "value";
         const address = "abcd";
         const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
-        const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
+            .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: true});
       })
 
@@ -352,8 +352,8 @@ describe('Blockchain Node', () => {
         const value = "value";
         const address = "efgh";
         const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
-        const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
+            .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: false});
       })
     })
@@ -364,8 +364,8 @@ describe('Blockchain Node', () => {
         const address = "abcd";
         const permission = "write_owner";
         const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
-        const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
+            .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: true,
@@ -407,8 +407,8 @@ describe('Blockchain Node', () => {
             }
           ]
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/get', {json: request})
+            .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
           result: [
@@ -623,21 +623,20 @@ describe('Blockchain Node', () => {
     describe('/set_value', () => {
       it('set_value', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
-            'GET', server1 + '/get_value?ref=some/wrong/path')
-            .body.toString('utf-8')).result;
+        const resultBefore = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=some/wrong/path').body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 
         const request = {ref: 'test/test_value/some/path', value: "some value"};
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, "some value");
@@ -645,13 +644,13 @@ describe('Blockchain Node', () => {
 
       it('set_value with a failing operation', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 
         const request = {ref: 'some/wrong/path', value: "some other value"};
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
@@ -660,7 +659,7 @@ describe('Blockchain Node', () => {
         });
 
         // Confirm that the original value is not altered.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
@@ -670,13 +669,13 @@ describe('Blockchain Node', () => {
     describe('/inc_value', () => {
       it('inc_value', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path2')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 
         const request = {ref: "test/test_value/some/path2", value: 10};
-        const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
+        const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
@@ -684,7 +683,7 @@ describe('Blockchain Node', () => {
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path2')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, 10);
@@ -692,13 +691,13 @@ describe('Blockchain Node', () => {
 
       it('inc_value with a failing operation', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path2')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 
         const request = {ref: "some/wrong/path2", value: 10};
-        const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
+        const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
@@ -707,7 +706,7 @@ describe('Blockchain Node', () => {
         });
 
         // Confirm that the original value is not altered.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path2')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
@@ -717,13 +716,13 @@ describe('Blockchain Node', () => {
     describe('/dec_value', () => {
       it('dec_value', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path3')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 
         const request = {ref: "test/test_value/some/path3", value: 10};
-        const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
+        const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
@@ -731,7 +730,7 @@ describe('Blockchain Node', () => {
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path3')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, -10);
@@ -739,13 +738,13 @@ describe('Blockchain Node', () => {
 
       it('dec_value with a failing operation', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path3')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 
         const request = {ref: "some/wrong/path3", value: 10};
-        const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
+        const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
@@ -754,7 +753,7 @@ describe('Blockchain Node', () => {
         });
 
         // Confirm that the original value is not altered.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path3')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
@@ -764,7 +763,7 @@ describe('Blockchain Node', () => {
     describe('/set_function', () => {
       it('set_function', () => {
         // Check the original function.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=test/test_function/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
@@ -777,15 +776,16 @@ describe('Blockchain Node', () => {
             ".function": "some other function config"
           }
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_function', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=test/test_function/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
@@ -795,7 +795,7 @@ describe('Blockchain Node', () => {
 
       it('set_function with a failing operation', () => {
         // Check the original function.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
@@ -806,8 +806,9 @@ describe('Blockchain Node', () => {
             ".function": "some other function config"
           }
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_function', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 3,
@@ -815,7 +816,7 @@ describe('Blockchain Node', () => {
         });
 
         // Confirm that the original function is not altered.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
@@ -825,7 +826,7 @@ describe('Blockchain Node', () => {
     describe('/set_rule', () => {
       it('set_rule', () => {
         // Check the original rule.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
@@ -838,15 +839,15 @@ describe('Blockchain Node', () => {
             ".write": "some other rule config"
           }
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
@@ -856,7 +857,7 @@ describe('Blockchain Node', () => {
 
       it('set_rule with a failing operation', () => {
         // Check the original rule.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
@@ -867,8 +868,8 @@ describe('Blockchain Node', () => {
             ".write": "some other rule config"
           }
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 3,
@@ -876,7 +877,7 @@ describe('Blockchain Node', () => {
         });
 
         // Confirm that the original rule is not altered.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
@@ -886,7 +887,7 @@ describe('Blockchain Node', () => {
     describe('/set_owner', () => {
       it('set_owner', () => {
         // Check the original owner.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=test/test_owner/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
@@ -917,15 +918,15 @@ describe('Blockchain Node', () => {
             }
           }
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=test/test_owner/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
@@ -944,7 +945,7 @@ describe('Blockchain Node', () => {
 
       it('set_owner with a failing operation', () => {
         // Check the original owner.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
@@ -955,8 +956,8 @@ describe('Blockchain Node', () => {
             ".owner": "some other owner config"
           }
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 4,
@@ -964,7 +965,7 @@ describe('Blockchain Node', () => {
         });
 
         // Confirm that the original owner is not altered.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=some/wrong/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
@@ -974,7 +975,7 @@ describe('Blockchain Node', () => {
     describe('/set', () => {
       it('set', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some100/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
@@ -1019,15 +1020,15 @@ describe('Blockchain Node', () => {
             }
           ]
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
 
         // Confirm that the original value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some100/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, 'some other100 value');
@@ -1035,7 +1036,7 @@ describe('Blockchain Node', () => {
 
       it('set with a failing operation', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some101/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
@@ -1085,8 +1086,8 @@ describe('Blockchain Node', () => {
             }
           ]
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
-          .body.toString('utf-8'));
+        const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
+            .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 2,
@@ -1094,7 +1095,7 @@ describe('Blockchain Node', () => {
         });
 
         // Confirm that the original value is not altered.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some101/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
@@ -1104,11 +1105,11 @@ describe('Blockchain Node', () => {
     describe('/batch', () => {
       it('batch', () => {
         // Check the original value.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
-        const resultBefore2 = JSON.parse(syncRequest(
+        const resultBefore2 = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some201/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
@@ -1120,21 +1121,24 @@ describe('Blockchain Node', () => {
                 // Default type: SET_VALUE
                 ref: "test/test_value/some200/path",
                 value: "some other200 value",
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
                 type: 'INC_VALUE',
                 ref: "test/test_value/some200/path2",
                 value: 10
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
                 type: 'DEC_VALUE',
                 ref: "test/test_value/some200/path3",
                 value: 10
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1143,7 +1147,8 @@ describe('Blockchain Node', () => {
                 value: {
                   ".function": "some other200 function config"
                 }
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1152,7 +1157,8 @@ describe('Blockchain Node', () => {
                 value: {
                   ".write": "some other200 rule config"
                 }
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1161,7 +1167,8 @@ describe('Blockchain Node', () => {
                 value: {
                   ".owner": "some other200 owner config"
                 }
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1204,30 +1211,58 @@ describe('Blockchain Node', () => {
                     }
                   }
                 ]
-              }
+              },
+              timestamp: Date.now()
             }
           ]
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
+        const body = parseOrLog(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
+        expect(body).to.not.equal(null);
         expect(body.code).to.equal(0);
-        assert.deepEqual(_.get(body, 'result.result'), [
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
+        expect(Array.isArray(body.result)).to.equal(true);
+        for (let i = 0; i < body.result.length; i++) {
+          const result = body.result[i];
+          result.tx_hash = 'erased';
+        }
+        assert.deepEqual(body.result, [
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          }
         ]);
 
         // Confirm that the value is set properly.
         sleep(3);
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, 'some other200 value');
-        const resultAfter2 = JSON.parse(syncRequest(
+        const resultAfter2 = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some201/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter2, 'some other201 value');
@@ -1235,11 +1270,11 @@ describe('Blockchain Node', () => {
 
       it('batch with a failing transaction', () => {
         // Check the original values.
-        const resultBefore = JSON.parse(syncRequest(
+        const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
-        const resultBefore2 = JSON.parse(syncRequest(
+        const resultBefore2 = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some203/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
@@ -1251,28 +1286,32 @@ describe('Blockchain Node', () => {
                 // Default type: SET_VALUE
                 ref: "test/test_value/some202/path",
                 value: "some other202 value",
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
                 type: 'INC_VALUE',
                 ref: "test/test_value/some202/path2",
                 value: 10
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
                 type: 'DEC_VALUE',
                 ref: "test/test_value/some202/path3",
                 value: 10
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
                 type: 'SET_VALUE',
                 ref: "some/wrong/path",
                 value: "some other202 value",
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1281,7 +1320,8 @@ describe('Blockchain Node', () => {
                 value: {
                   ".function": "some other202 function config"
                 }
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1290,7 +1330,8 @@ describe('Blockchain Node', () => {
                 value: {
                   ".write": "some other202 rule config"
                 }
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1299,7 +1340,8 @@ describe('Blockchain Node', () => {
                 value: {
                   ".owner": "some other202 owner config"
                 }
-              }
+              },
+              timestamp: Date.now()
             },
             {
               operation: {
@@ -1342,33 +1384,64 @@ describe('Blockchain Node', () => {
                     }
                   }
                 ]
-              }
+              },
+              timestamp: Date.now()
             }
           ]
         };
-        const body = JSON.parse(syncRequest('POST', server1 + '/batch', {json: request})
+        const body = parseOrLog(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
+        expect(body).to.not.equal(null);
         expect(body.code).to.equal(0);
-        assert.deepEqual(_.get(body, 'result.result'), [
-          true,
-          true,
-          true,
+        expect(Array.isArray(body.result)).to.equal(true);
+        for (let i = 0; i < body.result.length; i++) {
+          const result = body.result[i];
+          result.tx_hash = 'erased';
+        }
+        assert.deepEqual(body.result, [
           {
-            "code": 2,
-            "error_message": "No .write permission on: some/wrong/path"
+            "result": true,
+            "tx_hash": "erased"
           },
-          true,
-          true,
-          true,
-          true,
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 2,
+              "error_message": "No .write permission on: some/wrong/path"
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          },
+          {
+            "result": true,
+            "tx_hash": "erased"
+          }
         ]);
 
         // Confirm that the value is set properly.
-        const resultAfter = JSON.parse(syncRequest(
+        const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, 'some other202 value');
-        const resultAfter2 = JSON.parse(syncRequest(
+        const resultAfter2 = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some203/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter2, 'some other203 value');
@@ -1395,8 +1468,17 @@ describe('Blockchain Node', () => {
           signature,
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
-            assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
-          })
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          result.tx_hash = 'erased';
+          assert.deepEqual(res.result, {
+            protoVer: CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: true,
+              tx_hash: "erased"
+            }
+          });
+        })
       })
 
       it('rejects a transaction that exceeds the size limit.', () => {
@@ -1412,7 +1494,7 @@ describe('Blockchain Node', () => {
             value: longText,
             ref: `test/test_long_text`
           },
-          timestamp: Date.now() + 100000,
+          timestamp: Date.now(),
           nonce: -1
         };
         const signature =
@@ -1423,8 +1505,10 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            code: 1,
-            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+            result: {
+              code: 1,
+              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+            },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
         })
@@ -1450,8 +1534,10 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            code: 2,
-            message: `Missing properties.`,
+            result: {
+              code: 2,
+              message: `Missing properties.`,
+            },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
         })
@@ -1466,7 +1552,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
           // missing nonce
         };
         const signature =
@@ -1477,8 +1563,311 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            code: 3,
-            message: `Invalid transaction format.`,
+            result: {
+              code: 3,
+              message: `Invalid transaction format.`,
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION
+          });
+        })
+      })
+    })
+
+    describe('ain_sendSignedTransactionBatch', () => {
+      it('accepts a batch transaction', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBodyList = [
+          {
+            operation: {
+              // Default type: SET_VALUE
+              ref: "test/test_value/some300/path",
+              value: "some other300 value",
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          },
+          {
+            operation: {
+              type: 'INC_VALUE',
+              ref: "test/test_value/some300/path2",
+              value: 10
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          },
+          {
+            operation: {
+              type: 'DEC_VALUE',
+              ref: "test/test_value/some300/path3",
+              value: 10
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          },
+          {
+            operation: {
+              type: 'SET_FUNCTION',
+              ref: "/test/test_function/other300/path",
+              value: {
+                ".function": "some other300 function config"
+              }
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          },
+          {
+            operation: {
+              type: 'SET_RULE',
+              ref: "/test/test_rule/other300/path",
+              value: {
+                ".write": "some other300 rule config"
+              }
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          },
+          {
+            operation: {
+              type: 'SET_OWNER',
+              ref: "/test/test_owner/other300/path",
+              value: {
+                ".owner": "some other300 owner config"
+              }
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          },
+          {
+            operation: {
+              type: 'SET',
+              op_list: [
+                {
+                  type: "SET_VALUE",
+                  ref: "test/test_value/some301/path",
+                  value: "some other301 value",
+                },
+                {
+                  type: 'INC_VALUE',
+                  ref: "test/test_value/some301/path2",
+                  value: 5
+                },
+                {
+                  type: 'DEC_VALUE',
+                  ref: "test/test_value/some301/path3",
+                  value: 5
+                },
+                {
+                  type: 'SET_FUNCTION',
+                  ref: "/test/test_function/other301/path",
+                  value: {
+                    ".function": "some other301 function config"
+                  }
+                },
+                {
+                  type: 'SET_RULE',
+                  ref: "/test/test_rule/other301/path",
+                  value: {
+                    ".write": "some other301 rule config"
+                  }
+                },
+                {
+                  type: 'SET_OWNER',
+                  ref: "/test/test_owner/other301/path",
+                  value: {
+                    ".owner": "some other301 owner config"
+                  }
+                }
+              ]
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          }
+        ]
+        const txList = [];
+        for (const txBody of txBodyList) {
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList.push({
+            tx_body: txBody,
+            signature 
+          });
+        }
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const resultList = _.get(res, 'result.result', null);
+          expect(Array.isArray(resultList)).to.equal(true);
+          for (let i = 0; i < resultList.length; i++) {
+            const result = resultList[i];
+            result.tx_hash = 'erased';
+          }
+          assert.deepEqual(res.result, {
+            result: [
+              {
+                result: true,
+                tx_hash: "erased"
+              },
+              {
+                result: true,
+                tx_hash: "erased"
+              },
+              {
+                result: true,
+                tx_hash: "erased"
+              },
+              {
+                result: true,
+                tx_hash: "erased"
+              },
+              {
+                result: true,
+                tx_hash: "erased"
+              },
+              {
+                result: true,
+                tx_hash: "erased"
+              },
+              {
+                result: true,
+                tx_hash: "erased"
+              }
+            ],
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('rejects a batch transaction that exceeds the size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        let longText = '';
+        for (let i = 0; i < MAX_TX_BYTES / 2; i++) {
+          longText += 'a'
+        }
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: longText,
+            ref: `test/test_long_text`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: [
+            {
+              tx_body: txBody,
+              signature,
+            }
+          ],
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const resultList = _.get(res, 'result.result');
+          expect(Array.isArray(resultList)).to.equal(false);
+          assert.deepEqual(res.result, {
+            result: {
+              code: 1,
+              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('rejects a batch transaction of invalid batch transaction format.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: {  // should be an array
+            tx_body: txBody,
+            signature,
+          },
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            result: {
+              code: 2,
+              message: `Invalid batch transaction format.`
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('rejects a batch transaction of missing transaction properties.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: [
+            {
+              tx_body: txBody,
+              // missing signature
+            }
+          ],
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            result: {
+              code: 3,
+              message: `Missing properties of transaction[0].`,
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('rejects a batch transaction of invalid transaction format.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          // missing nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: [
+            {
+              tx_body: txBody,
+              signature,
+            }
+          ],
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            result: {
+              code: 4,
+              message: `Invalid format of transaction[0].`
+            },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
         })
@@ -1505,56 +1894,61 @@ describe('Blockchain Node', () => {
     let depositBalancePath;
 
     before(() => {
-      transferFrom =
-          JSON.parse(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
+      transferFrom = parseOrLog(
+          syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
       transferTo =
-          JSON.parse(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
+          parseOrLog(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
       transferFromBad =
-          JSON.parse(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
+          parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
       transferPath = `/transfer/${transferFrom}/${transferTo}`;
       transferFromBalancePath = `/accounts/${transferFrom}/balance`;
       transferToBalancePath = `/accounts/${transferTo}/balance`;
 
       depositServiceAdmin =
-          JSON.parse(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
+          parseOrLog(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
       depositActor =
-          JSON.parse(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
+          parseOrLog(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
       depositActorBad =
-          JSON.parse(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
+          parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
       depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;
       depositBalancePath = `/accounts/${depositActor}/balance`;
 
-      let res = JSON.parse(syncRequest('POST', server1+'/set_value',
-                  {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}}).body.toString('utf-8')).result;
+      let res = parseOrLog(syncRequest(
+          'POST', server1 + '/set_value',
+          {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}})
+          .body.toString('utf-8')).result;
       waitUntilTxFinalized(SERVERS, res.tx_hash);
-      res = JSON.parse(syncRequest('POST', server1+'/set_value',
-                  {json: {ref: depositBalancePath, value: 1000}}).body.toString('utf-8')).result;
+      res = parseOrLog(syncRequest(
+          'POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}})
+          .body.toString('utf-8')).result;
       waitUntilTxFinalized(SERVERS, res.tx_hash);
-      res = JSON.parse(syncRequest('POST', server1+'/set_value',
-                  {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}}).body.toString('utf-8')).result;
+      res = parseOrLog(syncRequest(
+          'POST', server1+'/set_value',
+          {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}})
+          .body.toString('utf-8')).result;
       waitUntilTxFinalized(SERVERS, res.tx_hash);
     })
 
     describe('_transfer', () => {
       it('transfer', () => {
-        let fromBeforeBalance = JSON.parse(syncRequest('GET',
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        let toBeforeBalance = JSON.parse(syncRequest('GET',
+        let toBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
         assert.equal(body.result.result, true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const fromAfterBalance = JSON.parse(syncRequest('GET',
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        const toAfterBalance = JSON.parse(syncRequest('GET',
+        const toAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
-        const resultCode = JSON.parse(syncRequest('GET',
+        const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferPath}/1/result/code`)
           .body.toString('utf-8')).result
         expect(fromAfterBalance).to.equal(fromBeforeBalance - transferAmount);
@@ -1563,43 +1957,43 @@ describe('Blockchain Node', () => {
       });
 
       it('transfer more than account balance', () => {
-        let fromBeforeBalance = JSON.parse(syncRequest('GET',
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        let toBeforeBalance = JSON.parse(syncRequest('GET',
+        let toBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPath + '/2/value',
           value: fromBeforeBalance + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const fromAfterBalance = JSON.parse(syncRequest('GET',
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        const toAfterBalance = JSON.parse(syncRequest('GET',
+        const toAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
         expect(fromAfterBalance).to.equal(fromBeforeBalance);
         expect(toAfterBalance).to.equal(toBeforeBalance);
       });
 
       it('transfer by another address', () => {
-        let fromBeforeBalance = JSON.parse(syncRequest('GET',
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        let toBeforeBalance = JSON.parse(syncRequest('GET',
+        let toBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server3 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
           ref: transferPath + '/3/value',
           value: transferAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const fromAfterBalance = JSON.parse(syncRequest('GET',
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        const toAfterBalance = JSON.parse(syncRequest('GET',
+        const toAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
         expect(fromAfterBalance).to.equal(fromBeforeBalance);
         expect(toAfterBalance).to.equal(toBeforeBalance);
       });
 
       it('transfer with a duplicated key', () => {
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
@@ -1608,7 +2002,7 @@ describe('Blockchain Node', () => {
 
       it('transfer with same addresses', () => {
         const transferPathSameAddrs = `/transfer/${transferFrom}/${transferFrom}`;
-        const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPathSameAddrs + '/4/value',
           value: transferAmount
         }}).body.toString('utf-8'));
@@ -1618,7 +2012,7 @@ describe('Blockchain Node', () => {
       it('transfer with non-checksum addreess', () => {
         const fromLowerCase = _.toLower(transferFrom);
         const transferPathFromLowerCase = `/transfer/${fromLowerCase}/${transferTo}`;
-        const bodyFromLowerCase = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const bodyFromLowerCase = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPathFromLowerCase + '/101/value',
           value: transferAmount
         }}).body.toString('utf-8'));
@@ -1626,7 +2020,7 @@ describe('Blockchain Node', () => {
 
         const toLowerCase = _.toLower(transferTo);
         const transferPathToLowerCase = `/transfer/${transferFrom}/${toLowerCase}`;
-        const bodyToLowerCase = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const bodyToLowerCase = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPathToLowerCase + '/102/value',
           value: transferAmount
         }}).body.toString('utf-8'));
@@ -1634,7 +2028,7 @@ describe('Blockchain Node', () => {
 
         const fromUpperCase = _.toLower(transferFrom);
         const transferPathFromUpperCase = `/transfer/${fromUpperCase}/${transferTo}`;
-        const bodyFromUpperCase = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const bodyFromUpperCase = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPathFromUpperCase + '/103/value',
           value: transferAmount
         }}).body.toString('utf-8'));
@@ -1642,7 +2036,7 @@ describe('Blockchain Node', () => {
 
         const toUpperCase = _.toLower(transferTo);
         const transferPathToUpperCase = `/transfer/${transferFrom}/${toUpperCase}`;
-        const bodyToUpperCase = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: {
+        const bodyToUpperCase = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPathToUpperCase + '/104/value',
           value: transferAmount
         }}).body.toString('utf-8'));
@@ -1653,7 +2047,7 @@ describe('Blockchain Node', () => {
     describe('_deposit', () => {
       it('setup deposit', () => {
         const configPath = '/deposit_accounts/test_service/config'
-        const body = JSON.parse(syncRequest('POST', server2 + '/set', {json: {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set', {json: {
           op_list: [
             {
               type: 'SET_OWNER',
@@ -1687,22 +2081,22 @@ describe('Blockchain Node', () => {
       })
 
       it('deposit', () => {
-        let beforeBalance = JSON.parse(syncRequest('GET',
+        let beforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPath + '/1/value',
           value: depositAmount
         }}).body.toString('utf-8'));
         assert.equal(body.result.result, true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const depositValue = JSON.parse(syncRequest('GET',
+        const depositValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
-        const depositAccountValue = JSON.parse(syncRequest('GET',
+        const depositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = JSON.parse(syncRequest('GET',
+        const balance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        const resultCode = JSON.parse(syncRequest('GET',
+        const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/result/code`)
           .body.toString('utf-8')).result;
         expect(depositValue).to.equal(depositAmount);
@@ -1712,34 +2106,34 @@ describe('Blockchain Node', () => {
       });
 
       it('deposit more than account balance', () => {
-        const beforeBalance = JSON.parse(syncRequest('GET', server2 +
+        const beforeBalance = parseOrLog(syncRequest('GET', server2 +
             `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8')).result;
-        const beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPath + '/2/value',
           value: beforeBalance + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const depositAccountValue = JSON.parse(syncRequest('GET',
+        const depositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = JSON.parse(syncRequest('GET',
+        const balance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
         expect(depositAccountValue).to.equal(beforeDepositAccountValue);
         expect(balance).to.equal(beforeBalance);
       });
 
       it('deposit by another address', () => {
-        const beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server3 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
           ref: `${depositPath}/3/value`,
           value: depositAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const depositRequest = JSON.parse(syncRequest('GET',
+        const depositRequest = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3`).body.toString('utf-8')).result;
-        const depositAccountValue = JSON.parse(syncRequest('GET',
+        const depositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         expect(depositRequest).to.equal(null);
         expect(depositAccountValue).to.equal(beforeDepositAccountValue);
@@ -1748,7 +2142,7 @@ describe('Blockchain Node', () => {
       // TODO (lia): update test code after fixing timestamp verification logic.
       it('deposit with invalid timestamp', () => {
         const account = ainUtil.createAccount();
-        const res = JSON.parse(syncRequest('POST', server2 + '/set_value', {
+        const res = parseOrLog(syncRequest('POST', server2 + '/set_value', {
           json: {
             ref: `/accounts/${account.address}/balance`,
             value: 1000
@@ -1773,15 +2167,15 @@ describe('Blockchain Node', () => {
           signature,
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then(res => {
-          const depositResult = JSON.parse(syncRequest('GET',
+          const depositResult = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=/deposit/test_service/${account.address}/1/result/code`)
-            .body.toString('utf-8')).result;
+              .body.toString('utf-8')).result;
           expect(depositResult).to.equal(FunctionResultCode.FAILURE);
         });
       });
 
       it('deposit with the same deposit_id', () => {
-        const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPath + '/1/value',
           value: depositAmount
         }}).body.toString('utf-8'));
@@ -1791,7 +2185,7 @@ describe('Blockchain Node', () => {
       it('deposit with non-checksum addreess', () => {
         const addrLowerCase = _.toLower(depositActor);
         const depositPathLowerCase = `/deposit/checksum_addr_test_service/${addrLowerCase}`;
-        const bodyLowerCase = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const bodyLowerCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPathLowerCase + '/101/value',
           value: depositAmount
         }}).body.toString('utf-8'));
@@ -1799,7 +2193,7 @@ describe('Blockchain Node', () => {
 
         const addrUpperCase = _.toUpper(depositActor);
         const depositPathUpperCase = `/deposit/checksum_addr_test_service/${addrUpperCase}`;
-        const bodyUpperCase = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const bodyUpperCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPathUpperCase + '/102/value',
           value: depositAmount
         }}).body.toString('utf-8'));
@@ -1809,50 +2203,50 @@ describe('Blockchain Node', () => {
 
     describe('_withdraw', () => {
       it('withdraw by another address', () => {
-        let beforeBalance = JSON.parse(syncRequest('GET',
+        let beforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${depositActorBad}/balance`)
-          .body.toString('utf-8')).result;
-        let beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+            .body.toString('utf-8')).result;
+        let beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server3 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
           ref: `${withdrawPath}/1/value`,
           value: depositAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const withdrawRequest = JSON.parse(syncRequest('GET',
+        const withdrawRequest = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${withdrawPath}/1`).body.toString('utf-8')).result;
-        const depositAccountValue = JSON.parse(syncRequest('GET',
+        const depositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = JSON.parse(syncRequest('GET',
+        const balance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${depositActorBad}/balance`)
-          .body.toString('utf-8')).result;
+            .body.toString('utf-8')).result;
         expect(withdrawRequest).to.equal(null);
         expect(depositAccountValue).to.equal(beforeDepositAccountValue);
         expect(balance).to.equal(beforeBalance);
       });
 
       it('withdraw more than deposited amount', () => {
-        let beforeBalance = JSON.parse(syncRequest('GET',
+        let beforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        let beforeDepositAccountValue = JSON.parse(syncRequest('GET',
+        let beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${withdrawPath}/1/value`,
           value: beforeDepositAccountValue + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const depositAccountValue = JSON.parse(syncRequest('GET',
+        const depositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = JSON.parse(syncRequest('GET',
+        const balance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
         expect(depositAccountValue).to.equal(beforeDepositAccountValue);
         expect(balance).to.equal(beforeBalance);
       });
 
       it('withdraw', () => {
-        let beforeBalance = JSON.parse(syncRequest('GET',
+        let beforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${withdrawPath}/2/value`,
           value: depositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
@@ -1860,13 +2254,13 @@ describe('Blockchain Node', () => {
         assert.equal(body.result.result, true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const depositAccountValue = JSON.parse(syncRequest('GET',
+        const depositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = JSON.parse(syncRequest('GET',
+        const balance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        const resultCode = JSON.parse(syncRequest('GET',
+        const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${withdrawPath}/2/result/code`)
-          .body.toString('utf-8')).result;
+            .body.toString('utf-8')).result;
         expect(depositAccountValue).to.equal(0);
         expect(balance).to.equal(beforeBalance + depositAmount);
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
@@ -1874,11 +2268,11 @@ describe('Blockchain Node', () => {
 
       it('deposit after withdraw', () => {
         const newDepositAmount = 100;
-        const beforeBalance = JSON.parse(syncRequest('GET', server2 +
+        const beforeBalance = parseOrLog(syncRequest('GET', server2 +
             `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8')).result;
-        const beforeDepositAccountValue = JSON.parse(syncRequest('GET', server2 +
+        const beforeDepositAccountValue = parseOrLog(syncRequest('GET', server2 +
             `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = JSON.parse(syncRequest('POST', server2 + '/set_value', {json: {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPath + '/3/value',
           value: newDepositAmount,
           is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
@@ -1886,15 +2280,15 @@ describe('Blockchain Node', () => {
         assert.equal(body.result.result, true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const depositValue = JSON.parse(syncRequest('GET',
+        const depositValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
-        const depositAccountValue = JSON.parse(syncRequest('GET',
+        const depositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = JSON.parse(syncRequest('GET',
+        const balance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        const resultCode = JSON.parse(syncRequest('GET',
+        const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/result/code`)
-                .body.toString('utf-8')).result;
+            .body.toString('utf-8')).result;
         expect(depositValue).to.equal(newDepositAmount);
         expect(depositAccountValue).to.equal(beforeDepositAccountValue + newDepositAmount);
         expect(balance).to.equal(beforeBalance - newDepositAmount);

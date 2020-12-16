@@ -198,7 +198,7 @@ class BlockchainNode {
     const LOG_HEADER = 'createTransaction';
     if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
-      txBody.tx_list.forEach((subTxBody) => {
+      for (const subTxBody of txBody.tx_list) {
         const createdTx = this.createSingleTransaction(subTxBody, isNoncedTransaction);
         if (createdTx === null) {
           logger.info(`[${LOG_HEADER}] Failed to create a transaction with subTx: ` +
@@ -206,8 +206,8 @@ class BlockchainNode {
         } else {
           txList.push(createdTx);
         }
-      })
-      return {tx_list: txList};
+      }
+      return { tx_list: txList };
     }
     const createdTx = this.createSingleTransaction(txBody, isNoncedTransaction);
     if (createdTx === null) {

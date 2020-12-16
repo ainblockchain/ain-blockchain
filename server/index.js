@@ -584,13 +584,29 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(tx) {
-    if (!tx) return null;
+    if (!tx) {
+      return {
+        tx_hash: null,
+        result: false
+      };
+    }
     if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
       const txListSucceeded = [];
       for (const subTx of tx.tx_list) {
+        if (!subTx) {
+          resultList.push({
+            tx_hash: null,
+            result: false
+          });
+
+          continue;
+        }
         const result = this.node.executeTransactionAndAddToPool(subTx);
-        resultList.push(result);
+        resultList.push({
+          tx_hash: subTx.hash,
+          result
+        });
         if (!ChainUtil.transactionFailed(result)) {
           txListSucceeded.push(subTx);
         }
@@ -608,7 +624,10 @@ class P2pServer {
         this.broadcastTransaction(tx);
       }
 
-      return result;
+      return {
+        tx_hash: tx.hash,
+        result
+      };
     }
   }
 

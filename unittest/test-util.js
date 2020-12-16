@@ -6,6 +6,7 @@ const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const { StateVersions } = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -121,6 +122,14 @@ function waitUntilNodeSyncs(server) {
   }
 }
 
+function parseOrLog(resp) {
+  const parsed = ChainUtil.parseJsonOrNull(resp);
+  if (parsed === null) {
+    console.log(`Not in JSON format: ${resp}`);
+  }
+  return parsed;
+}
+
 module.exports = {
   readConfigFile,
   setNodeForTesting,
@@ -128,5 +137,6 @@ module.exports = {
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
-  waitUntilNodeSyncs
+  waitUntilNodeSyncs,
+  parseOrLog,
 };
