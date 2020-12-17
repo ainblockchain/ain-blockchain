@@ -1,13 +1,13 @@
 /* eslint guard-for-in: "off" */
 const logger = require('../logger')('STATE_UTIL');
 
-const ChainUtil = require('../chain-util');
+const ChainUtil = require('../common/chain-util');
 const {
   FunctionProperties,
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
-} = require('../constants');
+} = require('../common/constants');
 
 function isEmptyNode(node) {
   return node.getIsLeaf() && node.getValue() === null;

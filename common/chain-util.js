@@ -2,7 +2,7 @@ const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
-const RuleUtil = require('./db/rule-util');
+const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
@@ -107,6 +107,20 @@ class ChainUtil {
     }
   }
 
+  static parseJsonOrNull(str) {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(str);
+    } catch (e) {
+      // parsed is not set
+    }
+    return parsed;
+  }
+
+  static isJson(str) {
+    return ChainUtil.parseJsonOrNull(str) !== null;
+  }
+
   static parsePath(path) {
     if (!path) {
       return [];
@@ -179,18 +193,18 @@ class ChainUtil {
 
   static transactionFailed(response) {
     if (Array.isArray(response)) {
-      response.forEach((res) => {
-        if (ChainUtil.checkForTransactionErrorCode(res)) {
+      for (const result of response) {
+        if (ChainUtil.checkForTransactionErrorCode(result)) {
           return true;
         }
-      });
+      }
       return false;
     }
     return ChainUtil.checkForTransactionErrorCode(response);
   }
 
-  static checkForTransactionErrorCode(response) {
-    return response === null || (response.code !== undefined && response.code !== 0);
+  static checkForTransactionErrorCode(result) {
+    return result === null || (result.code !== undefined && result.code !== 0);
   }
 }
 

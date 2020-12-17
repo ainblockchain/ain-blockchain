@@ -4,18 +4,18 @@ const moment = require('moment');
 const {
   ConsensusConsts,
   ConsensusDbPaths,
-} = require('./consensus/constants');
+} = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
 const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
-const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
-const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
+const BLOCKCHAINS_DIR = path.resolve(process.cwd(), 'blockchain/blockchains');
+const PROTOCOL_VERSIONS = path.resolve(process.cwd(), 'client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
-const TRANSACTION_POOL_TIME_OUT_MS = moment.duration(1, 'hours').as('milliseconds');
-const TRANSACTION_TRACKER_TIME_OUT_MS = moment.duration(24, 'hours').as('milliseconds');
+const TRANSACTION_POOL_TIMEOUT_MS = moment.duration(1, 'hours').as('milliseconds');
+const TRANSACTION_TRACKER_TIMEOUT_MS = moment.duration(24, 'hours').as('milliseconds');
 // TODO (lia): Check network id in all messages
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
@@ -304,6 +304,7 @@ const DefaultValues = {
 const StateVersions = {
   BACKUP: 'BACKUP',
   EMPTY: 'EMPTY',
+  FINAL: 'FINAL',
   NODE: 'NODE',
   SNAP: 'SNAP',
   START: 'START',
@@ -330,13 +331,13 @@ const GenesisOwners = getGenesisOwners();
 function getGenesisConfig(filename, additionalEnv) {
   let config = null;
   if (CUSTOM_GENESIS_CONFIGS_DIR) {
-    const configPath = path.resolve(__dirname, CUSTOM_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(process.cwd(), CUSTOM_GENESIS_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     }
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, DEFAULT_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(process.cwd(), DEFAULT_GENESIS_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
@@ -346,7 +347,7 @@ function getGenesisConfig(filename, additionalEnv) {
   if (additionalEnv) {
     const parts = additionalEnv.split(':');
     const dbPath = parts[0];
-    const additionalFilePath = path.resolve(__dirname, parts[1])
+    const additionalFilePath = path.resolve(process.cwd(), parts[1])
     if (fs.existsSync(additionalFilePath)) {
       const additionalConfig = JSON.parse(fs.readFileSync(additionalFilePath));
       ChainUtil.setJsObject(config, [dbPath], additionalConfig);
@@ -476,8 +477,8 @@ module.exports = {
   PROTOCOL_VERSIONS,
   DEBUG,
   MAX_TX_BYTES,
-  TRANSACTION_POOL_TIME_OUT_MS,
-  TRANSACTION_TRACKER_TIME_OUT_MS,
+  TRANSACTION_POOL_TIMEOUT_MS,
+  TRANSACTION_TRACKER_TIMEOUT_MS,
   NETWORK_ID,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
