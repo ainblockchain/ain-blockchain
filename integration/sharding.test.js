@@ -9,6 +9,7 @@ const syncRequest = require('sync-request');
 const jayson = require('jayson/promise');
 const rimraf = require("rimraf")
 const _ = require('lodash');
+const { parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
@@ -22,8 +23,8 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const {
   readConfigFile,
   waitForNewBlocks,
@@ -100,15 +101,15 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 function waitUntilShardReporterStarts() {
   let consensusState;
   while (true) {
-    consensusState = JSON.parse(syncRequest('GET', server1 + '/get_consensus_state')
-      .body.toString('utf-8')).result;
+    consensusState = parseOrLog(syncRequest('GET', server1 + '/get_consensus_state')
+        .body.toString('utf-8')).result;
     if (consensusState && consensusState.status === 1) return;
     sleep(1000);
   }
 }
 
 function setUp() {
-  let res = JSON.parse(syncRequest('POST', server2 + '/set', {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
@@ -153,7 +154,7 @@ function setUp() {
 }
 
 function cleanUp() {
-  let res = JSON.parse(syncRequest('POST', server2 + '/set', {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
@@ -184,7 +185,7 @@ function cleanUp() {
 
 function setUpForSharding(shardingConfig) {
   const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-  const res = JSON.parse(
+  const res = parseOrLog(
     syncRequest(
       'POST',
       parentServer + '/set',
@@ -283,7 +284,7 @@ describe('Sharding', () => {
   describe('Parent chain initialization', () => {
     describe('DB values', () => {
       it('sharding', () => {
-        const body = JSON.parse(syncRequest(
+        const body = parseOrLog(syncRequest(
             'GET', parentServer +
             `/get_value?ref=/sharding/shard/${ainUtil.encode(sharding.sharding_path)}`)
           .body.toString('utf-8'));
@@ -301,7 +302,7 @@ describe('Sharding', () => {
       });
 
       it('.shard', () => {
-        const body = JSON.parse(syncRequest(
+        const body = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard`)
           .body.toString('utf-8'));
         assert.deepEqual(body, {
@@ -318,7 +319,7 @@ describe('Sharding', () => {
 
     describe('DB functions', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest(
+        const body = parseOrLog(syncRequest(
             'GET', parentServer +
             `/get_function?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
@@ -339,7 +340,7 @@ describe('Sharding', () => {
 
     describe('DB rules', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest(
+        const body = parseOrLog(syncRequest(
             'GET', parentServer +
             `/get_rule?ref=${sharding.sharding_path}/` +
             `.shard/proof_hash_map/$block_number/proof_hash`)
@@ -351,7 +352,7 @@ describe('Sharding', () => {
 
     describe('DB owners', () => {
       it('sharding path', () => {
-        const body = JSON.parse(syncRequest(
+        const body = parseOrLog(syncRequest(
             'GET', parentServer + `/get_owner?ref=${sharding.sharding_path}`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
@@ -363,19 +364,19 @@ describe('Sharding', () => {
   describe('Child chain initialization', () => {
     describe('DB values', () => {
       it('token', () => {
-        const body = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=/token')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/token')
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: token});
       })
 
       it('accounts', () => {
-        const body1 = JSON.parse(syncRequest(
+        const body1 = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/accounts/' + accounts.owner.address + '/balance')
           .body.toString('utf-8'));
         expect(body1.code).to.equal(0);
         expect(body1.result).to.be.above(0);
 
-        const body2 = JSON.parse(syncRequest(
+        const body2 = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/accounts/' + accounts.others[0].address + '/balance')
           .body.toString('utf-8'));
         expect(body2.code).to.equal(0);
@@ -383,7 +384,7 @@ describe('Sharding', () => {
       })
 
       it('sharding', () => {
-        const body = JSON.parse(syncRequest('GET', server1 + '/get_value?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/sharding/config')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result.sharding_protocol).to.equal(sharding.sharding_protocol);
@@ -393,7 +394,7 @@ describe('Sharding', () => {
 
     describe('DB functions', () => {
       it('sharding', () => {
-        const body = JSON.parse(syncRequest('GET', server2 + '/get_function?ref=/transfer')
+        const body = parseOrLog(syncRequest('GET', server2 + '/get_function?ref=/transfer')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result).to.not.be.null;
@@ -402,7 +403,7 @@ describe('Sharding', () => {
 
     describe('DB rules', () => {
       it('sharding', () => {
-        const body = JSON.parse(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.write']).to.have.string(accounts.owner.address);
@@ -411,7 +412,7 @@ describe('Sharding', () => {
 
     describe('DB owners', () => {
       it('sharding', () => {
-        const body = JSON.parse(syncRequest('GET', server4 + '/get_owner?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server4 + '/get_owner?ref=/sharding/config')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
@@ -426,7 +427,7 @@ describe('Sharding', () => {
 
     describe('Periodic reports', () => {
       it ('reports proof hashes periodically', () => {
-        const body = JSON.parse(syncRequest(
+        const body = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
@@ -442,7 +443,7 @@ describe('Sharding', () => {
 
     describe('Latest block number', () => {
       it ('updates latest block number', () => {
-        const body = JSON.parse(syncRequest(
+        const body = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
@@ -456,7 +457,7 @@ describe('Sharding', () => {
 
     describe('Shard reporter node restart', () => {
       it('can resume reporting after missing some reports', () => {
-        const reportsBefore = JSON.parse(syncRequest(
+        const reportsBefore = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         console.log(`Shutting down server[0]...`);
@@ -467,7 +468,7 @@ describe('Sharding', () => {
         waitForNewBlocks(server2, sharding.reporting_period);
         waitUntilNodeSyncs(server1);
         waitForNewBlocks(server1, sharding.reporting_period);
-        const reportsAfter = JSON.parse(syncRequest(
+        const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         let blockNumber = 0;
@@ -494,7 +495,7 @@ describe('Sharding', () => {
 
       describe('/get_value', () => {
         it('/get_value with is_global = false', () => {
-          const body = JSON.parse(
+          const body = parseOrLog(
               syncRequest('GET', server1 + '/get_value?ref=/test/test_value/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -502,7 +503,7 @@ describe('Sharding', () => {
         })
 
         it('/get_value with is_global = false (explicit)', () => {
-          const body = JSON.parse(syncRequest(
+          const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_value?ref=/test/test_value/some/path&is_global=false')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -510,7 +511,7 @@ describe('Sharding', () => {
         })
 
         it('/get_value with is_global = true', () => {
-          const body = JSON.parse(syncRequest(
+          const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_value?ref=/apps/afan/test/test_value/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -520,7 +521,7 @@ describe('Sharding', () => {
 
       describe('/get_function', () => {
         it('/get_function with is_global = false', () => {
-          const body = JSON.parse(
+          const body = parseOrLog(
               syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -528,7 +529,7 @@ describe('Sharding', () => {
         })
 
         it('/get_function with is_global = true', () => {
-          const body = JSON.parse(syncRequest(
+          const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_function?ref=/apps/afan/test/test_function/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -538,7 +539,7 @@ describe('Sharding', () => {
 
       describe('/get_rule', () => {
         it('/get_rule with is_global = false', () => {
-          const body = JSON.parse(
+          const body = parseOrLog(
               syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -546,7 +547,7 @@ describe('Sharding', () => {
         })
 
         it('/get_rule with is_global = true', () => {
-          const body = JSON.parse(syncRequest(
+          const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -556,7 +557,7 @@ describe('Sharding', () => {
 
       describe('/get_owner', () => {
         it('/get_owner with is_global = false', () => {
-          const body = JSON.parse(
+          const body = parseOrLog(
               syncRequest('GET', server1 + '/get_owner?ref=/test/test_owner/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -575,7 +576,7 @@ describe('Sharding', () => {
         })
 
         it('/get_owner with is_global = true', () => {
-          const body = JSON.parse(syncRequest(
+          const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_owner?ref=/apps/afan/test/test_owner/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
@@ -597,7 +598,7 @@ describe('Sharding', () => {
       describe('/match_function', () => {
         it('/match_function with is_global = false', () => {
           const ref = "/test/test_function/some/path";
-          const body = JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
+          const body = parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
@@ -616,7 +617,7 @@ describe('Sharding', () => {
         it('/match_function with is_global = true', () => {
           const ref = "/apps/afan/test/test_function/some/path";
           const body =
-              JSON.parse(syncRequest('GET', `${server1}/match_function?ref=${ref}&is_global=true`)
+              parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}&is_global=true`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
@@ -636,7 +637,7 @@ describe('Sharding', () => {
       describe('/match_rule', () => {
         it('/match_rule with is_global = false', () => {
           const ref = "/test/test_rule/some/path";
-          const body = JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+          const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
@@ -655,7 +656,7 @@ describe('Sharding', () => {
         it('/match_rule with is_global = true', () => {
           const ref = "/apps/afan/test/test_rule/some/path";
           const body =
-              JSON.parse(syncRequest('GET', `${server1}/match_rule?ref=${ref}&is_global=true`)
+              parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}&is_global=true`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
@@ -675,8 +676,8 @@ describe('Sharding', () => {
       describe('/match_owner', () => {
         it('/match_owner with is_global = false', () => {
           const ref = "/test/test_owner/some/path";
-          const body = JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
+              .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/test/test_owner/some/path"
@@ -700,8 +701,8 @@ describe('Sharding', () => {
         it('/match_owner with is_global = true', () => {
           const ref = "/apps/afan/test/test_owner/some/path";
           const body =
-              JSON.parse(syncRequest('GET', `${server1}/match_owner?ref=${ref}&is_global=true`)
-            .body.toString('utf-8'));
+              parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}&is_global=true`)
+              .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
               "target_path": "/apps/afan/test/test_owner/some/path"
@@ -729,8 +730,8 @@ describe('Sharding', () => {
           const value = "value";
           const address = "abcd";
           const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
-          const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: true});
         })
 
@@ -740,8 +741,8 @@ describe('Sharding', () => {
           const address = "abcd";
           const is_global = true;
           const request = { ref, value, address, is_global, protoVer: CURRENT_PROTOCOL_VERSION };
-          const body = JSON.parse(syncRequest('POST', server1 + '/eval_rule', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: true});
         })
       })
@@ -752,8 +753,8 @@ describe('Sharding', () => {
           const address = "abcd";
           const permission = "write_owner";
           const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
-          const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body, {
             code: 0,
             result: true,
@@ -765,9 +766,10 @@ describe('Sharding', () => {
           const address = "abcd";
           const permission = "write_owner";
           const is_global = true;
-          const request = { ref, permission, address, is_global, protoVer: CURRENT_PROTOCOL_VERSION };
-          const body = JSON.parse(syncRequest('POST', server1 + '/eval_owner', {json: request})
-            .body.toString('utf-8'));
+          const request =
+              { ref, permission, address, is_global, protoVer: CURRENT_PROTOCOL_VERSION };
+          const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body, {
             code: 0,
             result: true,
@@ -809,8 +811,8 @@ describe('Sharding', () => {
               }
             ]
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/get', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body, {
             code: 0,
             result: [
@@ -878,8 +880,8 @@ describe('Sharding', () => {
               }
             ]
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/get', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/get', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body, {
             code: 0,
             result: [
@@ -1153,16 +1155,16 @@ describe('Sharding', () => {
       describe('/set_value', () => {
         it('/set_value with is_global = false', () => {
           const request = {ref: 'test/test_value/some/path', value: "some value"};
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
           assert.equal(body.code, 0);
         })
 
         it('/set_value with is_global = false (explicit)', () => {
           const request = {ref: 'test/test_value/some/path', value: "some value", is_global: false};
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1171,8 +1173,8 @@ describe('Sharding', () => {
           const request = {
             ref: 'apps/afan/test/test_value/some/path', value: "some value", is_global: true
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_value', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1181,8 +1183,8 @@ describe('Sharding', () => {
       describe('/inc_value', () => {
         it('/inc_value with is_global = false', () => {
           const request = {ref: 'test/test_value/some/path', value: 10};
-          const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1191,8 +1193,8 @@ describe('Sharding', () => {
           const request = {
             ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/inc_value', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1201,8 +1203,8 @@ describe('Sharding', () => {
       describe('/dec_value', () => {
         it('/dec_value with is_global = false', () => {
           const request = {ref: 'test/test_value/some/path', value: 10};
-          const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1211,8 +1213,8 @@ describe('Sharding', () => {
           const request = {
             ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/dec_value', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
+              .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1226,8 +1228,8 @@ describe('Sharding', () => {
               ".function": "some other function config"
             }
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1240,8 +1242,8 @@ describe('Sharding', () => {
             },
             is_global: true,
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_function', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1255,8 +1257,8 @@ describe('Sharding', () => {
               ".write": "some other rule config"
             }
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1269,8 +1271,8 @@ describe('Sharding', () => {
             },
             is_global: true,
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_rule', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1284,8 +1286,8 @@ describe('Sharding', () => {
               ".owner": "some other owner config"
             }
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1298,8 +1300,8 @@ describe('Sharding', () => {
             },
             is_global: true,
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set_owner', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1347,8 +1349,8 @@ describe('Sharding', () => {
               }
             ]
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1400,8 +1402,8 @@ describe('Sharding', () => {
               }
             ]
           };
-          const body = JSON.parse(syncRequest('POST', server1 + '/set', {json: request})
-            .body.toString('utf-8'));
+          const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
+              .body.toString('utf-8'));
           assert.equal(body.result.result, true);
           assert.equal(body.code, 0);
         })
@@ -1422,10 +1424,19 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-              protoVer: CURRENT_PROTOCOL_VERSION })
+          return client.request('ain_sendSignedTransaction',
+              { tx_body: txBody, signature, protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
-              assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
+              const result = _.get(res, 'result.result', null);
+              expect(result).to.not.equal(null);
+              result.tx_hash = 'erased';
+              assert.deepEqual(res.result, {
+                protoVer: CURRENT_PROTOCOL_VERSION,
+                result: {
+                  result: true,
+                  tx_hash: "erased"
+                }
+              });
             })
         })
 
@@ -1447,7 +1458,16 @@ describe('Sharding', () => {
           return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
-              assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
+              const result = _.get(res, 'result.result', null);
+              expect(result).to.not.equal(null);
+              result.tx_hash = 'erased';
+              assert.deepEqual(res.result, {
+                protoVer: CURRENT_PROTOCOL_VERSION,
+                result: {
+                  result: true,
+                  tx_hash: "erased"
+                }
+              });
             })
         })
 
@@ -1469,8 +1489,147 @@ describe('Sharding', () => {
           return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
               protoVer: CURRENT_PROTOCOL_VERSION })
             .then((res) => {
-              assert.deepEqual(res.result, { "protoVer": CURRENT_PROTOCOL_VERSION, "result": true });
+              const result = _.get(res, 'result.result', null);
+              expect(result).to.not.equal(null);
+              result.tx_hash = 'erased';
+              assert.deepEqual(res.result, {
+                protoVer: CURRENT_PROTOCOL_VERSION,
+                result: {
+                  result: true,
+                  tx_hash: "erased"
+                }
+              });
             })
+        })
+      })
+
+      describe('ain_sendSignedTransactionBatch', () => {
+        it('ain_sendSignedTransactionBatch with is_global = false', () => {
+          const account = ainUtil.createAccount();
+          const client = jayson.client.http(server1 + '/json-rpc');
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value',
+              ref: `test/test_value/some/path`
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          }
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransactionBatch', {
+            tx_list: [
+              {
+                tx_body: txBody,
+                signature
+              }
+            ],
+            signature,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          }).then((res) => {
+            const resultList = _.get(res, 'result.result', null);
+            expect(Array.isArray(resultList)).to.equal(true);
+            for (let i = 0; i < resultList.length; i++) {
+              const result = resultList[i];
+              result.tx_hash = 'erased';
+            }
+            assert.deepEqual(res.result, {
+              protoVer: CURRENT_PROTOCOL_VERSION,
+              result: [
+                {
+                  result: true,
+                  tx_hash: "erased"
+                },
+              ]
+            });
+          })
+        })
+
+        it('ain_sendSignedTransactionBatch with is_global = false (explicit)', () => {
+          const account = ainUtil.createAccount();
+          const client = jayson.client.http(server1 + '/json-rpc');
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value',
+              ref: `test/test_value/some/path`,
+              is_global: false,
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          }
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransactionBatch', {
+            tx_list: [
+              {
+                tx_body: txBody,
+                signature
+              }
+            ],
+            signature,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          }).then((res) => {
+            const resultList = _.get(res, 'result.result', null);
+            expect(Array.isArray(resultList)).to.equal(true);
+            for (let i = 0; i < resultList.length; i++) {
+              const result = resultList[i];
+              result.tx_hash = 'erased';
+            }
+            assert.deepEqual(res.result, {
+              protoVer: CURRENT_PROTOCOL_VERSION,
+              result: [
+                {
+                  result: true,
+                  tx_hash: "erased"
+                },
+              ]
+            });
+          })
+        })
+
+        it('ain_sendSignedTransactionBatch with is_global = true', () => {
+          const account = ainUtil.createAccount();
+          const client = jayson.client.http(server1 + '/json-rpc');
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value',
+              ref: `apps/afan/test/test_value/some/path`,
+              is_global: true,
+            },
+            timestamp: Date.now(),
+            nonce: -1
+          }
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransactionBatch', {
+            tx_list: [
+              {
+                tx_body: txBody,
+                signature
+              }
+            ],
+            signature,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          }).then((res) => {
+            const resultList = _.get(res, 'result.result', null);
+            expect(Array.isArray(resultList)).to.equal(true);
+            for (let i = 0; i < resultList.length; i++) {
+              const result = resultList[i];
+              result.tx_hash = 'erased';
+            }
+            assert.deepEqual(res.result, {
+              protoVer: CURRENT_PROTOCOL_VERSION,
+              result: [
+                {
+                  result: true,
+                  tx_hash: "erased"
+                },
+              ]
+            });
+          });
         })
       })
     })
@@ -1482,7 +1641,7 @@ describe('Sharding', () => {
     let shardOwner, shardReporter, shardingPath, shardingConfig;
 
     before(() => {
-      parentAddr = JSON.parse(syncRequest(
+      parentAddr = parseOrLog(syncRequest(
           'GET', parentServer + '/get_address').body.toString('utf-8')).result;
 
       shardOwner = parentAddr;
@@ -1508,11 +1667,11 @@ describe('Sharding', () => {
           ref: `${shardingPath}/5/proof_hash`,
           value: "0xPROOF_HASH_5"
         }
-        const shardReportRes = JSON.parse(syncRequest(
+        const shardReportRes = parseOrLog(syncRequest(
             'POST', parentServer + '/set_value', { json: reportVal }).body.toString('utf-8')
         ).result;
         waitUntilTxFinalized(PARENT_SERVERS, shardReportRes.tx_hash);
-        const shardingPathRes = JSON.parse(syncRequest(
+        const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
         assert.deepEqual(shardingPathRes, {
@@ -1536,11 +1695,11 @@ describe('Sharding', () => {
             }
           ]
         }
-        const shardReportRes = JSON.parse(syncRequest(
+        const shardReportRes = parseOrLog(syncRequest(
             'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
         ).result;
         waitUntilTxFinalized(PARENT_SERVERS, shardReportRes.tx_hash);
-        const shardingPathRes = JSON.parse(syncRequest(
+        const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
         assert.deepEqual(shardingPathRes, {

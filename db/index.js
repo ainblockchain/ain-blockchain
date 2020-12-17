@@ -11,8 +11,8 @@ const {
   FeatureFlags,
   LIGHTWEIGHT,
   buildOwnerPermissions,
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {
@@ -515,7 +515,6 @@ class DB {
     return true;
   }
 
-  // TODO(seo): Make this operation atomic, i.e., rolled back when it fails.
   set(opList, address, timestamp, transaction) {
     let ret = true;
     for (let i = 0; i < opList.length; i++) {

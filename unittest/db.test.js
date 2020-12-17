@@ -13,7 +13,7 @@ const {
   GenesisRules,
   GenesisOwners,
   ProofProperties,
-} = require('../constants')
+} = require('../common/constants')
 const {
   setNodeForTesting,
 } = require('./test-util');

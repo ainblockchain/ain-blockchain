@@ -1,8 +1,8 @@
 const get = require('lodash/get');
 const logger = require('../logger')('BLOCK_POOL');
 const {ConsensusConsts} = require('./constants');
-const {WriteDbOperations} = require('../constants');
-const ChainUtil = require('../chain-util');
+const {WriteDbOperations} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 
 class BlockPool {
   constructor(node, lastBlock) {

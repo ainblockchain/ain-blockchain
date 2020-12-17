@@ -8,13 +8,13 @@ const {
 const {
   FeatureFlags,
   StateVersions,
-} = require('../constants');
+} = require('../common/constants');
 
 class StateManager {
   constructor() {
     this.rootMap = new Map();
     this._setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
-    this.finalizedVersion = null;
+    this.finalVersion = null;
   }
 
   /**
@@ -27,22 +27,22 @@ class StateManager {
   /**
    * Returns the finalized version.
    */
-  getFinalizedVersion() {
-    return this.finalizedVersion;
+  getFinalVersion() {
+    return this.finalVersion;
   }
 
   /**
    * Returns whether the given version is finalized.
    */
-  isFinalizedVersion(version) {
-    return this.getFinalizedVersion() === version;
+  isFinalVersion(version) {
+    return this.getFinalVersion() === version;
   }
 
   /**
    * Returns the finalized state root.
    */
-  getFinalizedRoot() {
-    return this.getRoot(this.finalizedVersion);
+  getFinalRoot() {
+    return this.getRoot(this.finalVersion);
   }
 
   /**
@@ -87,8 +87,8 @@ class StateManager {
    * 
    * @param {string} newVersion 
    */
-  cloneFinalizedVersion(newVersion) {
-    return this.cloneVersion(this.getFinalizedVersion(), newVersion);
+  cloneFinalVersion(newVersion) {
+    return this.cloneVersion(this.getFinalVersion(), newVersion);
   }
 
   /**
@@ -136,7 +136,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return null;
     }
-    if (version === this.finalizedVersion) {
+    if (version === this.finalVersion) {
       logger.error(`[${LOG_HEADER}] Not allowed to delete finalized version: ${version}`);
       return null;
     }
@@ -165,8 +165,8 @@ class StateManager {
     const LOG_HEADER = 'finalizeVersion';
     logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
         `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
-        ` with latest finalized version: '${this.getFinalizedVersion()}'`);
-    if (version === this.finalizedVersion) {
+        ` with latest finalized version: '${this.getFinalVersion()}'`);
+    if (version === this.finalVersion) {
       logger.error(`[${LOG_HEADER}] Already finalized version: ${version}`);
       return false;
     }
@@ -174,8 +174,16 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return false;
     }
-    this.finalizedVersion = version;
+    this.finalVersion = version;
     return true;
+  }
+
+  /**
+   * Returns a random state version with the given version prefix.
+   * @param {string} versionPrefix version prefix
+   */
+  static createRandomVersion(versionPrefix) {
+    return `${versionPrefix}:${Date.now()}:${Math.floor(Math.random() * 10000)}`;
   }
 }
 

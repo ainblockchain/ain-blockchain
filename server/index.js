@@ -35,8 +35,8 @@ const {
   NativeFunctionIds,
   buildOwnerPermissions,
   LIGHTWEIGHT
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const {sendTxAndWaitForFinalization} = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -583,63 +583,51 @@ class P2pServer {
     });
   }
 
-  /**
-   * Adds transaction to the transactionPool and executes the operations specified
-   * in the transaction.
-   * @param {Object} tx An object with a signature and a transaction.
-   */
-  executeTransaction(tx) {
-    logger.debug(`EXECUTING: ${JSON.stringify(tx)}`);
-    if (this.node.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.node.bc.lastBlockTimestamp())) {
-      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(tx)}`);
-      return null;
-    }
-    if (this.node.tp.isNotEligibleTransaction(tx)) {
-      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(tx)}`);
-      return null;
-    }
-    if (this.node.bc.syncedAfterStartup === false) {
-      logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
-          `${JSON.stringify(tx)}`);
-      this.node.tp.addTransaction(tx);
-      return null;
-    }
-    const result = this.node.db.executeTransaction(tx);
-    if (!ChainUtil.transactionFailed(result)) {
-      this.node.tp.addTransaction(tx);
-    } else {
-      logger.info(`FAILED TRANSACTION: ${JSON.stringify(tx)}\t ` +
-          `RESULT:${JSON.stringify(result)}`);
-    }
-    return result;
-  }
-
   executeAndBroadcastTransaction(tx) {
-    if (!tx) return null;
+    if (!tx) {
+      return {
+        tx_hash: null,
+        result: false
+      };
+    }
     if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
       const txListSucceeded = [];
       for (const subTx of tx.tx_list) {
-        const response = this.executeTransaction(subTx);
-        resultList.push(response);
-        if (!ChainUtil.transactionFailed(response)) {
+        if (!subTx) {
+          resultList.push({
+            tx_hash: null,
+            result: false
+          });
+
+          continue;
+        }
+        const result = this.node.executeTransactionAndAddToPool(subTx);
+        resultList.push({
+          tx_hash: subTx.hash,
+          result
+        });
+        if (!ChainUtil.transactionFailed(result)) {
           txListSucceeded.push(subTx);
         }
       }
-      logger.debug(`\n BATCH TX RESPONSE: ` + JSON.stringify(resultList));
+      logger.debug(`\n BATCH TX RESULT: ` + JSON.stringify(resultList));
       if (txListSucceeded.length > 0) {
         this.broadcastTransaction({ tx_list: txListSucceeded });
       }
 
       return resultList;
     } else {
-      const response = this.executeTransaction(tx);
-      logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response));
-      if (!ChainUtil.transactionFailed(response)) {
+      const result = this.node.executeTransactionAndAddToPool(tx);
+      logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
+      if (!ChainUtil.transactionFailed(result)) {
         this.broadcastTransaction(tx);
       }
 
-      return response;
+      return {
+        tx_hash: tx.hash,
+        result
+      };
     }
   }
 

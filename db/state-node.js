@@ -1,7 +1,7 @@
 const logger = require('../logger')('STATE_NODE');
 
-const ChainUtil = require('../chain-util');
-const { HASH_DELIMITER } = require('../constants');
+const ChainUtil = require('../common/chain-util');
+const { HASH_DELIMITER } = require('../common/constants');
 
 class StateNode {
   constructor(version) {

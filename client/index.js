@@ -8,8 +8,13 @@ const jayson = require('jayson');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pServer = require('../server');
-const ChainUtil = require('../chain-util');
-const {PORT, PROTOCOL_VERSIONS, WriteDbOperations, TransactionStatus} = require('../constants');
+const ChainUtil = require('../common/chain-util');
+const {
+  PORT,
+  PROTOCOL_VERSIONS,
+  WriteDbOperations,
+  TransactionStatus
+} = require('../common/constants');
 const {ConsensusStatus} = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
@@ -316,7 +321,7 @@ app.get('/protocol_versions', (req, res) => {
 app.get('/state_versions', (req, res) => {
   const result = {
     version_list: node.stateManager.getVersionList(),
-    finalized_version: node.stateManager.getFinalizedVersion(),
+    final_version: node.stateManager.getFinalVersion(),
   };
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -325,8 +330,8 @@ app.get('/state_versions', (req, res) => {
 });
 
 // TODO(seo): Support for subtree dumping (i.e. with ref path).
-app.get('/dump_finalized_version', (req, res) => {
-  const result = node.dumpFinalizedVersion(true);
+app.get('/dump_final_version', (req, res) => {
+  const result = node.dumpFinalVersion(true);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -464,10 +469,7 @@ function createAndExecuteTransaction(txBody, isNoncedTransaction) {
       result: false,
     };
   }
-  return {
-    tx_hash: tx.hash,
-    result: p2pServer.executeAndBroadcastTransaction(tx)
-  };
+  return p2pServer.executeAndBroadcastTransaction(tx);
 }
 
 function checkIfTransactionShouldBeNonced(input) {

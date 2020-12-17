@@ -8,7 +8,8 @@ const {Block} = require('../blockchain/block');
 const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
-const ChainUtil = require('../chain-util');
+const ChainUtil = require('../common/chain-util');
+const StateManager = require('../db/state-manager');
 const {
   WriteDbOperations,
   ReadDbOperations,
@@ -22,7 +23,7 @@ const {
   MAX_SHARD_REPORT,
   GenesisWhitelist,
   LIGHTWEIGHT,
-} = require('../constants');
+} = require('../common/constants');
 const {
   ConsensusMessageTypes,
   ConsensusConsts,
@@ -270,9 +271,9 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
-        this.node.stateManager.getFinalizedVersion() :
+        this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
-    const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
@@ -461,7 +462,7 @@ class Consensus {
       let prevDb;
       let isSnapDb = false;
       if (prevBlock.number === this.node.bc.lastBlockNumber()) {
-        baseVersion = this.node.stateManager.getFinalizedVersion();
+        baseVersion = this.node.stateManager.getFinalVersion();
       } else if (this.blockPool.hashToDb.has(last_hash)) {
         baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
       } else {
@@ -473,7 +474,7 @@ class Consensus {
         }
         baseVersion = prevDb.stateVersion;
       }
-      const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+      const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
       const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
@@ -515,7 +516,7 @@ class Consensus {
     let prevDb;
     let isSnapDb = false;
     if (prevBlock.number === this.node.bc.lastBlockNumber()) {
-      baseVersion = this.node.stateManager.getFinalizedVersion();
+      baseVersion = this.node.stateManager.getFinalVersion();
     } else if (this.blockPool.hashToDb.has(last_hash)) {
       baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
     } else {
@@ -527,7 +528,7 @@ class Consensus {
       }
       baseVersion = prevDb.stateVersion;
     }
-    const tempVersion = `${StateVersions.TEMP}:${Date.now()}`;
+    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
@@ -544,7 +545,7 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(createdTx);
-    const newVersion = `${StateVersions.TEMP}:${Date.now()}`;
+    const newVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
@@ -803,9 +804,9 @@ class Consensus {
     if (this.blockPool.hashToDb.has(blockHash)) {
       baseVersion = this.blockPool.hashToDb.get(blockHash).stateVersion;
     } else if (blockHash === lastFinalizedHash) {
-      baseVersion = this.node.stateManager.getFinalizedVersion();
+      baseVersion = this.node.stateManager.getFinalVersion();
     }
-    const snapVersion = `${StateVersions.SNAP}:${Date.now()}`;
+    const snapVersion = StateManager.createRandomVersion(`${StateVersions.SNAP}`);
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
     const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
 
