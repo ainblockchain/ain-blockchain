@@ -180,7 +180,7 @@ class StateManager {
 
   /**
    * Returns a random state version with the given version prefix.
-   * @param {*} versionPrefix version prefix
+   * @param {string} versionPrefix version prefix
    */
   static createRandomVersion(versionPrefix) {
     return `${versionPrefix}:${Date.now()}:${Math.floor(Math.random() * 10000)}`;
