@@ -209,7 +209,7 @@ describe("state-manager", () => {
         assert.deepEqual(manager.getVersionList(), [StateVersions.EMPTY, finalVersion]);
         expect(manager.isFinalVersion(finalVersion)).to.equal(true);
 
-        expect(manager.deleteVersion(finalVersion)).to.equal(null);
+        expect(manager.deleteVersion(finalVersion)).to.equal(false);
         expect(manager.numVersions()).to.equal(2);
         expect(manager.hasVersion(StateVersions.EMPTY)).to.equal(true);
         expect(manager.hasVersion(finalVersion)).to.equal(true);

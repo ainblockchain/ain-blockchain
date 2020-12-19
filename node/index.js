@@ -116,7 +116,9 @@ class BlockchainNode {
     }
     this.db.setStateVersion(clonedRoot, newVersion);
     if (oldVersion) {
-      this.stateManager.deleteVersion(oldVersion);
+      if (!this.stateManager.deleteVersion(oldVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${oldVersion}`);
+      }
     }
     return true;
   }
@@ -130,12 +132,19 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${version}`);
       return;
     }
-    this.stateManager.finalizeVersion(newFinalVersion);
+    logger.info(`[${LOG_HEADER}] Finalizing version: ${newFinalVersion}`);
+    if (!this.stateManager.finalizeVersion(newFinalVersion)) {
+      logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
+    }
     logger.info(`[${LOG_HEADER}] Replacing version: ${version} -> ${newFinalVersion}`);
-    this.stateManager.replaceVersion(version, newFinalVersion);
+    if (!this.stateManager.replaceVersion(version, newFinalVersion)) {
+      logger.error(`[${LOG_HEADER}] Failed to replace version: ${version} -> ${newFinalVersion}`);
+    }
     if (oldFinalVersion) {
       logger.info(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
-      this.stateManager.deleteVersion(oldFinalVersion);
+      if (!this.stateManager.deleteVersion(oldFinalVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete previous final version: ${oldFinalVersion}`);
+      }
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDb(nodeVersion)
@@ -250,11 +259,15 @@ class BlockchainNode {
     if (ChainUtil.transactionFailed(result)) {
       // Changes are rolled back.
       if (this.stateManager.isFinalVersion(this.db.stateVersion)) {
-        this.stateManager.finalizeVersion(backupVersion);
+        if (!this.stateManager.finalizeVersion(backupVersion)) {
+          logger.error(`[${LOG_HEADER}] Failed to finalize version: ${backupVersion}`);
+        }
       }
       this.db.setStateVersion(backupRoot, backupVersion);
     } else {
-      this.stateManager.deleteVersion(backupVersion);
+      if (!this.stateManager.deleteVersion(backupVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${backupVersion}`);
+      }
     }
     return result;
   }
