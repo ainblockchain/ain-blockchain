@@ -7,6 +7,7 @@ const {
   isValidPathForStates,
   isValidJsObjectForStates,
   setStateTreeVersion,
+  replaceStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
@@ -646,6 +647,133 @@ describe("state-util", () => {
           null: null,
           undef: undefined,
           empty_obj: null,
+        }
+      });
+    })
+  })
+
+  describe("replaceStateTreeVersion", () => {
+    it("leaf node w/ no version match", () => {
+      const ver1 = 'ver1';
+      const ver2 = 'ver2';
+
+      const stateNode = StateNode.fromJsObject(true, ver1);
+
+      const numRenamed = replaceStateTreeVersion(stateNode, 'other version', ver2);
+      expect(numRenamed).to.equal(0);
+      expect(stateNode.getVersion()).to.equal(ver1);
+    })
+
+    it("leaf node w/ version match", () => {
+      const ver1 = 'ver1';
+      const ver2 = 'ver2';
+
+      const stateNode = StateNode.fromJsObject(true, ver1,);
+
+      const numRenamed = replaceStateTreeVersion(stateNode, ver1, ver2);
+      expect(numRenamed).to.equal(1);
+      expect(stateNode.getVersion()).to.equal(ver2);
+    })
+
+    it("internal node", () => {
+      const ver1 = 'ver1';
+      const ver2 = 'ver2';
+      const ver3 = 'ver3';
+
+      const grandChild11 = new StateNode(ver1);
+      const grandChild12 = new StateNode(ver2);
+      const grandChild21 = new StateNode(ver2);
+      const grandChild22 = new StateNode(ver1);
+      grandChild11.setValue('value11');
+      grandChild12.setValue('value12');
+      grandChild21.setValue('value21');
+      grandChild22.setValue('value22');
+      const child1 = new StateNode(ver2);
+      child1.setChild('label11', grandChild11);
+      child1.setChild('label12', grandChild12);
+      const child2 = new StateNode(ver2);
+      child2.setChild('label21', grandChild21);
+      child2.setChild('label22', grandChild22);
+      const stateTree = new StateNode(ver3);
+      stateTree.setChild('label1', child1);
+      stateTree.setChild('label2', child2);
+      assert.deepEqual(stateTree.toJsObject(true), {
+        ".numParents": 0,
+        ".proofHash": null,
+        ".treeSize": 1,
+        ".version": "ver3",
+        "label1": {
+          ".numParents": 1,
+          ".numParents:label11": 1,
+          ".numParents:label12": 1,
+          ".proofHash": null,
+          ".proofHash:label11": null,
+          ".proofHash:label12": null,
+          ".treeSize": 1,
+          ".treeSize:label11": 1,
+          ".treeSize:label12": 1,
+          ".version": "ver2",
+          ".version:label11": "ver1",
+          ".version:label12": "ver2",
+          "label11": "value11",
+          "label12": "value12",
+        },
+        "label2": {
+          ".numParents": 1,
+          ".numParents:label21": 1,
+          ".numParents:label22": 1,
+          ".proofHash": null,
+          ".proofHash:label21": null,
+          ".proofHash:label22": null,
+          ".treeSize": 1,
+          ".treeSize:label21": 1,
+          ".treeSize:label22": 1,
+          ".version": "ver2",
+          ".version:label21": "ver2",
+          ".version:label22": "ver1",
+          "label21": "value21",
+          "label22": "value22",
+        }
+      });
+
+      const numNodes = replaceStateTreeVersion(stateTree, ver2, ver3);
+      expect(numNodes).to.equal(4);
+      assert.deepEqual(stateTree.toJsObject(true), {
+        ".numParents": 0,
+        ".proofHash": null,
+        ".treeSize": 1,
+        ".version": "ver3",
+        "label1": {
+          ".numParents": 1,
+          ".numParents:label11": 1,
+          ".numParents:label12": 1,
+          ".proofHash": null,
+          ".proofHash:label11": null,
+          ".proofHash:label12": null,
+          ".treeSize": 1,
+          ".treeSize:label11": 1,
+          ".treeSize:label12": 1,
+          ".version": "ver3",  // renamed
+          ".version:label11": "ver1",
+          ".version:label12": "ver3",  // renamed
+          "label11": "value11",
+          "label12": "value12",
+        },
+        "label2": {
+          ".numParents": 1,
+          ".numParents:label21": 1,
+          ".numParents:label22": 1,
+          ".proofHash": null,
+          ".proofHash:label21": null,
+          ".proofHash:label22": null,
+          ".treeSize": 1,
+          ".treeSize:label21": 1,
+          ".treeSize:label22": 1,
+          ".version": "ver3",  // renamed
+          ".version:label21": "ver3",  // renamed
+          ".version:label22": "ver1",
+          "label21": "value21",
+          "label22": "value22",
         }
       });
     })
