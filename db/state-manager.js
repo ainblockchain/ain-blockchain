@@ -2,6 +2,7 @@ const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
   makeCopyOfStateTree,
+  replaceStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
 } = require('./state-util');
@@ -25,7 +26,7 @@ class StateManager {
   }
 
   /**
-   * Returns the finalized version.
+   * Returns the final version.
    */
   getFinalVersion() {
     return this.finalVersion;
@@ -39,7 +40,7 @@ class StateManager {
   }
 
   /**
-   * Returns the finalized state root.
+   * Returns the final state root.
    */
   getFinalRoot() {
     return this.getRoot(this.finalVersion);
@@ -83,7 +84,7 @@ class StateManager {
   }
 
   /**
-   * Clones the finalized version to create a new version.
+   * Clones the final version to create a new version.
    * 
    * @param {string} newVersion 
    */
@@ -125,6 +126,31 @@ class StateManager {
   }
 
   /**
+   * Replaces the subtree nodes' version of the given newVersion root with newVersion
+   * if their version is the given oldVersion.
+   * 
+   * @param {string} oldVersion state version to replace
+   * @param {string} newVersion new state version 
+   */
+  replaceVersion(oldVersion, newVersion) {
+    const LOG_HEADER = 'renameVersion';
+    logger.info(
+        `[${LOG_HEADER}] Renaming version ${oldVersion} -> ${newVersion} (${this.numVersions()})`);
+    if (!this.hasVersion(newVersion)) {
+      logger.error(`[${LOG_HEADER}] Non-existing version: ${newVersion}`);
+      return false;
+    }
+    const root = this.getRoot(newVersion);
+    if (root === null) {
+      logger.error(`[${LOG_HEADER}] Null root of version: ${newVersion}`);
+      return false;
+    }
+    let numRenamedNodes = replaceStateTreeVersion(root, oldVersion, newVersion);
+    logger.info(`[${LOG_HEADER}] Renamed ${numRenamedNodes} state nodes.`);
+    return true;
+  }
+
+  /**
    * Deletes the given version.
    * 
    * @param {string} version state version 
@@ -137,7 +163,7 @@ class StateManager {
       return null;
     }
     if (version === this.finalVersion) {
-      logger.error(`[${LOG_HEADER}] Not allowed to delete finalized version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Not allowed to delete final version: ${version}`);
       return null;
     }
     const root = this.getRoot(version);
@@ -157,17 +183,17 @@ class StateManager {
   }
 
   /**
-   * Sets a the given version finalized and deletes the existing finalized version.
+   * Finalize the given version.
    * 
-   * @param {string} version state version
+   * @param {string} version state version to finalize
    */
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
     logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
         `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
-        ` with latest finalized version: '${this.getFinalVersion()}'`);
+        ` with latest final version: '${this.getFinalVersion()}'`);
     if (version === this.finalVersion) {
-      logger.error(`[${LOG_HEADER}] Already finalized version: ${version}`);
+      logger.error(`[${LOG_HEADER}] Already final version: ${version}`);
       return false;
     }
     if (!this.hasVersion(version)) {
