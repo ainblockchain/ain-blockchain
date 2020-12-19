@@ -100,7 +100,7 @@ class StateManager {
    */
   cloneVersion(version, newVersion) {
     const LOG_HEADER = 'cloneVersion';
-    logger.info(`[${LOG_HEADER}] Cloning version ${version} to version ${newVersion} ` +
+    logger.debug(`[${LOG_HEADER}] Cloning version ${version} to version ${newVersion} ` +
         `(${this.numVersions()})`);
     if (!this.hasVersion(version)) {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
@@ -134,7 +134,7 @@ class StateManager {
    */
   replaceVersion(oldVersion, newVersion) {
     const LOG_HEADER = 'renameVersion';
-    logger.info(
+    logger.debug(
         `[${LOG_HEADER}] Renaming version ${oldVersion} -> ${newVersion} (${this.numVersions()})`);
     if (!this.hasVersion(newVersion)) {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${newVersion}`);
@@ -146,7 +146,7 @@ class StateManager {
       return false;
     }
     let numRenamedNodes = replaceStateTreeVersion(root, oldVersion, newVersion);
-    logger.info(`[${LOG_HEADER}] Renamed ${numRenamedNodes} state nodes.`);
+    logger.debug(`[${LOG_HEADER}] Renamed ${numRenamedNodes} state nodes.`);
     return true;
   }
 
@@ -157,19 +157,19 @@ class StateManager {
    */
   deleteVersion(version) {
     const LOG_HEADER = 'deleteVersion';
-    logger.info(`[${LOG_HEADER}] Deleting version ${version} (${this.numVersions()})`);
+    logger.debug(`[${LOG_HEADER}] Deleting version ${version} (${this.numVersions()})`);
     if (!this.hasVersion(version)) {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
-      return null;
+      return false;
     }
     if (version === this.finalVersion) {
       logger.error(`[${LOG_HEADER}] Not allowed to delete final version: ${version}`);
-      return null;
+      return false;
     }
     const root = this.getRoot(version);
     if (root === null) {
       logger.error(`[${LOG_HEADER}] Null root of version: ${version}`);
-      return null;
+      return false;
     }
     let numDeletedNodes = null;
     if (FeatureFlags.enableStateVersionOpt) {
@@ -177,9 +177,9 @@ class StateManager {
     } else {
       numDeletedNodes = deleteStateTree(root);
     }
-    logger.info(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
+    logger.debug(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
     this.rootMap.delete(version);
-    return root;
+    return true;
   }
 
   /**
@@ -189,7 +189,7 @@ class StateManager {
    */
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
-    logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
+    logger.debug(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
         `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
         ` with latest final version: '${this.getFinalVersion()}'`);
     if (version === this.finalVersion) {
