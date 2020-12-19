@@ -149,19 +149,19 @@ function isValidJsObjectForStates(obj) {
 }
 
 /**
- * Returns affected nodes number.
+ * Returns affected nodes' number.
  */
-function setStateTreeVersion(root, version) {
+function setStateTreeVersion(node, version) {
   let numAffectedNodes = 0;
-  if (root === null) {
+  if (node === null) {
     return numAffectedNodes;
   }
-  if (root.getVersion() !== version) {
-    root.setVersion(version);
+  if (node.getVersion() !== version) {
+    node.setVersion(version);
     numAffectedNodes++;
   }
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
+  for (const label of node.getChildLabels()) {
+    const childNode = node.getChild(label);
     numAffectedNodes += setStateTreeVersion(childNode, version);
   }
 
@@ -169,43 +169,67 @@ function setStateTreeVersion(root, version) {
 }
 
 /**
- * Returns affected nodes number.
+ * Returns affected nodes' number.
  */
-function deleteStateTree(root) {
+function replaceStateTreeVersion(node, oldVersion, newVersion, isRootNode = true) {
   let numAffectedNodes = 0;
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
-    numAffectedNodes += deleteStateTree(childNode);
-    root.deleteChild(label);
+  if (node === null) {
+    return numAffectedNodes;
   }
-  root.resetValue();
-  root.resetProofHash();
+  let nodeVersionRenamed = false;
+  if (node.getVersion() === oldVersion) {
+    node.setVersion(newVersion);
+    nodeVersionRenamed = true;
+    numAffectedNodes++;
+  }
+  if (isRootNode || nodeVersionRenamed) {
+    for (const label of node.getChildLabels()) {
+      const childNode = node.getChild(label);
+      numAffectedNodes += replaceStateTreeVersion(childNode, oldVersion, newVersion, false);
+    }
+  }
+
+  return numAffectedNodes;
+}
+
+/**
+ * Returns affected nodes' number.
+ */
+function deleteStateTree(node) {
+  let numAffectedNodes = 0;
+  for (const label of node.getChildLabels()) {
+    const childNode = node.getChild(label);
+    numAffectedNodes += deleteStateTree(childNode);
+    node.deleteChild(label);
+  }
+  node.resetValue();
+  node.resetProofHash();
   numAffectedNodes++;
 
   return numAffectedNodes;
 }
 
 /**
- * Returns affected nodes number.
+ * Returns affected nodes' number.
  */
-function deleteStateTreeVersion(root, version) {
+function deleteStateTreeVersion(node, version) {
   const LOG_HEADER = 'deleteStateTreeVersion';
   let numAffectedNodes = 0;
-  if (root.getVersion() !== version) {
+  if (node.getVersion() !== version) {
     // Does nothing.
     return numAffectedNodes;
   }
-  if (root.numParents() > 0) {
+  if (node.numParents() > 0) {
     // This shouldn't happen.
     logger.error(
         `[${LOG_HEADER}] Trying to delete a node with ` +
-        `invalid numParents() value: ${root.numParents()} with version: ${version}.`);
+        `invalid numParents() value: ${node.numParents()} with version: ${version}.`);
     return numAffectedNodes;
   }
 
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
-    root.deleteChild(label);
+  for (const label of node.getChildLabels()) {
+    const childNode = node.getChild(label);
+    node.deleteChild(label);
     if (childNode.numParents() == 0) {
       numAffectedNodes += deleteStateTreeVersion(childNode, version);
     } else if (childNode.numParents() < 0) {
@@ -215,36 +239,36 @@ function deleteStateTreeVersion(root, version) {
           `invalid numParents() value: ${childNode.numParents()} with label: ${label}.`);
     }
   }
-  root.resetValue();
-  root.resetProofHash();
+  node.resetValue();
+  node.resetProofHash();
   numAffectedNodes++;
 
   return numAffectedNodes;
 }
 
-function makeCopyOfStateTree(root) {
-  const copy = root.clone();
-  for (const label of root.getChildLabels()) {
-    const childNode = root.getChild(label);
+function makeCopyOfStateTree(node) {
+  const copy = node.clone();
+  for (const label of node.getChildLabels()) {
+    const childNode = node.getChild(label);
     copy.setChild(label, makeCopyOfStateTree(childNode));
   }
   return copy;
 }
 
-function equalStateTrees(root1, root2) {
-  if (!root1 && !root2) {
+function equalStateTrees(node1, node2) {
+  if (!node1 && !node2) {
     return true;
   }
-  if (!root1 || !root2) {
+  if (!node1 || !node2) {
     return false;
   }
-  if (!root1.equal(root2)) {
+  if (!node1.equal(node2)) {
     return false;
   }
   // NOTE: The child label order matters.
-  for (const label of root1.getChildLabels()) {
-    const child1 = root1.getChild(label);
-    const child2 = root2.getChild(label);
+  for (const label of node1.getChildLabels()) {
+    const child1 = node1.getChild(label);
+    const child2 = node2.getChild(label);
     if (!equalStateTrees(child1, child2)) {
       return false;
     }
@@ -315,6 +339,7 @@ module.exports = {
   isValidPathForStates,
   isValidJsObjectForStates,
   setStateTreeVersion,
+  replaceStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,

@@ -111,7 +111,7 @@ class BlockchainNode {
     }
     const clonedRoot = this.stateManager.cloneFinalVersion(newVersion);
     if (!clonedRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone finalized state version: ` +
+      logger.error(`[${LOG_HEADER}] Failed to clone the final state version: ` +
           `${this.stateManager.getFinalVersion()}`);
     }
     this.db.setStateVersion(clonedRoot, newVersion);
@@ -123,17 +123,19 @@ class BlockchainNode {
 
   cloneAndFinalizeVersion(version, blockNumber) {
     const LOG_HEADER = 'cloneAndFinalizeVersion';
-    const oldVersion = this.stateManager.getFinalVersion();
-    const finalVersion = `${StateVersions.FINAL}:${blockNumber}`;
-    const clonedRoot = this.stateManager.cloneVersion(version, finalVersion);
+    const oldFinalVersion = this.stateManager.getFinalVersion();
+    const newFinalVersion = `${StateVersions.FINAL}:${blockNumber}`;
+    const clonedRoot = this.stateManager.cloneVersion(version, newFinalVersion);
     if (!clonedRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${version}`);
       return;
     }
-    this.stateManager.finalizeVersion(finalVersion);
-    if (oldVersion) {
-      logger.info(`[${LOG_HEADER}] Deleting previously finalized version: ${oldVersion}`);
-      this.stateManager.deleteVersion(oldVersion);
+    this.stateManager.finalizeVersion(newFinalVersion);
+    logger.info(`[${LOG_HEADER}] Replacing version: ${version} -> ${newFinalVersion}`);
+    this.stateManager.replaceVersion(version, newFinalVersion);
+    if (oldFinalVersion) {
+      logger.info(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
+      this.stateManager.deleteVersion(oldFinalVersion);
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDb(nodeVersion)
