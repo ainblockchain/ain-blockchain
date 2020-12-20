@@ -2,7 +2,7 @@ const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
   makeCopyOfStateTree,
-  replaceStateTreeVersion,
+  renameStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
 } = require('./state-util');
@@ -126,13 +126,14 @@ class StateManager {
   }
 
   /**
-   * Replaces the subtree nodes' version of the given newVersion root with newVersion
-   * if their version is the given oldVersion.
+   * Renames the state tree's version of the given new version. Each node's version of
+   * the state tree specified with the new version is set with the new version if its value
+   * is equal to the given old version.
    * 
-   * @param {string} oldVersion state version to replace
-   * @param {string} newVersion new state version 
+   * @param {string} oldVersion state version to rename
+   * @param {string} newVersion version of the state tree to apply the renaming
    */
-  replaceVersion(oldVersion, newVersion) {
+  renameVersion(oldVersion, newVersion) {
     const LOG_HEADER = 'renameVersion';
     logger.debug(
         `[${LOG_HEADER}] Renaming version ${oldVersion} -> ${newVersion} (${this.numVersions()})`);
@@ -145,7 +146,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Null root of version: ${newVersion}`);
       return false;
     }
-    let numRenamedNodes = replaceStateTreeVersion(root, oldVersion, newVersion);
+    let numRenamedNodes = renameStateTreeVersion(root, oldVersion, newVersion);
     logger.debug(`[${LOG_HEADER}] Renamed ${numRenamedNodes} state nodes.`);
     return true;
   }
