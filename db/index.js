@@ -215,7 +215,7 @@ class DB {
     return stateNode.toJsObject();
   }
 
-  // TODO(seo): Support lookups on the finalized version.
+  // TODO(seo): Support lookups on the final version.
   getValue(valuePath, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
