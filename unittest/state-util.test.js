@@ -7,7 +7,7 @@ const {
   isValidPathForStates,
   isValidJsObjectForStates,
   setStateTreeVersion,
-  replaceStateTreeVersion,
+  renameStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
@@ -652,14 +652,14 @@ describe("state-util", () => {
     })
   })
 
-  describe("replaceStateTreeVersion", () => {
+  describe("renameStateTreeVersion", () => {
     it("leaf node w/ no version match", () => {
       const ver1 = 'ver1';
       const ver2 = 'ver2';
 
       const stateNode = StateNode.fromJsObject(true, ver1);
 
-      const numRenamed = replaceStateTreeVersion(stateNode, 'other version', ver2);
+      const numRenamed = renameStateTreeVersion(stateNode, 'other version', ver2);
       expect(numRenamed).to.equal(0);
       expect(stateNode.getVersion()).to.equal(ver1);
     })
@@ -670,7 +670,7 @@ describe("state-util", () => {
 
       const stateNode = StateNode.fromJsObject(true, ver1,);
 
-      const numRenamed = replaceStateTreeVersion(stateNode, ver1, ver2);
+      const numRenamed = renameStateTreeVersion(stateNode, ver1, ver2);
       expect(numRenamed).to.equal(1);
       expect(stateNode.getVersion()).to.equal(ver2);
     })
@@ -736,7 +736,7 @@ describe("state-util", () => {
         }
       });
 
-      const numNodes = replaceStateTreeVersion(stateTree, ver2, ver3);
+      const numNodes = renameStateTreeVersion(stateTree, ver2, ver3);
       expect(numNodes).to.equal(4);
       assert.deepEqual(stateTree.toJsObject(true), {
         ".numParents": 0,
