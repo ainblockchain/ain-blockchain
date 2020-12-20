@@ -147,8 +147,8 @@ describe("state-manager", () => {
       });
     });
 
-    describe("replaceVersion", () => {
-      it("replaceVersion w/ existing version", () => {
+    describe("renameVersion", () => {
+      it("renameVersion w/ existing version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager._setRoot('new version', newRoot);
@@ -156,10 +156,10 @@ describe("state-manager", () => {
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
 
-        expect(manager.replaceVersion(finalVersion, 'new version')).to.equal(true);
+        expect(manager.renameVersion(finalVersion, 'new version')).to.equal(true);
       });
 
-      it("replaceVersion w/ non-existing version", () => {
+      it("renameVersion w/ non-existing version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager._setRoot('new version', newRoot);
@@ -167,16 +167,16 @@ describe("state-manager", () => {
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
 
-        expect(manager.replaceVersion(finalVersion, 'non-existing version')).to.equal(false);
+        expect(manager.renameVersion(finalVersion, 'non-existing version')).to.equal(false);
       });
 
-      it("replaceVersion w/ a version of null root", () => {
+      it("renameVersion w/ a version of null root", () => {
         manager._setRoot('new version', null);
         expect(manager.numVersions()).to.equal(3);
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
 
-        expect(manager.replaceVersion(finalVersion, 'new version')).to.equal(false);
+        expect(manager.renameVersion(finalVersion, 'new version')).to.equal(false);
       });
     });
 

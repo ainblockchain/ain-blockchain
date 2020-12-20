@@ -169,9 +169,12 @@ function setStateTreeVersion(node, version) {
 }
 
 /**
+ * Renames the version of the given state tree. Each node's version of the state tree is set with
+ * given new version if its value is equal to the given old version.
+ * 
  * Returns affected nodes' number.
  */
-function replaceStateTreeVersion(node, oldVersion, newVersion, isRootNode = true) {
+function renameStateTreeVersion(node, oldVersion, newVersion, isRootNode = true) {
   let numAffectedNodes = 0;
   if (node === null) {
     return numAffectedNodes;
@@ -185,7 +188,7 @@ function replaceStateTreeVersion(node, oldVersion, newVersion, isRootNode = true
   if (isRootNode || nodeVersionRenamed) {
     for (const label of node.getChildLabels()) {
       const childNode = node.getChild(label);
-      numAffectedNodes += replaceStateTreeVersion(childNode, oldVersion, newVersion, false);
+      numAffectedNodes += renameStateTreeVersion(childNode, oldVersion, newVersion, false);
     }
   }
 
@@ -339,7 +342,7 @@ module.exports = {
   isValidPathForStates,
   isValidJsObjectForStates,
   setStateTreeVersion,
-  replaceStateTreeVersion,
+  renameStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,

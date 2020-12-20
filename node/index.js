@@ -136,8 +136,8 @@ class BlockchainNode {
     if (!this.stateManager.finalizeVersion(newFinalVersion)) {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
-    logger.info(`[${LOG_HEADER}] Replacing version: ${version} -> ${newFinalVersion}`);
-    if (!this.stateManager.replaceVersion(version, newFinalVersion)) {
+    logger.info(`[${LOG_HEADER}] Renaming version: ${version} -> ${newFinalVersion}`);
+    if (!this.stateManager.renameVersion(version, newFinalVersion)) {
       logger.error(`[${LOG_HEADER}] Failed to replace version: ${version} -> ${newFinalVersion}`);
     }
     if (oldFinalVersion) {
