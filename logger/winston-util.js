@@ -10,7 +10,7 @@ const {DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT} = require('../commo
 const {combine, timestamp, label, printf, colorize} = winston.format;
 
 const logDir = path.join(__dirname, '.', 'logs', String(PORT));
-const prefix = `node-${ACCOUNT_INDEX}-${PORT}`;
+const prefix = ACCOUNT_INDEX ? `node-${ACCOUNT_INDEX}-${PORT}` : `tracker-${PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
