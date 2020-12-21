@@ -22,6 +22,7 @@ const {
   COMCOM_HOST_EXTERNAL_IP,
   COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
+  BlockchainNodeStatus,
   PredefinedDbPaths,
   WriteDbOperations,
   GenesisSharding,
@@ -53,7 +54,6 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
-    this.isStarting = true;
     this.internalIpAddress = null;
     this.externalIpAddress = null;
     this.trackerWebSocket = null;
@@ -217,12 +217,12 @@ class P2pServer {
           logger.info(`Updated managed peers info: ` +
                       `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
-        if (this.isStarting) {
-          this.isStarting = false;
+        if (this.node.status === BlockchainNodeStatus.STARTUP) {
+          this.node.status = BlockchainNodeStatus.SYNCING;
           if (parsedMsg.numLivePeers === 0) {
             const lastBlockWithoutProposal = this.node.init(true);
             await this.tryInitializeShard();
-            this.node.bc.syncedAfterStartup = true;
+            this.node.status = BlockchainNodeStatus.SERVING;
             this.consensus.init(lastBlockWithoutProposal, true);
           } else {
             // Consensus will be initialized after syncing with peers
@@ -362,7 +362,7 @@ class P2pServer {
         switch (data.type) {
           case MessageTypes.CONSENSUS:
             logger.debug(`Receiving a consensus message: ${JSON.stringify(data.message)}`);
-            if (this.node.bc.syncedAfterStartup) {
+            if (this.node.status === BlockchainNodeStatus.SERVING) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
               logger.info(`\n Needs syncing...\n`);
@@ -373,7 +373,7 @@ class P2pServer {
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
               logger.debug(`Already have the transaction in my tx tracker`);
               break;
-            } else if (this.node.initialized) {
+            } else if (this.node.status === BlockchainNodeStatus.SERVING) {
               const tx = data.transaction;
               if (Transaction.isBatchTransaction(tx)) {
                 const newTxList = [];
@@ -399,8 +399,6 @@ class P2pServer {
                   this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
                 }
               }
-            } else {
-              // Put the tx in the txPool?
             }
             break;
           case MessageTypes.CHAIN_SUBSECTION:
@@ -410,9 +408,10 @@ class P2pServer {
               if (this.consensus.status === ConsensusStatus.STARTING) {
                 // XXX(minsu): need to be investigated
                 // ref: https://eslint.org/docs/rules/no-mixed-operators
-                if (!data.chainSubsection && !data.catchUpInfo ||
+                if ((!data.chainSubsection || chainSubSection.length === 0) && !data.catchUpInfo ||
                     data.number === this.node.bc.lastBlockNumber()) {
-                  this.node.bc.syncedAfterStartup = true;
+                  logger.info(`Blockchain Node is now synced!`);
+                  this.node.status = BlockchainNodeStatus.SERVING;
                   this.consensus.init();
                   if (this.consensus.isRunning()) {
                     this.consensus.catchUp(data.catchUpInfo);
@@ -427,9 +426,9 @@ class P2pServer {
             if (this.node.mergeChainSubsection(data.chainSubsection)) {
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
-                if (!this.node.bc.syncedAfterStartup) {
-                  logger.info(`Node is now synced!`);
-                  this.node.bc.syncedAfterStartup = true;
+                if (this.node.status === BlockchainNodeStatus.SYNCING) {
+                  logger.info(`Blockchain Node is now synced!`);
+                  this.node.status = BlockchainNodeStatus.SERVING;
                 }
                 if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init();
