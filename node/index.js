@@ -4,6 +4,7 @@ const logger = require('../logger')('NODE');
 const {
   PORT,
   ACCOUNT_INDEX,
+  BlockchainNodeStatus,
   PredefinedDbPaths,
   ShardingProperties,
   ShardingProtocols,
@@ -43,7 +44,7 @@ class BlockchainNode {
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}}`;
     this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;
-    this.initialized = false;
+    this.status = BlockchainNodeStatus.STARTUP;
   }
 
   // For testing purpose only.
@@ -77,7 +78,7 @@ class BlockchainNode {
     this.nonce = this.getNonce();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
     this.db.executeTransactionList(this.tp.getValidTransactions());
-    this.initialized = true;
+    this.status = BlockchainNodeStatus.SYNCING;
     return lastBlockWithoutProposal;
   }
 
@@ -287,8 +288,8 @@ class BlockchainNode {
       logger.debug(`[${LOG_HEADER}] ALREADY RECEIVED: ${JSON.stringify(tx)}`);
       return null;
     }
-    if (this.bc.syncedAfterStartup === false) {
-      logger.debug(`[${LOG_HEADER}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
+    if (this.status !== BlockchainNodeStatus.SERVING) {
+      logger.debug(`[${LOG_HEADER}] NOT SERVING YET. WILLBE REJECTED: ` +
           `${JSON.stringify(tx)}`);
       this.tp.addTransaction(tx);
       return null;
@@ -317,6 +318,30 @@ class BlockchainNode {
 
   mergeChainSubsection(chainSubsection) {
     const LOG_HEADER = 'mergeChainSubsection';
+
+    if (this.status !== BlockchainNodeStatus.SYNCING) {
+      logger.info(`Blockchain node is not in SYNCING status: ${this.status}`);
+      return false;
+    }
+    if (!chainSubsection || chainSubsection.length === 0) {
+      logger.info(`Empty chain sub section`);
+      // Regard this situation as if you're synced.
+      // TODO (lia): ask the tracker server for another peer.
+      this.status = BlockchainNodeStatus.SERVING;
+      return false;
+    }
+    if (chainSubsection[chainSubsection.length - 1].number < this.bc.lastBlockNumber()) {
+      logger.info(`Received chain is of lower block number than current last block number`);
+      return false;
+    }
+    if (chainSubsection[chainSubsection.length - 1].number === this.bc.lastBlockNumber()) {
+      logger.info(`Received chain is at the same block number`);
+      // Regard this situation as if you're synced.
+      // TODO (lia): ask the tracker server for another peer.
+      this.status = BlockchainNodeStatus.SERVING;
+      return false;
+    }
+
     const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.createTempDb(
         this.stateManager.getFinalVersion(), tempVersion, this.bc.lastBlockNumber());

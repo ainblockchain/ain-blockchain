@@ -16,7 +16,6 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainDir = blockchainDir;
-    this.syncedAfterStartup = false;
   }
 
   init(isFirstNode) {
@@ -178,10 +177,10 @@ class Blockchain {
     return Blockchain.isValidChainSubsection(chain);
   }
 
-  static isValidChainSubsection(chainSubSection) {
-    for (let i = 1; i < chainSubSection.length; i++) {
-      const block = chainSubSection[i];
-      const lastBlock = Block.parse(chainSubSection[i - 1]);
+  static isValidChainSubsection(chainSubsection) {
+    for (let i = 1; i < chainSubsection.length; i++) {
+      const block = chainSubsection[i];
+      const lastBlock = Block.parse(chainSubsection[i - 1]);
       if (block.last_hash !== lastBlock.hash || !Block.validateHashes(block)) {
         return false;
       }
@@ -253,43 +252,19 @@ class Blockchain {
       return [this.lastBlock()];
     }
 
-    const chainSubSection = [];
+    const chainSubsection = [];
     blockFiles.forEach((blockFile) => {
-      chainSubSection.push(Block.loadBlock(blockFile));
+      chainSubsection.push(Block.loadBlock(blockFile));
     });
-    return chainSubSection.length > 0 ? chainSubSection : [];
+    return chainSubsection.length > 0 ? chainSubsection : [];
   }
 
-  merge(chainSubSection, db) {
-    // Call to shift here is important as it removes the first element from the list !!
+  merge(chainSubsection, db) {
     logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
-    if (!chainSubSection || chainSubSection.length === 0) {
-      logger.info(`Empty chain sub section`);
-      if (!this.syncedAfterStartup) {
-        // Regard this situation as if you're synced.
-        // TODO (lia): ask the tracker server for another peer.
-        this.syncedAfterStartup = true;
-      }
-      return false;
-    }
-    if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
-      logger.info(`Received chain is of lower block number than current last block number`);
-      return false;
-    }
-    if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {
-      logger.info(`Received chain is at the same block number`);
-      if (!this.syncedAfterStartup) {
-        // Regard this situation as if you're synced.
-        // TODO (lia): ask the tracker server for another peer.
-        this.syncedAfterStartup = true;
-      }
-      return false;
-    }
-
-    const firstBlock = Block.parse(chainSubSection[0]);
+    const firstBlock = Block.parse(chainSubsection[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
     const overlap = lastBlockHash ?
-        chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
+        chainSubsection.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.
@@ -306,12 +281,12 @@ class Blockchain {
         return false;
       }
     }
-    if (!Blockchain.isValidChainSubsection(chainSubSection)) {
+    if (!Blockchain.isValidChainSubsection(chainSubsection)) {
       logger.error(`Invalid chain subsection`);
       return false;
     }
-    for (let i = 0; i < chainSubSection.length; i++) {
-      const block = chainSubSection[i];
+    for (let i = 0; i < chainSubsection.length; i++) {
+      const block = chainSubsection[i];
 
       if (block.number <= this.lastBlockNumber()) {
         continue;
