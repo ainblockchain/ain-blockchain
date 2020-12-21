@@ -206,6 +206,11 @@ class ChainUtil {
   static checkForTransactionErrorCode(result) {
     return result === null || (result.code !== undefined && result.code !== 0);
   }
+
+  static logAndReturnError(logger, code, message) {
+    logger.info(message);
+    return { code, error_message: message };
+  }
 }
 
 module.exports = ChainUtil;

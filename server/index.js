@@ -408,8 +408,10 @@ class P2pServer {
               if (this.consensus.status === ConsensusStatus.STARTING) {
                 // XXX(minsu): need to be investigated
                 // ref: https://eslint.org/docs/rules/no-mixed-operators
-                if ((!data.chainSubsection || chainSubSection.length === 0) && !data.catchUpInfo ||
+                if (!data.chainSubsection && !data.catchUpInfo ||
                     data.number === this.node.bc.lastBlockNumber()) {
+                  // Regard this situation as if you're synced.
+                  // TODO (lia): ask the tracker server for another peer.
                   logger.info(`Blockchain Node is now synced!`);
                   this.node.status = BlockchainNodeStatus.SERVING;
                   this.consensus.init();
@@ -427,6 +429,8 @@ class P2pServer {
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
                 if (this.node.status === BlockchainNodeStatus.SYNCING) {
+                  // Regard this situation as if you're synced.
+                  // TODO (lia): ask the tracker server for another peer.
                   logger.info(`Blockchain Node is now synced!`);
                   this.node.status = BlockchainNodeStatus.SERVING;
                 }

@@ -250,11 +250,13 @@ class BlockchainNode {
    * @param {Object} tx transaction
    */
   executeOrRollbackTransaction(tx) {
+    const LOG_HEADER = 'executeOrRollbackTransaction';
+
     const backupVersion = StateManager.createRandomVersion(`${StateVersions.BACKUP}`);
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`);
-      return null;
+      return ChainUtil.logAndReturnError(
+          logger, 11, `[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`);
     }
     const result = this.db.executeTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
@@ -279,28 +281,29 @@ class BlockchainNode {
    */
   executeTransactionAndAddToPool(tx) {
     const LOG_HEADER = 'executeTransactionAndAddToPool';
-    logger.debug(`[${LOG_HEADER}] EXECUTING: ${JSON.stringify(tx)}`);
+
+    logger.debug(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
+    if (this.status !== BlockchainNodeStatus.SERVING) {
+      return ChainUtil.logAndReturnError(
+          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`);
+    }
     if (this.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.bc.lastBlockTimestamp())) {
-      logger.debug(`[${LOG_HEADER}] TIMED-OUT TRANSACTION: ${JSON.stringify(tx)}`);
-      return null;
+      return ChainUtil.logAndReturnError(
+          logger, 2, `[${LOG_HEADER}] Timeouted transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
-      logger.debug(`[${LOG_HEADER}] ALREADY RECEIVED: ${JSON.stringify(tx)}`);
-      return null;
-    }
-    if (this.status !== BlockchainNodeStatus.SERVING) {
-      logger.debug(`[${LOG_HEADER}] NOT SERVING YET. WILLBE REJECTED: ` +
-          `${JSON.stringify(tx)}`);
-      this.tp.addTransaction(tx);
-      return null;
+      return ChainUtil.logAndReturnError(
+          logger, 3,
+          `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     const result = this.executeOrRollbackTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
-      logger.info(`[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(tx)}\t ` +
-          `RESULT:${JSON.stringify(result)}`);
+      logger.info(`[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(tx, null, 2)}\n ` +
+          `WITH RESULT:${JSON.stringify(result)}`);
     } else {
       this.tp.addTransaction(tx);
     }
+
     return result;
   }
 
@@ -320,14 +323,11 @@ class BlockchainNode {
     const LOG_HEADER = 'mergeChainSubsection';
 
     if (this.status !== BlockchainNodeStatus.SYNCING) {
-      logger.info(`Blockchain node is not in SYNCING status: ${this.status}`);
+      logger.info(`Blockchain node is NOT in SYNCING status: ${this.status}`);
       return false;
     }
     if (!chainSubsection || chainSubsection.length === 0) {
       logger.info(`Empty chain sub section`);
-      // Regard this situation as if you're synced.
-      // TODO (lia): ask the tracker server for another peer.
-      this.status = BlockchainNodeStatus.SERVING;
       return false;
     }
     if (chainSubsection[chainSubsection.length - 1].number < this.bc.lastBlockNumber()) {
@@ -336,9 +336,6 @@ class BlockchainNode {
     }
     if (chainSubsection[chainSubsection.length - 1].number === this.bc.lastBlockNumber()) {
       logger.info(`Received chain is at the same block number`);
-      // Regard this situation as if you're synced.
-      // TODO (lia): ask the tracker server for another peer.
-      this.status = BlockchainNodeStatus.SERVING;
       return false;
     }
 
@@ -357,6 +354,7 @@ class BlockchainNode {
       this.tp.cleanUpForNewBlock(block);
       this.tp.updateNonceTrackers(block.transactions);
     });
+
     return true;
   }
 
