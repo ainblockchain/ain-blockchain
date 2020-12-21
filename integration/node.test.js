@@ -654,7 +654,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 2,
+          "code": 103,
           "error_message": "No .write permission on: some/wrong/path"
         });
 
@@ -701,7 +701,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 2,
+          "code": 103,
           "error_message": "No .write permission on: some/wrong/path2"
         });
 
@@ -748,7 +748,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 2,
+          "code": 103,
           "error_message": "No .write permission on: some/wrong/path3"
         });
 
@@ -811,7 +811,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 3,
+          "code": 403,
           "error_message": "No write_function permission on: /some/wrong/path"
         });
 
@@ -872,7 +872,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 3,
+          "code": 503,
           "error_message": "No write_rule permission on: /some/wrong/path"
         });
 
@@ -960,7 +960,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 4,
+          "code": 603,
           "error_message": "No write_owner or branch_owner permission on: /some/wrong/path"
         });
 
@@ -1090,7 +1090,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 2,
+          "code": 103,
           "error_message": "No .write permission on: some/wrong/path"
         });
 
@@ -1413,7 +1413,7 @@ describe('Blockchain Node', () => {
           },
           {
             "result": {
-              "code": 2,
+              "code": 103,
               "error_message": "No .write permission on: some/wrong/path"
             },
             "tx_hash": "erased"
