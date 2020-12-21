@@ -382,12 +382,12 @@ class DB {
   setValue(valuePath, value, address, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
+      return {code: 101, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(valuePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+      return {code: 102, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -395,7 +395,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForValue(localPath, value, address, timestamp)) {
-      return {code: 2, error_message: `No .write permission on: ${valuePath}`};
+      return {code: 103, error_message: `No .write permission on: ${valuePath}`};
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
@@ -405,7 +405,7 @@ class DB {
         return true;
       } else {
         return {
-          code: 8,
+          code: 104,
           error_message: `Non-writable path with shard config: ${isWritablePath.invalidPath}`
         };
       }
@@ -413,6 +413,7 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
+
     return true;
   }
 
@@ -420,7 +421,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
+      return {code: 201, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
@@ -430,7 +431,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return {code: 1, error_message: `Not a number type: ${valueBefore} or ${delta}`};
+      return {code: 301, error_message: `Not a number type: ${valueBefore} or ${delta}`};
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
@@ -439,12 +440,12 @@ class DB {
   setFunction(functionPath, functionInfo, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionInfo);
     if (!isValidObj.isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
+      return {code: 401, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+      return {code: 402, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -452,12 +453,13 @@ class DB {
       return true;
     }
     if (!this.getPermissionForFunction(localPath, address)) {
-      return {code: 3, error_message: `No write_function permission on: ${functionPath}`};
+      return {code: 403, error_message: `No write_function permission on: ${functionPath}`};
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
         JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
     this.writeDatabase(fullPath, functionInfoCopy);
+
     return true;
   }
 
@@ -466,12 +468,12 @@ class DB {
   setRule(rulePath, rule, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
+      return {code: 501, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+      return {code: 502, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -479,11 +481,12 @@ class DB {
       return true;
     }
     if (!this.getPermissionForRule(localPath, address)) {
-      return {code: 3, error_message: `No write_rule permission on: ${rulePath}`};
+      return {code: 503, error_message: `No write_rule permission on: ${rulePath}`};
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
+
     return true;
   }
 
@@ -491,12 +494,12 @@ class DB {
   setOwner(ownerPath, owner, address, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
-      return {code: 6, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
+      return {code: 601, error_message: `Invalid object for states: ${isValidObj.invalidPath}`};
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return {code: 7, error_message: `Invalid path: ${isValidPath.invalidPath}`};
+      return {code: 602, error_message: `Invalid path: ${isValidPath.invalidPath}`};
     }
     const localPath = isGlobal === true ? this.toLocalPath(parsedPath) : parsedPath;
     if (localPath === null) {
@@ -505,13 +508,14 @@ class DB {
     }
     if (!this.getPermissionForOwner(localPath, address)) {
       return {
-        code: 4,
+        code: 603,
         error_message: `No write_owner or branch_owner permission on: ${ownerPath}`
       };
     }
     const fullPath = this.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
+
     return true;
   }
 
@@ -551,7 +555,7 @@ class DB {
         }
       } else {
         // Invalid Operation
-        return {code: 5, error_message: `Invalid opeartion type: ${op.type}`};
+        return {code: 701, error_message: `Invalid opeartion type: ${op.type}`};
       }
     }
     return ret;
@@ -563,14 +567,14 @@ class DB {
       const txBody = tx.tx_body;
       if (!txBody) {
         const message = 'No tx_body';
-        resultList.push({code: 1, error_message: message});
+        resultList.push({code: 801, error_message: message});
         logger.info(message);
         continue;
       }
       const operation = txBody.operation;
       if (!operation) {
         const message = 'No operation';
-        resultList.push({code: 2, error_message: message});
+        resultList.push({code: 802, error_message: message});
         logger.info(message);
         continue;
       }
@@ -587,7 +591,7 @@ class DB {
           break;
         default:
           const message = `Invalid operation type: ${operation.type}`;
-          resultList.push({code: 3, error_message: message});
+          resultList.push({code: 803, error_message: message});
           logger.info(message);
       }
     }
