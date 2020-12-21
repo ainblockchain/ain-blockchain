@@ -207,9 +207,13 @@ class ChainUtil {
     return result === null || (result.code !== undefined && result.code !== 0);
   }
 
+  static returnError(code, message) {
+    return { code, error_message: message };
+  }
+
   static logAndReturnError(logger, code, message) {
     logger.info(message);
-    return { code, error_message: message };
+    return ChainUtil.returnError(code, message);
   }
 }
 
