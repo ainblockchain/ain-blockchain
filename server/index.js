@@ -266,16 +266,20 @@ class P2pServer {
                 this.consensus.blockPool.longestNotarizedChainTips.length : 0
           }
       ),
-      shardingStatus: this.node.getSharding(),
-      dbStatus: {
-        treeSize: this.node.db.getTreeSize('/'),
-        proof: this.node.db.getProof('/'),
+      nodeStatus: {
+        status: this.node.status,
+        nonce: this.node.nonce,
       },
+      shardingStatus: this.node.getSharding(),
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
         committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
         pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
+      },
+      dbStatus: {
+        treeSize: this.node.db.getTreeSize('/'),
+        proof: this.node.db.getProof('/'),
       },
       memoryStatus: this.getMemoryUsage(),
       diskStatus: this.getDiskUsage(),
