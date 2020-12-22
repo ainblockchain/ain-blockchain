@@ -229,7 +229,7 @@ class Consensus {
         // prevent the node from getting/handling messages properly.
         // this.node.status = BlockchainNodeStatus.SYNCING;
 
-        this.server.requestChainSubsection(this.node.bc.lastBlock());
+        this.server.requestChainSegment(this.node.bc.lastBlock());
         return;
       }
       if (Consensus.isValidConsensusTx(proposalTx) &&

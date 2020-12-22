@@ -49,11 +49,11 @@ function getPortNumber(defaultValue, baseValue) {
  * @enum {string}
  */
 const MessageTypes = {
-  TRANSACTION: 'transaction',
-  CHAIN_SUBSECTION: 'chain_subsection',
-  CHAIN_SUBSECTION_REQUEST: 'chain_subsection_request',
-  CONSENSUS: 'consensus',
-  HEARTBEAT: 'heartbeat'
+  TRANSACTION: 'TRANSACTION',
+  CHAIN_SEGMENT: 'CHAIN_SEGMENT',
+  CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
+  CONSENSUS: 'CONSENSUS',
+  HEARTBEAT: 'HEARTBEAT'
 };
 
 /**
