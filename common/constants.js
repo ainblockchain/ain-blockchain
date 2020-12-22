@@ -44,19 +44,31 @@ function getPortNumber(defaultValue, baseValue) {
 }
 
 /**
- * Message types for communication between nodes
+ * Message types for communication between nodes.
+ * 
  * @enum {string}
  */
 const MessageTypes = {
-  TRANSACTION: 'transaction',
-  CHAIN_SUBSECTION: 'chain_subsection',
-  CHAIN_SUBSECTION_REQUEST: 'chain_subsection_request',
-  CONSENSUS: 'consensus',
-  HEARTBEAT: 'heartbeat'
+  TRANSACTION: 'TRANSACTION',
+  CHAIN_SEGMENT: 'CHAIN_SEGMENT',
+  CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
+  CONSENSUS: 'CONSENSUS',
+  HEARTBEAT: 'HEARTBEAT'
 };
 
 /**
- * Predefined database paths
+ * Status of blockchain nodes.
+ * 
+ * @enum {string}
+ */
+const BlockchainNodeStatus = {
+  STARTING: 'STARTING',
+  SYNCING: 'SYNCING',
+  SERVING: 'SERVING',
+};
+
+/**
+ * Predefined database paths.
  * @enum {string}
  */
 // TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
@@ -110,7 +122,8 @@ const PredefinedDbPaths = {
 };
 
 /**
- * Properties of token configs
+ * Properties of token configs.
+ * 
  * @enum {string}
  */
 const TokenProperties = {
@@ -120,7 +133,8 @@ const TokenProperties = {
 };
 
 /**
- * Properties of account configs
+ * Properties of account configs.
+ * 
  * @enum {string}
  */
 const AccountProperties = {
@@ -134,7 +148,8 @@ const AccountProperties = {
 };
 
 /**
- * Properties of owner configs
+ * Properties of owner configs.
+ * 
  * @enum {string}
  */
 const OwnerProperties = {
@@ -148,7 +163,8 @@ const OwnerProperties = {
 };
 
 /**
- * Properties of rule configs
+ * Properties of rule configs.
+ * 
  * @enum {string}
  */
 const RuleProperties = {
@@ -156,7 +172,8 @@ const RuleProperties = {
 };
 
 /**
- * Properties of function configs
+ * Properties of function configs.
+ * 
  * @enum {string}
  */
 const FunctionProperties = {
@@ -168,7 +185,8 @@ const FunctionProperties = {
 };
 
 /**
- * Types of functions
+ * Types of functions.
+ * 
  * @enum {string}
  */
 const FunctionTypes = {
@@ -177,7 +195,8 @@ const FunctionTypes = {
 };
 
 /**
- * Properties of proof configs
+ * Properties of proof configs.
+ * 
  * @enum {string}
  */
 const ProofProperties = {
@@ -185,7 +204,8 @@ const ProofProperties = {
 };
 
 /**
- * IDs of native functions
+ * IDs of native functions.
+ * 
  * @enum {string}
  */
 const NativeFunctionIds = {
@@ -198,7 +218,8 @@ const NativeFunctionIds = {
 };
 
 /**
- * Properties of sharding configs
+ * Properties of sharding configs.
+ * 
  * @enum {string}
  */
 const ShardingProperties = {
@@ -219,7 +240,8 @@ const ShardingProperties = {
 };
 
 /**
- * Sharding protocols
+ * Sharding protocols.
+ * 
  * @enum {string}
  */
 const ShardingProtocols = {
@@ -228,7 +250,8 @@ const ShardingProtocols = {
 };
 
 /**
- * Token exchange schemes
+ * Token exchange schemes.
+ * 
  * @enum {string}
  */
 const TokenExchangeSchemes = {
@@ -237,7 +260,8 @@ const TokenExchangeSchemes = {
 };
 
 /**
- * Types of read database operations
+ * Types of read database operations.
+ * 
  * @enum {string}
  */
 const ReadDbOperations = {
@@ -255,7 +279,8 @@ const ReadDbOperations = {
 };
 
 /**
- * Types of write database operations
+ * Types of write database operations.
+ * 
  * @enum {string}
  */
 const WriteDbOperations = {
@@ -269,7 +294,8 @@ const WriteDbOperations = {
 };
 
 /**
- * Function result code
+ * Function result code.
+ * 
  * @enum {string}
  */
 const FunctionResultCode = {
@@ -280,7 +306,8 @@ const FunctionResultCode = {
 };
 
 /**
- * Constant values for transactionTracker
+ * Constant values for transactionTracker.
+ * 
  * @enum {string}
  */
 const TransactionStatus = {
@@ -299,6 +326,7 @@ const DefaultValues = {
 
 /**
  * State versions.
+ * 
  * @enum {string}
  */
 const StateVersions = {
@@ -491,6 +519,7 @@ module.exports = {
   LIGHTWEIGHT,
   HASH_DELIMITER,
   MessageTypes,
+  BlockchainNodeStatus,
   PredefinedDbPaths,
   TokenProperties,
   AccountProperties,

@@ -199,7 +199,7 @@ function sendTransactions(sentOperations) {
   }
 }
 
-describe('Blockchain', () => {
+describe('Blockchain Cluster', () => {
   let trackerProc;
   let numNewBlocks = 0;
   let numBlocksOnStartup;

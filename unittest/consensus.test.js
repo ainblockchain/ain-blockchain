@@ -42,7 +42,7 @@ describe("Consensus", () => {
           }
         }
       );
-    expect(node1.db.executeTransaction(voteTx).code).to.equal(2);
+    expect(node1.db.executeTransaction(voteTx).code).to.equal(103);
   });
 
   it("Staked nodes can vote", () => {

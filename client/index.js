@@ -249,6 +249,14 @@ app.post('/batch', (req, res, next) => {
     .end();
 });
 
+app.get('/node_status', (req, res, next) => {
+  const result = node.status;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/blocks', (req, res, next) => {
   const blockEnd = node.bc.lastBlockNumber() + 1;
   const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);

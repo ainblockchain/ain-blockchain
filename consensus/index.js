@@ -227,9 +227,9 @@ class Consensus {
         // FIXME(lia): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
-        // this.node.bc.syncedAfterStartup = false;
+        // this.node.status = BlockchainNodeStatus.SYNCING;
 
-        this.server.requestChainSubsection(this.node.bc.lastBlock());
+        this.server.requestChainSegment(this.node.bc.lastBlock());
         return;
       }
       if (Consensus.isValidConsensusTx(proposalTx) &&
