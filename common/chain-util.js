@@ -206,6 +206,29 @@ class ChainUtil {
   static checkForTransactionErrorCode(result) {
     return result === null || (result.code !== undefined && result.code !== 0);
   }
+
+  static returnError(code, message) {
+    return { code, error_message: message };
+  }
+
+  /**
+   * Logs and returns error.
+   * 
+   * @param {*} logger logger to log with
+   * @param {*} code error code
+   * @param {*} message error message
+   * @param {*} level level to log with
+   */
+  static logAndReturnError(logger, code, message, level = 1) {
+    if (level === 0) {
+      logger.error(message);
+    } else if (level === 1) {
+      logger.info(message);
+    } else {
+      logger.debug(message);
+    }
+    return ChainUtil.returnError(code, message);
+  }
 }
 
 module.exports = ChainUtil;

@@ -4,11 +4,12 @@ const semver = require('semver');
 const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
+  BlockchainNodeStatus,
   ReadDbOperations,
   PredefinedDbPaths,
   TransactionStatus,
   MAX_TX_BYTES,
-  NETWORK_ID
+  NETWORK_ID,
 } = require('../common/constants');
 const {
   ConsensusConsts
@@ -375,7 +376,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     net_syncing: function(args, done) {
       // TODO (lia): return { starting, latest } with block numbers if the node
       // is currently syncing.
-      done(null, addProtocolVersion({result: !node.bc.syncedAfterStartup}));
+      done(null, addProtocolVersion({result: node.status === BlockchainNodeStatus.SYNCING}));
     },
 
     net_getNetworkId: function(args, done) {
