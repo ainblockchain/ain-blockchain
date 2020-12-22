@@ -218,7 +218,7 @@ class P2pServer {
           logger.info(`Updated managed peers info: ` +
                       `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
-        if (this.node.status === BlockchainNodeStatus.STARTUP) {
+        if (this.node.status === BlockchainNodeStatus.STARTING) {
           this.node.status = BlockchainNodeStatus.SYNCING;
           if (parsedMsg.numLivePeers === 0) {
             const lastBlockWithoutProposal = this.node.init(true);
