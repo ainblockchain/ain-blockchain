@@ -3,7 +3,7 @@ const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('BLOCK');
-const ChainUtil = require('../chain-util');
+const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('../db/state-node');
 const DB = require('../db');
@@ -18,7 +18,7 @@ const {
   AccountProperties,
   ProofProperties,
   StateVersions,
-} = require('../constants');
+} = require('../common/constants');
 const BlockFilePatterns = require('./block-file-patterns');
 
 class Block {

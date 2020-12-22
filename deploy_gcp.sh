@@ -22,8 +22,8 @@ echo "PROJECT_ID=$PROJECT_ID"
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
 
-FILES_FOR_TRACKER="blockchain/ chain-util.js consensus/ constants.js db/ logger/ package.json setup_tracker_gcp.sh setup_ubuntu.sh start_tracker_gcp.sh tracker-server/"
-FILES_FOR_NODE="blockchain/ chain-util.js client/ consensus/ constants.js db json_rpc logger/ node/ package.json server/ setup_node_gcp.sh setup_ubuntu.sh start_node_gcp.sh tx-pool/"
+FILES_FOR_TRACKER="blockchain/ common/ consensus/ db/ logger/ package.json setup_tracker_gcp.sh setup_ubuntu.sh start_tracker_gcp.sh tracker-server/"
+FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db json_rpc logger/ node/ package.json server/ setup_node_gcp.sh setup_ubuntu.sh start_node_gcp.sh tx-pool/"
 
 printf "\nRemoving redundant files..."
 rm -rf blockchain/blockchains logger/logs tracker-server/node_modules tracker-server/logs

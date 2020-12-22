@@ -2,8 +2,8 @@
 const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {
-  TRANSACTION_POOL_TIME_OUT_MS,
-  TRANSACTION_TRACKER_TIME_OUT_MS,
+  TRANSACTION_POOL_TIMEOUT_MS,
+  TRANSACTION_TRACKER_TIMEOUT_MS,
   LIGHTWEIGHT,
   GenesisSharding,
   GenesisAccounts,
@@ -11,8 +11,8 @@ const {
   TransactionStatus,
   WriteDbOperations,
   AccountProperties,
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const {sendGetRequest, signAndSendTx} = require('../server/util');
 const Transaction = require('./transaction');
 
@@ -74,11 +74,11 @@ class TransactionPool {
   }
 
   isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_POOL_TIME_OUT_MS);
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_POOL_TIMEOUT_MS);
   }
 
   isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIME_OUT_MS);
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIMEOUT_MS);
   }
 
   isNotEligibleTransaction(tx) {

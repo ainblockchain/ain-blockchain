@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const { BLOCKCHAINS_DIR } = require('../constants');
+const { BLOCKCHAINS_DIR } = require('../common/constants');
 const Blockchain = require('../blockchain/');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
@@ -96,7 +96,7 @@ describe('Blockchain', () => {
       while (!node1.bc.lastBlock() || !node2.bc.lastBlock() || node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
         const blockSection = node1.bc.requestBlockchainSection(node2.bc.lastBlock());
         if (blockSection) {
-          node2.bc.merge(blockSection, node2.createDb(node2.stateManager.getFinalizedVersion(),
+          node2.bc.merge(blockSection, node2.createDb(node2.stateManager.getFinalVersion(),
               `NODE:${blockSection[blockSection.length - 1].number}`, this.bc, this.tp, true));
         }
       }

@@ -3,8 +3,8 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
-const ChainUtil = require('../chain-util');
-const { HASH_DELIMITER } = require('../constants');
+const ChainUtil = require('../common/chain-util');
+const { HASH_DELIMITER } = require('../common/constants');
 
 describe("state-node", () => {
   let node;
