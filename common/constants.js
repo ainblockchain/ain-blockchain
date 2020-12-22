@@ -62,7 +62,7 @@ const MessageTypes = {
  * @enum {string}
  */
 const BlockchainNodeStatus = {
-  STARTUP: 'STARTUP',
+  STARTING: 'STARTING',
   SYNCING: 'SYNCING',
   SERVING: 'SERVING',
 };
