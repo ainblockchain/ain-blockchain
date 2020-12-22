@@ -174,13 +174,13 @@ class Blockchain {
       return false;
     }
     // TODO (lia): Check if the tx nonces are correct.
-    return Blockchain.isValidChainSubsection(chain);
+    return Blockchain.isValidChainSegment(chain);
   }
 
-  static isValidChainSubsection(chainSubsection) {
-    for (let i = 1; i < chainSubsection.length; i++) {
-      const block = chainSubsection[i];
-      const lastBlock = Block.parse(chainSubsection[i - 1]);
+  static isValidChainSegment(chainSegment) {
+    for (let i = 1; i < chainSegment.length; i++) {
+      const block = chainSegment[i];
+      const lastBlock = Block.parse(chainSegment[i - 1]);
       if (block.last_hash !== lastBlock.hash || !Block.validateHashes(block)) {
         return false;
       }
@@ -252,19 +252,19 @@ class Blockchain {
       return [this.lastBlock()];
     }
 
-    const chainSubsection = [];
+    const chainSegment = [];
     blockFiles.forEach((blockFile) => {
-      chainSubsection.push(Block.loadBlock(blockFile));
+      chainSegment.push(Block.loadBlock(blockFile));
     });
-    return chainSubsection.length > 0 ? chainSubsection : [];
+    return chainSegment.length > 0 ? chainSegment : [];
   }
 
-  merge(chainSubsection, db) {
+  merge(chainSegment, db) {
     logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
-    const firstBlock = Block.parse(chainSubsection[0]);
+    const firstBlock = Block.parse(chainSegment[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
     const overlap = lastBlockHash ?
-        chainSubsection.filter((block) => block.number === this.lastBlockNumber()) : null;
+        chainSegment.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.
@@ -281,12 +281,12 @@ class Blockchain {
         return false;
       }
     }
-    if (!Blockchain.isValidChainSubsection(chainSubsection)) {
-      logger.error(`Invalid chain subsection`);
+    if (!Blockchain.isValidChainSegment(chainSegment)) {
+      logger.error(`Invalid chain segment`);
       return false;
     }
-    for (let i = 0; i < chainSubsection.length; i++) {
-      const block = chainSubsection[i];
+    for (let i = 0; i < chainSegment.length; i++) {
+      const block = chainSegment[i];
 
       if (block.number <= this.lastBlockNumber()) {
         continue;

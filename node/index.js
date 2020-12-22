@@ -319,22 +319,22 @@ class BlockchainNode {
     return false;
   }
 
-  mergeChainSubsection(chainSubsection) {
-    const LOG_HEADER = 'mergeChainSubsection';
+  mergeChainSegment(chainSegment) {
+    const LOG_HEADER = 'mergeChainSegment';
 
     if (this.status !== BlockchainNodeStatus.SYNCING) {
       logger.info(`Blockchain node is NOT in SYNCING status: ${this.status}`);
       return false;
     }
-    if (!chainSubsection || chainSubsection.length === 0) {
-      logger.info(`Empty chain sub section`);
+    if (!chainSegment || chainSegment.length === 0) {
+      logger.info(`Empty chain segment`);
       return false;
     }
-    if (chainSubsection[chainSubsection.length - 1].number < this.bc.lastBlockNumber()) {
+    if (chainSegment[chainSegment.length - 1].number < this.bc.lastBlockNumber()) {
       logger.info(`Received chain is of lower block number than current last block number`);
       return false;
     }
-    if (chainSubsection[chainSubsection.length - 1].number === this.bc.lastBlockNumber()) {
+    if (chainSegment[chainSegment.length - 1].number === this.bc.lastBlockNumber()) {
       logger.info(`Received chain is at the same block number`);
       return false;
     }
@@ -342,15 +342,15 @@ class BlockchainNode {
     const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.createTempDb(
         this.stateManager.getFinalVersion(), tempVersion, this.bc.lastBlockNumber());
-    if (!this.bc.merge(chainSubsection, tempDb)) {
-      logger.error(`[${LOG_HEADER}] Failed to merge chain subsection: ` +
-          `${JSON.stringify(chainSubsection, null, 2)}`);
+    if (!this.bc.merge(chainSegment, tempDb)) {
+      logger.error(`[${LOG_HEADER}] Failed to merge chain segment: ` +
+          `${JSON.stringify(chainSegment, null, 2)}`);
       this.destroyDb(tempDb);
       return false;
     }
     const lastBlockNumber = this.bc.lastBlockNumber();
     this.cloneAndFinalizeVersion(tempDb.stateVersion, lastBlockNumber);
-    chainSubsection.forEach((block) => {
+    chainSegment.forEach((block) => {
       this.tp.cleanUpForNewBlock(block);
       this.tp.updateNonceTrackers(block.transactions);
     });

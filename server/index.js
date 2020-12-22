@@ -344,7 +344,7 @@ class P2pServer {
   setSocket(socket, address) {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
-    this.requestChainSubsection(this.node.bc.lastBlock());
+    this.requestChainSegment(this.node.bc.lastBlock());
     if (this.consensus.stakeTx) {
       this.broadcastTransaction(this.consensus.stakeTx);
       this.consensus.stakeTx = null;
@@ -406,14 +406,14 @@ class P2pServer {
               }
             }
             break;
-          case MessageTypes.CHAIN_SUBSECTION:
-            logger.debug(`Receiving a chain subsection: ` +
-                `${JSON.stringify(data.chainSubsection, null, 2)}`);
+          case MessageTypes.CHAIN_SEGMENT:
+            logger.debug(`Receiving a chain segment: ` +
+                `${JSON.stringify(data.chainSegment, null, 2)}`);
             if (data.number <= this.node.bc.lastBlockNumber()) {
               if (this.consensus.status === ConsensusStatus.STARTING) {
                 // XXX(minsu): need to be investigated
                 // ref: https://eslint.org/docs/rules/no-mixed-operators
-                if (!data.chainSubsection && !data.catchUpInfo ||
+                if (!data.chainSegment && !data.catchUpInfo ||
                     data.number === this.node.bc.lastBlockNumber()) {
                   // Regard this situation as if you're synced.
                   // TODO (lia): ask the tracker server for another peer.
@@ -428,9 +428,9 @@ class P2pServer {
               return;
             }
 
-            // Check if chain subsection is valid and can be
+            // Check if chain segment is valid and can be
             // merged ontop of your local blockchain
-            if (this.node.mergeChainSubsection(data.chainSubsection)) {
+            if (this.node.mergeChainSegment(data.chainSegment)) {
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
                 if (this.node.status === BlockchainNodeStatus.SYNCING) {
@@ -451,13 +451,13 @@ class P2pServer {
                 this.consensus.blockPool.addSeenBlock(this.node.bc.lastBlock());
                 this.consensus.catchUp(data.catchUpInfo);
               }
-              // Continuously request the blockchain in subsections until
+              // Continuously request the blockchain segments until
               // your local blockchain matches the height of the consensus blockchain.
               if (data.number > this.node.bc.lastBlockNumber()) {
-                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
+                setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
               }
             } else {
-              logger.info(`Failed to merge incoming chain subsection.`);
+              logger.info(`Failed to merge incoming chain segment.`);
               // FIXME: Could be that I'm on a wrong chain.
               if (data.number <= this.node.bc.lastBlockNumber()) {
                 logger.info(`I am ahead(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
@@ -469,34 +469,34 @@ class P2pServer {
                 }
               } else {
                 logger.info(`I am behind (${data.number} < ${this.node.bc.lastBlockNumber()}).`);
-                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
+                setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
               }
             }
             break;
-          case MessageTypes.CHAIN_SUBSECTION_REQUEST:
-            logger.debug(`Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
+          case MessageTypes.CHAIN_SEGMENT_REQUEST:
+            logger.debug(`Receiving a chain segment request: ${JSON.stringify(data.lastBlock)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
             // Send a chunk of 20 blocks from your blockchain to the requester.
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
-            const chainSubsection = this.node.bc.requestBlockchainSection(
+            const chainSegment = this.node.bc.requestBlockchainSection(
                 data.lastBlock ? Block.parse(data.lastBlock) : null);
-            if (chainSubsection) {
+            if (chainSegment) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(
-                  `Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)}` +
+                  `Sending a chain segment ${JSON.stringify(chainSegment, null, 2)}` +
                   `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
-              this.sendChainSubsection(
+              this.sendChainSegment(
                   socket,
-                  chainSubsection,
+                  chainSegment,
                   this.node.bc.lastBlockNumber(),
                   catchUpInfo
               );
             } else {
-              logger.info(`No chainSubsection to send`);
-              this.sendChainSubsection(
+              logger.info(`No chain segment to send`);
+              this.sendChainSegment(
                   socket,
                   null,
                   this.node.bc.lastBlockNumber(),
@@ -545,28 +545,28 @@ class P2pServer {
     return false;
   }
 
-  sendChainSubsection(socket, chainSubsection, number, catchUpInfo) {
+  sendChainSegment(socket, chainSegment, number, catchUpInfo) {
     socket.send(JSON.stringify({
-      type: MessageTypes.CHAIN_SUBSECTION,
-      chainSubsection,
+      type: MessageTypes.CHAIN_SEGMENT,
+      chainSegment,
       number,
       catchUpInfo,
       protoVer: CURRENT_PROTOCOL_VERSION
     }));
   }
 
-  requestChainSubsection(lastBlock) {
+  requestChainSegment(lastBlock) {
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
-        type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
+        type: MessageTypes.CHAIN_SEGMENT_REQUEST,
         lastBlock,
         protoVer: CURRENT_PROTOCOL_VERSION
       }));
     });
   }
 
-  broadcastChainSubsection(chainSubsection) {
-    this.sockets.forEach((socket) => this.sendChainSubsection(socket, chainSubsection));
+  broadcastChainSegment(chainSegment) {
+    this.sockets.forEach((socket) => this.sendChainSegment(socket, chainSegment));
   }
 
   broadcastTransaction(transaction) {
