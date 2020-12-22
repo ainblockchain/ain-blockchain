@@ -44,7 +44,7 @@ class BlockchainNode {
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}}`;
     this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;
-    this.status = BlockchainNodeStatus.STARTUP;
+    this.status = BlockchainNodeStatus.STARTING;
   }
 
   // For testing purpose only.
@@ -256,7 +256,8 @@ class BlockchainNode {
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
       return ChainUtil.logAndReturnError(
-          logger, 11, `[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`);
+          logger, 11, `[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`,
+          0);
     }
     const result = this.db.executeTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
@@ -285,11 +286,13 @@ class BlockchainNode {
     logger.debug(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     if (this.status !== BlockchainNodeStatus.SERVING) {
       return ChainUtil.logAndReturnError(
-          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`);
+          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`,
+          0);
     }
     if (this.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.bc.lastBlockTimestamp())) {
       return ChainUtil.logAndReturnError(
-          logger, 2, `[${LOG_HEADER}] Timeouted transaction: ${JSON.stringify(tx, null, 2)}`);
+          logger, 2, `[${LOG_HEADER}] Timeouted transaction: ${JSON.stringify(tx, null, 2)}`,
+          0);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return ChainUtil.logAndReturnError(
