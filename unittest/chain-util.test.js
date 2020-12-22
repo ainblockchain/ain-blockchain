@@ -1,4 +1,4 @@
-const ChainUtil = require('../chain-util');
+const ChainUtil = require('../common/chain-util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -57,6 +57,31 @@ describe("ChainUtil", () => {
       expect(ChainUtil.toString(undefined)).to.equal('');
       expect(ChainUtil.toString(Infinity)).to.equal('null');
       expect(ChainUtil.toString(NaN)).to.equal('null');
+    })
+  })
+
+  describe("parseJsonOrNull", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.parseJsonOrNull(''), null);
+      assert.deepEqual(ChainUtil.parseJsonOrNull('<!DOCTYPE html>'), null);
+    })
+
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.parseJsonOrNull('{}'), {});
+      assert.deepEqual(ChainUtil.parseJsonOrNull(
+          '{ "a": true, "b": { "c": 10 }, "d": "d" }'), { a: true, b: { c: 10 }, d: "d" });
+    })
+  })
+
+  describe("isJson", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.isJson(''), false);
+      assert.deepEqual(ChainUtil.isJson('<!DOCTYPE html>'), false);
+    })
+
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.isJson('{}'), true);
+      assert.deepEqual(ChainUtil.isJson('{ "a": true, "b": { "c": 10 }, "d": "d" }'), true);
     })
   })
 

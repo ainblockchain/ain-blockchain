@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -24,13 +24,13 @@
     "test_blockchain": "./node_modules/mocha/bin/mocha --timeout 160000 integration/blockchain.test.js",
     "test_dapp": "./node_modules/mocha/bin/mocha --timeout 160000 integration/afan_dapp.test.js",
     "test_sharding": "./node_modules/mocha/bin/mocha --timeout 320000 integration/sharding.test.js",
-    "test_integration": "./node_modules/mocha/bin/mocha --timeout 320000 \"integration/**/*.test.js\"",
+    "test_integration": "./node_modules/mocha/bin/mocha --timeout 640000 \"integration/**/*.test.js\"",
     "loadtest": "sh loadtest/load_tester.sh",
     "lint": "eslint --ext js -c .eslintrc.json ."
   },
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.6",
-    "@google-cloud/logging-winston": "^3.0.5",
+    "@google-cloud/logging-winston": "^4.0.2",
     "ajv": "^5.5.2",
     "axios": "^0.20.0",
     "bluebird": "^3.5.3",

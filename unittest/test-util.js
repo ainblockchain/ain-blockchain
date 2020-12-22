@@ -5,7 +5,8 @@ const sleep = require('sleep').msleep;
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { StateVersions } = require('../constants');
+const { StateVersions } = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -73,9 +74,9 @@ function getTransaction(node, inputTxBody) {
 
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
-  const finalizedDb = node.createDb(node.stateManager.getFinalizedVersion(),
-      `${StateVersions.BACKUP}:${lastBlock.number + 1}`, node.bc, node.tp, true);
-  finalizedDb.executeTransactionList(txs);
+  const finalDb = node.createDb(node.stateManager.getFinalVersion(),
+      `${StateVersions.FINAL}:${lastBlock.number + 1}`, node.bc, node.tp, true);
+  finalDb.executeTransactionList(txs);
   node.syncDb(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
       lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
@@ -87,17 +88,14 @@ function waitUntilTxFinalized(servers, txHash) {
   while (true) {
     if (!unchecked.size) return;
     unchecked.forEach(server => {
-      const txStatus = JSON.parse(
-        syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
-        .body
-        .toString('utf-8')
-      )
-      .result;
+      const txStatus = JSON.parse(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
+          .body
+          .toString('utf-8')).result;
       if (txStatus && txStatus.is_finalized === true) {
         unchecked.delete(server);
       }
     });
-    sleep(1000);
+    sleep(200);
   }
 }
 
@@ -124,6 +122,14 @@ function waitUntilNodeSyncs(server) {
   }
 }
 
+function parseOrLog(resp) {
+  const parsed = ChainUtil.parseJsonOrNull(resp);
+  if (parsed === null) {
+    console.log(`Not in JSON format: ${resp}`);
+  }
+  return parsed;
+}
+
 module.exports = {
   readConfigFile,
   setNodeForTesting,
@@ -131,5 +137,6 @@ module.exports = {
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
-  waitUntilNodeSyncs
+  waitUntilNodeSyncs,
+  parseOrLog,
 };

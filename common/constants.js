@@ -4,18 +4,18 @@ const moment = require('moment');
 const {
   ConsensusConsts,
   ConsensusDbPaths,
-} = require('./consensus/constants');
+} = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
 const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
-const BLOCKCHAINS_DIR = path.resolve(__dirname, 'blockchain/blockchains');
-const PROTOCOL_VERSIONS = path.resolve(__dirname, 'client/protocol_versions.json');
+const BLOCKCHAINS_DIR = path.resolve(process.cwd(), 'blockchain/blockchains');
+const PROTOCOL_VERSIONS = path.resolve(process.cwd(), 'client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
-const TRANSACTION_POOL_TIME_OUT_MS = moment.duration(1, 'hours').as('milliseconds');
-const TRANSACTION_TRACKER_TIME_OUT_MS = moment.duration(24, 'hours').as('milliseconds');
+const TRANSACTION_POOL_TIMEOUT_MS = moment.duration(1, 'hours').as('milliseconds');
+const TRANSACTION_TRACKER_TIMEOUT_MS = moment.duration(24, 'hours').as('milliseconds');
 // TODO (lia): Check network id in all messages
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
@@ -44,19 +44,31 @@ function getPortNumber(defaultValue, baseValue) {
 }
 
 /**
- * Message types for communication between nodes
+ * Message types for communication between nodes.
+ * 
  * @enum {string}
  */
 const MessageTypes = {
-  TRANSACTION: 'transaction',
-  CHAIN_SUBSECTION: 'chain_subsection',
-  CHAIN_SUBSECTION_REQUEST: 'chain_subsection_request',
-  CONSENSUS: 'consensus',
-  HEARTBEAT: 'heartbeat'
+  TRANSACTION: 'TRANSACTION',
+  CHAIN_SEGMENT: 'CHAIN_SEGMENT',
+  CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
+  CONSENSUS: 'CONSENSUS',
+  HEARTBEAT: 'HEARTBEAT'
 };
 
 /**
- * Predefined database paths
+ * Status of blockchain nodes.
+ * 
+ * @enum {string}
+ */
+const BlockchainNodeStatus = {
+  STARTING: 'STARTING',
+  SYNCING: 'SYNCING',
+  SERVING: 'SERVING',
+};
+
+/**
+ * Predefined database paths.
  * @enum {string}
  */
 // TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
@@ -110,7 +122,8 @@ const PredefinedDbPaths = {
 };
 
 /**
- * Properties of token configs
+ * Properties of token configs.
+ * 
  * @enum {string}
  */
 const TokenProperties = {
@@ -120,7 +133,8 @@ const TokenProperties = {
 };
 
 /**
- * Properties of account configs
+ * Properties of account configs.
+ * 
  * @enum {string}
  */
 const AccountProperties = {
@@ -134,7 +148,8 @@ const AccountProperties = {
 };
 
 /**
- * Properties of owner configs
+ * Properties of owner configs.
+ * 
  * @enum {string}
  */
 const OwnerProperties = {
@@ -148,7 +163,8 @@ const OwnerProperties = {
 };
 
 /**
- * Properties of rule configs
+ * Properties of rule configs.
+ * 
  * @enum {string}
  */
 const RuleProperties = {
@@ -156,7 +172,8 @@ const RuleProperties = {
 };
 
 /**
- * Properties of function configs
+ * Properties of function configs.
+ * 
  * @enum {string}
  */
 const FunctionProperties = {
@@ -168,7 +185,8 @@ const FunctionProperties = {
 };
 
 /**
- * Types of functions
+ * Types of functions.
+ * 
  * @enum {string}
  */
 const FunctionTypes = {
@@ -177,7 +195,8 @@ const FunctionTypes = {
 };
 
 /**
- * Properties of proof configs
+ * Properties of proof configs.
+ * 
  * @enum {string}
  */
 const ProofProperties = {
@@ -185,7 +204,8 @@ const ProofProperties = {
 };
 
 /**
- * IDs of native functions
+ * IDs of native functions.
+ * 
  * @enum {string}
  */
 const NativeFunctionIds = {
@@ -198,7 +218,8 @@ const NativeFunctionIds = {
 };
 
 /**
- * Properties of sharding configs
+ * Properties of sharding configs.
+ * 
  * @enum {string}
  */
 const ShardingProperties = {
@@ -219,7 +240,8 @@ const ShardingProperties = {
 };
 
 /**
- * Sharding protocols
+ * Sharding protocols.
+ * 
  * @enum {string}
  */
 const ShardingProtocols = {
@@ -228,7 +250,8 @@ const ShardingProtocols = {
 };
 
 /**
- * Token exchange schemes
+ * Token exchange schemes.
+ * 
  * @enum {string}
  */
 const TokenExchangeSchemes = {
@@ -237,7 +260,8 @@ const TokenExchangeSchemes = {
 };
 
 /**
- * Types of read database operations
+ * Types of read database operations.
+ * 
  * @enum {string}
  */
 const ReadDbOperations = {
@@ -255,7 +279,8 @@ const ReadDbOperations = {
 };
 
 /**
- * Types of write database operations
+ * Types of write database operations.
+ * 
  * @enum {string}
  */
 const WriteDbOperations = {
@@ -269,7 +294,8 @@ const WriteDbOperations = {
 };
 
 /**
- * Function result code
+ * Function result code.
+ * 
  * @enum {string}
  */
 const FunctionResultCode = {
@@ -280,7 +306,8 @@ const FunctionResultCode = {
 };
 
 /**
- * Constant values for transactionTracker
+ * Constant values for transactionTracker.
+ * 
  * @enum {string}
  */
 const TransactionStatus = {
@@ -299,11 +326,13 @@ const DefaultValues = {
 
 /**
  * State versions.
+ * 
  * @enum {string}
  */
 const StateVersions = {
   BACKUP: 'BACKUP',
   EMPTY: 'EMPTY',
+  FINAL: 'FINAL',
   NODE: 'NODE',
   SNAP: 'SNAP',
   START: 'START',
@@ -330,13 +359,13 @@ const GenesisOwners = getGenesisOwners();
 function getGenesisConfig(filename, additionalEnv) {
   let config = null;
   if (CUSTOM_GENESIS_CONFIGS_DIR) {
-    const configPath = path.resolve(__dirname, CUSTOM_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(process.cwd(), CUSTOM_GENESIS_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     }
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, DEFAULT_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(process.cwd(), DEFAULT_GENESIS_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
@@ -346,7 +375,7 @@ function getGenesisConfig(filename, additionalEnv) {
   if (additionalEnv) {
     const parts = additionalEnv.split(':');
     const dbPath = parts[0];
-    const additionalFilePath = path.resolve(__dirname, parts[1])
+    const additionalFilePath = path.resolve(process.cwd(), parts[1])
     if (fs.existsSync(additionalFilePath)) {
       const additionalConfig = JSON.parse(fs.readFileSync(additionalFilePath));
       ChainUtil.setJsObject(config, [dbPath], additionalConfig);
@@ -476,8 +505,8 @@ module.exports = {
   PROTOCOL_VERSIONS,
   DEBUG,
   MAX_TX_BYTES,
-  TRANSACTION_POOL_TIME_OUT_MS,
-  TRANSACTION_TRACKER_TIME_OUT_MS,
+  TRANSACTION_POOL_TIMEOUT_MS,
+  TRANSACTION_TRACKER_TIMEOUT_MS,
   NETWORK_ID,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
@@ -490,6 +519,7 @@ module.exports = {
   LIGHTWEIGHT,
   HASH_DELIMITER,
   MessageTypes,
+  BlockchainNodeStatus,
   PredefinedDbPaths,
   TokenProperties,
   AccountProperties,
