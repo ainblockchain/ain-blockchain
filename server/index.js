@@ -432,7 +432,7 @@ class P2pServer {
             if (this.node.mergeChainSegment(data.chainSegment)) {
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
-                if (this.node.status === BlockchainNodeStatus.SYNCING) {
+                if (this.node.status !== BlockchainNodeStatus.SERVING) {
                   // Regard this situation as if you're synced.
                   // TODO (lia): ask the tracker server for another peer.
                   logger.info(`Blockchain Node is now synced!`);
