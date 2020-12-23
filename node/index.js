@@ -284,11 +284,6 @@ class BlockchainNode {
     const LOG_HEADER = 'executeTransactionAndAddToPool';
 
     logger.debug(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
-    if (this.status !== BlockchainNodeStatus.SERVING) {
-      return ChainUtil.logAndReturnError(
-          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`,
-          0);
-    }
     if (this.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.bc.lastBlockTimestamp())) {
       return ChainUtil.logAndReturnError(
           logger, 2, `[${LOG_HEADER}] Timeouted transaction: ${JSON.stringify(tx, null, 2)}`,
@@ -298,6 +293,12 @@ class BlockchainNode {
       return ChainUtil.logAndReturnError(
           logger, 3,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
+    }
+    if (this.status !== BlockchainNodeStatus.SERVING) {
+      this.tp.addTransaction(tx);
+      return ChainUtil.logAndReturnError(
+          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`,
+          0);
     }
     const result = this.executeOrRollbackTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
