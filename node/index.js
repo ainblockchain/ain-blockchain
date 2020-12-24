@@ -300,7 +300,6 @@ class BlockchainNode {
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.status !== BlockchainNodeStatus.SERVING) {
-      this.tp.addTransaction(tx);
       return ChainUtil.logAndReturnError(
           logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`,
           0);
