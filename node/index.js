@@ -275,7 +275,6 @@ class BlockchainNode {
     if (this.bc.syncedAfterStartup === false) {
       logger.debug(`[${LOG_HEADER}] NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
           `${JSON.stringify(tx)}`);
-      this.tp.addTransaction(tx);
       return null;
     }
     const result = this.executeOrRollbackTransaction(tx);
