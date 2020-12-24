@@ -350,7 +350,8 @@ class BlockPool {
     }, 0);
     if (currentBlockInfo.tallied &&
         currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
-      logger.info(`[${LOG_HEADER}] block ${currentBlockInfo.block.hash} is notarized!`);
+      logger.info(`[${LOG_HEADER}] Notarized block: ${currentBlockInfo.block.hash} ` +
+          `(${currentBlockInfo.block.number} / ${currentBlockInfo.block.epoch})`);
       this.hashToBlockInfo[blockHash].notarized = true;
       this.updateLongestNotarizedChains(this.hashToBlockInfo[blockHash]);
     }
