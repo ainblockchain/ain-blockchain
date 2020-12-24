@@ -463,7 +463,8 @@ class P2pServer {
               logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
               // FIXME: Could be that I'm on a wrong chain.
               if (data.number <= this.node.bc.lastBlockNumber()) {
-                logger.info(`[${LOG_HEADER}] I am ahead(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
+                logger.info(`[${LOG_HEADER}] I am ahead ` +
+                    `(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
                 if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init();
                   if (this.consensus.isRunning()) {
@@ -471,13 +472,15 @@ class P2pServer {
                   }
                 }
               } else {
-                logger.info(`[${LOG_HEADER}] I am behind (${data.number} < ${this.node.bc.lastBlockNumber()}).`);
+                logger.info(`[${LOG_HEADER}] I am behind ` +
+                    `(${data.number} < ${this.node.bc.lastBlockNumber()}).`);
                 setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
               }
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
-            logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ${JSON.stringify(data.lastBlock)}`);
+            logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
+                `${JSON.stringify(data.lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
