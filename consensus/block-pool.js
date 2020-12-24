@@ -222,15 +222,18 @@ class BlockPool {
 
   addSeenBlock(block, proposalTx) {
     const LOG_HEADER = 'addSeenBlock';
+
+    logger.info(
+        `[${LOG_HEADER}] Adding seen block to the block pool: ${block.number} / ${block.epoch}`);
     // Check that there's no other block proposed at the same epoch
     if (this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
       const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
       if (conflict && conflict.notarized) {
-        logger.error(`[${LOG_HEADER}] multiple blocks proposed for epoch ` +
+        logger.error(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
             `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
         return false;
       }
-      logger.info(`[${LOG_HEADER}] multiple blocks proposed for epoch ` +
+      logger.info(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
           `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
       // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
     }
@@ -253,9 +256,11 @@ class BlockPool {
         });
         this.tryUpdateNotarized(blockHash);
       }
-      logger.info(`[${LOG_HEADER}] block added to the block pool`);
+      logger.info(
+          `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.info(`[${LOG_HEADER}] block already in the block pool`);
+      logger.info(
+          `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
     }
 
     this.epochToBlock[block.epoch] = blockHash;

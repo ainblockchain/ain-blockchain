@@ -206,8 +206,8 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Invalid message value: ${msg.value}`);
       return;
     }
-    logger.info(`[${LOG_HEADER}] Consensus state - finalized number: ` +
-        `${this.node.bc.lastBlockNumber()} / epoch: ${this.state.epoch}`);
+    logger.info(`[${LOG_HEADER}] Consensus state - Finalized block: ` +
+        `${this.node.bc.lastBlockNumber()} / ${this.state.epoch}`);
     logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
     if (msg.type === ConsensusMessageTypes.PROPOSE) {
       const lastNotarizedBlock = this.getLastNotarizedBlock();
@@ -372,6 +372,9 @@ class Consensus {
 
   checkProposal(proposalBlock, proposalTx) {
     const LOG_HEADER = 'checkProposal';
+
+    logger.info(`[${LOG_HEADER}] Checking block proposal: ` +
+        `${proposalBlock.number} / ${proposalBlock.epoch}`);
     if (this.blockPool.hasSeenBlock(proposalBlock)) {
       logger.info(`[${LOG_HEADER}] Proposal already seen`);
       return false;
@@ -573,7 +576,8 @@ class Consensus {
           `(${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
       return false;
     }
-    logger.info(`[${LOG_HEADER}] proposal verified`);
+    logger.info(`[${LOG_HEADER}] Verifed block proposal: ` +
+        `${proposalBlock.number} / ${proposalBlock.epoch}`);
     return true;
   }
 
@@ -617,6 +621,7 @@ class Consensus {
 
   tryPropose() {
     const LOG_HEADER = 'tryPropose';
+
     if (this.votedForEpoch(this.state.epoch)) {
       logger.info(`[${LOG_HEADER}] Already voted for ` +
           `${this.blockPool.epochToBlock[this.state.epoch]} at epoch ${this.state.epoch} ` +
@@ -624,17 +629,17 @@ class Consensus {
       return;
     }
     if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
-      logger.info(`[${LOG_HEADER}] I'm the proposer`);
+      logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const proposal = this.createProposal();
         if (proposal !== null) {
           this.handleConsensusMessage({value: proposal, type: ConsensusMessageTypes.PROPOSE});
         }
       } catch (e) {
-        logger.error(`Error while creating a proposal: ${e}`);
+        logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${e}`);
       }
     } else {
-      logger.info(`[${LOG_HEADER}] Not my turn`);
+      logger.info(`[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
     }
   }
 

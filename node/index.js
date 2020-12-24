@@ -69,6 +69,7 @@ class BlockchainNode {
 
   init(isFirstNode) {
     const LOG_HEADER = 'init';
+
     logger.info(`[${LOG_HEADER}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
     const startingDb =
@@ -105,9 +106,10 @@ class BlockchainNode {
 
   syncDb(newVersion) {
     const LOG_HEADER = 'syncDb';
+
     const oldVersion = this.db.stateVersion;
     if (newVersion === oldVersion) {
-      logger.info(`[${LOG_HEADER}] Already sync'ed.`);
+      logger.info(`[${LOG_HEADER}] Already sync'ed with version: ${newVersion}`);
       return false;
     }
     const clonedRoot = this.stateManager.cloneFinalVersion(newVersion);
@@ -126,6 +128,7 @@ class BlockchainNode {
 
   cloneAndFinalizeVersion(version, blockNumber) {
     const LOG_HEADER = 'cloneAndFinalizeVersion';
+
     const oldFinalVersion = this.stateManager.getFinalVersion();
     const newFinalVersion = `${StateVersions.FINAL}:${blockNumber}`;
     const clonedRoot = this.stateManager.cloneVersion(version, newFinalVersion);
@@ -157,6 +160,7 @@ class BlockchainNode {
 
   getNonce() {
     const LOG_HEADER = 'getNonce';
+
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
     //               publicKey
     let nonce = 0;
@@ -208,6 +212,7 @@ class BlockchainNode {
     */
   createTransaction(txBody, isNoncedTransaction = true) {
     const LOG_HEADER = 'createTransaction';
+
     if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
       for (const subTxBody of txBody.tx_list) {
@@ -326,20 +331,35 @@ class BlockchainNode {
   mergeChainSegment(chainSegment) {
     const LOG_HEADER = 'mergeChainSegment';
 
+    /*
     if (this.status !== BlockchainNodeStatus.SYNCING) {
       logger.info(`Blockchain node is NOT in SYNCING status: ${this.status}`);
       return false;
     }
+    */
     if (!chainSegment || chainSegment.length === 0) {
-      logger.info(`Empty chain segment`);
+      logger.info(`[${LOG_HEADER}] Empty chain segment`);
+      if (this.status !== BlockchainNodeStatus.SERVING) {
+        // Regard this situation as if you're synced.
+        // TODO (lia): ask the tracker server for another peer.
+        logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+        this.status = BlockchainNodeStatus.SERVING;
+      }
       return false;
     }
     if (chainSegment[chainSegment.length - 1].number < this.bc.lastBlockNumber()) {
-      logger.info(`Received chain is of lower block number than current last block number`);
+      logger.info(
+          `[${LOG_HEADER}] Received chain is of lower block number than current last block number`);
       return false;
     }
     if (chainSegment[chainSegment.length - 1].number === this.bc.lastBlockNumber()) {
-      logger.info(`Received chain is at the same block number`);
+      logger.info(`[${LOG_HEADER}] Received chain is at the same block number`);
+      if (this.status !== BlockchainNodeStatus.SERVING) {
+        // Regard this situation as if you're synced.
+        // TODO (lia): ask the tracker server for another peer.
+        logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+        this.status = BlockchainNodeStatus.SERVING;
+      }
       return false;
     }
 
@@ -364,6 +384,7 @@ class BlockchainNode {
 
   executeChainOnDb(db) {
     const LOG_HEADER = 'executeChainOnDb';
+
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       if (!db.executeTransactionList(block.last_votes)) {
