@@ -114,23 +114,30 @@ class Block {
   }
 
   static validateHashes(block) {
+    const LOG_HEADER = 'validateHashes';
+
     if (block.hash !== Block.hash(block)) {
-      logger.error(`Block hash is incorrect for block ${block.hash}`);
+      logger.error(`[${LOG_HEADER}] Block hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
-      logger.error(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
+      logger.error(
+          `[${LOG_HEADER}] Transactions or transactions_hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
-      logger.error(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+      logger.error(
+          `[${LOG_HEADER}] Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
     }
-    logger.info(`Hash check successfully done`);
+    logger.info(
+        `[${LOG_HEADER}] Hash check successfully done for block: ${block.number} / ${block.epoch}`);
     return true;
   }
 
   static validateProposedBlock(block) {
+    const LOG_HEADER = 'validateProposedBlock';
+
     if (!Block.validateHashes(block)) return false;
     const nonceTracker = {};
     let tx;
@@ -144,7 +151,7 @@ class Block {
         continue;
       }
       if (tx.tx_body.nonce != nonceTracker[tx.address] + 1) {
-        logger.error(`Invalid noncing for ${tx.address} ` +
+        logger.error(`[${LOG_HEADER}] Invalid noncing for ${tx.address} ` +
             `Expected ${nonceTracker[tx.address] + 1} ` +
             `Received ${tx.tx_body.nonce}`);
         return false;
@@ -152,7 +159,7 @@ class Block {
       nonceTracker[tx.address] = tx.tx_body.nonce;
     }
 
-    logger.info(`Valid block of number ${block.number}`);
+    logger.info(`[${LOG_HEADER}] Validated block: ${block.number} / ${block.epoch}`);
     return true;
   }
 
