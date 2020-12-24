@@ -11,6 +11,7 @@ const {
   GenesisAccounts,
   GenesisSharding,
   StateVersions,
+  FeatureFlags,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Blockchain = require('../blockchain');
@@ -140,9 +141,11 @@ class BlockchainNode {
     if (!this.stateManager.finalizeVersion(newFinalVersion)) {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
-    logger.info(`[${LOG_HEADER}] Renaming version: ${version} -> ${newFinalVersion}`);
-    if (!this.stateManager.renameVersion(version, newFinalVersion)) {
-      logger.error(`[${LOG_HEADER}] Failed to replace version: ${version} -> ${newFinalVersion}`);
+    if (FeatureFlags.enableVersionRenaming) {
+      logger.info(`[${LOG_HEADER}] Renaming version: ${version} -> ${newFinalVersion}`);
+      if (!this.stateManager.renameVersion(version, newFinalVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to replace version: ${version} -> ${newFinalVersion}`);
+      }
     }
     if (oldFinalVersion) {
       logger.info(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
