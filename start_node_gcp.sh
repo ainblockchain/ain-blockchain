@@ -83,4 +83,4 @@ export HOSTING_ENV=gcp
 export DEBUG=false
 export LIGHTWEIGHT=false
 
-nohup node client/index.js >/dev/null 2>&1 &
+nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
