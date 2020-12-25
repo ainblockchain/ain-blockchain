@@ -333,12 +333,6 @@ class BlockchainNode {
   mergeChainSegment(chainSegment) {
     const LOG_HEADER = 'mergeChainSegment';
 
-    /*
-    if (this.status !== BlockchainNodeStatus.SYNCING) {
-      logger.info(`Blockchain node is NOT in SYNCING status: ${this.status}`);
-      return false;
-    }
-    */
     if (!chainSegment || chainSegment.length === 0) {
       logger.info(`[${LOG_HEADER}] Empty chain segment`);
       if (this.status !== BlockchainNodeStatus.SERVING) {
