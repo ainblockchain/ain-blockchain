@@ -10,7 +10,7 @@
     "url": "https://github.com/ainblockchain/ain-blockchain"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=12"
   },
   "scripts": {
     "clean": "sh stop_servers.sh & echo 'cleaned'",
