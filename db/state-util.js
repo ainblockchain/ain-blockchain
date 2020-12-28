@@ -233,7 +233,7 @@ function deleteStateTreeVersion(node, version) {
   for (const label of node.getChildLabels()) {
     const childNode = node.getChild(label);
     node.deleteChild(label);
-    if (childNode.numParents() == 0) {
+    if (childNode.numParents() === 0) {
       numAffectedNodes += deleteStateTreeVersion(childNode, version);
     } else if (childNode.numParents() < 0) {
       // This shouldn't happen.
