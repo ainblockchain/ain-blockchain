@@ -7,6 +7,7 @@ const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
+const v8 = require('v8');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
@@ -276,14 +277,10 @@ class P2pServer {
         committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
         pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
       },
+      memoryStatus: this.getMemoryUsage(),
+      diskStatus: this.getDiskUsage(),
       managedPeersInfo: this.managedPeersInfo,
     };
-    const diskUsage = this.getDiskUsage();
-    if (diskUsage !== null) {
-      updateToTracker.diskUsage = diskUsage;
-    }
-    const memoryUsage = this.getMemoryUsage();
-    updateToTracker.memoryUsage = memoryUsage;
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
                  `${JSON.stringify(updateToTracker, null, 2)}`);
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
@@ -294,7 +291,7 @@ class P2pServer {
       return disk.checkSync(DISK_USAGE_PATH);
     } catch (err) {
       logger.error(err);
-      return null;
+      return {};
     }
   }
 
@@ -303,9 +300,13 @@ class P2pServer {
     const total = os.totalmem();
     const usage = total - free;
     return {
-      free,
-      usage,
-      total,
+      os: {
+        free,
+        usage,
+        total,
+      },
+      heap: process.memoryUsage(),
+      heapStats: v8.getHeapStatistics(),
     };
   }
 
