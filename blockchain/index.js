@@ -8,7 +8,7 @@ const logger = require('../logger')('BLOCKCHAIN');
 const {Block} = require('./block');
 const BlockFilePatterns = require('./block-file-patterns');
 const {BLOCKCHAINS_DIR} = require('../common/constants');
-const CHAIN_SUBSECT_LENGTH = 20;
+const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 
 class Blockchain {
@@ -223,12 +223,12 @@ class Blockchain {
   }
 
   /**
-    * Returns a section of the chain up to a maximuim of length CHAIN_SUBSECT_LENGTH, starting from
+    * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
     * the block number of the reference block.
     *
     * @param {Block} refBlock - The current highest block tin the querying nodes blockchain
     * @return {list} A list of Block instances with refBlock at index 0, up to a maximuim length
-    *                CHAIN_SUBSECT_LENGTH
+    *                CHAIN_SEGMENT_LENGTH
     */
   requestBlockchainSection(refBlock) {
     const refBlockNumber = refBlock ? refBlock.number : -1;
@@ -237,7 +237,7 @@ class Blockchain {
     logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
                 `Requester's last block number: ${refBlockNumber}`);
 
-    const blockFiles = this.getBlockFiles(nextBlockNumber, nextBlockNumber + CHAIN_SUBSECT_LENGTH);
+    const blockFiles = this.getBlockFiles(nextBlockNumber, nextBlockNumber + CHAIN_SEGMENT_LENGTH);
 
     if (blockFiles.length > 0 &&
         (!!(refBlock) && Block.loadBlock(blockFiles[0]).last_hash !== refBlock.hash)) {
