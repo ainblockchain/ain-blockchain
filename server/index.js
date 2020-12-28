@@ -245,14 +245,15 @@ class P2pServer {
   // TODO(seo): Add sharding status.
   updateNodeStatusToTracker() {
     const updateToTracker = {
+      address: this.node.account.address,
+      updatedAt: Date.now(),
       url: url.format({
         protocol: 'ws',
         hostname: this.node.ipAddrExternal,
         port: P2P_PORT
       }),
       ip: this.node.ipAddrExternal,
-      address: this.node.account.address,
-      updatedAt: Date.now(),
+      port: P2P_PORT,
       lastBlock: {
         number: this.node.bc.lastBlockNumber(),
         epoch: this.node.bc.lastBlockEpoch(),
@@ -283,7 +284,7 @@ class P2pServer {
       },
       memoryStatus: this.getMemoryUsage(),
       diskStatus: this.getDiskUsage(),
-      processStatus: this.getProcessStatus(),
+      runtimeInfo: this.getRuntimeInfo(),
       managedPeersInfo: this.managedPeersInfo,
     };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
@@ -315,12 +316,28 @@ class P2pServer {
     };
   }
 
-  getProcessStatus() {
+  getRuntimeInfo() {
     return {
-      version: process.version,
-      platform: process.platform,
-      pid: process.pid,
-      uptime: Math.floor(process.uptime()),
+      process: {
+        version: process.version,
+        platform: process.platform,
+        pid: process.pid,
+        uptime: Math.floor(process.uptime()),
+        v8Version: process.versions.v8,
+      },
+      os: {
+        hostname: os.hostname(),
+        type: os.type(),
+        release: os.release(),
+        version: os.version(),
+        uptime: os.uptime(),
+      },
+      env: {
+        NUM_VALIDATORS: process.env.NUM_VALIDATORS,
+        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+        HOSTING_ENV: process.env.HOSTING_ENV,
+        DEBUG: process.env.DEBUG,
+      },
     };
   }
 
