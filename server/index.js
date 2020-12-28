@@ -283,6 +283,7 @@ class P2pServer {
       },
       memoryStatus: this.getMemoryUsage(),
       diskStatus: this.getDiskUsage(),
+      processStatus: this.getProcessStatus(),
       managedPeersInfo: this.managedPeersInfo,
     };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
@@ -311,6 +312,15 @@ class P2pServer {
       },
       heap: process.memoryUsage(),
       heapStats: v8.getHeapStatistics(),
+    };
+  }
+
+  getProcessStatus() {
+    return {
+      version: process.version,
+      platform: process.platform,
+      pid: process.pid,
+      uptime: Math.floor(process.uptime()),
     };
   }
 
