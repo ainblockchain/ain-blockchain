@@ -7,6 +7,7 @@ const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
+const v8 = require('v8');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
@@ -244,14 +245,15 @@ class P2pServer {
   // TODO(seo): Add sharding status.
   updateNodeStatusToTracker() {
     const updateToTracker = {
+      address: this.node.account.address,
+      updatedAt: Date.now(),
       url: url.format({
         protocol: 'ws',
         hostname: this.node.ipAddrExternal,
         port: P2P_PORT
       }),
       ip: this.node.ipAddrExternal,
-      address: this.node.account.address,
-      updatedAt: Date.now(),
+      port: P2P_PORT,
       lastBlock: {
         number: this.node.bc.lastBlockNumber(),
         epoch: this.node.bc.lastBlockEpoch(),
@@ -280,14 +282,11 @@ class P2pServer {
         treeSize: this.node.db.getTreeSize('/'),
         proof: this.node.db.getProof('/'),
       },
+      memoryStatus: this.getMemoryUsage(),
+      diskStatus: this.getDiskUsage(),
+      runtimeInfo: this.getRuntimeInfo(),
       managedPeersInfo: this.managedPeersInfo,
     };
-    const diskUsage = this.getDiskUsage();
-    if (diskUsage !== null) {
-      updateToTracker.diskUsage = diskUsage;
-    }
-    const memoryUsage = this.getMemoryUsage();
-    updateToTracker.memoryUsage = memoryUsage;
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
                  `${JSON.stringify(updateToTracker, null, 2)}`);
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
@@ -298,7 +297,7 @@ class P2pServer {
       return disk.checkSync(DISK_USAGE_PATH);
     } catch (err) {
       logger.error(err);
-      return null;
+      return {};
     }
   }
 
@@ -307,9 +306,38 @@ class P2pServer {
     const total = os.totalmem();
     const usage = total - free;
     return {
-      free,
-      usage,
-      total,
+      os: {
+        free,
+        usage,
+        total,
+      },
+      heap: process.memoryUsage(),
+      heapStats: v8.getHeapStatistics(),
+    };
+  }
+
+  getRuntimeInfo() {
+    return {
+      process: {
+        version: process.version,
+        platform: process.platform,
+        pid: process.pid,
+        uptime: Math.floor(process.uptime()),
+        v8Version: process.versions.v8,
+      },
+      os: {
+        hostname: os.hostname(),
+        type: os.type(),
+        release: os.release(),
+        version: os.version(),
+        uptime: os.uptime(),
+      },
+      env: {
+        NUM_VALIDATORS: process.env.NUM_VALIDATORS,
+        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+        HOSTING_ENV: process.env.HOSTING_ENV,
+        DEBUG: process.env.DEBUG,
+      },
     };
   }
 
