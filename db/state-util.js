@@ -161,8 +161,8 @@ function setStateTreeVersion(node, version) {
     numAffectedNodes++;
   }
   for (const label of node.getChildLabels()) {
-    const childNode = node.getChild(label);
-    numAffectedNodes += setStateTreeVersion(childNode, version);
+    const child = node.getChild(label);
+    numAffectedNodes += setStateTreeVersion(child, version);
   }
 
   return numAffectedNodes;
@@ -198,8 +198,8 @@ function replaceStateTreeVersion(node, oldVersion, newVersion, isRootNode = true
 function deleteStateTree(node) {
   let numAffectedNodes = 0;
   for (const label of node.getChildLabels()) {
-    const childNode = node.getChild(label);
-    numAffectedNodes += deleteStateTree(childNode);
+    const child = node.getChild(label);
+    numAffectedNodes += deleteStateTree(child);
     node.deleteChild(label);
   }
   node.resetValue();
@@ -249,8 +249,8 @@ function deleteStateTreeVersion(node, version) {
 function makeCopyOfStateTree(node) {
   const copy = node.clone();
   for (const label of node.getChildLabels()) {
-    const childNode = node.getChild(label);
-    copy.setChild(label, makeCopyOfStateTree(childNode));
+    const child = node.getChild(label);
+    copy.setChild(label, makeCopyOfStateTree(child));
   }
   return copy;
 }
@@ -280,9 +280,9 @@ function equalStateTrees(node1, node2) {
 function setProofHashForStateTree(stateTree) {
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
-    stateTree.getChildNodes().forEach((node) => {
-      numAffectedNodes += setProofHashForStateTree(node);
-    });
+    for (const child of stateTree.getChildNodes()) {
+      numAffectedNodes += setProofHashForStateTree(child);
+    };
   }
   stateTree.updateProofHashAndTreeSize();
   numAffectedNodes++;
@@ -294,9 +294,9 @@ function updateProofHashForAllRootPathsRecursive(node) {
   let numAffectedNodes = 0;
   node.updateProofHashAndTreeSize();
   numAffectedNodes++;
-  node.getParentNodes().forEach((parent) => {
+  for (const parent of node.getParentNodes()) {
     numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);
-  })
+  }
   return numAffectedNodes;
 }
 

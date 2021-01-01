@@ -29,9 +29,9 @@ class StateNode {
   clone(version) {
     const clone = StateNode._create(version ? version : this.version,
         this.isLeaf, this.childMap, this.value, this.proofHash, this.treeSize);
-    this.getChildNodes().forEach((child) => {
+    for (const child of this.getChildNodes()) {
       child._addParent(clone);
-    });
+    };
     return clone;
   }
 
@@ -141,7 +141,7 @@ class StateNode {
   }
 
   getParentNodes() {
-    return Array.from(this.parentSet);
+    return this.parentSet.values();
   }
 
   numParents() {
@@ -195,11 +195,11 @@ class StateNode {
   }
 
   getChildLabels() {
-    return [...this.childMap.keys()];
+    return this.childMap.keys();
   }
 
   getChildNodes() {
-    return [...this.childMap.values()];
+    return this.childMap.values();
   }
 
   numChildren() {
@@ -239,9 +239,11 @@ class StateNode {
     if (this.getIsLeaf()) {
       preimage = this.getValue();
     } else {
-      preimage = this.getChildLabels().map((label) => {
-        return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
-      }, '').join(HASH_DELIMITER);
+      const parts = [];
+      for (const label of this.getChildLabels()) {
+        parts.push(`${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`);
+      }
+      preimage = parts.join(HASH_DELIMITER);
     }
     return ChainUtil.hashString(ChainUtil.toString(preimage));
   }
@@ -250,7 +252,11 @@ class StateNode {
     if (this.getIsLeaf()) {
       return 1;
     } else {
-      return this.getChildNodes().reduce((acc, cur) => acc + cur.getTreeSize(), 1);
+      let treeSize = 1;
+      for (const childNode of this.getChildNodes()) {
+        treeSize += childNode.getTreeSize();
+      }
+      return treeSize;
     }
   }
 
