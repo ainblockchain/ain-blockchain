@@ -15,7 +15,7 @@ class StateManager {
   constructor() {
     this.rootMap = new Map();
     this._setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
-    this.finalVersion = null;
+    this._setFinalVersion(null);
   }
 
   /**
@@ -37,6 +37,14 @@ class StateManager {
    */
   isFinalVersion(version) {
     return this.getFinalVersion() === version;
+  }
+
+  /**
+   * Sets the final version.
+   * This is priviate method. Use finalizeVersion() instead.
+   */
+  _setFinalVersion(version) {
+    this.finalVersion = version;
   }
 
   /**
@@ -65,6 +73,16 @@ class StateManager {
    */
   _setRoot(version, root) {
     this.rootMap.set(version, root);
+  }
+
+  /**
+   * Deletes the state root of the given version.
+   * This is priviate method. Use deleteVersion() instead.
+   * 
+   * @param {string} version state version
+   */
+  _deleteRoot(version) {
+    this.rootMap.delete(version);
   }
 
   /**
@@ -178,7 +196,7 @@ class StateManager {
       numDeletedNodes = deleteStateTree(root);
     }
     logger.info(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
-    this.rootMap.delete(version);
+    this._deleteRoot(version);
     return root;
   }
 
@@ -200,7 +218,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return false;
     }
-    this.finalVersion = version;
+    this._setFinalVersion(version);
     return true;
   }
 
