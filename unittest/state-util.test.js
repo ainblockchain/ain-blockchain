@@ -866,18 +866,18 @@ describe("state-util", () => {
       const stateNode1 = StateNode.fromJsObject(true);
       setProofHashForStateTree(stateNode1);
       const numNodes1 = deleteStateTreeVersion(stateNode1, ver1);
-      expect(numNodes1).to.equal(0);
-      expect(stateNode1.getValue()).to.equal(true);
-      expect(stateNode1.getProofHash()).to.not.equal(null);
+      expect(numNodes1).to.equal(1);
+      expect(stateNode1.getValue()).to.equal(null);
+      expect(stateNode1.getProofHash()).to.equal(null);
       expect(stateNode1.numParents()).to.equal(0);
 
       // Delete a leaf node with a different version.
       const stateNode2 = StateNode.fromJsObject(true, 'ver2');
       setProofHashForStateTree(stateNode2);
       const numNodes2 = deleteStateTreeVersion(stateNode2, ver1);
-      expect(numNodes2).to.equal(0);
-      expect(stateNode2.getValue()).to.equal(true);
-      expect(stateNode2.getProofHash()).to.not.equal(null);
+      expect(numNodes2).to.equal(1);
+      expect(stateNode2.getValue()).to.equal(null);
+      expect(stateNode2.getProofHash()).to.equal(null);
       expect(stateNode2.numParents()).to.equal(0);
 
       // Delete a leaf node with the same version.
@@ -901,25 +901,19 @@ describe("state-util", () => {
     })
 
     it("internal node with a different version", () => {
-      const numNodes = deleteStateTreeVersion(node, 'ver4');
-      expect(numNodes).to.equal(0);
-      // State tree is not deleted.
-      assert.deepEqual(node.toJsObject(true), {
-        ".version": "ver3",
-        ".version:label1": "ver1",
-        ".version:label2": "ver2",
-        ".numParents": 0,
-        ".numParents:label1": 1,
-        ".numParents:label2": 1,
-        ".proofHash": "0xa540d9d1906f4579604302acdee0b4c9742f537eb5f8397fb9a43ed458dad439",
-        ".proofHash:label1": "0xb41f4a6e100333ddd8e8dcc01ca1fed23662d9faaec359ed255d21a900cecd08",
-        ".proofHash:label2": "0x7597bdc763c23c44e90f26c63d7eac963cc0d0aa8a0a3268e7f5691c5361d942",
-        ".treeSize": 3,
-        ".treeSize:label1": 1,
-        ".treeSize:label2": 1,
-        label1: "value1",
-        label2: "value2"
-      });
+      const numNodes = deleteStateTreeVersion(node, ver3);
+      expect(numNodes).to.equal(3);
+      // State tree is deleted.
+      assert.deepEqual(node.toJsObject(true), null);
+      // And child nodes are deleted as well.
+      expect(child1.getValue()).to.equal(null);
+      expect(child1.getProofHash()).to.equal(null);
+      expect(child1.getVersion()).to.equal(ver1);
+      expect(child1.numParents()).to.equal(0);
+      expect(child2.getValue()).to.equal(null);
+      expect(child2.getProofHash()).to.equal(null);
+      expect(child2.getVersion()).to.equal(ver2);
+      expect(child2.numParents()).to.equal(0);
     })
 
     it("internal node with the same version", () => {
@@ -937,7 +931,7 @@ describe("state-util", () => {
       expect(child1.numParents()).to.equal(0);
       expect(child2.getValue()).to.equal(null);
       expect(child2.getProofHash()).to.equal(null);
-      expect(child1.getVersion()).to.equal(ver3);
+      expect(child2.getVersion()).to.equal(ver3);
       expect(child2.numParents()).to.equal(0);
     })
 
@@ -968,16 +962,16 @@ describe("state-util", () => {
 
     it("internal node with the same version but with sub-node of different versions", () => {
       const numNodes = deleteStateTreeVersion(node, ver3);
-      expect(numNodes).to.equal(1);
+      expect(numNodes).to.equal(3);
       // Root node is deleted.
       assert.deepEqual(node.toJsObject(true), null);
-      // But child nodes are not deleted.
-      expect(child1.getValue()).to.equal('value1');
-      expect(child1.getProofHash()).to.not.equal(null);
+      // And child nodes are deleted as well.
+      expect(child1.getValue()).to.equal(null);
+      expect(child1.getProofHash()).to.equal(null);
       expect(child1.getVersion()).to.equal(ver1);
       expect(child1.numParents()).to.equal(0);
-      expect(child2.getValue()).to.equal('value2');
-      expect(child2.getProofHash()).to.not.equal(null);
+      expect(child2.getValue()).to.equal(null);
+      expect(child2.getProofHash()).to.equal(null);
       expect(child2.getVersion()).to.equal(ver2);
       expect(child2.numParents()).to.equal(0);
     })

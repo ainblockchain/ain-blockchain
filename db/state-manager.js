@@ -144,27 +144,27 @@ class StateManager {
   }
 
   /**
-   * Renames the state tree's version of the given new version. Each node's version of
-   * the state tree specified with the new version is set with the new version if its value
-   * is equal to the given old version.
+   * Renames the state tree's version of the given to-version. Each node's version of
+   * the state tree rooted with the given to-version is set with the to-version if its value
+   * is equal to the given from-version.
    * 
-   * @param {string} oldVersion state version to rename
-   * @param {string} newVersion version of the state tree to apply the renaming
+   * @param {string} fromVersion state version to rename
+   * @param {string} toVersion version of the state tree to apply the renaming
    */
-  renameVersion(oldVersion, newVersion) {
+  renameVersion(fromVersion, toVersion) {
     const LOG_HEADER = 'renameVersion';
     logger.debug(
-        `[${LOG_HEADER}] Renaming version ${oldVersion} -> ${newVersion} (${this.numVersions()})`);
-    if (!this.hasVersion(newVersion)) {
-      logger.error(`[${LOG_HEADER}] Non-existing version: ${newVersion}`);
+        `[${LOG_HEADER}] Renaming version ${fromVersion} -> ${toVersion} (${this.numVersions()})`);
+    if (!this.hasVersion(toVersion)) {
+      logger.error(`[${LOG_HEADER}] Non-existing version: ${toVersion}`);
       return false;
     }
-    const root = this.getRoot(newVersion);
+    const root = this.getRoot(toVersion);
     if (root === null) {
-      logger.error(`[${LOG_HEADER}] Null root of version: ${newVersion}`);
+      logger.error(`[${LOG_HEADER}] Null root of version: ${toVersion}`);
       return false;
     }
-    let numRenamedNodes = renameStateTreeVersion(root, oldVersion, newVersion);
+    let numRenamedNodes = renameStateTreeVersion(root, fromVersion, toVersion);
     logger.debug(`[${LOG_HEADER}] Renamed ${numRenamedNodes} state nodes.`);
     return true;
   }
