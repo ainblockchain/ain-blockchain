@@ -28,10 +28,10 @@ class StateNode {
   clone(version) {
     const cloned = StateNode._create(version ? version : this.version,
         this.isLeaf, this.value, this.proofHash, this.treeSize);
-    this.getChildLabels().forEach((label) => {
+    for (const label of this.getChildLabels()) {
       const child = this.getChild(label);
       cloned.setChild(label, child);
-    });
+    }
     return cloned;
   }
 
@@ -166,7 +166,8 @@ class StateNode {
         // Does nothing.
         return;
       }
-      this.deleteChild(label);
+      // NOTE(seo): Use _deleteParent() instead of deleteChild() to keep the order of children.
+      child._deleteParent(this);
     }
     this.childMap.set(label, node);
     node._addParent(this);
