@@ -192,13 +192,13 @@ class StateManager {
     }
     let numDeletedNodes = null;
     if (FeatureFlags.enableStateVersionOpt) {
-      numDeletedNodes = deleteStateTreeVersion(root, version);
+      numDeletedNodes = deleteStateTreeVersion(root);
     } else {
       numDeletedNodes = deleteStateTree(root);
     }
     logger.debug(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
     this._deleteRoot(version);
-    return root;
+    return true;
   }
 
   /**

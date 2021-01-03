@@ -259,10 +259,10 @@ describe('Blockchain Node', () => {
         const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
         const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
         const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
-            `functions${HASH_DELIMITER}${functionProof}${HASH_DELIMITER}` +
-            `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
-            `values${HASH_DELIMITER}${valuesProof}`;
+        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
+            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
+            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
+            `functions${HASH_DELIMITER}${functionProof}`;
         const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
         assert.deepEqual(body, { code: 0, result: { [ProofProperties.PROOF_HASH]: proofHash } });
       });
