@@ -213,7 +213,6 @@ function deleteStateTree(node) {
 /**
  * Returns affected nodes' number.
  */
-
 function deleteStateTreeVersion(node) {
   let numAffectedNodes = 0;
   if (node.numParents() > 0) {
@@ -267,9 +266,9 @@ function equalStateTrees(node1, node2) {
 function setProofHashForStateTree(stateTree) {
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
-    stateTree.getChildNodes().forEach((node) => {
+    for (const node of stateTree.getChildNodes()) {
       numAffectedNodes += setProofHashForStateTree(node);
-    });
+    }
   }
   stateTree.updateProofHashAndTreeSize();
   numAffectedNodes++;
@@ -281,9 +280,9 @@ function updateProofHashForAllRootPathsRecursive(node) {
   let numAffectedNodes = 0;
   node.updateProofHashAndTreeSize();
   numAffectedNodes++;
-  node.getParentNodes().forEach((parent) => {
+  for (const parent of node.getParentNodes()) {
     numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);
-  })
+  }
   return numAffectedNodes;
 }
 
