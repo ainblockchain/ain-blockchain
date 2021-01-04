@@ -326,6 +326,14 @@ app.get('/protocol_versions', (req, res) => {
     .end();
 });
 
+app.get('/state_versions', (req, res) => {
+  const result = p2pServer.getStateVersions();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 // TODO(seo): Support for subtree dumping (i.e. with ref path).
 app.get('/dump_final_version', (req, res) => {
   const result = node.dumpFinalVersion(true);
