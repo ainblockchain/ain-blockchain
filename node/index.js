@@ -90,9 +90,13 @@ class BlockchainNode {
 
   createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
     const LOG_HEADER = 'createDb';
+
+    logger.info(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
+        `${baseVersion} -> ${newVersion}`);
     const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
     if (!newRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`)
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion} -> ${newVersion}`);
       return null;
     }
     if (finalizeVersion) {
@@ -102,6 +106,9 @@ class BlockchainNode {
   }
 
   destroyDb(db) {
+    const LOG_HEADER = 'destroyDb';
+
+    logger.info(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
     return this.stateManager.deleteVersion(db.stateVersion);
   }
 
