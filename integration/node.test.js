@@ -17,7 +17,6 @@ const {
   MAX_TX_BYTES,
   GenesisAccounts,
   HASH_DELIMITER,
-  PredefinedDbPaths,
   ProofProperties,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -245,17 +244,16 @@ describe('Blockchain Node', () => {
       it('get_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_proof?ref=/')
             .body.toString('utf-8'));
-        const ownersBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.OWNERS_ROOT}`)
+        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/owners`)
             .body.toString('utf-8'));
-        const rulesBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.RULES_ROOT}`)
+        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/rules`)
             .body.toString('utf-8'));
-        const valuesBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.VALUES_ROOT}`)
+        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/values`)
             .body.toString('utf-8'));
         const functionsBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_proof?ref=/${PredefinedDbPaths.FUNCTIONS_ROOT}`)
+            'GET', server1 + `/get_proof?ref=/functions`)
+            .body.toString('utf-8'));
+        const dump = parseOrLog(syncRequest('GET', server1 + '/dump_final_version')
             .body.toString('utf-8'));
         const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
         const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
