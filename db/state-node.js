@@ -16,10 +16,9 @@ class StateNode {
     this.treeSize = 1;
   }
 
-  static _create(version, isLeaf, childMap, value, proofHash, treeSize) {
+  static _create(version, isLeaf, value, proofHash, treeSize) {
     const node = new StateNode(version);
     node.setIsLeaf(isLeaf);
-    node.childMap = new Map(childMap);
     node.setValue(value);
     node.setProofHash(proofHash);
     node.setTreeSize(treeSize);
@@ -27,12 +26,13 @@ class StateNode {
   }
 
   clone(version) {
-    const clone = StateNode._create(version ? version : this.version,
-        this.isLeaf, this.childMap, this.value, this.proofHash, this.treeSize);
-    this.getChildNodes().forEach((child) => {
-      child._addParent(clone);
-    });
-    return clone;
+    const cloned = StateNode._create(version ? version : this.version,
+        this.isLeaf, this.value, this.proofHash, this.treeSize);
+    for (const label of this.getChildLabels()) {
+      const child = this.getChild(label);
+      cloned.setChild(label, child);
+    }
+    return cloned;
   }
 
   equal(that) {
@@ -159,13 +159,14 @@ class StateNode {
   setChild(label, node) {
     const LOG_HEADER = 'setChild';
     if (this.hasChild(label)) {
-      if (this.getChild(label) === node) {
+      const child = this.getChild(label);
+      if (child === node) {
         logger.error(
             `[${LOG_HEADER}] Setting a child with label ${label} which is already a child.`);
         // Does nothing.
         return;
       }
-      const child = this.getChild(label);
+      // NOTE(seo): Use _deleteParent() instead of deleteChild() to keep the order of children.
       child._deleteParent(this);
     }
     this.childMap.set(label, node);
