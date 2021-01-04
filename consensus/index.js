@@ -503,8 +503,8 @@ class Consensus {
       this.node.destroyDb(tempDb);
     }
     if (prevBlock.epoch >= epoch) {
-      logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) is greater than` +
-          `or equal to incoming block's (${epoch})`);
+      logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) ` +
+          `is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
     const seed = '' + this.genesisHash + epoch;
