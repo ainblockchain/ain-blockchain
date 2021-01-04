@@ -334,9 +334,13 @@ const StateVersions = {
   EMPTY: 'EMPTY',
   FINAL: 'FINAL',
   NODE: 'NODE',
+  POOL: 'POOL',
   SNAP: 'SNAP',
   START: 'START',
-  TEMP: 'TEMP',
+  TEMP_A: 'TEMP_A',
+  TEMP_B: 'TEMP_B',
+  TEMP_C: 'TEMP_C',
+  TEMP_D: 'TEMP_D',
 };
 
 /**

@@ -227,8 +227,15 @@ class StateManager {
    * Returns a random state version with the given version prefix.
    * @param {string} versionPrefix version prefix
    */
-  static createRandomVersion(versionPrefix) {
-    return `${versionPrefix}:${Date.now()}:${Math.floor(Math.random() * 10000)}`;
+  createRandomVersion(versionPrefix) {
+    const timestamp = Date.now();
+    let index = 0;
+    let version = null;
+    do {
+      version = `${versionPrefix}:${timestamp}:${index}`;
+      index++;
+    } while (this.hasVersion(version));
+    return version;
   }
 }
 

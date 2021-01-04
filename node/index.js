@@ -260,7 +260,7 @@ class BlockchainNode {
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
 
-    const backupVersion = StateManager.createRandomVersion(`${StateVersions.BACKUP}`);
+    const backupVersion = this.stateManager.createRandomVersion(`${StateVersions.BACKUP}`);
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
       return ChainUtil.logAndReturnError(
@@ -359,7 +359,8 @@ class BlockchainNode {
       return false;
     }
 
-    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
+    const tempVersion = this.stateManager.createRandomVersion(
+        `${StateVersions.TEMP_D}:${this.bc.lastBlockNumber()}`);
     const tempDb = this.createTempDb(
         this.stateManager.getFinalVersion(), tempVersion, this.bc.lastBlockNumber());
     if (!this.bc.merge(chainSegment, tempDb)) {
