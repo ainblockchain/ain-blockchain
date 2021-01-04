@@ -274,7 +274,7 @@ class Consensus {
         this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
     const tempVersion = this.node.stateManager.createRandomVersion(
-        `${StateVersions.TEMP_A}:${this.node.bc.lastBlockNumber()}`);
+        `${StateVersions.TEMP_A}:${this.node.bc.lastBlockNumber()}:${blockNumber}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
@@ -479,7 +479,7 @@ class Consensus {
         baseVersion = prevDb.stateVersion;
       }
       const tempVersion = this.node.stateManager.createRandomVersion(
-          `${StateVersions.TEMP_B}:${this.node.bc.lastBlockNumber()}`);
+          `${StateVersions.TEMP_B}:${this.node.bc.lastBlockNumber()}:${number}`);
       const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
@@ -534,7 +534,7 @@ class Consensus {
       baseVersion = prevDb.stateVersion;
     }
     const tempVersion = this.node.stateManager.createRandomVersion(
-        `${StateVersions.TEMP_C}:${this.node.bc.lastBlockNumber()}`);
+        `${StateVersions.TEMP_C}:${this.node.bc.lastBlockNumber()}:${number}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
@@ -552,7 +552,7 @@ class Consensus {
     }
     this.node.tp.addTransaction(createdTx);
     const newVersion = this.node.stateManager.createRandomVersion(
-        `${StateVersions.POOL}:${this.node.bc.lastBlockNumber()}`);
+        `${StateVersions.POOL}:${this.node.bc.lastBlockNumber()}:${number}`);
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);

@@ -366,10 +366,11 @@ class BlockchainNode {
       return false;
     }
 
+    const baseVersion = this.stateManager.getFinalVersion();
     const tempVersion = this.stateManager.createRandomVersion(
         `${StateVersions.TEMP_D}:${this.bc.lastBlockNumber()}`);
     const tempDb = this.createTempDb(
-        this.stateManager.getFinalVersion(), tempVersion, this.bc.lastBlockNumber());
+        baseVersion, tempVersion, this.bc.lastBlockNumber());
     if (!this.bc.merge(chainSegment, tempDb)) {
       logger.error(`[${LOG_HEADER}] Failed to merge chain segment: ` +
           `${JSON.stringify(chainSegment, null, 2)}`);
@@ -382,6 +383,7 @@ class BlockchainNode {
       this.tp.cleanUpForNewBlock(block);
       this.tp.updateNonceTrackers(block.transactions);
     });
+    this.destroyDb(tempDb);
 
     return true;
   }
