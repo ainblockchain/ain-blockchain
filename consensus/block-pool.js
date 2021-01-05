@@ -1,8 +1,8 @@
 const get = require('lodash/get');
 const logger = require('../logger')('BLOCK_POOL');
 const {ConsensusConsts} = require('./constants');
-const {WriteDbOperations} = require('../constants');
-const ChainUtil = require('../chain-util');
+const {WriteDbOperations} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 
 class BlockPool {
   constructor(node, lastBlock) {
@@ -222,15 +222,18 @@ class BlockPool {
 
   addSeenBlock(block, proposalTx) {
     const LOG_HEADER = 'addSeenBlock';
+
+    logger.info(
+        `[${LOG_HEADER}] Adding seen block to the block pool: ${block.number} / ${block.epoch}`);
     // Check that there's no other block proposed at the same epoch
     if (this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
       const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
       if (conflict && conflict.notarized) {
-        logger.error(`[${LOG_HEADER}] multiple blocks proposed for epoch ` +
+        logger.error(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
             `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
         return false;
       }
-      logger.info(`[${LOG_HEADER}] multiple blocks proposed for epoch ` +
+      logger.info(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
           `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
       // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
     }
@@ -248,14 +251,16 @@ class BlockPool {
         this.hashToBlockInfo[blockHash].tallied = 0;
         blockInfo.votes.forEach((vote) => {
           if (block.validators[vote.address]) {
-            this.hashToBlockInfo[blockHash].tallied += get(vote, 'operation.value.stake');
+            this.hashToBlockInfo[blockHash].tallied += get(vote, 'tx_body.operation.value.stake');
           }
         });
         this.tryUpdateNotarized(blockHash);
       }
-      logger.info(`[${LOG_HEADER}] block added to the block pool`);
+      logger.info(
+          `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.info(`[${LOG_HEADER}] block already in the block pool`);
+      logger.info(
+          `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
     }
 
     this.epochToBlock[block.epoch] = blockHash;
@@ -284,8 +289,8 @@ class BlockPool {
 
   addSeenVote(voteTx, currentEpoch) {
     const LOG_HEADER = 'addSeenVote';
-    const blockHash = get(voteTx, 'operation.value.block_hash');
-    const stake = get(voteTx, 'operation.value.stake');
+    const blockHash = get(voteTx, 'tx_body.operation.value.block_hash');
+    const stake = get(voteTx, 'tx_body.operation.value.stake');
     logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
         `blockHash: ${blockHash}, stake: ${stake}`);
     if (!this.hashToBlockInfo[blockHash]) {
@@ -345,7 +350,8 @@ class BlockPool {
     }, 0);
     if (currentBlockInfo.tallied &&
         currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
-      logger.info(`[${LOG_HEADER}] block ${currentBlockInfo.block.hash} is notarized!`);
+      logger.info(`[${LOG_HEADER}] Notarized block: ${currentBlockInfo.block.hash} ` +
+          `(${currentBlockInfo.block.number} / ${currentBlockInfo.block.epoch})`);
       this.hashToBlockInfo[blockHash].notarized = true;
       this.updateLongestNotarizedChains(this.hashToBlockInfo[blockHash]);
     }
@@ -392,10 +398,10 @@ class BlockPool {
     if (!votes) return null;
     const proposalSuffix = 'propose';
     const proposal = votes.filter((tx) => {
-      if (tx.operation.type === WriteDbOperations.SET_VALUE) {
-        return tx.operation.ref.endsWith(proposalSuffix);
-      } else if (tx.operation.type === WriteDbOperations.SET) {
-        return tx.operation.op_list[0].ref.endsWith(proposalSuffix);
+      if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
+        return tx.tx_body.operation.ref.endsWith(proposalSuffix);
+      } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
+        return tx.tx_body.operation.op_list[0].ref.endsWith(proposalSuffix);
       }
       return false;
     });
@@ -403,18 +409,19 @@ class BlockPool {
   }
 
   static getBlockNumberFromTx(tx) {
-    if (!tx || !tx.operation) return null;
-    const ref = tx.operation.ref ? tx.operation.ref : get(tx, 'operation.op_list')[0].ref;
+    if (!tx || !tx.tx_body.operation) return null;
+    const ref = tx.tx_body.operation.ref ?
+        tx.tx_body.operation.ref : get(tx, 'tx_body.operation.op_list')[0].ref;
     const refSplit = ref ? ref.split('/') : [];
     return refSplit.length > 3 ? refSplit[3] : null;
   }
 
   static getBlockHashFromTx(tx) {
-    if (!tx || !tx.operation) return null;
-    if (tx.operation.type === WriteDbOperations.SET_VALUE) {
-      return get(tx.operation, 'value.block_hash');
-    } else if (tx.operation.type === WriteDbOperations.SET) {
-      return get(tx.operation.op_list[0], 'value.block_hash');
+    if (!tx || !tx.tx_body.operation) return null;
+    if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
+      return get(tx.tx_body.operation, 'value.block_hash');
+    } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
+      return get(tx.tx_body.operation.op_list[0], 'value.block_hash');
     } else {
       return null;
     }

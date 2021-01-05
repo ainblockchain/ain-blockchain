@@ -2,17 +2,19 @@
 
 const semver = require('semver');
 const sizeof = require('object-sizeof');
+const ainUtil = require('@ainblockchain/ain-util');
 const {
+  BlockchainNodeStatus,
   ReadDbOperations,
   PredefinedDbPaths,
   TransactionStatus,
   MAX_TX_BYTES,
-  NETWORK_ID
-} = require('../constants');
+  NETWORK_ID,
+} = require('../common/constants');
 const {
   ConsensusConsts
 } = require('../consensus/constants');
-const ainUtil = require('@ainblockchain/ain-util');
+const Transaction = require('../tx-pool/transaction');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 /**
@@ -122,13 +124,84 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
+    // TODO(seo): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
       // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
-        done(null, addProtocolVersion({code: 1, message: `Transaction size exceeds ` +
-            `${MAX_TX_BYTES} bytes.`}));
+        done(null, addProtocolVersion({
+          result: {
+            code: 1,
+            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`
+          }
+        }));
+      } else if (!args.tx_body || !args.signature) {
+        done(null, addProtocolVersion({
+          result: {
+            code: 2,
+            message: `Missing properties.`
+          }
+        }));
       } else {
-        done(null, addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(args)}));
+        const createdTx = Transaction.create(args.tx_body, args.signature);
+        if (!createdTx) {
+          done(null, addProtocolVersion({
+            result: {
+              code: 3,
+              message: `Invalid transaction format.`
+            }
+          }));
+        } else {
+          done(null,
+              addProtocolVersion({result: p2pServer.executeAndBroadcastTransaction(createdTx)}));
+        }
+      }
+    },
+
+    // TODO(lia): add test cases
+    ain_sendSignedTransactionBatch: function(args, done) {
+      // TODO (lia): return the transaction hash or an error message
+      if (sizeof(args) > MAX_TX_BYTES) {
+        done(null, addProtocolVersion({
+          result: {
+            code: 1,
+            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`
+          }
+        }));
+      } else if (!args.tx_list || !Array.isArray(args.tx_list)) {
+        done(null, addProtocolVersion({
+          result: {
+            code: 2,
+            message: `Invalid batch transaction format.`
+          }
+        }));
+      } else {
+        const txList = [];
+        for (let i = 0; i < args.tx_list.length; i++) {
+          const tx = args.tx_list[i];
+          if (!tx.tx_body || !tx.signature) {
+            done(null, addProtocolVersion({
+              result: {
+                code: 3,
+                message: `Missing properties of transaction[${i}].`
+              }
+            }));
+            return;
+          }
+          const createdTx = Transaction.create(tx.tx_body, tx.signature);
+          if (!createdTx) {
+            done(null, addProtocolVersion({
+              result: {
+                code: 4,
+                message: `Invalid format of transaction[${i}].`
+              }
+            }));
+            return;
+          }
+          txList.push(createdTx);
+        }
+        done(null, addProtocolVersion({
+          result: p2pServer.executeAndBroadcastTransaction({tx_list: txList})
+        }));
       }
     },
 
@@ -303,7 +376,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     net_syncing: function(args, done) {
       // TODO (lia): return { starting, latest } with block numbers if the node
       // is currently syncing.
-      done(null, addProtocolVersion({result: !node.bc.syncedAfterStartup}));
+      done(null, addProtocolVersion({result: p2pServer.node.status === BlockchainNodeStatus.SYNCING}));
     },
 
     net_getNetworkId: function(args, done) {

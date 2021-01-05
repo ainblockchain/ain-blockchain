@@ -3,7 +3,6 @@ const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
 const ainUtil = require('@ainblockchain/ain-util');
-const Blockchain = require('../blockchain');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
 const {setNodeForTesting, getTransaction} = require('./test-util')
@@ -80,28 +79,28 @@ describe('TransactionPool', () => {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       const sortedNonces2 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node2.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       const sortedNonces3 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node3.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       const sortedNonces4 = node.tp.getValidTransactions().filter((transaction) => {
         if (ainUtil.areSameAddresses(transaction.address, node4.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
-        return transaction.nonce;
+        return transaction.tx_body.nonce;
       });
       assert.deepEqual(sortedNonces1, [...Array(11).keys()]);
       assert.deepEqual(sortedNonces2, [...Array(11).keys()]);
@@ -112,8 +111,9 @@ describe('TransactionPool', () => {
     it('clean up for new block', () => {
       const number = 1;
       const lastBlock = Block.genesis();
-      const block = Block.createBlock(lastBlock.hash, [], node.tp.getValidTransactions(),
-          number, lastBlock.epoch + 1, '', node.account.address, []);
+      const block = Block.create(
+          lastBlock.hash, [], node.tp.getValidTransactions(), number, lastBlock.epoch + 1, '',
+          node.account.address, []);
       const newTransactions = {};
       newTransactions[node.account.address] = [];
       for (let i = 0; i < 10; i++) {

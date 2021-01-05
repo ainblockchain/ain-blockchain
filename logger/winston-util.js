@@ -5,12 +5,12 @@ const winston = require('winston');
 const {LoggingWinston} = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
-const {DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT} = require('../constants');
+const {DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT} = require('../common/constants');
 
 const {combine, timestamp, label, printf, colorize} = winston.format;
 
 const logDir = path.join(__dirname, '.', 'logs', String(PORT));
-const prefix = `node-${ACCOUNT_INDEX}-${PORT}`;
+const prefix = ACCOUNT_INDEX ? `node-${ACCOUNT_INDEX}-${PORT}` : `tracker-${PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
@@ -54,10 +54,10 @@ const getWinstonConsoleTransport = () => {
   });
 };
 
-const getWinstonDailyDebugFileTransport = () => {
+const getWinstonDailyCombinedFileTransport = () => {
   return new (winstonDaily)({
     name: 'daily-combined-log',
-    level: 'debug',
+    level: DEBUG ? 'debug' : 'info',
     filename: `${logDir}/${prefix}-combined-%DATE%.log`,
     handleExceptions: true,
     json: false,
@@ -94,7 +94,7 @@ const getWinstonTransports = () => {
   const transports = LIGHTWEIGHT ? [getWinstonDailyErrorFileTransport()]
       : [
         getWinstonConsoleTransport(),
-        getWinstonDailyDebugFileTransport(),
+        getWinstonDailyCombinedFileTransport(),
         getWinstonDailyErrorFileTransport(),
       ];
   if (HOSTING_ENV === 'gcp') {

@@ -7,8 +7,8 @@ const naturalSort = require('node-natural-sort');
 const logger = require('../logger')('BLOCKCHAIN');
 const {Block} = require('./block');
 const BlockFilePatterns = require('./block-file-patterns');
-const {BLOCKCHAINS_DIR} = require('../constants');
-const CHAIN_SUBSECT_LENGTH = 20;
+const {BLOCKCHAINS_DIR} = require('../common/constants');
+const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 
 class Blockchain {
@@ -16,7 +16,6 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainDir = blockchainDir;
-    this.syncedAfterStartup = false;
   }
 
   init(isFirstNode) {
@@ -175,13 +174,13 @@ class Blockchain {
       return false;
     }
     // TODO (lia): Check if the tx nonces are correct.
-    return Blockchain.isValidChainSubsection(chain);
+    return Blockchain.isValidChainSegment(chain);
   }
 
-  static isValidChainSubsection(chainSubSection) {
-    for (let i = 1; i < chainSubSection.length; i++) {
-      const block = chainSubSection[i];
-      const lastBlock = Block.parse(chainSubSection[i - 1]);
+  static isValidChainSegment(chainSegment) {
+    for (let i = 1; i < chainSegment.length; i++) {
+      const block = chainSegment[i];
+      const lastBlock = Block.parse(chainSegment[i - 1]);
       if (block.last_hash !== lastBlock.hash || !Block.validateHashes(block)) {
         return false;
       }
@@ -224,12 +223,12 @@ class Blockchain {
   }
 
   /**
-    * Returns a section of the chain up to a maximuim of length CHAIN_SUBSECT_LENGTH, starting from
+    * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
     * the block number of the reference block.
     *
     * @param {Block} refBlock - The current highest block tin the querying nodes blockchain
     * @return {list} A list of Block instances with refBlock at index 0, up to a maximuim length
-    *                CHAIN_SUBSECT_LENGTH
+    *                CHAIN_SEGMENT_LENGTH
     */
   requestBlockchainSection(refBlock) {
     const refBlockNumber = refBlock ? refBlock.number : -1;
@@ -238,7 +237,7 @@ class Blockchain {
     logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
                 `Requester's last block number: ${refBlockNumber}`);
 
-    const blockFiles = this.getBlockFiles(nextBlockNumber, nextBlockNumber + CHAIN_SUBSECT_LENGTH);
+    const blockFiles = this.getBlockFiles(nextBlockNumber, nextBlockNumber + CHAIN_SEGMENT_LENGTH);
 
     if (blockFiles.length > 0 &&
         (!!(refBlock) && Block.loadBlock(blockFiles[0]).last_hash !== refBlock.hash)) {
@@ -253,43 +252,19 @@ class Blockchain {
       return [this.lastBlock()];
     }
 
-    const chainSubSection = [];
+    const chainSegment = [];
     blockFiles.forEach((blockFile) => {
-      chainSubSection.push(Block.loadBlock(blockFile));
+      chainSegment.push(Block.loadBlock(blockFile));
     });
-    return chainSubSection.length > 0 ? chainSubSection : [];
+    return chainSegment.length > 0 ? chainSegment : [];
   }
 
-  merge(chainSubSection, db) {
-    // Call to shift here is important as it removes the first element from the list !!
+  merge(chainSegment, db) {
     logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
-    if (!chainSubSection || chainSubSection.length === 0) {
-      logger.info(`Empty chain sub section`);
-      if (!this.syncedAfterStartup) {
-        // Regard this situation as if you're synced.
-        // TODO (lia): ask the tracker server for another peer.
-        this.syncedAfterStartup = true;
-      }
-      return false;
-    }
-    if (chainSubSection[chainSubSection.length - 1].number < this.lastBlockNumber()) {
-      logger.info(`Received chain is of lower block number than current last block number`);
-      return false;
-    }
-    if (chainSubSection[chainSubSection.length - 1].number === this.lastBlockNumber()) {
-      logger.info(`Received chain is at the same block number`);
-      if (!this.syncedAfterStartup) {
-        // Regard this situation as if you're synced.
-        // TODO (lia): ask the tracker server for another peer.
-        this.syncedAfterStartup = true;
-      }
-      return false;
-    }
-
-    const firstBlock = Block.parse(chainSubSection[0]);
+    const firstBlock = Block.parse(chainSegment[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
     const overlap = lastBlockHash ?
-        chainSubSection.filter((block) => block.number === this.lastBlockNumber()) : null;
+        chainSegment.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
     if (lastBlockHash) {
       // Case 1: Not a cold start.
@@ -306,12 +281,12 @@ class Blockchain {
         return false;
       }
     }
-    if (!Blockchain.isValidChainSubsection(chainSubSection)) {
-      logger.error(`Invalid chain subsection`);
+    if (!Blockchain.isValidChainSegment(chainSegment)) {
+      logger.error(`Invalid chain segment`);
       return false;
     }
-    for (let i = 0; i < chainSubSection.length; i++) {
-      const block = chainSubSection[i];
+    for (let i = 0; i < chainSegment.length; i++) {
+      const block = chainSegment[i];
 
       if (block.number <= this.lastBlockNumber()) {
         continue;

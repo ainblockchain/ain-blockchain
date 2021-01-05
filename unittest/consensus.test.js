@@ -1,7 +1,7 @@
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
-const { BLOCKCHAINS_DIR } = require('../constants');
+const { BLOCKCHAINS_DIR } = require('../common/constants');
 const BlockchainNode = require('../node');
 const { setNodeForTesting, getTransaction, addBlock } = require('./test-util')
 
@@ -42,7 +42,7 @@ describe("Consensus", () => {
           }
         }
       );
-    expect(node1.db.executeTransaction(voteTx).code).to.equal(2);
+    expect(node1.db.executeTransaction(voteTx).code).to.equal(103);
   });
 
   it("Staked nodes can vote", () => {

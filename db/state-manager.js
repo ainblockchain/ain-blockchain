@@ -2,19 +2,20 @@ const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
   makeCopyOfStateTree,
+  renameStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
 } = require('./state-util');
 const {
   FeatureFlags,
   StateVersions,
-} = require('../constants');
+} = require('../common/constants');
 
 class StateManager {
   constructor() {
     this.rootMap = new Map();
     this._setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
-    this.finalizedVersion = null;
+    this._setFinalVersion(null);
   }
 
   /**
@@ -25,24 +26,32 @@ class StateManager {
   }
 
   /**
-   * Returns the finalized version.
+   * Returns the final version.
    */
-  getFinalizedVersion() {
-    return this.finalizedVersion;
+  getFinalVersion() {
+    return this.finalVersion;
   }
 
   /**
    * Returns whether the given version is finalized.
    */
-  isFinalizedVersion(version) {
-    return this.getFinalizedVersion() === version;
+  isFinalVersion(version) {
+    return this.getFinalVersion() === version;
   }
 
   /**
-   * Returns the finalized state root.
+   * Sets the final version.
+   * This is priviate method. Use finalizeVersion() instead.
    */
-  getFinalizedRoot() {
-    return this.getRoot(this.finalizedVersion);
+  _setFinalVersion(version) {
+    this.finalVersion = version;
+  }
+
+  /**
+   * Returns the final state root.
+   */
+  getFinalRoot() {
+    return this.getRoot(this.finalVersion);
   }
 
   /**
@@ -67,6 +76,16 @@ class StateManager {
   }
 
   /**
+   * Deletes the state root of the given version.
+   * This is priviate method. Use deleteVersion() instead.
+   * 
+   * @param {string} version state version
+   */
+  _deleteRoot(version) {
+    this.rootMap.delete(version);
+  }
+
+  /**
    * Returns true if the given version exists, otherwise false.
    * 
    * @param {string} version state version
@@ -83,12 +102,12 @@ class StateManager {
   }
 
   /**
-   * Clones the finalized version to create a new version.
+   * Clones the final version to create a new version.
    * 
    * @param {string} newVersion 
    */
-  cloneFinalizedVersion(newVersion) {
-    return this.cloneVersion(this.getFinalizedVersion(), newVersion);
+  cloneFinalVersion(newVersion) {
+    return this.cloneVersion(this.getFinalVersion(), newVersion);
   }
 
   /**
@@ -99,7 +118,7 @@ class StateManager {
    */
   cloneVersion(version, newVersion) {
     const LOG_HEADER = 'cloneVersion';
-    logger.info(`[${LOG_HEADER}] Cloning version ${version} to version ${newVersion} ` +
+    logger.debug(`[${LOG_HEADER}] Cloning version ${version} to version ${newVersion} ` +
         `(${this.numVersions()})`);
     if (!this.hasVersion(version)) {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
@@ -125,57 +144,91 @@ class StateManager {
   }
 
   /**
+   * Renames the state tree's version of the given to-version. Each node's version of
+   * the state tree rooted with the given to-version is set with the to-version if its value
+   * is equal to the given from-version.
+   * 
+   * @param {string} fromVersion state version to rename
+   * @param {string} toVersion version of the state tree to apply the renaming
+   */
+  renameVersion(fromVersion, toVersion) {
+    const LOG_HEADER = 'renameVersion';
+    logger.debug(
+        `[${LOG_HEADER}] Renaming version ${fromVersion} -> ${toVersion} (${this.numVersions()})`);
+    if (!this.hasVersion(toVersion)) {
+      logger.error(`[${LOG_HEADER}] Non-existing version: ${toVersion}`);
+      return false;
+    }
+    const root = this.getRoot(toVersion);
+    if (root === null) {
+      logger.error(`[${LOG_HEADER}] Null root of version: ${toVersion}`);
+      return false;
+    }
+    let numRenamedNodes = renameStateTreeVersion(root, fromVersion, toVersion);
+    logger.debug(`[${LOG_HEADER}] Renamed ${numRenamedNodes} state nodes.`);
+    return true;
+  }
+
+  /**
    * Deletes the given version.
    * 
    * @param {string} version state version 
    */
   deleteVersion(version) {
     const LOG_HEADER = 'deleteVersion';
-    logger.info(`[${LOG_HEADER}] Deleting version ${version} (${this.numVersions()})`);
+    logger.debug(`[${LOG_HEADER}] Deleting version ${version} (${this.numVersions()})`);
     if (!this.hasVersion(version)) {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
-      return null;
+      return false;
     }
-    if (version === this.finalizedVersion) {
-      logger.error(`[${LOG_HEADER}] Not allowed to delete finalized version: ${version}`);
-      return null;
+    if (version === this.finalVersion) {
+      logger.error(`[${LOG_HEADER}] Not allowed to delete final version: ${version}`);
+      return false;
     }
     const root = this.getRoot(version);
     if (root === null) {
       logger.error(`[${LOG_HEADER}] Null root of version: ${version}`);
-      return null;
+      return false;
     }
     let numDeletedNodes = null;
     if (FeatureFlags.enableStateVersionOpt) {
-      numDeletedNodes = deleteStateTreeVersion(root, version);
+      numDeletedNodes = deleteStateTreeVersion(root);
     } else {
       numDeletedNodes = deleteStateTree(root);
     }
-    logger.info(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
-    this.rootMap.delete(version);
-    return root;
+    logger.debug(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
+    this._deleteRoot(version);
+    return true;
   }
 
   /**
-   * Sets a the given version finalized and deletes the existing finalized version.
+   * Finalize the given version.
    * 
-   * @param {string} version state version
+   * @param {string} version state version to finalize
    */
   finalizeVersion(version) {
     const LOG_HEADER = 'finalizeVersion';
-    logger.info(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
+    logger.debug(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
         `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
-        ` with latest finalized version: '${this.getFinalizedVersion()}'`);
-    if (version === this.finalizedVersion) {
-      logger.error(`[${LOG_HEADER}] Already finalized version: ${version}`);
+        ` with latest final version: '${this.getFinalVersion()}'`);
+    if (version === this.finalVersion) {
+      logger.error(`[${LOG_HEADER}] Already final version: ${version}`);
       return false;
     }
     if (!this.hasVersion(version)) {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return false;
     }
-    this.finalizedVersion = version;
+    this._setFinalVersion(version);
     return true;
+  }
+
+  /**
+   * Returns a random state version with the given version prefix.
+   * @param {string} versionPrefix version prefix
+   */
+  static createRandomVersion(versionPrefix) {
+    return `${versionPrefix}:${Date.now()}:${Math.floor(Math.random() * 10000)}`;
   }
 }
 

@@ -53,15 +53,16 @@ function numLivePeers(address) {
 }
 
 function printNodesInfo() {
-  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()}/${numNodes()}` +
-      `at ${Date.now()})`);
+  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()} / ${numNodes()}, ` +
+      `At: ${Date.now()})`);
   const nodeList = Object.values(PEER_NODES).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
   for (let i = 0; i < nodeList.length; i++) {
     const node = nodeList[i];
-    const diskAvailableMb = Math.floor(node.diskUsage.available / 1000 / 1000);
-    const memoryFreeMb = Math.round(node.memoryUsage.free / 1000 / 1000);
+    const diskAvailableMb = Math.floor(_.get(node, 'diskStatus.available') / 1000 / 1000);
+    const memoryFreeMb =
+        Math.round(_.get(node, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
     logger.info(`    Node[${i}]: ${node.getNodeSummary()} ` +
         `LastBlock: ${node.lastBlock.number}, ` +
         `Disk: ${diskAvailableMb}MB, ` +

@@ -4,14 +4,16 @@ const logger = require('../logger')('NODE');
 const {
   PORT,
   ACCOUNT_INDEX,
+  BlockchainNodeStatus,
   PredefinedDbPaths,
   ShardingProperties,
   ShardingProtocols,
   GenesisAccounts,
   GenesisSharding,
   StateVersions,
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+  FeatureFlags,
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');
@@ -41,9 +43,9 @@ class BlockchainNode {
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}}`;
-    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false);
+    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;
-    this.initialized = false;
+    this.status = BlockchainNodeStatus.STARTING;
   }
 
   // For testing purpose only.
@@ -68,6 +70,7 @@ class BlockchainNode {
 
   init(isFirstNode) {
     const LOG_HEADER = 'init';
+
     logger.info(`[${LOG_HEADER}] Initializing node..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode);
     const startingDb =
@@ -77,25 +80,25 @@ class BlockchainNode {
     this.nonce = this.getNonce();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
     this.db.executeTransactionList(this.tp.getValidTransactions());
-    this.initialized = true;
+    this.status = BlockchainNodeStatus.SYNCING;
     return lastBlockWithoutProposal;
   }
 
   createTempDb(baseVersion, newVersion, blockNumberSnapshot) {
-    return this.createDb(baseVersion, newVersion, null, null, false, blockNumberSnapshot);
+    return this.createDb(baseVersion, newVersion, null, null, false, false, blockNumberSnapshot);
   }
 
-  createDb(baseVersion, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot) {
+  createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
     const LOG_HEADER = 'createDb';
     const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
     if (!newRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`)
       return null;
     }
-    if (isFinalizedState) {
+    if (finalizeVersion) {
       this.stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, tp, isFinalizedState, blockNumberSnapshot);
+    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot);
   }
 
   destroyDb(db) {
@@ -104,52 +107,72 @@ class BlockchainNode {
 
   syncDb(newVersion) {
     const LOG_HEADER = 'syncDb';
+
     const oldVersion = this.db.stateVersion;
     if (newVersion === oldVersion) {
-      logger.info(`[${LOG_HEADER}] Already sync'ed.`);
+      logger.info(`[${LOG_HEADER}] Already sync'ed with version: ${newVersion}`);
       return false;
     }
-    const clonedRoot = this.stateManager.cloneFinalizedVersion(newVersion);
+    const clonedRoot = this.stateManager.cloneFinalVersion(newVersion);
     if (!clonedRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone finalized state version: ` +
-          `${this.stateManager.getFinalizedVersion()}`);
+      logger.error(`[${LOG_HEADER}] Failed to clone the final state version: ` +
+          `${this.stateManager.getFinalVersion()}`);
     }
     this.db.setStateVersion(clonedRoot, newVersion);
     if (oldVersion) {
-      this.stateManager.deleteVersion(oldVersion);
+      if (!this.stateManager.deleteVersion(oldVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${oldVersion}`);
+      }
     }
     return true;
   }
 
   cloneAndFinalizeVersion(version, blockNumber) {
     const LOG_HEADER = 'cloneAndFinalizeVersion';
-    const oldVersion = this.stateManager.getFinalizedVersion();
-    const backupVersion = `${StateVersions.BACKUP}:${blockNumber}`;
-    const clonedRoot = this.stateManager.cloneVersion(version, backupVersion);
+
+    const oldFinalVersion = this.stateManager.getFinalVersion();
+    const newFinalVersion = `${StateVersions.FINAL}:${blockNumber}`;
+    const clonedRoot = this.stateManager.cloneVersion(version, newFinalVersion);
     if (!clonedRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${version}`);
       return;
     }
-    this.stateManager.finalizeVersion(backupVersion);
-    if (oldVersion) {
-      logger.info(`[${LOG_HEADER}] Deleting previously finalized version: ${oldVersion}`);
-      this.stateManager.deleteVersion(oldVersion);
+    logger.info(`[${LOG_HEADER}] Finalizing version: ${newFinalVersion}`);
+    if (!this.stateManager.finalizeVersion(newFinalVersion)) {
+      logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
+    }
+    if (FeatureFlags.enableVersionRenaming) {
+      logger.info(`[${LOG_HEADER}] Renaming version: ${version} -> ${newFinalVersion}`);
+      if (!this.stateManager.renameVersion(version, newFinalVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to rename version: ${version} -> ${newFinalVersion}`);
+      }
+    }
+    if (oldFinalVersion) {
+      logger.info(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
+      if (!this.stateManager.deleteVersion(oldFinalVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete previous final version: ${oldFinalVersion}`);
+      }
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDb(nodeVersion)
   }
 
+  dumpFinalVersion(withDetails) {
+    return this.stateManager.getFinalRoot().toJsObject(withDetails);
+  }
+
   getNonce() {
     const LOG_HEADER = 'getNonce';
+
     // TODO (Chris): Search through all blocks for any previous nonced transaction with current
     //               publicKey
     let nonce = 0;
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
       for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
         if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
-            this.account.address) && this.bc.chain[i].transactions[j].nonce > -1) {
+            this.account.address) && this.bc.chain[i].transactions[j].tx_body.nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
-          nonce = this.bc.chain[i].transactions[j].nonce + 1;
+          nonce = this.bc.chain[i].transactions[j].tx_body.nonce + 1;
           break;
         }
       }
@@ -190,23 +213,33 @@ class BlockchainNode {
     *                                        not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(txData, isNoncedTransaction = true) {
-    if (Transaction.isBatchTransaction(txData)) {
+  createTransaction(txBody, isNoncedTransaction = true) {
+    const LOG_HEADER = 'createTransaction';
+
+    if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
-      txData.tx_list.forEach((subData) => {
-        txList.push(this.createSingleTransaction(subData, isNoncedTransaction));
-      })
-      return {tx_list: txList};
+      for (const subTxBody of txBody.tx_list) {
+        const createdTx = this.createSingleTransaction(subTxBody, isNoncedTransaction);
+        if (createdTx === null) {
+          logger.info(`[${LOG_HEADER}] Failed to create a transaction with subTx: ` +
+              `${JSON.stringify(subTxBody, null, 2)}`);
+        } else {
+          txList.push(createdTx);
+        }
+      }
+      return { tx_list: txList };
     }
-    return this.createSingleTransaction(txData, isNoncedTransaction);
+    const createdTx = this.createSingleTransaction(txBody, isNoncedTransaction);
+    if (createdTx === null) {
+      logger.info(`[${LOG_HEADER}] Failed to create a transaction with txBody: ` +
+          `${JSON.stringify(txBody, null, 2)}`);
+      return null;
+    }
+    return createdTx;
   }
 
-  createSingleTransaction(txData, isNoncedTransaction) {
-    // Workaround for skip_verif with custom address
-    if (txData.address !== undefined) {
-      txData.skip_verif = true;
-    }
-    if (txData.nonce === undefined) {
+  createSingleTransaction(txBody, isNoncedTransaction) {
+    if (txBody.nonce === undefined) {
       let nonce;
       if (isNoncedTransaction) {
         nonce = this.nonce;
@@ -214,9 +247,75 @@ class BlockchainNode {
       } else {
         nonce = -1;
       }
-      txData.nonce = nonce;
+      txBody.nonce = nonce;
     }
-    return Transaction.newTransaction(this.account.private_key, txData);
+    return Transaction.signTxBody(txBody, this.account.private_key);
+  }
+
+  /**
+   * Try to executes a transaction on the node database. If it was not successful, all changes are
+   * rolled back from the database states.
+   * @param {Object} tx transaction
+   */
+  executeOrRollbackTransaction(tx) {
+    const LOG_HEADER = 'executeOrRollbackTransaction';
+
+    const backupVersion = StateManager.createRandomVersion(`${StateVersions.BACKUP}`);
+    const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
+    if (!backupRoot) {
+      return ChainUtil.logAndReturnError(
+          logger, 11, `[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`,
+          0);
+    }
+    const result = this.db.executeTransaction(tx);
+    if (ChainUtil.transactionFailed(result)) {
+      // Changes are rolled back.
+      if (this.stateManager.isFinalVersion(this.db.stateVersion)) {
+        if (!this.stateManager.finalizeVersion(backupVersion)) {
+          logger.error(`[${LOG_HEADER}] Failed to finalize version: ${backupVersion}`);
+        }
+      }
+      this.db.setStateVersion(backupRoot, backupVersion);
+    } else {
+      if (!this.stateManager.deleteVersion(backupVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${backupVersion}`);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Executes a transaction and add it to the transaction pool if the execution was successful.
+   * @param {Object} tx transaction
+   */
+  executeTransactionAndAddToPool(tx) {
+    const LOG_HEADER = 'executeTransactionAndAddToPool';
+
+    logger.debug(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
+    if (this.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.bc.lastBlockTimestamp())) {
+      return ChainUtil.logAndReturnError(
+          logger, 2, `[${LOG_HEADER}] Timeouted transaction: ${JSON.stringify(tx, null, 2)}`,
+          0);
+    }
+    if (this.tp.isNotEligibleTransaction(tx)) {
+      return ChainUtil.logAndReturnError(
+          logger, 3,
+          `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
+    }
+    if (this.status !== BlockchainNodeStatus.SERVING) {
+      return ChainUtil.logAndReturnError(
+          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`,
+          0);
+    }
+    const result = this.executeOrRollbackTransaction(tx);
+    if (ChainUtil.transactionFailed(result)) {
+      logger.info(`[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(tx, null, 2)}\n ` +
+          `WITH RESULT:${JSON.stringify(result)}`);
+    } else {
+      this.tp.addTransaction(tx);
+    }
+
+    return result;
   }
 
   addNewBlock(block) {
@@ -231,30 +330,57 @@ class BlockchainNode {
     return false;
   }
 
-  mergeChainSubsection(chainSubsection) {
-    const LOG_HEADER = 'mergeChainSubsection';
+  mergeChainSegment(chainSegment) {
+    const LOG_HEADER = 'mergeChainSegment';
+
+    if (!chainSegment || chainSegment.length === 0) {
+      logger.info(`[${LOG_HEADER}] Empty chain segment`);
+      if (this.status !== BlockchainNodeStatus.SERVING) {
+        // Regard this situation as if you're synced.
+        // TODO (lia): ask the tracker server for another peer.
+        logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+        this.status = BlockchainNodeStatus.SERVING;
+      }
+      return false;
+    }
+    if (chainSegment[chainSegment.length - 1].number < this.bc.lastBlockNumber()) {
+      logger.info(
+          `[${LOG_HEADER}] Received chain is of lower block number than current last block number`);
+      return false;
+    }
+    if (chainSegment[chainSegment.length - 1].number === this.bc.lastBlockNumber()) {
+      logger.info(`[${LOG_HEADER}] Received chain is at the same block number`);
+      if (this.status !== BlockchainNodeStatus.SERVING) {
+        // Regard this situation as if you're synced.
+        // TODO (lia): ask the tracker server for another peer.
+        logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+        this.status = BlockchainNodeStatus.SERVING;
+      }
+      return false;
+    }
+
+    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
     const tempDb = this.createTempDb(
-        this.stateManager.getFinalizedVersion(),
-        `${StateVersions.TEMP}:${Date.now()}`,
-        this.bc.lastBlockNumber()
-      );
-    if (!this.bc.merge(chainSubsection, tempDb)) {
-      logger.error(`[${LOG_HEADER}] Failed to merge chain subsection: ` +
-          `${JSON.stringify(chainSubsection, null, 2)}`);
+        this.stateManager.getFinalVersion(), tempVersion, this.bc.lastBlockNumber());
+    if (!this.bc.merge(chainSegment, tempDb)) {
+      logger.error(`[${LOG_HEADER}] Failed to merge chain segment: ` +
+          `${JSON.stringify(chainSegment, null, 2)}`);
       this.destroyDb(tempDb);
       return false;
     }
     const lastBlockNumber = this.bc.lastBlockNumber();
     this.cloneAndFinalizeVersion(tempDb.stateVersion, lastBlockNumber);
-    chainSubsection.forEach((block) => {
+    chainSegment.forEach((block) => {
       this.tp.cleanUpForNewBlock(block);
       this.tp.updateNonceTrackers(block.transactions);
     });
+
     return true;
   }
 
   executeChainOnDb(db) {
     const LOG_HEADER = 'executeChainOnDb';
+
     this.bc.chain.forEach((block) => {
       const transactions = block.transactions;
       if (!db.executeTransactionList(block.last_votes)) {

@@ -1,5 +1,5 @@
 const {Command, flags} = require('@oclif/command');
-const ChainUtil = require('../../../chain-util');
+const ChainUtil = require('../../../common/chain-util');
 const Transaction = require('../../../tx-pool/transaction');
 const fs = require('fs');
 const sleep = require('sleep').msleep;
@@ -66,14 +66,14 @@ class TransactionExecutorCommand extends Command {
       const transactionData = TransactionExecutorCommand.parseLine(line);
       if (Transaction.isBatchTransaction(transactionData)) {
         const txList = [];
-        transactionData.tx_list.forEach((subData) => {
-          if (typeof subData.address !== 'undefined') {
+        transactionData.tx_list.forEach((subTx) => {
+          if (typeof subTx.address !== 'undefined') {
             throw Error(`Address field should NOT be specified:\n${line}`);
           }
-          if (typeof subData.nonce === 'undefined') {
+          if (typeof subTx.tx_body.nonce === 'undefined') {
             throw Error(`Nonce field should be specified:\n${line}`);
           }
-          txList.push(Transaction.newTransaction(privateKey, subData));
+          txList.push(Transaction.signTxBody(subTx, privateKey));
         })
         transactions.push({tx_list: txList});
       } else {
@@ -83,7 +83,7 @@ class TransactionExecutorCommand extends Command {
         if (typeof transactionData.nonce === 'undefined') {
           throw Error(`Nonce field should be specified:\n${line}`);
         }
-        const trans = Transaction.newTransaction(privateKey, transactionData);
+        const trans = Transaction.signTxBody(transactionData, privateKey);
         transactions.push(trans);
       }
     });
@@ -104,7 +104,7 @@ class TransactionExecutorCommand extends Command {
             throw Error(`Nonce field should be specified:\n${line}`);
           }
           subData.skip_verif = true;
-          txList.push(Transaction.newTransaction('', subData));
+          txList.push(Transaction.signTxBody(subData, ''));
         })
         transactions.push({tx_list: txList});
       } else {
@@ -115,7 +115,7 @@ class TransactionExecutorCommand extends Command {
           throw Error(`Nonce field should be specified:\n${line}`);
         }
         transactionData.skip_verif = true;
-        const trans = Transaction.newTransaction('', transactionData);
+        const trans = Transaction.signTxBody(transactionData, '');
         transactions.push(trans);
       }
     });
