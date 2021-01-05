@@ -350,7 +350,7 @@ const FeatureFlags = {
   // Enables state version optimization.
   enableStateVersionOpt: true,
   // Enables state version renaming.
-  enableVersionRenaming: true,
+  enableVersionRenaming: false,
 }
 
 const GenesisToken = getGenesisConfig('genesis_token.json');
