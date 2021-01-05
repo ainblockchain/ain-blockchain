@@ -12,40 +12,39 @@ const expect = chai.expect;
 // eslint-disable-next-line no-unused-vars
 const path = require('path');
 const syncRequest = require('sync-request');
-const itParam = require('mocha-param');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
 const Blockchain = require('../blockchain');
 const StateNode = require('../db/state-node');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
-const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../constants');
+const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const { waitUntilTxFinalized } = require('../unittest/test-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { waitForNewBlocks, waitUntilNodeSyncs } = require('../unittest/test-util');
+const { waitForNewBlocks, waitUntilNodeSyncs, parseOrLog } = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: true,
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
     ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
   },
@@ -175,7 +174,7 @@ function waitUntilNodeStakes() {
   let blocksAfterStaking = 0;
   let validators = {};
   while (count <= MAX_PROMISE_STACK_DEPTH && blocksAfterStaking < 2) {
-    const block = JSON.parse(syncRequest('POST', server1 + '/json-rpc',
+    const block = parseOrLog(syncRequest('POST', server1 + '/json-rpc',
         {json: {jsonrpc: '2.0', method: JSON_RPC_GET_RECENT_BLOCK, id: 0,
                 params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
         .body.toString('utf-8')).result.result;
@@ -200,7 +199,7 @@ function sendTransactions(sentOperations) {
   }
 }
 
-describe('Blockchain', () => {
+describe('Blockchain Cluster', () => {
   let trackerProc;
   let numNewBlocks = 0;
   let numBlocksOnStartup;
@@ -221,7 +220,7 @@ describe('Blockchain', () => {
       proc.start();
       sleep(2000);
       const address =
-          JSON.parse(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;
+          parseOrLog(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
     };
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
@@ -343,10 +342,17 @@ describe('Blockchain', () => {
       for (let i = 0; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
         waitForNewBlocks(server1);
-        const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
-            {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
-                    params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-            .body.toString('utf-8')).result.result;
+        const blocks = parseOrLog(syncRequest(
+            'POST', SERVERS[i] + '/json-rpc', {
+              json: {
+                jsonrpc: '2.0',
+                method: JSON_RPC_GET_BLOCKS,
+                id: 0,
+                params: {
+                  protoVer: CURRENT_PROTOCOL_VERSION
+                }
+              }
+            }).body.toString('utf-8')).result.result;
         const len = blocks.length;
         for (let j = 2; j < len; j++) { // voting starts with block#1 (included in block#2's last_votes)
           let voteSum = 0;
@@ -358,12 +364,12 @@ describe('Blockchain', () => {
             if (!blocks[j - 1].validators[vote.address]) {
               assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
             }
-            if (vote.operation.value.block_hash !== blocks[j - 1].hash) {
+            if (vote.tx_body.operation.value.block_hash !== blocks[j - 1].hash) {
               assert.fail('Invalid vote included in last_votes');
             }
-            if (vote.operation.type === 'SET_VALUE' && vote.operation.value.stake &&
+            if (vote.tx_body.operation.type === 'SET_VALUE' && vote.tx_body.operation.value.stake &&
                 blocks[j - 1].validators[vote.address]) {
-              voteSum += vote.operation.value.stake;
+              voteSum += vote.tx_body.operation.value.stake;
             }
           }
           if (voteSum < majority) {
@@ -394,7 +400,7 @@ describe('Blockchain', () => {
       for (let i = 0; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
         waitForNewBlocks(server1);
-        const blocks = JSON.parse(syncRequest('POST', SERVERS[i] + '/json-rpc',
+        const blocks = parseOrLog(syncRequest('POST', SERVERS[i] + '/json-rpc',
             {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                     params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
             .body.toString('utf-8')).result.result;
@@ -422,7 +428,7 @@ describe('Blockchain', () => {
       for (let i = 0; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
         waitForNewBlocks(SERVERS[i]);
-        blocks = JSON.parse(syncRequest(
+        blocks = parseOrLog(syncRequest(
             'GET', SERVERS[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
         const transactionsOnBlockChain = [];
         blocks.forEach((block) => {
@@ -442,12 +448,12 @@ describe('Blockchain', () => {
           .to.equal(transactionsOnBlockChain.length);
         for (let i = 0; i < transactionsOnBlockChain.length; i++) {
           const sentOp = sentOperations[i][1];
-          const blockchainOp = transactionsOnBlockChain[i].operation;
+          const blockchainOp = transactionsOnBlockChain[i].tx_body.operation;
           if (sentOperations[i][0].toUpperCase() === "BATCH") {
             expect(sentOp.tx_list).to.not.equal(undefined);
-            expect(sentOp.tx_list[0].operation.type).to.equal(blockchainOp.type);
-            expect(sentOp.tx_list[0].operation.ref).to.equal(blockchainOp.ref);
-            assert.deepEqual(sentOp.tx_list[0].operation.value, blockchainOp.value);
+            expect(sentOp.tx_list[0].tx_body.operation.type).to.equal(blockchainOp.type);
+            expect(sentOp.tx_list[0].tx_body.operation.ref).to.equal(blockchainOp.ref);
+            assert.deepEqual(sentOp.tx_list[0].tx_body.operation.value, blockchainOp.value);
           } else {
             expect(sentOperations[i][0].toUpperCase()).to.equal(blockchainOp.type);
             expect(sentOp.ref).to.equal(blockchainOp.ref);
@@ -463,7 +469,7 @@ describe('Blockchain', () => {
     it('rules correctly prevent users from restricted areas', () => {
       sendTransactions(sentOperations);
       waitForNewBlocks(server1);
-      const body = JSON.parse(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
+      const body = parseOrLog(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
         ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
       }}).body.toString('utf-8'));
       expect(body.code).to.equals(1);
@@ -475,9 +481,9 @@ describe('Blockchain', () => {
       for (let i = 1; i < SERVERS.length; i++) {
         sendTransactions(sentOperations);
         waitForNewBlocks(SERVERS[i]);
-        body1 = JSON.parse(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
+        body1 = parseOrLog(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
             .body.toString('utf-8'));
-        body2 = JSON.parse(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
+        body2 = parseOrLog(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
             .body.toString('utf-8'));
         assert.deepEqual(body1.result, body2.result);
       }
@@ -531,7 +537,8 @@ describe('Blockchain', () => {
     let address, committedNonceAfterBroadcast, pendingNonceAfterBroadcast;
 
     before(() => {
-      address = JSON.parse(syncRequest('GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
+      address = parseOrLog(syncRequest(
+          'GET', server2 + GET_ADDR_ENDPOINT).body.toString('utf-8')).result;
     });
 
     it('pendingNonceTracker', () => {

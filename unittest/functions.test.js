@@ -6,7 +6,7 @@ const expect = chai.expect;
 const nock = require('nock');
 const {
   BLOCKCHAINS_DIR,
-} = require('../constants')
+} = require('../common/constants')
 const BlockchainNode = require('../node')
 const {
   setNodeForTesting,

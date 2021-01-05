@@ -7,6 +7,7 @@ const axios = require('axios');
 const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
+const v8 = require('v8');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
@@ -22,6 +23,7 @@ const {
   COMCOM_HOST_EXTERNAL_IP,
   COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
+  BlockchainNodeStatus,
   PredefinedDbPaths,
   WriteDbOperations,
   GenesisSharding,
@@ -35,8 +37,8 @@ const {
   NativeFunctionIds,
   buildOwnerPermissions,
   LIGHTWEIGHT
-} = require('../constants');
-const ChainUtil = require('../chain-util');
+} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const {sendTxAndWaitForFinalization} = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -53,7 +55,6 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
-    this.isStarting = true;
     this.internalIpAddress = null;
     this.externalIpAddress = null;
     this.trackerWebSocket = null;
@@ -220,12 +221,12 @@ class P2pServer {
           logger.debug(`Updated UNMANAGED peers info: ` +
               `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
-        if (this.isStarting) {
-          this.isStarting = false;
+        if (this.node.status === BlockchainNodeStatus.STARTING) {
+          this.node.status = BlockchainNodeStatus.SYNCING;
           if (parsedMsg.numLivePeers === 0) {
             const lastBlockWithoutProposal = this.node.init(true);
             await this.tryInitializeShard();
-            this.node.bc.syncedAfterStartup = true;
+            this.node.status = BlockchainNodeStatus.SERVING;
             this.consensus.init(lastBlockWithoutProposal, true);
           } else {
             // Consensus will be initialized after syncing with peers
@@ -247,14 +248,15 @@ class P2pServer {
   // TODO(seo): Add sharding status.
   updateNodeStatusToTracker() {
     const updateToTracker = {
+      address: this.node.account.address,
+      updatedAt: Date.now(),
       url: url.format({
         protocol: 'ws',
         hostname: this.node.ipAddrExternal,
         port: P2P_PORT
       }),
       ip: this.node.ipAddrExternal,
-      address: this.node.account.address,
-      updatedAt: Date.now(),
+      port: P2P_PORT,
       lastBlock: {
         number: this.node.bc.lastBlockNumber(),
         epoch: this.node.bc.lastBlockEpoch(),
@@ -268,6 +270,10 @@ class P2pServer {
                 this.consensus.blockPool.longestNotarizedChainTips.length : 0
           }
       ),
+      nodeStatus: {
+        status: this.node.status,
+        nonce: this.node.nonce,
+      },
       shardingStatus: this.node.getSharding(),
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
@@ -275,14 +281,15 @@ class P2pServer {
         committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
         pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
       },
+      dbStatus: {
+        treeSize: this.node.db.getTreeSize('/'),
+        proof: this.node.db.getProof('/'),
+      },
+      memoryStatus: this.getMemoryUsage(),
+      diskStatus: this.getDiskUsage(),
+      runtimeInfo: this.getRuntimeInfo(),
       managedPeersInfo: this.managedPeersInfo,
     };
-    const diskUsage = this.getDiskUsage();
-    if (diskUsage !== null) {
-      updateToTracker.diskUsage = diskUsage;
-    }
-    const memoryUsage = this.getMemoryUsage();
-    updateToTracker.memoryUsage = memoryUsage;
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
                  `${JSON.stringify(updateToTracker, null, 2)}`);
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
@@ -293,7 +300,7 @@ class P2pServer {
       return disk.checkSync(DISK_USAGE_PATH);
     } catch (err) {
       logger.error(err);
-      return null;
+      return {};
     }
   }
 
@@ -302,9 +309,38 @@ class P2pServer {
     const total = os.totalmem();
     const usage = total - free;
     return {
-      free,
-      usage,
-      total,
+      os: {
+        free,
+        usage,
+        total,
+      },
+      heap: process.memoryUsage(),
+      heapStats: v8.getHeapStatistics(),
+    };
+  }
+
+  getRuntimeInfo() {
+    return {
+      process: {
+        version: process.version,
+        platform: process.platform,
+        pid: process.pid,
+        uptime: Math.floor(process.uptime()),
+        v8Version: process.versions.v8,
+      },
+      os: {
+        hostname: os.hostname(),
+        type: os.type(),
+        release: os.release(),
+        version: os.version(),
+        uptime: os.uptime(),
+      },
+      env: {
+        NUM_VALIDATORS: process.env.NUM_VALIDATORS,
+        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+        HOSTING_ENV: process.env.HOSTING_ENV,
+        DEBUG: process.env.DEBUG,
+      },
     };
   }
 
@@ -338,7 +374,7 @@ class P2pServer {
   setSocket(socket, address) {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
-    this.requestChainSubsection(this.node.bc.lastBlock());
+    this.requestChainSegment(this.node.bc.lastBlock());
     if (this.consensus.stakeTx) {
       this.broadcastTransaction(this.consensus.stakeTx);
       this.consensus.stakeTx = null;
@@ -347,6 +383,8 @@ class P2pServer {
 
   setPeerEventHandlers(socket, address) {
     socket.on('message', (message) => {
+      const LOG_HEADER = 'peerEventHandler';
+
       try {
         const data = JSON.parse(message);
         const version = data.protoVer;
@@ -360,34 +398,61 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.CONSENSUS:
-            logger.debug(`Receiving a consensus message: ${JSON.stringify(data.message)}`);
-            if (this.node.bc.syncedAfterStartup) {
+            logger.debug(
+                `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            if (this.node.status === BlockchainNodeStatus.SERVING) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
-              logger.info(`\n Needs syncing...\n`);
+              logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
             }
             break;
           case MessageTypes.TRANSACTION:
-            logger.debug(`Receiving a transaction: ${JSON.stringify(data.transaction)}`);
+            logger.debug(
+                `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
-              logger.debug(`Already have the transaction in my tx tracker`);
+              logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               break;
-            } else if (this.node.initialized) {
-              this.executeAndBroadcastTransaction(data.transaction, MessageTypes.TRANSACTION);
-            } else {
-              // Put the tx in the txPool?
+            } else if (this.node.status === BlockchainNodeStatus.SERVING) {
+              const tx = data.transaction;
+              if (Transaction.isBatchTransaction(tx)) {
+                const newTxList = [];
+                for (const subTx of tx.tx_list) {
+                  const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
+                  if (!createdTx) {
+                    logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
+                        `${JSON.stringify(subTx, null, 2)}`);
+                    continue;
+                  }
+                  newTxList.push(createdTx);
+                }
+                if (newTxList.length > 0) {
+                  this.executeAndBroadcastTransaction(
+                      { tx_list: newTxList }, MessageTypes.TRANSACTION);
+                }
+              } else {
+                const createdTx = Transaction.create(tx.tx_body, tx.signature);
+                if (!createdTx) {
+                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
+                      `${JSON.stringify(tx, null, 2)}`);
+                } else {
+                  this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                }
+              }
             }
             break;
-          case MessageTypes.CHAIN_SUBSECTION:
-            logger.debug(`Receiving a chain subsection: ` +
-                `${JSON.stringify(data.chainSubsection, null, 2)}`);
+          case MessageTypes.CHAIN_SEGMENT:
+            logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
+                `${JSON.stringify(data.chainSegment, null, 2)}`);
             if (data.number <= this.node.bc.lastBlockNumber()) {
               if (this.consensus.status === ConsensusStatus.STARTING) {
                 // XXX(minsu): need to be investigated
                 // ref: https://eslint.org/docs/rules/no-mixed-operators
-                if (!data.chainSubsection && !data.catchUpInfo ||
+                if (!data.chainSegment && !data.catchUpInfo ||
                     data.number === this.node.bc.lastBlockNumber()) {
-                  this.node.bc.syncedAfterStartup = true;
+                  // Regard this situation as if you're synced.
+                  // TODO (lia): ask the tracker server for another peer.
+                  logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+                  this.node.status = BlockchainNodeStatus.SERVING;
                   this.consensus.init();
                   if (this.consensus.isRunning()) {
                     this.consensus.catchUp(data.catchUpInfo);
@@ -397,37 +462,40 @@ class P2pServer {
               return;
             }
 
-            // Check if chain subsection is valid and can be
+            // Check if chain segment is valid and can be
             // merged ontop of your local blockchain
-            if (this.node.mergeChainSubsection(data.chainSubsection)) {
+            if (this.node.mergeChainSegment(data.chainSegment)) {
               if (data.number === this.node.bc.lastBlockNumber()) {
                 // All caught up with the peer
-                if (!this.node.bc.syncedAfterStartup) {
-                  logger.info(`Node is now synced!`);
-                  this.node.bc.syncedAfterStartup = true;
+                if (this.node.status !== BlockchainNodeStatus.SERVING) {
+                  // Regard this situation as if you're synced.
+                  // TODO (lia): ask the tracker server for another peer.
+                  logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+                  this.node.status = BlockchainNodeStatus.SERVING;
                 }
                 if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init();
                 }
               } else {
                 // There's more blocks to receive
-                logger.info(`Wait, there's more...`);
+                logger.info(`[${LOG_HEADER}] Wait, there's more...`);
               }
               if (this.consensus.isRunning()) {
                 // FIXME: add new last block to blockPool and updateLongestNotarizedChains?
                 this.consensus.blockPool.addSeenBlock(this.node.bc.lastBlock());
                 this.consensus.catchUp(data.catchUpInfo);
               }
-              // Continuously request the blockchain in subsections until
+              // Continuously request the blockchain segments until
               // your local blockchain matches the height of the consensus blockchain.
               if (data.number > this.node.bc.lastBlockNumber()) {
-                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
+                setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
               }
             } else {
-              logger.info(`Failed to merge incoming chain subsection.`);
+              logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
               // FIXME: Could be that I'm on a wrong chain.
               if (data.number <= this.node.bc.lastBlockNumber()) {
-                logger.info(`I am ahead(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
+                logger.info(`[${LOG_HEADER}] I am ahead ` +
+                    `(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
                 if (this.consensus.status === ConsensusStatus.STARTING) {
                   this.consensus.init();
                   if (this.consensus.isRunning()) {
@@ -435,35 +503,38 @@ class P2pServer {
                   }
                 }
               } else {
-                logger.info(`I am behind (${data.number} < ${this.node.bc.lastBlockNumber()}).`);
-                setTimeout(() => this.requestChainSubsection(this.node.bc.lastBlock()), 1000);
+                logger.info(`[${LOG_HEADER}] I am behind ` +
+                    `(${data.number} < ${this.node.bc.lastBlockNumber()}).`);
+                setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
               }
             }
             break;
-          case MessageTypes.CHAIN_SUBSECTION_REQUEST:
-            logger.debug(`Receiving a chain subsection request: ${JSON.stringify(data.lastBlock)}`);
+          case MessageTypes.CHAIN_SEGMENT_REQUEST:
+            logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
+                `${JSON.stringify(data.lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
             // Send a chunk of 20 blocks from your blockchain to the requester.
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
-            const chainSubsection = this.node.bc.requestBlockchainSection(
+            const chainSegment = this.node.bc.requestBlockchainSection(
                 data.lastBlock ? Block.parse(data.lastBlock) : null);
-            if (chainSubsection) {
+            if (chainSegment) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(
-                  `Sending a chain subsection ${JSON.stringify(chainSubsection, null, 2)}` +
+                  `[${LOG_HEADER}] Sending a chain segment ` +
+                  `${JSON.stringify(chainSegment, null, 2)}` +
                   `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
-              this.sendChainSubsection(
+              this.sendChainSegment(
                   socket,
-                  chainSubsection,
+                  chainSegment,
                   this.node.bc.lastBlockNumber(),
                   catchUpInfo
               );
             } else {
-              logger.info(`No chainSubsection to send`);
-              this.sendChainSubsection(
+              logger.info(`[${LOG_HEADER}] No chain segment to send`);
+              this.sendChainSegment(
                   socket,
                   null,
                   this.node.bc.lastBlockNumber(),
@@ -512,28 +583,28 @@ class P2pServer {
     return false;
   }
 
-  sendChainSubsection(socket, chainSubsection, number, catchUpInfo) {
+  sendChainSegment(socket, chainSegment, number, catchUpInfo) {
     socket.send(JSON.stringify({
-      type: MessageTypes.CHAIN_SUBSECTION,
-      chainSubsection,
+      type: MessageTypes.CHAIN_SEGMENT,
+      chainSegment,
       number,
       catchUpInfo,
       protoVer: CURRENT_PROTOCOL_VERSION
     }));
   }
 
-  requestChainSubsection(lastBlock) {
+  requestChainSegment(lastBlock) {
     this.sockets.forEach((socket) => {
       socket.send(JSON.stringify({
-        type: MessageTypes.CHAIN_SUBSECTION_REQUEST,
+        type: MessageTypes.CHAIN_SEGMENT_REQUEST,
         lastBlock,
         protoVer: CURRENT_PROTOCOL_VERSION
       }));
     });
   }
 
-  broadcastChainSubsection(chainSubsection) {
-    this.sockets.forEach((socket) => this.sendChainSubsection(socket, chainSubsection));
+  broadcastChainSegment(chainSegment) {
+    this.sockets.forEach((socket) => this.sendChainSegment(socket, chainSegment));
   }
 
   broadcastTransaction(transaction) {
@@ -558,69 +629,51 @@ class P2pServer {
     });
   }
 
-  /**
-   * Adds transaction to the transactionPool and executes the operations specified
-   * in the transaction.
-   * @param {Object} transactionWithSig An object with a signature and a transaction.
-   */
-  // TODO(seo): Remove new Transaction() use cases.
-  executeTransaction(transactionWithSig) {
-    if (!transactionWithSig) return null;
-    const transaction = transactionWithSig instanceof Transaction ?
-        transactionWithSig : new Transaction(transactionWithSig);
-    logger.debug(`EXECUTING: ${JSON.stringify(transaction)}`);
-    if (this.node.tp.isTimedOutFromPool(transaction.timestamp, this.node.bc.lastBlockTimestamp())) {
-      logger.debug(`TIMED-OUT TRANSACTION: ${JSON.stringify(transaction)}`);
-      return null;
+  executeAndBroadcastTransaction(tx) {
+    if (!tx) {
+      return {
+        tx_hash: null,
+        result: false
+      };
     }
-    if (this.node.tp.isNotEligibleTransaction(transaction)) {
-      logger.debug(`ALREADY RECEIVED: ${JSON.stringify(transaction)}`);
-      return null;
-    }
-    if (this.node.bc.syncedAfterStartup === false) {
-      logger.debug(`NOT SYNCED YET. WILL ADD TX TO THE POOL: ` +
-          `${JSON.stringify(transaction)}`);
-      this.node.tp.addTransaction(transaction);
-      return null;
-    }
-    const result = this.node.db.executeTransaction(transaction);
-    if (!ChainUtil.transactionFailed(result)) {
-      this.node.tp.addTransaction(transaction);
-    } else {
-      logger.debug(`FAILED TRANSACTION: ${JSON.stringify(transaction)}\t ` +
-          `RESULT:${JSON.stringify(result)}`);
-    }
-    return result;
-  }
-
-  executeAndBroadcastTransaction(transactionWithSig) {
-    if (!transactionWithSig) return null;
-    if (Transaction.isBatchTransaction(transactionWithSig)) {
+    if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
       const txListSucceeded = [];
-      transactionWithSig.tx_list.forEach((tx) => {
-        const transaction = tx instanceof Transaction ? tx : new Transaction(tx);
-        const response = this.executeTransaction(transaction);
-        resultList.push(response);
-        if (!ChainUtil.transactionFailed(response)) {
-          txListSucceeded.push(tx);
+      for (const subTx of tx.tx_list) {
+        if (!subTx) {
+          resultList.push({
+            tx_hash: null,
+            result: false
+          });
+
+          continue;
         }
-      })
+        const result = this.node.executeTransactionAndAddToPool(subTx);
+        resultList.push({
+          tx_hash: subTx.hash,
+          result
+        });
+        if (!ChainUtil.transactionFailed(result)) {
+          txListSucceeded.push(subTx);
+        }
+      }
+      logger.debug(`\n BATCH TX RESULT: ` + JSON.stringify(resultList));
       if (txListSucceeded.length > 0) {
-        this.broadcastTransaction({tx_list: txListSucceeded});
+        this.broadcastTransaction({ tx_list: txListSucceeded });
       }
 
       return resultList;
     } else {
-      const transaction = transactionWithSig instanceof Transaction ?
-          transactionWithSig : new Transaction(transactionWithSig);
-      const response = this.executeTransaction(transaction);
-      logger.debug(`\n TX RESPONSE: ` + JSON.stringify(response))
-      if (!ChainUtil.transactionFailed(response)) {
-        this.broadcastTransaction(transaction);
+      const result = this.node.executeTransactionAndAddToPool(tx);
+      logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
+      if (!ChainUtil.transactionFailed(result)) {
+        this.broadcastTransaction(tx);
       }
 
-      return response;
+      return {
+        tx_hash: tx.hash,
+        result
+      };
     }
   }
 
@@ -637,7 +690,6 @@ class P2pServer {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const keyBuffer = Buffer.from(ownerPrivateKey, 'hex');
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const shardingPathRules = `auth === '${shardOwner}'`;
@@ -727,7 +779,7 @@ class P2pServer {
       nonce: -1
     };
 
-    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, keyBuffer);
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
   }
 

@@ -6,20 +6,16 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
-  jsObjectToStateTree,
-  stateTreeToJsObject,
-  stateTreeVersionsToJsObject,
   setStateTreeVersion,
+  renameStateTreeVersion,
   deleteStateTree,
   deleteStateTreeVersion,
   makeCopyOfStateTree,
-  buildProofHashOfStateNode,
+  equalStateTrees,
   setProofHashForStateTree,
-  updateProofHashForPath,
+  updateProofHashForAllRootPaths,
 } = require('../db/state-util');
 const StateNode = require('../db/state-node');
-const { HASH_DELIMITER } = require('../constants');
-const ChainUtil = require('../chain-util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -27,16 +23,16 @@ const assert = chai.assert;
 describe("state-util", () => {
   describe("hasEnabledShardConfig", () => {
     it("when input without matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(jsObjectToStateTree(null))).to.equal(false);
-      expect(hasEnabledShardConfig(jsObjectToStateTree({}))).to.equal(false);
-      expect(hasEnabledShardConfig(jsObjectToStateTree({
+      expect(hasEnabledShardConfig(StateNode.fromJsObject(null))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromJsObject({}))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromJsObject({
         subtree: {
           path: "some value"
         },
         str: "string value"
       }
       ))).to.equal(false);
-      expect(hasEnabledShardConfig(jsObjectToStateTree({
+      expect(hasEnabledShardConfig(StateNode.fromJsObject({
         subtree: {
           path: "some value",
           ".shard": {
@@ -49,7 +45,7 @@ describe("state-util", () => {
     })
 
     it("when input with matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(jsObjectToStateTree({
+      expect(hasEnabledShardConfig(StateNode.fromJsObject({
         subtree: {
           path: "some value",
         },
@@ -62,7 +58,7 @@ describe("state-util", () => {
     })
 
     it("when input with shard config returning true", () => {
-      expect(hasEnabledShardConfig(jsObjectToStateTree({
+      expect(hasEnabledShardConfig(StateNode.fromJsObject({
         subtree: {
           path: "some value",
         },
@@ -79,7 +75,7 @@ describe("state-util", () => {
     it("when non-writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               path: {
                 ".shard": {
@@ -90,7 +86,7 @@ describe("state-util", () => {
           })), {isValid: false, invalidPath: '/some/path'});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               other_path: true,
               ".shard": {
@@ -103,14 +99,14 @@ describe("state-util", () => {
     it("when writable path w/o shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               path: true
             }
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               other_path: true
             }
@@ -119,7 +115,7 @@ describe("state-util", () => {
     it("when writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               path: {
                 ".shard": {
@@ -130,7 +126,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               other_path: true,
               ".shard": {
@@ -142,7 +138,7 @@ describe("state-util", () => {
     it("when writable path through shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'sharding_enabled'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               path: {
                 ".shard": {
@@ -153,7 +149,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'proof_hash_map'],
-          jsObjectToStateTree({
+          StateNode.fromJsObject({
             some: {
               path: {
                 ".shard": {
@@ -487,197 +483,11 @@ describe("state-util", () => {
     })
   })
 
-  describe("jsObjectToStateTree / stateTreeToJsObject", () => {
-    it("leaf node", () => {
-      expect(stateTreeToJsObject(jsObjectToStateTree(true))).to.equal(true);
-      expect(stateTreeToJsObject(jsObjectToStateTree(false))).to.equal(false);
-      expect(stateTreeToJsObject(jsObjectToStateTree(10))).to.equal(10);
-      expect(stateTreeToJsObject(jsObjectToStateTree('str'))).to.equal('str');
-      expect(stateTreeToJsObject(jsObjectToStateTree(null))).to.equal(null);
-    })
-
-    it("internal node", () => {
-      const stateObj = {
-        bool: false,
-        number: 10,
-        str: 'str',
-        empty_str: '',
-        null: null,
-        undef: undefined,
-        empty_obj: {},
-        subobj1: {
-          bool: true,
-          number: 20,
-          str: 'str2',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        },
-        subobj2: {
-          bool: true,
-          number: -10,
-          str: 'str3',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        }
-      };
-      assert.deepEqual(stateTreeToJsObject(jsObjectToStateTree(stateObj)), {
-        bool: false,
-        number: 10,
-        str: 'str',
-        empty_str: '',
-        null: null,
-        undef: undefined,
-        empty_obj: null,
-        subobj1: {
-          bool: true,
-          number: 20,
-          str: 'str2',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: null,
-        },
-        subobj2: {
-          bool: true,
-          number: -10,
-          str: 'str3',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: null,
-        }
-      });
-    })
-  })
-
-  describe("jsObjectToStateTree with version / stateTreeVersionsToJsObject", () => {
-    it("leaf node", () => {
-      const ver1 = 'ver1';
-
-      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(true, ver1))).to.equal(true);
-      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(false, ver1))).to.equal(false);
-      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(10, ver1))).to.equal(10);
-      expect(stateTreeVersionsToJsObject(jsObjectToStateTree('str', ver1))).to.equal('str');
-      expect(stateTreeVersionsToJsObject(jsObjectToStateTree(null, ver1))).to.equal(null);
-    })
-
-    it("internal node", () => {
-      const ver1 = 'ver1';
-
-      const stateObj = {
-        bool: false,
-        number: 10,
-        str: 'str',
-        empty_str: '',
-        null: null,
-        undef: undefined,
-        empty_obj: {},
-        subobj1: {
-          bool: true,
-          number: 20,
-          str: 'str2',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        },
-        subobj2: {
-          bool: true,
-          number: -10,
-          str: 'str3',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        }
-      };
-      assert.deepEqual(stateTreeVersionsToJsObject(jsObjectToStateTree(stateObj, ver1)), {
-        ".version": "ver1",
-        ".version:bool": "ver1",
-        ".version:empty_obj": "ver1",
-        ".version:empty_str": "ver1",
-        ".version:null": "ver1",
-        ".version:number": "ver1",
-        ".version:str": "ver1",
-        ".version:undef": "ver1",
-        ".numRef": 0,
-        ".numRef:bool": 1,
-        ".numRef:empty_obj": 1,
-        ".numRef:empty_str": 1,
-        ".numRef:null": 1,
-        ".numRef:number": 1,
-        ".numRef:str": 1,
-        ".numRef:undef": 1,
-        bool: false,
-        number: 10,
-        str: 'str',
-        empty_str: '',
-        null: null,
-        undef: undefined,
-        empty_obj: null,
-        subobj1: {
-          ".version": "ver1",
-          ".version:bool": "ver1",
-          ".version:empty_obj": "ver1",
-          ".version:empty_str": "ver1",
-          ".version:null": "ver1",
-          ".version:number": "ver1",
-          ".version:str": "ver1",
-          ".version:undef": "ver1",
-          ".numRef": 1,
-          ".numRef:bool": 1,
-          ".numRef:empty_obj": 1,
-          ".numRef:empty_str": 1,
-          ".numRef:null": 1,
-          ".numRef:number": 1,
-          ".numRef:str": 1,
-          ".numRef:undef": 1,
-          bool: true,
-          number: 20,
-          str: 'str2',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: null,
-        },
-        subobj2: {
-          ".version": "ver1",
-          ".version:bool": "ver1",
-          ".version:empty_obj": "ver1",
-          ".version:empty_str": "ver1",
-          ".version:null": "ver1",
-          ".version:number": "ver1",
-          ".version:str": "ver1",
-          ".version:undef": "ver1",
-          ".numRef": 1,
-          ".numRef:bool": 1,
-          ".numRef:empty_obj": 1,
-          ".numRef:empty_str": 1,
-          ".numRef:null": 1,
-          ".numRef:number": 1,
-          ".numRef:str": 1,
-          ".numRef:undef": 1,
-          bool: true,
-          number: -10,
-          str: 'str3',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: null,
-        }
-      });
-    })
-  })
-
   describe("setStateTreeVersion", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      const stateNode = jsObjectToStateTree(true);
+      const stateNode = StateNode.fromJsObject(true);
       const numNodes = setStateTreeVersion(stateNode, ver1);
       expect(numNodes).to.equal(1);
       expect(stateNode.getVersion()).to.equal(ver1);
@@ -713,10 +523,10 @@ describe("state-util", () => {
           empty_obj: {},
         }
       };
-      const stateTree = jsObjectToStateTree(stateObj);
+      const stateTree = StateNode.fromJsObject(stateObj);
       const numNodes = setStateTreeVersion(stateTree, ver1);
       expect(numNodes).to.equal(24);
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
+      assert.deepEqual(stateTree.toJsObject(true), {
         ".version": "ver1",
         ".version:bool": "ver1",
         ".version:empty_obj": "ver1",
@@ -725,14 +535,30 @@ describe("state-util", () => {
         ".version:number": "ver1",
         ".version:str": "ver1",
         ".version:undef": "ver1",
-        ".numRef": 0,
-        ".numRef:bool": 1,
-        ".numRef:empty_obj": 1,
-        ".numRef:empty_str": 1,
-        ".numRef:null": 1,
-        ".numRef:number": 1,
-        ".numRef:str": 1,
-        ".numRef:undef": 1,
+        ".numParents": 0,
+        ".numParents:bool": 1,
+        ".numParents:empty_obj": 1,
+        ".numParents:empty_str": 1,
+        ".numParents:null": 1,
+        ".numParents:number": 1,
+        ".numParents:str": 1,
+        ".numParents:undef": 1,
+        ".proofHash": null,
+        ".proofHash:bool": null,
+        ".proofHash:empty_obj": null,
+        ".proofHash:empty_str": null,
+        ".proofHash:null": null,
+        ".proofHash:number": null,
+        ".proofHash:str": null,
+        ".proofHash:undef": null,
+        ".treeSize": 1,
+        ".treeSize:bool": 1,
+        ".treeSize:empty_obj": 1,
+        ".treeSize:empty_str": 1,
+        ".treeSize:null": 1,
+        ".treeSize:number": 1,
+        ".treeSize:str": 1,
+        ".treeSize:undef": 1,
         bool: false,
         number: 10,
         str: 'str',
@@ -749,14 +575,30 @@ describe("state-util", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numRef": 1,
-          ".numRef:bool": 1,
-          ".numRef:empty_obj": 1,
-          ".numRef:empty_str": 1,
-          ".numRef:null": 1,
-          ".numRef:number": 1,
-          ".numRef:str": 1,
-          ".numRef:undef": 1,
+          ".numParents": 1,
+          ".numParents:bool": 1,
+          ".numParents:empty_obj": 1,
+          ".numParents:empty_str": 1,
+          ".numParents:null": 1,
+          ".numParents:number": 1,
+          ".numParents:str": 1,
+          ".numParents:undef": 1,
+          ".proofHash": null,
+          ".proofHash:bool": null,
+          ".proofHash:empty_obj": null,
+          ".proofHash:empty_str": null,
+          ".proofHash:null": null,
+          ".proofHash:number": null,
+          ".proofHash:str": null,
+          ".proofHash:undef": null,
+          ".treeSize": 1,
+          ".treeSize:bool": 1,
+          ".treeSize:empty_obj": 1,
+          ".treeSize:empty_str": 1,
+          ".treeSize:null": 1,
+          ".treeSize:number": 1,
+          ".treeSize:str": 1,
+          ".treeSize:undef": 1,
           bool: true,
           number: 20,
           str: 'str2',
@@ -774,14 +616,30 @@ describe("state-util", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numRef": 1,
-          ".numRef:bool": 1,
-          ".numRef:empty_obj": 1,
-          ".numRef:empty_str": 1,
-          ".numRef:null": 1,
-          ".numRef:number": 1,
-          ".numRef:str": 1,
-          ".numRef:undef": 1,
+          ".numParents": 1,
+          ".numParents:bool": 1,
+          ".numParents:empty_obj": 1,
+          ".numParents:empty_str": 1,
+          ".numParents:null": 1,
+          ".numParents:number": 1,
+          ".numParents:str": 1,
+          ".numParents:undef": 1,
+          ".proofHash": null,
+          ".proofHash:bool": null,
+          ".proofHash:empty_obj": null,
+          ".proofHash:empty_str": null,
+          ".proofHash:null": null,
+          ".proofHash:number": null,
+          ".proofHash:str": null,
+          ".proofHash:undef": null,
+          ".treeSize": 1,
+          ".treeSize:bool": 1,
+          ".treeSize:empty_obj": 1,
+          ".treeSize:empty_str": 1,
+          ".treeSize:null": 1,
+          ".treeSize:number": 1,
+          ".treeSize:str": 1,
+          ".treeSize:undef": 1,
           bool: true,
           number: -10,
           str: 'str3',
@@ -789,6 +647,133 @@ describe("state-util", () => {
           null: null,
           undef: undefined,
           empty_obj: null,
+        }
+      });
+    })
+  })
+
+  describe("renameStateTreeVersion", () => {
+    it("leaf node w/ no version match", () => {
+      const ver1 = 'ver1';
+      const ver2 = 'ver2';
+
+      const stateNode = StateNode.fromJsObject(true, ver1);
+
+      const numRenamed = renameStateTreeVersion(stateNode, 'other version', ver2);
+      expect(numRenamed).to.equal(0);
+      expect(stateNode.getVersion()).to.equal(ver1);
+    })
+
+    it("leaf node w/ version match", () => {
+      const ver1 = 'ver1';
+      const ver2 = 'ver2';
+
+      const stateNode = StateNode.fromJsObject(true, ver1,);
+
+      const numRenamed = renameStateTreeVersion(stateNode, ver1, ver2);
+      expect(numRenamed).to.equal(1);
+      expect(stateNode.getVersion()).to.equal(ver2);
+    })
+
+    it("internal node", () => {
+      const ver1 = 'ver1';
+      const ver2 = 'ver2';
+      const ver3 = 'ver3';
+
+      const grandChild11 = new StateNode(ver1);
+      const grandChild12 = new StateNode(ver2);
+      const grandChild21 = new StateNode(ver2);
+      const grandChild22 = new StateNode(ver1);
+      grandChild11.setValue('value11');
+      grandChild12.setValue('value12');
+      grandChild21.setValue('value21');
+      grandChild22.setValue('value22');
+      const child1 = new StateNode(ver2);
+      child1.setChild('label11', grandChild11);
+      child1.setChild('label12', grandChild12);
+      const child2 = new StateNode(ver2);
+      child2.setChild('label21', grandChild21);
+      child2.setChild('label22', grandChild22);
+      const stateTree = new StateNode(ver3);
+      stateTree.setChild('label1', child1);
+      stateTree.setChild('label2', child2);
+      assert.deepEqual(stateTree.toJsObject(true), {
+        ".numParents": 0,
+        ".proofHash": null,
+        ".treeSize": 1,
+        ".version": "ver3",
+        "label1": {
+          ".numParents": 1,
+          ".numParents:label11": 1,
+          ".numParents:label12": 1,
+          ".proofHash": null,
+          ".proofHash:label11": null,
+          ".proofHash:label12": null,
+          ".treeSize": 1,
+          ".treeSize:label11": 1,
+          ".treeSize:label12": 1,
+          ".version": "ver2",
+          ".version:label11": "ver1",
+          ".version:label12": "ver2",
+          "label11": "value11",
+          "label12": "value12",
+        },
+        "label2": {
+          ".numParents": 1,
+          ".numParents:label21": 1,
+          ".numParents:label22": 1,
+          ".proofHash": null,
+          ".proofHash:label21": null,
+          ".proofHash:label22": null,
+          ".treeSize": 1,
+          ".treeSize:label21": 1,
+          ".treeSize:label22": 1,
+          ".version": "ver2",
+          ".version:label21": "ver2",
+          ".version:label22": "ver1",
+          "label21": "value21",
+          "label22": "value22",
+        }
+      });
+
+      const numNodes = renameStateTreeVersion(stateTree, ver2, ver3);
+      expect(numNodes).to.equal(4);
+      assert.deepEqual(stateTree.toJsObject(true), {
+        ".numParents": 0,
+        ".proofHash": null,
+        ".treeSize": 1,
+        ".version": "ver3",
+        "label1": {
+          ".numParents": 1,
+          ".numParents:label11": 1,
+          ".numParents:label12": 1,
+          ".proofHash": null,
+          ".proofHash:label11": null,
+          ".proofHash:label12": null,
+          ".treeSize": 1,
+          ".treeSize:label11": 1,
+          ".treeSize:label12": 1,
+          ".version": "ver3",  // renamed
+          ".version:label11": "ver1",
+          ".version:label12": "ver3",  // renamed
+          "label11": "value11",
+          "label12": "value12",
+        },
+        "label2": {
+          ".numParents": 1,
+          ".numParents:label21": 1,
+          ".numParents:label22": 1,
+          ".proofHash": null,
+          ".proofHash:label21": null,
+          ".proofHash:label22": null,
+          ".treeSize": 1,
+          ".treeSize:label21": 1,
+          ".treeSize:label22": 1,
+          ".version": "ver3",  // renamed
+          ".version:label21": "ver3",  // renamed
+          ".version:label22": "ver1",
+          "label21": "value21",
+          "label22": "value22",
         }
       });
     })
@@ -818,38 +803,38 @@ describe("state-util", () => {
       const ver1 = 'ver1';
 
       // Delete a leaf node without version.
-      const stateNode1 = jsObjectToStateTree(true);
+      const stateNode1 = StateNode.fromJsObject(true);
       setProofHashForStateTree(stateNode1);
       const numNodes1 = deleteStateTree(stateNode1);
       expect(numNodes1).to.equal(1);
       expect(stateNode1.numChildren()).to.equal(0);
       expect(stateNode1.getValue()).to.equal(null);
       expect(stateNode1.getProofHash()).to.equal(null);
-      expect(stateNode1.getNumRef()).to.equal(0);
+      expect(stateNode1.numParents()).to.equal(0);
 
       // Delete a leaf node with version.
-      const stateNode2 = jsObjectToStateTree(true, ver1);
+      const stateNode2 = StateNode.fromJsObject(true, ver1);
       setProofHashForStateTree(stateNode2);
       const numNodes2 = deleteStateTree(stateNode2);
       expect(numNodes2).to.equal(1);
       expect(stateNode2.numChildren()).to.equal(0);
       expect(stateNode2.getValue()).to.equal(null);
       expect(stateNode2.getProofHash()).to.equal(null);
-      expect(stateNode2.getNumRef()).to.equal(0);
+      expect(stateNode2.numParents()).to.equal(0);
     })
 
     it("internal node", () => {
       const numNodes = deleteStateTree(stateTree);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      assert.deepEqual(stateTree.toJsObject(true), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
-      expect(child1.getNumRef()).to.equal(0);
+      expect(child1.numParents()).to.equal(0);
       expect(child2.getValue()).to.equal(null);
       expect(child2.getProofHash()).to.equal(null);
-      expect(child2.getNumRef()).to.equal(0);
+      expect(child2.numParents()).to.equal(0);
     })
   })
 
@@ -860,152 +845,159 @@ describe("state-util", () => {
 
     let child1 = null;
     let child2 = null;
-    let stateTree = null;
+    let node = null;
+
+    const parent = new StateNode(ver1);
+    const nodeLabel = 'node_label';
 
     beforeEach(() => {
       child1 = new StateNode(ver1);
       child2 = new StateNode(ver2);
       child1.setValue('value1');
       child2.setValue('value2');
-      stateTree = new StateNode(ver3);
-      stateTree.setChild('label1', child1);
-      stateTree.setChild('label2', child2);
-      setProofHashForStateTree(stateTree);
+      node = new StateNode(ver3);
+      node.setChild('label1', child1);
+      node.setChild('label2', child2);
+      setProofHashForStateTree(node);
     })
 
     it("leaf node", () => {
-      const ver1 = 'ver1';
-
       // Delete a leaf node without version.
-      const stateNode1 = jsObjectToStateTree(true);
+      const stateNode1 = StateNode.fromJsObject(true);
       setProofHashForStateTree(stateNode1);
-      const numNodes1 = deleteStateTreeVersion(stateNode1, ver1);
-      expect(numNodes1).to.equal(0);
-      expect(stateNode1.getValue()).to.equal(true);
-      expect(stateNode1.getProofHash()).to.not.equal(null);
-      expect(stateNode1.getNumRef()).to.equal(0);
+      const numNodes1 = deleteStateTreeVersion(stateNode1);
+      expect(numNodes1).to.equal(1);
+      expect(stateNode1.getValue()).to.equal(null);
+      expect(stateNode1.getProofHash()).to.equal(null);
+      expect(stateNode1.numParents()).to.equal(0);
 
       // Delete a leaf node with a different version.
-      const stateNode2 = jsObjectToStateTree(true, 'ver2');
+      const stateNode2 = StateNode.fromJsObject(true, 'ver2');
       setProofHashForStateTree(stateNode2);
-      const numNodes2 = deleteStateTreeVersion(stateNode2, ver1);
-      expect(numNodes2).to.equal(0);
-      expect(stateNode2.getValue()).to.equal(true);
-      expect(stateNode2.getProofHash()).to.not.equal(null);
-      expect(stateNode2.getNumRef()).to.equal(0);
+      const numNodes2 = deleteStateTreeVersion(stateNode2);
+      expect(numNodes2).to.equal(1);
+      expect(stateNode2.getValue()).to.equal(null);
+      expect(stateNode2.getProofHash()).to.equal(null);
+      expect(stateNode2.numParents()).to.equal(0);
 
       // Delete a leaf node with the same version.
-      const stateNode3 = jsObjectToStateTree(true, ver1);
+      const stateNode3 = StateNode.fromJsObject(true, ver1);
       setProofHashForStateTree(stateNode3);
-      const numNodes3 = deleteStateTreeVersion(stateNode3, ver1);
+      const numNodes3 = deleteStateTreeVersion(stateNode3);
       expect(numNodes3).to.equal(1);
       expect(stateNode3.getValue()).to.equal(null);
       expect(stateNode3.getProofHash()).to.equal(null);
-      expect(stateNode3.getNumRef()).to.equal(0);
+      expect(stateNode3.numParents()).to.equal(0);
 
-      // Delete a leaf node with the same version but with non-zero numRef value.
-      const stateNode4 = jsObjectToStateTree(true, ver1);
-      stateNode4.increaseNumRef();
+      // Delete a leaf node with the same version but with non-zero numParents() value.
+      const stateNode4 = StateNode.fromJsObject(true, ver1);
+      parent.setChild(nodeLabel, stateNode4);
       setProofHashForStateTree(stateNode4);
-      const numNodes4 = deleteStateTreeVersion(stateNode4, ver1);
+      const numNodes4 = deleteStateTreeVersion(stateNode4);
       expect(numNodes4).to.equal(0);
       expect(stateNode4.getValue()).to.equal(true);
       expect(stateNode4.getProofHash()).to.not.equal(null);
-      expect(stateNode4.getNumRef()).to.equal(1);
+      expect(stateNode4.numParents()).to.equal(1);
     })
 
     it("internal node with a different version", () => {
-      const numNodes = deleteStateTreeVersion(stateTree, 'ver4');
-      expect(numNodes).to.equal(0);
-      // State tree is not deleted.
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
-        ".version": "ver3",
-        ".version:label1": "ver1",
-        ".version:label2": "ver2",
-        ".numRef": 0,
-        ".numRef:label1": 1,
-        ".numRef:label2": 1,
-        label1: "value1",
-        label2: "value2"
-      });
+      const numNodes = deleteStateTreeVersion(node);
+      expect(numNodes).to.equal(3);
+      // State tree is deleted.
+      assert.deepEqual(node.toJsObject(true), null);
+      // And child nodes are deleted as well.
+      expect(child1.getValue()).to.equal(null);
+      expect(child1.getProofHash()).to.equal(null);
+      expect(child1.getVersion()).to.equal(ver1);
+      expect(child1.numParents()).to.equal(0);
+      expect(child2.getValue()).to.equal(null);
+      expect(child2.getProofHash()).to.equal(null);
+      expect(child2.getVersion()).to.equal(ver2);
+      expect(child2.numParents()).to.equal(0);
     })
 
     it("internal node with the same version", () => {
       // Set versions of the state tree.
-      setStateTreeVersion(stateTree, ver3);
+      setStateTreeVersion(node, ver3);
 
-      const numNodes = deleteStateTreeVersion(stateTree, ver3);
+      const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      assert.deepEqual(node.toJsObject(true), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
       expect(child1.getVersion()).to.equal(ver3);
-      expect(child1.getNumRef()).to.equal(0);
+      expect(child1.numParents()).to.equal(0);
       expect(child2.getValue()).to.equal(null);
       expect(child2.getProofHash()).to.equal(null);
-      expect(child1.getVersion()).to.equal(ver3);
-      expect(child2.getNumRef()).to.equal(0);
+      expect(child2.getVersion()).to.equal(ver3);
+      expect(child2.numParents()).to.equal(0);
     })
 
-    it("internal node with the same version but with non-zero numRef value", () => {
-      // Increase the numRef of the root node.
-      stateTree.increaseNumRef();
+    it("internal node with the same version but with non-zero numParents() value", () => {
+      // Increase the numParents() value of the root node.
+      parent.setChild(nodeLabel, node);
 
-      const numNodes = deleteStateTreeVersion(stateTree, ver3);
+      const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(0);
       // State tree is not deleted.
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), {
+      assert.deepEqual(node.toJsObject(true), {
         ".version": "ver3",
         ".version:label1": "ver1",
         ".version:label2": "ver2",
-        ".numRef": 1,
-        ".numRef:label1": 1,
-        ".numRef:label2": 1,
+        ".numParents": 1,
+        ".numParents:label1": 1,
+        ".numParents:label2": 1,
+        ".proofHash": "0xa540d9d1906f4579604302acdee0b4c9742f537eb5f8397fb9a43ed458dad439",
+        ".proofHash:label1": "0xb41f4a6e100333ddd8e8dcc01ca1fed23662d9faaec359ed255d21a900cecd08",
+        ".proofHash:label2": "0x7597bdc763c23c44e90f26c63d7eac963cc0d0aa8a0a3268e7f5691c5361d942",
+        ".treeSize": 3,
+        ".treeSize:label1": 1,
+        ".treeSize:label2": 1,
         label1: "value1",
         label2: "value2"
       });
     })
 
     it("internal node with the same version but with sub-node of different versions", () => {
-      const numNodes = deleteStateTreeVersion(stateTree, ver3);
-      expect(numNodes).to.equal(1);
+      const numNodes = deleteStateTreeVersion(node);
+      expect(numNodes).to.equal(3);
       // Root node is deleted.
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
-      // But child nodes are not deleted.
-      expect(child1.getValue()).to.equal('value1');
-      expect(child1.getProofHash()).to.not.equal(null);
+      assert.deepEqual(node.toJsObject(true), null);
+      // And child nodes are deleted as well.
+      expect(child1.getValue()).to.equal(null);
+      expect(child1.getProofHash()).to.equal(null);
       expect(child1.getVersion()).to.equal(ver1);
-      expect(child1.getNumRef()).to.equal(0);
-      expect(child2.getValue()).to.equal('value2');
-      expect(child2.getProofHash()).to.not.equal(null);
+      expect(child1.numParents()).to.equal(0);
+      expect(child2.getValue()).to.equal(null);
+      expect(child2.getProofHash()).to.equal(null);
       expect(child2.getVersion()).to.equal(ver2);
-      expect(child2.getNumRef()).to.equal(0);
+      expect(child2.numParents()).to.equal(0);
     })
 
-    it("internal node with the same version but with sub-nodes of > 1 numRef values", () => {
+    it("internal node with the same version but with sub-nodes of > 1 numParents() values", () => {
       // Set versions of the state tree.
-      setStateTreeVersion(stateTree, ver3);
-      stateTree2 = new StateNode('ver99');
-      stateTree2.setChild('label1', child1);
-      stateTree2.setChild('label2', child2);
-      expect(child1.getNumRef()).to.equal(2);
-      expect(child2.getNumRef()).to.equal(2);
+      setStateTreeVersion(node, ver3);
+      node2 = new StateNode('ver99');
+      node2.setChild('label1', child1);
+      node2.setChild('label2', child2);
+      expect(child1.numParents()).to.equal(2);
+      expect(child2.numParents()).to.equal(2);
 
-      const numNodes = deleteStateTreeVersion(stateTree, ver3);
+      const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(1);
       // State tree is deleted.
-      assert.deepEqual(stateTreeVersionsToJsObject(stateTree), null);
+      assert.deepEqual(node.toJsObject(true), null);
       // But child nodes are not deleted.
       expect(child1.getValue()).to.equal('value1');
       expect(child1.getProofHash()).to.not.equal(null);
       expect(child1.getVersion()).to.equal(ver3);
-      expect(child1.getNumRef()).to.equal(1);
+      expect(child1.numParents()).to.equal(1);
       expect(child2.getValue()).to.equal('value2');
       expect(child2.getProofHash()).to.not.equal(null);
       expect(child2.getVersion()).to.equal(ver3);
-      expect(child2.getNumRef()).to.equal(1);
+      expect(child2.numParents()).to.equal(1);
     })
   })
 
@@ -1038,17 +1030,25 @@ describe("state-util", () => {
           empty_obj: {},
         }
       };
-      const root = jsObjectToStateTree(stateObj);
+      const root = StateNode.fromJsObject(stateObj);
+      const convertedObj = root.toJsObject();
       const copy = makeCopyOfStateTree(root);
+      expect(equalStateTrees(copy, root)).to.equal(true);
       deleteStateTree(root);
-      assert.deepEqual(stateTreeToJsObject(copy), {
+      assert.deepEqual(copy.toJsObject(), convertedObj);
+    })
+  })
+
+  describe("equalStateTrees", () => {
+    it("equal state trees", () => {
+      const stateObj = {
         bool: false,
         number: 10,
         str: 'str',
         empty_str: '',
         null: null,
         undef: undefined,
-        empty_obj: null,
+        empty_obj: {},
         subobj1: {
           bool: true,
           number: 20,
@@ -1056,7 +1056,7 @@ describe("state-util", () => {
           empty_str: '',
           null: null,
           undef: undefined,
-          empty_obj: null,
+          empty_obj: {},
         },
         subobj2: {
           bool: true,
@@ -1065,58 +1065,125 @@ describe("state-util", () => {
           empty_str: '',
           null: null,
           undef: undefined,
-          empty_obj: null,
-        }
-      });
-    })
-  })
-})
-
-describe("state-util: a part of state Proof", () => {
-  describe("buildProofHashOfStateNode", () => {
-    it("tests a leaf node case", () => {
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(true)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(true)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(10)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(10)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(-200)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(-200)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree('')))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString('')));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree('unittest')))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString('unittest')));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(null)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(null)));
-      expect(buildProofHashOfStateNode(jsObjectToStateTree(undefined)))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(undefined)));
-    });
-
-    it("tests a NON-leaf node case", () => {
-      const jsObject = {
-        level0: {
-          child1: 'value1',
-          child2: 'value2',
-          child3: 'value3'
+          empty_obj: {},
         }
       };
-      const level0Node = jsObjectToStateTree(jsObject).getChild('level0');
-      const childLabels = level0Node.getChildLabels();
-      const child1Node = level0Node.getChild(childLabels[0]);
-      const child2Node = level0Node.getChild(childLabels[1]);
-      const child3Node = level0Node.getChild(childLabels[2]);
-      child1Node.setProofHash('proofHash1');
-      child2Node.setProofHash('proofHash2');
-      child3Node.setProofHash('proofHash3');
-      const preimage = `${childLabels[0]}${HASH_DELIMITER}`
-          + `${child1Node.getProofHash()}${HASH_DELIMITER}`
-          + `${childLabels[1]}${HASH_DELIMITER}`
-          + `${child2Node.getProofHash()}${HASH_DELIMITER}`
-          + `${childLabels[2]}${HASH_DELIMITER}`
-          + `${child3Node.getProofHash()}`;
-      expect(buildProofHashOfStateNode(level0Node))
-        .to.equal(ChainUtil.hashString(ChainUtil.toString(preimage)));
-    });
-  });
+      const root1 = StateNode.fromJsObject(stateObj);
+      const root2 = StateNode.fromJsObject(stateObj);
+      expect(equalStateTrees(root1, root2)).to.equal(true);
+    })
+
+    it("state trees with grandchildren in different orders", () => {
+      const stateObj1 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const stateObj2 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          // different order
+          label3: 'value3',
+          label2: 'value2',
+          label1: 'value1',
+        },
+        subobj2: {
+          // different order
+          label3: 'value3',
+          label2: 'value2',
+          label1: 'value1',
+        }
+      };
+      const root1 = StateNode.fromJsObject(stateObj1);
+      const root2 = StateNode.fromJsObject(stateObj2);
+      expect(equalStateTrees(root1, root2)).to.equal(false);
+    })
+
+    it("state trees with a grandchild of a different label", () => {
+      const stateObj1 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const stateObj2 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label4: 'value3',  // different label
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const root1 = StateNode.fromJsObject(stateObj1);
+      const root2 = StateNode.fromJsObject(stateObj2);
+      expect(equalStateTrees(root1, root2)).to.equal(false);
+    })
+
+    it("state trees with an extra grandchild", () => {
+      const stateObj1 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const stateObj2 = {
+        label1: 'value1',
+        label2: 'value2',
+        label3: 'value3',
+        subobj1: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+          label4: 'value4',  // extra node
+        },
+        subobj2: {
+          label1: 'value1',
+          label2: 'value2',
+          label3: 'value3',
+        }
+      };
+      const root1 = StateNode.fromJsObject(stateObj1);
+      const root2 = StateNode.fromJsObject(stateObj2);
+      expect(equalStateTrees(root1, root2)).to.equal(false);
+    })
+  })
 
   describe("setProofHashForStateTree", () => {
     it("generates a proof hash along with the given stateTree", () => {
@@ -1131,24 +1198,34 @@ describe("state-util: a part of state Proof", () => {
           test: 10
         }
       };
-      const stateTree = jsObjectToStateTree(jsObject);
+      const stateTree = StateNode.fromJsObject(jsObject);
       const level0Node = stateTree.getChild('level0');
       const level1Node = level0Node.getChild('level1');
       const fooNode = level1Node.getChild('foo');
       const bazNode = level1Node.getChild('baz');
+      const anotherNode = stateTree.getChild('another_route');
+      const testNode = anotherNode.getChild('test');
       setProofHashForStateTree(level0Node);
-      expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
-      expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
-      expect(fooNode.getProofHash()).to.equal(buildProofHashOfStateNode(fooNode));
-      expect(bazNode.getProofHash()).to.equal(buildProofHashOfStateNode(bazNode));
+      // Checks proof hashes.
+      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
+      expect(fooNode.getProofHash()).to.equal(fooNode.buildProofHash());
+      expect(bazNode.getProofHash()).to.equal(bazNode.buildProofHash());
       expect(stateTree.getChild('another_route').getChild('test').getProofHash()).to.equal(null);
       expect(stateTree.getChild('another_route').getProofHash()).to.equal(null);
       expect(stateTree.getProofHash()).to.equal(null);
+      // Checks tree sizes.
+      expect(fooNode.getTreeSize()).to.equal(1);
+      expect(bazNode.getTreeSize()).to.equal(1);
+      expect(level1Node.getTreeSize()).to.equal(3);
+      expect(level0Node.getTreeSize()).to.equal(4);
+      expect(anotherNode.getTreeSize()).to.equal(1);
+      expect(testNode.getTreeSize()).to.equal(1);
     });
   });
 
-  describe("updateProofHashForPath", () => {
-    it("updates proof hashes to the root", () => {
+  describe("updateProofHashForAllRootPaths", () => {
+    it("updates proof hashes for a single path to a root", () => {
       const jsObject = {
         level0: {
           level1: {
@@ -1162,25 +1239,32 @@ describe("state-util: a part of state Proof", () => {
           }
         }
       };
-      const stateTree = jsObjectToStateTree(jsObject);
-      const level0Node = stateTree.getChild('level0');
+      const rootNode = StateNode.fromJsObject(jsObject);
+      const level0Node = rootNode.getChild('level0');
       const level1Node = level0Node.getChild('level1');
       const level2Node = level1Node.getChild('level2');
       const anotherNode = level0Node.getChild('another_route');
-      updateProofHashForPath(['level0', 'level1'], stateTree);
+
+      const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
+      expect(numAffectedNodes).to.equal(3);
+
+      // Checks proof hashes.
       expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
       expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
       expect(level2Node.getProofHash()).to.equal(null);
-      expect(anotherNode.getProofHash()).to.equal(null);
       expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
-      expect(level1Node.getProofHash()).to.equal(buildProofHashOfStateNode(level1Node));
-      expect(level0Node.getProofHash()).to.equal(buildProofHashOfStateNode(level0Node));
-      expect(stateTree.getProofHash()).to.equal(buildProofHashOfStateNode(stateTree));
-    });
-  });
+      expect(anotherNode.getProofHash()).to.equal(null);
+      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
+      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
 
-  describe("makeCopyOfStateTree and deleteStateTree", () => {
-    it("copy with proof", () => {
+      // Checks tree sizes.
+      expect(level1Node.getTreeSize()).to.equal(2);
+      expect(level0Node.getTreeSize()).to.equal(4);
+      expect(rootNode.getTreeSize()).to.equal(5);
+    });
+
+    it("updates proof hashes for multiple paths to all the roots", () => {
       const jsObject = {
         level0: {
           level1: {
@@ -1194,30 +1278,40 @@ describe("state-util: a part of state Proof", () => {
           }
         }
       };
-      const stateTree = jsObjectToStateTree(jsObject);
-      setProofHashForStateTree(stateTree);
-      const copyTree = makeCopyOfStateTree(stateTree);
-      expect(copyTree.getProofHash()).to.equal(stateTree.getProofHash());
-    });
+      const rootNode = StateNode.fromJsObject(jsObject);
+      const level0Node = rootNode.getChild('level0');
+      const level1Node = level0Node.getChild('level1');
+      const level2Node = level1Node.getChild('level2');
+      const anotherNode = level0Node.getChild('another_route');
+      const rootClone = rootNode.clone();
+      const level0Clone = level0Node.clone();
+      const level1Clone = level1Node.clone();
+      const level2Clone = level2Node.clone();
+      const anotherClone = anotherNode.clone();
 
-    it("delete with proof", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const stateTree = jsObjectToStateTree(jsObject);
-      setProofHashForStateTree(stateTree);
-      deleteStateTree(stateTree);
-      expect(stateTree.getProofHash()).to.equal(null);
+      const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
+      expect(numAffectedNodes).to.equal(5);
+
+      // Checks proof hashes.
+      expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
+      expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
+      expect(level2Node.getProofHash()).to.equal(null);
+      expect(level2Clone.getProofHash()).to.equal(null);
+
+      expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
+      expect(anotherNode.getProofHash()).to.equal(null);
+      expect(anotherClone.getProofHash()).to.equal(null);
+
+      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
+      expect(level1Clone.getProofHash()).to.equal(null);
+
+      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
+      expect(level0Clone.getProofHash()).to.equal(level0Clone.buildProofHash());
+      expect(level0Clone.getProofHash()).to.equal(level0Node.getProofHash());
+
+      expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
+      expect(rootClone.getProofHash()).to.equal(rootClone.buildProofHash());
+      expect(rootClone.getProofHash()).to.equal(rootNode.getProofHash());
     });
   });
-});
+})
