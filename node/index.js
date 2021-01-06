@@ -267,7 +267,8 @@ class BlockchainNode {
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
 
-    const backupVersion = this.stateManager.createRandomVersion(`${StateVersions.BACKUP}`);
+    const backupVersion = this.stateManager.createRandomVersion(
+        `${StateVersions.BACKUP}:${this.bc.lastBlockNumber()}`);
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
       return ChainUtil.logAndReturnError(
