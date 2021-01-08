@@ -131,12 +131,14 @@ class Blockchain {
   }
 
   addNewBlockToChain(newBlock, db) {
+    const LOG_HEADER = 'addNewBlockToChain';
+
     if (!newBlock) {
-      logger.error('[blockchain.addNewBlockToChain] Block is null');
+      logger.error(`[${LOG_HEADER}] Block is null.`);
       return false;
     }
     if (newBlock.number !== this.lastBlockNumber() + 1) {
-      logger.error(`[blockchain.addNewBlockToChain] Invalid blockchain number: ${newBlock.number}`);
+      logger.error(`[${LOG_HEADER}] Invalid blockchain number: ${newBlock.number}`);
       return false;
     }
     if (!(newBlock instanceof Block)) {
@@ -144,12 +146,12 @@ class Blockchain {
     }
     if (db) {
       if (!db.executeTransactionList(newBlock.last_votes)) {
-        logger.error('[blockchain.addNewBlockToChain] Failed to execute last_votes of block' +
+        logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
             `${JSON.stringify(newBlock, null, 2)}`);
         return false;
       }
       if (!db.executeTransactionList(newBlock.transactions)) {
-        logger.error('[blockchain.addNewBlockToChain] Failed to execute transactions of block' +
+        logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(newBlock, null, 2)}`);
         return false;
       }
