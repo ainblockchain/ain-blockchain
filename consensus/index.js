@@ -273,7 +273,7 @@ class Consensus {
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
-    const tempVersion = this.node.stateManager.createRandomVersion(
+    const tempVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
@@ -478,7 +478,7 @@ class Consensus {
         }
         baseVersion = prevDb.stateVersion;
       }
-      const tempVersion = this.node.stateManager.createRandomVersion(
+      const tempVersion = this.node.stateManager.createUniqueVersionName(
           `${StateVersions.CONSENSUS_VOTE}:${prevBlock.number}:${number}`);
       const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
       if (isSnapDb) {
@@ -533,7 +533,7 @@ class Consensus {
       }
       baseVersion = prevDb.stateVersion;
     }
-    const tempVersion = this.node.stateManager.createRandomVersion(
+    const tempVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
     if (isSnapDb) {
@@ -551,7 +551,7 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(createdTx);
-    const newVersion = this.node.stateManager.createRandomVersion(
+    const newVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.POOL}:${prevBlock.number}:${number}`);
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
@@ -815,7 +815,7 @@ class Consensus {
     } else if (blockHash === lastFinalizedHash) {
       baseVersion = this.node.stateManager.getFinalVersion();
     }
-    const snapVersion = this.node.stateManager.createRandomVersion(
+    const snapVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.SNAP}:${currBlock.number}`);
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
     const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
