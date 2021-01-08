@@ -274,7 +274,7 @@ class Consensus {
         this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
     const tempVersion = this.node.stateManager.createRandomVersion(
-        `${StateVersions.TEMP_A}:${lastBlock.number}:${blockNumber}`);
+        `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
@@ -479,7 +479,7 @@ class Consensus {
         baseVersion = prevDb.stateVersion;
       }
       const tempVersion = this.node.stateManager.createRandomVersion(
-          `${StateVersions.TEMP_B}:${prevBlock.number}:${number}`);
+          `${StateVersions.CONSENSUS_VOTE}:${prevBlock.number}:${number}`);
       const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
@@ -534,7 +534,7 @@ class Consensus {
       baseVersion = prevDb.stateVersion;
     }
     const tempVersion = this.node.stateManager.createRandomVersion(
-        `${StateVersions.TEMP_C}:${prevBlock.number}:${number}`);
+        `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
     if (isSnapDb) {
       this.node.destroyDb(prevDb);

@@ -388,7 +388,7 @@ class BlockchainNode {
 
     const baseVersion = this.stateManager.getFinalVersion();
     const tempVersion = this.stateManager.createRandomVersion(
-        `${StateVersions.TEMP_D}:${this.bc.lastBlockNumber()}`);
+        `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`);
     const tempDb = this.createTempDb(
         baseVersion, tempVersion, this.bc.lastBlockNumber());
     const validBlocks = this.bc.getValidBlocks(chainSegment);

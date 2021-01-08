@@ -331,16 +331,16 @@ const DefaultValues = {
  */
 const StateVersions = {
   BACKUP: 'BACKUP',
+  CONSENSUS_CREATE: 'CONSENSUS_CREATE',
+  CONSENSUS_PROPOSE: 'CONSENSUS_PROPOSE',
+  CONSENSUS_VOTE: 'CONSENSUS_VOTE',
   EMPTY: 'EMPTY',
   FINAL: 'FINAL',
   NODE: 'NODE',
   POOL: 'POOL',
+  SEGMENT: 'SEGMENT',
   SNAP: 'SNAP',
   START: 'START',
-  TEMP_A: 'TEMP_A',
-  TEMP_B: 'TEMP_B',
-  TEMP_C: 'TEMP_C',
-  TEMP_D: 'TEMP_D',
 };
 
 /**
