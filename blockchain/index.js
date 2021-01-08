@@ -130,7 +130,7 @@ class Blockchain {
     return lastBlock.timestamp;
   }
 
-  addNewBlockToChain(newBlock, db) {
+  addNewBlockToChain(newBlock) {
     const LOG_HEADER = 'addNewBlockToChain';
 
     if (!newBlock) {
@@ -143,18 +143,6 @@ class Blockchain {
     }
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
-    }
-    if (db) {
-      if (!db.executeTransactionList(newBlock.last_votes)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
-            `${JSON.stringify(newBlock, null, 2)}`);
-        return false;
-      }
-      if (!db.executeTransactionList(newBlock.transactions)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
-            `${JSON.stringify(newBlock, null, 2)}`);
-        return false;
-      }
     }
     this.chain.push(newBlock);
     this.writeChain();
@@ -261,46 +249,40 @@ class Blockchain {
     return chainSegment.length > 0 ? chainSegment : [];
   }
 
-  merge(chainSegment, db) {
+  getValidBlocks(chainSegment) {
     logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
     const firstBlock = Block.parse(chainSegment[0]);
     const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
     const overlap = lastBlockHash ?
         chainSegment.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
+    const validBlocks = [];
     if (lastBlockHash) {
       // Case 1: Not a cold start.
       if (overlappingBlock && overlappingBlock.hash !== lastBlockHash) {
         logger.info(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
             `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
-        return false;
+        return validBlocks;
       }
     } else {
       // Case 2: A cold start.
       if (firstBlock.last_hash !== '') {
         logger.info(`First block of hash ${firstBlock.hash.substring(0, 5)} ` +
             `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
-        return false;
+        return validBlocks;
       }
     }
     if (!Blockchain.isValidChainSegment(chainSegment)) {
       logger.error(`Invalid chain segment`);
-      return false;
+      return validBlocks; 
     }
-    for (let i = 0; i < chainSegment.length; i++) {
-      const block = chainSegment[i];
-
+    for (const block of chainSegment) {
       if (block.number <= this.lastBlockNumber()) {
         continue;
       }
-      // TODO(lia): validate the state proof of each block
-      if (!this.addNewBlockToChain(block, db)) {
-        logger.error(`Failed to add block ` + block);
-        return false;
-      }
+      validBlocks.push(block);
     }
-    logger.info(`Last block number after merge: ${this.lastBlockNumber()}`);
-    return true;
+    return validBlocks;
   }
 
   static loadChain(chainPath) {
