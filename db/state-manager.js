@@ -224,10 +224,10 @@ class StateManager {
   }
 
   /**
-   * Returns a random state version with the given version prefix.
-   * @param {string} versionPrefix version prefix
+   * Returns a unique version name with the given version name prefix.
+   * @param {string} versionPrefix version name prefix
    */
-  createRandomVersion(versionPrefix) {
+  createUniqueVersionName(versionPrefix) {
     const timestamp = Date.now();
     let index = 0;
     let version = null;

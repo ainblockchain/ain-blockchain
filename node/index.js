@@ -267,7 +267,7 @@ class BlockchainNode {
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
 
-    const backupVersion = this.stateManager.createRandomVersion(
+    const backupVersion = this.stateManager.createUniqueVersionName(
         `${StateVersions.BACKUP}:${this.bc.lastBlockNumber()}`);
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
@@ -387,7 +387,7 @@ class BlockchainNode {
     }
 
     const baseVersion = this.stateManager.getFinalVersion();
-    const tempVersion = this.stateManager.createRandomVersion(
+    const tempVersion = this.stateManager.createUniqueVersionName(
         `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`);
     const tempDb = this.createTempDb(
         baseVersion, tempVersion, this.bc.lastBlockNumber());
