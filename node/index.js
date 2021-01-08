@@ -90,9 +90,13 @@ class BlockchainNode {
 
   createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
     const LOG_HEADER = 'createDb';
+
+    logger.info(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
+        `${baseVersion} -> ${newVersion}`);
     const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
     if (!newRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`)
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion} -> ${newVersion}`);
       return null;
     }
     if (finalizeVersion) {
@@ -102,6 +106,9 @@ class BlockchainNode {
   }
 
   destroyDb(db) {
+    const LOG_HEADER = 'destroyDb';
+
+    logger.info(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
     return this.stateManager.deleteVersion(db.stateVersion);
   }
 
@@ -260,7 +267,8 @@ class BlockchainNode {
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
 
-    const backupVersion = StateManager.createRandomVersion(`${StateVersions.BACKUP}`);
+    const backupVersion = this.stateManager.createUniqueVersionName(
+        `${StateVersions.BACKUP}:${this.bc.lastBlockNumber()}`);
     const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
     if (!backupRoot) {
       return ChainUtil.logAndReturnError(
@@ -330,6 +338,25 @@ class BlockchainNode {
     return false;
   }
 
+  applyBlocksToDb(blockList, db) {
+    const LOG_HEADER = 'applyBlocksToDb';
+
+    for (const block of blockList) {
+      // TODO(lia): validate the state proof of each block
+      if (!db.executeTransactionList(block.last_votes)) {
+        logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
+            `${JSON.stringify(block, null, 2)}`);
+        return false;
+      }
+      if (!db.executeTransactionList(block.transactions)) {
+        logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
+            `${JSON.stringify(block, null, 2)}`);
+        return false;
+      }
+    }
+    return true;
+  }
+
   mergeChainSegment(chainSegment) {
     const LOG_HEADER = 'mergeChainSegment';
 
@@ -359,21 +386,39 @@ class BlockchainNode {
       return false;
     }
 
-    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
+    const baseVersion = this.stateManager.getFinalVersion();
+    const tempVersion = this.stateManager.createUniqueVersionName(
+        `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`);
     const tempDb = this.createTempDb(
-        this.stateManager.getFinalVersion(), tempVersion, this.bc.lastBlockNumber());
-    if (!this.bc.merge(chainSegment, tempDb)) {
-      logger.error(`[${LOG_HEADER}] Failed to merge chain segment: ` +
-          `${JSON.stringify(chainSegment, null, 2)}`);
-      this.destroyDb(tempDb);
-      return false;
+        baseVersion, tempVersion, this.bc.lastBlockNumber());
+    const validBlocks = this.bc.getValidBlocks(chainSegment);
+    if (validBlocks.length > 0) {
+      if (!this.applyBlocksToDb(validBlocks, tempDb)) {
+        logger.error(`[${LOG_HEADER}] Failed to apply valid blocks to database: ` +
+            `${JSON.stringify(validBlocks, null, 2)}`);
+        this.destroyDb(tempDb);
+        return false;
+      }
+      for (const block of validBlocks) {
+        // TODO(lia): validate the state proof of each block
+        if (!this.bc.addNewBlockToChain(block)) {
+          logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
+              `${JSON.stringify(block, null, 2)}`);
+          this.destroyDb(tempDb);
+          return false;
+        }
+      }
+      const lastBlockNumber = this.bc.lastBlockNumber();
+      this.cloneAndFinalizeVersion(tempDb.stateVersion, lastBlockNumber);
+      for (const block of validBlocks) {
+        this.tp.cleanUpForNewBlock(block);
+        this.tp.updateNonceTrackers(block.transactions);
+      }
+    } else {
+      logger.info(`[${LOG_HEADER}] No blocks to apply.`);
+      return true;
     }
-    const lastBlockNumber = this.bc.lastBlockNumber();
-    this.cloneAndFinalizeVersion(tempDb.stateVersion, lastBlockNumber);
-    chainSegment.forEach((block) => {
-      this.tp.cleanUpForNewBlock(block);
-      this.tp.updateNonceTrackers(block.transactions);
-    });
+    this.destroyDb(tempDb);
 
     return true;
   }
