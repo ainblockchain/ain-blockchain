@@ -25,8 +25,6 @@ class TransactionPool {
     this.transactions = {};
     this.committedNonceTracker = {};
     this.pendingNonceTracker = {};
-    // TODO (lia): do not store txs in the pool
-    // (they're already tracked by this.transactions..)
     this.transactionTracker = {};
     // Track transactions in remote blockchains (e.g. parent blockchain).
     this.remoteTransactionTracker = {};
@@ -35,7 +33,7 @@ class TransactionPool {
 
   addTransaction(tx) {
     // Quick verification of transaction on entry
-    // TODO (lia): pull verification out to the very front
+    // TODO(lia): pull verification out to the very front
     // (closer to the communication layers where the node first receives transactions)
     if (!LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(tx)) {

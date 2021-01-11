@@ -163,7 +163,7 @@ class Blockchain {
       logger.error(`Genesis block is corrupted`);
       return false;
     }
-    // TODO (lia): Check if the tx nonces are correct.
+    // TODO(lia): Check if the tx nonces are correct.
     return Blockchain.isValidChainSegment(chain);
   }
 
