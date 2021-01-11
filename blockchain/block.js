@@ -55,6 +55,13 @@ class Block {
     };
   }
 
+  get body() {
+    return {
+      last_votes: this.last_votes,
+      transactions: this.transactions,
+    };
+  }
+
   toString() {
     return `Block -
             hash:              ${ChainUtil.shortenHash(this.hash)}
@@ -81,22 +88,7 @@ class Block {
 
   static getSize(block) {
     if (!(block instanceof Block)) block = Block.parse(block);
-    return sizeof({
-      // header
-      hash: block.hash,
-      last_hash: block.last_hash,
-      last_votes_hash: block.last_votes_hash,
-      transactions_hash: block.transactions_hash,
-      number: block.number,
-      epoch: block.epoch,
-      timestamp: block.timestamp,
-      state_proof_hash: block.state_proof_hash,
-      proposer: block.proposer,
-      validators: block.validators,
-      // body
-      last_votes: block.last_votes,
-      transactions: block.transactions,
-    });
+    return sizeof({...block.header, ...block.body});
   }
 
   static create(lastHash, lastVotes, transactions, number, epoch,
