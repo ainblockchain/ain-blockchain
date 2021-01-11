@@ -516,7 +516,6 @@ class Consensus {
     }
     // TODO(lia): Check last_votes if they indeed voted for the previous block
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
-    // TODO(lia): Implement state version control
     let baseVersion;
     let prevDb;
     let isSnapDb = false;
@@ -564,10 +563,10 @@ class Consensus {
     }
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
-      if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
+      if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getProof('/')[ProofProperties.PROOF_HASH]} / ` +
-            `${proposalBlock.stateProofHash}`);
+            `${proposalBlock.state_proof_hash}`);
         return false;
       }
     }
@@ -936,7 +935,7 @@ class Consensus {
           ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
               `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
               `${ShardingProperties.PROOF_HASH}`,
-          value: block.stateProofHash
+          value: block.state_proof_hash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
         if (blockNumberToReport >= MAX_SHARD_REPORT) {

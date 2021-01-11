@@ -24,7 +24,7 @@ class ChainUtil {
     return '0x' + hashedData.toString('hex');
   }
 
-  // TODO (lia): remove this function
+  // TODO(lia): remove this function
   static genKeyPair() {
     let keyPair;
     if (PRIVATE_KEY) {
@@ -88,7 +88,6 @@ class ChainUtil {
     return ruleUtil.toBool(value);
   }
 
-  // TODO(lia): normalize addresses in user inputs using this function.
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
   }

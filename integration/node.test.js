@@ -2137,7 +2137,6 @@ describe('Blockchain Node', () => {
         expect(depositAccountValue).to.equal(beforeDepositAccountValue);
       });
 
-      // TODO (lia): update test code after fixing timestamp verification logic.
       it('deposit with invalid timestamp', () => {
         const account = ainUtil.createAccount();
         const res = parseOrLog(syncRequest('POST', server2 + '/set_value', {
@@ -2246,8 +2245,7 @@ describe('Blockchain Node', () => {
             server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${withdrawPath}/2/value`,
-          value: depositAmount,
-          is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
+          value: depositAmount
         }}).body.toString('utf-8'));
         assert.equal(body.result.result, true);
         assert.equal(body.code, 0);
@@ -2272,8 +2270,7 @@ describe('Blockchain Node', () => {
             `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPath + '/3/value',
-          value: newDepositAmount,
-          is_nonced_transaction: false // TODO (lia): remove this once state snapshot is fixed and txs aren't getting dropped
+          value: newDepositAmount
         }}).body.toString('utf-8'));
         assert.equal(body.result.result, true);
         assert.equal(body.code, 0);

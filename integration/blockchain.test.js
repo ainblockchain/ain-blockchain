@@ -390,11 +390,10 @@ describe('Blockchain Cluster', () => {
           transactions_hash: block.transactions_hash,
           number: block.number,
           epoch: block.epoch,
-          stateProofHash: block.stateProofHash,
+          state_proof_hash: block.state_proof_hash,
           timestamp: block.timestamp,
           proposer: block.proposer,
-          validators: block.validators,
-          size: block.size
+          validators: block.validators
         }));
       }
       for (let i = 0; i < SERVERS.length; i++) {
