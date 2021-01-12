@@ -136,7 +136,6 @@ class Functions {
     const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
     this.db.writeDatabase(
         this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
-    // TODO (lia): move this check to when we first receive the transaction
     if (timestamp > currentTime) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
           {code: FunctionResultCode.FAILURE});

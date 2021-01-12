@@ -462,7 +462,7 @@ class P2pServer {
                 if (!data.chainSegment && !data.catchUpInfo ||
                     data.number === this.node.bc.lastBlockNumber()) {
                   // Regard this situation as if you're synced.
-                  // TODO (lia): ask the tracker server for another peer.
+                  // TODO(lia): ask the tracker server for another peer.
                   logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                   this.node.status = BlockchainNodeStatus.SERVING;
                   this.consensus.init();
@@ -481,7 +481,7 @@ class P2pServer {
                 // All caught up with the peer
                 if (this.node.status !== BlockchainNodeStatus.SERVING) {
                   // Regard this situation as if you're synced.
-                  // TODO (lia): ask the tracker server for another peer.
+                  // TODO(lia): ask the tracker server for another peer.
                   logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                   this.node.status = BlockchainNodeStatus.SERVING;
                 }

@@ -33,13 +33,12 @@ class Block {
     this.number = number;
     this.epoch = epoch;
     this.timestamp = timestamp;
-    // TODO(lia): change this to snake case
-    this.stateProofHash = stateProofHash;
+    this.state_proof_hash = stateProofHash;
     this.proposer = proposer;
     this.validators = validators;
-    this.size = sizeof(this.transactions);
     // Hash of block's header
     this.hash = Block.hash(this);
+    this.size = Block.getSize(this);
   }
 
   get header() {
@@ -50,10 +49,16 @@ class Block {
       number: this.number,
       epoch: this.epoch,
       timestamp: this.timestamp,
-      stateProofHash: this.stateProofHash,
+      state_proof_hash: this.state_proof_hash,
       proposer: this.proposer,
       validators: this.validators,
-      size: this.size
+    };
+  }
+
+  get body() {
+    return {
+      last_votes: this.last_votes,
+      transactions: this.transactions,
     };
   }
 
@@ -66,7 +71,7 @@ class Block {
             number:            ${this.number}
             epoch:             ${this.epoch}
             timestamp:         ${this.timestamp}
-            stateProofHash:    ${this.stateProofHash}
+            state_proof_hash:  ${this.state_proof_hash}
             proposer:          ${this.proposer}
             validators:        ${this.validators}
             size:              ${this.size}
@@ -79,6 +84,11 @@ class Block {
   static hash(block) {
     if (!(block instanceof Block)) block = Block.parse(block);
     return ChainUtil.hashString(stringify(block.header));
+  }
+
+  static getSize(block) {
+    if (!(block instanceof Block)) block = Block.parse(block);
+    return sizeof({...block.header, ...block.body});
   }
 
   static create(lastHash, lastVotes, transactions, number, epoch,
@@ -102,14 +112,14 @@ class Block {
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes,
         blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
-        blockInfo.stateProofHash, blockInfo.proposer, blockInfo.validators);
+        blockInfo.state_proof_hash, blockInfo.proposer, blockInfo.validators);
   }
 
   static hasRequiredFields(block) {
     return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined &&
         block.epoch !== undefined && block.timestamp !== undefined &&
-        block.stateProofHash !== undefined && block.proposer !== undefined &&
+        block.state_proof_hash !== undefined && block.proposer !== undefined &&
         block.validators !== undefined);
   }
 
