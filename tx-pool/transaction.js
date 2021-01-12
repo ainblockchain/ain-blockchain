@@ -1,11 +1,11 @@
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
-const { WriteDbOperations } = require('../common/constants');
+const {WriteDbOperations} = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 class Transaction {
-  constructor(txBody, signature, hash, address, skipVerif) {
+  constructor(txBody, signature, hash, address, skipVerif, createdAt) {
     this.tx_body = JSON.parse(JSON.stringify(txBody));
     this.signature = signature;
     this.hash = hash;
@@ -13,6 +13,7 @@ class Transaction {
     if (skipVerif) {
       this.skip_verif = skipVerif;
     }
+    this.created_at = createdAt;
 
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
@@ -36,8 +37,8 @@ class Transaction {
     } else {
       address = Transaction.getAddress(hash.slice(2), signature);
     }
-
-    return new Transaction(txBody, signature, hash, address, skipVerif);
+    const createdAt = Date.now();
+    return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
   }
 
   static signTxBody(txBody, privateKey) {
@@ -201,7 +202,7 @@ class Transaction {
 
   static isValidFormat(txBody) {
     const sanitized = Transaction.sanitizeTxBody(txBody);
-    return _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, { strict: true });
+    return _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, {strict: true});
   }
 
   static isBatchTxBody(txBody) {
