@@ -71,7 +71,7 @@ class Block {
             number:            ${this.number}
             epoch:             ${this.epoch}
             timestamp:         ${this.timestamp}
-            state_proof_hash:    ${this.state_proof_hash}
+            state_proof_hash:  ${this.state_proof_hash}
             proposer:          ${this.proposer}
             validators:        ${this.validators}
             size:              ${this.size}
