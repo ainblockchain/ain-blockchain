@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
+const stringify = require('fast-json-stable-stringify');
 const logger = require('../logger')('TRANSACTION');
 const { WriteDbOperations } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -51,13 +52,11 @@ class Transaction {
   }
 
   toString() {
-    // TODO (lia): change JSON.stringify to 'fast-json-stable-stringify' or add
-    // an utility function to ain-util.
     return `hash:               ${this.hash},
             address:            ${this.address},
             tx_body.nonce:      ${this.tx_body.nonce},
             tx_body.timestamp:  ${this.tx_body.timestamp},
-            tx_body.operation:  ${JSON.stringify(this.tx_body.operation)},
+            tx_body.operation:  ${stringify(this.tx_body.operation)},
             ${this.tx_body.skip_verif !== undefined ?
                 'tx_body.skip_verif:     ' + this.tx_body.skip_verif + ',' : ''}
             ${this.parent_tx_hash !== undefined ?

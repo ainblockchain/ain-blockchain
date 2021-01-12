@@ -42,7 +42,7 @@ class BlockchainNode {
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
-    const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}}`;
+    const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;
     this.status = BlockchainNodeStatus.STARTING;
@@ -364,7 +364,7 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Empty chain segment`);
       if (this.status !== BlockchainNodeStatus.SERVING) {
         // Regard this situation as if you're synced.
-        // TODO (lia): ask the tracker server for another peer.
+        // TODO(lia): ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.status = BlockchainNodeStatus.SERVING;
       }
@@ -379,7 +379,7 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Received chain is at the same block number`);
       if (this.status !== BlockchainNodeStatus.SERVING) {
         // Regard this situation as if you're synced.
-        // TODO (lia): ask the tracker server for another peer.
+        // TODO(lia): ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.status = BlockchainNodeStatus.SERVING;
       }
