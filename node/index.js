@@ -300,11 +300,6 @@ class BlockchainNode {
     const LOG_HEADER = 'executeTransactionAndAddToPool';
 
     logger.debug(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
-    if (this.tp.isTimedOutFromPool(tx.tx_body.timestamp, this.bc.lastBlockTimestamp())) {
-      return ChainUtil.logAndReturnError(
-          logger, 2, `[${LOG_HEADER}] Timeouted transaction: ${JSON.stringify(tx, null, 2)}`,
-          0);
-    }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return ChainUtil.logAndReturnError(
           logger, 3,
