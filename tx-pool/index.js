@@ -56,7 +56,7 @@ class TransactionPool {
       timestamp: tx.tx_body.timestamp,
       is_finalized: false,
       finalized_at: -1,
-      tracked_at: Date.now(),
+      tracked_at: tx.created_at,
     };
     if (tx.tx_body.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
