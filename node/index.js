@@ -234,7 +234,7 @@ class BlockchainNode {
           txList.push(createdTx);
         }
       }
-      return {tx_list: txList};
+      return { tx_list: txList };
     }
     const createdTx = this.createSingleTransaction(txBody, isNoncedTransaction);
     if (createdTx === null) {
