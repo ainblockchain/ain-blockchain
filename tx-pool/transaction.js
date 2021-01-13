@@ -202,7 +202,7 @@ class Transaction {
 
   static isValidFormat(txBody) {
     const sanitized = Transaction.sanitizeTxBody(txBody);
-    return _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, {strict: true});
+    return _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, { strict: true });
   }
 
   static isBatchTxBody(txBody) {
