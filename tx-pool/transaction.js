@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
-const {WriteDbOperations} = require('../common/constants');
+const { WriteDbOperations } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 class Transaction {
