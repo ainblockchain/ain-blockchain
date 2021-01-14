@@ -270,20 +270,13 @@ class P2pServer {
                 this.consensus.blockPool.longestNotarizedChainTips.length : 0
           }
       ),
-      nodeStatus: {
-        status: this.node.status,
-        nonce: this.node.nonce,
-      },
+      nodeStatus: this.getNodeStatus(),
       shardingStatus: this.node.getSharding(),
       txStatus: {
         txPoolSize: this.node.tp.getPoolSize(),
         txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
         committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
         pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
-      },
-      dbStatus: {
-        treeSize: this.node.db.getTreeSize('/'),
-        proof: this.node.db.getProof('/'),
       },
       memoryStatus: this.getMemoryUsage(),
       diskStatus: this.getDiskUsage(),
@@ -293,6 +286,28 @@ class P2pServer {
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
                  `${JSON.stringify(updateToTracker, null, 2)}`);
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
+  }
+
+  getNodeStatus() {
+    return {
+      address: this.node.account.address,
+      status: this.node.status,
+      nonce: this.node.nonce,
+      last_block_number: this.node.bc.lastBlockNumber(),
+      db: {
+        tree_size: this.node.db.getTreeSize('/'),
+        proof: this.node.db.getProof('/'),
+      },
+      state_versions: this.getStateVersions(),
+    };
+  }
+
+  getStateVersions() {
+    return {
+      num_versions: this.node.stateManager.numVersions(),
+      version_list: this.node.stateManager.getVersionList(),
+      final_version: this.node.stateManager.getFinalVersion(),
+    };
   }
 
   getDiskUsage() {
@@ -450,7 +465,7 @@ class P2pServer {
                 if (!data.chainSegment && !data.catchUpInfo ||
                     data.number === this.node.bc.lastBlockNumber()) {
                   // Regard this situation as if you're synced.
-                  // TODO (lia): ask the tracker server for another peer.
+                  // TODO(lia): ask the tracker server for another peer.
                   logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                   this.node.status = BlockchainNodeStatus.SERVING;
                   this.consensus.init();
@@ -469,7 +484,7 @@ class P2pServer {
                 // All caught up with the peer
                 if (this.node.status !== BlockchainNodeStatus.SERVING) {
                   // Regard this situation as if you're synced.
-                  // TODO (lia): ask the tracker server for another peer.
+                  // TODO(lia): ask the tracker server for another peer.
                   logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                   this.node.status = BlockchainNodeStatus.SERVING;
                 }
