@@ -62,7 +62,6 @@ class RuleUtil {
     return this.isBool(value) ? value : value === 'true';
   }
 
-  // TODO(lia): normalize addresses in rule strings using this function.
   toCksumAddr(addr) {
     try {
       return ainUtil.toChecksumAddress(addr);

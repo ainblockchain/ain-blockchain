@@ -126,7 +126,6 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     // TODO(seo): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
-      // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
         done(null, addProtocolVersion({
           result: {
@@ -159,7 +158,6 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     // TODO(lia): add test cases
     ain_sendSignedTransactionBatch: function(args, done) {
-      // TODO (lia): return the transaction hash or an error message
       if (sizeof(args) > MAX_TX_BYTES) {
         done(null, addProtocolVersion({
           result: {
@@ -252,7 +250,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     // Database API
-    ain_get: function(args, done) { // TODO (lia): split this method
+    ain_get: function(args, done) {
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           done(null, addProtocolVersion({
@@ -352,7 +350,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_isValidator: function(args, done) {
-      // TODO (lia): update this function after revamping consensus staking
+      // TODO(lia): update this function after revamping consensus staking
       // FIXME: may need to deprecate or modify this logic for the new consensus
       const deposit = p2pServer.node.db.getValue(
           `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
@@ -363,7 +361,6 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     // Network API
     net_listening: function(args, done) {
-      // TODO (lia): Check if this number is lower than max peer number
       const peerCount = p2pServer.sockets.length;
       done(null, addProtocolVersion({result: !!peerCount}));
     },
@@ -374,8 +371,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     net_syncing: function(args, done) {
-      // TODO (lia): return { starting, latest } with block numbers if the node
-      // is currently syncing.
+      // TODO(lia): return { starting, latest } with block numbers if the node is currently syncing.
       done(null, addProtocolVersion({result: p2pServer.node.status === BlockchainNodeStatus.SYNCING}));
     },
 

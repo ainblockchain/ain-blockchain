@@ -25,8 +25,6 @@ class TransactionPool {
     this.transactions = {};
     this.committedNonceTracker = {};
     this.pendingNonceTracker = {};
-    // TODO (lia): do not store txs in the pool
-    // (they're already tracked by this.transactions..)
     this.transactionTracker = {};
     // Track transactions in remote blockchains (e.g. parent blockchain).
     this.remoteTransactionTracker = {};
@@ -35,7 +33,7 @@ class TransactionPool {
 
   addTransaction(tx) {
     // Quick verification of transaction on entry
-    // TODO (lia): pull verification out to the very front
+    // TODO(lia): pull verification out to the very front
     // (closer to the communication layers where the node first receives transactions)
     if (!LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(tx)) {
@@ -56,6 +54,7 @@ class TransactionPool {
       timestamp: tx.tx_body.timestamp,
       is_finalized: false,
       finalized_at: -1,
+      tracked_at: tx.created_at,
     };
     if (tx.tx_body.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
@@ -172,7 +171,7 @@ class TransactionPool {
     const timedOutTxs = new Set();
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
-        if (this.isTimedOutFromPool(tx.tx_body.timestamp, blockTimestamp)) {
+        if (this.isTimedOutFromPool(tx.created_at, blockTimestamp)) {
           timedOutTxs.add(tx.hash);
         }
       });
@@ -191,7 +190,7 @@ class TransactionPool {
     let removed = false;
     for (const hash in this.transactionTracker) {
       const txData = this.transactionTracker[hash];
-      if (this.isTimedOutFromTracker(txData.timestamp, blockTimestamp)) {
+      if (this.isTimedOutFromTracker(txData.tracked_at, blockTimestamp)) {
         delete this.transactionTracker[hash];
         removed = true;
       }
@@ -235,6 +234,7 @@ class TransactionPool {
         timestamp: voteTx.tx_body.timestamp,
         is_finalized: true,
         finalized_at: finalizedAt,
+        tracked_at: finalizedAt,
       };
       inBlockTxs.add(voteTx.hash);
     });
@@ -252,6 +252,7 @@ class TransactionPool {
         timestamp: tx.tx_body.timestamp,
         is_finalized: true,
         finalized_at: finalizedAt,
+        tracked_at: finalizedAt,
       };
       inBlockTxs.add(tx.hash);
     }

@@ -16,7 +16,7 @@ const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t'
 const MAX_TX_BYTES = 10000;
 const TRANSACTION_POOL_TIMEOUT_MS = moment.duration(1, 'hours').as('milliseconds');
 const TRANSACTION_TRACKER_TIMEOUT_MS = moment.duration(24, 'hours').as('milliseconds');
-// TODO (lia): Check network id in all messages
+// TODO(lia): Check network id in all messages
 const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
 // HOSTING_ENV is a variable used in extracting the ip address of the host machine,
 // of which value could be either 'local', 'default', or 'gcp'.
@@ -71,7 +71,7 @@ const BlockchainNodeStatus = {
  * Predefined database paths.
  * @enum {string}
  */
-// TODO (lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
+// TODO(lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -331,12 +331,16 @@ const DefaultValues = {
  */
 const StateVersions = {
   BACKUP: 'BACKUP',
+  CONSENSUS_CREATE: 'CONSENSUS_CREATE',
+  CONSENSUS_PROPOSE: 'CONSENSUS_PROPOSE',
+  CONSENSUS_VOTE: 'CONSENSUS_VOTE',
   EMPTY: 'EMPTY',
   FINAL: 'FINAL',
   NODE: 'NODE',
+  POOL: 'POOL',
+  SEGMENT: 'SEGMENT',
   SNAP: 'SNAP',
   START: 'START',
-  TEMP: 'TEMP',
 };
 
 /**

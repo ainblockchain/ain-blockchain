@@ -250,7 +250,7 @@ app.post('/batch', (req, res, next) => {
 });
 
 app.get('/node_status', (req, res, next) => {
-  const result = node.status;
+  const result = p2pServer.getNodeStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -327,10 +327,7 @@ app.get('/protocol_versions', (req, res) => {
 });
 
 app.get('/state_versions', (req, res) => {
-  const result = {
-    version_list: node.stateManager.getVersionList(),
-    final_version: node.stateManager.getFinalVersion(),
-  };
+  const result = p2pServer.getStateVersions();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})

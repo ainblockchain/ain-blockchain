@@ -273,7 +273,8 @@ class Consensus {
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
-    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
+    const tempVersion = this.node.stateManager.createUniqueVersionName(
+        `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
@@ -477,7 +478,8 @@ class Consensus {
         }
         baseVersion = prevDb.stateVersion;
       }
-      const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
+      const tempVersion = this.node.stateManager.createUniqueVersionName(
+          `${StateVersions.CONSENSUS_VOTE}:${prevBlock.number}:${number}`);
       const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
@@ -501,8 +503,8 @@ class Consensus {
       this.node.destroyDb(tempDb);
     }
     if (prevBlock.epoch >= epoch) {
-      logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) is greater than` +
-          `or equal to incoming block's (${epoch})`);
+      logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) ` +
+          `is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
     const seed = '' + this.genesisHash + epoch;
@@ -514,7 +516,6 @@ class Consensus {
     }
     // TODO(lia): Check last_votes if they indeed voted for the previous block
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
-    // TODO(lia): Implement state version control
     let baseVersion;
     let prevDb;
     let isSnapDb = false;
@@ -531,7 +532,8 @@ class Consensus {
       }
       baseVersion = prevDb.stateVersion;
     }
-    const tempVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
+    const tempVersion = this.node.stateManager.createUniqueVersionName(
+        `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
@@ -548,7 +550,8 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(createdTx);
-    const newVersion = StateManager.createRandomVersion(`${StateVersions.TEMP}`);
+    const newVersion = this.node.stateManager.createUniqueVersionName(
+        `${StateVersions.POOL}:${prevBlock.number}:${number}`);
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
@@ -560,10 +563,10 @@ class Consensus {
     }
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
-      if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.stateProofHash) {
+      if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getProof('/')[ProofProperties.PROOF_HASH]} / ` +
-            `${proposalBlock.stateProofHash}`);
+            `${proposalBlock.state_proof_hash}`);
         return false;
       }
     }
@@ -811,7 +814,8 @@ class Consensus {
     } else if (blockHash === lastFinalizedHash) {
       baseVersion = this.node.stateManager.getFinalVersion();
     }
-    const snapVersion = StateManager.createRandomVersion(`${StateVersions.SNAP}`);
+    const snapVersion = this.node.stateManager.createUniqueVersionName(
+        `${StateVersions.SNAP}:${currBlock.number}`);
     const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
     const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
 
@@ -931,7 +935,7 @@ class Consensus {
           ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
               `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
               `${ShardingProperties.PROOF_HASH}`,
-          value: block.stateProofHash
+          value: block.state_proof_hash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
         if (blockNumberToReport >= MAX_SHARD_REPORT) {
