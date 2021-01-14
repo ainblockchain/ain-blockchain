@@ -8,7 +8,6 @@ const logger = require('../logger')('TRACKER_SERVER');
 
 const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
-const MAX_NUM_PEERS = 2;
 const PEER_NODES = {};
 const WS_LIST = [];
 const MASK = 'xxx';
@@ -119,12 +118,12 @@ server.on('connection', (ws) => {
       const nodeInfo = JSON.parse(message);
       if (PEER_NODES[nodeInfo.address]) {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
-        node.assignRandomPeers();
+        node.assignRandomPeers(nodeInfo.connectionInfo.maxOutbound);
         logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
             `${JSON.stringify(nodeInfo, null, 2)}`)
       } else {
         node = new PeerNode(nodeInfo);
-        node.assignRandomPeers();
+        node.assignRandomPeers(nodeInfo.connectionInfo.maxOutbound);
         PEER_NODES[nodeInfo.address] = node;
       }
       const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
@@ -284,8 +283,8 @@ class PeerNode {
     return this.getPeerCandidates()[Math.floor(Math.random() * this.numPeerCandidates())];
   }
 
-  assignRandomPeers() {
-    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < MAX_NUM_PEERS) {
+  assignRandomPeers(MaxOutbound) {
+    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < MaxOutbound) {
       this.addPeer(this.getRandomPeer());
     }
   }

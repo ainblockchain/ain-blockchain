@@ -286,6 +286,11 @@ class P2pServer {
       diskStatus: this.getDiskUsage(),
       runtimeInfo: this.getRuntimeInfo(),
       managedPeersInfo: this.managedPeersInfo,
+      connectionInfo: {
+        maxConnection: this.maxConnection,
+        maxOutbound: this.maxOutbound,
+        maxInbound: this.maxInbound
+      }
     };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
                  `${JSON.stringify(updateToTracker, null, 2)}`);
