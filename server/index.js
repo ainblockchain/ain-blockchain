@@ -54,7 +54,8 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(seo): Sign messages to tracker or peer.
 class P2pServer {
-  constructor(node, minProtocolVersion, maxProtocolVersion) {
+  constructor (node, minProtocolVersion, maxProtocolVersion, maxConnection, maxOutbound, maxInbound)
+  {
     this.internalIpAddress = null;
     this.externalIpAddress = null;
     this.trackerWebSocket = null;
@@ -68,6 +69,9 @@ class P2pServer {
     this.waitInBlocks = 4;
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
+    this.maxConnection = maxConnection;
+    this.maxOutbound = maxOutbound;
+    this.maxInbound = maxInbound;
   }
 
   listen() {
@@ -347,7 +351,7 @@ class P2pServer {
         hostname: os.hostname(),
         type: os.type(),
         release: os.release(),
-        version: os.version(),
+        // version: os.version(),
         uptime: os.uptime(),
       },
       env: {
