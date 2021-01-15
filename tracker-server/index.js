@@ -118,14 +118,12 @@ server.on('connection', (ws) => {
       const nodeInfo = JSON.parse(message);
       if (PEER_NODES[nodeInfo.address]) {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
-        // XXX(minsu): connecting first necessary = no need to care about who will connect to me!
-        // XXX(minsu): assign to me!! which does not mean I am connecting to others.
-        node.assignRandomPeers(nodeInfo.connectionInfo.maxInbound);
+        node.assignRandomPeers(nodeInfo.connectionInfo.maxOutbound);
         logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
             `${JSON.stringify(nodeInfo, null, 2)}`)
       } else {
         node = new PeerNode(nodeInfo);
-        node.assignRandomPeers(nodeInfo.connectionInfo.maxInbound);
+        node.assignRandomPeers(nodeInfo.connectionInfo.maxOutbound);
         PEER_NODES[nodeInfo.address] = node;
       }
       const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
@@ -285,8 +283,8 @@ class PeerNode {
     return this.getPeerCandidates()[Math.floor(Math.random() * this.numPeerCandidates())];
   }
 
-  assignRandomPeers(MaxInbound) {
-    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < MaxInbound) {
+  assignRandomPeers(MaxOutbound) {
+    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < MaxOutbound) {
       this.addPeer(this.getRandomPeer());
     }
   }
