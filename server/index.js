@@ -98,10 +98,11 @@ class P2pServer {
         threshold: 1024 // Size (in bytes) below which messages should not be compressed.
       }
     });
+    // Set the number of maximum clients.
+    this.server.setMaxListeners(this.maxInbound);
     this.server.on('connection', (socket) => this.setSocket(socket, null));
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setUpIpAddresses()
-    .then(() => {
+    this.setUpIpAddresses().then(() => {
       this.setIntervalForTrackerConnection();
       // XXX(minsu): it won't run before updating p2p network.
       // this.heartbeat();
@@ -372,8 +373,7 @@ class P2pServer {
     let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
       if (this.managedPeersInfo[peerInfo.address]) {
-        logger.info(`Node ${peerInfo.address} is already a managed peer. ` +
-                    `Something is wrong.`)
+        logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
       } else {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
         this.managedPeersInfo[peerInfo.address] = peerInfo;
