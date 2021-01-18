@@ -62,13 +62,13 @@ class P2pServer {
     this.server = null;
     this.node = node;
     this.sockets = [];
+    // TODO(minsu): Remove this from Consensus.
     this.consensus = new Consensus(this, node);
     // XXX(minsu): The comment out will be revoked when next heartbeat updates.
     // this.isAlive = true;
-    this.waitInBlocks = 4;
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
-    this.managedPeersInfo = {};
+    this.managedPeersInfo = { inbound: [], outbound: [] };
     this.maxConnection = maxConnection;
     this.maxOutbound = maxOutbound;
     this.maxInbound = maxInbound;
