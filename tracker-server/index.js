@@ -112,7 +112,7 @@ server.on('connection', (ws) => {
         node = PEER_NODES[nodeInfo.address].reconstruct(nodeInfo);
         node.assignRandomPeers(nodeInfo.connectionInfo.maxOutbound);
         logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: ` +
-            `${JSON.stringify(nodeInfo, null, 2)}`)
+            `${JSON.stringify(nodeInfo, null, 2)}`);
       } else {
         node = new PeerNode(nodeInfo);
         node.assignRandomPeers(nodeInfo.connectionInfo.maxOutbound);
@@ -275,8 +275,8 @@ class PeerNode {
     return this.getPeerCandidates()[Math.floor(Math.random() * this.numPeerCandidates())];
   }
 
-  assignRandomPeers(MaxOutbound) {
-    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < MaxOutbound) {
+  assignRandomPeers(maxOutbound) {
+    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < maxOutbound) {
       this.addPeer(this.getRandomPeer());
     }
   }
