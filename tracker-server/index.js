@@ -76,14 +76,6 @@ function printNodesInfo() {
   }
 }
 
-// XXX(minsu): need to be inverstigated. This is not using it now.
-// A util function for testing/debugging.
-function setTimer(ws, timeSec) {
-  setTimeout(() => {
-    ws.close();
-  }, timeSec * 1000);
-}
-
 // A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
 // TODO(seo): Sign messages to nodes.
 const server = new WebSocketServer({
