@@ -4,12 +4,13 @@ const geoip = require('geoip-lite');
 const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
+const { v4: uuidv4 } = require('uuid');
 const logger = require('../logger')('TRACKER_SERVER');
 
 const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
 const PEER_NODES = {};
-const WS_LIST = [];
+const WS_LIST = {};
 
 const app = express();
 const jsonRpcMethods = require('./json-rpc')(PEER_NODES);
@@ -46,12 +47,9 @@ process.on('uncaughtException', function(err) {
 process.on('SIGINT', (_) => {
   logger.info('Stopping tracking server....');
   logger.info('Gracefully close websokets....');
-  for (const ws of WS_LIST) {
-    ws.close();
-  }
   logger.info('Gracefully close websoket server....');
   server.close((_) => {
-    process.exit(0);
+    process.exit(1);
   });
 });
 
@@ -79,13 +77,17 @@ const server = new WebSocketServer({
     concurrencyLimit: 10, // Limits zlib concurrency for perf.
     threshold: 1024 // Size (in bytes) below which messages
     // should not be compressed.
-  }
+  },
+  // TODO(minsu): verify clients
+  // verifyClient: function() {}
 });
 
 server.on('connection', (ws) => {
-  WS_LIST.push(ws);   // TODO(minsu): investigate this.
+  ws.uuid = uuidv4();
+  WS_LIST[ws.uuid] = null;
   ws.on('message', (message) => {
     const nodeInfo = JSON.parse(message);
+    WS_LIST[ws.uuid] = nodeInfo.address;
     if (PEER_NODES[nodeInfo.address]) {
       PEER_NODES[nodeInfo.address] = nodeInfo;
       logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: `);
@@ -111,17 +113,20 @@ server.on('connection', (ws) => {
     printNodesInfo();
   });
 
-  // TODO(minsu): FIXIT
-  // ws.on('close', (code) => {
-  //   logger.info(`\nDisconnected from node [${node ? abbrAddr(node.address) : 'unknown'}] ` +
-  //       `with code: ${code}`);
-  //   PEER_NODES[node.address].isLive = false;
-  //   printNodesInfo();
-  // });
+  // TODO(minsu): code should be setup ex) code === 1006: SIGINT
+  ws.on('close', (code) => {
+    const address = WS_LIST[ws.uuid];
+    logger.info(`\nDisconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
+        `with code: ${code}`);
+    delete WS_LIST[ws.uuid];
+    delete PEER_NODES[address];
+    printNodesInfo();
+  });
 
   ws.on('error', (error) => {
-    logger.error(`Error in communication with node [${abbrAddr(node.address)}]: ` +
-        `${JSON.stringify(error, null, 2)}`)
+    const address = WS_LIST[ws.uuid];
+    logger.error(`Error in communication with node [${abbrAddr(address)}]: ` +
+        `${JSON.stringify(error, null, 2)}`);
   });
 });
 
