@@ -155,7 +155,9 @@ function getPeerCandidates(myself, candidates) {
   Object.keys(PEER_NODES).forEach(address => {
     const nodeInfo = PEER_NODES[address];
     if (nodeInfo.address !== myself &&
-        nodeInfo.managedPeersInfo.inbound.length < nodeInfo.connectionInfo.maxInbound) {
+        nodeInfo.managedPeersInfo.inbound.length < nodeInfo.connectionInfo.maxInbound &&
+        !nodeInfo.managedPeersInfo.inbound.includes(myself) &&
+        !nodeInfo.managedPeersInfo.outbound.includes(myself)) {
       candidates.push({
         address: nodeInfo.address,
         url: nodeInfo.url
