@@ -96,11 +96,11 @@ server.on('connection', (ws) => {
       logger.debug(`${JSON.stringify(nodeInfo, null, 2)}`);
     }
 
-    let peerCandidates;
+    const newManagedPeerInfoList = [];
     if (nodeInfo.managedPeersInfo.outbound.length < nodeInfo.connectionInfo.maxOutbound) {
-      peerCandidates = getPeerCandidates(nodeInfo.address);
+      getPeerCandidates(nodeInfo.address, newManagedPeerInfoList);
+      assignRandomPeers(newManagedPeerInfoList);
     }
-    const newManagedPeerInfoList = assignRandomPeers(peerCandidates);
     const msgToNode = {
       newManagedPeerInfoList,
       numLivePeers: numNodes()
@@ -130,7 +130,7 @@ function abbrAddr(address) {
 }
 
 function numNodes() {
-  return Object.keys(PEER_NODES).length;
+  return Object.keys(PEER_NODES).length - 1;   // XXX(minsu): except for me
 }
 
 function assignRandomPeers(candidates) {
@@ -146,8 +146,7 @@ function assignRandomPeers(candidates) {
   }
 }
 
-function getPeerCandidates(myself) {
-  const candidates = [];
+function getPeerCandidates(myself, candidates) {
   Object.keys(PEER_NODES).forEach(address => {
     const nodeInfo = PEER_NODES[address];
     if (nodeInfo.address !== myself &&
@@ -158,7 +157,6 @@ function getPeerCandidates(myself) {
       });
     }
   });
-  return candidates;
 }
 
 function printNodesInfo() {
