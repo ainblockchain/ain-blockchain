@@ -654,10 +654,6 @@ class P2pClient extends P2pServer {
           logger.debug(`Updated MANAGED peers info: ` +
               `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
         }
-        if (this.connectToPeers(parsedMsg.newUnmanagedPeerInfoList)) {
-          logger.debug(`Updated UNMANAGED peers info: ` +
-              `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
-        }
         if (this.node.status === BlockchainNodeStatus.STARTING) {
           this.node.status = BlockchainNodeStatus.SYNCING;
           if (parsedMsg.numLivePeers === 0) {
