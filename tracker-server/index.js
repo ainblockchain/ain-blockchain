@@ -10,7 +10,33 @@ const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
 const PEER_NODES = {};
 const WS_LIST = [];
-const MASK = 'xxx';
+
+const app = express();
+const jsonRpcMethods = require('./json-rpc')(PEER_NODES);
+app.use(express.json());
+app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
+
+app.get('/', (req, res, next) => {
+  res.status(200)
+      .set('Content-Type', 'text/plain')
+      .send('Welcome to AIN Blockchain Tracker')
+      .end();
+});
+
+app.get('/peer_nodes', (req, res, next) => {
+  res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({result: PEER_NODES})
+      .end();
+});
+
+const trackerServer = app.listen(PORT, () => {
+  logger.info(`App listening on port ${PORT}`);
+  logger.info('Press Ctrl+C to quit.');
+});
+
+trackerServer.keepAliveTimeout = 620 * 1000; // 620 seconds
+trackerServer.headersTimeout = 630 * 1000; // 630 seconds
 
 // NOTE(seo): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
@@ -29,55 +55,8 @@ process.on('SIGINT', (_) => {
   });
 });
 
-function abbrAddr(address) {
-  return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
-}
-
-function numNodes() {
-  return Object.keys(PEER_NODES).length;
-}
-
-function numLiveNodes() {
-  const liveNodes = Object.values(PEER_NODES).filter((node) => {
-    return node.isLive;
-  });
-  return liveNodes.length;
-}
-
-function numLivePeers(address) {
-  const livePeers = Object.values(PEER_NODES).filter((node) => {
-    return node.isLive && node.address !== address;
-  });
-  return livePeers.length;
-}
-
-function printNodesInfo() {
-  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numLiveNodes()} / ${numNodes()}, ` +
-      `At: ${Date.now()})`);
-  const nodeList = Object.values(PEER_NODES).sort((x, y) => {
-    return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
-  });
-  for (let i = 0; i < nodeList.length; i++) {
-    const node = nodeList[i];
-    const diskAvailableMb = Math.floor(_.get(node, 'diskStatus.available') / 1000 / 1000);
-    const memoryFreeMb =
-        Math.round(_.get(node, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
-    logger.info(`    Node[${i}]: ${node.getNodeSummary()} ` +
-        `LastBlock: ${node.lastBlock.number}, ` +
-        `Disk: ${diskAvailableMb}MB, ` +
-        `Memory: ${memoryFreeMb}MB, ` +
-        `Peers: ${node.numManagedPeers()}, ` +
-        `UpdatedAt: ${node.updatedAt}`);
-    Object.keys(node.managedPeers).forEach((addr) => {
-      const peerSummary = PEER_NODES[addr] ?
-          PEER_NODES[addr].getNodeSummary() : PeerNode.getUnknownNodeSummary(addr);
-      logger.info(`      Managed peer: ${peerSummary}`);
-    });
-  }
-}
-
 // A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
-// TODO(seo): Sign messages to nodes.
+// TODO(minsu): Sign messages to nodes.
 const server = new WebSocketServer({
   port: P2P_PORT,
   // Enables server-side compression. For option details, see
@@ -117,22 +96,19 @@ server.on('connection', (ws) => {
       logger.debug(`${JSON.stringify(nodeInfo, null, 2)}`);
     }
 
+    let peerCandidates;
     if (nodeInfo.managedPeersInfo.outbound.length < nodeInfo.connectionInfo.maxOutbound) {
       peerCandidates = getPeerCandidates(nodeInfo.address);
     }
-    console.log(peerCandidates)
-    // assignRandomPeers(nodeInfo.connectionInfo.maxOutbound);
-    // const newManagedPeerInfoList = node.getManagedPeerInfoList().filter((peerInfo) => {
-    //   return !nodeInfo.managedPeersInfo[peerInfo.address];
-    // });
-    // const msgToNode = {
-    //   newManagedPeerInfoList,
-    //   numLivePeers: numLivePeers(node.address)
-    // };
-    // logger.info(`>> Message to node [${abbrAddr(node.address)}]: ` +
-    //     `${JSON.stringify(msgToNode, null, 2)}`);
-    // ws.send(JSON.stringify(msgToNode));
-    // printNodesInfo();
+    const newManagedPeerInfoList = assignRandomPeers(peerCandidates);
+    const msgToNode = {
+      newManagedPeerInfoList,
+      numLivePeers: numNodes()
+    };
+    logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
+        `${JSON.stringify(msgToNode, null, 2)}`);
+    ws.send(JSON.stringify(msgToNode));
+    printNodesInfo();
   });
 
   // TODO(minsu): FIXIT
@@ -149,6 +125,27 @@ server.on('connection', (ws) => {
   });
 });
 
+function abbrAddr(address) {
+  return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
+}
+
+function numNodes() {
+  return Object.keys(PEER_NODES).length;
+}
+
+function assignRandomPeers(candidates) {
+  if (_.isEmpty(candidates)) {
+    return candidates;
+  } else {
+    const shuffled = _.shuffle(candidates);
+    if (shuffled.length > 1) {
+      return [shuffled.pop(), shuffled.pop()];
+    } else {
+      return shuffled;
+    }
+  }
+}
+
 function getPeerCandidates(myself) {
   const candidates = [];
   Object.keys(PEER_NODES).forEach(address => {
@@ -164,127 +161,42 @@ function getPeerCandidates(myself) {
   return candidates;
 }
 
-class PeerNode {
-  constructor(nodeInfo) {
-    this.reconstruct(nodeInfo);
-  }
-
-  reconstruct(nodeInfo) {
-    this.isLive = true;
-
-    const infoToAdd = Object.assign({}, nodeInfo);
-    delete infoToAdd.managedPeersInfo;
-    Object.assign(this, infoToAdd);
-
-    this.location = this.getNodeLocation();
-    this.managedPeers = PeerNode.constructManagedPeers(nodeInfo);
-
-    return this;
-  }
-
-  getNodeSummary() {
-    return `[${abbrAddr(this.address)}] (${this.url}) -> ${this.isLive ? '(O)' : '(X)'}`;
-  }
-
-  static getUnknownNodeSummary(address) {
-    return `[${abbrAddr(address)}] (unknown) -> unknown`;
-  }
-
-  static maskIp(ip) {
-    const ipList = ip.split('.');
-    ipList[0] = MASK;
-    ipList[1] = MASK;
-    return ipList.join('.');
-  }
-
-  getNodeLocation() {
-    const geoLocationDict = geoip.lookup(this.ip);
-    if (geoLocationDict === null) {
-      return {
-        country: null,
-        region: null,
-        city: null,
-        timezone: null,
-      };
-    }
-    return {
-      country: _.isEmpty(geoLocationDict.country) ? null : geoLocationDict.country,
-      region: _.isEmpty(geoLocationDict.region) ? null : geoLocationDict.region,
-      city: _.isEmpty(geoLocationDict.city) ? null : geoLocationDict.city,
-      timezone: _.isEmpty(geoLocationDict.timezone) ? null : geoLocationDict.timezone,
-    };
-  }
-
-  static constructManagedPeers(nodeInfo) {
-    return { ...nodeInfo.managedPeersInfo };
-  }
-
-  numManagedPeers() {
-    return this.managedPeers.inbound.length;
-  }
-
-  addPeer(peer) {
-    if (peer && peer.address !== this.address && !this.managedPeers.inbound.includes(peer.address)) {
-      this.managedPeers.inbound.push(peer.address);
-    }
-  }
-
-  getPeerCandidates() {
-    return Object.values(PEER_NODES).filter((other) => {
-      return other.address !== this.address && other.isLive && !this.managedPeers.inbound.includes(other.address);
-    });
-  }
-
-  numPeerCandidates() {
-    return this.getPeerCandidates().length;
-  }
-
-  getRandomPeer() {
-    return this.getPeerCandidates()[Math.floor(Math.random() * this.numPeerCandidates())];
-  }
-
-  assignRandomPeers(maxOutbound) {
-    while (this.numPeerCandidates() > 0 && this.numManagedPeers() < maxOutbound) {
-      this.addPeer(this.getRandomPeer());
-    }
-  }
-
-  getManagedPeerInfoList() {
-    return Object.keys(this.managedPeers).map((addr) => {
-      if (PEER_NODES[addr]) {
-        return {
-          address: addr,
-          url: PEER_NODES[addr].url
-        };
-      }
-    });
-  }
+function printNodesInfo() {
+  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numNodes()})`);
+  const nodeInfoList = Object.values(PEER_NODES).sort((x, y) => {
+    return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
+  });
+  nodeInfoList.forEach((nodeInfo) => {
+    const diskAvailableMb = Math.floor(_.get(nodeInfo, 'diskStatus.available') / 1000 / 1000);
+    const memoryFreeMb =
+        Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
+    logger.info(`Node[${nodeInfo.address}]: ${getNodeSummary(nodeInfo)} ` +
+        `Disk: ${diskAvailableMb}MB, ` +
+        `Memory: ${memoryFreeMb}MB, ` +
+        `Peers: ${JSON.stringify(nodeInfo.managedPeersInfo)}, ` +
+        `UpdatedAt: ${nodeInfo.updatedAt}`);
+  });
 }
 
-const app = express();
-app.use(express.json()); // support json encoded bodies
+function getNodeSummary(nodeInfo) {
+  return `[${abbrAddr(nodeInfo.address)}]: ${JSON.stringify(nodeInfo.nodeStatus)}`;
+}
 
-const jsonRpcMethods = require('./json-rpc')(PEER_NODES);
-app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
-
-app.get('/', (req, res, next) => {
-  res.status(200)
-    .set('Content-Type', 'text/plain')
-    .send('Welcome to AIN Blockchain Tracker')
-    .end();
-});
-
-app.get('/peer_nodes', (req, res, next) => {
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({result: PEER_NODES})
-    .end();
-});
-
-const trackerServer = app.listen(PORT, () => {
-  logger.info(`App listening on port ${PORT}`);
-  logger.info('Press Ctrl+C to quit.');
-});
-
-trackerServer.keepAliveTimeout = 620 * 1000; // 620 seconds
-trackerServer.headersTimeout = 630 * 1000; // 630 seconds
+// TODO(minsu): Use it when connection
+function getNodeLocation() {
+  const geoLocationDict = geoip.lookup(this.ip);
+  if (geoLocationDict === null) {
+    return {
+      country: null,
+      region: null,
+      city: null,
+      timezone: null,
+    };
+  }
+  return {
+    country: _.isEmpty(geoLocationDict.country) ? null : geoLocationDict.country,
+    region: _.isEmpty(geoLocationDict.region) ? null : geoLocationDict.region,
+    city: _.isEmpty(geoLocationDict.city) ? null : geoLocationDict.city,
+    timezone: _.isEmpty(geoLocationDict.timezone) ? null : geoLocationDict.timezone,
+  };
+}
