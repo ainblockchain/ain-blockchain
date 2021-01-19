@@ -108,8 +108,8 @@ class P2pServer {
         maxOutbound: this.maxOutbound,
         maxInbound: this.maxInbound
       };
-      const p2pClient = new P2pClient(this.node, this.consensus, this.managedPeersInfo,
-          connectionInfo);
+      const p2pClient = new P2pClient(this.node, this.consensus, this.minProtocolVersion,
+          this.maxProtocolVersion, this.managedPeersInfo, connectionInfo);
       p2pClient.setIntervalForTrackerConnection();
       // XXX(minsu): it won't run before updating p2p network.
       // this.heartbeat();
@@ -362,16 +362,16 @@ class P2pServer {
 
     // TODO(minsu): Deal with handling/recording a peer status when connection closes.
     socket.on('close', () => {
-      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
-      // XXX(minsu): This will be revoked when next updates.
-      // this.clearIntervalHeartbeat(address);
-      this.removeFromListIfExists(socket);
+      // logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
+      // // XXX(minsu): This will be revoked when next updates.
+      // // this.clearIntervalHeartbeat(address);
+      // this.removeFromListIfExists(socket);
 
-      if (address && this.managedPeersInfo[address]) {
-        delete this.managedPeersInfo[address];
-        logger.info(` => Updated managed peers info: ` +
-                    `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
-      }
+      // if (address && this.managedPeersInfo[address]) {
+      //   delete this.managedPeersInfo[address];
+      //   logger.info(` => Updated managed peers info: ` +
+      //               `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+      // }
     });
 
     socket.on('pong', (_) => {
@@ -606,15 +606,18 @@ class P2pServer {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-  clearIntervalHeartbeat(address) {
-    clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
-    this.managedPeersInfo[address].intervalHeartbeat = null;
-  }
+  // TODO(minsu): Finish it later on
+  // clearIntervalHeartbeat(address) {
+  //   clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
+  //   this.managedPeersInfo[address].intervalHeartbeat = null;
+  // }
 }
 
 class P2pClient extends P2pServer {
-  constructor(node, consensus, managedPeersInfo, connectionInfo) {
-    super(node, consensus, managedPeersInfo);
+  constructor(node, consensus, minProtocolVersion, maxProtocolVersion, managedPeersInfo,
+    connectionInfo
+    ) {
+    super(node, consensus, minProtocolVersion, maxProtocolVersion, managedPeersInfo);
     this.connectionInfo = connectionInfo;
   }
 
@@ -681,11 +684,12 @@ class P2pClient extends P2pServer {
   connectToPeers(newPeerInfoList) {
     let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
-      if (this.managedPeersInfo[peerInfo.address]) {
+      if (this.managedPeersInfo.outbound.includes(peerInfo.address)) {
         logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
       } else {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
-        this.managedPeersInfo[peerInfo.address] = peerInfo;
+        // XXX(minsu): seems not necessary
+        // this.managedPeersInfo.outbound[peerInfo.address] = peerInfo;
         updated = true;
         const socket = new Websocket(peerInfo.url);
         socket.on('open', () => {
