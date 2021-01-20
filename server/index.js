@@ -56,9 +56,6 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 class P2pServer {
   constructor (node, minProtocolVersion, maxProtocolVersion, maxConnection, maxOutbound, maxInbound)
   {
-    this.internalIpAddress = null;
-    this.externalIpAddress = null;
-    this.trackerWebSocket = null;
     this.server = null;
     this.node = node;
     this.sockets = [];
@@ -100,20 +97,133 @@ class P2pServer {
     });
     // Set the number of maximum clients.
     this.server.setMaxListeners(this.maxInbound);
-    this.server.on('connection', (socket) => this.setSocket(socket, null));
+    this.server.on('connection', (socket) => {
+      this.setSocket(socket, null);
+    });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     this.setUpIpAddresses().then(() => {
-      const connectionInfo = {
-        maxConnection: this.maxConnection,
-        maxOutbound: this.maxOutbound,
-        maxInbound: this.maxInbound
-      };
-      const p2pClient = new P2pClient(this.node, this.consensus, this.minProtocolVersion,
-          this.maxProtocolVersion, this.managedPeersInfo, connectionInfo);
+      const p2pClient = new P2pClient(this);
       p2pClient.setIntervalForTrackerConnection();
-      // XXX(minsu): it won't run before updating p2p network.
-      // this.heartbeat();
     });
+  }
+
+  getAccount() {
+    return this.node.account.address;
+  }
+
+  getConnectionInfo() {
+    return {
+      maxConnection: this.maxConnection,
+      maxOutbound: this.maxOutbound,
+      maxInbound: this.maxInbound
+    };
+  }
+
+  getStateVersions() {
+    return {
+      num_versions: this.node.stateManager.numVersions(),
+      version_list: this.node.stateManager.getVersionList(),
+      final_version: this.node.stateManager.getFinalVersion(),
+    };
+  }
+
+  getExternalIp() {
+    return this.node.ipAddrExternal;
+  }
+
+  getConsensusStatus() {
+    return Object.assign(
+      {},
+      this.consensus.getState(),
+      {
+        longestNotarizedChainTipsSize: this.consensus.blockPool ?
+          this.consensus.blockPool.longestNotarizedChainTips.length : 0
+      }
+    );
+  }
+
+  getLastBlock() {
+    return {
+      number: this.node.bc.lastBlockNumber(),
+      epoch: this.node.bc.lastBlockEpoch(),
+      timestamp: this.node.bc.lastBlockTimestamp(),
+    };
+  }
+
+  getNodeStatus() {
+    return {
+      address: this.node.account.address,
+      status: this.node.status,
+      nonce: this.node.nonce,
+      last_block_number: this.node.bc.lastBlockNumber(),
+      db: {
+        tree_size: this.node.db.getTreeSize('/'),
+        proof: this.node.db.getProof('/'),
+      },
+      state_versions: this.getStateVersions(),
+    };
+  }
+
+  getDiskUsage() {
+    try {
+      return disk.checkSync(DISK_USAGE_PATH);
+    } catch (err) {
+      logger.error(err);
+      return {};
+    }
+  }
+
+  getMemoryUsage() {
+    const free = os.freemem();
+    const total = os.totalmem();
+    const usage = total - free;
+    return {
+      os: {
+        free,
+        usage,
+        total,
+      },
+      heap: process.memoryUsage(),
+      heapStats: v8.getHeapStatistics(),
+    };
+  }
+
+  getRuntimeInfo() {
+    return {
+      process: {
+        version: process.version,
+        platform: process.platform,
+        pid: process.pid,
+        uptime: Math.floor(process.uptime()),
+        v8Version: process.versions.v8,
+      },
+      os: {
+        hostname: os.hostname(),
+        type: os.type(),
+        release: os.release(),
+        // version: os.version(),
+        uptime: os.uptime(),
+      },
+      env: {
+        NUM_VALIDATORS: process.env.NUM_VALIDATORS,
+        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+        HOSTING_ENV: process.env.HOSTING_ENV,
+        DEBUG: process.env.DEBUG,
+      },
+    };
+  }
+
+  getTxStatus() {
+    return {
+      txPoolSize: this.node.tp.getPoolSize(),
+      txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
+      committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
+      pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
+    };
+  }
+
+  getShardingStatus() {
+    return this.node.getSharding();
   }
 
   stop() {
@@ -171,10 +281,6 @@ class P2pServer {
     const ipAddrExternal = await this.getIpAddress(false);
     this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
     return true;
-  }
-
-  static getNodeUrl(ipAddr) {
-    return `http://${ipAddr}:${PORT}`;
   }
 
   disconnectFromPeers() {
@@ -594,31 +700,14 @@ class P2pServer {
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
   }
-
-  // TODO(minsu): Since the p2p network has not been built completely,
-  // it will be updated afterwards.
-  heartbeat() {
-    logger.info(`Start heartbeat`);
-    this.intervalHeartbeat = setInterval(() => {
-      this.server.clients.forEach((ws) => {
-        ws.ping();
-      });
-    }, HEARTBEAT_INTERVAL_MS);
-  }
-
-  // TODO(minsu): Finish it later on
-  // clearIntervalHeartbeat(address) {
-  //   clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
-  //   this.managedPeersInfo[address].intervalHeartbeat = null;
-  // }
 }
 
-class P2pClient extends P2pServer {
-  constructor(node, consensus, minProtocolVersion, maxProtocolVersion, managedPeersInfo,
-    connectionInfo
-    ) {
-    super(node, consensus, minProtocolVersion, maxProtocolVersion, managedPeersInfo);
-    this.connectionInfo = connectionInfo;
+class P2pClient {
+  constructor(p2pServer) {
+    this.server = p2pServer;
+    this.trackerWebSocket = null;
+    // XXX(minsu): it won't run before updating p2p network.
+    // this.heartbeat();
   }
 
   setIntervalForTrackerConnection() {
@@ -626,6 +715,11 @@ class P2pClient extends P2pServer {
     this.intervalConnection = setInterval(() => {
       this.connectToTracker();
     }, RECONNECT_INTERVAL_MS);
+  }
+
+  clearIntervalForTrackerConnection() {
+    clearInterval(this.intervalConnection);
+    this.intervalConnection = null;
   }
 
   connectToTracker() {
@@ -643,30 +737,47 @@ class P2pClient extends P2pServer {
     });
   }
 
-  clearIntervalForTrackerConnection() {
-    clearInterval(this.intervalConnection);
-    this.intervalConnection = null;
+  connectToPeers(newPeerInfoList) {
+    let updated = false;
+    newPeerInfoList.forEach((peerInfo) => {
+      if (this.server.managedPeersInfo.outbound.includes(peerInfo.address)) {
+        logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
+      } else {
+        logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
+        // XXX(minsu): seems not necessary
+        // this.managedPeersInfo.outbound[peerInfo.address] = peerInfo;
+        updated = true;
+        const socket = new Websocket(peerInfo.url);
+        socket.on('open', () => {
+          logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
+          // XXX(minsu): start to here tmr
+          this.setSocket(socket, peerInfo.address);
+        });
+      }
+    });
+    return updated;
   }
 
   async setTrackerEventHandlers() {
+    const node = this.server.node;
     this.trackerWebSocket.on('message', async (message) => {
       try {
         const parsedMsg = JSON.parse(message);
         logger.info(`\n << Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
           logger.debug(`Updated MANAGED peers info: ` +
-              `${JSON.stringify(this.managedPeersInfo, null, 2)}`);
+              `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
         }
-        if (this.node.status === BlockchainNodeStatus.STARTING) {
-          this.node.status = BlockchainNodeStatus.SYNCING;
+        if (node.status === BlockchainNodeStatus.STARTING) {
+          node.status = BlockchainNodeStatus.SYNCING;
           if (parsedMsg.numLivePeers === 0) {
-            const lastBlockWithoutProposal = this.node.init(true);
-            await this.tryInitializeShard();
-            this.node.status = BlockchainNodeStatus.SERVING;
-            this.consensus.init(lastBlockWithoutProposal, true);
+            const lastBlockWithoutProposal = node.init(true);
+            await this.server.tryInitializeShard();
+            node.status = BlockchainNodeStatus.SERVING;
+            this.server.consensus.init(lastBlockWithoutProposal, true);
           } else {
             // Consensus will be initialized after syncing with peers
-            this.node.init(false);
+            node.init(false);
           }
         }
       } catch (error) {
@@ -681,136 +792,36 @@ class P2pClient extends P2pServer {
     });
   }
 
-  connectToPeers(newPeerInfoList) {
-    let updated = false;
-    newPeerInfoList.forEach((peerInfo) => {
-      if (this.managedPeersInfo.outbound.includes(peerInfo.address)) {
-        logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
-      } else {
-        logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
-        // XXX(minsu): seems not necessary
-        // this.managedPeersInfo.outbound[peerInfo.address] = peerInfo;
-        updated = true;
-        const socket = new Websocket(peerInfo.url);
-        socket.on('open', () => {
-          logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
-          this.setSocket(socket, peerInfo.address);
-        });
-      }
-    });
-
-    return updated;
-  }
-
-  getNodeStatus() {
+  getConnectionInfo() {
     return {
-      address: this.node.account.address,
-      status: this.node.status,
-      nonce: this.node.nonce,
-      last_block_number: this.node.bc.lastBlockNumber(),
-      db: {
-        tree_size: this.node.db.getTreeSize('/'),
-        proof: this.node.db.getProof('/'),
-      },
-      state_versions: this.getStateVersions(),
-    };
-  }
-
-  getStateVersions() {
-    return {
-      num_versions: this.node.stateManager.numVersions(),
-      version_list: this.node.stateManager.getVersionList(),
-      final_version: this.node.stateManager.getFinalVersion(),
-    };
-  }
-
-  getDiskUsage() {
-    try {
-      return disk.checkSync(DISK_USAGE_PATH);
-    } catch (err) {
-      logger.error(err);
-      return {};
-    }
-  }
-
-  getMemoryUsage() {
-    const free = os.freemem();
-    const total = os.totalmem();
-    const usage = total - free;
-    return {
-      os: {
-        free,
-        usage,
-        total,
-      },
-      heap: process.memoryUsage(),
-      heapStats: v8.getHeapStatistics(),
-    };
-  }
-
-  getRuntimeInfo() {
-    return {
-      process: {
-        version: process.version,
-        platform: process.platform,
-        pid: process.pid,
-        uptime: Math.floor(process.uptime()),
-        v8Version: process.versions.v8,
-      },
-      os: {
-        hostname: os.hostname(),
-        type: os.type(),
-        release: os.release(),
-        // version: os.version(),
-        uptime: os.uptime(),
-      },
-      env: {
-        NUM_VALIDATORS: process.env.NUM_VALIDATORS,
-        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
-        HOSTING_ENV: process.env.HOSTING_ENV,
-        DEBUG: process.env.DEBUG,
-      },
+      maxConnection: this.server.maxConnection,
+      maxOutbound: this.server.maxOutbound,
+      maxInbound: this.server.maxInbound
     };
   }
 
   // TODO(seo): Add sharding status.
   updateNodeStatusToTracker() {
     const updateToTracker = {
-      address: this.node.account.address,
+      address:  this.server.getAccount(),
       updatedAt: Date.now(),
       url: url.format({
         protocol: 'ws',
-        hostname: this.node.ipAddrExternal,
+        hostname: this.server.getExternalIp(),
         port: P2P_PORT
       }),
-      ip: this.node.ipAddrExternal,
+      ip: this.server.getExternalIp(),
       port: P2P_PORT,
-      lastBlock: {
-        number: this.node.bc.lastBlockNumber(),
-        epoch: this.node.bc.lastBlockEpoch(),
-        timestamp: this.node.bc.lastBlockTimestamp(),
-      },
-      consensusStatus: Object.assign(
-        {},
-        this.consensus.getState(),
-        {
-          longestNotarizedChainTipsSize: this.consensus.blockPool ?
-            this.consensus.blockPool.longestNotarizedChainTips.length : 0
-        }
-      ),
-      nodeStatus: this.getNodeStatus(),
-      shardingStatus: this.node.getSharding(),
-      txStatus: {
-        txPoolSize: this.node.tp.getPoolSize(),
-        txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
-        committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
-        pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
-      },
-      memoryStatus: this.getMemoryUsage(),
-      diskStatus: this.getDiskUsage(),
-      runtimeInfo: this.getRuntimeInfo(),
-      managedPeersInfo: this.managedPeersInfo,
-      connectionInfo: this.connectionInfo
+      lastBlock: this.server.getLastBlock(),
+      consensusStatus: this.server.getConsensusStatus(),
+      nodeStatus: this.server.getNodeStatus(),
+      shardingStatus: this.server.getShardingStatus(),
+      txStatus: this.server.getTxStatus(),
+      memoryStatus: this.server.getMemoryUsage(),
+      diskStatus: this.server.getDiskUsage(),
+      runtimeInfo: this.server.getRuntimeInfo(),
+      managedPeersInfo: this.server.managedPeersInfo,
+      connectionInfo: this.getConnectionInfo()
     };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
       `${JSON.stringify(updateToTracker, null, 2)}`);
@@ -832,6 +843,23 @@ class P2pClient extends P2pServer {
   disconnectFromTracker() {
     this.trackerWebSocket.close();
   }
+
+  // TODO(minsu): Since the p2p network has not been built completely,
+  // it will be updated afterwards.
+  heartbeat() {
+    logger.info(`Start heartbeat`);
+    this.intervalHeartbeat = setInterval(() => {
+      this.server.clients.forEach((ws) => {
+        ws.ping();
+      });
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  // TODO(minsu): Finish it later on
+  // clearIntervalHeartbeat(address) {
+  //   clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
+  //   this.managedPeersInfo[address].intervalHeartbeat = null;
+  // }
 }
 
 module.exports = P2pServer;
