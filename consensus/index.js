@@ -229,12 +229,12 @@ class Consensus {
         // prevent the node from getting/handling messages properly.
         // this.node.status = BlockchainNodeStatus.SYNCING;
 
-        this.server.requestChainSegment(this.node.bc.lastBlock());
+        this.server.client.requestChainSegment(this.node.bc.lastBlock());
         return;
       }
       if (Consensus.isValidConsensusTx(proposalTx) &&
           this.checkProposal(proposalBlock, proposalTx)) {
-        this.server.broadcastConsensusMessage(msg);
+        this.server.client.broadcastConsensusMessage(msg);
         this.tryVote(proposalBlock);
       }
     } else {
@@ -243,7 +243,7 @@ class Consensus {
         return;
       }
       if (Consensus.isValidConsensusTx(msg.value) && this.checkVoteTx(msg.value)) {
-        this.server.broadcastConsensusMessage(msg);
+        this.server.client.broadcastConsensusMessage(msg);
       }
     }
   }
@@ -588,9 +588,10 @@ class Consensus {
     const LOG_HEADER = 'checkVoteTx';
     const blockHash = voteTx.tx_body.operation.value.block_hash;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
+    console.log(blockInfo)
     let block;
     if (blockInfo && blockInfo.block) {
-      block = blockInfo.block
+      block = blockInfo.block;
     } else if (blockHash === this.node.bc.lastBlock().hash) {
       block = this.node.bc.lastBlock();
     }
