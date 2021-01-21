@@ -286,6 +286,7 @@ class P2pServer {
   }
 
   setPeerEventHandlers(socket) {
+    const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
@@ -301,7 +302,7 @@ class P2pServer {
         }
 
         switch (data.type) {
-          case MessageTypes.ACCOUNT:
+          case MessageTypes.ACCOUNT_REQUEST:
             if (!data.account) {
               logger.error(`Broken websocket(account unknown) is established.`);
               socket.close();
@@ -316,151 +317,82 @@ class P2pServer {
               }));
             }
             break;
-          // case MessageTypes.CONSENSUS:
-          //   logger.debug(
-          //       `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
-          //   if (this.node.status === BlockchainNodeStatus.SERVING) {
-          //     this.consensus.handleConsensusMessage(data.message);
-          //   } else {
-          //     logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
-          //   }
-          //   break;
-          // case MessageTypes.TRANSACTION:
-          //   logger.debug(
-          //       `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
-          //   if (this.node.tp.transactionTracker[data.transaction.hash]) {
-          //     logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
-          //     break;
-          //   } else if (this.node.status === BlockchainNodeStatus.SERVING) {
-          //     const tx = data.transaction;
-          //     if (Transaction.isBatchTransaction(tx)) {
-          //       const newTxList = [];
-          //       for (const subTx of tx.tx_list) {
-          //         const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
-          //         if (!createdTx) {
-          //           logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
-          //               `${JSON.stringify(subTx, null, 2)}`);
-          //           continue;
-          //         }
-          //         newTxList.push(createdTx);
-          //       }
-          //       if (newTxList.length > 0) {
-          //         this.executeAndBroadcastTransaction(
-          //             { tx_list: newTxList }, MessageTypes.TRANSACTION);
-          //       }
-          //     } else {
-          //       const createdTx = Transaction.create(tx.tx_body, tx.signature);
-          //       if (!createdTx) {
-          //         logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
-          //             `${JSON.stringify(tx, null, 2)}`);
-          //       } else {
-          //         this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
-          //       }
-          //     }
-          //   }
-          //   break;
-          // case MessageTypes.CHAIN_SEGMENT:
-          //   logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
-          //       `${JSON.stringify(data.chainSegment, null, 2)}`);
-          //   if (data.number <= this.node.bc.lastBlockNumber()) {
-          //     if (this.consensus.status === ConsensusStatus.STARTING) {
-          //       // XXX(minsu): need to be investigated
-          //       // ref: https://eslint.org/docs/rules/no-mixed-operators
-          //       if (!data.chainSegment && !data.catchUpInfo ||
-          //           data.number === this.node.bc.lastBlockNumber()) {
-          //         // Regard this situation as if you're synced.
-          //         // TODO(lia): ask the tracker server for another peer.
-          //         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-          //         this.node.status = BlockchainNodeStatus.SERVING;
-          //         this.consensus.init();
-          //         if (this.consensus.isRunning()) {
-          //           this.consensus.catchUp(data.catchUpInfo);
-          //         }
-          //       }
-          //     }
-          //     return;
-          //   }
-
-          //   // Check if chain segment is valid and can be
-          //   // merged ontop of your local blockchain
-          //   if (this.node.mergeChainSegment(data.chainSegment)) {
-          //     if (data.number === this.node.bc.lastBlockNumber()) {
-          //       // All caught up with the peer
-          //       if (this.node.status !== BlockchainNodeStatus.SERVING) {
-          //         // Regard this situation as if you're synced.
-          //         // TODO(lia): ask the tracker server for another peer.
-          //         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-          //         this.node.status = BlockchainNodeStatus.SERVING;
-          //       }
-          //       if (this.consensus.status === ConsensusStatus.STARTING) {
-          //         this.consensus.init();
-          //       }
-          //     } else {
-          //       // There's more blocks to receive
-          //       logger.info(`[${LOG_HEADER}] Wait, there's more...`);
-          //     }
-          //     if (this.consensus.isRunning()) {
-          //       // FIXME: add new last block to blockPool and updateLongestNotarizedChains?
-          //       this.consensus.blockPool.addSeenBlock(this.node.bc.lastBlock());
-          //       this.consensus.catchUp(data.catchUpInfo);
-          //     }
-          //     // Continuously request the blockchain segments until
-          //     // your local blockchain matches the height of the consensus blockchain.
-          //     if (data.number > this.node.bc.lastBlockNumber()) {
-          //       setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
-          //     }
-          //   } else {
-          //     logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
-          //     // FIXME: Could be that I'm on a wrong chain.
-          //     if (data.number <= this.node.bc.lastBlockNumber()) {
-          //       logger.info(`[${LOG_HEADER}] I am ahead ` +
-          //           `(${data.number} > ${this.node.bc.lastBlockNumber()}).`);
-          //       if (this.consensus.status === ConsensusStatus.STARTING) {
-          //         this.consensus.init();
-          //         if (this.consensus.isRunning()) {
-          //           this.consensus.catchUp(data.catchUpInfo);
-          //         }
-          //       }
-          //     } else {
-          //       logger.info(`[${LOG_HEADER}] I am behind ` +
-          //           `(${data.number} < ${this.node.bc.lastBlockNumber()}).`);
-          //       setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
-          //     }
-          //   }
-          //   break;
-          // case MessageTypes.CHAIN_SEGMENT_REQUEST:
-          //   logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
-          //       `${JSON.stringify(data.lastBlock, null, 2)}`);
-          //   if (this.node.bc.chain.length === 0) {
-          //     return;
-          //   }
-          //   // Send a chunk of 20 blocks from your blockchain to the requester.
-          //   // Requester will continue to request blockchain chunks
-          //   // until their blockchain height matches the consensus blockchain height
-          //   const chainSegment = this.node.bc.requestBlockchainSection(
-          //       data.lastBlock ? Block.parse(data.lastBlock) : null);
-          //   if (chainSegment) {
-          //     const catchUpInfo = this.consensus.getCatchUpInfo();
-          //     logger.debug(
-          //         `[${LOG_HEADER}] Sending a chain segment ` +
-          //         `${JSON.stringify(chainSegment, null, 2)}` +
-          //         `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
-          //     this.client.sendChainSegment(
-          //         socket,
-          //         chainSegment,
-          //         this.node.bc.lastBlockNumber(),
-          //         catchUpInfo
-          //     );
-          //   } else {
-          //     logger.info(`[${LOG_HEADER}] No chain segment to send`);
-          //     this.client.sendChainSegment(
-          //         socket,
-          //         null,
-          //         this.node.bc.lastBlockNumber(),
-          //         null
-          //     );
-          //   }
-          //   break;
+          case MessageTypes.CONSENSUS:
+            logger.debug(
+                `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            if (this.node.status === BlockchainNodeStatus.SERVING) {
+              this.consensus.handleConsensusMessage(data.message);
+            } else {
+              logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
+            }
+            break;
+          case MessageTypes.TRANSACTION:
+            logger.debug(
+                `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
+            if (this.node.tp.transactionTracker[data.transaction.hash]) {
+              logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
+              break;
+            } else if (this.node.status === BlockchainNodeStatus.SERVING) {
+              const tx = data.transaction;
+              if (Transaction.isBatchTransaction(tx)) {
+                const newTxList = [];
+                for (const subTx of tx.tx_list) {
+                  const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
+                  if (!createdTx) {
+                    logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
+                        `${JSON.stringify(subTx, null, 2)}`);
+                    continue;
+                  }
+                  newTxList.push(createdTx);
+                }
+                if (newTxList.length > 0) {
+                  this.executeAndBroadcastTransaction(
+                      { tx_list: newTxList }, MessageTypes.TRANSACTION);
+                }
+              } else {
+                const createdTx = Transaction.create(tx.tx_body, tx.signature);
+                if (!createdTx) {
+                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
+                      `${JSON.stringify(tx, null, 2)}`);
+                } else {
+                  this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                }
+              }
+            }
+            break;
+          case MessageTypes.CHAIN_SEGMENT_REQUEST:
+            logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
+                `${JSON.stringify(data.lastBlock, null, 2)}`);
+            if (this.node.bc.chain.length === 0) {
+              return;
+            }
+            // Send a chunk of 20 blocks from your blockchain to the requester.
+            // Requester will continue to request blockchain chunks
+            // until their blockchain height matches the consensus blockchain height
+            const chainSegment = this.node.bc.requestBlockchainSection(
+                data.lastBlock ? Block.parse(data.lastBlock) : null);
+            if (chainSegment) {
+              const catchUpInfo = this.consensus.getCatchUpInfo();
+              logger.debug(
+                  `[${LOG_HEADER}] Sending a chain segment ` +
+                  `${JSON.stringify(chainSegment, null, 2)}` +
+                  `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
+              this.client.sendChainSegment(
+                  socket,
+                  chainSegment,
+                  this.node.bc.lastBlockNumber(),
+                  catchUpInfo
+              );
+            } else {
+              logger.info(`[${LOG_HEADER}] No chain segment to send`);
+              this.client.sendChainSegment(
+                  socket,
+                  null,
+                  this.node.bc.lastBlockNumber(),
+                  null
+              );
+            }
+            break;
         }
       } catch (error) {
         logger.error(error.stack);
@@ -793,14 +725,12 @@ class P2pClient {
     });
   }
 
-  requestChainSegment(lastBlock) {
-    Object.values(this.outbound).forEach((socket) => {
-      socket.send(JSON.stringify({
-        type: MessageTypes.CHAIN_SEGMENT_REQUEST,
-        lastBlock,
-        protoVer: CURRENT_PROTOCOL_VERSION
-      }));
-    });
+  requestChainSegment(socket, lastBlock) {
+    socket.send(JSON.stringify({
+      type: MessageTypes.CHAIN_SEGMENT_REQUEST,
+      lastBlock,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    }));
   }
 
   broadcastTransaction(transaction) {
@@ -818,13 +748,14 @@ class P2pClient {
     const account = this.server.getAccount();
     logger.debug(`SENDING: account(${account}) to p2p server`);
     socket.send(JSON.stringify({
-      type: MessageTypes.ACCOUNT,
+      type: MessageTypes.ACCOUNT_REQUEST,
       account: account,
       protoVer: CURRENT_PROTOCOL_VERSION
     }));
   }
 
   setPeerEventHandlers(socket) {
+    const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const data = JSON.parse(message);
       const version = data.protoVer;
@@ -849,6 +780,75 @@ class P2pClient {
             this.outbound[data.account] = socket;
           }
           break;
+        case MessageTypes.CHAIN_SEGMENT:
+          logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
+              `${JSON.stringify(data.chainSegment, null, 2)}`);
+          if (data.number <= this.server.node.bc.lastBlockNumber()) {
+            if (this.server.consensus.status === ConsensusStatus.STARTING) {
+              // XXX(minsu): need to be investigated
+              // ref: https://eslint.org/docs/rules/no-mixed-operators
+              if (!data.chainSegment && !data.catchUpInfo ||
+                  data.number === this.server.node.bc.lastBlockNumber()) {
+                // Regard this situation as if you're synced.
+                // TODO(lia): ask the tracker server for another peer.
+                logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+                this.server.node.status = BlockchainNodeStatus.SERVING;
+                this.server.consensus.init();
+                if (this.server.consensus.isRunning()) {
+                  this.server.consensus.catchUp(data.catchUpInfo);
+                }
+              }
+            }
+            return;
+          }
+
+          // Check if chain segment is valid and can be
+          // merged ontop of your local blockchain
+          if (this.server.node.mergeChainSegment(data.chainSegment)) {
+            if (data.number === this.server.node.bc.lastBlockNumber()) {
+              // All caught up with the peer
+              if (this.server.node.status !== BlockchainNodeStatus.SERVING) {
+                // Regard this situation as if you're synced.
+                // TODO(lia): ask the tracker server for another peer.
+                logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+                this.server.node.status = BlockchainNodeStatus.SERVING;
+              }
+              if (this.server.consensus.status === ConsensusStatus.STARTING) {
+                this.server.consensus.init();
+              }
+            } else {
+              // There's more blocks to receive
+              logger.info(`[${LOG_HEADER}] Wait, there's more...`);
+            }
+            if (this.server.consensus.isRunning()) {
+              // FIXME: add new last block to blockPool and updateLongestNotarizedChains?
+              this.server.consensus.blockPool.addSeenBlock(this.server.node.bc.lastBlock());
+              this.server.consensus.catchUp(data.catchUpInfo);
+            }
+            // Continuously request the blockchain segments until
+            // your local blockchain matches the height of the consensus blockchain.
+            if (data.number > this.server.node.bc.lastBlockNumber()) {
+              setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
+            }
+          } else {
+            logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
+            // FIXME: Could be that I'm on a wrong chain.
+            if (data.number <= this.server.node.bc.lastBlockNumber()) {
+              logger.info(`[${LOG_HEADER}] I am ahead ` +
+                  `(${data.number} > ${this.server.node.bc.lastBlockNumber()}).`);
+              if (this.server.consensus.status === ConsensusStatus.STARTING) {
+                this.server.consensus.init();
+                if (this.server.consensus.isRunning()) {
+                  this.server.consensus.catchUp(data.catchUpInfo);
+                }
+              }
+            } else {
+              logger.info(`[${LOG_HEADER}] I am behind ` +
+                  `(${data.number} < ${this.server.node.bc.lastBlockNumber()}).`);
+              setTimeout(() => this.requestChainSegment(this.server.node.bc.lastBlock()), 1000);
+            }
+          }
+          break;
       }
     });
 
@@ -870,16 +870,6 @@ class P2pClient {
     }
   }
 
-  setSocket(socket) {
-    this.setPeerEventHandlers(socket);
-    this.sendAccount(socket);
-    // this.requestChainSegment(this.server.node.bc.lastBlock());
-    // if (this.server.consensus.stakeTx) {
-    //   this.broadcastTransaction(this.server.consensus.stakeTx);
-    //   this.server.consensus.stakeTx = null;
-    // }
-  }
-
   connectToPeers(newPeerInfoList) {
     let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
@@ -891,7 +881,13 @@ class P2pClient {
         const socket = new Websocket(peerInfo.url);
         socket.on('open', () => {
           logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
-          this.setSocket(socket, peerInfo.address);
+          this.setPeerEventHandlers(socket);
+          this.sendAccount(socket);
+          this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+          if (this.server.consensus.stakeTx) {
+            this.broadcastTransaction(this.server.consensus.stakeTx);
+            this.server.consensus.stakeTx = null;
+          }
         });
       }
     });
