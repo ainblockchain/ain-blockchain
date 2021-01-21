@@ -863,17 +863,12 @@ class Consensus {
   getValidators(blockHash, blockNumber) {
     const LOG_HEADER = 'getValidators';
     let db = this.blockPool.hashToDb.get(blockHash);
-    let isSnapDb = false;
-    if (this.status === ConsensusStatus.STOPPED) { // exception?
-      db = this.node.db;
-    } else {
-      isSnapDb = this.node.bc.lastBlock().hash === blockHash;
-      if (this.node.bc.lastBlock().hash === blockHash) {
-        const baseVersion = this.node.stateManager.getFinalVersion();
-        const snapVersion = this.node.stateManager.createUniqueVersionName(
-          `${StateVersions.SNAP}:${blockNumber}`);
-        db = this.node.createTempDb(baseVersion, snapVersion, blockNumber);
-      }
+    const isSnapDb = this.node.bc.lastBlock().hash === blockHash;
+    if (isSnapDb) {
+      const baseVersion = this.node.stateManager.getFinalVersion();
+      const snapVersion = this.node.stateManager.createUniqueVersionName(
+        `${StateVersions.SNAP}:${blockNumber}`);
+      db = this.node.createTempDb(baseVersion, snapVersion, blockNumber);
     }
     if (!db) {
       const err = `[${LOG_HEADER}] No db found for block ${blockHash}, ${blockNumber}`;
