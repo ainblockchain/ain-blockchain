@@ -31,7 +31,7 @@ process.on('uncaughtException', function(err) {
 process.on('SIGINT', (_) => {
   logger.info('Stopping the blockchain client....');
   p2pServer.stop();
-  process.exit();
+  process.exit(1);
 });
 
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
