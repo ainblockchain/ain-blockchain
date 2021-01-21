@@ -9,7 +9,6 @@ const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../common/chain-util');
-const StateManager = require('../db/state-manager');
 const {
   WriteDbOperations,
   ReadDbOperations,
@@ -588,7 +587,6 @@ class Consensus {
     const LOG_HEADER = 'checkVoteTx';
     const blockHash = voteTx.tx_body.operation.value.block_hash;
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
-    console.log(blockInfo)
     let block;
     if (blockInfo && blockInfo.block) {
       block = blockInfo.block;

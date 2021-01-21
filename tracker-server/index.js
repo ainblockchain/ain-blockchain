@@ -44,11 +44,11 @@ process.on('uncaughtException', function(err) {
   logger.error(err);
 });
 
-process.on('SIGINT', (_) => {
+process.on('SIGINT', () => {
   logger.info('Stopping tracking server....');
   logger.info('Gracefully close websokets....');
   logger.info('Gracefully close websoket server....');
-  server.close((_) => {
+  server.close(() => {
     process.exit(1);
   });
 });
@@ -99,7 +99,7 @@ server.on('connection', (ws) => {
     }
 
     const newManagedPeerInfoList = [];
-    if (nodeInfo.managedPeersInfo.outbound.length < nodeInfo.connectionInfo.maxOutbound) {
+    if (Object.keys(nodeInfo.managedPeersInfo.outbound).length < nodeInfo.connectionInfo.maxOutbound) {
       getPeerCandidates(nodeInfo.address, newManagedPeerInfoList);
       assignRandomPeers(newManagedPeerInfoList);
     }
@@ -155,7 +155,8 @@ function getPeerCandidates(myself, candidates) {
   Object.keys(PEER_NODES).forEach(address => {
     const nodeInfo = PEER_NODES[address];
     if (nodeInfo.address !== myself &&
-        nodeInfo.managedPeersInfo.inbound.length < nodeInfo.connectionInfo.maxInbound) {
+        !(myself in nodeInfo.managedPeersInfo.inbound) &&
+        Object.keys(nodeInfo.managedPeersInfo.inbound).length < nodeInfo.connectionInfo.maxInbound) {
       candidates.push({
         address: nodeInfo.address,
         url: nodeInfo.url
@@ -173,10 +174,11 @@ function printNodesInfo() {
     const diskAvailableMb = Math.floor(_.get(nodeInfo, 'diskStatus.available') / 1000 / 1000);
     const memoryFreeMb =
         Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
-    logger.info(`Node[${nodeInfo.address}]: ${getNodeSummary(nodeInfo)} ` +
+    logger.info(`${getNodeSummary(nodeInfo)} ` +
         `Disk: ${diskAvailableMb}MB, ` +
         `Memory: ${memoryFreeMb}MB, ` +
-        `Peers: ${JSON.stringify(nodeInfo.managedPeersInfo)}, ` +
+        `Peers: outbound(${Object.keys(nodeInfo.managedPeersInfo.outbound)}), ` +
+        `inbound(${Object.keys(nodeInfo.managedPeersInfo.inbound)}), ` +
         `UpdatedAt: ${nodeInfo.updatedAt}`);
   });
 }
