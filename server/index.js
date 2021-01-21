@@ -828,7 +828,9 @@ class P2pClient {
             // Continuously request the blockchain segments until
             // your local blockchain matches the height of the consensus blockchain.
             if (data.number > this.server.node.bc.lastBlockNumber()) {
-              setTimeout(() => this.requestChainSegment(this.node.bc.lastBlock()), 1000);
+              setTimeout(() => {
+                this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+              }, 1000);
             }
           } else {
             logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
@@ -845,7 +847,9 @@ class P2pClient {
             } else {
               logger.info(`[${LOG_HEADER}] I am behind ` +
                   `(${data.number} < ${this.server.node.bc.lastBlockNumber()}).`);
-              setTimeout(() => this.requestChainSegment(this.server.node.bc.lastBlock()), 1000);
+              setTimeout(() => {
+                this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+              }, 1000);
             }
           }
           break;
