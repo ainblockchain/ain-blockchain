@@ -53,8 +53,8 @@ const jsonRpcMethods = require('../json_rpc')(
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
-  const consensusStatus = p2pServer.consensus.status;
-  const message = consensusStatus === ConsensusStatus.RUNNING ?
+  const consensusState = p2pServer.consensus.getState();
+  const message = consensusState.status === ConsensusStatus.RUNNING ?
       'Welcome to AIN Blockchain Node' : 'AIN Blockchain Node is NOT ready yet';
   res.status(200)
     .set('Content-Type', 'text/plain')
