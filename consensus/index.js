@@ -485,7 +485,7 @@ class Consensus {
       }
       let hasInvalidLastVote = false;
       for (const voteTx of proposalBlock.last_votes) {
-        if (voteTx.hash === prevBlockProposal.hash) return;
+        if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
@@ -524,38 +524,19 @@ class Consensus {
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     let baseVersion;
     let prevDb;
-    let isSnapDb = false;
     if (prevBlock.number === this.node.bc.lastBlockNumber()) {
       baseVersion = this.node.stateManager.getFinalVersion();
     } else if (this.blockPool.hashToDb.has(last_hash)) {
       baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
     } else {
       prevDb = this.getSnapDb(prevBlock);
-      isSnapDb = true;
       if (!prevDb) {
         logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
         return false;
       }
       baseVersion = prevDb.stateVersion;
-    }
-    const tempVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
-    const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
-    if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
-      logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
-      return false;
-    }
-    this.node.destroyDb(tempDb);
-    const createdTx = Transaction.create(proposalTx.tx_body, proposalTx.signature);
-    if (!createdTx) {
-      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
-          `${JSON.stringify(proposalTx, null, 2)}`);
-      return false;
-    }
-    this.node.tp.addTransaction(createdTx);
     const newVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.POOL}:${prevBlock.number}:${number}`);
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
@@ -567,6 +548,26 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
       return false;
     }
+
+    // Try executing the proposal tx on the proposal block's db state
+    const tempVersion = this.node.stateManager.createUniqueVersionName(
+      `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
+    const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
+      logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
+      this.node.destroyDb(tempDb);
+      this.node.destroyDb(newVersion);
+      return false;
+    }
+    this.node.destroyDb(tempDb);
+    const createdTx = Transaction.create(proposalTx.tx_body, proposalTx.signature);
+    if (!createdTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
+          `${JSON.stringify(proposalTx, null, 2)}`);
+      this.node.destroyDb(newVersion);
+      return false;
+    }
+    this.node.tp.addTransaction(createdTx);
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
       if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
