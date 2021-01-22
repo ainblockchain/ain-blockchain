@@ -54,6 +54,13 @@ const jsonRpcMethods = require('../json_rpc')(
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send('Welcome to AIN Blockchain Node')
+    .end();
+});
+
+app.get('/health_check', (req, res, next) => {
   const nodeStatus = p2pServer.getNodeStatus();
   const consensusState = p2pServer.consensus.getState();
   const result = nodeStatus.status === BlockchainNodeStatus.SERVING &&
