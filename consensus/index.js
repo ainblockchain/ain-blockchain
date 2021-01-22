@@ -483,15 +483,22 @@ class Consensus {
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
       }
-      proposalBlock.last_votes.forEach((voteTx) => {
+      let hasInvalidLastVote = false;
+      for (const voteTx of proposalBlock.last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) return;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
-          logger.info(`[${LOG_HEADER}] voting tx execution for prev block failed`);
-          // return;
+          logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
+          hasInvalidLastVote = true;
+        } else {
+          this.blockPool.addSeenVote(voteTx);
         }
-        this.blockPool.addSeenVote(voteTx);
-      });
+      }
+      this.node.destroyDb(tempDb);
+      if (hasInvalidLastVote) {
+        logger.error(`[${LOG_HEADER}] Invalid proposalBlock: has invalid last_votes`);
+        return false;
+      }
       prevBlockInfo = this.blockPool.hashToBlockInfo[last_hash];
       if (!prevBlockInfo.notarized) {
         logger.error(`[${LOG_HEADER}] Block's last_votes don't correctly notarize ` +
@@ -499,8 +506,8 @@ class Consensus {
             `${last_hash}:\n${JSON.stringify(this.blockPool.hashToBlockInfo[last_hash], null, 2)}`);
         return false;
       }
-      this.node.destroyDb(tempDb);
     }
+
     if (prevBlock.epoch >= epoch) {
       logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) ` +
           `is greater than or equal to incoming block's (${epoch})`);
