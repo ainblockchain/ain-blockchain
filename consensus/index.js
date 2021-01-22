@@ -670,9 +670,7 @@ class Consensus {
 
   vote(block) {
     const myAddr = this.node.account.address;
-    // Need the block#1 to be finalized to have the deposits reflected in the state
-    const myStake = this.node.bc.lastBlockNumber() < 1 ?
-        block.validators[myAddr] : this.getValidators(block.hash, block.number)[myAddr];
+    const myStake = block.validators[myAddr];
     if (!myStake) {
       return;
     }
