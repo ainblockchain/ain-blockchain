@@ -12,7 +12,8 @@ const {
   NETWORK_ID,
 } = require('../common/constants');
 const {
-  ConsensusConsts
+  ConsensusConsts,
+  ConsensusDbPaths,
 } = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -350,13 +351,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_isValidator: function(args, done) {
-      // TODO(lia): update this function after revamping consensus staking
-      // FIXME: may need to deprecate or modify this logic for the new consensus
+      const whitelisted = p2pServer.node.db.getValue(
+          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${ConsensusDbPaths.WHITELIST}/${args.address}`);
       const deposit = p2pServer.node.db.getValue(
           `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
       const stakeValid = deposit && deposit.value > 0 &&
           deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
-      done(null, addProtocolVersion({result: stakeValid}));
+      done(null, addProtocolVersion({result: stakeValid && whitelisted ? stakeValid : 0}));
     },
 
     // Network API
