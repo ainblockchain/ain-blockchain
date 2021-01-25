@@ -853,10 +853,11 @@ class Consensus {
   }
 
   getWhitelist() {
+    const LOG_HEADER = 'getWhitelist';
     const whitelist = this.node.getValueWithStateVersion(
         `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false,
         this.node.stateManager.getFinalVersion());
-    logger.error(`[getWhitelist] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
 
