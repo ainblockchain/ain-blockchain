@@ -37,6 +37,7 @@ describe('Blockchain', () => {
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
         node1.account.address, {}));
+    delete tx.created_at;
     assert.deepEqual(node1.bc.chain[node1.bc.chain.length -1].transactions[0], tx);
   });
 
