@@ -556,7 +556,7 @@ class Consensus {
     if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
       this.node.destroyDb(tempDb);
-      this.node.destroyDb(newVersion);
+      this.node.destroyDb(newDb);
       return false;
     }
     this.node.destroyDb(tempDb);
@@ -564,7 +564,7 @@ class Consensus {
     if (!createdTx) {
       logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
           `${JSON.stringify(proposalTx, null, 2)}`);
-      this.node.destroyDb(newVersion);
+      this.node.destroyDb(newDb);
       return false;
     }
     this.node.tp.addTransaction(createdTx);
