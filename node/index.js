@@ -20,9 +20,6 @@ const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
-const isShardChain =
-    GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
-
 class BlockchainNode {
   constructor() {
     const LOG_HEADER = 'constructor';
@@ -31,8 +28,9 @@ class BlockchainNode {
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
     logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
+    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
     this.isShardReporter =
-        isShardChain &&
+        this.isShardChain &&
         ainUtil.areSameAddresses(
             GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
     this.ipAddrInternal = null;
@@ -166,6 +164,30 @@ class BlockchainNode {
 
   dumpFinalVersion(withDetails) {
     return this.stateManager.getFinalRoot().toJsObject(withDetails);
+  }
+
+  getValueWithStateVersion(refPath, isGlobal, version) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.VALUES_ROOT, refPath, isGlobal, this.db.shardingPath);
+  }
+
+  getFunctionWithStateVersion(refPath, isGlobal, version) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.FUNCTIONS_ROOT, refPath, isGlobal, this.db.shardingPath);
+  }
+
+  getRuleWithStateVersion(refPath, isGlobal, version) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.RULES_ROOT, refPath, isGlobal, this.db.shardingPath);
+  }
+
+  getOwnerWithStateVersion(refPath, isGlobal, version) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.OWNERS_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
   getNonce() {
