@@ -20,10 +20,6 @@ const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
-const isShardChain =
-    GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
-const shardingPath = ChainUtil.parsePath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
-
 class BlockchainNode {
   constructor() {
     const LOG_HEADER = 'constructor';
@@ -32,8 +28,9 @@ class BlockchainNode {
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
     logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
+    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
     this.isShardReporter =
-        isShardChain &&
+        this.isShardChain &&
         ainUtil.areSameAddresses(
             GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
     this.ipAddrInternal = null;
@@ -169,28 +166,28 @@ class BlockchainNode {
     return this.stateManager.getFinalRoot().toJsObject(withDetails);
   }
 
-  getValueFromStateWithVersion(version, readingPath, isGlobal) {
+  getValueWithStateVersion(version, refPath, isGlobal) {
     const versionRoot = this.stateManager.getRoot(version);
-    return DB.getterUtil(
-        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.VALUES_ROOT);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.VALUES_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
-  getFunctionFromStateWithVersion(version, readingPath, isGlobal) {
+  getFunctionWithStateVersion(version, refPath, isGlobal) {
     const versionRoot = this.stateManager.getRoot(version);
-    return DB.getterUtil(
-        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.FUNCTIONS_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
-  getRuleFromStateWithVersion(version, readingPath, isGlobal) {
+  getRuleWithStateVersion(version, refPath, isGlobal) {
     const versionRoot = this.stateManager.getRoot(version);
-    return DB.getterUtil(
-        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.RULES_ROOT);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.RULES_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
-  getOwnerFromStateWithVersion(version, readingPath, isGlobal) {
+  getOwnerWithStateVersion(version, refPath, isGlobal) {
     const versionRoot = this.stateManager.getRoot(version);
-    return DB.getterUtil(
-        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.OWNERS_ROOT);
+    return DB.readFromStateRoot(
+        versionRoot, PredefinedDbPaths.OWNERS_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
   getNonce() {

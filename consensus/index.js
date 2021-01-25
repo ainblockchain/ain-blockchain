@@ -853,7 +853,7 @@ class Consensus {
   }
 
   getWhitelist() {
-    const whitelist = this.node.getValueFromStateWithVersion(this.node.stateManager.getFinalVersion(),
+    const whitelist = this.node.getValueWithStateVersion(this.node.stateManager.getFinalVersion(),
         `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false);
     logger.error(`[getWhitelist] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
@@ -869,11 +869,11 @@ class Consensus {
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = this.node.getValueFromStateWithVersion(stateVersion,
+    const whitelist = this.node.getValueWithStateVersion(stateVersion,
         `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false) || {};
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
-      const deposit = this.node.getValueFromStateWithVersion(stateVersion,
+      const deposit = this.node.getValueWithStateVersion(stateVersion,
         `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false) || {};
       if (deposit && deposit.value === whitelist[address] &&
           deposit.expire_at >= Date.now() + ConsensusConsts.DAY_MS) {
@@ -886,7 +886,7 @@ class Consensus {
   }
 
   getValidConsensusDeposit(address) {
-    const deposit = this.node.getValueFromStateWithVersion(this.node.stateManager.getFinalVersion(),
+    const deposit = this.node.getValueWithStateVersion(this.node.stateManager.getFinalVersion(),
       `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false) || {};
     if (deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS) {
       return deposit.value;
