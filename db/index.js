@@ -206,38 +206,38 @@ class DB {
     return this.removeEmptyNodesRecursive(fullPath, 0, this.stateRoot);
   }
 
-  static getterUtil(rootNode, readingPath, isGlobal, shardingPath, rootLabel) {
-    if (!rootNode) return null;
-    const parsedPath = ChainUtil.parsePath(readingPath);
+  static readFromStateRoot(stateRoot, rootLabel, refPath, isGlobal, shardingPath) {
+    if (!stateRoot) return null;
+    const parsedPath = ChainUtil.parsePath(refPath);
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
     const fullPath = DB.getFullPath(localPath, rootLabel);
-    const stateNode = DB.getRefForReading(rootNode, fullPath);
+    const stateNode = DB.getRefForReading(stateRoot, fullPath);
     return stateNode !== null ? stateNode.toJsObject() : null;
+  }
+
+  readDatabase(refPath, rootLabel, isGlobal) {
+    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isGlobal, this.shardingPath);
   }
 
   // TODO(seo): Support lookups on the final version.
   getValue(valuePath, isGlobal) {
-    return DB.getterUtil(
-        this.stateRoot, valuePath, isGlobal, this.shardingPath, PredefinedDbPaths.VALUES_ROOT);
+    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isGlobal);
   }
 
   getFunction(functionPath, isGlobal) {
-    return DB.getterUtil(
-        this.stateRoot, functionPath, isGlobal, this.shardingPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, isGlobal);
   }
 
   getRule(rulePath, isGlobal) {
-    return DB.getterUtil(
-        this.stateRoot, rulePath, isGlobal, this.shardingPath, PredefinedDbPaths.RULES_ROOT);
+    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, isGlobal);
   }
 
   getOwner(ownerPath, isGlobal) {
-    return DB.getterUtil(
-        this.stateRoot, ownerPath, isGlobal, this.shardingPath, PredefinedDbPaths.OWNERS_ROOT);
+    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, isGlobal);
   }
 
   /**
