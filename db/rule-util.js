@@ -1,4 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
+const { GenesisAccounts, AccountProperties } = require('../common/constants');
 
 // NOTE(seo): To keep the blockchain deterministic as much as possibble over time,
 // we keep util functions here self-contained as much as possible.
@@ -68,6 +69,10 @@ class RuleUtil {
     } catch (e) {
       return '';
     }
+  }
+
+  getOwnerAddr() {
+    return _.get(GenesisAccounts, `${AccountProperties.OWNER}.${AccountProperties.ADDRESS}`, null);
   }
 }
 

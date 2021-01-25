@@ -9,7 +9,7 @@ const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../common/chain-util');
-const StateManager = require('../db/state-manager');
+const StateNode = require('../db/state-node');
 const {
   WriteDbOperations,
   ReadDbOperations,
@@ -179,8 +179,9 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.state.epoch})`);
     }
     // Need the block#1 to be finalized to have the deposits reflected in the state
-    const validators = this.node.bc.lastBlockNumber() < 1 ?
-        lastNotarizedBlock.validators : this.getWhitelist();
+    const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators
+        : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
+
     // FIXME(lia): make the seeds more secure and unpredictable
     const seed = '' + this.genesisHash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
@@ -312,7 +313,7 @@ class Consensus {
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ?
-        lastBlock.validators : this.getWhitelist();
+        lastBlock.validators : this.getValidators(lastBlock.hash, lastBlock.number);
     if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
     const totalAtStake = Object.values(validators).reduce(function(a, b) {
       return a + b;
@@ -396,7 +397,7 @@ class Consensus {
         return false;
       }
     }
-    const {proposer, number, epoch, last_hash} = proposalBlock;
+    const { proposer, number, epoch, last_hash, validators } = proposalBlock;
     if (number <= this.node.bc.lastBlockNumber()) {
       logger.info(`[${LOG_HEADER}] There already is a finalized block of the number`);
       logger.debug(`[${LOG_HEADER}] corresponding block info: ` +
@@ -418,7 +419,6 @@ class Consensus {
           `hash ${last_hash}`);
       return;
     }
-    const validators = prevBlock.validators;
     // check that the transactions from block #1 amount to +2/3 deposits of initially whitelisted
     // validators.
     if (number === 1) {
@@ -444,8 +444,7 @@ class Consensus {
           return false;
         }
       }
-    }
-    if (number !== 1 && !prevBlockInfo.notarized) {
+    } else if (!prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
       if (!prevBlockProposal) {
@@ -484,15 +483,22 @@ class Consensus {
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
       }
-      proposalBlock.last_votes.forEach((voteTx) => {
-        if (voteTx.hash === prevBlockProposal.hash) return;
+      let hasInvalidLastVote = false;
+      for (const voteTx of proposalBlock.last_votes) {
+        if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
-          logger.info(`[${LOG_HEADER}] voting tx execution for prev block failed`);
-          // return;
+          logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
+          hasInvalidLastVote = true;
+        } else {
+          this.blockPool.addSeenVote(voteTx);
         }
-        this.blockPool.addSeenVote(voteTx);
-      });
+      }
+      this.node.destroyDb(tempDb);
+      if (hasInvalidLastVote) {
+        logger.error(`[${LOG_HEADER}] Invalid proposalBlock: has invalid last_votes`);
+        return false;
+      }
       prevBlockInfo = this.blockPool.hashToBlockInfo[last_hash];
       if (!prevBlockInfo.notarized) {
         logger.error(`[${LOG_HEADER}] Block's last_votes don't correctly notarize ` +
@@ -500,8 +506,8 @@ class Consensus {
             `${last_hash}:\n${JSON.stringify(this.blockPool.hashToBlockInfo[last_hash], null, 2)}`);
         return false;
       }
-      this.node.destroyDb(tempDb);
     }
+
     if (prevBlock.epoch >= epoch) {
       logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) ` +
           `is greater than or equal to incoming block's (${epoch})`);
@@ -518,38 +524,19 @@ class Consensus {
     // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     let baseVersion;
     let prevDb;
-    let isSnapDb = false;
     if (prevBlock.number === this.node.bc.lastBlockNumber()) {
       baseVersion = this.node.stateManager.getFinalVersion();
     } else if (this.blockPool.hashToDb.has(last_hash)) {
       baseVersion = this.blockPool.hashToDb.get(last_hash).stateVersion;
     } else {
       prevDb = this.getSnapDb(prevBlock);
-      isSnapDb = true;
       if (!prevDb) {
         logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
         return false;
       }
       baseVersion = prevDb.stateVersion;
-    }
-    const tempVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
-    const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
-    if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
-      logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
-      return false;
-    }
-    this.node.destroyDb(tempDb);
-    const createdTx = Transaction.create(proposalTx.tx_body, proposalTx.signature);
-    if (!createdTx) {
-      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
-          `${JSON.stringify(proposalTx, null, 2)}`);
-      return false;
-    }
-    this.node.tp.addTransaction(createdTx);
     const newVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.POOL}:${prevBlock.number}:${number}`);
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
@@ -561,6 +548,26 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
       return false;
     }
+
+    // Try executing the proposal tx on the proposal block's db state
+    const tempVersion = this.node.stateManager.createUniqueVersionName(
+      `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
+    const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
+      logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
+      this.node.destroyDb(tempDb);
+      this.node.destroyDb(newDb);
+      return false;
+    }
+    this.node.destroyDb(tempDb);
+    const createdTx = Transaction.create(proposalTx.tx_body, proposalTx.signature);
+    if (!createdTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
+          `${JSON.stringify(proposalTx, null, 2)}`);
+      this.node.destroyDb(newDb);
+      return false;
+    }
+    this.node.tp.addTransaction(createdTx);
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
       if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
@@ -631,7 +638,7 @@ class Consensus {
           'but trying to propose at the same epoch');
       return;
     }
-    if (ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
+    if (this.state.proposer && ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
       logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const proposal = this.createProposal();
@@ -664,9 +671,7 @@ class Consensus {
 
   vote(block) {
     const myAddr = this.node.account.address;
-    // Need the block#1 to be finalized to have the deposits reflected in the state
-    const myStake = this.node.bc.lastBlockNumber() < 1 ?
-        block.validators[myAddr] : this.getWhitelist()[myAddr];
+    const myStake = block.validators[myAddr];
     if (!myStake) {
       return;
     }
@@ -830,7 +835,6 @@ class Consensus {
     return snapDb;
   }
 
-  // FIXME: check from the corresponding previous state?
   getValidatorsVotedFor(blockHash) {
     const LOG_HEADER = 'getValidatorsVotedFor';
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
@@ -849,22 +853,46 @@ class Consensus {
   }
 
   getWhitelist() {
-    return LIGHTWEIGHT ? GenesisWhitelist : this.node.db.getValue(ChainUtil.formatPath([
-      ConsensusDbPaths.CONSENSUS,
-      ConsensusDbPaths.WHITELIST
-    ])) || {};
+    const whitelist = this.node.getValueWithStateVersion(
+        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false,
+        this.node.stateManager.getFinalVersion());
+    logger.error(`[getWhitelist] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    return whitelist || {};
+  }
+
+  getValidators(blockHash, blockNumber) {
+    const LOG_HEADER = 'getValidators';
+    const db = this.blockPool.hashToDb.get(blockHash);
+    const stateVersion = this.node.bc.lastBlock().hash === blockHash ?
+        this.node.stateManager.getFinalVersion() : (db ? db.stateVersion : null);
+    if (!stateVersion) {
+      const err = `[${LOG_HEADER}] No stateVersion found for block ${blockHash}, ${blockNumber}`;
+      logger.error(err);
+      throw Error(err);
+    }
+    const whitelist = this.node.getValueWithStateVersion(
+        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false, stateVersion) || {};
+    const validators = {};
+    Object.keys(whitelist).forEach((address) => {
+      const deposit = this.node.getValueWithStateVersion(
+        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false, stateVersion) || {};
+      if (deposit && deposit.value === whitelist[address] &&
+          deposit.expire_at >= Date.now() + ConsensusConsts.DAY_MS) {
+        validators[address] = deposit.value;
+      }
+    });
+    logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
+        `whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    return validators;
   }
 
   getValidConsensusDeposit(address) {
-    const deposit = this.node.db.getValue(ChainUtil.formatPath([
-      PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
-      address
-    ]));
-
+    const deposit = this.node.getValueWithStateVersion(
+        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false,
+        this.node.stateManager.getFinalVersion()) || {};
     if (deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS) {
       return deposit.value;
     }
-
     return 0;
   }
 

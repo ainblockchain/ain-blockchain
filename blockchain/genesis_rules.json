@@ -40,6 +40,9 @@
           }
         }
       }
+    },
+    "whitelist": {
+      ".write": "auth === util.getOwnerAddr()"
     }
   },
   "deposit": {
