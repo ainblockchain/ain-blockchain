@@ -853,8 +853,9 @@ class Consensus {
   }
 
   getWhitelist() {
-    const whitelist = this.node.getValueWithStateVersion(this.node.stateManager.getFinalVersion(),
-        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false);
+    const whitelist = this.node.getValueWithStateVersion(
+        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false,
+        this.node.stateManager.getFinalVersion());
     logger.error(`[getWhitelist] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
@@ -869,12 +870,12 @@ class Consensus {
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = this.node.getValueWithStateVersion(stateVersion,
-        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false) || {};
+    const whitelist = this.node.getValueWithStateVersion(
+        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false, stateVersion) || {};
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
-      const deposit = this.node.getValueWithStateVersion(stateVersion,
-        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false) || {};
+      const deposit = this.node.getValueWithStateVersion(
+        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false, stateVersion) || {};
       if (deposit && deposit.value === whitelist[address] &&
           deposit.expire_at >= Date.now() + ConsensusConsts.DAY_MS) {
         validators[address] = deposit.value;
@@ -886,8 +887,9 @@ class Consensus {
   }
 
   getValidConsensusDeposit(address) {
-    const deposit = this.node.getValueWithStateVersion(this.node.stateManager.getFinalVersion(),
-      `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false) || {};
+    const deposit = this.node.getValueWithStateVersion(
+        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false,
+        this.node.stateManager.getFinalVersion()) || {};
     if (deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS) {
       return deposit.value;
     }

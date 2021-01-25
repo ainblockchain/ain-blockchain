@@ -166,25 +166,25 @@ class BlockchainNode {
     return this.stateManager.getFinalRoot().toJsObject(withDetails);
   }
 
-  getValueWithStateVersion(version, refPath, isGlobal) {
+  getValueWithStateVersion(refPath, isGlobal, version) {
     const versionRoot = this.stateManager.getRoot(version);
     return DB.readFromStateRoot(
         versionRoot, PredefinedDbPaths.VALUES_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
-  getFunctionWithStateVersion(version, refPath, isGlobal) {
+  getFunctionWithStateVersion(refPath, isGlobal, version) {
     const versionRoot = this.stateManager.getRoot(version);
     return DB.readFromStateRoot(
         versionRoot, PredefinedDbPaths.FUNCTIONS_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
-  getRuleWithStateVersion(version, refPath, isGlobal) {
+  getRuleWithStateVersion(refPath, isGlobal, version) {
     const versionRoot = this.stateManager.getRoot(version);
     return DB.readFromStateRoot(
         versionRoot, PredefinedDbPaths.RULES_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
-  getOwnerWithStateVersion(version, refPath, isGlobal) {
+  getOwnerWithStateVersion(refPath, isGlobal, version) {
     const versionRoot = this.stateManager.getRoot(version);
     return DB.readFromStateRoot(
         versionRoot, PredefinedDbPaths.OWNERS_ROOT, refPath, isGlobal, this.db.shardingPath);
