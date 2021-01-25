@@ -14,6 +14,7 @@ const {
   GenesisAccounts,
   AccountProperties,
   TokenExchangeSchemes,
+  FunctionProperties,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {sendSignedTx, signAndSendTx} = require('../server/util');
@@ -57,45 +58,56 @@ class Functions {
   triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionConfig = matched.matchedFunction.config;
-    if (functionConfig) {
-      if (functionConfig.function_type === FunctionTypes.NATIVE) {
-        const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
-        if (nativeFunction) {
-          const functionPath = matched.matchedFunction.path;
-          const params = Functions.convertPathVars2Params(matched.pathVars);
-          logger.info(
-              `  ==> Running native function '${functionConfig.function_id}' with\n` +
-              `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
-              `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-              `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
-              `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
-          // Execute the matched native function.
-          nativeFunction(
-              value,
-              {
-                valuePath: parsedValuePath,
-                functionPath,
-                params,
-                timestamp,
-                currentTime,
-                transaction
-              });
-        }
-      } else if (functionConfig.function_type === FunctionTypes.REST) {
-        if (functionConfig.event_listener &&
-            functionConfig.event_listener in EventListenerWhitelist) {
-          logger.info(
-              `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
-              `of '${functionConfig.event_listener}' ` +
-              `with transaction: ${JSON.stringify(transaction, null, 2)}`)
-          return axios.post(functionConfig.event_listener, {
-            transaction,
-            function: functionConfig
-          });
+    const functionList = Functions.getFunctionList(functionConfig);
+    if (functionList && functionList.length > 0) {
+      for (const functionEntry of functionList) {
+        if (functionEntry.function_type === FunctionTypes.NATIVE) {
+          const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
+          if (nativeFunction) {
+            const functionPath = matched.matchedFunction.path;
+            const params = Functions.convertPathVars2Params(matched.pathVars);
+            logger.info(
+                `  ==> Running native function '${functionEntry.function_id}' with\n` +
+                `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
+                `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
+                `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
+                `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
+            // Execute the matched native function.
+            nativeFunction(
+                value,
+                {
+                  valuePath: parsedValuePath,
+                  functionPath,
+                  params,
+                  timestamp,
+                  currentTime,
+                  transaction
+                });
+          }
+        } else if (functionEntry.function_type === FunctionTypes.REST) {
+          if (functionEntry.event_listener &&
+              functionEntry.event_listener in EventListenerWhitelist) {
+            logger.info(
+                `  ==> Triggering an event for function '${functionEntry.function_id}' ` +
+                `of '${functionEntry.event_listener}' ` +
+                `with transaction: ${JSON.stringify(transaction, null, 2)}`)
+            return axios.post(functionEntry.event_listener, {
+              transaction,
+              function: functionEntry
+            });
+          }
         }
       }
     }
     return true;
+  }
+
+  static getFunctionList(functionConfig) {
+    const functionMap = ChainUtil.getJsObject(functionConfig, [FunctionProperties.FUNCTION_MAP]);
+    if (!functionMap) {
+      return null;
+    }
+    return Object.values(functionMap);
   }
 
   static convertPathVars2Params(pathVars) {
