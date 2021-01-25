@@ -22,6 +22,7 @@ const Transaction = require('../tx-pool/transaction');
 
 const isShardChain =
     GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+const shardingPath = ChainUtil.parsePath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
 
 class BlockchainNode {
   constructor() {
@@ -166,6 +167,30 @@ class BlockchainNode {
 
   dumpFinalVersion(withDetails) {
     return this.stateManager.getFinalRoot().toJsObject(withDetails);
+  }
+
+  getValueFromStateWithVersion(version, readingPath, isGlobal) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.getterUtil(
+        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.VALUES_ROOT);
+  }
+
+  getFunctionFromStateWithVersion(version, readingPath, isGlobal) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.getterUtil(
+        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.FUNCTIONS_ROOT);
+  }
+
+  getRuleFromStateWithVersion(version, readingPath, isGlobal) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.getterUtil(
+        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.RULES_ROOT);
+  }
+
+  getOwnerFromStateWithVersion(version, readingPath, isGlobal) {
+    const versionRoot = this.stateManager.getRoot(version);
+    return DB.getterUtil(
+        versionRoot, readingPath, isGlobal, shardingPath, PredefinedDbPaths.OWNERS_ROOT);
   }
 
   getNonce() {

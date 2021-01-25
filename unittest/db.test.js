@@ -17,6 +17,7 @@ const {
 const {
   setNodeForTesting,
 } = require('./test-util');
+const DB = require('../db');
 
 describe("DB initialization", () => {
   let node;
@@ -2844,10 +2845,10 @@ describe("Test proof with database", () => {
 
   describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
     it("checks proof hash of under $root_path/test", () => {
-      const valuesNode = node.db.getRefForReading(['values', 'test']);
-      const ownersNode = node.db.getRefForReading(['owners', 'test']);
-      const rulesNode = node.db.getRefForReading(['rules', 'test']);
-      const functionNode = node.db.getRefForReading(['functions', 'test']);
+      const valuesNode = DB.getRefForReading(node.db.stateRoot, ['values', 'test']);
+      const ownersNode = DB.getRefForReading(node.db.stateRoot, ['owners', 'test']);
+      const rulesNode = DB.getRefForReading(node.db.stateRoot, ['rules', 'test']);
+      const functionNode = DB.getRefForReading(node.db.stateRoot, ['functions', 'test']);
       expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
       expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
       expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
@@ -2890,10 +2891,10 @@ describe("Test proof with database", () => {
       node.db.setOwner("test/empty_owners/.owner/owners/*/write_function", false);
       node.db.setRule("test/test_rules", nestedRules);
       node.db.setFunction("test/test_functions", dbFuncs);
-      const valuesNode = node.db.getRefForReading(['values', 'test']);
-      const ownersNode = node.db.getRefForReading(['owners', 'test']);
-      const rulesNode = node.db.getRefForReading(['rules', 'test']);
-      const functionNode = node.db.getRefForReading(['functions', 'test']);
+      const valuesNode = DB.getRefForReading(node.db.stateRoot, ['values', 'test']);
+      const ownersNode = DB.getRefForReading(node.db.stateRoot, ['owners', 'test']);
+      const rulesNode = DB.getRefForReading(node.db.stateRoot, ['rules', 'test']);
+      const functionNode = DB.getRefForReading(node.db.stateRoot, ['functions', 'test']);
       expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
       expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
       expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
@@ -2909,10 +2910,10 @@ describe("Test proof with database", () => {
 
     it("tests proof with owners, rules, values and functions", () => {
       const rootNode = node.db.stateRoot;
-      const ownersNode = node.db.getRefForReading(['owners']);
-      const rulesNode = node.db.getRefForReading(['rules']);
-      const valuesNode = node.db.getRefForReading(['values']);
-      const functionNode = node.db.getRefForReading(['functions']);
+      const ownersNode = DB.getRefForReading(node.db.stateRoot, ['owners']);
+      const rulesNode = DB.getRefForReading(node.db.stateRoot, ['rules']);
+      const valuesNode = DB.getRefForReading(node.db.stateRoot, ['values']);
+      const functionNode = DB.getRefForReading(node.db.stateRoot, ['functions']);
       const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
       const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
       rootNode.getChildLabels().forEach(label => {

@@ -9,7 +9,7 @@ const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../common/chain-util');
-const StateManager = require('../db/state-manager');
+const StateNode = require('../db/state-node');
 const {
   WriteDbOperations,
   ReadDbOperations,
@@ -853,44 +853,28 @@ class Consensus {
   }
 
   getWhitelist() {
-    const lastBlockNumber = this.node.bc.lastBlockNumber();
-    const baseVersion = this.node.stateManager.getFinalVersion();
-    const snapVersion = this.node.stateManager.createUniqueVersionName(
-      `${StateVersions.SNAP}:${lastBlockNumber}`);
-    const snapDb = this.node.createTempDb(baseVersion, snapVersion, lastBlockNumber);
-    const whitelist = snapDb.getValue(ChainUtil.formatPath([
-      ConsensusDbPaths.CONSENSUS,
-      ConsensusDbPaths.WHITELIST
-    ])) || {};
-    this.node.destroyDb(snapDb);
-    return whitelist;
+    const whitelist = this.node.getValueFromStateWithVersion(this.node.stateManager.getFinalVersion(),
+        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false);
+    logger.error(`[getWhitelist] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    return whitelist || {};
   }
 
   getValidators(blockHash, blockNumber) {
     const LOG_HEADER = 'getValidators';
-    let db = this.blockPool.hashToDb.get(blockHash);
-    const isSnapDb = this.node.bc.lastBlock().hash === blockHash;
-    if (isSnapDb) {
-      const baseVersion = this.node.stateManager.getFinalVersion();
-      const snapVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.SNAP}:${blockNumber}`);
-      db = this.node.createTempDb(baseVersion, snapVersion, blockNumber);
-    }
-    if (!db) {
-      const err = `[${LOG_HEADER}] No db found for block ${blockHash}, ${blockNumber}`;
+    const db = this.blockPool.hashToDb.get(blockHash);
+    const stateVersion = this.node.bc.lastBlock().hash === blockHash ?
+        this.node.stateManager.getFinalVersion() : (db ? db.stateVersion : null);
+    if (!stateVersion) {
+      const err = `[${LOG_HEADER}] No stateVersion found for block ${blockHash}, ${blockNumber}`;
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = db.getValue(ChainUtil.formatPath([
-          ConsensusDbPaths.CONSENSUS,
-          ConsensusDbPaths.WHITELIST
-        ])) || {};
+    const whitelist = this.node.getValueFromStateWithVersion(stateVersion,
+        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false) || {};
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
-      const deposit = db.getValue(ChainUtil.formatPath([
-            PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
-            address
-          ]));
+      const deposit = this.node.getValueFromStateWithVersion(stateVersion,
+        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false) || {};
       if (deposit && deposit.value === whitelist[address] &&
           deposit.expire_at >= Date.now() + ConsensusConsts.DAY_MS) {
         validators[address] = deposit.value;
@@ -898,29 +882,15 @@ class Consensus {
     });
     logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
         `whitelist: ${JSON.stringify(whitelist, null, 2)}`);
-
-    if (isSnapDb) {
-      this.node.destroyDb(db);
-    }
     return validators;
   }
 
   getValidConsensusDeposit(address) {
-    const lastBlockNumber = this.node.bc.lastBlockNumber();
-    const baseVersion = this.node.stateManager.getFinalVersion();
-    const snapVersion = this.node.stateManager.createUniqueVersionName(
-      `${StateVersions.SNAP}:${lastBlockNumber}`);
-    const snapDb = this.node.createTempDb(baseVersion, snapVersion, lastBlockNumber);
-    const deposit = snapDb.getValue(ChainUtil.formatPath([
-      PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS,
-      address
-    ]));
-    this.node.destroyDb(snapDb);
-
+    const deposit = this.node.getValueFromStateWithVersion(this.node.stateManager.getFinalVersion(),
+      `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false) || {};
     if (deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS) {
       return deposit.value;
     }
-
     return 0;
   }
 
