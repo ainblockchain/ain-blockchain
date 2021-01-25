@@ -440,7 +440,7 @@ class Functions {
   }
 
   _getFullValuePath(parsedPath) {
-    return this.db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    return this.db.constructor.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
   }
 }
 
