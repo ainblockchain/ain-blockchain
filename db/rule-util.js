@@ -69,6 +69,11 @@ class RuleUtil {
       return '';
     }
   }
+
+  getOwnerAddr() {
+    const { GenesisAccounts, AccountProperties } = require('../common/constants');
+    return _.get(GenesisAccounts, `${AccountProperties.OWNER}.${AccountProperties.ADDRESS}`, null);
+  }
 }
 
 module.exports = RuleUtil;
