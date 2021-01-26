@@ -180,7 +180,6 @@ const FunctionProperties = {
   EVENT_LISTENER: 'event_listener',
   FUNCTION: '.function',
   FUNCTION_ID: 'function_id',
-  FUNCTION_MAP: 'function_map',
   FUNCTION_TYPE: 'function_type',
   SERVICE_NAME: 'service_name',
 };

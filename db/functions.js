@@ -57,8 +57,8 @@ class Functions {
   // TODO(seo): Handle async function calls properly.
   triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
-    const functionConfig = matched.matchedFunction.config;
-    const functionList = Functions.getFunctionList(functionConfig);
+    const functionMap = matched.matchedFunction.config;
+    const functionList = Functions.getFunctionList(functionMap);
     if (functionList && functionList.length > 0) {
       for (const functionEntry of functionList) {
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
@@ -102,8 +102,7 @@ class Functions {
     return true;
   }
 
-  static getFunctionList(functionConfig) {
-    const functionMap = ChainUtil.getJsObject(functionConfig, [FunctionProperties.FUNCTION_MAP]);
+  static getFunctionList(functionMap) {
     if (!functionMap) {
       return null;
     }
@@ -125,21 +124,17 @@ class Functions {
       // Just delete the existing value.
       return null;
     }
-    const funcChangeMap = ChainUtil.getJsObject(
-        functionChange, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP]);
+    const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
     if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
       return curFunction;
     }
     const newFunction =
         ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
-    let newFuncMap = ChainUtil.getJsObject(
-        newFunction, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP]);
+    let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
     if (!newFuncMap) {
       // Add a place holder.
-      ChainUtil.setJsObject(
-          newFunction, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP], {});
-      newFuncMap = ChainUtil.getJsObject(
-          newFunction, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP]);
+      ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
+      newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
     }
     for (const functionKey in funcChangeMap) {
       const functionValue = funcChangeMap[functionKey];

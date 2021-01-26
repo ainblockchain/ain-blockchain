@@ -27,13 +27,11 @@ describe("Functions", () => {
 
       const functionConfig = {
         ".function": {
-          "function_map": {
-            "0x12345": {
-              "function_type": "REST",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainize.ai",
-              "function_id": "0x12345"
-            }
+          "0x12345": {
+            "function_type": "REST",
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainize.ai",
+            "function_id": "0x12345"
           }
         }
       };
@@ -110,49 +108,43 @@ describe("Functions", () => {
   describe("applyFunctionChange", () => {
     const curFunction = {
       ".function": {
-        "function_map": {
-          "0x111": {
-            "function_type": "NATIVE",
-            "function_id": "0x111"
-          },
-          "0x222": {
-            "function_type": "NATIVE",
-            "function_id": "0x222"
-          },
-          "0x333": {
-            "function_type": "NATIVE",
-            "function_id": "0x333"
-          }
+        "0x111": {
+          "function_type": "NATIVE",
+          "function_id": "0x111"
+        },
+        "0x222": {
+          "function_type": "NATIVE",
+          "function_id": "0x222"
+        },
+        "0x333": {
+          "function_type": "NATIVE",
+          "function_id": "0x333"
         }
       }
     };
     it("add / delete / modify with non-existing function", () => {
       assert.deepEqual(Functions.applyFunctionChange(null, {
         ".function": {
-          "function_map": {
-            "0x111": null,  // delete
-            "0x222": {  // modify
-              "function_type": "REST",
-              "function_id": "0x222"
-            },
-            "0x444": {  // add
-              "function_type": "REST",
-              "function_id": "0x444"
-            }
+          "0x111": null,  // delete
+          "0x222": {  // modify
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x444": {  // add
+            "function_type": "REST",
+            "function_id": "0x444"
           }
         }
       }), {  // the same as the given function change.
         ".function": {
-          "function_map": {
-            "0x111": null,
-            "0x222": {
-              "function_type": "REST",
-              "function_id": "0x222"
-            },
-            "0x444": {
-              "function_type": "REST",
-              "function_id": "0x444"
-            }
+          "0x111": null,
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x444": {
+            "function_type": "REST",
+            "function_id": "0x444"
           }
         }
       });
@@ -160,33 +152,29 @@ describe("Functions", () => {
     it("add / delete / modify with existing function", () => {
       assert.deepEqual(Functions.applyFunctionChange(curFunction, {
         ".function": {
-          "function_map": {
-            "0x111": null,  // delete
-            "0x222": {  // modify
-              "function_type": "REST",
-              "function_id": "0x222"
-            },
-            "0x444": {  // add
-              "function_type": "REST",
-              "function_id": "0x444"
-            }
+          "0x111": null,  // delete
+          "0x222": {  // modify
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x444": {  // add
+            "function_type": "REST",
+            "function_id": "0x444"
           }
         }
       }), {
         ".function": {
-          "function_map": {
-            "0x222": {  // modified
-              "function_type": "REST",
-              "function_id": "0x222"
-            },
-            "0x333": {  // untouched
-              "function_type": "NATIVE",
-              "function_id": "0x333"
-            },
-            "0x444": {  // added
-              "function_type": "REST",
-              "function_id": "0x444"
-            }
+          "0x222": {  // modified
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x333": {  // untouched
+            "function_type": "NATIVE",
+            "function_id": "0x333"
+          },
+          "0x444": {  // added
+            "function_type": "REST",
+            "function_id": "0x444"
           }
         }
       });
