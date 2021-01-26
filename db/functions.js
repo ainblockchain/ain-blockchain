@@ -53,8 +53,8 @@ class Functions {
    * @param {Number} currentTime current time
    * @param {Object} transaction transaction
    */
-  // TODO(seo): Support multiple-functions per path.
   // TODO(seo): Trigger subtree functions.
+  // TODO(seo): Handle async function calls properly.
   triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionConfig = matched.matchedFunction.config;
@@ -108,6 +108,53 @@ class Functions {
       return null;
     }
     return Object.values(functionMap);
+  }
+
+  /**
+   * Returns a new function created by applying the function change to the current function.
+   * 
+   * @param {Object} curFunction current function (modified and returned by this function)
+   * @param {Object} functionChange function change
+   */
+  static applyFunctionChange(curFunction, functionChange) {
+    if (curFunction === null) {
+      // Just write the function change.
+      return functionChange;
+    }
+    if (functionChange === null) {
+      // Just delete the existing value.
+      return null;
+    }
+    const funcChangeMap = ChainUtil.getJsObject(
+        functionChange, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP]);
+    if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
+      return curFunction;
+    }
+    const newFunction =
+        ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
+    let newFuncMap = ChainUtil.getJsObject(
+        newFunction, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP]);
+    if (!newFuncMap) {
+      // Add a place holder.
+      ChainUtil.setJsObject(
+          newFunction, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP], {});
+      newFuncMap = ChainUtil.getJsObject(
+          newFunction, [FunctionProperties.FUNCTION, FunctionProperties.FUNCTION_MAP]);
+    }
+    for (const functionKey in funcChangeMap) {
+      const functionValue = funcChangeMap[functionKey];
+      if (functionValue === null) {
+        if (functionKey in newFuncMap) {
+          delete newFuncMap[functionKey];
+        } else {
+          // Ignore this case.
+        }
+      } else {
+        newFuncMap[functionKey] = functionValue;
+      }
+    }
+
+    return newFunction;
   }
 
   static convertPathVars2Params(pathVars) {

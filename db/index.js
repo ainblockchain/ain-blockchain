@@ -415,8 +415,8 @@ class DB {
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
   }
 
-  setFunction(functionPath, functionInfo, address, isGlobal) {
-    const isValidObj = isValidJsObjectForStates(functionInfo);
+  setFunction(functionPath, functionChange, address, isGlobal) {
+    const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(401, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
@@ -433,10 +433,11 @@ class DB {
     if (!this.getPermissionForFunction(localPath, address)) {
       return ChainUtil.returnError(403, `No write_function permission on: ${functionPath}`);
     }
+console.log(`#######################functionChange: ${JSON.stringify(functionChange, null, 2)}`);
+    const curFunction = this.getFunction(functionPath, isGlobal);
+    const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
-        JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
-    this.writeDatabase(fullPath, functionInfoCopy);
+    this.writeDatabase(fullPath, newFunction);
 
     return true;
   }
