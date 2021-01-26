@@ -219,8 +219,10 @@ function setUpForSharding(shardingConfig) {
               ref: `${sharding_path}/$block_number/proof_hash`,
               value: {
                 [FunctionProperties.FUNCTION]: {
-                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                  [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                    [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                    [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                  }
                 }
               }
             },
