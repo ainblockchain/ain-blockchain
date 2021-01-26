@@ -30,23 +30,23 @@ const { waitForNewBlocks, waitUntilNodeSyncs, parseOrLog } = require('../unittes
 const ENV_VARIABLES = [
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -91,7 +91,11 @@ RANDOM_OPERATION = [
   ['dec_value', {ref: 'test/balance/user1', value: 10000}],
   ['dec_value', {ref: 'test/balance/user2', value: 100002}],
   ['set_rule', {ref: 'test/test_rule/', value: { ".write": "some rule config"}}],
-  ['set_function', {ref: 'test/test_function/', value: { ".function": "some function config"}}],
+  ['set_function', {ref: 'test/test_function/', value: {
+    ".function": {
+      "fid": "some function config"
+    }
+  }}],
   ['set_owner', {ref: 'test/test_owner/', value: {
     ".owner": {
       "owners": {

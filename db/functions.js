@@ -131,7 +131,7 @@ class Functions {
     const newFunction =
         ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
     let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
-    if (!newFuncMap) {
+    if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
       // Add a place holder.
       ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
       newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
