@@ -12,6 +12,7 @@ const ChainUtil = require('../common/chain-util');
 const {
   PORT,
   PROTOCOL_VERSIONS,
+  BlockchainNodeStatus,
   WriteDbOperations,
   TransactionStatus
 } = require('../common/constants');
@@ -61,12 +62,21 @@ const jsonRpcMethods = require('../json_rpc')(
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
-  const consensusStatus = p2pServer.consensus.status;
-  const message = consensusStatus === ConsensusStatus.RUNNING ?
-      'Welcome to AIN Blockchain Node' : 'AIN Blockchain Node is NOT ready yet';
   res.status(200)
     .set('Content-Type', 'text/plain')
-    .send(message)
+    .send('Welcome to AIN Blockchain Node')
+    .end();
+});
+
+app.get('/health_check', (req, res, next) => {
+  const nodeStatus = p2pServer.getNodeStatus();
+  const consensusState = p2pServer.consensus.getState();
+  const result = nodeStatus.status === BlockchainNodeStatus.SERVING &&
+      consensusState.status === ConsensusStatus.RUNNING &&
+      consensusState.health === true;
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send(result)
     .end();
 });
 

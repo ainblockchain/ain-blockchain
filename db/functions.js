@@ -167,18 +167,18 @@ class Functions {
     const userBalancePath = this._getBalancePath(user);
     const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
+    const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
     this.db.writeDatabase(
         this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
+    if (expireAt > currentTime) {
+      // Still in lock-up period.
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+          {code: FunctionResultCode.IN_LOCKUP_PERIOD});
+      return;
+    }
     if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
-      const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
-      if (expireAt <= currentTime) {
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
             {code: FunctionResultCode.SUCCESS});
-      } else {
-        // Still in lock-up period.
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            {code: FunctionResultCode.IN_LOCKUP_PERIOD});
-      }
     } else {
       // Not enough deposit.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
@@ -440,7 +440,7 @@ class Functions {
   }
 
   _getFullValuePath(parsedPath) {
-    return this.db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    return this.db.constructor.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
   }
 }
 

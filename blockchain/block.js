@@ -25,11 +25,11 @@ class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
       stateProofHash, proposer, validators) {
     this.last_votes = lastVotes;
-    this.transactions = transactions;
+    this.transactions = Block.sanitizeTransactions(transactions);
     // Block's header
     this.last_hash = lastHash;
     this.last_votes_hash = ChainUtil.hashString(stringify(lastVotes));
-    this.transactions_hash = ChainUtil.hashString(stringify(transactions));
+    this.transactions_hash = ChainUtil.hashString(stringify(this.transactions));
     this.number = number;
     this.epoch = epoch;
     this.timestamp = timestamp;
@@ -79,6 +79,19 @@ class Block {
             transactions len:  ${this.transactions.length}
             last_votes:        ${stringify(this.last_votes)}
             transactions:      ${stringify(this.transactions)}`;
+  }
+
+  static sanitizeTransactions(transactions) {
+    const sanitized = [];
+    transactions.forEach((tx) => {
+      sanitized.push({
+        tx_body: Transaction.sanitizeTxBody(tx.tx_body),
+        signature: tx.signature,
+        hash: tx.hash,
+        address: tx.address
+      });
+    });
+    return sanitized;
   }
 
   static hash(block) {

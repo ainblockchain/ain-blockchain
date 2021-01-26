@@ -156,7 +156,7 @@ class Blockchain {
   static isValidChain(chain) {
     const firstBlock = Block.parse(chain[0]);
     if (!firstBlock || firstBlock.hash !== Block.genesis().hash) {
-      logger.error(`First block is not the Genesis block`);
+      logger.error(`First block is not the Genesis block: ${firstBlock}\n${Block.genesis()}`);
       return false;
     }
     if (!Block.validateHashes(firstBlock)) {
