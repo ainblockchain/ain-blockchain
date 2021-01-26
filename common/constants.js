@@ -381,7 +381,7 @@ function getGenesisConfig(filename, additionalEnv) {
   if (additionalEnv) {
     const parts = additionalEnv.split(':');
     const dbPath = parts[0];
-    const additionalFilePath = path.resolve(__diurname, '..', parts[1])
+    const additionalFilePath = path.resolve(__dirname, '..', parts[1])
     if (fs.existsSync(additionalFilePath)) {
       const additionalConfig = JSON.parse(fs.readFileSync(additionalFilePath));
       ChainUtil.setJsObject(config, [dbPath], additionalConfig);
