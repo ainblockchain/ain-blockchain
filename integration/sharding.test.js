@@ -24,6 +24,9 @@ const {
   NativeFunctionIds,
   buildOwnerPermissions
 } = require('../common/constants');
+const {
+  ConsensusStatus
+} = require('../consensus/constants');
 const ChainUtil = require('../common/chain-util');
 const {
   readConfigFile,
@@ -103,7 +106,7 @@ function waitUntilShardReporterStarts() {
   while (true) {
     consensusState = parseOrLog(syncRequest('GET', server1 + '/get_consensus_state')
         .body.toString('utf-8')).result;
-    if (consensusState && consensusState.status === 1) return;
+    if (consensusState && consensusState.status === ConsensusStatus.RUNNING) return;
     sleep(1000);
   }
 }

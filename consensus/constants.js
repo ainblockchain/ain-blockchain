@@ -17,9 +17,9 @@ const ConsensusMessageTypes = {
 };
 
 const ConsensusStatus = {
-  STARTING: 0,
-  RUNNING: 1,
-  STOPPED: 2
+  STARTING: 'STARTING',
+  RUNNING: 'RUNNING',
+  STOPPED: 'STOPPED',
 }
 
 const ConsensusDbPaths = {

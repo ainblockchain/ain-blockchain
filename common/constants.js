@@ -323,7 +323,7 @@ const TransactionStatus = {
  * Default values
  */
 const DefaultValues = {
-  DEPOSIT_LOCKUP_DURATION_MS: 2592000000 // 30 days
+  DEPOSIT_LOCKUP_DURATION_MS: moment.duration(180, 'days').as('milliseconds')
 }
 
 /**

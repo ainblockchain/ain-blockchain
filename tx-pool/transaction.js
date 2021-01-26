@@ -27,7 +27,8 @@ class Transaction {
       return null;
     }
 
-    const hash = '0x' + ainUtil.hashTransaction(txBody).toString('hex');
+    const sanitized = Transaction.sanitizeTxBody(txBody);
+    const hash = '0x' + ainUtil.hashTransaction(sanitized).toString('hex');
 
     let address = null;
     let skipVerif = null;
@@ -46,10 +47,11 @@ class Transaction {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
+    const sanitized = Transaction.sanitizeTxBody(txBody);
     // A devel method for bypassing the transaction verification.
     const signature = txBody.address !== undefined ?
-        '' : ainUtil.ecSignTransaction(txBody, Buffer.from(privateKey, 'hex'));
-    return Transaction.create(txBody, signature);
+        '' : ainUtil.ecSignTransaction(sanitized, Buffer.from(privateKey, 'hex'));
+    return Transaction.create(sanitized, signature);
   }
 
   toString() {
