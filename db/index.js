@@ -433,7 +433,6 @@ class DB {
     if (!this.getPermissionForFunction(localPath, address)) {
       return ChainUtil.returnError(403, `No write_function permission on: ${functionPath}`);
     }
-console.log(`#######################functionChange: ${JSON.stringify(functionChange, null, 2)}`);
     const curFunction = this.getFunction(functionPath, isGlobal);
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
