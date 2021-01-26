@@ -10,8 +10,8 @@ const ChainUtil = require('./chain-util');
 const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
-const BLOCKCHAINS_DIR = path.resolve(process.cwd(), 'blockchain/blockchains');
-const PROTOCOL_VERSIONS = path.resolve(process.cwd(), 'client/protocol_versions.json');
+const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
+const PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const MAX_TX_BYTES = 10000;
 const TRANSACTION_POOL_TIMEOUT_MS = moment.duration(1, 'hours').as('milliseconds');
@@ -365,13 +365,13 @@ const GenesisOwners = getGenesisOwners();
 function getGenesisConfig(filename, additionalEnv) {
   let config = null;
   if (CUSTOM_GENESIS_CONFIGS_DIR) {
-    const configPath = path.resolve(process.cwd(), CUSTOM_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(__dirname, '..', CUSTOM_GENESIS_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     }
   }
   if (!config) {
-    const configPath = path.resolve(process.cwd(), DEFAULT_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(__dirname, '..', DEFAULT_GENESIS_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
@@ -381,7 +381,7 @@ function getGenesisConfig(filename, additionalEnv) {
   if (additionalEnv) {
     const parts = additionalEnv.split(':');
     const dbPath = parts[0];
-    const additionalFilePath = path.resolve(process.cwd(), parts[1])
+    const additionalFilePath = path.resolve(__diurname, '..', parts[1])
     if (fs.existsSync(additionalFilePath)) {
       const additionalConfig = JSON.parse(fs.readFileSync(additionalFilePath));
       ChainUtil.setJsObject(config, [dbPath], additionalConfig);
