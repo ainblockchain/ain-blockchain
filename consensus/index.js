@@ -298,7 +298,7 @@ class Consensus {
 
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
-    let validators = {};
+    const validators = {};
     if (this.node.bc.lastBlockNumber() < 1) {
       const whitelist = GenesisWhitelist;
       Object.keys(whitelist).forEach((address) => {
