@@ -224,7 +224,7 @@ class P2pServer {
             const lastBlockWithoutProposal = this.node.init(true);
             await this.tryInitializeShard();
             this.node.status = BlockchainNodeStatus.SERVING;
-            this.consensus.init(lastBlockWithoutProposal, true);
+            this.consensus.init(lastBlockWithoutProposal);
           } else {
             // Consensus will be initialized after syncing with peers
             this.node.init(false);
@@ -387,10 +387,6 @@ class P2pServer {
     this.sockets.push(socket);
     this.setPeerEventHandlers(socket, address);
     this.requestChainSegment(this.node.bc.lastBlock());
-    if (this.consensus.stakeTx) {
-      this.broadcastTransaction(this.consensus.stakeTx);
-      this.consensus.stakeTx = null;
-    }
   }
 
   setPeerEventHandlers(socket, address) {

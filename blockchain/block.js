@@ -10,7 +10,7 @@ const DB = require('../db');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
-  GenesisWhitelist,
+  GenesisValidators,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
@@ -259,6 +259,34 @@ class Block {
     return Transaction.signTxBody(secondTxBody, privateKey);
   }
 
+  static buildGenesisStakingTxs(timestamp) {
+    const _ = require('lodash');
+    const txs = [];
+    Object.entries(GenesisValidators).forEach(([address, amount], index) => {
+      const privateKey = _.get(GenesisAccounts,
+          `${AccountProperties.OTHERS}.${index}.${AccountProperties.PRIVATE_KEY}`);
+      if (!privateKey) {
+        throw Error(`GenesisAccounts missing values: ${JSON.stringify(GenesisAccounts)}, ${address}`);
+      }
+      const txBody = {
+        nonce: -1,
+        timestamp,
+        operation: {
+          type: 'SET_VALUE',
+          ref: ChainUtil.formatPath([
+            PredefinedDbPaths.DEPOSIT_CONSENSUS,
+            address,
+            1,
+            PredefinedDbPaths.DEPOSIT_VALUE
+          ]),
+          value: amount
+        }
+      };
+      txs.push(Transaction.signTxBody(txBody, privateKey));
+    });
+    return txs;
+  }
+
   static getGenesisBlockData(genesisTime) {
     const ownerAddress = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
@@ -267,8 +295,11 @@ class Block {
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
     const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
+    // NOTE: Need to get these staking txs ahead of time for genesis block (after genesis block is
+    // removed from the source code)
+    const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
-    return [firstTx, secondTx];
+    return [firstTx, secondTx, ...stakingTxs];
   }
 
   static getGenesisStateProofHash() {
@@ -300,7 +331,7 @@ class Block {
     const number = 0;
     const epoch = 0;
     const proposer = ownerAddress;
-    const validators = GenesisWhitelist;
+    const validators = GenesisValidators;
     const stateProofHash = Block.getGenesisStateProofHash();
     return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
         stateProofHash, proposer, validators);
