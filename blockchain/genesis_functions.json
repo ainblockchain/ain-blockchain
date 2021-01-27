@@ -4,16 +4,20 @@
       "$checkin_id": {
         "request": {
           ".function": {
-            "function_type": "NATIVE",
-            "function_id": "_openCheckin"
+            "_openCheckin": {
+              "function_type": "NATIVE",
+              "function_id": "_openCheckin"
+            }
           }
         },
         "parent_finalize": {
           "$tx_hash": {
             "result": {
               ".function": {
-                "function_type": "NATIVE",
-                "function_id": "_closeCheckin"
+                "_closeCheckin": {
+                  "function_type": "NATIVE",
+                  "function_id": "_closeCheckin"
+                }
               }
             }
           }
@@ -27,8 +31,10 @@
         "$deposit_id": {
           "value": {
             ".function": {
-              "function_type": "NATIVE",
-              "function_id": "_deposit"
+              "_deposit": {
+                "function_type": "NATIVE",
+                "function_id": "_deposit"
+              }
             }
           }
         }
@@ -41,8 +47,10 @@
         "$key": {
           "value": {
             ".function": {
-              "function_type": "NATIVE",
-              "function_id": "_transfer"
+              "_transfer": {
+                "function_type": "NATIVE",
+                "function_id": "_transfer"
+              }
             }
           }
         }
@@ -55,8 +63,10 @@
         "$withdraw_id": {
           "value": {
             ".function": {
-              "function_type": "NATIVE",
-              "function_id": "_withdraw"
+              "_withdraw": {
+                "function_type": "NATIVE",
+                "function_id": "_withdraw"
+              }
             }
           }
         }

@@ -14,7 +14,9 @@ const {
   GenesisAccounts,
   AccountProperties,
   TokenExchangeSchemes,
+  FunctionProperties,
 } = require('../common/constants');
+const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
 const ChainUtil = require('../common/chain-util');
 const {sendSignedTx, signAndSendTx} = require('../server/util');
 const Transaction = require('../tx-pool/transaction');
@@ -23,6 +25,7 @@ const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC]
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
+  'https://events.ainize.ai/trigger': true,
   'http://localhost:3000/trigger': true
 };
 
@@ -52,50 +55,131 @@ class Functions {
    * @param {Number} currentTime current time
    * @param {Object} transaction transaction
    */
-  // TODO(seo): Support multiple-functions per path.
   // TODO(seo): Trigger subtree functions.
   triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
-    const functionConfig = matched.matchedFunction.config;
-    if (functionConfig) {
-      if (functionConfig.function_type === FunctionTypes.NATIVE) {
-        const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
-        if (nativeFunction) {
-          const functionPath = matched.matchedFunction.path;
-          const params = Functions.convertPathVars2Params(matched.pathVars);
-          logger.info(
-              `  ==> Running native function '${functionConfig.function_id}' with\n` +
-              `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
-              `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-              `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
-              `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
-          // Execute the matched native function.
-          nativeFunction(
-              value,
-              {
-                valuePath: parsedValuePath,
-                functionPath,
-                params,
-                timestamp,
-                currentTime,
-                transaction
-              });
+    const functionPath = matched.matchedFunction.path;
+    const functionMap = matched.matchedFunction.config;
+    const functionList = Functions.getFunctionList(functionMap);
+    const params = Functions.convertPathVars2Params(matched.pathVars);
+    let triggerCount = 0;
+    let failCount = 0;
+    const promises = [];
+    if (functionList && functionList.length > 0) {
+      const formattedParams = Functions.formatFunctionParams(
+          parsedValuePath, functionPath, timestamp, currentTime, params, value, transaction);
+      for (const functionEntry of functionList) {
+        if (!functionEntry || !functionEntry.function_type) {
+          continue;  // Does nothing.
         }
-      } else if (functionConfig.function_type === FunctionTypes.REST) {
-        if (functionConfig.event_listener &&
-            functionConfig.event_listener in EventListenerWhitelist) {
-          logger.info(
-              `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
-              `of '${functionConfig.event_listener}' ` +
-              `with transaction: ${JSON.stringify(transaction, null, 2)}`)
-          return axios.post(functionConfig.event_listener, {
-            transaction,
-            function: functionConfig
-          });
+        if (functionEntry.function_type === FunctionTypes.NATIVE) {
+          const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
+          if (nativeFunction) {
+            logger.info(
+                `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
+                formattedParams);
+            // Execute the matched native function.
+            nativeFunction(
+                value,
+                {
+                  valuePath: parsedValuePath,
+                  functionPath,
+                  params,
+                  timestamp,
+                  currentTime,
+                  transaction
+                });
+            triggerCount++;
+            failCount++;
+          }
+        } else if (functionEntry.function_type === FunctionTypes.REST) {
+          if (functionEntry.event_listener &&
+              functionEntry.event_listener in EventListenerWhitelist) {
+            logger.info(
+                `  ==> Triggering REST function '${functionEntry.function_id}' of ` +
+                `event listener '${functionEntry.event_listener}' with\n` +
+                formattedParams);
+            promises.push(axios.post(functionEntry.event_listener, {
+              function: functionEntry,
+              transaction,
+            }).catch((error) => {
+              logger.error(
+                  `Failed to trigger REST function '${functionEntry.function_id}' of ` +
+                  `event listener '${functionEntry.event_listener}' with\n` +
+                  `error: ${JSON.stringify(error)}` +
+                  formattedParams);
+              failCount++;
+              return true;
+            }));
+            triggerCount++;
+          }
         }
       }
     }
-    return true;
+    return Promise.all(promises)
+        .then(() => {
+          return {
+            functionCount: functionList ? functionList.length : 0,
+            triggerCount,
+            failCount,
+          };
+        });
+  }
+
+  static formatFunctionParams(
+      parsedValuePath, functionPath, timestamp, currentTime, params, value, transaction) {
+    return `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
+      `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
+      `timestamp: '${timestamp}', currentTime: '${currentTime}', ` +
+      `params: ${JSON.stringify(params, null, 2)}, ` +
+      `value: '${JSON.stringify(value, null, 2)}', ` +
+      `transaction: ${JSON.stringify(transaction, null, 2)}`;
+  }
+
+  static getFunctionList(functionMap) {
+    if (!functionMap) {
+      return null;
+    }
+    return Object.values(functionMap);
+  }
+
+  /**
+   * Returns a new function created by applying the function change to the current function.
+   * 
+   * @param {Object} curFunction current function (modified and returned by this function)
+   * @param {Object} functionChange function change
+   */
+  static applyFunctionChange(curFunction, functionChange) {
+    if (curFunction === null) {
+      // Just write the function change.
+      return functionChange;
+    }
+    if (functionChange === null) {
+      // Just delete the existing value.
+      return null;
+    }
+    const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
+    if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
+      return curFunction;
+    }
+    const newFunction =
+        ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
+    let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
+      // Add a place holder.
+      ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
+      newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    }
+    for (const functionKey in funcChangeMap) {
+      const functionValue = funcChangeMap[functionKey];
+      if (functionValue === null) {
+        delete newFuncMap[functionKey];
+      } else {
+        newFuncMap[functionKey] = functionValue;
+      }
+    }
+
+    return newFunction;
   }
 
   static convertPathVars2Params(pathVars) {
@@ -173,16 +257,35 @@ class Functions {
     if (expireAt > currentTime) {
       // Still in lock-up period.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.IN_LOCKUP_PERIOD});
+          { code: FunctionResultCode.IN_LOCKUP_PERIOD });
       return;
+    }
+    if (service === PredefinedDbPaths.CONSENSUS) {
+      // Reject withdrawing consensus deposits if it reduces the number of validators to less than
+      // MIN_NUM_VALIDATORS.
+      const whitelist = this.db.getValue(
+          ChainUtil.formatPath([ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST]));
+      let numValidators = 0;
+      Object.keys(whitelist).forEach((address) => {
+        const deposit = this.db.getValue(
+            ChainUtil.formatPath([PredefinedDbPaths.DEPOSIT_CONSENSUS, address]));
+        if (deposit && deposit.value > ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+          numValidators++;
+        }
+      });
+      if (numValidators <= ConsensusConsts.MIN_NUM_VALIDATORS) {
+        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+            { code: FunctionResultCode.FAILURE });
+        return;
+      }
     }
     if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            {code: FunctionResultCode.SUCCESS});
+          { code: FunctionResultCode.SUCCESS });
     } else {
       // Not enough deposit.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 

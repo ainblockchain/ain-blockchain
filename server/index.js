@@ -393,6 +393,8 @@ class P2pServer {
               );
             }
             break;
+          case 'test':
+            console.log('testtesttest')
         }
       } catch (error) {
         logger.error(error.stack);
@@ -545,8 +547,10 @@ class P2pServer {
                 ShardingProperties.PROOF_HASH),
             value: {
               [FunctionProperties.FUNCTION]: {
-                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                }
               }
             }
           },
@@ -671,7 +675,7 @@ class P2pClient {
             const lastBlockWithoutProposal = node.init(true);
             await this.server.tryInitializeShard();
             node.status = BlockchainNodeStatus.SERVING;
-            this.server.consensus.init(lastBlockWithoutProposal, true);
+            this.server.consensus.init(lastBlockWithoutProposal);
           } else {
             // Consensus will be initialized after syncing with peers
             node.init(false);
@@ -717,6 +721,13 @@ class P2pClient {
   broadcastConsensusMessage(msg) {
     logger.debug(`SENDING: ${JSON.stringify(msg)}`);
     const connections = _.merge({}, this.outbound, this.server.inbound);
+    Object.values(connections).forEach(socket => {
+      socket.send(JSON.stringify({
+        type: 'test',
+        message: 'msg',
+        protoVer: CURRENT_PROTOCOL_VERSION
+      }))
+    })
     Object.values(connections).forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.CONSENSUS,
@@ -853,6 +864,16 @@ class P2pClient {
                 this.requestChainSegment(socket, this.server.node.bc.lastBlock());
               }, 1000);
             }
+          }
+          break;
+        // TODO(minsu): this should be separated.
+        case MessageTypes.CONSENSUS:
+          logger.debug(
+            `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+          if (this.server.node.status === BlockchainNodeStatus.SERVING) {
+            this.server.consensus.handleConsensusMessage(data.message);
+          } else {
+            logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
           }
           break;
       }
