@@ -295,8 +295,7 @@ class Block {
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
     const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
-    // NOTE: Need to get these staking txs ahead of time for genesis block (after genesis block is
-    // removed from the source code)
+    // TODO(lia): Change the logic to staking & signing by the current node
     const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
     return [firstTx, secondTx, ...stakingTxs];
