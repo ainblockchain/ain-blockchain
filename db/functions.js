@@ -61,6 +61,9 @@ class Functions {
     const functionList = Functions.getFunctionList(functionMap);
     if (functionList && functionList.length > 0) {
       for (const functionEntry of functionList) {
+        if (!functionEntry || !functionEntry.function_type) {
+          continue;  // Does nothing.
+        }
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
@@ -139,11 +142,7 @@ class Functions {
     for (const functionKey in funcChangeMap) {
       const functionValue = funcChangeMap[functionKey];
       if (functionValue === null) {
-        if (functionKey in newFuncMap) {
-          delete newFuncMap[functionKey];
-        } else {
-          // Ignore this case.
-        }
+        delete newFuncMap[functionKey];
       } else {
         newFuncMap[functionKey] = functionValue;
       }
