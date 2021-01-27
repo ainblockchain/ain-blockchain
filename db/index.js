@@ -678,14 +678,21 @@ class DB {
 
   // TODO(seo): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
+    const LOG_HEADER = 'getPermissionForValue';
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const value = this.getValue(ChainUtil.formatPath(parsedValuePath));
     const data =
         this.addPathToValue(value, matched.matchedValuePath, matched.closestRule.path.length);
     const newData =
         this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
-    return !!this.evalRuleString(
+    let evalRuleRes = false;
+    try {
+      evalRuleRes = !!this.evalRuleString(
         matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
+    } catch (e) {
+      logger.error(`[${LOG_HEADER}] Failed to eval rule: ${e}`);
+    }
+    return evalRuleRes;
   }
 
   getPermissionForRule(parsedRulePath, address) {
