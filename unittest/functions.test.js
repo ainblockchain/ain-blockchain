@@ -2,7 +2,6 @@ const Functions = require('../db/functions');
 const rimraf = require('rimraf');
 const chai = require('chai');
 const assert = chai.assert;
-const expect = chai.expect;
 const nock = require('nock');
 const _ = require('lodash');
 const {
@@ -17,10 +16,13 @@ const ChainUtil = require('../common/chain-util');
 describe("Functions", () => {
   describe("triggerFunctions", () => {
     const refPathRest = "test/test_function/some/path/rest";
+    const refPathRestMulti = "test/test_function/some/path/rest_multi";
+    const refPathRestWithoutListener = "test/test_function/some/path/rest_without_listener";
+    const refPathRestNotWhitelisted = "test/test_function/some/path/rest_not_whitelisted";
     const refPathNull = "test/test_function/some/path/null";
     let node;
     let functions;
-    let requestBody;
+    let requestBody1 = null, requestBody2 = null;
 
     beforeEach(() => {
       rimraf.sync(BLOCKCHAINS_DIR);
@@ -28,21 +30,49 @@ describe("Functions", () => {
       node = new BlockchainNode();
       setNodeForTesting(node);
 
-      const nativeFunction = {
+      const restFunction = {
         ".function": {
-          "_transfer": {
-            "function_type": "NATIVE",
-            "function_id": "_transfer"
+          "0x11111": {
+            "function_type": "REST",
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainetwork.ai",
+            "function_id": "0x11111"
           }
         }
       };
-      const restFunction = {
+      const restFunctionMulti = {
         ".function": {
-          "0x12345": {
+          "0x11111": {
             "function_type": "REST",
             "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainetwork.ai",
+            "function_id": "0x11111"
+          },
+          "0x22222": {
+            "function_type": "REST",
+            "event_listener": "https://events.ainize.ai/trigger",
             "service_name": "https://ainize.ai",
-            "function_id": "0x12345"
+            "function_id": "0x22222"
+          }
+        }
+      };
+      const restFunctionWithoutListener = {
+        ".function": {
+          "0x33333": {
+            "function_type": "REST",
+            "event_listener": "http://localhost:3000/trigger",
+            "service_name": "http://localhost:3000",
+            "function_id": "0x33333"
+          }
+        }
+      };
+      const restFunctionNotWhitelisted = {
+        ".function": {
+          "0x33333": {
+            "function_type": "REST",
+            "event_listener": "https://events.comcom.ai/trigger",
+            "service_name": "https://comcom.ai",
+            "function_id": "0x33333"
           }
         }
       };
@@ -51,10 +81,13 @@ describe("Functions", () => {
           "0x12345": null
         }
       };
-      const resultRest = node.db.setFunction(refPathRest, restFunction);
-      assert.deepEqual(resultRest, true);
-      const resultNull = node.db.setFunction(refPathNull, nullFunction);
-      assert.deepEqual(resultNull, true);
+      assert.deepEqual(node.db.setFunction(refPathRest, restFunction), true);
+      assert.deepEqual(node.db.setFunction(refPathRestMulti, restFunctionMulti), true);
+      assert.deepEqual(
+          node.db.setFunction(refPathRestWithoutListener, restFunctionWithoutListener), true);
+      assert.deepEqual(
+          node.db.setFunction(refPathRestNotWhitelisted, restFunctionNotWhitelisted), true);
+      assert.deepEqual(node.db.setFunction(refPathNull, nullFunction), true);
       functions = new Functions(node.db, null);
 
       // Setup mock for REST API calls.
@@ -62,7 +95,16 @@ describe("Functions", () => {
       nock('https://events.ainetwork.ai')
         .post('/trigger')
         .reply((uri, request) => {
-          requestBody = request;  // save request to requestBody.
+          requestBody1 = request;  // save request to requestBody1.
+          return [
+            201,
+            response,
+          ]
+        })
+      nock('https://events.ainize.ai')
+        .post('/trigger')
+        .reply((uri, request) => {
+          requestBody2 = request;  // save request to requestBody2.
           return [
             201,
             response,
@@ -86,13 +128,17 @@ describe("Functions", () => {
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRest), null, null, null, transaction).then((response) => {
-        assert.deepEqual(_.get(response, 'data.success'), true);
-        assert.deepEqual(requestBody, {
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 1,
+          failCount: 0,
+        });
+        assert.deepEqual(requestBody1, {
           "function": {
             "event_listener": "https://events.ainetwork.ai/trigger",
-            "function_id": "0x12345",
+            "function_id": "0x11111",
             "function_type": "REST",
-            "service_name": "https://ainize.ai",
+            "service_name": "https://ainetwork.ai",
           },
           "transaction": {
             "nonce": 123,
@@ -107,6 +153,102 @@ describe("Functions", () => {
       });
     })
 
+    it("REST function multi", () => {
+      transaction = {
+        "nonce": 123,
+        "timestamp": 1566736760322,
+        "operation": {
+          "ref": refPathRestMulti,
+          "type": "SET_VALUE",
+          "value": 1000
+        }
+      }
+      return functions.triggerFunctions(
+          ChainUtil.parsePath(refPathRestMulti), null, null, null, transaction).then((response) => {
+        assert.deepEqual(response, {
+          functionCount: 2,
+          triggerCount: 2,
+          failCount: 0,
+        });
+        assert.deepEqual(requestBody1, {
+          "function": {
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "function_id": "0x11111",
+            "function_type": "REST",
+            "service_name": "https://ainetwork.ai",
+          },
+          "transaction": {
+            "nonce": 123,
+            "operation": {
+              "ref": refPathRestMulti,
+              "type": "SET_VALUE",
+              "value": 1000,
+            },
+            "timestamp": 1566736760322,
+          }
+        });
+        assert.deepEqual(requestBody2, {
+          "function": {
+            "event_listener": "https://events.ainize.ai/trigger",
+            "function_id": "0x22222",
+            "function_type": "REST",
+            "service_name": "https://ainize.ai",
+          },
+          "transaction": {
+            "nonce": 123,
+            "operation": {
+              "ref": refPathRestMulti,
+              "type": "SET_VALUE",
+              "value": 1000,
+            },
+            "timestamp": 1566736760322,
+          }
+        });
+      });
+    })
+
+    it("REST function without listener", () => {
+      transaction = {
+        "nonce": 123,
+        "timestamp": 1566736760322,
+        "operation": {
+          "ref": refPathRestWithoutListener,
+          "type": "SET_VALUE",
+          "value": 1000
+        }
+      }
+      return functions.triggerFunctions(
+          ChainUtil.parsePath(refPathRestWithoutListener),
+          null, null, null, transaction).then((response) => {
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 1,
+          failCount: 1,
+        });
+      });
+    })
+
+    it("REST function NOT whitelisted", () => {
+      transaction = {
+        "nonce": 123,
+        "timestamp": 1566736760322,
+        "operation": {
+          "ref": refPathRestNotWhitelisted,
+          "type": "SET_VALUE",
+          "value": 1000
+        }
+      }
+      return functions.triggerFunctions(
+          ChainUtil.parsePath(refPathRestNotWhitelisted),
+          null, null, null, transaction).then((response) => {
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 0,
+          failCount: 0,
+        });
+      });
+    })
+
     it("null function", () => {
       transaction = {
         "nonce": 123,
@@ -117,10 +259,14 @@ describe("Functions", () => {
           "value": 1000
         }
       }
-      assert.deepEqual(
-          functions.triggerFunctions(
-              ChainUtil.parsePath(refPathNull), null, null, null, transaction),
-          true);
+      return functions.triggerFunctions(
+          ChainUtil.parsePath(refPathNull), null, null, null, transaction).then((response) => {
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 0,
+          failCount: 0,
+        });
+      });
     })
   });
 
