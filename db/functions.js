@@ -16,6 +16,7 @@ const {
   TokenExchangeSchemes,
   FunctionProperties,
 } = require('../common/constants');
+const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
 const ChainUtil = require('../common/chain-util');
 const {sendSignedTx, signAndSendTx} = require('../server/util');
 const Transaction = require('../tx-pool/transaction');
@@ -226,16 +227,35 @@ class Functions {
     if (expireAt > currentTime) {
       // Still in lock-up period.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.IN_LOCKUP_PERIOD});
+          { code: FunctionResultCode.IN_LOCKUP_PERIOD });
       return;
+    }
+    if (service === PredefinedDbPaths.CONSENSUS) {
+      // Reject withdrawing consensus deposits if it reduces the number of validators to less than
+      // MIN_NUM_VALIDATORS.
+      const whitelist = this.db.getValue(
+          ChainUtil.formatPath([ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST]));
+      let numValidators = 0;
+      Object.keys(whitelist).forEach((address) => {
+        const deposit = this.db.getValue(
+            ChainUtil.formatPath([PredefinedDbPaths.DEPOSIT_CONSENSUS, address]));
+        if (deposit && deposit.value > ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+          numValidators++;
+        }
+      });
+      if (numValidators <= ConsensusConsts.MIN_NUM_VALIDATORS) {
+        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
+            { code: FunctionResultCode.FAILURE });
+        return;
+      }
     }
     if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            {code: FunctionResultCode.SUCCESS});
+          { code: FunctionResultCode.SUCCESS });
     } else {
       // Not enough deposit.
       this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
+          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
     }
   }
 
