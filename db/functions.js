@@ -24,6 +24,7 @@ const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC]
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
+  'https://events.ainize.ai/trigger': true,
   'http://localhost:3000/trigger': true
 };
 
@@ -54,12 +55,18 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // TODO(seo): Trigger subtree functions.
-  // TODO(seo): Handle async function calls properly.
   triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
+    const functionPath = matched.matchedFunction.path;
     const functionMap = matched.matchedFunction.config;
     const functionList = Functions.getFunctionList(functionMap);
+    const params = Functions.convertPathVars2Params(matched.pathVars);
+    let triggerCount = 0;
+    let failCount = 0;
+    const promises = [];
     if (functionList && functionList.length > 0) {
+      const formattedParams = Functions.formatFunctionParams(
+          parsedValuePath, functionPath, timestamp, currentTime, params, value, transaction);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -67,14 +74,9 @@ class Functions {
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
-            const functionPath = matched.matchedFunction.path;
-            const params = Functions.convertPathVars2Params(matched.pathVars);
             logger.info(
-                `  ==> Running native function '${functionEntry.function_id}' with\n` +
-                `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
-                `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-                `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
-                `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
+                `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
+                formattedParams);
             // Execute the matched native function.
             nativeFunction(
                 value,
@@ -86,23 +88,51 @@ class Functions {
                   currentTime,
                   transaction
                 });
+            triggerCount++;
+            failCount++;
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
           if (functionEntry.event_listener &&
               functionEntry.event_listener in EventListenerWhitelist) {
             logger.info(
-                `  ==> Triggering an event for function '${functionEntry.function_id}' ` +
-                `of '${functionEntry.event_listener}' ` +
-                `with transaction: ${JSON.stringify(transaction, null, 2)}`)
-            return axios.post(functionEntry.event_listener, {
+                `  ==> Triggering REST function '${functionEntry.function_id}' of ` +
+                `event listener '${functionEntry.event_listener}' with\n` +
+                formattedParams);
+            promises.push(axios.post(functionEntry.event_listener, {
+              function: functionEntry,
               transaction,
-              function: functionEntry
-            });
+            }).catch((error) => {
+              logger.error(
+                  `Failed to trigger REST function '${functionEntry.function_id}' of ` +
+                  `event listener '${functionEntry.event_listener}' with\n` +
+                  `error: ${JSON.stringify(error)}` +
+                  formattedParams);
+              failCount++;
+              return true;
+            }));
+            triggerCount++;
           }
         }
       }
     }
-    return true;
+    return Promise.all(promises)
+        .then(() => {
+          return {
+            functionCount: functionList ? functionList.length : 0,
+            triggerCount,
+            failCount,
+          };
+        });
+  }
+
+  static formatFunctionParams(
+      parsedValuePath, functionPath, timestamp, currentTime, params, value, transaction) {
+    return `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
+      `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
+      `timestamp: '${timestamp}', currentTime: '${currentTime}', ` +
+      `params: ${JSON.stringify(params, null, 2)}, ` +
+      `value: '${JSON.stringify(value, null, 2)}', ` +
+      `transaction: ${JSON.stringify(transaction, null, 2)}`;
   }
 
   static getFunctionList(functionMap) {
