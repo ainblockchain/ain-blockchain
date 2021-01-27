@@ -61,11 +61,10 @@ class Consensus {
     }
     // This feature is only used when LIGHTWEIGHT=true.
     this.cache = {};
-    this.validatorList = Object.keys(GenesisWhitelist).sort();
     this.lastReportedBlockNumberSent = -1;
   }
 
-  init(lastBlockWithoutProposal, isFirstNode = false) {
+  init(lastBlockWithoutProposal) {
     const LOG_HEADER = 'init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
     const genesisBlock = this.node.bc.getBlockByNumber(0);
@@ -76,29 +75,16 @@ class Consensus {
     this.genesisHash = genesisBlock.hash;
     const myAddr = this.node.account.address;
     try {
+      const targetStake = process.env.STAKE ? Number(process.env.STAKE) : 0;
       const currentStake = this.getValidConsensusDeposit(myAddr);
-      logger.info(`[${LOG_HEADER}] Current stake: ${currentStake}`);
-      if (!currentStake) {
-        const whitelist = this.getWhitelist();
-        if (whitelist && whitelist[myAddr] > 0) {
-          const stakeTx = this.stake(whitelist[myAddr]);
-          if (isFirstNode) {
-            // Add the transaction to the pool so it gets included in the block #1
-            this.node.tp.addTransaction(stakeTx);
-            // Broadcast this tx once it's connected to other nodes
-            this.stakeTx = stakeTx;
-          } else {
-            this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
-          }
-        } else {
-          if (isFirstNode) {
-            logger.error(`[${LOG_HEADER}] First node should stake some AIN and ` +
-                'start the consensus protocol');
-            process.exit(1);
-          }
-          logger.info(`[${LOG_HEADER}] Node doesn't have any stakes. ` +
-              'Initialized as a non-validator.');
-        }
+      logger.info(`[${LOG_HEADER}] Current stake: ${currentStake} / Target stake: ${targetStake}`);
+      if (!targetStake && !currentStake) {
+        logger.info(`[${LOG_HEADER}] Node doesn't have any stakes. ` +
+            'Initialized as a non-validator.');
+      } else if (targetStake > 0 && currentStake < targetStake) {
+        const stakeAmount = targetStake - currentStake;
+        const stakeTx = this.stake(stakeAmount);
+        this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
       }
       this.blockPool = new BlockPool(this.node, lastBlockWithoutProposal);
       this.setStatus(ConsensusStatus.RUNNING, 'init');
@@ -312,9 +298,27 @@ class Consensus {
 
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
-    const validators = this.node.bc.lastBlockNumber() < 1 ?
-        lastBlock.validators : this.getValidators(lastBlock.hash, lastBlock.number);
-    if (!validators || !(Object.keys(validators).length)) throw Error('No whitelisted validators')
+    let validators = {};
+    if (this.node.bc.lastBlockNumber() < 1) {
+      const whitelist = GenesisWhitelist;
+      for (const address in whitelist) {
+        if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
+          const deposit = tempDb.getValue(`/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`);
+          if (whitelist[address] === true && deposit &&
+              deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+            validators[address] = deposit.value;
+          }
+        }
+      }
+      logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators)}`);
+    } else {
+      validators = this.getValidators(lastBlock.hash, lastBlock.number);
+    }
+    const numValidators = Object.keys(validators).length;
+    if (!validators || !numValidators) throw Error('No whitelisted validators');
+    if (numValidators < ConsensusConsts.MIN_NUM_VALIDATORS) {
+      throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
+    }
     const totalAtStake = Object.values(validators).reduce(function(a, b) {
       return a + b;
     }, 0);
@@ -419,32 +423,13 @@ class Consensus {
           `hash ${last_hash}`);
       return;
     }
-    // check that the transactions from block #1 amount to +2/3 deposits of initially whitelisted
-    // validators.
-    if (number === 1) {
-      const majority = ConsensusConsts.MAJORITY * Object.values(validators).reduce((a, b) => {
-        return a + b;
-      }, 0);
-      const depositTxs = Consensus.filterDepositTxs(proposalBlock.transactions);
-      const depositSum = depositTxs.reduce((a, b) => {
-        return a + b.tx_body.operation.value;
-      }, 0);
-      if (depositSum < majority) {
-        logger.info(`[${LOG_HEADER}] We don't have enough deposits yet`)
-        this.blockPool.addSeenBlock(proposalBlock, proposalTx);
-        return false;
-      }
-      // TODO(lia): make sure each validator staked only once at this point
-      for (const depositTx of depositTxs) {
-        const expectedStake = validators[depositTx.address];
-        const actualStake = _.get(depositTx, 'tx_body.operation.value');
-        if (actualStake < expectedStake) {
-          logger.error(`[${LOG_HEADER}] Validator ${depositTx.address} didn't stake enough. ` +
-              `Expected: ${expectedStake} / Actual: ${actualStake}`);
-          return false;
-        }
-      }
-    } else if (!prevBlockInfo.notarized) {
+    // Make sure we have at least MIN_NUM_VALIDATORS validators.
+    if (Object.keys(validators).length < ConsensusConsts.MIN_NUM_VALIDATORS) {
+      logger.error(`[${LOG_HEADER}] Validator set smaller than MIN_NUM_VALIDATORS: ${JSON.stringify(validators)}`);
+      return false;
+    }
+
+    if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
       const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
       if (!prevBlockProposal) {
@@ -613,11 +598,12 @@ class Consensus {
           `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(voteTx)}`);
       return false;
     }
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
-      logger.error(`[${LOG_HEADER}] Failed to execute the voting tx`);
+    const voteTxRes = tempDb.executeTransaction(voteTx);
+    this.node.destroyDb(tempDb);
+    if (ChainUtil.transactionFailed(voteTxRes)) {
+      logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
       return false;
     }
-    this.node.destroyDb(tempDb);
     const createdTx = Transaction.create(voteTx.tx_body, voteTx.signature);
     if (!createdTx) {
       logger.error(`[${LOG_HEADER}] Failed to create a transaction with a vote: ` +
@@ -877,8 +863,8 @@ class Consensus {
     Object.keys(whitelist).forEach((address) => {
       const deposit = this.node.getValueWithStateVersion(
         `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false, stateVersion) || {};
-      if (deposit && deposit.value === whitelist[address] &&
-          deposit.expire_at >= Date.now() + ConsensusConsts.DAY_MS) {
+      if (whitelist[address] === true && deposit &&
+          deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
         validators[address] = deposit.value;
       }
     });
@@ -891,7 +877,7 @@ class Consensus {
     const deposit = this.node.getValueWithStateVersion(
         `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false,
         this.node.stateManager.getFinalVersion()) || {};
-    if (deposit && deposit.value > 0 && deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS) {
+    if (deposit && deposit.value > 0) {
       return deposit.value;
     }
     return 0;
