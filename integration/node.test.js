@@ -25,24 +25,24 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -88,7 +88,9 @@ function setUp() {
           type: 'SET_FUNCTION',
           ref: '/test/test_function/some/path',
           value: {
-            ".function": "some function config"
+            ".function": {
+              "fid": "some function config"
+            }
           }
         },
         {
@@ -197,7 +199,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(body, {
           code: 0,
           result: {
-            ".function": "some function config"
+            ".function": {
+              "fid": "some function config"
+            }
           }
         });
       })
@@ -280,7 +284,9 @@ describe('Blockchain Node', () => {
             "path_vars": {},
           },
           "matched_config": {
-            "config": "some function config",
+            "config": {
+              "fid": "some function config"
+            },
             "path": "/test/test_function/some/path"
           },
           "subtree_configs": []
@@ -412,7 +418,9 @@ describe('Blockchain Node', () => {
           result: [
             100,
             {
-              ".function": "some function config"
+              ".function": {
+                "fid": "some function config"
+              }
             },
             {
               ".write": "auth === 'abcd'"
@@ -464,7 +472,9 @@ describe('Blockchain Node', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "some function config",
+              "config": {
+                "fid": "some function config"
+              },
               "path": "/test/test_function/some/path"
             },
             "subtree_configs": []
@@ -765,19 +775,23 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_function?ref=test/test_function/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
-          ".function": "some function config"
+          ".function": {
+            "fid": "some function config"
+          }
         });
 
         const request = {
           ref: "/test/test_function/some/path",
           value: {
-            ".function": "some other function config"
+            ".function": {
+              "fid": "some other function config"
+            }
           }
         };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_function', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(0);
+        expect(_.get(body, 'code')).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
 
         // Confirm that the value is set properly.
@@ -787,7 +801,9 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_function?ref=test/test_function/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
-          ".function": "some other function config"
+          ".function": {
+            "fid": "some other function config"
+          }
         });
       })
 
@@ -801,7 +817,9 @@ describe('Blockchain Node', () => {
         const request = {
           ref: "/some/wrong/path",
           value: {
-            ".function": "some other function config"
+            ".function": {
+              "fid": "some other function config"
+            }
           }
         };
         const body = parseOrLog(syncRequest(

@@ -92,10 +92,10 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-NUM_VALIDATORS=4 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
-NUM_VALIDATORS=4 ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false node client/index.js 
-NUM_VALIDATORS=4 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false node client/index.js 
-NUM_VALIDATORS=4 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false node client/index.js 
+NUM_VALIDATORS=4 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js
+NUM_VALIDATORS=4 ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js 
+NUM_VALIDATORS=4 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js 
+NUM_VALIDATORS=4 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js 
 ```
 The environment variable `NUM_VALIDATORS` has default value `5`.
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
@@ -106,7 +106,7 @@ rm -rf blockchain/blockchains logger/logs
 The default size of the validator whitelist is 5. Set NUM_VALIDATORS environment variable when running the first node if you'd like to run different number of validator nodes than 5.
 The genesis configs directory used is `blockchain` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-GENESIS_CONFIGS_DIR=blockchain/afan_shard NUM_VALIDATORS=1 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false node client/index.js
+GENESIS_CONFIGS_DIR=blockchain/afan_shard NUM_VALIDATORS=1 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js
 ```
 
 ### How to run tests

@@ -415,8 +415,8 @@ class DB {
     return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
   }
 
-  setFunction(functionPath, functionInfo, address, isGlobal) {
-    const isValidObj = isValidJsObjectForStates(functionInfo);
+  setFunction(functionPath, functionChange, address, isGlobal) {
+    const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(401, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
@@ -433,10 +433,10 @@ class DB {
     if (!this.getPermissionForFunction(localPath, address)) {
       return ChainUtil.returnError(403, `No write_function permission on: ${functionPath}`);
     }
+    const curFunction = this.getFunction(functionPath, isGlobal);
+    const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    const functionInfoCopy = ChainUtil.isDict(functionInfo) ?
-        JSON.parse(JSON.stringify(functionInfo)) : functionInfo;
-    this.writeDatabase(fullPath, functionInfoCopy);
+    this.writeDatabase(fullPath, newFunction);
 
     return true;
   }
@@ -678,14 +678,24 @@ class DB {
 
   // TODO(seo): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
+    const LOG_HEADER = 'getPermissionForValue';
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const value = this.getValue(ChainUtil.formatPath(parsedValuePath));
     const data =
         this.addPathToValue(value, matched.matchedValuePath, matched.closestRule.path.length);
     const newData =
         this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
-    return !!this.evalRuleString(
+    let evalRuleRes = false;
+    try {
+      evalRuleRes = !!this.evalRuleString(
         matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
+    } catch (e) {
+      logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
+          `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
+          `newData: ${JSON.stringify(newData)}, address: ${address}, timestamp: ${timestamp}\n` +
+          `Error: ${e}`);
+    }
+    return evalRuleRes;
   }
 
   getPermissionForRule(parsedRulePath, address) {

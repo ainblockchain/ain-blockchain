@@ -1,5 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
-const { GenesisAccounts, AccountProperties } = require('../common/constants');
+const _ = require('lodash');
 
 // NOTE(seo): To keep the blockchain deterministic as much as possibble over time,
 // we keep util functions here self-contained as much as possible.
@@ -72,7 +72,18 @@ class RuleUtil {
   }
 
   getOwnerAddr() {
+    const { GenesisAccounts, AccountProperties } = require('../common/constants');
     return _.get(GenesisAccounts, `${AccountProperties.OWNER}.${AccountProperties.ADDRESS}`, null);
+  }
+
+  getMinStakeAmount() {
+    const { ConsensusConsts } = require('../consensus/constants');
+    return ConsensusConsts.MIN_STAKE_PER_VALIDATOR;
+  }
+
+  getMinNumValidators() {
+    const { ConsensusConsts } = require('../consensus/constants');
+    return ConsensusConsts.MIN_NUM_VALIDATORS;
   }
 }
 
