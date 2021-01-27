@@ -90,12 +90,13 @@ server.on('connection', (ws) => {
     WS_LIST[ws.uuid] = nodeInfo.address;
     if (PEER_NODES[nodeInfo.address]) {
       PEER_NODES[nodeInfo.address] = nodeInfo;
-      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: `);
-      logger.debug(`${JSON.stringify(nodeInfo, null, 2)}`);
+      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
+      logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
     } else {
+      nodeInfo.location = getNodeLocation(nodeInfo.ip);
       PEER_NODES[nodeInfo.address] = nodeInfo;
-      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]: `);
-      logger.debug(`${JSON.stringify(nodeInfo, null, 2)}`);
+      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
+      logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
     }
 
     const newManagedPeerInfoList = [];
@@ -187,9 +188,8 @@ function getNodeSummary(nodeInfo) {
   return `[${abbrAddr(nodeInfo.address)}]: ${JSON.stringify(nodeInfo.nodeStatus)}`;
 }
 
-// TODO(minsu): Use it when connection
-function getNodeLocation() {
-  const geoLocationDict = geoip.lookup(this.ip);
+function getNodeLocation(ip) {
+  const geoLocationDict = geoip.lookup(ip);
   if (geoLocationDict === null) {
     return {
       country: null,
