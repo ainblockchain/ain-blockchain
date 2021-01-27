@@ -138,13 +138,19 @@ describe("DB operations", () => {
     dbFuncs = {
       "some": {
         "$var_path": {
-          ".function": "some function config with var path"
+          ".function": {
+            "fid_var": "some function config with var path"
+          }
         },
         "path": {
-          ".function": "some function config",
+          ".function": {
+            "fid": "some function config"
+          },
           "deeper": {
             "path": {
-              ".function": "some function config deeper"
+              ".function": {
+                "fid_deeper": "some function config deeper"
+              }
             }
           }
         },
@@ -247,10 +253,14 @@ describe("DB operations", () => {
 
     it("when retrieving existing function config", () => {
       assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
-        ".function": "some function config",
+        ".function": {
+          "fid": "some function config"
+        },
         "deeper": {
           "path": {
-            ".function": "some function config deeper"
+            ".function": {
+              "fid_deeper": "some function config deeper"
+            }
           }
         }
       });
@@ -333,7 +343,9 @@ describe("DB operations", () => {
           },
         },
         "matched_config": {
-          "config": "some function config with var path",
+          "config": {
+            "fid_var": "some function config with var path"
+          },
           "path": "/test/test_function/some/$var_path"
         },
         "subtree_configs": []
@@ -348,12 +360,16 @@ describe("DB operations", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "some function config",
+          "config": {
+            "fid": "some function config"
+          },
           "path": "/test/test_function/some/path"
         },
         "subtree_configs": [
           {
-            "config": "some function config deeper",
+            "config": {
+              "fid_deeper": "some function config deeper"
+            },
             "path": "/deeper/path"
           }
         ]
@@ -365,7 +381,9 @@ describe("DB operations", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "some function config deeper",
+          "config": {
+            "fid_deeper": "some function config deeper"
+          },
           "path": "/test/test_function/some/path/deeper/path"
         },
         "subtree_configs": []
@@ -385,7 +403,9 @@ describe("DB operations", () => {
         },
         "subtree_configs": [
           {
-            "config": "some function config deeper",
+            "config": {
+              "fid_deeper": "some function config deeper"
+            },
             "path": "/path"
           }
         ]
@@ -666,7 +686,7 @@ describe("DB operations", () => {
   })
 
   describe("get operations", () => {
-    it("when retrieving non-existing value or rule or owner", () => {
+    it("when retrieving non-existing value or function or rule or owner", () => {
       assert.deepEqual(node.db.get([
         {
           // Default type: GET_VALUE
@@ -727,7 +747,9 @@ describe("DB operations", () => {
           },
           "subtree_configs": [
             {
-              "config": "some function config deeper",
+              "config": {
+                "fid_deeper": "some function config deeper"
+              },
               "path": "/path"
             }
           ]
@@ -778,7 +800,7 @@ describe("DB operations", () => {
       ]);
     })
 
-    it("when retrieving existing value or rule or owner", () => {
+    it("when retrieving existing value or function or rule or owner", () => {
       assert.deepEqual(node.db.get([
         {
           // Default type: GET_VALUE
@@ -833,12 +855,16 @@ describe("DB operations", () => {
           }
         },
         {
-          ".function": "some function config",
+          ".function": {
+            "fid": "some function config"
+          },
           "deeper": {
             "path": {
-              ".function": "some function config deeper"
+              ".function": {
+                "fid_deeper": "some function config deeper"
+              }
             }
-        }
+          }
         },
         {
           ".owner": {
@@ -885,12 +911,16 @@ describe("DB operations", () => {
             "path_vars": {},
           },
           "matched_config": {
-            "config": "some function config",
+            "config": {
+              "fid": "some function config"
+            },
             "path": "/test/test_function/some/path"
           },
           "subtree_configs": [
             {
-              "config": "some function config deeper",
+              "config": {
+                "fid_deeper": "some function config deeper"
+              },
               "path": "/deeper/path"
             }
           ]
@@ -1127,13 +1157,32 @@ describe("DB operations", () => {
 
   describe("setFunction operations", () => {
     it("when overwriting existing function config with simple path", () => {
-      const functionConfig = {".function": "other function config"};
+      const functionConfig = {
+        ".function": {
+          "fid": "other function config"
+        }
+      };
       expect(node.db.setFunction("/test/test_function/some/path", functionConfig)).to.equal(true)
-      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), functionConfig)
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
+        ".function": {
+          "fid": "other function config"  // modified
+        },
+        "deeper": {
+          "path": {
+            ".function": {
+              "fid_deeper": "some function config deeper"
+            }
+          }
+        }
+      })
     })
 
     it("when writing with variable path", () => {
-      const functionConfig = {".function": "other function config"};
+      const functionConfig = {
+        ".function": {
+          "fid_other": "other function config"
+        }
+      };
       expect(node.db.setFunction("/test/test_function/some/$variable/path", functionConfig))
           .to.equal(true)
       assert.deepEqual(
@@ -1252,7 +1301,9 @@ describe("DB operations", () => {
           type: "SET_FUNCTION",
           ref: "/test/test_function/some/path",
           value: {
-            ".function": "other function config"
+            ".function": {
+              "fid": "other function config"
+            }
           }
         },
         {
@@ -1273,12 +1324,22 @@ describe("DB operations", () => {
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(node.db.getValue("test/increment/value")).to.equal(30)
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
-      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"),
-                       {".function": "other function config"});
-      assert.deepEqual(node.db.getRule("/test/test_rule/some/path"),
-                       {".write": "other rule config"});
-      assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"),
-                       {".owner": "other owner config"});
+      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
+        ".function": {
+          "fid": "other function config"  // modiied
+        },
+        "deeper": {
+          "path": {
+            ".function": {
+              "fid_deeper": "some function config deeper"
+            }
+          }
+        }
+      });
+      assert.deepEqual(
+          node.db.getRule("/test/test_rule/some/path"), { ".write": "other rule config" });
+      assert.deepEqual(
+          node.db.getOwner("/test/test_owner/some/path"), { ".owner": "other owner config" });
     })
 
     it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
@@ -1366,7 +1427,9 @@ describe("DB operations", () => {
               type: "SET_FUNCTION",
               ref: "/test/test_function/some/path",
               value: {
-                ".function": "other function config"
+                ".function": {
+                  "fid": "other function config"
+                }
               }
             }
           }
@@ -1398,12 +1461,24 @@ describe("DB operations", () => {
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(node.db.getValue("test/increment/value")).to.equal(30)
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
-      assert.deepEqual(node.db.getFunction("/test/test_function/some/path"),
-                       {".function": "other function config"});
-      assert.deepEqual(node.db.getRule("/test/test_rule/some/path"),
-                       {".write": "other rule config"});
-      assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"),
-                       {".owner": "other owner config"});
+      assert.deepEqual(
+          node.db.getFunction("/test/test_function/some/path"),
+          {
+            ".function": {
+              "fid": "other function config"  // modified
+            },
+            "deeper": {
+              "path": {
+                ".function": {
+                  "fid_deeper": "some function config deeper"
+                }
+              }
+            }
+          });
+      assert.deepEqual(
+          node.db.getRule("/test/test_rule/some/path"), { ".write": "other rule config" });
+      assert.deepEqual(
+          node.db.getOwner("/test/test_owner/some/path"), { ".owner": "other owner config" });
     })
 
     it("returning error code and leaving value unchanged if no operation is given", () => {
@@ -2217,9 +2292,13 @@ describe("DB sharding config", () => {
       "some": {
         "path": {
           "to": {
-            ".function": "some function config",
+            ".function": {
+              "fid": "some function config",
+            },
             "deeper": {
-              ".function": "some deeper function config",
+              ".function": {
+                "fid_deeper": "some deeper function config",
+              }
             }
           }
         }
@@ -2469,12 +2548,30 @@ describe("DB sharding config", () => {
 
   describe("function operations", () => {
     const func = {
-      ".function": "some function config",
+      ".function": {
+        "fid": "some function config",
+      },
       "deeper": {
-        ".function": "some deeper function config"
+        ".function": {
+          "fid_deeper": "some deeper function config"
+        }
       }
     };
-    const newFunc = { ".function": "another function config" };
+    const funcChange = {
+      ".function": {
+        "fid": "another function config"
+      }
+    };
+    const newFunc = {
+      ".function": {
+        "fid": "another function config"
+      },
+      "deeper": {
+        ".function": {
+          "fid_deeper": "some deeper function config"
+        }
+      }
+    };
 
     it("getFunction with isGlobal = false", () => {
       assert.deepEqual(node.db.getFunction("test/test_sharding/some/path/to"), func);
@@ -2493,21 +2590,21 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = false", () => {
       expect(node.db.setFunction(
-          "test/test_sharding/some/path/to", newFunc, 'known_user'))
+          "test/test_sharding/some/path/to", funcChange, 'known_user'))
         .to.equal(true);
       assert.deepEqual(node.db.getFunction("test/test_sharding/some/path/to"), newFunc);
     })
 
     it("setFunction with isGlobal = true", () => {
       expect(node.db.setFunction(
-          "apps/afan/test/test_sharding/some/path/to", newFunc, 'known_user', true))
+          "apps/afan/test/test_sharding/some/path/to", funcChange, 'known_user', true))
         .to.equal(true);
       assert.deepEqual(
           node.db.getFunction("apps/afan/test/test_sharding/some/path/to", true), newFunc);
     })
 
     it("setFunction with isGlobal = true and non-existing path", () => {
-      expect(node.db.setFunction("some/non-existing/path", newFunc, 'known_user', true))
+      expect(node.db.setFunction("some/non-existing/path", funcChange, 'known_user', true))
         .to.equal(true);
     })
 
@@ -2519,12 +2616,16 @@ describe("DB sharding config", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "some function config",
+          "config": {
+            "fid": "some function config"
+          },
           "path": "/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
-            "config": "some deeper function config",
+            "config": {
+              "fid_deeper": "some deeper function config"
+            },
             "path": "/deeper",
           }
         ]
@@ -2539,12 +2640,16 @@ describe("DB sharding config", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "some function config",
+          "config": {
+            "fid": "some function config"
+          },
           "path": "/apps/afan/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
-            "config": "some deeper function config",
+            "config": {
+              "fid_deeper": "some deeper function config"
+            },
             "path": "/deeper",
           }
         ]
@@ -2875,13 +2980,19 @@ describe("Test proof with database", () => {
       const dbFuncs = {
         "some": {
           "$var_path": {
-            ".function": "some function config with var path"
+            ".function": {
+              "fid_var": "some function config with var path"
+            }
           },
           "path": {
-            ".function": "some function config",
+            ".function": {
+              "fid": "some function config",
+            },
             "deeper": {
               "path": {
-                ".function": "some function config deeper"
+                ".function": {
+                  "fid_deeper": "some function config deeper"
+                }
               }
             }
           },
