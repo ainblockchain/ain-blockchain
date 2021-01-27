@@ -32,17 +32,19 @@
       "$number": {
         ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
         "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth) > 0 && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') > 0)"
+          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') >= util.getMinStakeAmount())"
         },
         "vote": {
           "$user_addr": {
-            ".write": "auth === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth) >= newData.stake && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') > 0)"
+            ".write": "auth === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') >= util.getMinStakeAmount())"
           }
         }
       }
     },
     "whitelist": {
-      ".write": "auth === util.getOwnerAddr()"
+      "$user_addr": {
+        ".write": "auth === util.getOwnerAddr() && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
+      }
     }
   },
   "deposit": {
