@@ -82,5 +82,6 @@ echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 export HOSTING_ENV=gcp
 export DEBUG=false
 export LIGHTWEIGHT=false
+export STAKE=250
 
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
