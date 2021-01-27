@@ -24,6 +24,7 @@ const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC]
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
+  'https://events.ainize.ai/trigger': true,
   'http://localhost:3000/trigger': true
 };
 
@@ -54,11 +55,12 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // TODO(seo): Trigger subtree functions.
-  // TODO(seo): Handle async function calls properly.
   triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionMap = matched.matchedFunction.config;
     const functionList = Functions.getFunctionList(functionMap);
+    let triggerCount = 0;
+    const promises = [];
     if (functionList && functionList.length > 0) {
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
@@ -86,6 +88,7 @@ class Functions {
                   currentTime,
                   transaction
                 });
+            triggerCount++;
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
           if (functionEntry.event_listener &&
@@ -94,15 +97,23 @@ class Functions {
                 `  ==> Triggering an event for function '${functionEntry.function_id}' ` +
                 `of '${functionEntry.event_listener}' ` +
                 `with transaction: ${JSON.stringify(transaction, null, 2)}`)
-            return axios.post(functionEntry.event_listener, {
+            promises.push(axios.post(functionEntry.event_listener, {
               transaction,
               function: functionEntry
-            });
+            }));
+            triggerCount++;
           }
         }
       }
     }
-    return true;
+    if (promises.length > 0) {
+      return Promise.all(promises)
+          .then(() => {
+            return triggerCount;
+          });
+    } else {
+      return triggerCount;
+    }
   }
 
   static getFunctionList(functionMap) {
