@@ -690,7 +690,10 @@ class DB {
       evalRuleRes = !!this.evalRuleString(
         matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
     } catch (e) {
-      logger.error(`[${LOG_HEADER}] Failed to eval rule: ${e}`);
+      logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
+          `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
+          `newData: ${JSON.stringify(newData)}, address: ${address}, timestamp: ${timestamp}\n` +
+          `Error: ${e}`);
     }
     return evalRuleRes;
   }
