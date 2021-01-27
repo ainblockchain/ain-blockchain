@@ -357,6 +357,7 @@ const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 const GenesisSharding = getGenesisSharding();
 const GenesisWhitelist = getGenesisWhitelist();
+const GenesisValidators = getGenesisValidators();
 const GenesisValues = getGenesisValues();
 const GenesisFunctions = getGenesisFunctions();
 const GenesisRules = getGenesisRules();
@@ -405,14 +406,24 @@ function getGenesisSharding() {
   return config;
 }
 
-// TODO(lia): Increase this list to 10.
+// TODO(lia): replace this with GENESIS_WHITELIST
 function getGenesisWhitelist() {
   const whitelist = {};
-  for (let i = 0; i < ConsensusConsts.INITIAL_NUM_VALIDATORS; i++) {
+  for (let i = 0; i < ConsensusConsts.MIN_NUM_VALIDATORS; i++) {
     const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(whitelist, [accountAddress], ConsensusConsts.INITIAL_STAKE);
+    ChainUtil.setJsObject(whitelist, [accountAddress], true);
   }
   return whitelist;
+}
+
+// TODO(lia): replace this with GENESIS_VALIDATORS
+function getGenesisValidators() {
+  const validators = {};
+  for (let i = 0; i < ConsensusConsts.MIN_NUM_VALIDATORS; i++) {
+    const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
+    ChainUtil.setJsObject(validators, [accountAddress], ConsensusConsts.GENESIS_STAKE);
+  }
+  return validators;
 }
 
 function getGenesisValues() {
@@ -442,8 +453,6 @@ function getGenesisRules() {
     ChainUtil.setJsObject(
         rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
-  ChainUtil.setJsObject(
-      rules, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistRule());
   return rules;
 }
 
@@ -460,14 +469,6 @@ function getGenesisOwners() {
 }
 
 function getShardingRule() {
-  const ownerAddress =
-      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  return {
-    [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
-  };
-}
-
-function getWhitelistRule() {
   const ownerAddress =
       ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
@@ -549,6 +550,7 @@ module.exports = {
   GenesisAccounts,
   GenesisSharding,
   GenesisWhitelist,
+  GenesisValidators,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
