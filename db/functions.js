@@ -14,6 +14,7 @@ const {
   GenesisAccounts,
   AccountProperties,
   TokenExchangeSchemes,
+  FunctionProperties,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {sendSignedTx, signAndSendTx} = require('../server/util');
@@ -52,50 +53,102 @@ class Functions {
    * @param {Number} currentTime current time
    * @param {Object} transaction transaction
    */
-  // TODO(seo): Support multiple-functions per path.
   // TODO(seo): Trigger subtree functions.
+  // TODO(seo): Handle async function calls properly.
   triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
-    const functionConfig = matched.matchedFunction.config;
-    if (functionConfig) {
-      if (functionConfig.function_type === FunctionTypes.NATIVE) {
-        const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
-        if (nativeFunction) {
-          const functionPath = matched.matchedFunction.path;
-          const params = Functions.convertPathVars2Params(matched.pathVars);
-          logger.info(
-              `  ==> Running native function '${functionConfig.function_id}' with\n` +
-              `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
-              `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-              `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
-              `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
-          // Execute the matched native function.
-          nativeFunction(
-              value,
-              {
-                valuePath: parsedValuePath,
-                functionPath,
-                params,
-                timestamp,
-                currentTime,
-                transaction
-              });
+    const functionMap = matched.matchedFunction.config;
+    const functionList = Functions.getFunctionList(functionMap);
+    if (functionList && functionList.length > 0) {
+      for (const functionEntry of functionList) {
+        if (!functionEntry || !functionEntry.function_type) {
+          continue;  // Does nothing.
         }
-      } else if (functionConfig.function_type === FunctionTypes.REST) {
-        if (functionConfig.event_listener &&
-            functionConfig.event_listener in EventListenerWhitelist) {
-          logger.info(
-              `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
-              `of '${functionConfig.event_listener}' ` +
-              `with transaction: ${JSON.stringify(transaction, null, 2)}`)
-          return axios.post(functionConfig.event_listener, {
-            transaction,
-            function: functionConfig
-          });
+        if (functionEntry.function_type === FunctionTypes.NATIVE) {
+          const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
+          if (nativeFunction) {
+            const functionPath = matched.matchedFunction.path;
+            const params = Functions.convertPathVars2Params(matched.pathVars);
+            logger.info(
+                `  ==> Running native function '${functionEntry.function_id}' with\n` +
+                `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
+                `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
+                `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
+                `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
+            // Execute the matched native function.
+            nativeFunction(
+                value,
+                {
+                  valuePath: parsedValuePath,
+                  functionPath,
+                  params,
+                  timestamp,
+                  currentTime,
+                  transaction
+                });
+          }
+        } else if (functionEntry.function_type === FunctionTypes.REST) {
+          if (functionEntry.event_listener &&
+              functionEntry.event_listener in EventListenerWhitelist) {
+            logger.info(
+                `  ==> Triggering an event for function '${functionEntry.function_id}' ` +
+                `of '${functionEntry.event_listener}' ` +
+                `with transaction: ${JSON.stringify(transaction, null, 2)}`)
+            return axios.post(functionEntry.event_listener, {
+              transaction,
+              function: functionEntry
+            });
+          }
         }
       }
     }
     return true;
+  }
+
+  static getFunctionList(functionMap) {
+    if (!functionMap) {
+      return null;
+    }
+    return Object.values(functionMap);
+  }
+
+  /**
+   * Returns a new function created by applying the function change to the current function.
+   * 
+   * @param {Object} curFunction current function (modified and returned by this function)
+   * @param {Object} functionChange function change
+   */
+  static applyFunctionChange(curFunction, functionChange) {
+    if (curFunction === null) {
+      // Just write the function change.
+      return functionChange;
+    }
+    if (functionChange === null) {
+      // Just delete the existing value.
+      return null;
+    }
+    const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
+    if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
+      return curFunction;
+    }
+    const newFunction =
+        ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
+    let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
+      // Add a place holder.
+      ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
+      newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    }
+    for (const functionKey in funcChangeMap) {
+      const functionValue = funcChangeMap[functionKey];
+      if (functionValue === null) {
+        delete newFuncMap[functionKey];
+      } else {
+        newFuncMap[functionKey] = functionValue;
+      }
+    }
+
+    return newFunction;
   }
 
   static convertPathVars2Params(pathVars) {

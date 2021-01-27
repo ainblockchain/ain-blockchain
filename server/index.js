@@ -759,8 +759,10 @@ class P2pServer {
                 ShardingProperties.PROOF_HASH),
             value: {
               [FunctionProperties.FUNCTION]: {
-                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                }
               }
             }
           },
