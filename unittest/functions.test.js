@@ -2,7 +2,6 @@ const Functions = require('../db/functions');
 const rimraf = require('rimraf');
 const chai = require('chai');
 const assert = chai.assert;
-const expect = chai.expect;
 const nock = require('nock');
 const _ = require('lodash');
 const {
@@ -18,11 +17,12 @@ describe("Functions", () => {
   describe("triggerFunctions", () => {
     const refPathRest = "test/test_function/some/path/rest";
     const refPathRestMulti = "test/test_function/some/path/rest_multi";
+    const refPathRestWithoutListener = "test/test_function/some/path/rest_without_listener";
     const refPathRestNotWhitelisted = "test/test_function/some/path/rest_not_whitelisted";
     const refPathNull = "test/test_function/some/path/null";
     let node;
     let functions;
-    let requestBody1, requestBody2;
+    let requestBody1 = null, requestBody2 = null;
 
     beforeEach(() => {
       rimraf.sync(BLOCKCHAINS_DIR);
@@ -56,6 +56,16 @@ describe("Functions", () => {
           }
         }
       };
+      const restFunctionWithoutListener = {
+        ".function": {
+          "0x33333": {
+            "function_type": "REST",
+            "event_listener": "http://localhost:3000/trigger",
+            "service_name": "http://localhost:3000",
+            "function_id": "0x33333"
+          }
+        }
+      };
       const restFunctionNotWhitelisted = {
         ".function": {
           "0x33333": {
@@ -73,6 +83,10 @@ describe("Functions", () => {
       };
       assert.deepEqual(node.db.setFunction(refPathRest, restFunction), true);
       assert.deepEqual(node.db.setFunction(refPathRestMulti, restFunctionMulti), true);
+      assert.deepEqual(
+          node.db.setFunction(refPathRestWithoutListener, restFunctionWithoutListener), true);
+      assert.deepEqual(
+          node.db.setFunction(refPathRestNotWhitelisted, restFunctionNotWhitelisted), true);
       assert.deepEqual(node.db.setFunction(refPathNull, nullFunction), true);
       functions = new Functions(node.db, null);
 
@@ -114,7 +128,11 @@ describe("Functions", () => {
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRest), null, null, null, transaction).then((response) => {
-        assert.deepEqual(response, 1);
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 1,
+          failCount: 0,
+        });
         assert.deepEqual(requestBody1, {
           "function": {
             "event_listener": "https://events.ainetwork.ai/trigger",
@@ -147,7 +165,11 @@ describe("Functions", () => {
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestMulti), null, null, null, transaction).then((response) => {
-        assert.deepEqual(response, 2);
+        assert.deepEqual(response, {
+          functionCount: 2,
+          triggerCount: 2,
+          failCount: 0,
+        });
         assert.deepEqual(requestBody1, {
           "function": {
             "event_listener": "https://events.ainetwork.ai/trigger",
@@ -185,6 +207,27 @@ describe("Functions", () => {
       });
     })
 
+    it("REST function without listener", () => {
+      transaction = {
+        "nonce": 123,
+        "timestamp": 1566736760322,
+        "operation": {
+          "ref": refPathRestWithoutListener,
+          "type": "SET_VALUE",
+          "value": 1000
+        }
+      }
+      return functions.triggerFunctions(
+          ChainUtil.parsePath(refPathRestWithoutListener),
+          null, null, null, transaction).then((response) => {
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 1,
+          failCount: 1,
+        });
+      });
+    })
+
     it("REST function NOT whitelisted", () => {
       transaction = {
         "nonce": 123,
@@ -195,10 +238,15 @@ describe("Functions", () => {
           "value": 1000
         }
       }
-      assert.deepEqual(
-          functions.triggerFunctions(
-              ChainUtil.parsePath(refPathRestNotWhitelisted), null, null, null, transaction),
-          0);
+      return functions.triggerFunctions(
+          ChainUtil.parsePath(refPathRestNotWhitelisted),
+          null, null, null, transaction).then((response) => {
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 0,
+          failCount: 0,
+        });
+      });
     })
 
     it("null function", () => {
@@ -211,10 +259,14 @@ describe("Functions", () => {
           "value": 1000
         }
       }
-      assert.deepEqual(
-          functions.triggerFunctions(
-              ChainUtil.parsePath(refPathNull), null, null, null, transaction),
-          0);
+      return functions.triggerFunctions(
+          ChainUtil.parsePath(refPathNull), null, null, null, transaction).then((response) => {
+        assert.deepEqual(response, {
+          functionCount: 1,
+          triggerCount: 0,
+          failCount: 0,
+        });
+      });
     })
   });
 
