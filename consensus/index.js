@@ -298,17 +298,19 @@ class Consensus {
 
     const myAddr = this.node.account.address;
     // Need the block#1 to be finalized to have the deposits reflected in the state
-    const validators = {};
+    let validators = {};
     if (this.node.bc.lastBlockNumber() < 1) {
       const whitelist = GenesisWhitelist;
-      Object.keys(whitelist).forEach((address) => {
-        const deposit = tempDb.getValue(`/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`);
-        if (whitelist[address] === true && deposit &&
-            deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
-          validators[address] = deposit.value;
+      for (const address in whitelist) {
+        if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
+          const deposit = tempDb.getValue(`/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`);
+          if (whitelist[address] === true && deposit &&
+              deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+            validators[address] = deposit.value;
+          }
         }
-      });
-      logger.error(`[${LOG_HEADER}] validators: ${JSON.stringify(validators)}`);
+      }
+      logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators)}`);
     } else {
       validators = this.getValidators(lastBlock.hash, lastBlock.number);
     }
