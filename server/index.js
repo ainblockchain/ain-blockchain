@@ -716,7 +716,8 @@ class P2pClient {
 
   broadcastConsensusMessage(msg) {
     logger.debug(`SENDING: ${JSON.stringify(msg)}`);
-    Object.values(this.outbound).forEach((socket) => {
+    const connections = _.merge({}, this.outbound, this.server.inbound);
+    Object.values(connections).forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.CONSENSUS,
         message: msg,
@@ -735,7 +736,8 @@ class P2pClient {
 
   broadcastTransaction(transaction) {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
-    Object.values(this.outbound).forEach((socket) => {
+    const connections = _.merge({}, this.outbound, this.server.inbound);
+    Object.values(connections).forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.TRANSACTION,
         transaction,
