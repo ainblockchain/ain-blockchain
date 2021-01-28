@@ -393,8 +393,6 @@ class P2pServer {
               );
             }
             break;
-          case 'test':
-            console.log('testtesttest')
         }
       } catch (error) {
         logger.error(error.stack);
@@ -429,6 +427,7 @@ class P2pServer {
     }
   }
 
+  // TODO(minsu): Seperate execute and broadcast
   executeAndBroadcastTransaction(tx) {
     if (!tx) {
       return {
@@ -721,13 +720,6 @@ class P2pClient {
   broadcastConsensusMessage(msg) {
     logger.debug(`SENDING: ${JSON.stringify(msg)}`);
     const connections = _.merge({}, this.outbound, this.server.inbound);
-    Object.values(connections).forEach(socket => {
-      socket.send(JSON.stringify({
-        type: 'test',
-        message: 'msg',
-        protoVer: CURRENT_PROTOCOL_VERSION
-      }))
-    })
     Object.values(connections).forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.CONSENSUS,
@@ -866,6 +858,8 @@ class P2pClient {
             }
           }
           break;
+        // XXX(minsu): since MessageTypes.CONSENSUS and MessageTypes.TRANSACTION can be separable
+        // when handleConsensusMessage at consensus/index.js is updated first. It will be next job.
         // TODO(minsu): this should be separated.
         case MessageTypes.CONSENSUS:
           logger.debug(
@@ -874,6 +868,41 @@ class P2pClient {
             this.server.consensus.handleConsensusMessage(data.message);
           } else {
             logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
+          }
+          break;
+        // TODO(minsu): this should be separated as well.
+        case MessageTypes.TRANSACTION:
+          logger.debug(
+            `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
+          if (this.node.tp.transactionTracker[data.transaction.hash]) {
+            logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
+            break;
+          } else if (this.node.status === BlockchainNodeStatus.SERVING) {
+            const tx = data.transaction;
+            if (Transaction.isBatchTransaction(tx)) {
+              const newTxList = [];
+              for (const subTx of tx.tx_list) {
+                const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
+                if (!createdTx) {
+                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
+                    `${JSON.stringify(subTx, null, 2)}`);
+                  continue;
+                }
+                newTxList.push(createdTx);
+              }
+              if (newTxList.length > 0) {
+                this.executeAndBroadcastTransaction(
+                  { tx_list: newTxList }, MessageTypes.TRANSACTION);
+              }
+            } else {
+              const createdTx = Transaction.create(tx.tx_body, tx.signature);
+              if (!createdTx) {
+                logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
+                  `${JSON.stringify(tx, null, 2)}`);
+              } else {
+                this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+              }
+            }
           }
           break;
       }

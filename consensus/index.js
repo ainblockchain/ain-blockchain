@@ -173,6 +173,7 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
+  // TODO(minsu): FIX it with p2p client code.
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
