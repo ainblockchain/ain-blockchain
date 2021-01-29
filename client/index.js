@@ -55,7 +55,7 @@ app.use(express.json()); // support json encoded bodies
 
 const node = new BlockchainNode();
 const p2pServer = new P2pServer(node, minProtocolVersion, maxProtocolVersion,
-  maxConnection, maxOutbound, maxInbound);
+    maxConnection, maxOutbound, maxInbound);
 
 const jsonRpcMethods = require('../json_rpc')(
     node, p2pServer, minProtocolVersion, maxProtocolVersion);
