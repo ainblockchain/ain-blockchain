@@ -14,12 +14,10 @@ const {
   PROTOCOL_VERSIONS,
   BlockchainNodeStatus,
   WriteDbOperations,
-  TransactionStatus
+  TransactionStatus,
+  PeerConnections
 } = require('../common/constants');
-const {
-  ConsensusStatus,
-  ConsensusConsts
-} = require('../consensus/constants');
+const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
@@ -42,13 +40,15 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
 const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const {min, max} = matchVersions(CURRENT_PROTOCOL_VERSION);
+const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
-
-const { maxConnection, maxOutbound, maxInbound } =
-    matchConnections(ConsensusConsts.INITIAL_MAX_CONNECTION,
-        ConsensusConsts.INITIAL_MAX_OUTBOUND, ConsensusConsts.INITIAL_MAX_INBOUND);
+const {
+  maxConnection,
+  maxOutbound,
+  maxInbound
+} = P2pServer.matchConnections(PeerConnections.INITIAL_MAX_CONNECTION,
+    PeerConnections.INITIAL_MAX_OUTBOUND, PeerConnections.INITIAL_MAX_INBOUND);
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
@@ -565,23 +565,4 @@ function validateVersion(req, res, next) {
   } else {
     next();
   }
-}
-
-function matchConnections(numConnection, numOutbound, numInbound) {
-  let maxConnection = numConnection;
-  let maxOutbound = numOutbound;
-  let maxInbound = numInbound;
-  if (0 > numConnection || numConnection < 5) {
-    maxConnection = 5;
-  }
-  if (0 > numOutbound || numOutbound < 2) {
-    maxOutbound = 2;
-  }
-  if (maxConnection < maxOutbound) {
-    maxOutbound = maxConnection;
-  }
-  if (0 > numInbound || numInbound < numConnection - numOutbound) {
-    maxInbound = numConnection - numOutbound;
-  }
-  return { maxConnection, maxOutbound, maxInbound };
 }

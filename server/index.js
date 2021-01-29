@@ -12,8 +12,8 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
 const Consensus = require('../consensus');
-const {ConsensusStatus} = require('../consensus/constants');
-const {Block} = require('../blockchain/block');
+const { ConsensusStatus } = require('../consensus/constants');
+const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
   P2P_PORT,
@@ -38,7 +38,7 @@ const {
   LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const {sendTxAndWaitForFinalization} = require('./util');
+const { sendTxAndWaitForFinalization } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
@@ -582,6 +582,16 @@ class P2pServer {
 
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
+  }
+
+  // NOTE(minsu): the total number of connection is up to more than 5 without limit.
+  // maxOutbound is for now limited equal or less than 2.
+  // maxInbound is a rest of connection after maxOutbound is set.
+  static matchConnections(numConnection, numOutbound, numInbound) {
+    const maxConnection = Math.max(numConnection, 5);
+    const maxOutbound = Math.min(numOutbound, 2);
+    const maxInbound = Math.min(numInbound, numConnection - numOutbound);
+    return { maxConnection, maxOutbound, maxInbound };
   }
 }
 
