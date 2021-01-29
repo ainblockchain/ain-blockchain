@@ -13,12 +13,10 @@ const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
 const P2pClient = require('./client');
 const Consensus = require('../consensus');
-const { ConsensusStatus } = require('../consensus/constants');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
   P2P_PORT,
-  TRACKER_WS_ADDR,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
   COMCOM_HOST_INTERNAL_IP_MAP,
@@ -46,9 +44,6 @@ const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/
 const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/ip';
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const RECONNECT_INTERVAL_MS = 10000;
-const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
-const HEARTBEAT_INTERVAL_MS = 1000;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
 // A peer-to-peer network server that broadcasts changes in the database.
@@ -56,7 +51,7 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 class P2pServer {
   constructor (node, minProtocolVersion, maxProtocolVersion, maxConnection, maxOutbound, maxInbound)
   {
-    this.server = null;
+    this.wsServer = null;
     this.client = null;
     this.node = node;
     // TODO(minsu): Remove this from Consensus.
@@ -70,7 +65,7 @@ class P2pServer {
   }
 
   listen() {
-    this.server = new Websocket.Server({
+    this.wsServer = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
       // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
@@ -94,8 +89,8 @@ class P2pServer {
       }
     });
     // Set the number of maximum clients.
-    this.server.setMaxListeners(this.maxInbound);
-    this.server.on('connection', (socket) => {
+    this.wsServer.setMaxListeners(this.maxInbound);
+    this.wsServer.on('connection', (socket) => {
       this.setPeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
@@ -231,7 +226,7 @@ class P2pServer {
     this.disconnectFromPeers();
     this.client.stop();
     logger.info(`Close server.`);
-    this.server.close();
+    this.wsServer.close();
   }
 
   getIpAddress(internal = false) {
@@ -429,6 +424,8 @@ class P2pServer {
   }
 
   // TODO(minsu): Seperate execute and broadcast
+  // XXX(minsu): disscussed this part off-line and it will be updated the next PR since this is
+  // also called at consensus and json-rpc.
   executeAndBroadcastTransaction(tx) {
     if (!tx) {
       return {

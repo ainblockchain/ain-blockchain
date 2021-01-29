@@ -216,7 +216,8 @@ class Consensus {
         // prevent the node from getting/handling messages properly.
         // this.node.status = BlockchainNodeStatus.SYNCING;
 
-        // TODO(minsu): FIXME!!
+        // TODO(minsu): requestChainSegment can be dealt with at P2p Client rather than here.
+        // it will be the next job as the second round of refactoring with p2p server and client.
         this.server.client.requestChainSegment(this.node.bc.lastBlock());
         return;
       }
