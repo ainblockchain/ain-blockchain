@@ -141,7 +141,7 @@ class P2pClient {
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
     socket.send(JSON.stringify({
-      type: MessageTypes.CHAIN_SEGMENT,
+      type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
       chainSegment,
       number,
       catchUpInfo,
@@ -337,12 +337,16 @@ class P2pClient {
             }
           }
           break;
+        default:
+          logger.error(`Wrong message type(${data.type}) has been specified.`);
+          logger.error('Igonore the message.');
+          break;
       }
     });
 
     socket.on('close', () => {
       const account = this.getAccountFromSocket(socket);
-      this.removeFromListIfExists(account);
+      this.removeFromOutboundIfExists(account);
       logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
     });
   }
@@ -351,10 +355,10 @@ class P2pClient {
     return Object.keys(this.outbound).filter(account => this.outbound[account] === socket);
   }
 
-  removeFromListIfExists(account) {
+  removeFromOutboundIfExists(account) {
     if (account in this.outbound) {
       delete this.outbound[account];
-      logger.info(` => Updated managed peers info: ${JSON.stringify(this.outbound, null, 2)}`);
+      logger.info(` => Updated managed peers info: ${Object.keys(this.outbound)}`);
     }
   }
 

@@ -307,7 +307,7 @@ class P2pServer {
               logger.info(`A new websocket(${data.account}) is established.`);
               this.inbound[data.account] = socket;
               socket.send(JSON.stringify({
-                type: MessageTypes.ACCOUNT,
+                type: MessageTypes.ACCOUNT_RESPONSE,
                 account: this.getAccount(),
                 protoVer: CURRENT_PROTOCOL_VERSION
               }));
@@ -389,6 +389,10 @@ class P2pServer {
               );
             }
             break;
+          default:
+            logger.error(`Wrong message type(${data.type}) has been specified.`);
+            logger.error('Igonore the message.');
+            break;
         }
       } catch (error) {
         logger.error(error.stack);
@@ -397,7 +401,7 @@ class P2pServer {
 
     socket.on('close', () => {
       const account = this.getAccountFromSocket(socket);
-      this.removeFromListIfExists(account);
+      this.removeFromInboundIfExists(account);
       logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
     });
 
@@ -416,10 +420,10 @@ class P2pServer {
     return Object.keys(this.inbound).filter(account => this.inbound[account] === socket);
   }
 
-  removeFromListIfExists(address) {
+  removeFromInboundIfExists(address) {
     if (address in this.inbound) {
       delete this.inbound[address];
-      logger.info(` => Updated managed peers info: ${JSON.stringify(this.inbound, null, 2)}`);
+      logger.info(` => Updated managed peers info: ${Object.keys(this.inbound)}`);
     }
   }
 

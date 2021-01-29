@@ -9,11 +9,11 @@ const logger = require('../logger')('TRACKER_SERVER');
 
 const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
-const PEER_NODES = {};
-const WS_LIST = {};
+const peerNodes = {};
+const wsList = {};
 
 const app = express();
-const jsonRpcMethods = require('./json-rpc')(PEER_NODES);
+const jsonRpcMethods = require('./json-rpc')(peerNodes);
 app.use(express.json());
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
@@ -27,7 +27,7 @@ app.get('/', (req, res, next) => {
 app.get('/peer_nodes', (req, res, next) => {
   res.status(200)
       .set('Content-Type', 'application/json')
-      .send({result: PEER_NODES})
+      .send({result: peerNodes})
       .end();
 });
 
@@ -84,17 +84,17 @@ const server = new WebSocketServer({
 
 server.on('connection', (ws) => {
   ws.uuid = uuidv4();
-  WS_LIST[ws.uuid] = null;
+  wsList[ws.uuid] = null;
   ws.on('message', (message) => {
     const nodeInfo = JSON.parse(message);
-    WS_LIST[ws.uuid] = nodeInfo.address;
-    if (PEER_NODES[nodeInfo.address]) {
-      PEER_NODES[nodeInfo.address] = nodeInfo;
+    wsList[ws.uuid] = nodeInfo.address;
+    if (peerNodes[nodeInfo.address]) {
+      peerNodes[nodeInfo.address] = nodeInfo;
       logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
       logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
     } else {
       nodeInfo.location = getNodeLocation(nodeInfo.ip);
-      PEER_NODES[nodeInfo.address] = nodeInfo;
+      peerNodes[nodeInfo.address] = nodeInfo;
       logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
       logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
     }
@@ -116,16 +116,16 @@ server.on('connection', (ws) => {
 
   // TODO(minsu): code should be setup ex) code === 1006: SIGINT
   ws.on('close', (code) => {
-    const address = WS_LIST[ws.uuid];
+    const address = wsList[ws.uuid];
     logger.info(`\nDisconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
         `with code: ${code}`);
-    delete WS_LIST[ws.uuid];
-    delete PEER_NODES[address];
+    delete wsList[ws.uuid];
+    delete peerNodes[address];
     printNodesInfo();
   });
 
   ws.on('error', (error) => {
-    const address = WS_LIST[ws.uuid];
+    const address = wsList[ws.uuid];
     logger.error(`Error in communication with node [${abbrAddr(address)}]: ` +
         `${JSON.stringify(error, null, 2)}`);
   });
@@ -136,7 +136,7 @@ function abbrAddr(address) {
 }
 
 function numNodes() {
-  return Object.keys(PEER_NODES).length - 1;   // XXX(minsu): except for me
+  return Object.keys(peerNodes).length - 1;   // XXX(minsu): except for me
 }
 
 function assignRandomPeers(candidates) {
@@ -153,8 +153,7 @@ function assignRandomPeers(candidates) {
 }
 
 function getPeerCandidates(myself, candidates) {
-  Object.keys(PEER_NODES).forEach(address => {
-    const nodeInfo = PEER_NODES[address];
+  Object.values(peerNodes).forEach(nodeInfo => {
     if (nodeInfo.address !== myself &&
         !(myself in nodeInfo.managedPeersInfo.inbound) &&
         Object.keys(nodeInfo.managedPeersInfo.inbound).length < nodeInfo.connectionInfo.maxInbound) {
@@ -167,8 +166,8 @@ function getPeerCandidates(myself, candidates) {
 }
 
 function printNodesInfo() {
-  logger.info(`Updated [PEER_NODES]: (Number of nodes: ${numNodes()})`);
-  const nodeInfoList = Object.values(PEER_NODES).sort((x, y) => {
+  logger.info(`Updated [peerNodes]: (Number of nodes: ${numNodes()})`);
+  const nodeInfoList = Object.values(peerNodes).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
   nodeInfoList.forEach((nodeInfo) => {
