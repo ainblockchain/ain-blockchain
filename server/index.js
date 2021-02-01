@@ -373,7 +373,7 @@ class P2pServer {
                   `[${LOG_HEADER}] Sending a chain segment ` +
                   `${JSON.stringify(chainSegment, null, 2)}` +
                   `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
-              this.client.sendChainSegment(
+              this.sendChainSegment(
                   socket,
                   chainSegment,
                   this.node.bc.lastBlockNumber(),
@@ -381,7 +381,7 @@ class P2pServer {
               );
             } else {
               logger.info(`[${LOG_HEADER}] No chain segment to send`);
-              this.client.sendChainSegment(
+              this.sendChainSegment(
                   socket,
                   null,
                   this.node.bc.lastBlockNumber(),
@@ -425,6 +425,16 @@ class P2pServer {
       delete this.inbound[address];
       logger.info(` => Updated managed peers info: ${Object.keys(this.inbound)}`);
     }
+  }
+
+  sendChainSegment(socket, chainSegment, number, catchUpInfo) {
+    socket.send(JSON.stringify({
+      type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
+      chainSegment,
+      number,
+      catchUpInfo,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    }));
   }
 
   // TODO(minsu): Seperate execute and broadcast
