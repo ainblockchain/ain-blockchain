@@ -139,16 +139,6 @@ class P2pClient {
     });
   }
 
-  sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    socket.send(JSON.stringify({
-      type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
-      chainSegment,
-      number,
-      catchUpInfo,
-      protoVer: CURRENT_PROTOCOL_VERSION
-    }));
-  }
-
   broadcastConsensusMessage(msg) {
     logger.debug(`SENDING: ${JSON.stringify(msg)}`);
     const connections = _.merge({}, this.outbound, this.server.inbound);
