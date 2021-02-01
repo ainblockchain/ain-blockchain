@@ -43,12 +43,7 @@ const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
-const {
-  maxConnection,
-  maxOutbound,
-  maxInbound
-} = P2pServer.matchConnections(PeerConnections.INITIAL_MAX_CONNECTION,
-    PeerConnections.INITIAL_MAX_OUTBOUND, PeerConnections.INITIAL_MAX_INBOUND);
+const { maxConnection, maxOutbound, maxInbound } = P2pServer.matchConnections();
 
 const app = express();
 app.use(express.json()); // support json encoded bodies

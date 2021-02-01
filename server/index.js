@@ -600,11 +600,18 @@ class P2pServer {
   // NOTE(minsu): the total number of connection is up to more than 5 without limit.
   // maxOutbound is for now limited equal or less than 2.
   // maxInbound is a rest of connection after maxOutbound is set.
-  static matchConnections(numConnection, numOutbound, numInbound) {
-    const maxConnection = Math.max(numConnection, PeerConnections.DEFAULT_MAX_CONNECTION);
-    const maxOutbound = Math.min(numOutbound, PeerConnections.DEFAULT_MAX_OUTBOUND);
-    const maxInbound = Math.min(numInbound, numConnection - numOutbound);
-    return { maxConnection, maxOutbound, maxInbound };
+  static matchConnections() {
+    const numConnection = process.env.MAX_CONNECTION ?
+        Number(process.env.MAX_CONNECTION) : PeerConnections.INITIAL_MAX_CONNECTION;
+    const numOutbound = process.env.MAX_OUTBOUND ?
+        Number(process.env.MAX_OUTBOUND) : PeerConnections.INITIAL_MAX_OUTBOUND;
+    const numInbound = process.env.MAX_INBOUND ?
+        Number(process.env.MAX_INBOUND) : PeerConnections.INITIAL_MAX_INBOUND;
+    return {
+      maxConnection: Math.max(numConnection, PeerConnections.MAX_CONNECTION_LIMIT),
+      maxOutbound: Math.min(numOutbound, PeerConnections.MAX_OUTBOUND_LIMIT),
+      maxInbound: Math.min(numInbound, numConnection - numOutbound)
+    };
   }
 }
 

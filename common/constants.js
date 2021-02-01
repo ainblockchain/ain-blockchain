@@ -360,11 +360,11 @@ const FeatureFlags = {
  * Connection info.
  */
 const PeerConnections = {
-  DEFAULT_MAX_CONNECTION: 5,
-  DEFAULT_MAX_OUTBOUND: 2,
-  INITIAL_MAX_CONNECTION: process.env.MAX_CONNECTION ? Number(process.env.MAX_CONNECTION) : 5,
-  INITIAL_MAX_OUTBOUND: process.env.MAX_OUTBOUND ? Number(process.env.MAX_OUTBOUND) : 2,
-  INITIAL_MAX_INBOUND: process.env.MAX_INBOUND ? Number(process.env.MAX_INBOUND) : 3
+  MAX_CONNECTION_LIMIT: 5,
+  MAX_OUTBOUND_LIMIT: 2,
+  INITIAL_MAX_CONNECTION: 5,
+  INITIAL_MAX_OUTBOUND: 2,
+  INITIAL_MAX_INBOUND: 3
 };
 
 const GenesisToken = getGenesisConfig('genesis_token.json');
