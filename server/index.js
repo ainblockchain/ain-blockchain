@@ -34,6 +34,7 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions,
+  PeerConnections,
   LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -600,8 +601,8 @@ class P2pServer {
   // maxOutbound is for now limited equal or less than 2.
   // maxInbound is a rest of connection after maxOutbound is set.
   static matchConnections(numConnection, numOutbound, numInbound) {
-    const maxConnection = Math.max(numConnection, 5);
-    const maxOutbound = Math.min(numOutbound, 2);
+    const maxConnection = Math.max(numConnection, PeerConnections.DEFAULT_MAX_CONNECTION);
+    const maxOutbound = Math.min(numOutbound, PeerConnections.DEFAULT_MAX_OUTBOUND);
     const maxInbound = Math.min(numInbound, numConnection - numOutbound);
     return { maxConnection, maxOutbound, maxInbound };
   }
