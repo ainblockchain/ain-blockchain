@@ -162,13 +162,13 @@ describe("DB operations", () => {
     dbRules = {
       "some": {
         "$var_path": {
-          ".write": "auth !== 'abcd'"
+          ".write": "auth.addr !== 'abcd'"
         },
         "path": {
-          ".write": "auth === 'abcd'",
+          ".write": "auth.addr === 'abcd'",
           "deeper": {
             "path": {
-              ".write": "auth === 'ijkl'"
+              ".write": "auth.addr === 'ijkl'"
             }
           }
         }
@@ -275,10 +275,10 @@ describe("DB operations", () => {
 
     it("when retrieving existing rule config", () => {
       assert.deepEqual(node.db.getRule("/test/test_rule/some/path"), {
-        ".write": "auth === 'abcd'",
+        ".write": "auth.addr === 'abcd'",
         "deeper": {
           "path": {
-            ".write": "auth === 'ijkl'"
+            ".write": "auth.addr === 'ijkl'"
           }
         }
       });
@@ -424,7 +424,7 @@ describe("DB operations", () => {
           },
         },
         "matched_config": {
-          "config": "auth !== 'abcd'",
+          "config": "auth.addr !== 'abcd'",
           "path": "/test/test_rule/some/$var_path"
         },
         "subtree_configs": []
@@ -439,12 +439,12 @@ describe("DB operations", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "auth === 'abcd'",
+          "config": "auth.addr === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
         "subtree_configs": [
           {
-            "config": "auth === 'ijkl'",
+            "config": "auth.addr === 'ijkl'",
             "path": "/deeper/path"
           }
         ]
@@ -456,7 +456,7 @@ describe("DB operations", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "auth === 'ijkl'",
+          "config": "auth.addr === 'ijkl'",
           "path": "/test/test_rule/some/path/deeper/path"
         },
         "subtree_configs": []
@@ -471,12 +471,12 @@ describe("DB operations", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "auth === 'abcd'",
+          "config": "auth.addr === 'abcd'",
           "path": "/test/test_rule/some/path"
         },
         "subtree_configs": [
           {
-            "config": "auth === 'ijkl'",
+            "config": "auth.addr === 'ijkl'",
             "path": "/path"
           }
         ]
@@ -767,12 +767,12 @@ describe("DB operations", () => {
             "path_vars": {},
           },
           "matched_config": {
-            "config": "auth === 'abcd'",
+            "config": "auth.addr === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
           "subtree_configs": [
             {
-              "config": "auth === 'ijkl'",
+              "config": "auth.addr === 'ijkl'",
               "path": "/path"
             }
           ]
@@ -853,10 +853,10 @@ describe("DB operations", () => {
       ]), [
         456,
         {
-          ".write": "auth === 'abcd'",
+          ".write": "auth.addr === 'abcd'",
           "deeper": {
             "path": {
-              ".write": "auth === 'ijkl'"
+              ".write": "auth.addr === 'ijkl'"
             }
           }
         },
@@ -938,12 +938,12 @@ describe("DB operations", () => {
             "path_vars": {},
           },
           "matched_config": {
-            "config": "auth === 'abcd'",
+            "config": "auth.addr === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
           "subtree_configs": [
             {
-              "config": "auth === 'ijkl'",
+              "config": "auth.addr === 'ijkl'",
               "path": "/deeper/path"
             }
           ]
@@ -2329,7 +2329,7 @@ describe("DB sharding config", () => {
         "path": {
           ".write": "false",
           "to": {
-            ".write": "auth === 'known_user'",
+            ".write": "auth.addr === 'known_user'",
             "deeper": {
               ".write": "some deeper rule config",
             }
@@ -2689,7 +2689,7 @@ describe("DB sharding config", () => {
 
   describe("rule operations", () => {
     const rule = {
-      ".write": "auth === 'known_user'",
+      ".write": "auth.addr === 'known_user'",
       "deeper": {
         ".write": "some deeper rule config"
       }
@@ -2740,7 +2740,7 @@ describe("DB sharding config", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "auth === 'known_user'",
+          "config": "auth.addr === 'known_user'",
           "path": "/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
@@ -2760,7 +2760,7 @@ describe("DB sharding config", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "auth === 'known_user'",
+          "config": "auth.addr === 'known_user'",
           "path": "/apps/afan/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
@@ -2994,13 +2994,13 @@ describe("Test proof with database", () => {
       const nestedRules = {
         "nested": {
           "$var_path": {
-            ".write": "auth !== 'abcd'"
+            ".write": "auth.addr !== 'abcd'"
           },
           "path": {
-            ".write": "auth === 'abcd'",
+            ".write": "auth.addr === 'abcd'",
             "deeper": {
               "path": {
-                ".write": "auth === 'ijkl'"
+                ".write": "auth.addr === 'ijkl'"
               }
             }
           }

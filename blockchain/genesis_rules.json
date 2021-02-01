@@ -15,12 +15,12 @@
     "$user_addr": {
       "$checkin_id": {
         "request": {
-          ".write": "data === null && auth === $user_addr && util.isDict(newData)"
+          ".write": "data === null && auth.addr === $user_addr && util.isDict(newData)"
         },
         "parent_finalize": {
           "$tx_hash": {
             "result": {
-              ".write": "auth === getValue('/sharding/config/shard_owner') && util.isBool(newData)"
+              ".write": "auth.addr === getValue('/sharding/config/shard_owner') && util.isBool(newData)"
             }
           }
         }
@@ -32,18 +32,18 @@
       "$number": {
         ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
         "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') >= util.getMinStakeAmount())"
+          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth.addr + '/value') >= util.getMinStakeAmount())"
         },
         "vote": {
           "$user_addr": {
-            ".write": "auth === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth + '/value') >= util.getMinStakeAmount())"
+            ".write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth.addr + '/value') >= util.getMinStakeAmount())"
           }
         }
       }
     },
     "whitelist": {
       "$user_addr": {
-        ".write": "auth === util.getOwnerAddr() && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
+        ".write": "auth.addr === util.getOwnerAddr() && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
       }
     }
   },
@@ -52,7 +52,7 @@
       "$user_addr": {
         "$deposit_id": {
           "value": {
-            ".write": "auth === $user_addr && !getValue('/deposit/' + $service + '/' + $user_addr + '/' + $deposit_id) && (util.length($user_addr) !== 42 || util.isCksumAddr($user_addr)) && util.isNumber(newData) && getValue('/accounts/' + $user_addr + '/balance') >= newData"
+            ".write": "auth.addr === $user_addr && !getValue('/deposit/' + $service + '/' + $user_addr + '/' + $deposit_id) && (util.length($user_addr) !== 42 || util.isCksumAddr($user_addr)) && util.isNumber(newData) && getValue('/accounts/' + $user_addr + '/balance') >= newData"
           },
           "createdAt": {
             ".write": false
@@ -65,7 +65,7 @@
     ".write": false,
     "$service": {
       "config": {
-        ".write": "!getValue('/deposit_accounts/' + $service) || (getOwner('/deposit_accounts/' + $service) && getOwner('/deposit_accounts/' + $service).owners && getOwner('/deposit_accounts/' + $service).owners[auth])"
+        ".write": "!getValue('/deposit_accounts/' + $service) || (getOwner('/deposit_accounts/' + $service) && getOwner('/deposit_accounts/' + $service).owners && getOwner('/deposit_accounts/' + $service).owners[auth.addr])"
       },
       "$user_addr": {
         ".write": false
@@ -81,7 +81,7 @@
     "shard": {
       ".write": false,
       "$sharding_path": {
-        ".write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardProto(newData.sharding_protocol) && evalOwner(newData.sharding_path, 'write_owner', auth) && evalOwner(newData.sharding_path, 'write_rule', auth) && evalOwner(newData.sharding_path, 'write_function', auth)) || (auth === data.shard_owner && newData === null)"
+        ".write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardProto(newData.sharding_protocol) && evalOwner(newData.sharding_path, 'write_owner', auth) && evalOwner(newData.sharding_path, 'write_rule', auth) && evalOwner(newData.sharding_path, 'write_function', auth)) || (auth.addr === data.shard_owner && newData === null)"
       }
     }
   },
@@ -90,7 +90,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "auth === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 42 || util.isCksumAddr($from)) && (util.length($to) !== 42 || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue('accounts/' + $from + '/balance') >= newData"
+            ".write": "auth.addr === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 42 || util.isCksumAddr($from)) && (util.length($to) !== 42 || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue('accounts/' + $from + '/balance') >= newData"
           }
         }
       }
@@ -101,7 +101,7 @@
       "$user_addr": {
         "$withdraw_id": {
           "value": {
-            ".write": "auth === $user_addr && !getValue('/withdraw/' + $service + '/' + $user_addr + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service + '/' + $user_addr + '/value') >= newData"
+            ".write": "auth.addr === $user_addr && !getValue('/withdraw/' + $service + '/' + $user_addr + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service + '/' + $user_addr + '/value') >= newData"
           },
           "createdAt": {
             ".write": false

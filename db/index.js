@@ -346,11 +346,23 @@ class DB {
       } else if (op.type === ReadDbOperations.MATCH_OWNER) {
         resultList.push(this.matchOwner(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
-        const auth = op.address ? { addr: op.address } : { fid: op.fid };
+        const auth = {};
+        if (op.address) {
+          auth.addr = op.address;
+        }
+        if (op.fid) {
+          auth.fid = op.fid;
+        }
         resultList.push(this.evalRule(
             op.ref, op.value, auth, op.timestamp || Date.now(), op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
-        const auth = op.address ? { addr: op.address } : { fid: op.fid };
+        const auth = {};
+        if (op.address) {
+          auth.addr = op.address;
+        }
+        if (op.fid) {
+          auth.fid = op.fid;
+        }
         resultList.push(this.evalOwner(op.ref, op.permission, auth, op.is_global));
       }
     });
@@ -548,12 +560,12 @@ class DB {
         resultList.push(ChainUtil.returnError(801, 'No tx_body'));
         continue;
       }
-      const operation = txBody.operation;
-      if (!operation) {
+      const op = txBody.operation;
+      if (!op) {
         resultList.push(ChainUtil.returnError(802, 'No operation'));
         continue;
       }
-      switch (operation.type) {
+      switch (op.type) {
         case undefined:
         case WriteDbOperations.SET_VALUE:
         case WriteDbOperations.INC_VALUE:
@@ -562,10 +574,11 @@ class DB {
         case WriteDbOperations.SET_RULE:
         case WriteDbOperations.SET_OWNER:
         case WriteDbOperations.SET:
-          resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
+          // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
+          resultList.push(this.executeOperation(op, { addr: tx.address }, tx.timestamp, tx));
           break;
         default:
-          resultList.push(ChainUtil.returnError(803, `Invalid operation type: ${operation.type}`));
+          resultList.push(ChainUtil.returnError(803, `Invalid operation type: ${op.type}`));
       }
     }
     return resultList;
@@ -621,26 +634,26 @@ class DB {
     this.stateVersion = stateVersion;
   }
 
-  executeOperation(op, addr, timestamp, tx) {
+  executeOperation(op, auth, timestamp, tx) {
     if (!op) {
       return null;
     }
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(op.ref, op.value, { addr }, timestamp, tx, op.is_global);
+        return this.setValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(op.ref, op.value, { addr }, timestamp, tx, op.is_global);
+        return this.incValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(op.ref, op.value, { addr }, timestamp, tx, op.is_global);
+        return this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(op.ref, op.value, { addr }, op.is_global);
+        return this.setFunction(op.ref, op.value, auth, op.is_global);
       case WriteDbOperations.SET_RULE:
-        return this.setRule(op.ref, op.value, { addr }, op.is_global);
+        return this.setRule(op.ref, op.value, auth, op.is_global);
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(op.ref, op.value, { addr }, op.is_global);
+        return this.setOwner(op.ref, op.value, auth, op.is_global);
       case WriteDbOperations.SET:
-        return this.set(op.op_list, { addr }, timestamp, tx);
+        return this.set(op.op_list, auth, timestamp, tx);
     }
   }
 
@@ -653,7 +666,9 @@ class DB {
       logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
       return false;
     }
-    return this.executeOperation(tx.tx_body.operation, tx.address, tx.tx_body.timestamp, tx);
+    // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
+    return this.executeOperation(
+        tx.tx_body.operation, { addr: tx.address}, tx.tx_body.timestamp, tx);
   }
 
   executeTransactionList(txList) {
@@ -1019,8 +1034,7 @@ class DB {
       return false;
     }
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
-    const address = auth ? auth.addr : null;
-    return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
+    return evalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));

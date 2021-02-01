@@ -519,9 +519,9 @@ class P2pServer {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-    const shardingPathRules = `auth === '${shardOwner}'`;
-    const proofHashRulesLight = `auth === '${shardReporter}'`;
-    const proofHashRules = `auth === '${shardReporter}' && ` +
+    const shardingPathRules = `auth.addr === '${shardOwner}'`;
+    const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
+    const proofHashRules = `auth.addr === '${shardReporter}' && ` +
         '((newData === null && ' +
         `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +

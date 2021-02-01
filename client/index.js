@@ -153,7 +153,13 @@ app.get('/match_owner', (req, res, next) => {
 // TODO(seo): Add tests for body.fid.
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
-  const auth = body.address ? { addr: body.address } : { fid: body.fid };
+  const auth = {};
+  if (body.address) {
+    auth.addr = body.address;
+  }
+  if (body.fid) {
+    auth.fid = body.fid;
+  }
   const result = node.db.evalRule(
       body.ref, body.value, auth, body.timestamp || Date.now(),
       ChainUtil.toBool(body.is_global));
@@ -166,7 +172,13 @@ app.post('/eval_rule', (req, res, next) => {
 // TODO(seo): Add tests for body.fid.
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
-  const auth = body.address ? { addr: body.address } : { fid: body.fid };
+  const auth = {};
+  if (body.address) {
+    auth.addr = body.address;
+  }
+  if (body.fid) {
+    auth.fid = body.fid;
+  }
   const result = node.db.evalOwner(
       body.ref, body.permission, auth, ChainUtil.toBool(body.is_global));
   res.status(200)
