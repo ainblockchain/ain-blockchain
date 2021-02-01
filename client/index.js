@@ -14,8 +14,7 @@ const {
   PROTOCOL_VERSIONS,
   BlockchainNodeStatus,
   WriteDbOperations,
-  TransactionStatus,
-  PeerConnections
+  TransactionStatus
 } = require('../common/constants');
 const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -43,14 +42,12 @@ const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
-const { maxConnection, maxOutbound, maxInbound } = P2pServer.matchConnections();
 
 const app = express();
 app.use(express.json()); // support json encoded bodies
 
 const node = new BlockchainNode();
-const p2pServer = new P2pServer(node, minProtocolVersion, maxProtocolVersion,
-    maxConnection, maxOutbound, maxInbound);
+const p2pServer = new P2pServer(node, minProtocolVersion, maxProtocolVersion);
 
 const jsonRpcMethods = require('../json_rpc')(
     node, p2pServer, minProtocolVersion, maxProtocolVersion);

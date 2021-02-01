@@ -50,8 +50,7 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsu): Sign messages to tracker or peer.
 class P2pServer {
-  constructor (node, minProtocolVersion, maxProtocolVersion, maxConnection, maxOutbound, maxInbound)
-  {
+  constructor (node, minProtocolVersion, maxProtocolVersion) {
     this.wsServer = null;
     this.client = null;
     this.node = node;
@@ -60,9 +59,7 @@ class P2pServer {
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
     this.inbound = {};
-    this.maxConnection = maxConnection;
-    this.maxOutbound = maxOutbound;
-    this.maxInbound = maxInbound;
+    this.initConnections();
   }
 
   listen() {
@@ -105,11 +102,29 @@ class P2pServer {
     return this.node.account.address;
   }
 
+  // NOTE(minsu): the total number of connection is up to more than 5 without limit.
+  // maxOutbound is for now limited equal or less than 2.
+  // maxInbound is a rest of connection after maxOutbound is set.
+  initConnections() {
+    const numConnection = process.env.MAX_CONNECTION ?
+        Number(process.env.MAX_CONNECTION) : PeerConnections.INITIAL_MAX_CONNECTION;
+    const numOutbound = process.env.MAX_OUTBOUND ?
+        Number(process.env.MAX_OUTBOUND) : PeerConnections.INITIAL_MAX_OUTBOUND;
+    const numInbound = process.env.MAX_INBOUND ?
+        Number(process.env.MAX_INBOUND) : PeerConnections.INITIAL_MAX_INBOUND;
+    this.maxConnection = Math.max(numConnection, PeerConnections.MAX_CONNECTION_LIMIT);
+    this.maxOutbound = Math.min(numOutbound, PeerConnections.MAX_OUTBOUND_LIMIT);
+    this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
+  }
+
+  // TODO(minsu): make it REST API
   getConnectionInfo() {
     return {
       maxConnection: this.maxConnection,
       maxOutbound: this.maxOutbound,
-      maxInbound: this.maxInbound
+      maxInbound: this.maxInbound,
+      incomingPeers: Object.keys(this.inbound),
+      outgoingPeers: Object.keys(this.client.outbound)
     };
   }
 
@@ -595,23 +610,6 @@ class P2pServer {
 
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
-  }
-
-  // NOTE(minsu): the total number of connection is up to more than 5 without limit.
-  // maxOutbound is for now limited equal or less than 2.
-  // maxInbound is a rest of connection after maxOutbound is set.
-  static matchConnections() {
-    const numConnection = process.env.MAX_CONNECTION ?
-        Number(process.env.MAX_CONNECTION) : PeerConnections.INITIAL_MAX_CONNECTION;
-    const numOutbound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : PeerConnections.INITIAL_MAX_OUTBOUND;
-    const numInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : PeerConnections.INITIAL_MAX_INBOUND;
-    return {
-      maxConnection: Math.max(numConnection, PeerConnections.MAX_CONNECTION_LIMIT),
-      maxOutbound: Math.min(numOutbound, PeerConnections.MAX_OUTBOUND_LIMIT),
-      maxInbound: Math.min(numInbound, numConnection - numOutbound)
-    };
   }
 }
 
