@@ -177,6 +177,7 @@ function printNodesInfo() {
     const memoryFreeMb =
         Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
     logger.info(`${getNodeSummary(nodeInfo)} ` +
+        `Alive: ${nodeInfo.isAlive}, ` +
         `Disk: ${diskAvailableMb}MB, ` +
         `Memory: ${memoryFreeMb}MB, ` +
         `Peers: outbound(${Object.keys(nodeInfo.managedPeersInfo.outbound)}), ` +
