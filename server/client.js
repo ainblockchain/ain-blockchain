@@ -40,15 +40,6 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  // TODO(minsu): maxConnection in client/index.js, maxOutbound in p2pClient, maxInbound in p2pServer
-  getConnectionInfo() {
-    return {
-      maxConnection: this.server.maxConnection,
-      maxOutbound: this.server.maxOutbound,
-      maxInbound: this.server.maxInbound
-    };
-  }
-
   buildManagedPeersInfo() {
     return {
       outbound: this.outbound,
@@ -76,7 +67,7 @@ class P2pClient {
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
       managedPeersInfo: this.buildManagedPeersInfo(),
-      connectionInfo: this.getConnectionInfo()
+      connectionInfo: this.server.getConnectionInfo()
     };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
       `${JSON.stringify(updateToTracker, null, 2)}`);
