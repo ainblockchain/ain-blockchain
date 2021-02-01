@@ -16,7 +16,7 @@ const {
   WriteDbOperations,
   TransactionStatus
 } = require('../common/constants');
-const {ConsensusStatus} = require('../consensus/constants');
+const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
@@ -29,7 +29,7 @@ process.on('uncaughtException', function(err) {
 process.on('SIGINT', (_) => {
   logger.info('Stopping the blockchain client....');
   p2pServer.stop();
-  process.exit();
+  process.exit(1);
 });
 
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
@@ -39,7 +39,7 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
 const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const {min, max} = matchVersions(CURRENT_PROTOCOL_VERSION);
+const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 

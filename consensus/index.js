@@ -9,7 +9,6 @@ const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
 const ChainUtil = require('../common/chain-util');
-const StateNode = require('../db/state-node');
 const {
   WriteDbOperations,
   ReadDbOperations,
@@ -174,6 +173,7 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
+  // TODO(minsu): FIX it with p2p client code.
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
@@ -216,12 +216,14 @@ class Consensus {
         // prevent the node from getting/handling messages properly.
         // this.node.status = BlockchainNodeStatus.SYNCING;
 
-        this.server.requestChainSegment(this.node.bc.lastBlock());
+        // TODO(minsu): requestChainSegment can be dealt with at P2p Client rather than here.
+        // it will be the next job as the second round of refactoring with p2p server and client.
+        this.server.client.requestChainSegment(this.node.bc.lastBlock());
         return;
       }
       if (Consensus.isValidConsensusTx(proposalTx) &&
           this.checkProposal(proposalBlock, proposalTx)) {
-        this.server.broadcastConsensusMessage(msg);
+        this.server.client.broadcastConsensusMessage(msg);
         this.tryVote(proposalBlock);
       }
     } else {
@@ -230,7 +232,7 @@ class Consensus {
         return;
       }
       if (Consensus.isValidConsensusTx(msg.value) && this.checkVoteTx(msg.value)) {
-        this.server.broadcastConsensusMessage(msg);
+        this.server.client.broadcastConsensusMessage(msg);
       }
     }
   }
@@ -582,7 +584,7 @@ class Consensus {
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     let block;
     if (blockInfo && blockInfo.block) {
-      block = blockInfo.block
+      block = blockInfo.block;
     } else if (blockHash === this.node.bc.lastBlock().hash) {
       block = this.node.bc.lastBlock();
     }
