@@ -124,7 +124,7 @@ function setUp() {
           type: 'SET_RULE',
           ref: '/test/test_rule/some/path',
           value: {
-            ".write": "auth === 'abcd'"
+            ".write": "auth.addr === 'abcd'"
           }
         },
         {
@@ -213,7 +213,7 @@ function setUpForSharding(shardingConfig) {
               type: WriteDbOperations.SET_RULE,
               ref: sharding_path,
               value: {
-                [RuleProperties.WRITE]: `auth === '${shard_reporter}'`
+                [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
               }
             },
             {
@@ -560,7 +560,7 @@ describe('Sharding', () => {
               syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
 
         it('/get_rule with is_global = true', () => {
@@ -568,7 +568,7 @@ describe('Sharding', () => {
               'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
       })
 
@@ -667,7 +667,7 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -686,7 +686,7 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/apps/afan/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -844,7 +844,7 @@ describe('Sharding', () => {
                 }
               },
               {
-                ".write": "auth === 'abcd'"
+                ".write": "auth.addr === 'abcd'"
               },
               {
                 ".owner": {
@@ -915,7 +915,7 @@ describe('Sharding', () => {
                 }
               },
               {
-                ".write": "auth === 'abcd'"
+                ".write": "auth.addr === 'abcd'"
               },
               {
                 ".owner": {
@@ -1038,7 +1038,7 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth === 'abcd'",
+                "config": "auth.addr === 'abcd'",
                 "path": "/test/test_rule/some/path"
               },
               "subtree_configs": []
@@ -1058,7 +1058,7 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth === 'abcd'",
+                "config": "auth.addr === 'abcd'",
                 "path": "/apps/afan/test/test_rule/some/path"
               },
               "subtree_configs": []

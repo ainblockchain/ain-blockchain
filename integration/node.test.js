@@ -81,7 +81,7 @@ function setUp() {
           type: 'SET_RULE',
           ref: '/test/test_rule/some/path',
           value: {
-            ".write": "auth === 'abcd'"
+            ".write": "auth.addr === 'abcd'"
           }
         },
         {
@@ -215,7 +215,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(body, {
           code: 0,
           result: {
-            ".write": "auth === 'abcd'"
+            ".write": "auth.addr === 'abcd'"
           }
         });
       })
@@ -306,7 +306,7 @@ describe('Blockchain Node', () => {
             "path_vars": {},
           },
           "matched_config": {
-            "config": "auth === 'abcd'",
+            "config": "auth.addr === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
           "subtree_configs": []
@@ -423,7 +423,7 @@ describe('Blockchain Node', () => {
               }
             },
             {
-              ".write": "auth === 'abcd'"
+              ".write": "auth.addr === 'abcd'"
             },
             {
               ".owner": {
@@ -496,7 +496,7 @@ describe('Blockchain Node', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -846,7 +846,7 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
-          ".write": "auth === 'abcd'"
+          ".write": "auth.addr === 'abcd'"
         });
 
         const request = {

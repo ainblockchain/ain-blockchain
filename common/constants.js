@@ -486,7 +486,7 @@ function getShardingRule() {
   const ownerAddress =
       ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
-    [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
+    [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
   };
 }
 
