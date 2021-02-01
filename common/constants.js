@@ -49,9 +49,12 @@ function getPortNumber(defaultValue, baseValue) {
  * @enum {string}
  */
 const MessageTypes = {
-  TRANSACTION: 'TRANSACTION',
-  CHAIN_SEGMENT: 'CHAIN_SEGMENT',
+  ACCOUNT_REQUEST: 'ACCOUNT_REQUEST',
+  ACCOUNT_RESPONSE: 'ACCOUNT_RESPONSE',
   CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
+  CHAIN_SEGMENT_RESPONSE: 'CHAIN_SEGMENT_RESPONSE',
+  // TODO(minsu): request and response necessary the below.
+  TRANSACTION: 'TRANSACTION',
   CONSENSUS: 'CONSENSUS',
   HEARTBEAT: 'HEARTBEAT'
 };
@@ -322,7 +325,7 @@ const TransactionStatus = {
  */
 const DefaultValues = {
   DEPOSIT_LOCKUP_DURATION_MS: moment.duration(180, 'days').as('milliseconds')
-}
+};
 
 /**
  * State versions.
@@ -351,7 +354,18 @@ const FeatureFlags = {
   enableStateVersionOpt: true,
   // Enables state version renaming.
   enableVersionRenaming: true,
-}
+};
+
+/**
+ * Connection info.
+ */
+const PeerConnections = {
+  MAX_CONNECTION_LIMIT: 5,
+  MAX_OUTBOUND_LIMIT: 2,
+  INITIAL_MAX_CONNECTION: 5,
+  INITIAL_MAX_OUTBOUND: 2,
+  INITIAL_MAX_INBOUND: 3
+};
 
 const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
@@ -546,6 +560,7 @@ module.exports = {
   DefaultValues,
   StateVersions,
   FeatureFlags,
+  PeerConnections,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
