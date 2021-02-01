@@ -157,6 +157,7 @@ function assignRandomPeers(candidates) {
 function getPeerCandidates(myself, candidates) {
   Object.values(peerNodes).forEach(nodeInfo => {
     if (nodeInfo.address !== myself &&
+        nodeInfo.isAlive === true &&
         !(myself in nodeInfo.managedPeersInfo.inbound) &&
         Object.keys(nodeInfo.managedPeersInfo.inbound).length < nodeInfo.connectionInfo.maxInbound) {
       candidates.push({
