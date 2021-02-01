@@ -88,16 +88,14 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     const nodeInfo = JSON.parse(message);
     wsList[ws.uuid] = nodeInfo.address;
-    if (peerNodes[nodeInfo.address]) {
-      peerNodes[nodeInfo.address] = nodeInfo;
-      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
-      logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
-    } else {
+    if (!(nodeInfo.address in peerNodes)) {
       nodeInfo.location = getNodeLocation(nodeInfo.ip);
-      peerNodes[nodeInfo.address] = nodeInfo;
-      logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
-      logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
     }
+    // TODO(minsu): It will be managed via peers when heartbeat updates.
+    nodeInfo.isAlive = true;
+    peerNodes[nodeInfo.address] = nodeInfo;
+    logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
+    logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 
     const newManagedPeerInfoList = [];
     if (Object.keys(nodeInfo.managedPeersInfo.outbound).length < nodeInfo.connectionInfo.maxOutbound) {
@@ -106,7 +104,7 @@ server.on('connection', (ws) => {
     }
     const msgToNode = {
       newManagedPeerInfoList,
-      numLivePeers: numNodes()
+      numLivePeers: numAliveNodes() - 1   // except for me.
     };
     logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
         `${JSON.stringify(msgToNode, null, 2)}`);
@@ -120,7 +118,7 @@ server.on('connection', (ws) => {
     logger.info(`\nDisconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
         `with code: ${code}`);
     delete wsList[ws.uuid];
-    delete peerNodes[address];
+    peerNodes[address].isAlive = false;
     printNodesInfo();
   });
 
@@ -135,8 +133,12 @@ function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
 
+function numAliveNodes() {
+  return Object.values(peerNodes).filter(node => node.isAlive === true).length;
+}
+
 function numNodes() {
-  return Object.keys(peerNodes).length - 1;   // XXX(minsu): except for me
+  return Object.keys(peerNodes).length;
 }
 
 function assignRandomPeers(candidates) {
@@ -166,7 +168,7 @@ function getPeerCandidates(myself, candidates) {
 }
 
 function printNodesInfo() {
-  logger.info(`Updated [peerNodes]: (Number of nodes: ${numNodes()})`);
+  logger.info(`Updated [peerNodes]: Number of nodes: (${numAliveNodes()}/${numNodes()})`);
   const nodeInfoList = Object.values(peerNodes).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
