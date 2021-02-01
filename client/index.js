@@ -150,10 +150,12 @@ app.get('/match_owner', (req, res, next) => {
     .end();
 });
 
+// TODO(seo): Add tests for body.fid.
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
+  const auth = body.address ? { addr: body.address } : { fid: body.fid };
   const result = node.db.evalRule(
-      body.ref, body.value, body.address, body.timestamp || Date.now(),
+      body.ref, body.value, auth, body.timestamp || Date.now(),
       ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -161,10 +163,12 @@ app.post('/eval_rule', (req, res, next) => {
     .end();
 });
 
+// TODO(seo): Add tests for body.fid.
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
+  const auth = body.address ? { addr: body.address } : { fid: body.fid };
   const result = node.db.evalOwner(
-      body.ref, body.permission, body.address, ChainUtil.toBool(body.is_global));
+      body.ref, body.permission, auth, ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
