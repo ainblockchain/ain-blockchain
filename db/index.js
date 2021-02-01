@@ -575,7 +575,7 @@ class DB {
         case WriteDbOperations.SET_OWNER:
         case WriteDbOperations.SET:
           // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-          resultList.push(this.executeOperation(op, { addr: tx.address }, tx.timestamp, tx));
+          resultList.push(this.executeOperation(op, { addr: tx.address }, txBody.timestamp, tx));
           break;
         default:
           resultList.push(ChainUtil.returnError(803, `Invalid operation type: ${op.type}`));
@@ -662,13 +662,13 @@ class DB {
     if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
-    if (!tx.tx_body) {
+    const txBody = tx.tx_body;
+    if (!txBody) {
       logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-    return this.executeOperation(
-        tx.tx_body.operation, { addr: tx.address}, tx.tx_body.timestamp, tx);
+    return this.executeOperation(txBody.operation, { addr: tx.address}, txBody.timestamp, tx);
   }
 
   executeTransactionList(txList) {
