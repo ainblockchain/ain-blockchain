@@ -39,3 +39,14 @@ jobs:
           echo $VERSION
           echo $MIN_VERSION
           echo $MAX_VERSION
+      - name: send results
+        run: |
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"username": "ain-blockchain",
+          "channel": "blockchain-testnet-deploy",
+          "text": "'"New patch has just been merged($GITHUB_HEAD_REF -> GITHUB_BASE_REF, $GITHUB_SHA).\n"'",
+          "icon_emoji": ":gem:"}' \
+          https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN
+        env:
+          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
