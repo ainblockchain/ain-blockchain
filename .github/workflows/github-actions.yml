@@ -33,6 +33,6 @@ jobs:
           echo $MIN_VERSION
           echo $MAX_VERSION
         env:
-          - VERSION=`cat package.json | jq -r '.version'`
-          - MIN_VERSION=`cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min'`
-          - MAX_VERSION=`cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max'`
+        - VERSION=`cat package.json | jq -r '.version'`
+        - MIN_VERSION=`cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min'`
+        - MAX_VERSION=`cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max'`
