@@ -1,32 +1,26 @@
-# This is a basic workflow to help you get started with Actions
+name: AIN-blockchain CI/CD
 
-name: CI
-
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
 on:
-  pull_request:
-    types: [opened, edited]
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+  # pull_request:
+  #   types: [opened]
+  #   branch: [develop]
+  push:
+    branches:
+      - 'feature/cicd/updates'
 jobs:
-  # This workflow contains a single job called "build"
-  build-and-test:
-    # The type of runner that the job will run on
+  build_and_test:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Setup node environment for testing
       - uses: actions/setup-node@v1
         with:
-          node-version: '10.x'
+          node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
       - name: npm install
         run: npm install
       - name: run unittest
         run: npm run test_unit
-      - name: run integration test
-        run: npm run test_integration
+      # - name: run integration test
+      #   run: npm run test_integration
