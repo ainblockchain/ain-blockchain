@@ -39,7 +39,7 @@ jobs:
           SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
           TEST: ${{ secrets.TEST }}
         run: |
-          echo "https://test.$TEST"
+          echo $TEST
           # curl -v -X POST https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN \
           #   -H "Content-Type: application/json" \
           #   -d '{"username": "ain-blockchain", "channel": "blockchain-testnet-deploy", "text": "test", "icon_emoji": ":gem:"}' \
