@@ -34,18 +34,13 @@ jobs:
         run: |
           echo "MIN_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min')" >> $GITHUB_ENV
           echo "MAX_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max')" >> $GITHUB_ENV
-      - name: check variables
-        run: |
-          echo $VERSION
-          echo $MIN_VERSION
-          echo $MAX_VERSION
       - name: send results
         run: |
           curl -X POST \
           -H "Content-Type: application/json" \
           -d '{"username": "ain-blockchain",
           "channel": "blockchain-testnet-deploy",
-          "text": "'"New patch has just been merged($GITHUB_HEAD_REF -> GITHUB_BASE_REF, $GITHUB_SHA).\n"'",
+          "text": "New patch has just been merged($GITHUB_HEAD_REF -> $GITHUB_BASE_REF, $GITHUB_SHA).",
           "icon_emoji": ":gem:"}' \
           https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN
         env:
