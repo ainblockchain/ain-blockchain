@@ -30,9 +30,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: set variables
         run: |
+          echo "VERSION=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+          echo "MIN_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min')" >> $GITHUB_ENV
+          echo "MAX_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max')" >> $GITHUB_ENV
+      - name: check variables
+        run: |
+          echo $VERSION
           echo $MIN_VERSION
           echo $MAX_VERSION
-        env:
-        - VERSION=$(cat package.json | jq -r '.version')
-        - MIN_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min')
-        - MAX_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max')
