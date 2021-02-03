@@ -514,9 +514,15 @@ class P2pServer {
   // TODO(seo): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
-    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const shardInitTxBody = P2pServer.buildShardingSetupTxBody(GenesisSharding, LIGHTWEIGHT);
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
+    logger.info(`setUpDbForSharding success`);
+  }
+
+  static buildShardingSetupTxBody(genesisSharding, isLightWeight) {
+    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const shardingPathRules = `auth.addr === '${shardOwner}'`;
@@ -529,8 +535,7 @@ class P2pServer {
         `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
     const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
-
-    const shardInitTx = {
+    return {
       operation: {
         type: WriteDbOperations.SET,
         op_list: [
@@ -562,7 +567,7 @@ class P2pServer {
                 '$block_number',
                 ShardingProperties.PROOF_HASH),
             value: {
-              [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+              [RuleProperties.WRITE]: isLightWeight ? proofHashRulesLight : proofHashRules
             }
           },
           {
@@ -612,16 +617,13 @@ class P2pServer {
               PredefinedDbPaths.SHARDING_SHARD,
               ainUtil.encode(shardingPath)
             ]),
-            value: GenesisSharding
+            value: genesisSharding
           }
         ]
       },
       timestamp: Date.now(),
       nonce: -1
     };
-
-    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
-    logger.info(`setUpDbForSharding success`);
   }
 }
 
