@@ -4,19 +4,23 @@ const moment = require('moment');
 const { ConsensusDbPaths } = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
+// Genesis configs
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/mainnet';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
-const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
-const PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
-
 const GenesisParams = getGenesisConfig('genesis_params.json');
 const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
+// Constants
+const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
+const PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
+const HASH_DELIMITER = '#';
+
+// Enums
 /**
  * Message types for communication between nodes.
- * 
+ *
  * @enum {string}
  */
 const MessageTypes = {
@@ -32,7 +36,7 @@ const MessageTypes = {
 
 /**
  * Status of blockchain nodes.
- * 
+ *
  * @enum {string}
  */
 const BlockchainNodeStatus = {
@@ -97,7 +101,7 @@ const PredefinedDbPaths = {
 
 /**
  * Properties of token configs.
- * 
+ *
  * @enum {string}
  */
 const TokenProperties = {
@@ -108,7 +112,7 @@ const TokenProperties = {
 
 /**
  * Properties of account configs.
- * 
+ *
  * @enum {string}
  */
 const AccountProperties = {
@@ -123,7 +127,7 @@ const AccountProperties = {
 
 /**
  * Properties of owner configs.
- * 
+ *
  * @enum {string}
  */
 const OwnerProperties = {
@@ -138,7 +142,7 @@ const OwnerProperties = {
 
 /**
  * Properties of rule configs.
- * 
+ *
  * @enum {string}
  */
 const RuleProperties = {
@@ -147,7 +151,7 @@ const RuleProperties = {
 
 /**
  * Properties of function configs.
- * 
+ *
  * @enum {string}
  */
 const FunctionProperties = {
@@ -160,7 +164,7 @@ const FunctionProperties = {
 
 /**
  * Types of functions.
- * 
+ *
  * @enum {string}
  */
 const FunctionTypes = {
@@ -170,7 +174,7 @@ const FunctionTypes = {
 
 /**
  * Properties of proof configs.
- * 
+ *
  * @enum {string}
  */
 const ProofProperties = {
@@ -179,7 +183,7 @@ const ProofProperties = {
 
 /**
  * IDs of native functions.
- * 
+ *
  * @enum {string}
  */
 const NativeFunctionIds = {
@@ -193,7 +197,7 @@ const NativeFunctionIds = {
 
 /**
  * Properties of sharding configs.
- * 
+ *
  * @enum {string}
  */
 const ShardingProperties = {
@@ -215,7 +219,7 @@ const ShardingProperties = {
 
 /**
  * Sharding protocols.
- * 
+ *
  * @enum {string}
  */
 const ShardingProtocols = {
@@ -225,7 +229,7 @@ const ShardingProtocols = {
 
 /**
  * Token exchange schemes.
- * 
+ *
  * @enum {string}
  */
 const TokenExchangeSchemes = {
@@ -235,7 +239,7 @@ const TokenExchangeSchemes = {
 
 /**
  * Types of read database operations.
- * 
+ *
  * @enum {string}
  */
 const ReadDbOperations = {
@@ -254,7 +258,7 @@ const ReadDbOperations = {
 
 /**
  * Types of write database operations.
- * 
+ *
  * @enum {string}
  */
 const WriteDbOperations = {
@@ -269,7 +273,7 @@ const WriteDbOperations = {
 
 /**
  * Function result code.
- * 
+ *
  * @enum {string}
  */
 const FunctionResultCode = {
@@ -281,7 +285,7 @@ const FunctionResultCode = {
 
 /**
  * Constant values for transactionTracker.
- * 
+ *
  * @enum {string}
  */
 const TransactionStatus = {
@@ -292,7 +296,7 @@ const TransactionStatus = {
 };
 
 /**
- * Default values
+ * Default values.
  */
 const DefaultValues = {
   DEPOSIT_LOCKUP_DURATION_MS: moment.duration(180, 'days').as('milliseconds')
@@ -300,7 +304,7 @@ const DefaultValues = {
 
 /**
  * State versions.
- * 
+ *
  * @enum {string}
  */
 const StateVersions = {
@@ -327,16 +331,23 @@ const FeatureFlags = {
   enableVersionRenaming: true,
 };
 
+/**
+ * Environment variables.
+ */
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8081);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
-const HASH_DELIMITER = '#';
 const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
     process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
+/**
+ * Port number helper.
+ * @param {number} defaultValue
+ * @param {number} baseValue
+ */
 function getPortNumber(defaultValue, baseValue) {
   if (GenesisParams.blockchain.HOSTING_ENV === 'local') {
     return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
@@ -344,6 +355,9 @@ function getPortNumber(defaultValue, baseValue) {
   return defaultValue;
 }
 
+/**
+ * Genesis DB & sharding config.
+ */
 const GenesisSharding = getGenesisSharding();
 const GenesisValues = getGenesisValues();
 const GenesisFunctions = getGenesisFunctions();
