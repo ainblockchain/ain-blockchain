@@ -1,11 +1,11 @@
 # PARENT CHAIN
 node ./tracker-server/index.js &
 sleep 5
-ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/dev STAKE=250 node ./client/index.js &
+ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/dev STAKE=100000 node ./client/index.js &
 sleep 10
-ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/dev STAKE=250 node ./client/index.js &
+ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/dev STAKE=100000 node ./client/index.js &
 sleep 10
-ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/dev STAKE=250 node ./client/index.js &
+ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/dev STAKE=100000 node ./client/index.js &
 sleep 10
 
 # CHILD CHAIN 1

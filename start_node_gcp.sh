@@ -34,6 +34,6 @@ echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 
 export DEBUG=false
 export LIGHTWEIGHT=false
-export STAKE=250
+export STAKE=100000
 
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &

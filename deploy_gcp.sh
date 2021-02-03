@@ -22,7 +22,7 @@ echo "PROJECT_ID=$PROJECT_ID"
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
 
-FILES_FOR_TRACKER="blockchain/ common/ consensus/ db/ logger/ package.json setup_tracker_gcp.sh setup_ubuntu.sh start_tracker_gcp.sh tracker-server/"
+FILES_FOR_TRACKER="blockchain/ common/ consensus/ db/ genesis-configs/ logger/ package.json setup_tracker_gcp.sh setup_ubuntu.sh start_tracker_gcp.sh tracker-server/"
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db json_rpc genesis-configs/ logger/ node/ package.json server/ setup_node_gcp.sh setup_ubuntu.sh start_node_gcp.sh tx-pool/"
 
 printf "\nRemoving redundant files..."
