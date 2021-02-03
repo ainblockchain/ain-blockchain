@@ -1,0 +1,8 @@
+{
+  "sharding_protocol": "POA",
+  "sharding_path": "/apps/shard_1",
+  "parent_chain_poc": "http://127.0.0.1:8080",
+  "reporting_period": 5,
+  "token_exchange_scheme": "FIXED",
+  "token_exchange_rate": 10
+}

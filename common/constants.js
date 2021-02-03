@@ -1,47 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
-const {
-  ConsensusConsts,
-  ConsensusDbPaths,
-} = require('../consensus/constants');
+const { ConsensusDbPaths } = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
-const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
+const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/mainnet';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
 const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
-const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
-const MAX_TX_BYTES = 10000;
-const TRANSACTION_POOL_TIMEOUT_MS = moment.duration(1, 'hours').as('milliseconds');
-const TRANSACTION_TRACKER_TIMEOUT_MS = moment.duration(24, 'hours').as('milliseconds');
-// TODO(lia): Check network id in all messages
-const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
-// HOSTING_ENV is a variable used in extracting the ip address of the host machine,
-// of which value could be either 'local', 'default', or 'gcp'.
-const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
-const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
-    process.env.COMCOM_HOST_EXTERNAL_IP : '';
-const COMCOM_HOST_INTERNAL_IP_MAP = {
-  aincom1: '192.168.1.13',
-  aincom2: '192.168.1.14',
-}
-const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
-const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
-const PORT = process.env.PORT || getPortNumber(8080, 8081);
-const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
-const HASH_DELIMITER = '#';
-const MAX_SHARD_REPORT = 100;
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
-    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
-function getPortNumber(defaultValue, baseValue) {
-  if (HOSTING_ENV === 'local') {
-    return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
-  }
-  return defaultValue;
-}
+const GenesisParams = getGenesisConfig('genesis_params.json');
+const GenesisToken = getGenesisConfig('genesis_token.json');
+const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
 /**
  * Message types for communication between nodes.
@@ -356,22 +327,24 @@ const FeatureFlags = {
   enableVersionRenaming: true,
 };
 
-/**
- * Connection info.
- */
-const PeerConnections = {
-  MAX_CONNECTION_LIMIT: 5,
-  MAX_OUTBOUND_LIMIT: 2,
-  INITIAL_MAX_CONNECTION: 5,
-  INITIAL_MAX_OUTBOUND: 2,
-  INITIAL_MAX_INBOUND: 3
-};
+const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
+const PORT = process.env.PORT || getPortNumber(8080, 8081);
+const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
+const HASH_DELIMITER = '#';
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
+    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
-const GenesisToken = getGenesisConfig('genesis_token.json');
-const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
+function getPortNumber(defaultValue, baseValue) {
+  if (GenesisParams.blockchain.HOSTING_ENV === 'local') {
+    return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
+  }
+  return defaultValue;
+}
+
 const GenesisSharding = getGenesisSharding();
-const GenesisWhitelist = getGenesisWhitelist();
-const GenesisValidators = getGenesisValidators();
 const GenesisValues = getGenesisValues();
 const GenesisFunctions = getGenesisFunctions();
 const GenesisRules = getGenesisRules();
@@ -420,26 +393,6 @@ function getGenesisSharding() {
   return config;
 }
 
-// TODO(lia): replace this with GENESIS_WHITELIST
-function getGenesisWhitelist() {
-  const whitelist = {};
-  for (let i = 0; i < ConsensusConsts.MIN_NUM_VALIDATORS; i++) {
-    const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(whitelist, [accountAddress], true);
-  }
-  return whitelist;
-}
-
-// TODO(lia): replace this with GENESIS_VALIDATORS
-function getGenesisValidators() {
-  const validators = {};
-  for (let i = 0; i < ConsensusConsts.MIN_NUM_VALIDATORS; i++) {
-    const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(validators, [accountAddress], ConsensusConsts.GENESIS_STAKE);
-  }
-  return validators;
-}
-
 function getGenesisValues() {
   const values = {};
   ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
@@ -452,7 +405,7 @@ function getGenesisValues() {
   ChainUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   ChainUtil.setJsObject(
-      values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisWhitelist);
+      values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
   return values;
 }
 
@@ -525,18 +478,10 @@ module.exports = {
   BLOCKCHAINS_DIR,
   PROTOCOL_VERSIONS,
   DEBUG,
-  MAX_TX_BYTES,
-  TRANSACTION_POOL_TIMEOUT_MS,
-  TRANSACTION_TRACKER_TIMEOUT_MS,
-  NETWORK_ID,
-  HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
-  COMCOM_HOST_INTERNAL_IP_MAP,
   ACCOUNT_INDEX,
   PORT,
   P2P_PORT,
-  TRACKER_WS_ADDR,
-  MAX_SHARD_REPORT,
   LIGHTWEIGHT,
   HASH_DELIMITER,
   MessageTypes,
@@ -560,15 +505,15 @@ module.exports = {
   DefaultValues,
   StateVersions,
   FeatureFlags,
-  PeerConnections,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
-  GenesisWhitelist,
-  GenesisValidators,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
   buildOwnerPermissions,
+  ...GenesisParams.blockchain,
+  ...GenesisParams.consensus,
+  ...GenesisParams.network,
 };

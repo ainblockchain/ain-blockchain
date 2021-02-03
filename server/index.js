@@ -34,8 +34,12 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions,
-  PeerConnections,
-  LIGHTWEIGHT
+  INITIAL_MAX_CONNECTION,
+  INITIAL_MAX_OUTBOUND,
+  INITIAL_MAX_INBOUND,
+  MAX_CONNECTION_LIMIT,
+  MAX_OUTBOUND_LIMIT,
+  LIGHTWEIGHT,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { sendTxAndWaitForFinalization } = require('./util');
@@ -107,13 +111,13 @@ class P2pServer {
   // maxInbound is a rest of connection after maxOutbound is set.
   initConnections() {
     const numConnection = process.env.MAX_CONNECTION ?
-        Number(process.env.MAX_CONNECTION) : PeerConnections.INITIAL_MAX_CONNECTION;
+        Number(process.env.MAX_CONNECTION) : INITIAL_MAX_CONNECTION;
     const numOutbound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : PeerConnections.INITIAL_MAX_OUTBOUND;
+        Number(process.env.MAX_OUTBOUND) : INITIAL_MAX_OUTBOUND;
     const numInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : PeerConnections.INITIAL_MAX_INBOUND;
-    this.maxConnection = Math.max(numConnection, PeerConnections.MAX_CONNECTION_LIMIT);
-    this.maxOutbound = Math.min(numOutbound, PeerConnections.MAX_OUTBOUND_LIMIT);
+        Number(process.env.MAX_INBOUND) : INITIAL_MAX_INBOUND;
+    this.maxConnection = Math.max(numConnection, MAX_CONNECTION_LIMIT);
+    this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
     this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
   }
 
@@ -214,9 +218,8 @@ class P2pServer {
         uptime: os.uptime(),
       },
       env: {
-        NUM_VALIDATORS: process.env.NUM_VALIDATORS,
+        GENESIS_CONFIGS_DIR: process.env.GENESIS_CONFIGS_DIR,
         ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
-        HOSTING_ENV: process.env.HOSTING_ENV,
         DEBUG: process.env.DEBUG,
       },
     };
@@ -407,7 +410,7 @@ class P2pServer {
             break;
           default:
             logger.error(`Wrong message type(${data.type}) has been specified.`);
-            logger.error('Igonore the message.');
+            logger.error('Ignore the message.');
             break;
         }
       } catch (error) {

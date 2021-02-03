@@ -20,8 +20,11 @@ const {
   StateVersions,
   MAX_TX_BYTES,
   MAX_SHARD_REPORT,
-  GenesisWhitelist,
+  GENESIS_WHITELIST,
   LIGHTWEIGHT,
+  MIN_NUM_VALIDATORS,
+  MIN_STAKE_PER_VALIDATOR,
+  EPOCH_MS,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -100,7 +103,7 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = Block.genesis();
     this.startingTime = genesisBlock.timestamp;
-    this.state.epoch = Math.ceil((Date.now() - this.startingTime) / ConsensusConsts.EPOCH_MS);
+    this.state.epoch = Math.ceil((Date.now() - this.startingTime) / EPOCH_MS);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.state.epoch}`);
 
     this.setEpochTransition();
@@ -129,7 +132,7 @@ class Consensus {
         }
       }
       currentTime -= this.timeAdjustment;
-      const absEpoch = Math.floor((currentTime - this.startingTime) / ConsensusConsts.EPOCH_MS);
+      const absEpoch = Math.floor((currentTime - this.startingTime) / EPOCH_MS);
       if (this.state.epoch + 1 < absEpoch) {
         logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.state.epoch} / ${absEpoch}`);
       } else if (this.state.epoch + 1 > absEpoch) {
@@ -144,7 +147,7 @@ class Consensus {
         this.tryPropose();
       }
       this.isInEpochTransition = false;
-    }, ConsensusConsts.EPOCH_MS);
+    }, EPOCH_MS);
   }
 
   stop() {
@@ -218,7 +221,10 @@ class Consensus {
 
         // TODO(minsu): requestChainSegment can be dealt with at P2p Client rather than here.
         // it will be the next job as the second round of refactoring with p2p server and client.
-        this.server.client.requestChainSegment(this.node.bc.lastBlock());
+        const connections = _.merge({}, this.server.client.outbound, this.server.inbound);
+        Object.values(connections).forEach((socket) => {
+          this.server.client.requestChainSegment(socket, this.node.bc.lastBlock());
+        });
         return;
       }
       if (Consensus.isValidConsensusTx(proposalTx) &&
@@ -302,12 +308,12 @@ class Consensus {
     // Need the block#1 to be finalized to have the deposits reflected in the state
     let validators = {};
     if (this.node.bc.lastBlockNumber() < 1) {
-      const whitelist = GenesisWhitelist;
+      const whitelist = GENESIS_WHITELIST;
       for (const address in whitelist) {
         if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
           const deposit = tempDb.getValue(`/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`);
           if (whitelist[address] === true && deposit &&
-              deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+              deposit.value >= MIN_STAKE_PER_VALIDATOR) {
             validators[address] = deposit.value;
           }
         }
@@ -318,7 +324,7 @@ class Consensus {
     }
     const numValidators = Object.keys(validators).length;
     if (!validators || !numValidators) throw Error('No whitelisted validators');
-    if (numValidators < ConsensusConsts.MIN_NUM_VALIDATORS) {
+    if (numValidators < MIN_NUM_VALIDATORS) {
       throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
     }
     const totalAtStake = Object.values(validators).reduce(function(a, b) {
@@ -418,15 +424,16 @@ class Consensus {
     // those can notarize the prevBlock (verify, execute and add the missing votes)
     let prevBlockInfo = number === 1 ?
         this.node.bc.getBlockByNumber(0) : this.blockPool.hashToBlockInfo[last_hash];
-    const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
     logger.debug(`[${LOG_HEADER}] prevBlockInfo: ${JSON.stringify(prevBlockInfo, null, 2)}`);
     if (number !== 1 && (!prevBlockInfo || !prevBlockInfo.block)) {
       logger.debug(`[${LOG_HEADER}] No notarized block at number ${number - 1} with ` +
           `hash ${last_hash}`);
       return;
     }
+    const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
+
     // Make sure we have at least MIN_NUM_VALIDATORS validators.
-    if (Object.keys(validators).length < ConsensusConsts.MIN_NUM_VALIDATORS) {
+    if (Object.keys(validators).length < MIN_NUM_VALIDATORS) {
       logger.error(`[${LOG_HEADER}] Validator set smaller than MIN_NUM_VALIDATORS: ${JSON.stringify(validators)}`);
       return false;
     }
@@ -866,7 +873,7 @@ class Consensus {
       const deposit = this.node.getValueWithStateVersion(
         `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false, stateVersion) || {};
       if (whitelist[address] === true && deposit &&
-          deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+          deposit.value >= MIN_STAKE_PER_VALIDATOR) {
         validators[address] = deposit.value;
       }
     });

@@ -62,7 +62,7 @@ docker pull ainblockchain/tracker-server
 ```
 - Run with Docker image
 ```
-docker run -e HOSTING_ENV="gcp" --network="host" -d ainblockchain/tracker-server:latest
+docker run --network="host" -d ainblockchain/tracker-server:latest
 ```
 -->
 
@@ -92,21 +92,20 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-NUM_VALIDATORS=4 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js
-NUM_VALIDATORS=4 ACCOUNT_INDEX=1 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js 
-NUM_VALIDATORS=4 ACCOUNT_INDEX=2 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js 
-NUM_VALIDATORS=4 ACCOUNT_INDEX=3 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js 
+ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/dev DEBUG=false STAKE=250 node client/index.js
+ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/dev DEBUG=false STAKE=250 node client/index.js 
+ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/dev DEBUG=false STAKE=250 node client/index.js
 ```
-The environment variable `NUM_VALIDATORS` has default value `5`.
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
 ```
 rm -rf blockchain/blockchains logger/logs
 ```
-The default size of the validator whitelist is 5. Set NUM_VALIDATORS environment variable when running the first node if you'd like to run different number of validator nodes than 5.
-The genesis configs directory used is `blockchain` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
+The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDATORS parameter in 
+the genesis-configs/dev/genesis.json to change this value.
+The genesis configs directory used is `genesis-configs/mainnet` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-GENESIS_CONFIGS_DIR=blockchain/afan_shard NUM_VALIDATORS=1 ACCOUNT_INDEX=0 HOSTING_ENV=local DEBUG=false STAKE=250 node client/index.js
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard ACCOUNT_INDEX=0 DEBUG=false STAKE=250 node client/index.js
 ```
 
 ### How to run tests
@@ -153,7 +152,7 @@ docker pull ainblockchain/blockchain-database
 ```
 - Run with Docker image
 ```
-docker run -e ACCOUNT_INDEX=0 -e HOSTING_ENV="gcp" -e TRACKER_WS_ADDR="ws://<ip_address_of_tracker_server>:5000" --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INDEX=0 --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 
 #### Enter Docker container and inspect blockchain files
