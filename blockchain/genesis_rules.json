@@ -74,7 +74,7 @@
         ".write": "!getValue('/deposit_accounts/' + $service) || (getOwner('/deposit_accounts/' + $service) && getOwner('/deposit_accounts/' + $service).owners && getOwner('/deposit_accounts/' + $service).owners[auth.addr])"
       },
       "$user_addr": {
-        ".write": "auth.fid === '_deposit'"
+        ".write": "auth.fid === '_deposit' || auth.fid === '_withdraw'"
       }
     },
     "consensus": {
@@ -82,7 +82,7 @@
         ".write": false
       },
       "$user_addr": {
-        ".write": "auth.fid === '_deposit'"
+        ".write": "auth.fid === '_deposit' || auth.fid === '_withdraw'"
       }
     }
   },
