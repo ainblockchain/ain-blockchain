@@ -35,11 +35,7 @@ jobs:
           echo "MIN_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min')" >> $GITHUB_ENV
           echo "MAX_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max')" >> $GITHUB_ENV
       - name: send results
-        env:
-          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-          TEST: ${{ secrets.TEST }}
         run: |
-          echo $TEST
-          # curl -v -X POST https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN \
-          #   -H "Content-Type: application/json" \
-          #   -d '{"username": "ain-blockchain", "channel": "blockchain-testnet-deploy", "text": "test", "icon_emoji": ":gem:"}' \
+          curl -v -X POST https://hooks.slack.com/services/${{ secrets.SLACK_WEBHOOK_TOKEN }} \
+            -H "Content-Type: application/json" \
+            -d '{"username": "ain-blockchain", "channel": "blockchain-testnet-deploy", "text": "test", "icon_emoji": ":gem:"}' \
