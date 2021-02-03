@@ -1,7 +1,11 @@
 {
   ".write": false,
   "accounts": {
-    ".write": true
+    "$user_addr": {
+      "balance": {
+        ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw'"
+      }
+    }
   },
   "afan": {
     ".write": true
@@ -54,26 +58,31 @@
           "value": {
             ".write": "auth.addr === $user_addr && !getValue('/deposit/' + $service + '/' + $user_addr + '/' + $deposit_id) && (util.length($user_addr) !== 42 || util.isCksumAddr($user_addr)) && util.isNumber(newData) && getValue('/accounts/' + $user_addr + '/balance') >= newData"
           },
-          "createdAt": {
-            ".write": false
+          "created_at": {
+            ".write": "auth.fid === '_deposit'"
+          },
+          "result": {
+            ".write": "auth.fid === '_deposit'"
           }
         }
       }
     }
   },
   "deposit_accounts": {
-    ".write": false,
     "$service": {
       "config": {
         ".write": "!getValue('/deposit_accounts/' + $service) || (getOwner('/deposit_accounts/' + $service) && getOwner('/deposit_accounts/' + $service).owners && getOwner('/deposit_accounts/' + $service).owners[auth.addr])"
       },
       "$user_addr": {
-        ".write": false
+        ".write": "auth.fid === '_deposit'"
       }
     },
     "consensus": {
       "config": {
         ".write": false
+      },
+      "$user_addr": {
+        ".write": "auth.fid === '_deposit'"
       }
     }
   },
@@ -91,6 +100,9 @@
         "$key": {
           "value": {
             ".write": "auth.addr === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 42 || util.isCksumAddr($from)) && (util.length($to) !== 42 || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue('accounts/' + $from + '/balance') >= newData"
+          },
+          "result": {
+            ".write": "auth.fid === '_transfer'"
           }
         }
       }
@@ -103,8 +115,11 @@
           "value": {
             ".write": "auth.addr === $user_addr && !getValue('/withdraw/' + $service + '/' + $user_addr + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service + '/' + $user_addr + '/value') >= newData"
           },
-          "createdAt": {
-            ".write": false
+          "created_at": {
+            ".write": "auth.fid === '_withdraw'"
+          },
+          "result": {
+            ".write": "auth.fid === '_withdraw'"
           }
         }
       }

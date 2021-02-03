@@ -405,7 +405,10 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
+    // NOTE(seo): As of now (2021-01), we don't allow recursive function triggering.
+    if (auth && auth.addr) {
+      this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
+    }
 
     return true;
   }
