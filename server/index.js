@@ -528,6 +528,7 @@ class P2pServer {
         '(newData !== null && ($block_number === "0" || ' +
         `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
+    const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
 
     const shardInitTx = {
       operation: {
@@ -562,6 +563,17 @@ class P2pServer {
                 ShardingProperties.PROOF_HASH),
             value: {
               [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+            }
+          },
+          {
+            type: WriteDbOperations.SET_RULE,
+            ref: ChainUtil.appendPath(
+                shardingPath,
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                ShardingProperties.LATEST),
+            value: {
+              [RuleProperties.WRITE]: latestBlockNumberRules
             }
           },
           {

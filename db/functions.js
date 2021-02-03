@@ -346,23 +346,25 @@ class Functions {
   }
 
   _updateLatestShardReport(value, context) {
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
     const blockNumber = Number(context.params.block_number);
     const valuePath = context.valuePath;
     if (!ChainUtil.isArray(context.functionPath)) {
-      return;
+      return false;
     }
     if (!ChainUtil.isString(value)) {
       // Removing old report or invalid reporting
-      return;
+      return false;
     }
     const latestReportPath = this.getLatestShardReportPathFromValuePath(valuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
-      return;
+      return false;
     }
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+    return this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp);
   }
 
   getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
