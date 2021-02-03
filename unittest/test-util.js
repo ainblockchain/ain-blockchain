@@ -84,9 +84,17 @@ function addBlock(node, txs, votes, validators) {
 }
 
 function waitUntilTxFinalized(servers, txHash) {
+  const MAX_ITERATION = 50;
+  let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
-    if (!unchecked.size) return;
+    if (!unchecked.size) {
+      return;
+    }
+    if (iterCount >= MAX_ITERATION) {
+      console.log(`Iteration count exceeded its limit before the given tx ${txHash} is finalized!`);
+      return;
+    }
     unchecked.forEach(server => {
       const txStatus = JSON.parse(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
           .body
@@ -96,6 +104,7 @@ function waitUntilTxFinalized(servers, txHash) {
       }
     });
     sleep(200);
+    iterCount++;
   }
 }
 
