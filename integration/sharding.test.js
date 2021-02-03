@@ -19,6 +19,7 @@ const {
   WriteDbOperations,
   OwnerProperties,
   RuleProperties,
+  ShardingProperties,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
@@ -217,8 +218,15 @@ function setUpForSharding(shardingConfig) {
               }
             },
             {
+              type: WriteDbOperations.SET_RULE,
+              ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+              value: {
+                [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
+              }
+            },
+            {
               type: WriteDbOperations.SET_FUNCTION,
-              ref: `${sharding_path}/$block_number/proof_hash`,
+              ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
               value: {
                 [FunctionProperties.FUNCTION]: {
                   [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {

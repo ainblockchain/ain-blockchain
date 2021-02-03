@@ -84,7 +84,7 @@ function addBlock(node, txs, votes, validators) {
 }
 
 function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 50;
+  const MAX_ITERATION = 100;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
