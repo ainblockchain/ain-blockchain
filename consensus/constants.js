@@ -3,11 +3,7 @@ const ConsensusConsts = {
   DAY_MS: 86400000,
   EPOCH_MS: 3000,
   MAX_CONSENSUS_STATE_DB: 1000,
-  GENESIS_STAKE: 250,
-  MIN_STAKE_PER_VALIDATOR: 100,
-  // TODO(lia): Use a separate genesis json file for consensus params and deprecate NUM_VALIDATORS
-  MIN_NUM_VALIDATORS: process.env.NUM_VALIDATORS ? Number(process.env.NUM_VALIDATORS) : 3,
-  HEALTH_THRESHOLD_EPOCH: 600 // 600 epochs = 10 minutes
+  HEALTH_THRESHOLD_EPOCH: 600
 }
 
 const ConsensusMessageTypes = {

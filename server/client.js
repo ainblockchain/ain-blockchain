@@ -287,10 +287,10 @@ class P2pClient {
         case MessageTypes.TRANSACTION:
           logger.debug(
             `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
-          if (this.node.tp.transactionTracker[data.transaction.hash]) {
+          if (this.server.node.tp.transactionTracker[data.transaction.hash]) {
             logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
             break;
-          } else if (this.node.status === BlockchainNodeStatus.SERVING) {
+          } else if (this.server.node.status === BlockchainNodeStatus.SERVING) {
             const tx = data.transaction;
             if (Transaction.isBatchTransaction(tx)) {
               const newTxList = [];
@@ -304,7 +304,7 @@ class P2pClient {
                 newTxList.push(createdTx);
               }
               if (newTxList.length > 0) {
-                this.executeAndBroadcastTransaction(
+                this.server.executeAndBroadcastTransaction(
                   { tx_list: newTxList }, MessageTypes.TRANSACTION);
               }
             } else {
@@ -313,14 +313,14 @@ class P2pClient {
                 logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
                   `${JSON.stringify(tx, null, 2)}`);
               } else {
-                this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                this.server.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
               }
             }
           }
           break;
         default:
           logger.error(`Wrong message type(${data.type}) has been specified.`);
-          logger.error('Igonore the message.');
+          logger.error('Ignore the message.');
           break;
       }
     });
