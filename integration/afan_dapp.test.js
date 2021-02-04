@@ -14,22 +14,22 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, GENESIS_CONFIGS_DIR: 'integration/genesis-configs/4-nodes', DEBUG: false,
+    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, GENESIS_CONFIGS_DIR: 'integration/genesis-configs/4-nodes', DEBUG: false,
+    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, GENESIS_CONFIGS_DIR: 'integration/genesis-configs/4-nodes', DEBUG: false,
+    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, GENESIS_CONFIGS_DIR: 'integration/genesis-configs/4-nodes', DEBUG: false,
+    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
