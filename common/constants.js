@@ -5,7 +5,7 @@ const { ConsensusDbPaths } = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
 // Genesis configs
-const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/mainnet';
+const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
 const GenesisParams = getGenesisConfig('genesis_params.json');
@@ -338,10 +338,41 @@ const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t'
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
-const PORT = process.env.PORT || getPortNumber(8080, 8081);
-const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
+const PORT = process.env.PORT || getPortNumber(8080, 8080);
+const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
     process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
+
+/**
+ * Overwriting environment variables.
+ * These parameters are defined in genesis_params.json, but if specified as environment variables,
+ * the env vars take precedence.
+ * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
+ */
+const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'HOSTING_ENV'];
+const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'EPOCH_MS'];
+for (const key of OVERWRITING_BLOCKCHAIN_PARAMS) {
+  if (process.env[key]) {
+    GenesisParams.blockchain[key] = process.env[key];
+  }
+}
+for (const key of OVERWRITING_CONSENSUS_PARAMS) {
+  if (process.env[key]) {
+    GenesisParams.consensus[key] = process.env[key];
+
+    if (key === 'MIN_NUM_VALIDATORS') {
+      const whitelist = {};
+      const validators = {};
+      for (let i = 0; i < process.env[key]; i++) {
+        const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
+        ChainUtil.setJsObject(whitelist, [addr], true);
+        ChainUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+      }
+      GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
+      GenesisParams.consensus.GENESIS_VALIDATORS = validators;
+    }
+  }
+}
 
 /**
  * Port number helper.
@@ -350,7 +381,7 @@ const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
  */
 function getPortNumber(defaultValue, baseValue) {
   if (GenesisParams.blockchain.HOSTING_ENV === 'local') {
-    return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
+    return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) + 1 : 0);
   }
   return defaultValue;
 }

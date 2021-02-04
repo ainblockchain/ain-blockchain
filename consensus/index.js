@@ -171,7 +171,8 @@ class Consensus {
         : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
 
     // FIXME(lia): make the seeds more secure and unpredictable
-    const seed = '' + this.genesisHash + this.state.epoch;
+    // const seed = '' + this.genesisHash + this.state.epoch;
+    const seed = '' + lastNotarizedBlock.last_votes_hash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
@@ -507,7 +508,8 @@ class Consensus {
           `is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
-    const seed = '' + this.genesisHash + epoch;
+    // const seed = '' + this.genesisHash + epoch;
+    const seed = '' + prevBlock.last_votes_hash + proposalBlock.epoch;
     const expectedProposer = Consensus.selectProposer(seed, validators);
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_HEADER}] Proposer is not the expected node (expected: ` +
