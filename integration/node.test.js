@@ -108,11 +108,16 @@ function setUp() {
               }
             }
           }
-        }
-      ]
+        },
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SERVERS, res.tx_hash);
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of setUp() tx.`)
+  }
 }
 
 function cleanUp() {
@@ -139,10 +144,117 @@ function cleanUp() {
           ref: 'test/test_value/some/path',
           value: null
         }
-      ]
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SERVERS, res.tx_hash);
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of cleanUp() tx.`)
+  }
+}
+
+function setUpForNativeFunctions() {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+    json: {
+      op_list: [
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: {
+            ".function": {
+              "_saveLastTx": {
+                "function_type": "NATIVE",
+                "function_id": "_saveLastTx"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: {
+            ".write": true,
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/allowed_path/last_tx',
+          value: {
+            ".write": "auth.fid === '_saveLastTx'",
+          }
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: {
+            ".function": {
+              "_saveLastTx": {
+                "function_type": "NATIVE",
+                "function_id": "_saveLastTx"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: {
+            ".write": true,
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/not_allowed_path/last_tx',
+          value: {
+            ".write": "auth.fid === 'some function id'",
+          }
+        },
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
+    }
+  }).body.toString('utf-8')).result;
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of setUpForNativeFunctions() tx.`)
+  }
+}
+
+function cleanUpForNativeFunctions() {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+    json: {
+      op_list: [
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: null
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: null
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: null
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: null
+        },
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
+    }
+  }).body.toString('utf-8')).result;
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of cleanUpForNativeFunctions() tx.`)
+  }
 }
 
 describe('Blockchain Node', () => {
@@ -1892,6 +2004,9 @@ describe('Blockchain Node', () => {
   })
 
   describe('Native functions', () => {
+    const saveLastTxAllowedPath = '/test/test_native_function/allowed_path';
+    const saveLastTxNotAllowedPath = '/test/test_native_function/not_allowed_path';
+
     let transferFrom; // = server1
     let transferTo; // = server2
     let transferFromBad;     // = server3
@@ -1931,6 +2046,54 @@ describe('Blockchain Node', () => {
       withdrawPath = `/withdraw/test_service/${depositActor}`;
       depositActorBalancePath = `/accounts/${depositActor}/balance`;
     })
+
+    beforeEach(() => {
+      setUpForNativeFunctions();
+    })
+
+    afterEach(() => {
+      cleanUpForNativeFunctions();
+    })
+
+    describe('function permission (_saveLastTx)', () => {
+      it('without function permission', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: saveLastTxNotAllowedPath + '/value',
+          value: 'some value',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.equal(_.get(body, 'result.result'), true);
+        assert.equal(body.code, 0);
+        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+          console.log(`Failed to check finalization of tx.`)
+        }
+        const lastTx = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/last_tx'}`)
+          .body.toString('utf-8')).result
+        // Should be null.
+        expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+      });
+
+      it('with function permission', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: saveLastTxAllowedPath + '/value',
+          value: 'some value',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.equal(_.get(body, 'result.result'), true);
+        assert.equal(body.code, 0);
+        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+          console.log(`Failed to check finalization of tx.`)
+        }
+        const lastTx = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${saveLastTxAllowedPath + '/last_tx'}`)
+          .body.toString('utf-8')).result
+        // Should be the tx hash value.
+        expect(_.get(lastTx, 'tx_hash', null)).to.equal(body.result.tx_hash);
+      });
+    });
 
     describe('_transfer', () => {
       it('transfer', () => {

@@ -37,12 +37,13 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
-      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
-      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
-      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
-      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
-      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
       [NativeFunctionIds.CLOSE_CHECKIN]: this._closeCheckin.bind(this),
+      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
+      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
+      [NativeFunctionIds.SAVE_LAST_TX]: this._saveLastTx.bind(this),
+      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
+      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
+      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
     };
   }
 
@@ -237,6 +238,25 @@ class Functions {
     const auth = context.auth;
     const execResult = Functions.buildExecutionResult(timestamp, transaction.hash, code);
     return this.setValueOrLog(resultPath, execResult, auth, timestamp);
+  }
+
+  /**
+   * Saves the transaction's hash to a sibling path.
+   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/last_tx'
+   */
+  // NOTE(seo): Use this function for test-purposes.
+  _saveLastTx(value, context) {
+    const transaction = context.transaction;
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
+    const valuePath = context.valuePath;
+    if (valuePath.length === 0) {
+      return false;
+    }
+    const lastTxPath = valuePath.slice(0, -1);
+    lastTxPath.push(PredefinedDbPaths.LAST_TX);
+    return this.setValueOrLog(ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp);
   }
 
   // TODO(seo): Add adress validity check.
