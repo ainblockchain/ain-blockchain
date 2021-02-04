@@ -6,7 +6,6 @@ on:
       - 'develop'
       - 'release/*'
       - 'master'
-      - 'feature/cicd/updates'
   pull_request:
     branches:
       - 'develop'
@@ -55,5 +54,5 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"username": "ain-blockchain",
             "channel": "blockchain-testnet-deploy",
-            "text": "New PR has just been opened(${{ github.ref }}, ${{ github.sha }}).\nCurrent version: '"$VERSION"', compatible with min('"$MIN_VERSION"'), max('"$MAX_VERSION"')",
+            "text": "New PR has just been merged(${{ github.ref }}, ${{ github.sha }}).\nCurrent version: '"$VERSION"', compatible with min('"$MIN_VERSION"'), max('"$MAX_VERSION"')",
             "icon_emoji": ":gem:"}'
