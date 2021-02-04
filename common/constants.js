@@ -88,6 +88,8 @@ const PredefinedDbPaths = {
   TOKEN_NAME: 'name',
   TOKEN_SYMBOL: 'symbol',
   TOKEN_TOTAL_SUPPLY: 'total_supply',
+  // Save last tx
+  LAST_TX: 'last_tx',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
   BALANCE: 'balance',
@@ -212,12 +214,13 @@ const ProofProperties = {
  * @enum {string}
  */
 const NativeFunctionIds = {
-  DEPOSIT: '_deposit',
-  TRANSFER: '_transfer',
-  WITHDRAW: '_withdraw',
-  UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
-  OPEN_CHECKIN: '_openCheckin',
   CLOSE_CHECKIN: '_closeCheckin',
+  DEPOSIT: '_deposit',
+  OPEN_CHECKIN: '_openCheckin',
+  SAVE_LAST_TX: '_saveLastTx',
+  TRANSFER: '_transfer',
+  UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
+  WITHDRAW: '_withdraw',
 };
 
 /**
@@ -302,10 +305,10 @@ const WriteDbOperations = {
  * @enum {string}
  */
 const FunctionResultCode = {
-  FAILURE: 'FAILURE',
+  FAILURE: 'FAILURE',  // Normal failure
   IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
   SUCCESS: 'SUCCESS',
 };
 

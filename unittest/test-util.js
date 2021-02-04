@@ -89,13 +89,13 @@ function waitUntilTxFinalized(servers, txHash) {
   const unchecked = new Set(servers);
   while (true) {
     if (!unchecked.size) {
-      return;
+      return true;
     }
     if (iterCount >= MAX_ITERATION) {
       console.log(`Iteration count exceeded its limit before the given tx ${txHash} is finalized!`);
-      return;
+      return false;
     }
-    unchecked.forEach(server => {
+    unchecked.forEach((server) => {
       const txStatus = JSON.parse(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
           .body
           .toString('utf-8')).result;

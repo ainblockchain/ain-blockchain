@@ -433,6 +433,7 @@ class DB {
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
   }
 
+  // TODO(seo): Do not allow users to set native functions to arbitrary paths.
   setFunction(functionPath, functionChange, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
