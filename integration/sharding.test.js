@@ -39,7 +39,7 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    GENESIS_CONFIGS_DIR: 'integration/genesis-configs/1-node', ACCOUNT_INDEX: 0, DEBUG: true
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true
   },
   {
     // For shard chain tracker
@@ -47,25 +47,25 @@ const ENV_VARIABLES = [
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9091, P2P_PORT: 6001, ACCOUNT_INDEX: 0, DEBUG: false,
+    PORT: 9091, P2P_PORT: 6001, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9092, P2P_PORT: 6002, ACCOUNT_INDEX: 1, DEBUG: false,
+    PORT: 9092, P2P_PORT: 6002, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9093, P2P_PORT: 6003, ACCOUNT_INDEX: 2, DEBUG: false,
+    PORT: 9093, P2P_PORT: 6003, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9094, P2P_PORT: 6004, ACCOUNT_INDEX: 3, DEBUG: false,
+    PORT: 9094, P2P_PORT: 6004, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
