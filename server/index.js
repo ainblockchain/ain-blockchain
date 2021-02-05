@@ -514,22 +514,28 @@ class P2pServer {
   // TODO(seo): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
-    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
+    logger.info(`setUpDbForSharding success`);
+  }
+
+  static buildShardingSetupTxBody() {
+    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-    const shardingPathRules = `auth === '${shardOwner}'`;
-    const proofHashRulesLight = `auth === '${shardReporter}'`;
-    const proofHashRules = `auth === '${shardReporter}' && ` +
+    const shardingPathRules = `auth.addr === '${shardOwner}'`;
+    const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
+    const proofHashRules = `auth.addr === '${shardReporter}' && ` +
         '((newData === null && ' +
         `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
         '(newData !== null && ($block_number === "0" || ' +
         `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
-
-    const shardInitTx = {
+    const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
+    return {
       operation: {
         type: WriteDbOperations.SET,
         op_list: [
@@ -562,6 +568,17 @@ class P2pServer {
                 ShardingProperties.PROOF_HASH),
             value: {
               [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+            }
+          },
+          {
+            type: WriteDbOperations.SET_RULE,
+            ref: ChainUtil.appendPath(
+                shardingPath,
+                ShardingProperties.SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                ShardingProperties.LATEST),
+            value: {
+              [RuleProperties.WRITE]: latestBlockNumberRules
             }
           },
           {
@@ -607,9 +624,6 @@ class P2pServer {
       timestamp: Date.now(),
       nonce: -1
     };
-
-    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTx, ownerPrivateKey);
-    logger.info(`setUpDbForSharding success`);
   }
 }
 

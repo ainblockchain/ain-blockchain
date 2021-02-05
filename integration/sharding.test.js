@@ -19,6 +19,7 @@ const {
   WriteDbOperations,
   OwnerProperties,
   RuleProperties,
+  ShardingProperties,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
@@ -124,7 +125,7 @@ function setUp() {
           type: 'SET_RULE',
           ref: '/test/test_rule/some/path',
           value: {
-            ".write": "auth === 'abcd'"
+            ".write": "auth.addr === 'abcd'"
           }
         },
         {
@@ -213,12 +214,19 @@ function setUpForSharding(shardingConfig) {
               type: WriteDbOperations.SET_RULE,
               ref: sharding_path,
               value: {
-                [RuleProperties.WRITE]: `auth === '${shard_reporter}'`
+                [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
+              }
+            },
+            {
+              type: WriteDbOperations.SET_RULE,
+              ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+              value: {
+                [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
               }
             },
             {
               type: WriteDbOperations.SET_FUNCTION,
-              ref: `${sharding_path}/$block_number/proof_hash`,
+              ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
               value: {
                 [FunctionProperties.FUNCTION]: {
                   [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
@@ -261,18 +269,18 @@ describe('Sharding', () => {
 
     parent_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
     sleep(2000);
-    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0]);
+    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], false);
     sleep(2000);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], false);
     sleep(2000);
     waitUntilShardReporterStarts();
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3]);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], false);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4]);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], false);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5]);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], false);
     sleep(2000);
   });
 
@@ -560,7 +568,7 @@ describe('Sharding', () => {
               syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
 
         it('/get_rule with is_global = true', () => {
@@ -568,7 +576,7 @@ describe('Sharding', () => {
               'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
       })
 
@@ -667,7 +675,7 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -686,7 +694,7 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/apps/afan/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -844,7 +852,7 @@ describe('Sharding', () => {
                 }
               },
               {
-                ".write": "auth === 'abcd'"
+                ".write": "auth.addr === 'abcd'"
               },
               {
                 ".owner": {
@@ -915,7 +923,7 @@ describe('Sharding', () => {
                 }
               },
               {
-                ".write": "auth === 'abcd'"
+                ".write": "auth.addr === 'abcd'"
               },
               {
                 ".owner": {
@@ -1038,7 +1046,7 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth === 'abcd'",
+                "config": "auth.addr === 'abcd'",
                 "path": "/test/test_rule/some/path"
               },
               "subtree_configs": []
@@ -1058,7 +1066,7 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth === 'abcd'",
+                "config": "auth.addr === 'abcd'",
                 "path": "/apps/afan/test/test_rule/some/path"
               },
               "subtree_configs": []

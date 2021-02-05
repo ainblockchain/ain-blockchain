@@ -23,6 +23,18 @@
       }
     }
   },
+  "test_native_function": {
+    ".owner": {
+      "owners": {
+        "*": {
+          "branch_owner": true,
+          "write_function": true,
+          "write_owner": true,
+          "write_rule": true
+        }
+      }
+    }
+  },
   "test_owner": {
     ".owner": {
       "owners": {
