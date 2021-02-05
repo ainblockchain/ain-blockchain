@@ -161,13 +161,13 @@ class Functions {
       // Just delete the existing value.
       return null;
     }
-    const funcChangeMap = ChainUtil.getJsObject(functionChange, [PredefinedDbPaths.FUNCTION]);
+    const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
     if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
       return curFunction;
     }
     const newFunction =
         ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
-    let newFuncMap = ChainUtil.getJsObject(newFunction, [PredefinedDbPaths.FUNCTION]);
+    let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
     if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
       // Add a place holder.
       ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
