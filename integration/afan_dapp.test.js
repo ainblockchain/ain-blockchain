@@ -65,13 +65,13 @@ describe('aFan DApp Test', () => {
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], false);
     sleep(2000);
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1]);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], false);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2]);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], false);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3]);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], false);
     sleep(2000);
   });
 
