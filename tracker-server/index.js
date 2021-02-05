@@ -130,7 +130,7 @@ function abbrAddr(address) {
 }
 
 function numAliveNodes() {
-  return Object.values(peerNodes).filter(node => node.isAlive === true).length;
+  return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
 }
 
 function numNodes() {
@@ -175,18 +175,19 @@ function printNodesInfo() {
     const diskAvailableMb = Math.floor(_.get(nodeInfo, 'diskStatus.available') / 1000 / 1000);
     const memoryFreeMb =
         Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
-    logger.info(`${getNodeSummary(nodeInfo)} ` +
-        `Alive: ${nodeInfo.isAlive}, ` +
-        `Disk: ${diskAvailableMb}MB, ` +
-        `Memory: ${memoryFreeMb}MB, ` +
-        `Peers: outbound(${Object.keys(nodeInfo.managedPeersInfo.outbound)}), ` +
-        `inbound(${Object.keys(nodeInfo.managedPeersInfo.inbound)}), ` +
+    logger.info(`NodeSummary: ${getNodeSummary(nodeInfo)}\n` +
+        `isAlive: ${nodeInfo.isAlive},\n` +
+        `Disk: ${diskAvailableMb}MB,\n` +
+        `Memory: ${memoryFreeMb}MB,\n` +
+        `Peers:\n` +
+        `  outbound(${Object.keys(nodeInfo.managedPeersInfo.outbound)}),\n` +
+        `  inbound(${Object.keys(nodeInfo.managedPeersInfo.inbound)}),\n` +
         `UpdatedAt: ${nodeInfo.updatedAt}`);
   });
 }
 
 function getNodeSummary(nodeInfo) {
-  return `[${abbrAddr(nodeInfo.address)}]: ${JSON.stringify(nodeInfo.nodeStatus)}`;
+  return `[${abbrAddr(nodeInfo.address)}]: ${JSON.stringify(nodeInfo.nodeStatus, null, 2)}`;
 }
 
 function getNodeLocation(ip) {
@@ -205,10 +206,6 @@ function getNodeLocation(ip) {
     city: _.isEmpty(geoLocationDict.city) ? null : geoLocationDict.city,
     timezone: _.isEmpty(geoLocationDict.timezone) ? null : geoLocationDict.timezone,
   };
-}
-
-function numAliveNodes() {
-  return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
 }
 
 function getNetworkInfo() {
