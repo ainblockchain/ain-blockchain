@@ -75,6 +75,7 @@ const BlockchainNodeStatus = {
  * @enum {string}
  */
 // TODO(lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
+// TODO(seo): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
