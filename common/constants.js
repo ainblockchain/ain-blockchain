@@ -351,28 +351,29 @@ const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
  */
 const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'HOSTING_ENV'];
 const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'EPOCH_MS'];
-for (const key of OVERWRITING_BLOCKCHAIN_PARAMS) {
-  if (process.env[key]) {
-    GenesisParams.blockchain[key] = process.env[key];
-  }
-}
-for (const key of OVERWRITING_CONSENSUS_PARAMS) {
-  if (process.env[key]) {
-    GenesisParams.consensus[key] = process.env[key];
 
-    if (key === 'MIN_NUM_VALIDATORS') {
-      const whitelist = {};
-      const validators = {};
-      for (let i = 0; i < process.env[key]; i++) {
-        const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-        ChainUtil.setJsObject(whitelist, [addr], true);
-        ChainUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+function overwriteGenesisParams(overwritingParams, type) {
+  for (const key of overwritingParams) {
+    if (process.env[key]) {
+      GenesisParams[type][key] = process.env[key];
+
+      if (key === 'MIN_NUM_VALIDATORS') {
+        const whitelist = {};
+        const validators = {};
+        for (let i = 0; i < process.env[key]; i++) {
+          const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
+          ChainUtil.setJsObject(whitelist, [addr], true);
+          ChainUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+        }
+        GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
+        GenesisParams.consensus.GENESIS_VALIDATORS = validators;
       }
-      GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
-      GenesisParams.consensus.GENESIS_VALIDATORS = validators;
     }
   }
 }
+
+overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
+overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
 /**
  * Port number helper.
