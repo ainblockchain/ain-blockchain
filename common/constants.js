@@ -369,19 +369,19 @@ function overwriteGenesisParams(overwritingParams, type) {
   for (const key of overwritingParams) {
     if (process.env[key]) {
       GenesisParams[type][key] = process.env[key];
-
-      if (key === 'MIN_NUM_VALIDATORS') {
-        const whitelist = {};
-        const validators = {};
-        for (let i = 0; i < process.env[key]; i++) {
-          const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-          ChainUtil.setJsObject(whitelist, [addr], true);
-          ChainUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
-        }
-        GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
-        GenesisParams.consensus.GENESIS_VALIDATORS = validators;
-      }
     }
+  }
+
+  if (type === 'consensus') {
+    const whitelist = {};
+    const validators = {};
+    for (let i = 0; i < GenesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
+      const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
+      ChainUtil.setJsObject(whitelist, [addr], true);
+      ChainUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+    }
+    GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
+    GenesisParams.consensus.GENESIS_VALIDATORS = validators;
   }
 }
 
