@@ -190,6 +190,14 @@ class ChainUtil {
     return true;
   }
 
+  static simplifyProperties(obj) {
+    const newObj = {};
+    for (const key of Object.keys(obj)) {
+      newObj[key] = true;
+    }
+    return newObj;
+  }
+
   static transactionFailed(response) {
     if (Array.isArray(response)) {
       for (const result of response) {
