@@ -89,7 +89,7 @@ const PredefinedDbPaths = {
   TOKEN_SYMBOL: 'symbol',
   TOKEN_TOTAL_SUPPLY: 'total_supply',
   // Save last tx
-  LAST_TX: 'last_tx',
+  SAVE_LAST_TX_LAST_TX: '.last_tx',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
   BALANCE: 'balance',
