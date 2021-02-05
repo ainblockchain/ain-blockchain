@@ -49,6 +49,7 @@ const BlockchainNodeStatus = {
  * @enum {string}
  */
 // TODO(lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
+// TODO(seo): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -71,6 +72,8 @@ const PredefinedDbPaths = {
   TOKEN_NAME: 'name',
   TOKEN_SYMBOL: 'symbol',
   TOKEN_TOTAL_SUPPLY: 'total_supply',
+  // Save last tx
+  SAVE_LAST_TX_LAST_TX: '.last_tx',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
   BALANCE: 'balance',
@@ -195,12 +198,13 @@ const ProofProperties = {
  * @enum {string}
  */
 const NativeFunctionIds = {
-  DEPOSIT: '_deposit',
-  TRANSFER: '_transfer',
-  WITHDRAW: '_withdraw',
-  UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
-  OPEN_CHECKIN: '_openCheckin',
   CLOSE_CHECKIN: '_closeCheckin',
+  DEPOSIT: '_deposit',
+  OPEN_CHECKIN: '_openCheckin',
+  SAVE_LAST_TX: '_saveLastTx',
+  TRANSFER: '_transfer',
+  UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
+  WITHDRAW: '_withdraw',
 };
 
 /**
@@ -285,10 +289,11 @@ const WriteDbOperations = {
  * @enum {string}
  */
 const FunctionResultCode = {
-  SUCCESS: 'SUCCESS',
-  FAILURE: 'FAILURE',
-  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+  FAILURE: 'FAILURE',  // Normal failure
   IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
+  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
+  SUCCESS: 'SUCCESS',
 };
 
 /**
@@ -493,7 +498,7 @@ function getShardingRule() {
   const ownerAddress =
       ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
-    [RuleProperties.WRITE]: `auth === '${ownerAddress}'`,
+    [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
   };
 }
 

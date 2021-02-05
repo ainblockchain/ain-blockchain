@@ -1,32 +1,58 @@
-# This is a basic workflow to help you get started with Actions
+name: AIN-blockchain CI/CD
 
-name: CI
-
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
 on:
+  push:
+    branches:
+      - 'develop'
+      - 'release/*'
+      - 'master'
   pull_request:
-    types: [opened, edited]
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+    branches:
+      - 'develop'
+      - 'release/*'
+      - 'master'
 jobs:
-  # This workflow contains a single job called "build"
-  build-and-test:
-    # The type of runner that the job will run on
+  build_and_test:
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Setup node environment for testing
       - uses: actions/setup-node@v1
         with:
-          node-version: '10.x'
+          node-version: '12.16'
           registry-url: 'https://registry.npmjs.org'
+      - name: test
+        run: echo ${{github.event_name}}
       - name: npm install
         run: npm install
       - name: run unittest
         run: npm run test_unit
       - name: run integration test
+        if: github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
         run: npm run test_integration
+  check_protocol_version:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: test
+        if: github.event_name == 'push'
+        run: echo ${{github.event_name}}
+      - name: get current version
+        run: echo "VERSION=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+      - name: get min/max versions
+        run: |
+          echo "MIN_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min')" >> $GITHUB_ENV
+          echo "MAX_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max')" >> $GITHUB_ENV
+      - name: send results
+        env:
+          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        run: |
+          curl -X POST https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN \
+            -H "Content-Type: application/json" \
+            -d '{"username": "ain-blockchain",
+            "channel": "blockchain-testnet-deploy",
+            "text": "New PR has just been merged(${{ github.ref }}, ${{ github.sha }}).\nCurrent version: '"$VERSION"', compatible with min('"$MIN_VERSION"'), max('"$MAX_VERSION"')",
+            "icon_emoji": ":gem:"}'

@@ -81,7 +81,7 @@ function setUp() {
           type: 'SET_RULE',
           ref: '/test/test_rule/some/path',
           value: {
-            ".write": "auth === 'abcd'"
+            ".write": "auth.addr === 'abcd'"
           }
         },
         {
@@ -108,11 +108,16 @@ function setUp() {
               }
             }
           }
-        }
-      ]
+        },
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SERVERS, res.tx_hash);
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of setUp() tx.`)
+  }
 }
 
 function cleanUp() {
@@ -139,10 +144,117 @@ function cleanUp() {
           ref: 'test/test_value/some/path',
           value: null
         }
-      ]
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SERVERS, res.tx_hash);
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of cleanUp() tx.`)
+  }
+}
+
+function setUpForNativeFunctions() {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+    json: {
+      op_list: [
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: {
+            ".function": {
+              "_saveLastTx": {
+                "function_type": "NATIVE",
+                "function_id": "_saveLastTx"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: {
+            ".write": true,
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/allowed_path/.last_tx/value',
+          value: {
+            ".write": "auth.fid === '_saveLastTx'",
+          }
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: {
+            ".function": {
+              "_saveLastTx": {
+                "function_type": "NATIVE",
+                "function_id": "_saveLastTx"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: {
+            ".write": true,
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/not_allowed_path/.last_tx/value',
+          value: {
+            ".write": "auth.fid === 'some function id'",
+          }
+        },
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
+    }
+  }).body.toString('utf-8')).result;
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of setUpForNativeFunctions() tx.`)
+  }
+}
+
+function cleanUpForNativeFunctions() {
+  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+    json: {
+      op_list: [
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: null
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/allowed_path/value',
+          value: null
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: null
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_native_function/not_allowed_path/value',
+          value: null
+        },
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
+    }
+  }).body.toString('utf-8')).result;
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+    console.log(`Failed to check finalization of cleanUpForNativeFunctions() tx.`)
+  }
 }
 
 describe('Blockchain Node', () => {
@@ -153,13 +265,13 @@ describe('Blockchain Node', () => {
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], false);
     sleep(2000);
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1]);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], false);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2]);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], false);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3]);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], false);
     sleep(2000);
   });
 
@@ -215,7 +327,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(body, {
           code: 0,
           result: {
-            ".write": "auth === 'abcd'"
+            ".write": "auth.addr === 'abcd'"
           }
         });
       })
@@ -306,7 +418,7 @@ describe('Blockchain Node', () => {
             "path_vars": {},
           },
           "matched_config": {
-            "config": "auth === 'abcd'",
+            "config": "auth.addr === 'abcd'",
             "path": "/test/test_rule/some/path"
           },
           "subtree_configs": []
@@ -423,7 +535,7 @@ describe('Blockchain Node', () => {
               }
             },
             {
-              ".write": "auth === 'abcd'"
+              ".write": "auth.addr === 'abcd'"
             },
             {
               ".owner": {
@@ -496,7 +608,7 @@ describe('Blockchain Node', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -846,7 +958,7 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
-          ".write": "auth === 'abcd'"
+          ".write": "auth.addr === 'abcd'"
         });
 
         const request = {
@@ -1892,6 +2004,9 @@ describe('Blockchain Node', () => {
   })
 
   describe('Native functions', () => {
+    const saveLastTxAllowedPath = '/test/test_native_function/allowed_path';
+    const saveLastTxNotAllowedPath = '/test/test_native_function/not_allowed_path';
+
     let transferFrom; // = server1
     let transferTo; // = server2
     let transferFromBad;     // = server3
@@ -1907,7 +2022,7 @@ describe('Blockchain Node', () => {
     let depositAccountPath;
     let depositPath;
     let withdrawPath;
-    let depositBalancePath;
+    let depositActorBalancePath;
 
     before(() => {
       transferFrom = parseOrLog(
@@ -1929,23 +2044,56 @@ describe('Blockchain Node', () => {
       depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
       depositPath = `/deposit/test_service/${depositActor}`;
       withdrawPath = `/withdraw/test_service/${depositActor}`;
-      depositBalancePath = `/accounts/${depositActor}/balance`;
-
-      let res = parseOrLog(syncRequest(
-          'POST', server1 + '/set_value',
-          {json: {ref: `/accounts/${depositServiceAdmin}/balance`, value: 1000}})
-          .body.toString('utf-8')).result;
-      waitUntilTxFinalized(SERVERS, res.tx_hash);
-      res = parseOrLog(syncRequest(
-          'POST', server1+'/set_value', {json: {ref: depositBalancePath, value: 1000}})
-          .body.toString('utf-8')).result;
-      waitUntilTxFinalized(SERVERS, res.tx_hash);
-      res = parseOrLog(syncRequest(
-          'POST', server1+'/set_value',
-          {json: {ref: `/accounts/${depositActorBad}/balance`, value: 1000}})
-          .body.toString('utf-8')).result;
-      waitUntilTxFinalized(SERVERS, res.tx_hash);
+      depositActorBalancePath = `/accounts/${depositActor}/balance`;
     })
+
+    beforeEach(() => {
+      setUpForNativeFunctions();
+    })
+
+    afterEach(() => {
+      cleanUpForNativeFunctions();
+    })
+
+    describe('function permission (_saveLastTx)', () => {
+      it('without function permission', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: saveLastTxNotAllowedPath + '/value',
+          value: 'some value',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.equal(_.get(body, 'result.result'), true);
+        assert.equal(body.code, 0);
+        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+          console.log(`Failed to check finalization of tx.`)
+        }
+        const lastTx = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/.last_tx/value'}`)
+          .body.toString('utf-8')).result
+        // Should be null.
+        expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+      });
+
+      it('with function permission', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: saveLastTxAllowedPath + '/value',
+          value: 'some value',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.equal(_.get(body, 'result.result'), true);
+        assert.equal(body.code, 0);
+        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+          console.log(`Failed to check finalization of tx.`)
+        }
+        const lastTx = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
+          .body.toString('utf-8')).result
+        // Should be the tx hash value.
+        expect(_.get(lastTx, 'tx_hash', null)).to.equal(body.result.tx_hash);
+      });
+    });
 
     describe('_transfer', () => {
       it('transfer', () => {
@@ -1957,7 +2105,7 @@ describe('Blockchain Node', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.result.result, true);
+        assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const fromAfterBalance = parseOrLog(syncRequest('GET',
@@ -2098,27 +2246,29 @@ describe('Blockchain Node', () => {
 
       it('deposit', () => {
         let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPath + '/1/value',
           value: depositAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.result.result, true);
+        assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
-        const depositAccountValue = parseOrLog(syncRequest('GET',
+        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
+        const afterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
         const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/result/code`)
           .body.toString('utf-8')).result;
-        expect(depositValue).to.equal(depositAmount);
-        expect(depositAccountValue).to.equal(depositAmount);
-        expect(balance).to.equal(beforeBalance - depositAmount);
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
+        expect(depositValue).to.equal(depositAmount);
+        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue + depositAmount);
+        expect(afterBalance).to.equal(beforeBalance - depositAmount);
       });
 
       it('deposit more than account balance', () => {
@@ -2131,12 +2281,12 @@ describe('Blockchain Node', () => {
           value: beforeBalance + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const depositAccountValue = parseOrLog(syncRequest('GET',
+        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
-        expect(balance).to.equal(beforeBalance);
+        const afterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
+        expect(afterBalance).to.equal(beforeBalance);
       });
 
       it('deposit by another address', () => {
@@ -2149,20 +2299,19 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equals(1);
         const depositRequest = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3`).body.toString('utf-8')).result;
-        const depositAccountValue = parseOrLog(syncRequest('GET',
+        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         expect(depositRequest).to.equal(null);
-        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
       });
 
       it('deposit with invalid timestamp', () => {
         const account = ainUtil.createAccount();
-        const res = parseOrLog(syncRequest('POST', server2 + '/set_value', {
-          json: {
-            ref: `/accounts/${account.address}/balance`,
-            value: 1000
-          }
-        }).body.toString('utf-8')).result;
+        depositTransferPath = `/transfer/${transferFrom}/${account.address}`;
+        const res = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: depositTransferPath + '/100/value',
+          value: 1000
+        }}).body.toString('utf-8')).result;
         waitUntilTxFinalized(SERVERS, res.tx_hash);
         const txBody = {
           operation: {
@@ -2230,19 +2379,19 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equals(1);
         const withdrawRequest = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${withdrawPath}/1`).body.toString('utf-8')).result;
-        const depositAccountValue = parseOrLog(syncRequest('GET',
+        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${depositActorBad}/balance`)
             .body.toString('utf-8')).result;
         expect(withdrawRequest).to.equal(null);
-        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
         expect(balance).to.equal(beforeBalance);
       });
 
       it('withdraw more than deposited amount', () => {
         let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
         let beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -2250,34 +2399,36 @@ describe('Blockchain Node', () => {
           value: beforeDepositAccountValue + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const depositAccountValue = parseOrLog(syncRequest('GET',
+        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
-        expect(depositAccountValue).to.equal(beforeDepositAccountValue);
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
         expect(balance).to.equal(beforeBalance);
       });
 
       it('withdraw', () => {
-        let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${withdrawPath}/2/value`,
           value: depositAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.result.result, true);
+        assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const depositAccountValue = parseOrLog(syncRequest('GET',
+        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
+        const afterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
         const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${withdrawPath}/2/result/code`)
             .body.toString('utf-8')).result;
-        expect(depositAccountValue).to.equal(0);
-        expect(balance).to.equal(beforeBalance + depositAmount);
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
+        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue - depositAmount);
+        expect(afterBalance).to.equal(beforeBalance + depositAmount);
       });
 
       it('deposit after withdraw', () => {
@@ -2290,22 +2441,22 @@ describe('Blockchain Node', () => {
           ref: depositPath + '/3/value',
           value: newDepositAmount
         }}).body.toString('utf-8'));
-        assert.equal(body.result.result, true);
+        assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
         waitUntilTxFinalized(SERVERS, body.result.tx_hash);
         const depositValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
-        const depositAccountValue = parseOrLog(syncRequest('GET',
+        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositBalancePath}`).body.toString('utf-8')).result;
+        const afterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
         const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/result/code`)
             .body.toString('utf-8')).result;
-        expect(depositValue).to.equal(newDepositAmount);
-        expect(depositAccountValue).to.equal(beforeDepositAccountValue + newDepositAmount);
-        expect(balance).to.equal(beforeBalance - newDepositAmount);
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
+        expect(depositValue).to.equal(newDepositAmount);
+        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue + newDepositAmount);
+        expect(afterBalance).to.equal(beforeBalance - newDepositAmount);
       });
     });
   });

@@ -303,14 +303,28 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_evalRule: function(args, done) {
+      const auth = {};
+      if (args.address) {
+        auth.addr = args.address;
+      }
+      if (args.fid) {
+        auth.fid = args.fid;
+      }
       const result = p2pServer.node.db.evalRule(
-          args.ref, args.value, args.address, args.timestamp || Date.now(), args.is_global);
+          args.ref, args.value, auth, args.timestamp || Date.now(), args.is_global);
       done(null, addProtocolVersion({result}));
     },
 
     ain_evalOwner: function(args, done) {
+      const auth = {};
+      if (args.address) {
+        auth.addr = args.address;
+      }
+      if (args.fid) {
+        auth.fid = args.fid;
+      }
       const result =
-          p2pServer.node.db.evalOwner(args.ref, args.permission, args.address, args.is_global);
+          p2pServer.node.db.evalOwner(args.ref, args.permission, auth, args.is_global);
       done(null, addProtocolVersion({result}));
     },
 

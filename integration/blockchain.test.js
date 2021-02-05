@@ -221,7 +221,7 @@ describe('Blockchain Cluster', () => {
     sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
-      proc.start();
+      proc.start(false);
       sleep(2000);
       const address =
           parseOrLog(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;

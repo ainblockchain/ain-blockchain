@@ -38,12 +38,13 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
-      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
-      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
-      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
-      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
-      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
       [NativeFunctionIds.CLOSE_CHECKIN]: this._closeCheckin.bind(this),
+      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
+      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
+      [NativeFunctionIds.SAVE_LAST_TX]: this._saveLastTx.bind(this),
+      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
+      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
+      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
     };
   }
 
@@ -53,11 +54,11 @@ class Functions {
    * @param {Array} parsedValuePath parsed value path
    * @param {Object} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
-   * @param {Number} currentTime current time
+   * @param {Number} execTime execution time
    * @param {Object} transaction transaction
    */
   // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
+  triggerFunctions(parsedValuePath, value, timestamp, execTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionPath = matched.matchedFunction.path;
     const functionMap = matched.matchedFunction.config;
@@ -68,7 +69,7 @@ class Functions {
     const promises = [];
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, currentTime, params, value, transaction);
+          parsedValuePath, functionPath, timestamp, execTime, params, value, transaction);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -79,6 +80,7 @@ class Functions {
             logger.info(
                 `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
                 formattedParams);
+            const auth = { fid: functionEntry.function_id, };
             // Execute the matched native function.
             nativeFunction(
                 value,
@@ -87,8 +89,9 @@ class Functions {
                   functionPath,
                   params,
                   timestamp,
-                  currentTime,
-                  transaction
+                  execTime,
+                  transaction,
+                  auth,
                 });
             triggerCount++;
             failCount++;
@@ -128,10 +131,10 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, currentTime, params, value, transaction) {
+      parsedValuePath, functionPath, timestamp, execTime, params, value, transaction) {
     return `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-      `timestamp: '${timestamp}', currentTime: '${currentTime}', ` +
+      `timestamp: '${timestamp}', execTime: '${execTime}', ` +
       `params: ${JSON.stringify(params, null, 2)}, ` +
       `value: '${JSON.stringify(value, null, 2)}', ` +
       `transaction: ${JSON.stringify(transaction, null, 2)}`;
@@ -194,20 +197,90 @@ class Functions {
     return params;
   }
 
+  static buildExecutionResult(timestamp, txHash, code) {
+    // NOTE(seo): Allow only node-independent values to avoid state proof hash issues.
+    return {
+      timestamp,
+      tx_hash: txHash,
+      code,
+    };
+  }
+
+  setValueOrLog(valuePath, value, auth, timestamp) {
+    const result = this.db.setValue(valuePath, value, auth, timestamp);
+    if (result !== true) {
+      logger.error(
+          `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
+    }
+    return result;
+  }
+
+  incValueOrLog(valuePath, delta, auth, timestamp) {
+    const result = this.db.incValue(valuePath, delta, auth, timestamp);
+    if (result !== true) {
+      logger.error(
+          `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
+    }
+    return result;
+  }
+
+  decValueOrLog(valuePath, delta, auth, timestamp) {
+    const result = this.db.decValue(valuePath, delta, auth, timestamp);
+    if (result !== true) {
+      logger.error(
+          `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
+    }
+    return result;
+  }
+
+  setExecutionResult(context, resultPath, code) {
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+    const execResult = Functions.buildExecutionResult(timestamp, transaction.hash, code);
+    return this.setValueOrLog(resultPath, execResult, auth, timestamp);
+  }
+
+  /**
+   * Saves the transaction's hash to a sibling path.
+   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
+   */
+  _saveLastTx(value, context) {
+    const transaction = context.transaction;
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
+    const valuePath = context.valuePath;
+    if (valuePath.length === 0) {
+      return false;
+    }
+    const lastTxPath = valuePath.slice();
+    // Insert '.last_tx' label just before the last label in the path.
+    const lastLabel = lastTxPath.pop();
+    lastTxPath.push(PredefinedDbPaths.SAVE_LAST_TX_LAST_TX);
+    lastTxPath.push(lastLabel);
+
+    return this.setValueOrLog(
+        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp);
+  }
+
   // TODO(seo): Add adress validity check.
   _transfer(value, context) {
     const from = context.params.from;
     const to = context.params.to;
     const key = context.params.key;
+
     const fromBalancePath = this._getBalancePath(from);
     const toBalancePath = this._getBalancePath(to);
     const resultPath = this._getTransferResultPath(from, to, key);
-    if (this._transferInternal(fromBalancePath, toBalancePath, value)) {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.SUCCESS});
+    const transferResult =
+        this._transferInternal(fromBalancePath, toBalancePath, value, context);
+    if (transferResult === true) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -216,29 +289,30 @@ class Functions {
     const user = context.params.user_addr;
     const depositId = context.params.deposit_id;
     const timestamp = context.timestamp;
-    const currentTime = context.currentTime;
+    const execTime = context.execTime;
+    const auth = context.auth;
+
     const resultPath = this._getDepositResultPath(service, user, depositId);
     const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
-    if (timestamp > currentTime) {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.FAILURE});
+    this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp);
+    if (timestamp > execTime) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
     const userBalancePath = this._getBalancePath(user);
     const depositAmountPath = this._getDepositAmountPath(service, user);
-    if (this._transferInternal(userBalancePath, depositAmountPath, value)) {
+    const transferResult =
+        this._transferInternal(userBalancePath, depositAmountPath, value, context);
+    if (transferResult === true) {
       const lockup = this.db.getValue(this._getDepositLockupDurationPath(service)) ||
           DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       const expirationPath = this._getDepositExpirationPath(service, user);
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
-          Number(timestamp) + Number(lockup));
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.SUCCESS});
+      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), auth, timestamp);
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -247,18 +321,18 @@ class Functions {
     const user = context.params.user_addr;
     const withdrawId = context.params.withdraw_id;
     const timestamp = context.timestamp;
-    const currentTime = context.currentTime;
+    const execTime = context.execTime;
+    const auth = context.auth;
+
     const depositAmountPath = this._getDepositAmountPath(service, user);
     const userBalancePath = this._getBalancePath(user);
     const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
     const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
-    if (expireAt > currentTime) {
+    this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp);
+    if (expireAt > execTime) {
       // Still in lock-up period.
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.IN_LOCKUP_PERIOD });
+      this.setExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
       return;
     }
     if (service === PredefinedDbPaths.CONSENSUS) {
@@ -275,18 +349,19 @@ class Functions {
         }
       });
       if (numValidators <= MIN_NUM_VALIDATORS) {
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            { code: FunctionResultCode.FAILURE });
+        this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
         return;
       }
     }
-    if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.SUCCESS });
-    } else {
+    const transferResult =
+        this._transferInternal(depositAmountPath, userBalancePath, value, context);
+    if (transferResult === true) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
       // Not enough deposit.
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          { code: FunctionResultCode.INSUFFICIENT_BALANCE });
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+    } else {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -296,23 +371,25 @@ class Functions {
   }
 
   _updateLatestShardReport(value, context) {
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
     const blockNumber = Number(context.params.block_number);
     const valuePath = context.valuePath;
     if (!ChainUtil.isArray(context.functionPath)) {
-      return;
+      return false;
     }
     if (!ChainUtil.isString(value)) {
       // Removing old report or invalid reporting
-      return;
+      return false;
     }
     const latestReportPath = this.getLatestShardReportPathFromValuePath(valuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
-      return;
+      return false;
     }
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+    return this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp);
   }
 
   getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
@@ -471,13 +548,22 @@ class Functions {
     return parsedPath.length && parsedPath[0] === PredefinedDbPaths.TRANSFER;
   }
 
-  _transferInternal(fromPath, toPath, value) {
+  _transferInternal(fromPath, toPath, value, context) {
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
     const fromBalance = this.db.getValue(fromPath);
-    if (fromBalance < value) return false;
-    const toBalance = this.db.getValue(toPath);
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(fromPath)), fromBalance - value);
-    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toPath)), toBalance + value);
+    if (fromBalance < value) {
+      return false;
+    }
+    const decResult = this.decValueOrLog(fromPath, value, auth, timestamp);
+    if (decResult !== true) {
+      return decResult;
+    }
+    const incResult = this.incValueOrLog(toPath, value, auth, timestamp);
+    if (incResult !== true) {
+      return incResult;
+    }
     return true;
   }
 

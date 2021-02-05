@@ -304,17 +304,17 @@ class DB {
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
-  evalRule(valuePath, value, address, timestamp, isGlobal) {
+  evalRule(valuePath, value, auth, timestamp, isGlobal) {
     const parsedPath = ChainUtil.parsePath(valuePath);
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
-    return this.getPermissionForValue(localPath, value, address, timestamp);
+    return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
-  evalOwner(refPath, permission, address, isGlobal) {
+  evalOwner(refPath, permission, auth, isGlobal) {
     const parsedPath = ChainUtil.parsePath(refPath);
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -322,9 +322,10 @@ class DB {
       return null;
     }
     const matched = this.matchOwnerForParsedPath(localPath);
-    return this.checkPermission(matched.closestOwner.config, address, permission);
+    return this.checkPermission(matched.closestOwner.config, auth, permission);
   }
 
+  // TODO(seo): Add tests for op.fid.
   get(opList) {
     const resultList = [];
     opList.forEach((op) => {
@@ -345,10 +346,24 @@ class DB {
       } else if (op.type === ReadDbOperations.MATCH_OWNER) {
         resultList.push(this.matchOwner(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
-        resultList.push(
-            this.evalRule(op.ref, op.value, op.address, op.timestamp || Date.now(), op.is_global));
+        const auth = {};
+        if (op.address) {
+          auth.addr = op.address;
+        }
+        if (op.fid) {
+          auth.fid = op.fid;
+        }
+        resultList.push(this.evalRule(
+            op.ref, op.value, auth, op.timestamp || Date.now(), op.is_global));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
-        resultList.push(this.evalOwner(op.ref, op.permission, op.address, op.is_global));
+        const auth = {};
+        if (op.address) {
+          auth.addr = op.address;
+        }
+        if (op.fid) {
+          auth.fid = op.fid;
+        }
+        resultList.push(this.evalOwner(op.ref, op.permission, auth, op.is_global));
       }
     });
     return resultList;
@@ -359,7 +374,7 @@ class DB {
   //            the former if the latter fails.
   // TODO(seo): Apply isWritablePathWithSharding() to setFunction(), setRule(), and setOwner()
   //            as well.
-  setValue(valuePath, value, address, timestamp, transaction, isGlobal) {
+  setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(101, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -374,7 +389,7 @@ class DB {
       // There is nothing to do.
       return true;
     }
-    if (!this.getPermissionForValue(localPath, value, address, timestamp)) {
+    if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
       return ChainUtil.returnError(103, `No .write permission on: ${valuePath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
@@ -390,32 +405,36 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
+    // NOTE(seo): As of now (2021-01), we don't allow recursive function triggering.
+    if (auth && auth.addr) {
+      this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
+    }
 
     return true;
   }
 
-  incValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
+  incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnError(201, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
   }
 
-  decValue(valuePath, delta, address, timestamp, transaction, isGlobal) {
+  decValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnError(301, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, address, timestamp, transaction, isGlobal);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
   }
 
-  setFunction(functionPath, functionChange, address, isGlobal) {
+  // TODO(seo): Do not allow users to set native functions to arbitrary paths.
+  setFunction(functionPath, functionChange, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(401, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -430,7 +449,7 @@ class DB {
       // There is nothing to do.
       return true;
     }
-    if (!this.getPermissionForFunction(localPath, address)) {
+    if (!this.getPermissionForFunction(localPath, auth)) {
       return ChainUtil.returnError(403, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
@@ -443,7 +462,7 @@ class DB {
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
-  setRule(rulePath, rule, address, isGlobal) {
+  setRule(rulePath, rule, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(501, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -458,7 +477,7 @@ class DB {
       // There is nothing to do.
       return true;
     }
-    if (!this.getPermissionForRule(localPath, address)) {
+    if (!this.getPermissionForRule(localPath, auth)) {
       return ChainUtil.returnError(503, `No write_rule permission on: ${rulePath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
@@ -469,7 +488,7 @@ class DB {
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  setOwner(ownerPath, owner, address, isGlobal) {
+  setOwner(ownerPath, owner, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(601, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -484,7 +503,7 @@ class DB {
       // There is nothing to do.
       return true;
     }
-    if (!this.getPermissionForOwner(localPath, address)) {
+    if (!this.getPermissionForOwner(localPath, auth)) {
       return ChainUtil.returnError(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
@@ -495,37 +514,37 @@ class DB {
     return true;
   }
 
-  set(opList, address, timestamp, transaction) {
+  set(opList, auth, timestamp, transaction) {
     let ret = true;
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
+        ret = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
+        ret = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, address, timestamp, transaction, op.is_global);
+        ret = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, address, op.is_global);
+        ret = this.setFunction(op.ref, op.value, auth, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, address, op.is_global);
+        ret = this.setRule(op.ref, op.value, auth, op.is_global);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, address, op.is_global);
+        ret = this.setOwner(op.ref, op.value, auth, op.is_global);
         if (ret !== true) {
           break;
         }
@@ -545,12 +564,12 @@ class DB {
         resultList.push(ChainUtil.returnError(801, 'No tx_body'));
         continue;
       }
-      const operation = txBody.operation;
-      if (!operation) {
+      const op = txBody.operation;
+      if (!op) {
         resultList.push(ChainUtil.returnError(802, 'No operation'));
         continue;
       }
-      switch (operation.type) {
+      switch (op.type) {
         case undefined:
         case WriteDbOperations.SET_VALUE:
         case WriteDbOperations.INC_VALUE:
@@ -559,10 +578,11 @@ class DB {
         case WriteDbOperations.SET_RULE:
         case WriteDbOperations.SET_OWNER:
         case WriteDbOperations.SET:
-          resultList.push(this.executeOperation(operation, tx.address, tx.timestamp, tx));
+          // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
+          resultList.push(this.executeOperation(op, { addr: tx.address }, txBody.timestamp, tx));
           break;
         default:
-          resultList.push(ChainUtil.returnError(803, `Invalid operation type: ${operation.type}`));
+          resultList.push(ChainUtil.returnError(803, `Invalid operation type: ${op.type}`));
       }
     }
     return resultList;
@@ -618,26 +638,26 @@ class DB {
     this.stateVersion = stateVersion;
   }
 
-  executeOperation(op, address, timestamp, tx) {
+  executeOperation(op, auth, timestamp, tx) {
     if (!op) {
       return null;
     }
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(op.ref, op.value, address, timestamp, tx, op.is_global);
+        return this.setValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(op.ref, op.value, address, timestamp, tx, op.is_global);
+        return this.incValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(op.ref, op.value, address, timestamp, tx, op.is_global);
+        return this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(op.ref, op.value, address, op.is_global);
+        return this.setFunction(op.ref, op.value, auth, op.is_global);
       case WriteDbOperations.SET_RULE:
-        return this.setRule(op.ref, op.value, address, op.is_global);
+        return this.setRule(op.ref, op.value, auth, op.is_global);
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(op.ref, op.value, address, op.is_global);
+        return this.setOwner(op.ref, op.value, auth, op.is_global);
       case WriteDbOperations.SET:
-        return this.set(op.op_list, address, timestamp, tx);
+        return this.set(op.op_list, auth, timestamp, tx);
     }
   }
 
@@ -646,11 +666,13 @@ class DB {
     if (Transaction.isBatchTransaction(tx)) {
       return this.batch(tx.tx_list);
     }
-    if (!tx.tx_body) {
+    const txBody = tx.tx_body;
+    if (!txBody) {
       logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
       return false;
     }
-    return this.executeOperation(tx.tx_body.operation, tx.address, tx.tx_body.timestamp, tx);
+    // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
+    return this.executeOperation(txBody.operation, { addr: tx.address}, txBody.timestamp, tx);
   }
 
   executeTransactionList(txList) {
@@ -677,7 +699,7 @@ class DB {
   }
 
   // TODO(seo): Eval subtree rules.
-  getPermissionForValue(parsedValuePath, newValue, address, timestamp) {
+  getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
     const LOG_HEADER = 'getPermissionForValue';
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const value = this.getValue(ChainUtil.formatPath(parsedValuePath));
@@ -688,35 +710,35 @@ class DB {
     let evalRuleRes = false;
     try {
       evalRuleRes = !!this.evalRuleString(
-        matched.closestRule.config, matched.pathVars, data, newData, address, timestamp);
+        matched.closestRule.config, matched.pathVars, data, newData, auth, timestamp);
     } catch (e) {
       logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
-          `newData: ${JSON.stringify(newData)}, address: ${address}, timestamp: ${timestamp}\n` +
-          `Error: ${e}`);
+          `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
+          `timestamp: ${timestamp}\nError: ${e}`);
     }
     return evalRuleRes;
   }
 
-  getPermissionForRule(parsedRulePath, address) {
+  getPermissionForRule(parsedRulePath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
-    return this.checkPermission(matched.closestOwner.config, address, OwnerProperties.WRITE_RULE);
+    return this.checkPermission(matched.closestOwner.config, auth, OwnerProperties.WRITE_RULE);
   }
 
-  getPermissionForFunction(parsedFuncPath, address) {
+  getPermissionForFunction(parsedFuncPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
     return this.checkPermission(
-        matched.closestOwner.config, address, OwnerProperties.WRITE_FUNCTION);
+        matched.closestOwner.config, auth, OwnerProperties.WRITE_FUNCTION);
   }
 
-  getPermissionForOwner(parsedOwnerPath, address) {
+  getPermissionForOwner(parsedOwnerPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
     if (matched.closestOwner.path.length === parsedOwnerPath.length) {
       return this.checkPermission(
-          matched.closestOwner.config, address, OwnerProperties.WRITE_OWNER);
+          matched.closestOwner.config, auth, OwnerProperties.WRITE_OWNER);
     } else {
       return this.checkPermission(
-          matched.closestOwner.config, address, OwnerProperties.BRANCH_OWNER);
+          matched.closestOwner.config, auth, OwnerProperties.BRANCH_OWNER);
     }
   }
 
@@ -1008,14 +1030,15 @@ class DB {
         ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
   }
 
-  evalRuleString(ruleString, pathVars, data, newData, address, timestamp) {
+  // TODO(seo): Extend function for auth.fid.
+  evalRuleString(ruleString, pathVars, data, newData, auth, timestamp) {
     if (typeof ruleString === 'boolean') {
       return ruleString;
     } else if (typeof ruleString !== 'string') {
       return false;
     }
     const evalFunc = this.makeEvalFunction(ruleString, pathVars);
-    return evalFunc(address, data, newData, timestamp, this.getValue.bind(this),
+    return evalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
@@ -1080,7 +1103,7 @@ class DB {
     };
   }
 
-  getOwnerPermissions(config, address) {
+  getOwnerPermissions(config, auth) {
     if (!config) {
       return null;
     }
@@ -1089,9 +1112,16 @@ class DB {
     if (!owners) {
       return null;
     }
-    // Step 1: Check if the address exists in owners.
-    let permissions = owners[address];
-    // Step 2: If the address does not exist in owners, check permissions for anyone ('*').
+    let permissions = null;
+    // Step 1: Check if the given address or fid exists in owners.
+    if (auth) {
+      if (auth.addr) {
+        permissions = owners[auth.addr];
+      } else if (auth.fid) {
+        permissions = owners[auth.fid];
+      }
+    }
+    // Step 2: If not, check permissions for anyone ('*').
     if (!permissions) {
       permissions = owners[OwnerProperties.ANYONE];
     }
@@ -1101,8 +1131,8 @@ class DB {
     return permissions;
   }
 
-  checkPermission(config, address, permission) {
-    const permissions = this.getOwnerPermissions(config, address);
+  checkPermission(config, auth, permission) {
+    const permissions = this.getOwnerPermissions(config, auth);
     return !!(permissions && permissions[permission] === true);
   }
 }
