@@ -14,6 +14,9 @@ const {
   GenesisAccounts,
   AccountProperties,
   TokenExchangeSchemes,
+  FunctionProperties,
+  MIN_NUM_VALIDATORS,
+  MIN_STAKE_PER_VALIDATOR,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {sendSignedTx, signAndSendTx} = require('../server/util');
@@ -23,6 +26,7 @@ const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC]
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
+  'https://events.ainize.ai/trigger': true,
   'http://localhost:3000/trigger': true
 };
 
@@ -34,12 +38,13 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
-      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
-      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
-      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
-      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
-      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
       [NativeFunctionIds.CLOSE_CHECKIN]: this._closeCheckin.bind(this),
+      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
+      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
+      [NativeFunctionIds.SAVE_LAST_TX]: this._saveLastTx.bind(this),
+      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
+      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
+      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
     };
   }
 
@@ -49,53 +54,136 @@ class Functions {
    * @param {Array} parsedValuePath parsed value path
    * @param {Object} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
-   * @param {Number} currentTime current time
+   * @param {Number} execTime execution time
    * @param {Object} transaction transaction
    */
-  // TODO(seo): Support multiple-functions per path.
   // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, timestamp, currentTime, transaction) {
+  triggerFunctions(parsedValuePath, value, timestamp, execTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
-    const functionConfig = matched.matchedFunction.config;
-    if (functionConfig) {
-      if (functionConfig.function_type === FunctionTypes.NATIVE) {
-        const nativeFunction = this.nativeFunctionMap[functionConfig.function_id];
-        if (nativeFunction) {
-          const functionPath = matched.matchedFunction.path;
-          const params = Functions.convertPathVars2Params(matched.pathVars);
-          logger.info(
-              `  ==> Running native function '${functionConfig.function_id}' with\n` +
-              `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
-              `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-              `value: '${JSON.stringify(value, null, 2)}', timestamp: '${timestamp}', ` +
-              `currentTime: '${currentTime}', and params: ${JSON.stringify(params, null, 2)}`);
-          // Execute the matched native function.
-          nativeFunction(
-              value,
-              {
-                valuePath: parsedValuePath,
-                functionPath,
-                params,
-                timestamp,
-                currentTime,
-                transaction
-              });
+    const functionPath = matched.matchedFunction.path;
+    const functionMap = matched.matchedFunction.config;
+    const functionList = Functions.getFunctionList(functionMap);
+    const params = Functions.convertPathVars2Params(matched.pathVars);
+    let triggerCount = 0;
+    let failCount = 0;
+    const promises = [];
+    if (functionList && functionList.length > 0) {
+      const formattedParams = Functions.formatFunctionParams(
+          parsedValuePath, functionPath, timestamp, execTime, params, value, transaction);
+      for (const functionEntry of functionList) {
+        if (!functionEntry || !functionEntry.function_type) {
+          continue;  // Does nothing.
         }
-      } else if (functionConfig.function_type === FunctionTypes.REST) {
-        if (functionConfig.event_listener &&
-            functionConfig.event_listener in EventListenerWhitelist) {
-          logger.info(
-              `  ==> Triggering an event for function '${functionConfig.function_id}' ` +
-              `of '${functionConfig.event_listener}' ` +
-              `with transaction: ${JSON.stringify(transaction, null, 2)}`)
-          return axios.post(functionConfig.event_listener, {
-            transaction,
-            function: functionConfig
-          });
+        if (functionEntry.function_type === FunctionTypes.NATIVE) {
+          const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
+          if (nativeFunction) {
+            logger.info(
+                `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
+                formattedParams);
+            const auth = { fid: functionEntry.function_id, };
+            // Execute the matched native function.
+            nativeFunction(
+                value,
+                {
+                  valuePath: parsedValuePath,
+                  functionPath,
+                  params,
+                  timestamp,
+                  execTime,
+                  transaction,
+                  auth,
+                });
+            triggerCount++;
+            failCount++;
+          }
+        } else if (functionEntry.function_type === FunctionTypes.REST) {
+          if (functionEntry.event_listener &&
+              functionEntry.event_listener in EventListenerWhitelist) {
+            logger.info(
+                `  ==> Triggering REST function '${functionEntry.function_id}' of ` +
+                `event listener '${functionEntry.event_listener}' with\n` +
+                formattedParams);
+            promises.push(axios.post(functionEntry.event_listener, {
+              function: functionEntry,
+              transaction,
+            }).catch((error) => {
+              logger.error(
+                  `Failed to trigger REST function '${functionEntry.function_id}' of ` +
+                  `event listener '${functionEntry.event_listener}' with\n` +
+                  `error: ${JSON.stringify(error)}` +
+                  formattedParams);
+              failCount++;
+              return true;
+            }));
+            triggerCount++;
+          }
         }
       }
     }
-    return true;
+    return Promise.all(promises)
+        .then(() => {
+          return {
+            functionCount: functionList ? functionList.length : 0,
+            triggerCount,
+            failCount,
+          };
+        });
+  }
+
+  static formatFunctionParams(
+      parsedValuePath, functionPath, timestamp, execTime, params, value, transaction) {
+    return `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
+      `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
+      `timestamp: '${timestamp}', execTime: '${execTime}', ` +
+      `params: ${JSON.stringify(params, null, 2)}, ` +
+      `value: '${JSON.stringify(value, null, 2)}', ` +
+      `transaction: ${JSON.stringify(transaction, null, 2)}`;
+  }
+
+  static getFunctionList(functionMap) {
+    if (!functionMap) {
+      return null;
+    }
+    return Object.values(functionMap);
+  }
+
+  /**
+   * Returns a new function created by applying the function change to the current function.
+   * 
+   * @param {Object} curFunction current function (modified and returned by this function)
+   * @param {Object} functionChange function change
+   */
+  static applyFunctionChange(curFunction, functionChange) {
+    if (curFunction === null) {
+      // Just write the function change.
+      return functionChange;
+    }
+    if (functionChange === null) {
+      // Just delete the existing value.
+      return null;
+    }
+    const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
+    if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
+      return curFunction;
+    }
+    const newFunction =
+        ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
+    let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
+      // Add a place holder.
+      ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
+      newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    }
+    for (const functionKey in funcChangeMap) {
+      const functionValue = funcChangeMap[functionKey];
+      if (functionValue === null) {
+        delete newFuncMap[functionKey];
+      } else {
+        newFuncMap[functionKey] = functionValue;
+      }
+    }
+
+    return newFunction;
   }
 
   static convertPathVars2Params(pathVars) {
@@ -109,20 +197,90 @@ class Functions {
     return params;
   }
 
+  static buildExecutionResult(timestamp, txHash, code) {
+    // NOTE(seo): Allow only node-independent values to avoid state proof hash issues.
+    return {
+      timestamp,
+      tx_hash: txHash,
+      code,
+    };
+  }
+
+  setValueOrLog(valuePath, value, auth, timestamp) {
+    const result = this.db.setValue(valuePath, value, auth, timestamp);
+    if (result !== true) {
+      logger.error(
+          `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
+    }
+    return result;
+  }
+
+  incValueOrLog(valuePath, delta, auth, timestamp) {
+    const result = this.db.incValue(valuePath, delta, auth, timestamp);
+    if (result !== true) {
+      logger.error(
+          `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
+    }
+    return result;
+  }
+
+  decValueOrLog(valuePath, delta, auth, timestamp) {
+    const result = this.db.decValue(valuePath, delta, auth, timestamp);
+    if (result !== true) {
+      logger.error(
+          `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
+    }
+    return result;
+  }
+
+  setExecutionResult(context, resultPath, code) {
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+    const execResult = Functions.buildExecutionResult(timestamp, transaction.hash, code);
+    return this.setValueOrLog(resultPath, execResult, auth, timestamp);
+  }
+
+  /**
+   * Saves the transaction's hash to a sibling path.
+   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
+   */
+  _saveLastTx(value, context) {
+    const transaction = context.transaction;
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
+    const valuePath = context.valuePath;
+    if (valuePath.length === 0) {
+      return false;
+    }
+    const lastTxPath = valuePath.slice();
+    // Insert '.last_tx' label just before the last label in the path.
+    const lastLabel = lastTxPath.pop();
+    lastTxPath.push(PredefinedDbPaths.SAVE_LAST_TX_LAST_TX);
+    lastTxPath.push(lastLabel);
+
+    return this.setValueOrLog(
+        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp);
+  }
+
   // TODO(seo): Add adress validity check.
   _transfer(value, context) {
     const from = context.params.from;
     const to = context.params.to;
     const key = context.params.key;
+
     const fromBalancePath = this._getBalancePath(from);
     const toBalancePath = this._getBalancePath(to);
     const resultPath = this._getTransferResultPath(from, to, key);
-    if (this._transferInternal(fromBalancePath, toBalancePath, value)) {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.SUCCESS});
+    const transferResult =
+        this._transferInternal(fromBalancePath, toBalancePath, value, context);
+    if (transferResult === true) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -131,30 +289,30 @@ class Functions {
     const user = context.params.user_addr;
     const depositId = context.params.deposit_id;
     const timestamp = context.timestamp;
-    const currentTime = context.currentTime;
+    const execTime = context.execTime;
+    const auth = context.auth;
+
     const resultPath = this._getDepositResultPath(service, user, depositId);
     const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(depositCreatedAtPath)), timestamp);
-    // TODO (lia): move this check to when we first receive the transaction
-    if (timestamp > currentTime) {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.FAILURE});
+    this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp);
+    if (timestamp > execTime) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
     const userBalancePath = this._getBalancePath(user);
     const depositAmountPath = this._getDepositAmountPath(service, user);
-    if (this._transferInternal(userBalancePath, depositAmountPath, value)) {
+    const transferResult =
+        this._transferInternal(userBalancePath, depositAmountPath, value, context);
+    if (transferResult === true) {
       const lockup = this.db.getValue(this._getDepositLockupDurationPath(service)) ||
           DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       const expirationPath = this._getDepositExpirationPath(service, user);
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(expirationPath)),
-          Number(timestamp) + Number(lockup));
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.SUCCESS});
+      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), auth, timestamp);
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -163,27 +321,47 @@ class Functions {
     const user = context.params.user_addr;
     const withdrawId = context.params.withdraw_id;
     const timestamp = context.timestamp;
-    const currentTime = context.currentTime;
+    const execTime = context.execTime;
+    const auth = context.auth;
+
     const depositAmountPath = this._getDepositAmountPath(service, user);
     const userBalancePath = this._getBalancePath(user);
     const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(withdrawCreatedAtPath)), timestamp);
-    if (this._transferInternal(depositAmountPath, userBalancePath, value)) {
-      const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
-      if (expireAt <= currentTime) {
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            {code: FunctionResultCode.SUCCESS});
-      } else {
-        // Still in lock-up period.
-        this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-            {code: FunctionResultCode.IN_LOCKUP_PERIOD});
+    const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
+    this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp);
+    if (expireAt > execTime) {
+      // Still in lock-up period.
+      this.setExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
+      return;
+    }
+    if (service === PredefinedDbPaths.CONSENSUS) {
+      // Reject withdrawing consensus deposits if it reduces the number of validators to less than
+      // MIN_NUM_VALIDATORS.
+      const whitelist = this.db.getValue(
+          ChainUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST]));
+      let numValidators = 0;
+      Object.keys(whitelist).forEach((address) => {
+        const deposit = this.db.getValue(
+            ChainUtil.formatPath([PredefinedDbPaths.DEPOSIT_CONSENSUS, address]));
+        if (deposit && deposit.value > MIN_STAKE_PER_VALIDATOR) {
+          numValidators++;
+        }
+      });
+      if (numValidators <= MIN_NUM_VALIDATORS) {
+        this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+        return;
       }
-    } else {
+    }
+    const transferResult =
+        this._transferInternal(depositAmountPath, userBalancePath, value, context);
+    if (transferResult === true) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
       // Not enough deposit.
-      this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(resultPath)),
-          {code: FunctionResultCode.INSUFFICIENT_BALANCE});
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+    } else {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -193,23 +371,25 @@ class Functions {
   }
 
   _updateLatestShardReport(value, context) {
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
     const blockNumber = Number(context.params.block_number);
     const valuePath = context.valuePath;
     if (!ChainUtil.isArray(context.functionPath)) {
-      return;
+      return false;
     }
     if (!ChainUtil.isString(value)) {
       // Removing old report or invalid reporting
-      return;
+      return false;
     }
     const latestReportPath = this.getLatestShardReportPathFromValuePath(valuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
-      return;
+      return false;
     }
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(latestReportPath)), blockNumber);
+    return this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp);
   }
 
   getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
@@ -368,13 +548,22 @@ class Functions {
     return parsedPath.length && parsedPath[0] === PredefinedDbPaths.TRANSFER;
   }
 
-  _transferInternal(fromPath, toPath, value) {
+  _transferInternal(fromPath, toPath, value, context) {
+    const timestamp = context.timestamp;
+    const auth = context.auth;
+
     const fromBalance = this.db.getValue(fromPath);
-    if (fromBalance < value) return false;
-    const toBalance = this.db.getValue(toPath);
-    this.db.writeDatabase(
-        this._getFullValuePath(ChainUtil.parsePath(fromPath)), fromBalance - value);
-    this.db.writeDatabase(this._getFullValuePath(ChainUtil.parsePath(toPath)), toBalance + value);
+    if (fromBalance < value) {
+      return false;
+    }
+    const decResult = this.decValueOrLog(fromPath, value, auth, timestamp);
+    if (decResult !== true) {
+      return decResult;
+    }
+    const incResult = this.incValueOrLog(toPath, value, auth, timestamp);
+    if (incResult !== true) {
+      return incResult;
+    }
     return true;
   }
 
@@ -441,7 +630,7 @@ class Functions {
   }
 
   _getFullValuePath(parsedPath) {
-    return this.db.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    return this.db.constructor.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
   }
 }
 

@@ -15,7 +15,7 @@ class StateManager {
   constructor() {
     this.rootMap = new Map();
     this._setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
-    this.finalVersion = null;
+    this._setFinalVersion(null);
   }
 
   /**
@@ -37,6 +37,14 @@ class StateManager {
    */
   isFinalVersion(version) {
     return this.getFinalVersion() === version;
+  }
+
+  /**
+   * Sets the final version.
+   * This is priviate method. Use finalizeVersion() instead.
+   */
+  _setFinalVersion(version) {
+    this.finalVersion = version;
   }
 
   /**
@@ -65,6 +73,16 @@ class StateManager {
    */
   _setRoot(version, root) {
     this.rootMap.set(version, root);
+  }
+
+  /**
+   * Deletes the state root of the given version.
+   * This is priviate method. Use deleteVersion() instead.
+   * 
+   * @param {string} version state version
+   */
+  _deleteRoot(version) {
+    this.rootMap.delete(version);
   }
 
   /**
@@ -126,27 +144,27 @@ class StateManager {
   }
 
   /**
-   * Renames the state tree's version of the given new version. Each node's version of
-   * the state tree specified with the new version is set with the new version if its value
-   * is equal to the given old version.
+   * Renames the state tree's version of the given to-version. Each node's version of
+   * the state tree rooted with the given to-version is set with the to-version if its value
+   * is equal to the given from-version.
    * 
-   * @param {string} oldVersion state version to rename
-   * @param {string} newVersion version of the state tree to apply the renaming
+   * @param {string} fromVersion state version to rename
+   * @param {string} toVersion version of the state tree to apply the renaming
    */
-  renameVersion(oldVersion, newVersion) {
+  renameVersion(fromVersion, toVersion) {
     const LOG_HEADER = 'renameVersion';
     logger.debug(
-        `[${LOG_HEADER}] Renaming version ${oldVersion} -> ${newVersion} (${this.numVersions()})`);
-    if (!this.hasVersion(newVersion)) {
-      logger.error(`[${LOG_HEADER}] Non-existing version: ${newVersion}`);
+        `[${LOG_HEADER}] Renaming version ${fromVersion} -> ${toVersion} (${this.numVersions()})`);
+    if (!this.hasVersion(toVersion)) {
+      logger.error(`[${LOG_HEADER}] Non-existing version: ${toVersion}`);
       return false;
     }
-    const root = this.getRoot(newVersion);
+    const root = this.getRoot(toVersion);
     if (root === null) {
-      logger.error(`[${LOG_HEADER}] Null root of version: ${newVersion}`);
+      logger.error(`[${LOG_HEADER}] Null root of version: ${toVersion}`);
       return false;
     }
-    let numRenamedNodes = renameStateTreeVersion(root, oldVersion, newVersion);
+    let numRenamedNodes = renameStateTreeVersion(root, fromVersion, toVersion);
     logger.debug(`[${LOG_HEADER}] Renamed ${numRenamedNodes} state nodes.`);
     return true;
   }
@@ -174,12 +192,12 @@ class StateManager {
     }
     let numDeletedNodes = null;
     if (FeatureFlags.enableStateVersionOpt) {
-      numDeletedNodes = deleteStateTreeVersion(root, version);
+      numDeletedNodes = deleteStateTreeVersion(root);
     } else {
       numDeletedNodes = deleteStateTree(root);
     }
     logger.debug(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
-    this.rootMap.delete(version);
+    this._deleteRoot(version);
     return true;
   }
 
@@ -201,16 +219,23 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return false;
     }
-    this.finalVersion = version;
+    this._setFinalVersion(version);
     return true;
   }
 
   /**
-   * Returns a random state version with the given version prefix.
-   * @param {string} versionPrefix version prefix
+   * Returns a unique version name with the given version name prefix.
+   * @param {string} versionPrefix version name prefix
    */
-  static createRandomVersion(versionPrefix) {
-    return `${versionPrefix}:${Date.now()}:${Math.floor(Math.random() * 10000)}`;
+  createUniqueVersionName(versionPrefix) {
+    const timestamp = Date.now();
+    let index = 0;
+    let version = null;
+    do {
+      version = `${versionPrefix}:${timestamp}:${index}`;
+      index++;
+    } while (this.hasVersion(version));
+    return version;
   }
 }
 

@@ -1,4 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
 
 // NOTE(seo): To keep the blockchain deterministic as much as possibble over time,
 // we keep util functions here self-contained as much as possible.
@@ -62,13 +63,27 @@ class RuleUtil {
     return this.isBool(value) ? value : value === 'true';
   }
 
-  // TODO(lia): normalize addresses in rule strings using this function.
   toCksumAddr(addr) {
     try {
       return ainUtil.toChecksumAddress(addr);
     } catch (e) {
       return '';
     }
+  }
+
+  getOwnerAddr() {
+    const { GenesisAccounts, AccountProperties } = require('../common/constants');
+    return _.get(GenesisAccounts, `${AccountProperties.OWNER}.${AccountProperties.ADDRESS}`, null);
+  }
+
+  getMinStakeAmount() {
+    const { MIN_STAKE_PER_VALIDATOR } = require('../common/constants');
+    return MIN_STAKE_PER_VALIDATOR;
+  }
+
+  getMinNumValidators() {
+    const { MIN_NUM_VALIDATORS } = require('../common/constants');
+    return MIN_NUM_VALIDATORS;
   }
 }
 

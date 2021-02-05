@@ -1,11 +1,12 @@
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
+const stringify = require('fast-json-stable-stringify');
 const logger = require('../logger')('TRANSACTION');
 const { WriteDbOperations } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 class Transaction {
-  constructor(txBody, signature, hash, address, skipVerif) {
+  constructor(txBody, signature, hash, address, skipVerif, createdAt) {
     this.tx_body = JSON.parse(JSON.stringify(txBody));
     this.signature = signature;
     this.hash = hash;
@@ -13,6 +14,7 @@ class Transaction {
     if (skipVerif) {
       this.skip_verif = skipVerif;
     }
+    this.created_at = createdAt;
 
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
@@ -25,7 +27,8 @@ class Transaction {
       return null;
     }
 
-    const hash = '0x' + ainUtil.hashTransaction(txBody).toString('hex');
+    const sanitized = Transaction.sanitizeTxBody(txBody);
+    const hash = '0x' + ainUtil.hashTransaction(sanitized).toString('hex');
 
     let address = null;
     let skipVerif = null;
@@ -36,28 +39,27 @@ class Transaction {
     } else {
       address = Transaction.getAddress(hash.slice(2), signature);
     }
-
-    return new Transaction(txBody, signature, hash, address, skipVerif);
+    const createdAt = Date.now();
+    return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
   }
 
   static signTxBody(txBody, privateKey) {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
+    const sanitized = Transaction.sanitizeTxBody(txBody);
     // A devel method for bypassing the transaction verification.
     const signature = txBody.address !== undefined ?
-        '' : ainUtil.ecSignTransaction(txBody, Buffer.from(privateKey, 'hex'));
-    return Transaction.create(txBody, signature);
+        '' : ainUtil.ecSignTransaction(sanitized, Buffer.from(privateKey, 'hex'));
+    return Transaction.create(sanitized, signature);
   }
 
   toString() {
-    // TODO (lia): change JSON.stringify to 'fast-json-stable-stringify' or add
-    // an utility function to ain-util.
     return `hash:               ${this.hash},
             address:            ${this.address},
             tx_body.nonce:      ${this.tx_body.nonce},
             tx_body.timestamp:  ${this.tx_body.timestamp},
-            tx_body.operation:  ${JSON.stringify(this.tx_body.operation)},
+            tx_body.operation:  ${stringify(this.tx_body.operation)},
             ${this.tx_body.skip_verif !== undefined ?
                 'tx_body.skip_verif:     ' + this.tx_body.skip_verif + ',' : ''}
             ${this.parent_tx_hash !== undefined ?

@@ -10,7 +10,7 @@ const DB = require('../db');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
-  GenesisWhitelist,
+  GENESIS_VALIDATORS,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
@@ -25,21 +25,20 @@ class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
       stateProofHash, proposer, validators) {
     this.last_votes = lastVotes;
-    this.transactions = transactions;
+    this.transactions = Block.sanitizeTransactions(transactions);
     // Block's header
     this.last_hash = lastHash;
     this.last_votes_hash = ChainUtil.hashString(stringify(lastVotes));
-    this.transactions_hash = ChainUtil.hashString(stringify(transactions));
+    this.transactions_hash = ChainUtil.hashString(stringify(this.transactions));
     this.number = number;
     this.epoch = epoch;
     this.timestamp = timestamp;
-    // TODO(lia): change this to snake case
-    this.stateProofHash = stateProofHash;
+    this.state_proof_hash = stateProofHash;
     this.proposer = proposer;
     this.validators = validators;
-    this.size = sizeof(this.transactions);
     // Hash of block's header
     this.hash = Block.hash(this);
+    this.size = Block.getSize(this);
   }
 
   get header() {
@@ -50,10 +49,16 @@ class Block {
       number: this.number,
       epoch: this.epoch,
       timestamp: this.timestamp,
-      stateProofHash: this.stateProofHash,
+      state_proof_hash: this.state_proof_hash,
       proposer: this.proposer,
       validators: this.validators,
-      size: this.size
+    };
+  }
+
+  get body() {
+    return {
+      last_votes: this.last_votes,
+      transactions: this.transactions,
     };
   }
 
@@ -66,7 +71,7 @@ class Block {
             number:            ${this.number}
             epoch:             ${this.epoch}
             timestamp:         ${this.timestamp}
-            stateProofHash:    ${this.stateProofHash}
+            state_proof_hash:  ${this.state_proof_hash}
             proposer:          ${this.proposer}
             validators:        ${this.validators}
             size:              ${this.size}
@@ -76,9 +81,27 @@ class Block {
             transactions:      ${stringify(this.transactions)}`;
   }
 
+  static sanitizeTransactions(transactions) {
+    const sanitized = [];
+    transactions.forEach((tx) => {
+      sanitized.push({
+        tx_body: Transaction.sanitizeTxBody(tx.tx_body),
+        signature: tx.signature,
+        hash: tx.hash,
+        address: tx.address
+      });
+    });
+    return sanitized;
+  }
+
   static hash(block) {
     if (!(block instanceof Block)) block = Block.parse(block);
     return ChainUtil.hashString(stringify(block.header));
+  }
+
+  static getSize(block) {
+    if (!(block instanceof Block)) block = Block.parse(block);
+    return sizeof({...block.header, ...block.body});
   }
 
   static create(lastHash, lastVotes, transactions, number, epoch,
@@ -102,35 +125,42 @@ class Block {
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes,
         blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
-        blockInfo.stateProofHash, blockInfo.proposer, blockInfo.validators);
+        blockInfo.state_proof_hash, blockInfo.proposer, blockInfo.validators);
   }
 
   static hasRequiredFields(block) {
     return (block && block.last_hash !== undefined && block.last_votes !== undefined &&
         block.transactions !== undefined && block.number !== undefined &&
         block.epoch !== undefined && block.timestamp !== undefined &&
-        block.stateProofHash !== undefined && block.proposer !== undefined &&
+        block.state_proof_hash !== undefined && block.proposer !== undefined &&
         block.validators !== undefined);
   }
 
   static validateHashes(block) {
+    const LOG_HEADER = 'validateHashes';
+
     if (block.hash !== Block.hash(block)) {
-      logger.error(`Block hash is incorrect for block ${block.hash}`);
+      logger.error(`[${LOG_HEADER}] Block hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
-      logger.error(`Transactions or transactions_hash is incorrect for block ${block.hash}`);
+      logger.error(
+          `[${LOG_HEADER}] Transactions or transactions_hash is incorrect for block ${block.hash}`);
       return false;
     }
     if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
-      logger.error(`Last votes or last_votes_hash is incorrect for block ${block.hash}`);
+      logger.error(
+          `[${LOG_HEADER}] Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
     }
-    logger.info(`Hash check successfully done`);
+    logger.info(
+        `[${LOG_HEADER}] Hash check successfully done for block: ${block.number} / ${block.epoch}`);
     return true;
   }
 
   static validateProposedBlock(block) {
+    const LOG_HEADER = 'validateProposedBlock';
+
     if (!Block.validateHashes(block)) return false;
     const nonceTracker = {};
     let tx;
@@ -144,7 +174,7 @@ class Block {
         continue;
       }
       if (tx.tx_body.nonce != nonceTracker[tx.address] + 1) {
-        logger.error(`Invalid noncing for ${tx.address} ` +
+        logger.error(`[${LOG_HEADER}] Invalid noncing for ${tx.address} ` +
             `Expected ${nonceTracker[tx.address] + 1} ` +
             `Received ${tx.tx_body.nonce}`);
         return false;
@@ -152,7 +182,7 @@ class Block {
       nonceTracker[tx.address] = tx.tx_body.nonce;
     }
 
-    logger.info(`Valid block of number ${block.number}`);
+    logger.info(`[${LOG_HEADER}] Validated block: ${block.number} / ${block.epoch}`);
     return true;
   }
 
@@ -229,6 +259,34 @@ class Block {
     return Transaction.signTxBody(secondTxBody, privateKey);
   }
 
+  static buildGenesisStakingTxs(timestamp) {
+    const _ = require('lodash');
+    const txs = [];
+    Object.entries(GENESIS_VALIDATORS).forEach(([address, amount], index) => {
+      const privateKey = _.get(GenesisAccounts,
+          `${AccountProperties.OTHERS}.${index}.${AccountProperties.PRIVATE_KEY}`);
+      if (!privateKey) {
+        throw Error(`GenesisAccounts missing values: ${JSON.stringify(GenesisAccounts)}, ${address}`);
+      }
+      const txBody = {
+        nonce: -1,
+        timestamp,
+        operation: {
+          type: 'SET_VALUE',
+          ref: ChainUtil.formatPath([
+            PredefinedDbPaths.DEPOSIT_CONSENSUS,
+            address,
+            1,
+            PredefinedDbPaths.DEPOSIT_VALUE
+          ]),
+          value: amount
+        }
+      };
+      txs.push(Transaction.signTxBody(txBody, privateKey));
+    });
+    return txs;
+  }
+
   static getGenesisBlockData(genesisTime) {
     const ownerAddress = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
@@ -237,8 +295,10 @@ class Block {
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
     const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
+    // TODO(lia): Change the logic to staking & signing by the current node
+    const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
-    return [firstTx, secondTx];
+    return [firstTx, secondTx, ...stakingTxs];
   }
 
   static getGenesisStateProofHash() {
@@ -270,7 +330,7 @@ class Block {
     const number = 0;
     const epoch = 0;
     const proposer = ownerAddress;
-    const validators = GenesisWhitelist;
+    const validators = GENESIS_VALIDATORS;
     const stateProofHash = Block.getGenesisStateProofHash();
     return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
         stateProofHash, proposer, validators);

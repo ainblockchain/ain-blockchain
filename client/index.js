@@ -12,10 +12,11 @@ const ChainUtil = require('../common/chain-util');
 const {
   PORT,
   PROTOCOL_VERSIONS,
+  BlockchainNodeStatus,
   WriteDbOperations,
   TransactionStatus
 } = require('../common/constants');
-const {ConsensusStatus} = require('../consensus/constants');
+const { ConsensusStatus } = require('../consensus/constants');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
@@ -28,7 +29,7 @@ process.on('uncaughtException', function(err) {
 process.on('SIGINT', (_) => {
   logger.info('Stopping the blockchain client....');
   p2pServer.stop();
-  process.exit();
+  process.exit(1);
 });
 
 if (!fs.existsSync(PROTOCOL_VERSIONS)) {
@@ -38,7 +39,7 @@ if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
 const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const {min, max} = matchVersions(CURRENT_PROTOCOL_VERSION);
+const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
@@ -53,12 +54,21 @@ const jsonRpcMethods = require('../json_rpc')(
 app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
-  const consensusStatus = p2pServer.consensus.status;
-  const message = consensusStatus === ConsensusStatus.RUNNING ?
-      'Welcome to AIN Blockchain Node' : 'AIN Blockchain Node is NOT ready yet';
   res.status(200)
     .set('Content-Type', 'text/plain')
-    .send(message)
+    .send('Welcome to AIN Blockchain Node')
+    .end();
+});
+
+app.get('/health_check', (req, res, next) => {
+  const nodeStatus = p2pServer.getNodeStatus();
+  const consensusState = p2pServer.consensus.getState();
+  const result = nodeStatus.status === BlockchainNodeStatus.SERVING &&
+      consensusState.status === ConsensusStatus.RUNNING &&
+      consensusState.health === true;
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send(result)
     .end();
 });
 
@@ -140,10 +150,18 @@ app.get('/match_owner', (req, res, next) => {
     .end();
 });
 
+// TODO(seo): Add tests for body.fid.
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
+  const auth = {};
+  if (body.address) {
+    auth.addr = body.address;
+  }
+  if (body.fid) {
+    auth.fid = body.fid;
+  }
   const result = node.db.evalRule(
-      body.ref, body.value, body.address, body.timestamp || Date.now(),
+      body.ref, body.value, auth, body.timestamp || Date.now(),
       ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -151,10 +169,18 @@ app.post('/eval_rule', (req, res, next) => {
     .end();
 });
 
+// TODO(seo): Add tests for body.fid.
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
+  const auth = {};
+  if (body.address) {
+    auth.addr = body.address;
+  }
+  if (body.fid) {
+    auth.fid = body.fid;
+  }
   const result = node.db.evalOwner(
-      body.ref, body.permission, body.address, ChainUtil.toBool(body.is_global));
+      body.ref, body.permission, auth, ChainUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -250,7 +276,7 @@ app.post('/batch', (req, res, next) => {
 });
 
 app.get('/node_status', (req, res, next) => {
-  const result = node.status;
+  const result = p2pServer.getNodeStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -327,10 +353,7 @@ app.get('/protocol_versions', (req, res) => {
 });
 
 app.get('/state_versions', (req, res) => {
-  const result = {
-    version_list: node.stateManager.getVersionList(),
-    final_version: node.stateManager.getFinalVersion(),
-  };
+  const result = p2pServer.getStateVersions();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
