@@ -11,11 +11,11 @@
       "$number": {
         ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
         "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth && Number($number) === newData.number && (newData.number === 1 || getValue('/consensus/number/' + (newData.number - 1) + '/propose/validators/' + auth) > 0)"
+          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && (newData.number === 1 || getValue('/consensus/number/' + (newData.number - 1) + '/propose/validators/' + auth.addr) > 0)"
         },
         "vote": {
           "$user_addr": {
-            ".write": "auth === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/deposit_accounts/consensus/' + $user_addr + '/value') >= newData.stake"
+            ".write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/deposit_accounts/consensus/' + $user_addr + '/value') >= newData.stake"
           }
         }
       }
@@ -34,7 +34,7 @@
   },
   "users":{
     "$uid": {
-      ".write": "auth === $uid",
+      ".write": "auth.addr === $uid",
       "balance": {
         ".write": "typeof newData === 'number' && newData >= 0"
       },

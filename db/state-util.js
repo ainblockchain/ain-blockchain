@@ -160,9 +160,8 @@ function setStateTreeVersion(node, version) {
     node.setVersion(version);
     numAffectedNodes++;
   }
-  for (const label of node.getChildLabels()) {
-    const childNode = node.getChild(label);
-    numAffectedNodes += setStateTreeVersion(childNode, version);
+  for (const child of node.getChildNodes()) {
+    numAffectedNodes += setStateTreeVersion(child, version);
   }
 
   return numAffectedNodes;
@@ -170,25 +169,24 @@ function setStateTreeVersion(node, version) {
 
 /**
  * Renames the version of the given state tree. Each node's version of the state tree is set with
- * given new version if its value is equal to the given old version.
+ * given to-version if its value is equal to the given from-version.
  * 
  * Returns affected nodes' number.
  */
-function renameStateTreeVersion(node, oldVersion, newVersion, isRootNode = true) {
+function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true) {
   let numAffectedNodes = 0;
   if (node === null) {
     return numAffectedNodes;
   }
-  let nodeVersionRenamed = false;
-  if (node.getVersion() === oldVersion) {
-    node.setVersion(newVersion);
-    nodeVersionRenamed = true;
+  let versionRenamed = false;
+  if (node.getVersion() === fromVersion) {
+    node.setVersion(toVersion);
+    versionRenamed = true;
     numAffectedNodes++;
   }
-  if (isRootNode || nodeVersionRenamed) {
-    for (const label of node.getChildLabels()) {
-      const childNode = node.getChild(label);
-      numAffectedNodes += renameStateTreeVersion(childNode, oldVersion, newVersion, false);
+  if (isRootNode || versionRenamed) {
+    for (const child of node.getChildNodes()) {
+      numAffectedNodes += renameStateTreeVersion(child, fromVersion, toVersion, false);
     }
   }
 
@@ -201,9 +199,9 @@ function renameStateTreeVersion(node, oldVersion, newVersion, isRootNode = true)
 function deleteStateTree(node) {
   let numAffectedNodes = 0;
   for (const label of node.getChildLabels()) {
-    const childNode = node.getChild(label);
-    numAffectedNodes += deleteStateTree(childNode);
+    const child = node.getChild(label);
     node.deleteChild(label);
+    numAffectedNodes += deleteStateTree(child);
   }
   node.resetValue();
   node.resetProofHash();
@@ -215,36 +213,21 @@ function deleteStateTree(node) {
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTreeVersion(node, version) {
-  const LOG_HEADER = 'deleteStateTreeVersion';
+function deleteStateTreeVersion(node) {
   let numAffectedNodes = 0;
-  if (node.getVersion() !== version) {
+  if (node.numParents() > 0) {
     // Does nothing.
     return numAffectedNodes;
-  }
-  if (node.numParents() > 0) {
-    // This shouldn't happen.
-    logger.error(
-        `[${LOG_HEADER}] Trying to delete a node with ` +
-        `invalid numParents() value: ${node.numParents()} with version: ${version}.`);
-    return numAffectedNodes;
-  }
-
-  for (const label of node.getChildLabels()) {
-    const childNode = node.getChild(label);
-    node.deleteChild(label);
-    if (childNode.numParents() == 0) {
-      numAffectedNodes += deleteStateTreeVersion(childNode, version);
-    } else if (childNode.numParents() < 0) {
-      // This shouldn't happen.
-      logger.error(
-          `[${LOG_HEADER}] Deleted a child node with ` +
-          `invalid numParents() value: ${childNode.numParents()} with label: ${label}.`);
-    }
   }
   node.resetValue();
   node.resetProofHash();
   numAffectedNodes++;
+
+  for (const label of node.getChildLabels()) {
+    const child = node.getChild(label);
+    node.deleteChild(label);
+    numAffectedNodes += deleteStateTreeVersion(child);
+  }
 
   return numAffectedNodes;
 }
@@ -252,8 +235,8 @@ function deleteStateTreeVersion(node, version) {
 function makeCopyOfStateTree(node) {
   const copy = node.clone();
   for (const label of node.getChildLabels()) {
-    const childNode = node.getChild(label);
-    copy.setChild(label, makeCopyOfStateTree(childNode));
+    const child = node.getChild(label);
+    copy.setChild(label, makeCopyOfStateTree(child));
   }
   return copy;
 }
@@ -283,9 +266,9 @@ function equalStateTrees(node1, node2) {
 function setProofHashForStateTree(stateTree) {
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
-    stateTree.getChildNodes().forEach((node) => {
+    for (const node of stateTree.getChildNodes()) {
       numAffectedNodes += setProofHashForStateTree(node);
-    });
+    }
   }
   stateTree.updateProofHashAndTreeSize();
   numAffectedNodes++;
@@ -297,9 +280,9 @@ function updateProofHashForAllRootPathsRecursive(node) {
   let numAffectedNodes = 0;
   node.updateProofHashAndTreeSize();
   numAffectedNodes++;
-  node.getParentNodes().forEach((parent) => {
+  for (const parent of node.getParentNodes()) {
     numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);
-  })
+  }
   return numAffectedNodes;
 }
 

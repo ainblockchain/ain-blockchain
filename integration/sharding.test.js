@@ -19,11 +19,15 @@ const {
   WriteDbOperations,
   OwnerProperties,
   RuleProperties,
+  ShardingProperties,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions
 } = require('../common/constants');
+const {
+  ConsensusStatus
+} = require('../consensus/constants');
 const ChainUtil = require('../common/chain-util');
 const {
   readConfigFile,
@@ -36,39 +40,35 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true
   },
   {
     // For shard chain tracker
     PORT: 9090, P2P_PORT: 6000
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9091, P2P_PORT: 6001, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9091, P2P_PORT: 6001, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9092, P2P_PORT: 6002, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9092, P2P_PORT: 6002, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9093, P2P_PORT: 6003, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9093, P2P_PORT: 6003, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9094, P2P_PORT: 6004, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9094, P2P_PORT: 6004, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -103,7 +103,7 @@ function waitUntilShardReporterStarts() {
   while (true) {
     consensusState = parseOrLog(syncRequest('GET', server1 + '/get_consensus_state')
         .body.toString('utf-8')).result;
-    if (consensusState && consensusState.status === 1) return;
+    if (consensusState && consensusState.status === ConsensusStatus.RUNNING) return;
     sleep(1000);
   }
 }
@@ -121,14 +121,16 @@ function setUp() {
           type: 'SET_RULE',
           ref: '/test/test_rule/some/path',
           value: {
-            ".write": "auth === 'abcd'"
+            ".write": "auth.addr === 'abcd'"
           }
         },
         {
           type: 'SET_FUNCTION',
           ref: '/test/test_function/some/path',
           value: {
-            ".function": "some function config"
+            ".function": {
+              "fid": "some function config"
+            }
           }
         },
         {
@@ -208,16 +210,25 @@ function setUpForSharding(shardingConfig) {
               type: WriteDbOperations.SET_RULE,
               ref: sharding_path,
               value: {
-                [RuleProperties.WRITE]: `auth === '${shard_reporter}'`
+                [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
+              }
+            },
+            {
+              type: WriteDbOperations.SET_RULE,
+              ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+              value: {
+                [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
               }
             },
             {
               type: WriteDbOperations.SET_FUNCTION,
-              ref: `${sharding_path}/$block_number/proof_hash`,
+              ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
               value: {
                 [FunctionProperties.FUNCTION]: {
-                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                  [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                    [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                    [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                  }
                 }
               }
             },
@@ -240,11 +251,11 @@ function setUpForSharding(shardingConfig) {
 
 describe('Sharding', () => {
   const token =
-      readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_token.json'));
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
   const accounts =
-      readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_accounts.json'));
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_accounts.json'));
   const sharding =
-      readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_sharding.json'));
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_sharding.json'));
 
   let parent_tracker_proc, parent_server_proc,
       tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
@@ -254,18 +265,18 @@ describe('Sharding', () => {
 
     parent_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
     sleep(2000);
-    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0]);
+    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], false);
     sleep(2000);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], false);
     sleep(2000);
     waitUntilShardReporterStarts();
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3]);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], false);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4]);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], false);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5]);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], false);
     sleep(2000);
   });
 
@@ -329,8 +340,10 @@ describe('Sharding', () => {
           "$block_number": {
             "proof_hash": {
               ".function": {
-                "function_type": "NATIVE",
-                "function_id": "_updateLatestShardReport"
+                "_updateLatestShardReport": {
+                  "function_type": "NATIVE",
+                  "function_id": "_updateLatestShardReport"
+                }
               }
             }
           }
@@ -525,7 +538,11 @@ describe('Sharding', () => {
               syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.function': 'some function config' });
+          assert.deepEqual(body.result, {
+            '.function': {
+              'fid': 'some function config'
+            }
+          });
         })
 
         it('/get_function with is_global = true', () => {
@@ -533,7 +550,11 @@ describe('Sharding', () => {
               'GET', server1 + '/get_function?ref=/apps/afan/test/test_function/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.function': 'some function config' });
+          assert.deepEqual(body.result, {
+            '.function': {
+              'fid': 'some function config'
+            }
+          });
         })
       })
 
@@ -543,7 +564,7 @@ describe('Sharding', () => {
               syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
 
         it('/get_rule with is_global = true', () => {
@@ -551,7 +572,7 @@ describe('Sharding', () => {
               'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.equal(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth === \'abcd\'' });
+          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
       })
 
@@ -607,7 +628,9 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "some function config",
+              "config": {
+                "fid": "some function config"
+              },
               "path": "/test/test_function/some/path"
             },
             "subtree_configs": []
@@ -626,7 +649,9 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "some function config",
+              "config": {
+                "fid": "some function config"
+              },
               "path": "/apps/afan/test/test_function/some/path"
             },
             "subtree_configs": []
@@ -646,7 +671,7 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -665,7 +690,7 @@ describe('Sharding', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth === 'abcd'",
+              "config": "auth.addr === 'abcd'",
               "path": "/apps/afan/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -818,10 +843,12 @@ describe('Sharding', () => {
             result: [
               100,
               {
-                ".function": "some function config"
+                ".function": {
+                  "fid": "some function config"
+                }
               },
               {
-                ".write": "auth === 'abcd'"
+                ".write": "auth.addr === 'abcd'"
               },
               {
                 ".owner": {
@@ -887,10 +914,12 @@ describe('Sharding', () => {
             result: [
               100,
               {
-                ".function": "some function config"
+                ".function": {
+                  "fid": "some function config"
+                }
               },
               {
-                ".write": "auth === 'abcd'"
+                ".write": "auth.addr === 'abcd'"
               },
               {
                 ".owner": {
@@ -967,7 +996,9 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "some function config",
+                "config": {
+                  "fid": "some function config"
+                },
                 "path": "/test/test_function/some/path"
               },
               "subtree_configs": []
@@ -987,7 +1018,9 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "some function config",
+                "config": {
+                  "fid": "some function config"
+                },
                 "path": "/apps/afan/test/test_function/some/path"
               },
               "subtree_configs": []
@@ -1009,7 +1042,7 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth === 'abcd'",
+                "config": "auth.addr === 'abcd'",
                 "path": "/test/test_rule/some/path"
               },
               "subtree_configs": []
@@ -1029,7 +1062,7 @@ describe('Sharding', () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth === 'abcd'",
+                "config": "auth.addr === 'abcd'",
                 "path": "/apps/afan/test/test_rule/some/path"
               },
               "subtree_configs": []
@@ -1225,7 +1258,9 @@ describe('Sharding', () => {
           const request = {
             ref: "test/test_function/other/path",
             value: {
-              ".function": "some other function config"
+              ".function": {
+                "fid": "some other function config"
+              }
             }
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
@@ -1238,7 +1273,9 @@ describe('Sharding', () => {
           const request = {
             ref: "apps/afan/test/test_function/other/path",
             value: {
-              ".function": "some other function config"
+              ".function": {
+                "fid": "some other function config"
+              }
             },
             is_global: true,
           };

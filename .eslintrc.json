@@ -15,10 +15,7 @@
       "error",
       { "code": 100 }
     ],
-    "object-curly-spacing": [
-      "error",
-      "never"
-    ],
+    "object-curly-spacing": "off",
     "comma-dangle": [
       "error",
       "only-multiline"

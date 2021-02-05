@@ -29,24 +29,24 @@ const { waitForNewBlocks, waitUntilNodeSyncs, parseOrLog } = require('../unittes
 
 const ENV_VARIABLES = [
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false,
-    ADDITIONAL_OWNERS: 'test:./unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:./unittest/data/rules_for_testing.json'
+    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
+    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -91,7 +91,11 @@ RANDOM_OPERATION = [
   ['dec_value', {ref: 'test/balance/user1', value: 10000}],
   ['dec_value', {ref: 'test/balance/user2', value: 100002}],
   ['set_rule', {ref: 'test/test_rule/', value: { ".write": "some rule config"}}],
-  ['set_function', {ref: 'test/test_function/', value: { ".function": "some function config"}}],
+  ['set_function', {ref: 'test/test_function/', value: {
+    ".function": {
+      "fid": "some function config"
+    }
+  }}],
   ['set_owner', {ref: 'test/test_owner/', value: {
     ".owner": {
       "owners": {
@@ -217,7 +221,7 @@ describe('Blockchain Cluster', () => {
     sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
-      proc.start();
+      proc.start(false);
       sleep(2000);
       const address =
           parseOrLog(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;
@@ -296,7 +300,7 @@ describe('Blockchain Cluster', () => {
       const accountIndex = 4;
       const newServer = 'http://localhost:' + String(8081 + Number(accountIndex))
       const newServerProc = new Process(APP_SERVER, {
-        ACCOUNT_INDEX: accountIndex, HOSTING_ENV: 'local', DEBUG: true,
+        ACCOUNT_INDEX: accountIndex, DEBUG: true,
         ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
       });
@@ -390,11 +394,10 @@ describe('Blockchain Cluster', () => {
           transactions_hash: block.transactions_hash,
           number: block.number,
           epoch: block.epoch,
-          stateProofHash: block.stateProofHash,
+          state_proof_hash: block.state_proof_hash,
           timestamp: block.timestamp,
           proposer: block.proposer,
-          validators: block.validators,
-          size: block.size
+          validators: block.validators
         }));
       }
       for (let i = 0; i < SERVERS.length; i++) {
