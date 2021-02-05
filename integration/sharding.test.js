@@ -40,37 +40,33 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: true
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true
   },
   {
     // For shard chain tracker
     PORT: 9090, P2P_PORT: 6000
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9091, P2P_PORT: 6001, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9091, P2P_PORT: 6001, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9092, P2P_PORT: 6002, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9092, P2P_PORT: 6002, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9093, P2P_PORT: 6003, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9093, P2P_PORT: 6003, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'blockchain/afan_shard',
-    PORT: 9094, P2P_PORT: 6004, TRACKER_WS_ADDR: 'ws://localhost:6000',
-    NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, HOSTING_ENV: 'local', DEBUG: false, STAKE: 250,
+    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    PORT: 9094, P2P_PORT: 6004, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -255,11 +251,11 @@ function setUpForSharding(shardingConfig) {
 
 describe('Sharding', () => {
   const token =
-      readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_token.json'));
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
   const accounts =
-      readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_accounts.json'));
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_accounts.json'));
   const sharding =
-      readConfigFile(path.resolve(__dirname, '../blockchain/afan_shard', 'genesis_sharding.json'));
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_sharding.json'));
 
   let parent_tracker_proc, parent_server_proc,
       tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;

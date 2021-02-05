@@ -13,7 +13,6 @@ const {
 } = require('../common/constants');
 const {
   ConsensusConsts,
-  ConsensusDbPaths,
 } = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -366,7 +365,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_isValidator: function(args, done) {
       const whitelisted = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${ConsensusDbPaths.WHITELIST}/${args.address}`);
+          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${PredefinedDbPaths.WHITELIST}/${args.address}`);
       const deposit = p2pServer.node.db.getValue(
           `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
       const stakeValid = deposit && deposit.value > 0 &&

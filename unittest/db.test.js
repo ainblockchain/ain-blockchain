@@ -8,7 +8,7 @@ const {
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
-  GenesisWhitelist,
+  GENESIS_WHITELIST,
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
@@ -66,7 +66,7 @@ describe("DB initialization", () => {
 
   describe("whitelist", () => {
     it("loading whitelist properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), GenesisWhitelist);
+      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), GENESIS_WHITELIST);
     })
   })
 

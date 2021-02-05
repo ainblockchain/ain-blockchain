@@ -10,7 +10,7 @@ const DB = require('../db');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
-  GenesisValidators,
+  GENESIS_VALIDATORS,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
@@ -262,7 +262,7 @@ class Block {
   static buildGenesisStakingTxs(timestamp) {
     const _ = require('lodash');
     const txs = [];
-    Object.entries(GenesisValidators).forEach(([address, amount], index) => {
+    Object.entries(GENESIS_VALIDATORS).forEach(([address, amount], index) => {
       const privateKey = _.get(GenesisAccounts,
           `${AccountProperties.OTHERS}.${index}.${AccountProperties.PRIVATE_KEY}`);
       if (!privateKey) {
@@ -330,7 +330,7 @@ class Block {
     const number = 0;
     const epoch = 0;
     const proposer = ownerAddress;
-    const validators = GenesisValidators;
+    const validators = GENESIS_VALIDATORS;
     const stateProofHash = Block.getGenesisStateProofHash();
     return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
         stateProofHash, proposer, validators);

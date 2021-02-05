@@ -15,8 +15,9 @@ const {
   AccountProperties,
   TokenExchangeSchemes,
   FunctionProperties,
+  MIN_NUM_VALIDATORS,
+  MIN_STAKE_PER_VALIDATOR,
 } = require('../common/constants');
-const { ConsensusDbPaths, ConsensusConsts } = require('../consensus/constants');
 const ChainUtil = require('../common/chain-util');
 const {sendSignedTx, signAndSendTx} = require('../server/util');
 const Transaction = require('../tx-pool/transaction');
@@ -338,16 +339,16 @@ class Functions {
       // Reject withdrawing consensus deposits if it reduces the number of validators to less than
       // MIN_NUM_VALIDATORS.
       const whitelist = this.db.getValue(
-          ChainUtil.formatPath([ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST]));
+          ChainUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST]));
       let numValidators = 0;
       Object.keys(whitelist).forEach((address) => {
         const deposit = this.db.getValue(
             ChainUtil.formatPath([PredefinedDbPaths.DEPOSIT_CONSENSUS, address]));
-        if (deposit && deposit.value > ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+        if (deposit && deposit.value > MIN_STAKE_PER_VALIDATOR) {
           numValidators++;
         }
       });
-      if (numValidators <= ConsensusConsts.MIN_NUM_VALIDATORS) {
+      if (numValidators <= MIN_NUM_VALIDATORS) {
         this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
         return;
       }

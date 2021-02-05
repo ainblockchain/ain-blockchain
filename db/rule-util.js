@@ -77,13 +77,13 @@ class RuleUtil {
   }
 
   getMinStakeAmount() {
-    const { ConsensusConsts } = require('../consensus/constants');
-    return ConsensusConsts.MIN_STAKE_PER_VALIDATOR;
+    const { MIN_STAKE_PER_VALIDATOR } = require('../common/constants');
+    return MIN_STAKE_PER_VALIDATOR;
   }
 
   getMinNumValidators() {
-    const { ConsensusConsts } = require('../consensus/constants');
-    return ConsensusConsts.MIN_NUM_VALIDATORS;
+    const { MIN_NUM_VALIDATORS } = require('../common/constants');
+    return MIN_NUM_VALIDATORS;
   }
 }
 
