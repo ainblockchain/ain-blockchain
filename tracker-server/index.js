@@ -88,9 +88,7 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     const nodeInfo = JSON.parse(message);
     wsList[ws.uuid] = nodeInfo.address;
-    if (!(nodeInfo.address in peerNodes)) {
-      nodeInfo.location = getNodeLocation(nodeInfo.ip);
-    }
+    nodeInfo.location = getNodeLocation(nodeInfo.ip);
     // TODO(minsu): It will be managed via peers when heartbeat updates.
     nodeInfo.isAlive = true;
     peerNodes[nodeInfo.address] = nodeInfo;
