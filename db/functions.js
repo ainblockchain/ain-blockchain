@@ -161,13 +161,13 @@ class Functions {
       // Just delete the existing value.
       return null;
     }
-    const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
+    const funcChangeMap = ChainUtil.getJsObject(functionChange, [PredefinedDbPaths.FUNCTION]);
     if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
       return curFunction;
     }
     const newFunction =
         ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
-    let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    let newFuncMap = ChainUtil.getJsObject(newFunction, [PredefinedDbPaths.FUNCTION]);
     if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
       // Add a place holder.
       ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
@@ -242,9 +242,8 @@ class Functions {
 
   /**
    * Saves the transaction's hash to a sibling path.
-   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/last_tx'
+   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
    */
-  // NOTE(seo): Use this function for test-purposes.
   _saveLastTx(value, context) {
     const transaction = context.transaction;
     const timestamp = context.timestamp;
@@ -254,9 +253,14 @@ class Functions {
     if (valuePath.length === 0) {
       return false;
     }
-    const lastTxPath = valuePath.slice(0, -1);
-    lastTxPath.push(PredefinedDbPaths.LAST_TX);
-    return this.setValueOrLog(ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp);
+    const lastTxPath = valuePath.slice();
+    // Insert '.last_tx' label just before the last label in the path.
+    const lastLabel = lastTxPath.pop();
+    lastTxPath.push(PredefinedDbPaths.SAVE_LAST_TX_LAST_TX);
+    lastTxPath.push(lastLabel);
+
+    return this.setValueOrLog(
+        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp);
   }
 
   // TODO(seo): Add adress validity check.

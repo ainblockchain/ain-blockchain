@@ -180,7 +180,7 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path/last_tx',
+          ref: '/test/test_native_function/allowed_path/.last_tx/value',
           value: {
             ".write": "auth.fid === '_saveLastTx'",
           }
@@ -206,7 +206,7 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path/last_tx',
+          ref: '/test/test_native_function/not_allowed_path/.last_tx/value',
           value: {
             ".write": "auth.fid === 'some function id'",
           }
@@ -265,13 +265,13 @@ describe('Blockchain Node', () => {
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0]);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], false);
     sleep(2000);
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1]);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], false);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2]);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], false);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3]);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], false);
     sleep(2000);
   });
 
@@ -2069,7 +2069,7 @@ describe('Blockchain Node', () => {
           console.log(`Failed to check finalization of tx.`)
         }
         const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/last_tx'}`)
+            server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/.last_tx/value'}`)
           .body.toString('utf-8')).result
         // Should be null.
         expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
@@ -2088,7 +2088,7 @@ describe('Blockchain Node', () => {
           console.log(`Failed to check finalization of tx.`)
         }
         const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxAllowedPath + '/last_tx'}`)
+            server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
           .body.toString('utf-8')).result
         // Should be the tx hash value.
         expect(_.get(lastTx, 'tx_hash', null)).to.equal(body.result.tx_hash);

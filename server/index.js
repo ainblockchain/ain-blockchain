@@ -516,12 +516,12 @@ class P2pServer {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const shardInitTxBody = P2pServer.buildShardingSetupTxBody(GenesisSharding, LIGHTWEIGHT);
+    const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
   }
 
-  static buildShardingSetupTxBody(genesisSharding, isLightWeight) {
+  static buildShardingSetupTxBody() {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -567,7 +567,7 @@ class P2pServer {
                 '$block_number',
                 ShardingProperties.PROOF_HASH),
             value: {
-              [RuleProperties.WRITE]: isLightWeight ? proofHashRulesLight : proofHashRules
+              [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
             }
           },
           {
@@ -617,7 +617,7 @@ class P2pServer {
               PredefinedDbPaths.SHARDING_SHARD,
               ainUtil.encode(shardingPath)
             ]),
-            value: genesisSharding
+            value: GenesisSharding
           }
         ]
       },
