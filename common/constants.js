@@ -1,51 +1,25 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
-const {
-  ConsensusConsts,
-  ConsensusDbPaths,
-} = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
-const DEFAULT_GENESIS_CONFIGS_DIR = 'blockchain';
+// Genesis configs
+const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
+const GenesisParams = getGenesisConfig('genesis_params.json');
+const GenesisToken = getGenesisConfig('genesis_token.json');
+const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
+
+// Constants
 const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
 const PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
-const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
-const MAX_TX_BYTES = 10000;
-const TRANSACTION_POOL_TIMEOUT_MS = moment.duration(1, 'hours').as('milliseconds');
-const TRANSACTION_TRACKER_TIMEOUT_MS = moment.duration(24, 'hours').as('milliseconds');
-// TODO(lia): Check network id in all messages
-const NETWORK_ID = process.env.NETWORK_ID || 'Testnet';
-// HOSTING_ENV is a variable used in extracting the ip address of the host machine,
-// of which value could be either 'local', 'default', or 'gcp'.
-const HOSTING_ENV = process.env.HOSTING_ENV || 'default';
-const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
-    process.env.COMCOM_HOST_EXTERNAL_IP : '';
-const COMCOM_HOST_INTERNAL_IP_MAP = {
-  aincom1: '192.168.1.13',
-  aincom2: '192.168.1.14',
-}
-const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
-const TRACKER_WS_ADDR = process.env.TRACKER_WS_ADDR || 'ws://localhost:5000';
-const PORT = process.env.PORT || getPortNumber(8080, 8081);
-const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5001);
 const HASH_DELIMITER = '#';
-const MAX_SHARD_REPORT = 100;
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
-    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
-function getPortNumber(defaultValue, baseValue) {
-  if (HOSTING_ENV === 'local') {
-    return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) : 0);
-  }
-  return defaultValue;
-}
-
+// Enums
 /**
  * Message types for communication between nodes.
- * 
+ *
  * @enum {string}
  */
 const MessageTypes = {
@@ -61,7 +35,7 @@ const MessageTypes = {
 
 /**
  * Status of blockchain nodes.
- * 
+ *
  * @enum {string}
  */
 const BlockchainNodeStatus = {
@@ -84,6 +58,15 @@ const PredefinedDbPaths = {
   VALUES_ROOT: 'values',
   // Consensus
   CONSENSUS: 'consensus',
+  WHITELIST: 'whitelist',
+  NUMBER: 'number',
+  PROPOSE: 'propose',
+  PROPOSER: 'proposer',
+  VALIDATORS: 'validators',
+  TOTAL_AT_STAKE: 'total_at_stake',
+  VOTE: 'vote',
+  BLOCK_HASH: 'block_hash',
+  STAKE: 'stake',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -129,7 +112,7 @@ const PredefinedDbPaths = {
 
 /**
  * Properties of token configs.
- * 
+ *
  * @enum {string}
  */
 const TokenProperties = {
@@ -140,7 +123,7 @@ const TokenProperties = {
 
 /**
  * Properties of account configs.
- * 
+ *
  * @enum {string}
  */
 const AccountProperties = {
@@ -155,7 +138,7 @@ const AccountProperties = {
 
 /**
  * Properties of owner configs.
- * 
+ *
  * @enum {string}
  */
 const OwnerProperties = {
@@ -170,7 +153,7 @@ const OwnerProperties = {
 
 /**
  * Properties of rule configs.
- * 
+ *
  * @enum {string}
  */
 const RuleProperties = {
@@ -179,7 +162,7 @@ const RuleProperties = {
 
 /**
  * Properties of function configs.
- * 
+ *
  * @enum {string}
  */
 const FunctionProperties = {
@@ -192,7 +175,7 @@ const FunctionProperties = {
 
 /**
  * Types of functions.
- * 
+ *
  * @enum {string}
  */
 const FunctionTypes = {
@@ -202,7 +185,7 @@ const FunctionTypes = {
 
 /**
  * Properties of proof configs.
- * 
+ *
  * @enum {string}
  */
 const ProofProperties = {
@@ -211,7 +194,7 @@ const ProofProperties = {
 
 /**
  * IDs of native functions.
- * 
+ *
  * @enum {string}
  */
 const NativeFunctionIds = {
@@ -226,7 +209,7 @@ const NativeFunctionIds = {
 
 /**
  * Properties of sharding configs.
- * 
+ *
  * @enum {string}
  */
 const ShardingProperties = {
@@ -248,7 +231,7 @@ const ShardingProperties = {
 
 /**
  * Sharding protocols.
- * 
+ *
  * @enum {string}
  */
 const ShardingProtocols = {
@@ -258,7 +241,7 @@ const ShardingProtocols = {
 
 /**
  * Token exchange schemes.
- * 
+ *
  * @enum {string}
  */
 const TokenExchangeSchemes = {
@@ -268,7 +251,7 @@ const TokenExchangeSchemes = {
 
 /**
  * Types of read database operations.
- * 
+ *
  * @enum {string}
  */
 const ReadDbOperations = {
@@ -287,7 +270,7 @@ const ReadDbOperations = {
 
 /**
  * Types of write database operations.
- * 
+ *
  * @enum {string}
  */
 const WriteDbOperations = {
@@ -302,7 +285,7 @@ const WriteDbOperations = {
 
 /**
  * Function result code.
- * 
+ *
  * @enum {string}
  */
 const FunctionResultCode = {
@@ -315,7 +298,7 @@ const FunctionResultCode = {
 
 /**
  * Constant values for transactionTracker.
- * 
+ *
  * @enum {string}
  */
 const TransactionStatus = {
@@ -326,7 +309,7 @@ const TransactionStatus = {
 };
 
 /**
- * Default values
+ * Default values.
  */
 const DefaultValues = {
   DEPOSIT_LOCKUP_DURATION_MS: moment.duration(180, 'days').as('milliseconds')
@@ -334,7 +317,7 @@ const DefaultValues = {
 
 /**
  * State versions.
- * 
+ *
  * @enum {string}
  */
 const StateVersions = {
@@ -362,21 +345,65 @@ const FeatureFlags = {
 };
 
 /**
- * Connection info.
+ * Environment variables.
  */
-const PeerConnections = {
-  MAX_CONNECTION_LIMIT: 5,
-  MAX_OUTBOUND_LIMIT: 2,
-  INITIAL_MAX_CONNECTION: 5,
-  INITIAL_MAX_OUTBOUND: 2,
-  INITIAL_MAX_INBOUND: 3
-};
+const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
+const PORT = process.env.PORT || getPortNumber(8080, 8080);
+const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
+    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
-const GenesisToken = getGenesisConfig('genesis_token.json');
-const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
+/**
+ * Overwriting environment variables.
+ * These parameters are defined in genesis_params.json, but if specified as environment variables,
+ * the env vars take precedence.
+ * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
+ */
+const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'HOSTING_ENV'];
+const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'EPOCH_MS'];
+
+function overwriteGenesisParams(overwritingParams, type) {
+  for (const key of overwritingParams) {
+    if (process.env[key]) {
+      GenesisParams[type][key] = process.env[key];
+
+      if (key === 'MIN_NUM_VALIDATORS') {
+        const whitelist = {};
+        const validators = {};
+        for (let i = 0; i < process.env[key]; i++) {
+          const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
+          ChainUtil.setJsObject(whitelist, [addr], true);
+          ChainUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+        }
+        GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
+        GenesisParams.consensus.GENESIS_VALIDATORS = validators;
+      }
+    }
+  }
+}
+
+overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
+overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
+
+/**
+ * Port number helper.
+ * @param {number} defaultValue
+ * @param {number} baseValue
+ */
+function getPortNumber(defaultValue, baseValue) {
+  if (GenesisParams.blockchain.HOSTING_ENV === 'local') {
+    return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) + 1 : 0);
+  }
+  return defaultValue;
+}
+
+/**
+ * Genesis DB & sharding config.
+ */
 const GenesisSharding = getGenesisSharding();
-const GenesisWhitelist = getGenesisWhitelist();
-const GenesisValidators = getGenesisValidators();
 const GenesisValues = getGenesisValues();
 const GenesisFunctions = getGenesisFunctions();
 const GenesisRules = getGenesisRules();
@@ -425,26 +452,6 @@ function getGenesisSharding() {
   return config;
 }
 
-// TODO(lia): replace this with GENESIS_WHITELIST
-function getGenesisWhitelist() {
-  const whitelist = {};
-  for (let i = 0; i < ConsensusConsts.MIN_NUM_VALIDATORS; i++) {
-    const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(whitelist, [accountAddress], true);
-  }
-  return whitelist;
-}
-
-// TODO(lia): replace this with GENESIS_VALIDATORS
-function getGenesisValidators() {
-  const validators = {};
-  for (let i = 0; i < ConsensusConsts.MIN_NUM_VALIDATORS; i++) {
-    const accountAddress = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(validators, [accountAddress], ConsensusConsts.GENESIS_STAKE);
-  }
-  return validators;
-}
-
 function getGenesisValues() {
   const values = {};
   ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
@@ -457,7 +464,7 @@ function getGenesisValues() {
   ChainUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   ChainUtil.setJsObject(
-      values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisWhitelist);
+      values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
   return values;
 }
 
@@ -483,7 +490,7 @@ function getGenesisOwners() {
         getShardingOwner());
   }
   ChainUtil.setJsObject(
-      owners, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistOwner());
+      owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], getWhitelistOwner());
   return owners;
 }
 
@@ -530,18 +537,10 @@ module.exports = {
   BLOCKCHAINS_DIR,
   PROTOCOL_VERSIONS,
   DEBUG,
-  MAX_TX_BYTES,
-  TRANSACTION_POOL_TIMEOUT_MS,
-  TRANSACTION_TRACKER_TIMEOUT_MS,
-  NETWORK_ID,
-  HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
-  COMCOM_HOST_INTERNAL_IP_MAP,
   ACCOUNT_INDEX,
   PORT,
   P2P_PORT,
-  TRACKER_WS_ADDR,
-  MAX_SHARD_REPORT,
   LIGHTWEIGHT,
   HASH_DELIMITER,
   MessageTypes,
@@ -565,15 +564,15 @@ module.exports = {
   DefaultValues,
   StateVersions,
   FeatureFlags,
-  PeerConnections,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
-  GenesisWhitelist,
-  GenesisValidators,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
   buildOwnerPermissions,
+  ...GenesisParams.blockchain,
+  ...GenesisParams.consensus,
+  ...GenesisParams.network,
 };

@@ -20,14 +20,16 @@ const {
   StateVersions,
   MAX_TX_BYTES,
   MAX_SHARD_REPORT,
-  GenesisWhitelist,
+  GENESIS_WHITELIST,
   LIGHTWEIGHT,
+  MIN_NUM_VALIDATORS,
+  MIN_STAKE_PER_VALIDATOR,
+  EPOCH_MS,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
   ConsensusConsts,
   ConsensusStatus,
-  ConsensusDbPaths,
 } = require('./constants');
 const {
   signAndSendTx,
@@ -100,7 +102,7 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = Block.genesis();
     this.startingTime = genesisBlock.timestamp;
-    this.state.epoch = Math.ceil((Date.now() - this.startingTime) / ConsensusConsts.EPOCH_MS);
+    this.state.epoch = Math.ceil((Date.now() - this.startingTime) / EPOCH_MS);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.state.epoch}`);
 
     this.setEpochTransition();
@@ -129,7 +131,7 @@ class Consensus {
         }
       }
       currentTime -= this.timeAdjustment;
-      const absEpoch = Math.floor((currentTime - this.startingTime) / ConsensusConsts.EPOCH_MS);
+      const absEpoch = Math.floor((currentTime - this.startingTime) / EPOCH_MS);
       if (this.state.epoch + 1 < absEpoch) {
         logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.state.epoch} / ${absEpoch}`);
       } else if (this.state.epoch + 1 > absEpoch) {
@@ -144,7 +146,7 @@ class Consensus {
         this.tryPropose();
       }
       this.isInEpochTransition = false;
-    }, ConsensusConsts.EPOCH_MS);
+    }, EPOCH_MS);
   }
 
   stop() {
@@ -168,7 +170,8 @@ class Consensus {
         : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
 
     // FIXME(lia): make the seeds more secure and unpredictable
-    const seed = '' + this.genesisHash + this.state.epoch;
+    // const seed = '' + this.genesisHash + this.state.epoch;
+    const seed = '' + lastNotarizedBlock.last_votes_hash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
@@ -218,7 +221,10 @@ class Consensus {
 
         // TODO(minsu): requestChainSegment can be dealt with at P2p Client rather than here.
         // it will be the next job as the second round of refactoring with p2p server and client.
-        this.server.client.requestChainSegment(this.node.bc.lastBlock());
+        const connections = _.merge({}, this.server.client.outbound, this.server.inbound);
+        Object.values(connections).forEach((socket) => {
+          this.server.client.requestChainSegment(socket, this.node.bc.lastBlock());
+        });
         return;
       }
       if (Consensus.isValidConsensusTx(proposalTx) &&
@@ -302,12 +308,12 @@ class Consensus {
     // Need the block#1 to be finalized to have the deposits reflected in the state
     let validators = {};
     if (this.node.bc.lastBlockNumber() < 1) {
-      const whitelist = GenesisWhitelist;
+      const whitelist = GENESIS_WHITELIST;
       for (const address in whitelist) {
         if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
           const deposit = tempDb.getValue(`/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`);
           if (whitelist[address] === true && deposit &&
-              deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+              deposit.value >= MIN_STAKE_PER_VALIDATOR) {
             validators[address] = deposit.value;
           }
         }
@@ -318,7 +324,7 @@ class Consensus {
     }
     const numValidators = Object.keys(validators).length;
     if (!validators || !numValidators) throw Error('No whitelisted validators');
-    if (numValidators < ConsensusConsts.MIN_NUM_VALIDATORS) {
+    if (numValidators < MIN_NUM_VALIDATORS) {
       throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
     }
     const totalAtStake = Object.values(validators).reduce(function(a, b) {
@@ -333,10 +339,10 @@ class Consensus {
     const proposeOp = {
       type: WriteDbOperations.SET_VALUE,
       ref: ChainUtil.formatPath([
-        ConsensusDbPaths.CONSENSUS,
-        ConsensusDbPaths.NUMBER,
+        PredefinedDbPaths.CONSENSUS,
+        PredefinedDbPaths.NUMBER,
         blockNumber,
-        ConsensusDbPaths.PROPOSE
+        PredefinedDbPaths.PROPOSE
       ]),
       value: {
         number: blockNumber,
@@ -361,8 +367,8 @@ class Consensus {
           {
             type: WriteDbOperations.SET_VALUE,
             ref: ChainUtil.formatPath([
-              ConsensusDbPaths.CONSENSUS,
-              ConsensusDbPaths.NUMBER,
+              PredefinedDbPaths.CONSENSUS,
+              PredefinedDbPaths.NUMBER,
               blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
             ]),
             value: null
@@ -418,15 +424,16 @@ class Consensus {
     // those can notarize the prevBlock (verify, execute and add the missing votes)
     let prevBlockInfo = number === 1 ?
         this.node.bc.getBlockByNumber(0) : this.blockPool.hashToBlockInfo[last_hash];
-    const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
     logger.debug(`[${LOG_HEADER}] prevBlockInfo: ${JSON.stringify(prevBlockInfo, null, 2)}`);
     if (number !== 1 && (!prevBlockInfo || !prevBlockInfo.block)) {
       logger.debug(`[${LOG_HEADER}] No notarized block at number ${number - 1} with ` +
           `hash ${last_hash}`);
       return;
     }
+    const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
+
     // Make sure we have at least MIN_NUM_VALIDATORS validators.
-    if (Object.keys(validators).length < ConsensusConsts.MIN_NUM_VALIDATORS) {
+    if (Object.keys(validators).length < MIN_NUM_VALIDATORS) {
       logger.error(`[${LOG_HEADER}] Validator set smaller than MIN_NUM_VALIDATORS: ${JSON.stringify(validators)}`);
       return false;
     }
@@ -500,7 +507,8 @@ class Consensus {
           `is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
-    const seed = '' + this.genesisHash + epoch;
+    // const seed = '' + this.genesisHash + epoch;
+    const seed = '' + prevBlock.last_votes_hash + proposalBlock.epoch;
     const expectedProposer = Consensus.selectProposer(seed, validators);
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_HEADER}] Proposer is not the expected node (expected: ` +
@@ -666,15 +674,15 @@ class Consensus {
     const operation = {
       type: WriteDbOperations.SET_VALUE,
       ref: ChainUtil.formatPath([
-        ConsensusDbPaths.CONSENSUS,
-        ConsensusDbPaths.NUMBER,
+        PredefinedDbPaths.CONSENSUS,
+        PredefinedDbPaths.NUMBER,
         block.number,
-        ConsensusDbPaths.VOTE,
+        PredefinedDbPaths.VOTE,
         myAddr
       ]),
       value: {
-        [ConsensusDbPaths.BLOCK_HASH]: block.hash,
-        [ConsensusDbPaths.STAKE]: myStake
+        [PredefinedDbPaths.BLOCK_HASH]: block.hash,
+        [PredefinedDbPaths.STAKE]: myStake
       }
     };
     const voteTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
@@ -843,7 +851,7 @@ class Consensus {
   getWhitelist() {
     const LOG_HEADER = 'getWhitelist';
     const whitelist = this.node.getValueWithStateVersion(
-        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false,
+        `/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.WHITELIST}`, false,
         this.node.stateManager.getFinalVersion());
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
@@ -860,13 +868,13 @@ class Consensus {
       throw Error(err);
     }
     const whitelist = this.node.getValueWithStateVersion(
-        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false, stateVersion) || {};
+        `/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.WHITELIST}`, false, stateVersion) || {};
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
       const deposit = this.node.getValueWithStateVersion(
         `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false, stateVersion) || {};
       if (whitelist[address] === true && deposit &&
-          deposit.value >= ConsensusConsts.MIN_STAKE_PER_VALIDATOR) {
+          deposit.value >= MIN_STAKE_PER_VALIDATOR) {
         validators[address] = deposit.value;
       }
     });
@@ -1095,7 +1103,7 @@ class Consensus {
   static isValidConsensusTx(tx) {
     if (!tx.tx_body.operation) return false;
     const consensusTxPrefix = ChainUtil.formatPath(
-        [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.NUMBER]);
+        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER]);
     if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
       return tx.tx_body.operation.ref.startsWith(consensusTxPrefix);
     } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
