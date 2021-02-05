@@ -14,7 +14,7 @@
   },
   "consensus": {
     "MIN_STAKE_PER_VALIDATOR": 100000,
-    "MIN_NUM_VALIDATORS": 3,
+    "MIN_NUM_VALIDATORS": 5,
     "EPOCH_MS": 3000,
     "GENESIS_WHITELIST": {},
     "GENESIS_VALIDATORS": {}
