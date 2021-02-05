@@ -17,22 +17,8 @@ const ConsensusStatus = {
   STOPPED: 'STOPPED',
 }
 
-const ConsensusDbPaths = {
-  CONSENSUS: 'consensus',
-  WHITELIST: 'whitelist',
-  NUMBER: 'number',
-  PROPOSE: 'propose',
-  PROPOSER: 'proposer',
-  VALIDATORS: 'validators',
-  TOTAL_AT_STAKE: 'total_at_stake',
-  VOTE: 'vote',
-  BLOCK_HASH: 'block_hash',
-  STAKE: 'stake'
-}
-
 module.exports = {
   ConsensusMessageTypes,
   ConsensusConsts,
   ConsensusStatus,
-  ConsensusDbPaths
 }

@@ -30,7 +30,6 @@ const {
   ConsensusMessageTypes,
   ConsensusConsts,
   ConsensusStatus,
-  ConsensusDbPaths,
 } = require('./constants');
 const {
   signAndSendTx,
@@ -340,10 +339,10 @@ class Consensus {
     const proposeOp = {
       type: WriteDbOperations.SET_VALUE,
       ref: ChainUtil.formatPath([
-        ConsensusDbPaths.CONSENSUS,
-        ConsensusDbPaths.NUMBER,
+        PredefinedDbPaths.CONSENSUS,
+        PredefinedDbPaths.NUMBER,
         blockNumber,
-        ConsensusDbPaths.PROPOSE
+        PredefinedDbPaths.PROPOSE
       ]),
       value: {
         number: blockNumber,
@@ -368,8 +367,8 @@ class Consensus {
           {
             type: WriteDbOperations.SET_VALUE,
             ref: ChainUtil.formatPath([
-              ConsensusDbPaths.CONSENSUS,
-              ConsensusDbPaths.NUMBER,
+              PredefinedDbPaths.CONSENSUS,
+              PredefinedDbPaths.NUMBER,
               blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
             ]),
             value: null
@@ -675,15 +674,15 @@ class Consensus {
     const operation = {
       type: WriteDbOperations.SET_VALUE,
       ref: ChainUtil.formatPath([
-        ConsensusDbPaths.CONSENSUS,
-        ConsensusDbPaths.NUMBER,
+        PredefinedDbPaths.CONSENSUS,
+        PredefinedDbPaths.NUMBER,
         block.number,
-        ConsensusDbPaths.VOTE,
+        PredefinedDbPaths.VOTE,
         myAddr
       ]),
       value: {
-        [ConsensusDbPaths.BLOCK_HASH]: block.hash,
-        [ConsensusDbPaths.STAKE]: myStake
+        [PredefinedDbPaths.BLOCK_HASH]: block.hash,
+        [PredefinedDbPaths.STAKE]: myStake
       }
     };
     const voteTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
@@ -852,7 +851,7 @@ class Consensus {
   getWhitelist() {
     const LOG_HEADER = 'getWhitelist';
     const whitelist = this.node.getValueWithStateVersion(
-        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false,
+        `/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.WHITELIST}`, false,
         this.node.stateManager.getFinalVersion());
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
@@ -869,7 +868,7 @@ class Consensus {
       throw Error(err);
     }
     const whitelist = this.node.getValueWithStateVersion(
-        `/${ConsensusDbPaths.CONSENSUS}/${ConsensusDbPaths.WHITELIST}`, false, stateVersion) || {};
+        `/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.WHITELIST}`, false, stateVersion) || {};
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
       const deposit = this.node.getValueWithStateVersion(
@@ -1104,7 +1103,7 @@ class Consensus {
   static isValidConsensusTx(tx) {
     if (!tx.tx_body.operation) return false;
     const consensusTxPrefix = ChainUtil.formatPath(
-        [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.NUMBER]);
+        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER]);
     if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
       return tx.tx_body.operation.ref.startsWith(consensusTxPrefix);
     } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
