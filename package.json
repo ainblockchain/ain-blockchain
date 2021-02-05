@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
