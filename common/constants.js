@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
-const { ConsensusDbPaths } = require('../consensus/constants');
 const ChainUtil = require('./chain-util');
 
 // Genesis configs
@@ -58,6 +57,15 @@ const PredefinedDbPaths = {
   VALUES_ROOT: 'values',
   // Consensus
   CONSENSUS: 'consensus',
+  WHITELIST: 'whitelist',
+  NUMBER: 'number',
+  PROPOSE: 'propose',
+  PROPOSER: 'proposer',
+  VALIDATORS: 'validators',
+  TOTAL_AT_STAKE: 'total_at_stake',
+  VOTE: 'vote',
+  BLOCK_HASH: 'block_hash',
+  STAKE: 'stake',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -451,7 +459,7 @@ function getGenesisValues() {
   ChainUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   ChainUtil.setJsObject(
-      values, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
+      values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
   return values;
 }
 
@@ -477,7 +485,7 @@ function getGenesisOwners() {
         getShardingOwner());
   }
   ChainUtil.setJsObject(
-      owners, [ConsensusDbPaths.CONSENSUS, ConsensusDbPaths.WHITELIST], getWhitelistOwner());
+      owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], getWhitelistOwner());
   return owners;
 }
 
