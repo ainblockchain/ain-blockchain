@@ -42,7 +42,7 @@ const {
   LIGHTWEIGHT,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const { sendTxAndWaitForFinalization } = require('./util');
+const { sendTxAndWaitForFinalization } = require('../p2p/util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
