@@ -34,7 +34,7 @@ const {
 const {
   signAndSendTx,
   sendGetRequest
-} = require('../server/util');
+} = require('../p2p/util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
