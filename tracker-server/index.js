@@ -24,10 +24,10 @@ app.get('/', (req, res, next) => {
       .end();
 });
 
-app.get('/peer_nodes', (req, res, next) => {
+app.get('/network_status', (req, res, next) => {
   res.status(200)
       .set('Content-Type', 'application/json')
-      .send({result: peerNodes})
+      .send({ network_info: getNetworkInfo() })
       .end();
 });
 
@@ -86,19 +86,17 @@ server.on('connection', (ws) => {
   ws.uuid = uuidv4();
   wsList[ws.uuid] = null;
   ws.on('message', (message) => {
-    const nodeInfo = JSON.parse(message);
+    const nodeInfo = Object.assign({ isAlive: true }, JSON.parse(message));
     wsList[ws.uuid] = nodeInfo.address;
     nodeInfo.location = getNodeLocation(nodeInfo.ip);
     // TODO(minsu): It will be managed via peers when heartbeat updates.
-    nodeInfo.isAlive = true;
     peerNodes[nodeInfo.address] = nodeInfo;
     logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
     logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 
-    const newManagedPeerInfoList = [];
+    let newManagedPeerInfoList = [];
     if (Object.keys(nodeInfo.managedPeersInfo.outbound).length < nodeInfo.connectionInfo.maxOutbound) {
-      getPeerCandidates(nodeInfo.address, newManagedPeerInfoList);
-      assignRandomPeers(newManagedPeerInfoList);
+      newManagedPeerInfoList = assignRandomPeers(getPeerCandidates(nodeInfo.address));
     }
     const msgToNode = {
       newManagedPeerInfoList,
@@ -132,7 +130,7 @@ function abbrAddr(address) {
 }
 
 function numAliveNodes() {
-  return Object.values(peerNodes).filter(node => node.isAlive === true).length;
+  return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
 }
 
 function numNodes() {
@@ -141,18 +139,19 @@ function numNodes() {
 
 function assignRandomPeers(candidates) {
   if (_.isEmpty(candidates)) {
-    return candidates;
+    return [];
+  }
+
+  const shuffled = _.shuffle(candidates);
+  if (shuffled.length > 1) {
+    return [shuffled.pop(), shuffled.pop()];
   } else {
-    const shuffled = _.shuffle(candidates);
-    if (shuffled.length > 1) {
-      return [shuffled.pop(), shuffled.pop()];
-    } else {
-      return shuffled;
-    }
+    return shuffled;
   }
 }
 
-function getPeerCandidates(myself, candidates) {
+function getPeerCandidates(myself) {
+  const candidates = [];
   Object.values(peerNodes).forEach(nodeInfo => {
     if (nodeInfo.address !== myself &&
         nodeInfo.isAlive === true &&
@@ -164,6 +163,7 @@ function getPeerCandidates(myself, candidates) {
       });
     }
   });
+  return candidates;
 }
 
 function printNodesInfo() {
@@ -175,18 +175,19 @@ function printNodesInfo() {
     const diskAvailableMb = Math.floor(_.get(nodeInfo, 'diskStatus.available') / 1000 / 1000);
     const memoryFreeMb =
         Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
-    logger.info(`${getNodeSummary(nodeInfo)} ` +
-        `Alive: ${nodeInfo.isAlive}, ` +
-        `Disk: ${diskAvailableMb}MB, ` +
-        `Memory: ${memoryFreeMb}MB, ` +
-        `Peers: outbound(${Object.keys(nodeInfo.managedPeersInfo.outbound)}), ` +
-        `inbound(${Object.keys(nodeInfo.managedPeersInfo.inbound)}), ` +
+    logger.info(`NodeSummary: ${getNodeSummary(nodeInfo)}\n` +
+        `isAlive: ${nodeInfo.isAlive},\n` +
+        `Disk: ${diskAvailableMb}MB,\n` +
+        `Memory: ${memoryFreeMb}MB,\n` +
+        `Peers:\n` +
+        `  outbound(${Object.keys(nodeInfo.managedPeersInfo.outbound)}),\n` +
+        `  inbound(${Object.keys(nodeInfo.managedPeersInfo.inbound)}),\n` +
         `UpdatedAt: ${nodeInfo.updatedAt}`);
   });
 }
 
 function getNodeSummary(nodeInfo) {
-  return `[${abbrAddr(nodeInfo.address)}]: ${JSON.stringify(nodeInfo.nodeStatus)}`;
+  return `[${abbrAddr(nodeInfo.address)}]: ${JSON.stringify(nodeInfo.nodeStatus, null, 2)}`;
 }
 
 function getNodeLocation(ip) {
@@ -204,5 +205,12 @@ function getNodeLocation(ip) {
     region: _.isEmpty(geoLocationDict.region) ? null : geoLocationDict.region,
     city: _.isEmpty(geoLocationDict.city) ? null : geoLocationDict.city,
     timezone: _.isEmpty(geoLocationDict.timezone) ? null : geoLocationDict.timezone,
+  };
+}
+
+function getNetworkInfo() {
+  return {
+    numAliveNodes: numAliveNodes() ,
+    peerNodes
   };
 }

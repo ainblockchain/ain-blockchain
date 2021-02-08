@@ -6,6 +6,7 @@ const _ = require('lodash');
 const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
+const ChainUtil = require('../common/chain-util');
 const {
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -42,8 +43,8 @@ class P2pClient {
 
   buildManagedPeersInfo() {
     return {
-      outbound: this.outbound,
-      inbound: this.server.inbound
+      outbound: ChainUtil.simplifyProperties(this.outbound),
+      inbound: ChainUtil.simplifyProperties(this.server.inbound),
     };
   }
 
