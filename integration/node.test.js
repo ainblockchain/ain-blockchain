@@ -2009,42 +2009,39 @@ describe('Blockchain Node', () => {
 
     let transferFrom; // = server1
     let transferTo; // = server2
-    let transferFromBad;     // = server3
     const transferAmount = 33;
     let transferPath;
     let transferFromBalancePath;
     let transferToBalancePath;
 
-    let depositServiceAdmin; // = server1
-    let depositActor; // = server2
-    let depositActorBad;     // = server3
+    let serviceAdmin; // = server1
+    let serviceUser; // = server2
+    let serviceUserBad;     // = server3
     const depositAmount = 50;
     let depositAccountPath;
     let depositPath;
     let withdrawPath;
-    let depositActorBalancePath;
+    let serviceUserBalancePath;
 
     before(() => {
       transferFrom = parseOrLog(
           syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
       transferTo =
           parseOrLog(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
-      transferFromBad =
-          parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
       transferPath = `/transfer/${transferFrom}/${transferTo}`;
       transferFromBalancePath = `/accounts/${transferFrom}/balance`;
       transferToBalancePath = `/accounts/${transferTo}/balance`;
 
-      depositServiceAdmin =
+      serviceAdmin =
           parseOrLog(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
-      depositActor =
+      serviceUser =
           parseOrLog(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
-      depositActorBad =
+      serviceUserBad =
           parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
-      depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
-      depositPath = `/deposit/test_service/${depositActor}`;
-      withdrawPath = `/withdraw/test_service/${depositActor}`;
-      depositActorBalancePath = `/accounts/${depositActor}/balance`;
+      depositAccountPath = `/deposit_accounts/test_service/${serviceUser}`;
+      depositPath = `/deposit/test_service/${serviceUser}`;
+      withdrawPath = `/withdraw/test_service/${serviceUser}`;
+      serviceUserBalancePath = `/accounts/${serviceUser}/balance`;
     })
 
     beforeEach(() => {
@@ -2224,7 +2221,7 @@ describe('Blockchain Node', () => {
                       "write_owner": false,
                       "write_rule": false
                     },
-                    [depositServiceAdmin]: {
+                    [serviceAdmin]: {
                       "branch_owner": true,
                       "write_owner": true,
                       "write_rule": true
@@ -2246,7 +2243,7 @@ describe('Blockchain Node', () => {
 
       it('deposit', () => {
         let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -2261,7 +2258,7 @@ describe('Blockchain Node', () => {
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/result/code`)
           .body.toString('utf-8')).result;
@@ -2273,7 +2270,7 @@ describe('Blockchain Node', () => {
 
       it('deposit more than account balance', () => {
         const beforeBalance = parseOrLog(syncRequest('GET', server2 +
-            `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8')).result;
+            `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -2284,7 +2281,7 @@ describe('Blockchain Node', () => {
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
         expect(afterBalance).to.equal(beforeBalance);
       });
@@ -2347,7 +2344,7 @@ describe('Blockchain Node', () => {
       });
 
       it('deposit with non-checksum addreess', () => {
-        const addrLowerCase = _.toLower(depositActor);
+        const addrLowerCase = _.toLower(serviceUser);
         const depositPathLowerCase = `/deposit/checksum_addr_test_service/${addrLowerCase}`;
         const bodyLowerCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPathLowerCase + '/101/value',
@@ -2355,7 +2352,7 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         expect(bodyLowerCase.code).to.equals(1);
 
-        const addrUpperCase = _.toUpper(depositActor);
+        const addrUpperCase = _.toUpper(serviceUser);
         const depositPathUpperCase = `/deposit/checksum_addr_test_service/${addrUpperCase}`;
         const bodyUpperCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: depositPathUpperCase + '/102/value',
@@ -2368,7 +2365,7 @@ describe('Blockchain Node', () => {
     describe('_withdraw', () => {
       it('withdraw by another address', () => {
         let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/accounts/${depositActorBad}/balance`)
+            server2 + `/get_value?ref=/accounts/${serviceUserBad}/balance`)
             .body.toString('utf-8')).result;
         let beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
@@ -2382,7 +2379,7 @@ describe('Blockchain Node', () => {
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/accounts/${depositActorBad}/balance`)
+            server2 + `/get_value?ref=/accounts/${serviceUserBad}/balance`)
             .body.toString('utf-8')).result;
         expect(withdrawRequest).to.equal(null);
         expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
@@ -2391,7 +2388,7 @@ describe('Blockchain Node', () => {
 
       it('withdraw more than deposited amount', () => {
         let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         let beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -2402,14 +2399,14 @@ describe('Blockchain Node', () => {
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
         expect(balance).to.equal(beforeBalance);
       });
 
       it('withdraw', () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -2422,7 +2419,7 @@ describe('Blockchain Node', () => {
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${withdrawPath}/2/result/code`)
             .body.toString('utf-8')).result;
@@ -2434,7 +2431,7 @@ describe('Blockchain Node', () => {
       it('deposit after withdraw', () => {
         const newDepositAmount = 100;
         const beforeBalance = parseOrLog(syncRequest('GET', server2 +
-            `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8')).result;
+            `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const beforeDepositAccountValue = parseOrLog(syncRequest('GET', server2 +
             `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -2449,7 +2446,7 @@ describe('Blockchain Node', () => {
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
         const resultCode = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/result/code`)
             .body.toString('utf-8')).result;
