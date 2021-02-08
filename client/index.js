@@ -7,7 +7,7 @@ const express = require('express');
 const jayson = require('jayson');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
-const P2pServer = require('../server');
+const P2pServer = require('../p2p');
 const ChainUtil = require('../common/chain-util');
 const {
   PORT,
