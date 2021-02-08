@@ -24,7 +24,7 @@ app.get('/', (req, res, next) => {
       .end();
 });
 
-app.get('/network_info', (req, res, next) => {
+app.get('/network_status', (req, res, next) => {
   res.status(200)
       .set('Content-Type', 'application/json')
       .send({ network_info: getNetworkInfo() })
