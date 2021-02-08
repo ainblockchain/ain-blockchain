@@ -7,7 +7,7 @@ const express = require('express');
 const jayson = require('jayson');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
-const P2pServer = require('../p2p');
+const P2pClient = require('../p2p');
 const ChainUtil = require('../common/chain-util');
 const {
   PORT,
@@ -47,7 +47,8 @@ const app = express();
 app.use(express.json()); // support json encoded bodies
 
 const node = new BlockchainNode();
-const p2pServer = new P2pServer(node, minProtocolVersion, maxProtocolVersion);
+const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
+const p2pServer = p2pClient.server;
 
 const jsonRpcMethods = require('../json_rpc')(
     node, p2pServer, minProtocolVersion, maxProtocolVersion);
@@ -432,7 +433,8 @@ server.headersTimeout = 630 * 1000; // 630 seconds
 
 // Lets start this p2p server up so we listen for changes in either DATABASE
 // or NUMBER OF SERVERS
-p2pServer.listen();
+p2pClient.setIntervalForTrackerConnection();
+// p2pServer.listen();
 
 module.exports = app;
 
