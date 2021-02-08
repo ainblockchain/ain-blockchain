@@ -41,6 +41,22 @@
       }
     }
   },
+  "payment": {
+    "$service": {
+      "$user_addr": {
+        "history": {
+          "$payment_id": {
+            ".function": {
+              "_payment": {
+                "function_type": "NATIVE",
+                "function_id": "_payment"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "transfer": {
     "$from": {
       "$to": {

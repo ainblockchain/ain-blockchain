@@ -76,6 +76,7 @@ const PredefinedDbPaths = {
   SAVE_LAST_TX_LAST_TX: '.last_tx',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
+  SERVICE_ACCOUNTS: 'service_accounts',
   BALANCE: 'balance',
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
@@ -96,6 +97,12 @@ const PredefinedDbPaths = {
   DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
   DEPOSIT_CONSENSUS: 'deposit/consensus',
   WITHDRAW_CONSENSUS: 'withdraw/consensus',
+  // Payment
+  PAYMENT: 'payment',
+  PAYMENT_ADMIN: 'admin',
+  PAYMENT_CONFIG: 'config',
+  PAYMENT_HISTORY: 'history',
+  PAYMENT_RESULT: 'result',
   // Remote transaction action
   REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
@@ -201,6 +208,7 @@ const NativeFunctionIds = {
   CLOSE_CHECKIN: '_closeCheckin',
   DEPOSIT: '_deposit',
   OPEN_CHECKIN: '_openCheckin',
+  PAYMENT: '_payment',
   SAVE_LAST_TX: '_saveLastTx',
   TRANSFER: '_transfer',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
