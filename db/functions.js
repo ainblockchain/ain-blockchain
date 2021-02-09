@@ -41,9 +41,11 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
+      [NativeFunctionIds.CLAIM]: this._claim.bind(this),
       [NativeFunctionIds.CLOSE_CHECKIN]: this._closeCheckin.bind(this),
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
       [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
+      [NativeFunctionIds.PAY]: this._pay.bind(this),
       [NativeFunctionIds.SAVE_LAST_TX]: this._saveLastTx.bind(this),
       [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
@@ -368,6 +370,84 @@ class Functions {
     }
   }
 
+  // TODO(lia): migrate from /payments/{serviceName}/{userAddr}/balance to
+  // /service_accounts/payments/{serviceName}/{userAddr}/balance.
+  // TODO(lia): add test cases
+  _pay(value, context) {
+    const service = context.params.service;
+    const user = context.params.user_addr;
+    const recordId = context.params.record_id;
+    const timestamp = context.timestamp;
+    const execTime = context.execTime;
+    const resultPath = this._getPaymentPayRecordsResultPath(service, user, recordId);
+    const serviceAdminPath = this._getPaymentServiceAdminPath(service);
+    const adminAddr = this.db.getValue(serviceAdminPath);
+
+    if (!this.validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime)) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return;
+    }
+
+    const adminBalancePath = this._getBalancePath(adminAddr);
+    const paymentBalancePath = this._getPaymentBalancePath(service, user);
+    const transferResult =
+        this._transferInternal(adminBalancePath, paymentBalancePath, value.amount, context);
+    if (transferResult === true) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+    } else {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+    }
+  }
+
+  // TODO(lia): migrate from /payments/{serviceName}/{userAddr}/balance to
+  // /service_accounts/payments/{serviceName}/{userAddr}/balance.
+  // TODO(lia): add test cases
+  _claim(value, context) {
+    const service = context.params.service;
+    const user = context.params.user_addr;
+    const recordId = context.params.record_id;
+    const timestamp = context.timestamp;
+    const execTime = context.execTime;
+    const resultPath = this._getPaymentClaimRecordsResultPath(service, user, recordId);
+    const serviceAdminPath = this._getPaymentServiceAdminPath(service);
+    const adminAddr = this.db.getValue(serviceAdminPath);
+
+    if (!this.validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime)) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return;
+    }
+
+    const adminBalancePath = this._getBalancePath(adminAddr);
+    const paymentBalancePath = this._getPaymentBalancePath(service, user);
+    const transferResult =
+        this._transferInternal(paymentBalancePath, adminBalancePath, value.amount, context);
+    if (transferResult === true) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else if (transferResult === false) {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+    } else {
+      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+    }
+  }
+
+  validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime) {
+    if (!adminAddr) {
+      return false;
+    }
+    if (!value || !value.amount || !ChainUtil.isNumber(value.amount)) {
+      return false;
+    }
+    if (value.id !== recordId) {
+      return false;
+    }
+    if (timestamp > execTime) {
+      return false;
+    }
+    return true;
+  }
+
   getLatestShardReportPathFromValuePath(valuePath) {
     const branchPath = ChainUtil.formatPath(valuePath.slice(0, -2));
     return this._getLatestShardReportPath(branchPath);
@@ -612,6 +692,25 @@ class Functions {
   _getWithdrawResultPath(service, user, withdrawId) {
     return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
         `${PredefinedDbPaths.WITHDRAW_RESULT}`);
+  }
+
+  _getPaymentServiceAdminPath(service) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${PredefinedDbPaths.PAYMENTS_CONFIG}/` +
+        `${PredefinedDbPaths.PAYMENTS_ADMIN}`);
+  }
+
+  _getPaymentBalancePath(service, user) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.BALANCE}`);
+  }
+
+  _getPaymentPayRecordsResultPath(service, user, recordId) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_PAYS}/` +
+        `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
+  }
+
+  _getPaymentClaimRecordsResultPath(service, user, recordId) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_CLAIMS}/` +
+        `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 
   _getLatestShardReportPath(branchPath) {
