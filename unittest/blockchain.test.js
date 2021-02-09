@@ -4,6 +4,7 @@ const rimraf = require('rimraf');
 const assert = chai.assert;
 const { BLOCKCHAINS_DIR } = require('../common/constants');
 const Blockchain = require('../blockchain/');
+const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
 const { setNodeForTesting, getTransaction } = require('./test-util')
@@ -37,8 +38,9 @@ describe('Blockchain', () => {
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
         node1.account.address, {}));
-    delete tx.created_at;
-    assert.deepEqual(node1.bc.chain[node1.bc.chain.length -1].transactions[0], tx);
+    assert.deepEqual(
+        node1.bc.chain[node1.bc.chain.length -1].transactions[0],
+        Transaction.removeExtraFields(tx));
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)

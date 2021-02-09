@@ -11,10 +11,12 @@ class Transaction {
     this.signature = signature;
     this.hash = hash;
     this.address = address;
+    this.extra = {
+      created_at: createdAt,
+    };
     if (skipVerif) {
-      this.skip_verif = skipVerif;
+      this.extra.skip_verif = skipVerif;
     }
-    this.created_at = createdAt;
 
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
@@ -54,17 +56,17 @@ class Transaction {
     return Transaction.create(sanitized, signature);
   }
 
+  static removeExtraFields(tx) {
+    return {
+      tx_body: tx.tx_body,
+      signature: tx.signature,
+      hash: tx.hash,
+      address: tx.address
+    };
+  }
+
   toString() {
-    return `hash:               ${this.hash},
-            address:            ${this.address},
-            tx_body.nonce:      ${this.tx_body.nonce},
-            tx_body.timestamp:  ${this.tx_body.timestamp},
-            tx_body.operation:  ${stringify(this.tx_body.operation)},
-            ${this.tx_body.skip_verif !== undefined ?
-                'tx_body.skip_verif:     ' + this.tx_body.skip_verif + ',' : ''}
-            ${this.parent_tx_hash !== undefined ?
-                'parent_tx_hash:         ' + this.parent_tx_hash : ''}
-        `;
+    return JSON.stringify(this, null, 2);
   }
 
   /**
@@ -170,7 +172,7 @@ class Transaction {
       return false;
     }
     // A devel method for bypassing the transaction verification.
-    if (tx.skip_verif) {
+    if (tx.extra.skip_verif) {
       logger.info('Skip verifying signature for transaction: ' +
           JSON.stringify(tx, null, 2));
       return true;
