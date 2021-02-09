@@ -32,12 +32,7 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions,
-  INITIAL_MAX_CONNECTION,
-  INITIAL_MAX_OUTBOUND,
-  INITIAL_MAX_INBOUND,
-  MAX_CONNECTION_LIMIT,
-  MAX_OUTBOUND_LIMIT,
-  LIGHTWEIGHT,
+  LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { sendTxAndWaitForFinalization } = require('../p2p/util');
@@ -52,7 +47,7 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsu): Sign messages to tracker or peer.
 class P2pServer {
-  constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion) {
+  constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion, maxInbound) {
     this.wsServer = null;
     this.client = p2pClient;
     this.node = node;
@@ -61,7 +56,7 @@ class P2pServer {
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
     this.inbound = {};
-    this.initConnections();
+    this.maxInbound = maxInbound
   }
 
   listen() {
@@ -94,40 +89,11 @@ class P2pServer {
       this.setPeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setUpIpAddresses().then(() => {
-      // this.client = new P2pClient(this);
-      // this.client.setIntervalForTrackerConnection();
-    });
+    this.setUpIpAddresses().then(() => { });
   }
 
   getAccount() {
     return this.node.account.address;
-  }
-
-  // NOTE(minsu): the total number of connection is up to more than 5 without limit.
-  // maxOutbound is for now limited equal or less than 2.
-  // maxInbound is a rest of connection after maxOutbound is set.
-  initConnections() {
-    const numConnection = process.env.MAX_CONNECTION ?
-        Number(process.env.MAX_CONNECTION) : INITIAL_MAX_CONNECTION;
-    const numOutbound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : INITIAL_MAX_OUTBOUND;
-    const numInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : INITIAL_MAX_INBOUND;
-    this.maxConnection = Math.max(numConnection, MAX_CONNECTION_LIMIT);
-    this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
-    this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
-  }
-
-  // TODO(minsu): make it REST API
-  getConnectionInfo() {
-    return {
-      maxConnection: this.maxConnection,
-      maxOutbound: this.maxOutbound,
-      maxInbound: this.maxInbound,
-      incomingPeers: Object.keys(this.inbound),
-      outgoingPeers: Object.keys(this.client.outbound)
-    };
   }
 
   getStateVersions() {
@@ -241,7 +207,6 @@ class P2pServer {
     this.consensus.stop();
     logger.info(`Disconnect from connected peers.`);
     this.disconnectFromPeers();
-    this.client.stop();
     logger.info(`Close server.`);
     this.wsServer.close();
   }
