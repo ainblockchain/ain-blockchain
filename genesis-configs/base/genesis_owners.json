@@ -23,7 +23,7 @@
       }
     }
   },
-  "payment": {
+  "payments": {
     ".owner": {
       "owners": {
         "*": {
