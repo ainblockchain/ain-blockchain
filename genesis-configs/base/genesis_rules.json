@@ -95,7 +95,7 @@
         "balance": {
           ".write": "auth.fid === '_pay' || auth.fid === '_claim'"
         },
-        "claim_records": {
+        "claims": {
           "$record_id": {
             ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
             "result": {
@@ -103,7 +103,7 @@
             }
           }
         },
-        "pay_records": {
+        "pays": {
           "$record_id": {
             ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
             "result": {
