@@ -19,7 +19,10 @@ const {
   MIN_STAKE_PER_VALIDATOR,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const {sendSignedTx, signAndSendTx} = require('../server/util');
+const {
+  sendSignedTx,
+  signAndSendTx
+} = require('../p2p/util');
 const Transaction = require('../tx-pool/transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';

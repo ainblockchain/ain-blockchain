@@ -13,7 +13,10 @@ const {
   AccountProperties,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const {sendGetRequest, signAndSendTx} = require('../server/util');
+const {
+  sendGetRequest,
+  signAndSendTx
+} = require('../p2p/util');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
