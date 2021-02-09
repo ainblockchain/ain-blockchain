@@ -28,7 +28,7 @@ process.on('uncaughtException', function(err) {
 
 process.on('SIGINT', (_) => {
   logger.info('Stopping the blockchain client....');
-  p2pServer.stop();
+  p2pClient.stop();
   process.exit(1);
 });
 
@@ -431,10 +431,9 @@ const server = app.listen(PORT, () => {
 server.keepAliveTimeout = 620 * 1000; // 620 seconds
 server.headersTimeout = 630 * 1000; // 630 seconds
 
-// Lets start this p2p server up so we listen for changes in either DATABASE
-// or NUMBER OF SERVERS
-p2pClient.setIntervalForTrackerConnection();
-// p2pServer.listen();
+// Lets start this p2p client up so we look for peers in the network and listen for changes
+// in either DATABASE or NUMBER OF SERVERS.
+p2pClient.run();
 
 module.exports = app;
 

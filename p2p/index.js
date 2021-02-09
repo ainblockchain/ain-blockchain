@@ -12,7 +12,12 @@ const {
   P2P_PORT,
   TRACKER_WS_ADDR,
   MessageTypes,
-  BlockchainNodeStatus
+  BlockchainNodeStatus,
+  INITIAL_MAX_CONNECTION,
+  INITIAL_MAX_OUTBOUND,
+  INITIAL_MAX_INBOUND,
+  MAX_CONNECTION_LIMIT,
+  MAX_OUTBOUND_LIMIT
 } = require('../common/constants');
 
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -22,13 +27,45 @@ const HEARTBEAT_INTERVAL_MS = 1000;
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
-    this.server = new P2pServer(this, node, minProtocolVersion, maxProtocolVersion);
+    this.initConnections();
+    this.server = new P2pServer(
+        this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
     this.trackerWebSocket = null;
     this.outbound = {};
-    this.server.listen();
     // XXX(minsu): The comment out will be revoked when next heartbeat updates.
     // this.isAlive = true;
     // this.heartbeat();   // XXX(minsu): it won't run before updating p2p network.
+  }
+
+  run() {
+    this.server.listen();
+    this.setIntervalForTrackerConnection();
+  }
+
+  // NOTE(minsu): the total number of connection is up to more than 5 without limit.
+  // maxOutbound is for now limited equal or less than 2.
+  // maxInbound is a rest of connection after maxOutbound is set.
+  initConnections() {
+    const numConnection = process.env.MAX_CONNECTION ?
+        Number(process.env.MAX_CONNECTION) : INITIAL_MAX_CONNECTION;
+    const numOutbound = process.env.MAX_OUTBOUND ?
+        Number(process.env.MAX_OUTBOUND) : INITIAL_MAX_OUTBOUND;
+    const numInbound = process.env.MAX_INBOUND ?
+        Number(process.env.MAX_INBOUND) : INITIAL_MAX_INBOUND;
+    this.maxConnection = Math.max(numConnection, MAX_CONNECTION_LIMIT);
+    this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
+    this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
+  }
+
+  // TODO(minsu): make it REST API
+  getConnectionInfo() {
+    return {
+      maxConnection: this.maxConnection,
+      maxOutbound: this.maxOutbound,
+      maxInbound: this.maxInbound,
+      incomingPeers: Object.keys(this.server.inbound),
+      outgoingPeers: Object.keys(this.outbound)
+    };
   }
 
   setIntervalForTrackerConnection() {
@@ -70,7 +107,7 @@ class P2pClient {
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
       managedPeersInfo: this.buildManagedPeersInfo(),
-      connectionInfo: this.server.getConnectionInfo()
+      connectionInfo: this.getConnectionInfo()
     };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
       `${JSON.stringify(updateToTracker, null, 2)}`);
@@ -382,6 +419,7 @@ class P2pClient {
   }
 
   stop() {
+    this.server.stop();
     logger.info('Disconnect from tracker server.');
     this.trackerWebSocket.close();
     logger.info('Disconnect from connected peers.');
