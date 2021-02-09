@@ -7,6 +7,10 @@ ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./cli
 sleep 10
 ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
 sleep 10
+ACCOUNT_INDEX=3 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
+sleep 10
+ACCOUNT_INDEX=4 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
+sleep 10
 
 # CHILD CHAIN 1
 PORT=9010 P2P_PORT=6010 node ./tracker-server/index.js &
