@@ -82,20 +82,25 @@ describe('Transaction', () => {
       expect(tx.hash).to.equal(
           '0x' + ainUtil.hashTransaction(txBody).toString('hex'));
       expect(tx.address).to.equal(node.account.address);
+      expect(tx.extra.created_at).to.not.equal(undefined);
+      expect(tx.extra.skip_verif).to.equal(undefined);
 
       expect(txCustomAddress).to.not.equal(null);
       expect(txCustomAddress.tx_body.address).to.equal(txBodyCustomAddress.address);
       expect(txCustomAddress.hash).to.equal(
           '0x' + ainUtil.hashTransaction(txBodyCustomAddress).toString('hex'));
       expect(txCustomAddress.address).to.equal(txBodyCustomAddress.address);
-      expect(txCustomAddress.skip_verif).to.equal(true);
       expect(txCustomAddress.signature).to.equal('');
+      expect(txCustomAddress.extra.created_at).to.not.equal(undefined);
+      expect(txCustomAddress.extra.skip_verif).to.equal(true);
 
       expect(txParentHash).to.not.equal(null);
       expect(txParentHash.tx_body.parent_tx_hash).to.equal(txBodyParentHash.parent_tx_hash);
       expect(txParentHash.hash).to.equal(
           '0x' + ainUtil.hashTransaction(txBodyParentHash).toString('hex'));
       expect(txParentHash.address).to.equal(node.account.address);
+      expect(txParentHash.extra.created_at).to.not.equal(undefined);
+      expect(txParentHash.extra.skip_verif).to.equal(undefined);
     });
 
     it('fail with missing timestamp', () => {

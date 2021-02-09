@@ -57,7 +57,7 @@ class TransactionPool {
       timestamp: tx.tx_body.timestamp,
       is_finalized: false,
       finalized_at: -1,
-      tracked_at: tx.created_at,
+      tracked_at: tx.extra.created_at,
     };
     if (tx.tx_body.nonce >= 0 &&
         (!(tx.address in this.pendingNonceTracker) ||
@@ -174,7 +174,7 @@ class TransactionPool {
     const timedOutTxs = new Set();
     for (const address in this.transactions) {
       this.transactions[address].forEach((tx) => {
-        if (this.isTimedOutFromPool(tx.created_at, blockTimestamp)) {
+        if (this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp)) {
           timedOutTxs.add(tx.hash);
         }
       });
