@@ -96,6 +96,13 @@ const PredefinedDbPaths = {
   DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
   DEPOSIT_CONSENSUS: 'deposit/consensus',
   WITHDRAW_CONSENSUS: 'withdraw/consensus',
+  // Payments
+  PAYMENTS: 'payments',
+  PAYMENTS_ADMIN: 'admin',
+  PAYMENTS_CLAIMS: 'claims',
+  PAYMENTS_CONFIG: 'config',
+  PAYMENTS_PAYS: 'pays',
+  PAYMENTS_RESULT: 'result',
   // Remote transaction action
   REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
@@ -198,9 +205,11 @@ const ProofProperties = {
  * @enum {string}
  */
 const NativeFunctionIds = {
+  CLAIM: '_claim',
   CLOSE_CHECKIN: '_closeCheckin',
   DEPOSIT: '_deposit',
   OPEN_CHECKIN: '_openCheckin',
+  PAY: '_pay',
   SAVE_LAST_TX: '_saveLastTx',
   TRANSFER: '_transfer',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',

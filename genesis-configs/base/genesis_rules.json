@@ -3,7 +3,7 @@
   "accounts": {
     "$user_addr": {
       "balance": {
-        ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw'"
+        ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
       }
     }
   },
@@ -83,6 +83,34 @@
       },
       "$user_addr": {
         ".write": "auth.fid === '_deposit' || auth.fid === '_withdraw'"
+      }
+    }
+  },
+  "payments": {
+    "$service": {
+      "config": {
+        ".write": "evalOwner('/payments/' + $service + '/config', 'write_owner', auth) && data === null && util.isDict(newData)"
+      },
+      "$user_addr": {
+        "balance": {
+          ".write": "auth.fid === '_pay' || auth.fid === '_claim'"
+        },
+        "claims": {
+          "$record_id": {
+            ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
+            "result": {
+              ".write": "auth.fid === '_claim'"
+            }
+          }
+        },
+        "pays": {
+          "$record_id": {
+            ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
+            "result": {
+              ".write": "auth.fid === '_pay'"
+            }
+          }
+        }
       }
     }
   },
