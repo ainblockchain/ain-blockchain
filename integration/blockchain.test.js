@@ -56,7 +56,7 @@ const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCO
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const SERVERS = [server1, server2, server3, server4];
+const serverList = [server1, server2, server3, server4];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
 const JSON_RPC_GET_RECENT_BLOCK = 'ain_getRecentBlock';
@@ -196,8 +196,8 @@ function sendTransactions(sentOperations) {
     const randomOperation =
         RANDOM_OPERATION[Math.floor(Math.random() * RANDOM_OPERATION.length)];
     sentOperations.push(randomOperation);
-    const serverIndex = Math.floor(Math.random() * SERVERS.length);
-    syncRequest('POST', SERVERS[serverIndex] + '/' + randomOperation[0],
+    const serverIndex = Math.floor(Math.random() * serverList.length);
+    syncRequest('POST', serverList[serverIndex] + '/' + randomOperation[0],
                 {json: randomOperation[1]});
     sleep(200);
   }
@@ -224,7 +224,7 @@ describe('Blockchain Cluster', () => {
       proc.start(false);
       sleep(2000);
       const address =
-          parseOrLog(syncRequest('GET', SERVERS[i] + '/get_address').body.toString('utf-8')).result;
+          parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
     };
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
@@ -254,9 +254,9 @@ describe('Blockchain Cluster', () => {
 
   describe(`Synchronization`, () => {
     it('syncs across all blockchain nodes', () => {
-      for (let i = 1; i < SERVERS.length; i++) {
+      for (let i = 1; i < serverList.length; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(SERVERS[i]);
+        waitForNewBlocks(serverList[i]);
         return new Promise((resolve) => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)
           .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
@@ -267,7 +267,7 @@ describe('Blockchain Cluster', () => {
           });
         }).then(() => {
           return new Promise((resolve) => {
-            jayson.client.http(SERVERS[i] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
+            jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
                 {protoVer: CURRENT_PROTOCOL_VERSION},
                 function(err, response) {
                   if (err) throw err;
@@ -343,11 +343,11 @@ describe('Blockchain Cluster', () => {
 
   describe('Block validity', () => {
     it('blocks have correct validators and voting data', () => {
-      for (let i = 0; i < SERVERS.length; i++) {
+      for (let i = 0; i < serverList.length; i++) {
         sendTransactions(sentOperations);
         waitForNewBlocks(server1);
         const blocks = parseOrLog(syncRequest(
-            'POST', SERVERS[i] + '/json-rpc', {
+            'POST', serverList[i] + '/json-rpc', {
               json: {
                 jsonrpc: '2.0',
                 method: JSON_RPC_GET_BLOCKS,
@@ -400,10 +400,10 @@ describe('Blockchain Cluster', () => {
           validators: block.validators
         }));
       }
-      for (let i = 0; i < SERVERS.length; i++) {
+      for (let i = 0; i < serverList.length; i++) {
         sendTransactions(sentOperations);
         waitForNewBlocks(server1);
-        const blocks = parseOrLog(syncRequest('POST', SERVERS[i] + '/json-rpc',
+        const blocks = parseOrLog(syncRequest('POST', serverList[i] + '/json-rpc',
             {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                     params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
             .body.toString('utf-8')).result.result;
@@ -428,11 +428,11 @@ describe('Blockchain Cluster', () => {
     /*
     it('not dropping any transations ', () => {
       let blocks;
-      for (let i = 0; i < SERVERS.length; i++) {
+      for (let i = 0; i < serverList.length; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(SERVERS[i]);
+        waitForNewBlocks(serverList[i]);
         blocks = parseOrLog(syncRequest(
-            'GET', SERVERS[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
+            'GET', serverList[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
         const transactionsOnBlockChain = [];
         blocks.forEach((block) => {
           block.transactions.forEach((transaction) => {
@@ -481,12 +481,12 @@ describe('Blockchain Cluster', () => {
     // FIXME(lia): this test case is flaky.
     /*
     it('maintaining correct order', () => {
-      for (let i = 1; i < SERVERS.length; i++) {
+      for (let i = 1; i < serverList.length; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(SERVERS[i]);
+        waitForNewBlocks(serverList[i]);
         body1 = parseOrLog(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
             .body.toString('utf-8'));
-        body2 = parseOrLog(syncRequest('GET', SERVERS[i] + GET_VALUE_ENDPOINT + '?ref=test')
+        body2 = parseOrLog(syncRequest('GET', serverList[i] + GET_VALUE_ENDPOINT + '?ref=test')
             .body.toString('utf-8'));
         assert.deepEqual(body1.result, body2.result);
       }
@@ -618,7 +618,7 @@ describe('Blockchain Cluster', () => {
         });
       }).then(() => {
         return new Promise((resolve) => {
-          jayson.client.http(SERVERS[1] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
+          jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
               {protoVer: CURRENT_PROTOCOL_VERSION},
               function(err, response) {
                 if (err) throw err;

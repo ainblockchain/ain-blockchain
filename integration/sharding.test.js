@@ -73,12 +73,12 @@ const ENV_VARIABLES = [
 ];
 
 const parentServer = 'http://localhost:8081';
-const PARENT_SERVERS = [ parentServer ];
+const parentServerList = [ parentServer ];
 const server1 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[5].ACCOUNT_INDEX))
-const SHARD_SERVERS = [ server1, server2, server3, server4 ];
+const shardServerList = [ server1, server2, server3, server4 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -152,7 +152,7 @@ function setUp() {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SHARD_SERVERS, res.tx_hash);
+  waitUntilTxFinalized(shardServerList, res.tx_hash);
 }
 
 function cleanUp() {
@@ -182,7 +182,7 @@ function cleanUp() {
       ]
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(SHARD_SERVERS, res.tx_hash);
+  waitUntilTxFinalized(shardServerList, res.tx_hash);
 }
 
 function setUpForSharding(shardingConfig) {
@@ -246,7 +246,7 @@ function setUpForSharding(shardingConfig) {
       }
     ).body.toString('utf-8')
   ).result;
-  waitUntilTxFinalized(PARENT_SERVERS, res.tx_hash);
+  waitUntilTxFinalized(parentServerList, res.tx_hash);
 }
 
 describe('Sharding', () => {
@@ -1707,7 +1707,7 @@ describe('Sharding', () => {
         const shardReportRes = parseOrLog(syncRequest(
             'POST', parentServer + '/set_value', { json: reportVal }).body.toString('utf-8')
         ).result;
-        waitUntilTxFinalized(PARENT_SERVERS, shardReportRes.tx_hash);
+        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
@@ -1735,7 +1735,7 @@ describe('Sharding', () => {
         const shardReportRes = parseOrLog(syncRequest(
             'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
         ).result;
-        waitUntilTxFinalized(PARENT_SERVERS, shardReportRes.tx_hash);
+        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
