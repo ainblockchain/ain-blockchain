@@ -41,15 +41,25 @@
       }
     }
   },
-  "payment": {
+  "payments": {
     "$service": {
       "$user_addr": {
-        "history": {
-          "$payment_id": {
+        "pay_records": {
+          "$record_id": {
             ".function": {
-              "_payment": {
+              "_pay": {
                 "function_type": "NATIVE",
-                "function_id": "_payment"
+                "function_id": "_pay"
+              }
+            }
+          }
+        },
+        "claim_records": {
+          "$record_id": {
+            ".function": {
+              "_claim": {
+                "function_type": "NATIVE",
+                "function_id": "_claim"
               }
             }
           }

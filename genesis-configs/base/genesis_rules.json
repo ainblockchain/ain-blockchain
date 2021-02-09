@@ -3,7 +3,7 @@
   "accounts": {
     "$user_addr": {
       "balance": {
-        ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_payment'"
+        ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
       }
     }
   },
@@ -86,31 +86,30 @@
       }
     }
   },
-  "payment": {
+  "payments": {
     "$service": {
       "config": {
-        ".write": "evalOwner('/payment/' + $service + '/config', 'write_owner', auth) && data === null && util.isDict(newData)"
+        ".write": "evalOwner('/payments/' + $service + '/config', 'write_owner', auth) && data === null && util.isDict(newData)"
       },
       "$user_addr": {
-        "history": {
-          "$payment_id": {
-            ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payment/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $payment_id",
+        "balance": {
+          ".write": "auth.fid === '_pay' || auth.fid === '_claim'"
+        },
+        "claim_records": {
+          "$record_id": {
+            ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
             "result": {
-              ".write": "auth.fid === '_payment'"
+              ".write": "auth.fid === '_claim'"
             }
           }
         },
-        "balance": {
-          ".write": "auth.fid === '_payment'"
-        }
-      }
-    }
-  },
-  "service_accounts": {
-    "$service_type": {
-      "$service_name": {
-        "balance": {
-          ".write": "auth.fid === '_transfer'"
+        "pay_records": {
+          "$record_id": {
+            ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
+            "result": {
+              ".write": "auth.fid === '_pay'"
+            }
+          }
         }
       }
     }
