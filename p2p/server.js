@@ -56,7 +56,7 @@ class P2pServer {
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
     this.inbound = {};
-    this.maxInbound = maxInbound
+    this.maxInbound = maxInbound;
   }
 
   listen() {
