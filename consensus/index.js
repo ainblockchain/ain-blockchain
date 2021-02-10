@@ -176,7 +176,6 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
-  // TODO(minsu): FIX it with p2p client code.
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
@@ -218,11 +217,7 @@ class Consensus {
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
         // this.node.status = BlockchainNodeStatus.SYNCING;
-
-        // TODO(minsu): requestChainSegment can be dealt with at P2p Client rather than here.
-        // it will be the next job as the second round of refactoring with p2p server and client.
-        const connections = _.merge({}, this.server.client.outbound, this.server.inbound);
-        Object.values(connections).forEach((socket) => {
+        Object.values(this.server.client.outbound).forEach((socket) => {
           this.server.client.requestChainSegment(socket, this.node.bc.lastBlock());
         });
         return;
