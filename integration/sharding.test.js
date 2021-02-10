@@ -1715,10 +1715,11 @@ describe('Sharding', () => {
         setUpForSharding(shardingConfig);
       });
 
-      it('updates the block number of the latest reported proof hash', () => {
+      it('update latest shard report', () => {
         const reportVal = {
           ref: `${shardingPath}/5/proof_hash`,
-          value: "0xPROOF_HASH_5"
+          value: "0xPROOF_HASH_5",
+          nonce: -1,
         }
         const shardReportRes = parseOrLog(syncRequest(
             'POST', parentServer + '/set_value', { json: reportVal }).body.toString('utf-8')
@@ -1735,7 +1736,7 @@ describe('Sharding', () => {
         });
       });
 
-      it('can handle reports that are out of order', () => {
+      it('update latest shard report - can handle reports that are out of order', () => {
         const multipleReportVal = {
           op_list: [
             {
@@ -1746,7 +1747,8 @@ describe('Sharding', () => {
               ref: `${shardingPath}/10/proof_hash`,
               value: "0xPROOF_HASH_10"
             }
-          ]
+          ],
+          nonce: -1,
         }
         const shardReportRes = parseOrLog(syncRequest(
             'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
