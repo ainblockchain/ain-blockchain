@@ -51,7 +51,6 @@ class P2pServer {
     this.wsServer = null;
     this.client = p2pClient;
     this.node = node;
-    // TODO(minsu): Remove this from Consensus.
     this.consensus = new Consensus(this, node);
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
