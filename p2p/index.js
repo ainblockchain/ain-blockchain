@@ -172,8 +172,7 @@ class P2pClient {
 
   broadcastConsensusMessage(msg) {
     logger.debug(`SENDING: ${JSON.stringify(msg)}`);
-    const connections = _.merge({}, this.outbound, this.server.inbound);
-    Object.values(connections).forEach((socket) => {
+    Object.values(this.outbound).forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.CONSENSUS,
         message: msg,
@@ -192,8 +191,7 @@ class P2pClient {
 
   broadcastTransaction(transaction) {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
-    const connections = _.merge({}, this.outbound, this.server.inbound);
-    Object.values(connections).forEach((socket) => {
+    Object.values(this.outbound).forEach((socket) => {
       socket.send(JSON.stringify({
         type: MessageTypes.TRANSACTION,
         transaction,
@@ -308,53 +306,6 @@ class P2pClient {
               setTimeout(() => {
                 this.requestChainSegment(socket, this.server.node.bc.lastBlock());
               }, 1000);
-            }
-          }
-          break;
-        // XXX(minsu): since MessageTypes.CONSENSUS and MessageTypes.TRANSACTION can be separable
-        // when handleConsensusMessage at consensus/index.js is updated first. It will be next job.
-        // TODO(minsu): this should be separated.
-        case MessageTypes.CONSENSUS:
-          logger.debug(
-            `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
-          if (this.server.node.status === BlockchainNodeStatus.SERVING) {
-            this.server.consensus.handleConsensusMessage(data.message);
-          } else {
-            logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
-          }
-          break;
-        // TODO(minsu): this should be separated as well.
-        case MessageTypes.TRANSACTION:
-          logger.debug(
-            `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
-          if (this.server.node.tp.transactionTracker[data.transaction.hash]) {
-            logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
-            break;
-          } else if (this.server.node.status === BlockchainNodeStatus.SERVING) {
-            const tx = data.transaction;
-            if (Transaction.isBatchTransaction(tx)) {
-              const newTxList = [];
-              for (const subTx of tx.tx_list) {
-                const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
-                if (!createdTx) {
-                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
-                    `${JSON.stringify(subTx, null, 2)}`);
-                  continue;
-                }
-                newTxList.push(createdTx);
-              }
-              if (newTxList.length > 0) {
-                this.server.executeAndBroadcastTransaction(
-                  { tx_list: newTxList }, MessageTypes.TRANSACTION);
-              }
-            } else {
-              const createdTx = Transaction.create(tx.tx_body, tx.signature);
-              if (!createdTx) {
-                logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
-                  `${JSON.stringify(tx, null, 2)}`);
-              } else {
-                this.server.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
-              }
             }
           }
           break;
