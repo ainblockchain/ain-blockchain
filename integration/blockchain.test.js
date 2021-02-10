@@ -473,7 +473,7 @@ describe('Blockchain Cluster', () => {
       sendTransactions(sentOperations);
       waitForNewBlocks(server1);
       const body = parseOrLog(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
-        ref: 'restricted/path', value: 'anything', is_nonced_transaction: false
+        ref: 'restricted/path', value: 'anything' 
       }}).body.toString('utf-8'));
       expect(body.code).to.equals(1);
     });

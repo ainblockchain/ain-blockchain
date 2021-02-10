@@ -197,9 +197,8 @@ app.post('/get', (req, res, next) => {
 });
 
 app.post('/set_value', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(
-      createSingleSetTxBody(req.body, WriteDbOperations.SET_VALUE), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createSingleSetTxBody(
+      req.body, WriteDbOperations.SET_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -207,9 +206,8 @@ app.post('/set_value', (req, res, next) => {
 });
 
 app.post('/inc_value', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(
-      createSingleSetTxBody(req.body, WriteDbOperations.INC_VALUE), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createSingleSetTxBody(
+      req.body, WriteDbOperations.INC_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -217,9 +215,8 @@ app.post('/inc_value', (req, res, next) => {
 });
 
 app.post('/dec_value', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(
-      createSingleSetTxBody(req.body, WriteDbOperations.DEC_VALUE), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createSingleSetTxBody(
+      req.body, WriteDbOperations.DEC_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -227,9 +224,8 @@ app.post('/dec_value', (req, res, next) => {
 });
 
 app.post('/set_function', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(
-      createSingleSetTxBody(req.body, WriteDbOperations.SET_FUNCTION), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createSingleSetTxBody(
+      req.body, WriteDbOperations.SET_FUNCTION));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -237,9 +233,8 @@ app.post('/set_function', (req, res, next) => {
 });
 
 app.post('/set_rule', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(
-      createSingleSetTxBody(req.body, WriteDbOperations.SET_RULE), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createSingleSetTxBody(
+      req.body, WriteDbOperations.SET_RULE));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -247,9 +242,8 @@ app.post('/set_rule', (req, res, next) => {
 });
 
 app.post('/set_owner', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(
-      createSingleSetTxBody(req.body, WriteDbOperations.SET_OWNER), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createSingleSetTxBody(
+      req.body, WriteDbOperations.SET_OWNER));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -259,8 +253,7 @@ app.post('/set_owner', (req, res, next) => {
 // A custom address can be used as a devel method for bypassing the trasaction verification.
 // TODO(seo): Replace custom address with real signature.
 app.post('/set', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(createMultiSetTxBody(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result.result === true ? 0 : 1, result})
@@ -268,8 +261,7 @@ app.post('/set', (req, res, next) => {
 });
 
 app.post('/batch', (req, res, next) => {
-  const isNoncedTransaction = checkIfTransactionShouldBeNonced(req.body);
-  const result = createAndExecuteTransaction(createBatchTxBody(req.body), isNoncedTransaction);
+  const result = createAndExecuteTransaction(createBatchTxBody(req.body));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -452,6 +444,8 @@ function createSingleSetTxBody(input, opType) {
   }
   if (input.nonce !== undefined) {
     txBody.nonce = input.nonce;
+  } else {
+    txBody.nonce = -1;
   }
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
@@ -473,6 +467,8 @@ function createMultiSetTxBody(input) {
   }
   if (input.nonce !== undefined) {
     txBody.nonce = input.nonce;
+  } else {
+    txBody.nonce = -1;
   }
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
@@ -493,8 +489,8 @@ function createBatchTxBody(input) {
   return { tx_list: txList };
 }
 
-function createAndExecuteTransaction(txBody, isNoncedTransaction) {
-  const tx = node.createTransaction(txBody, isNoncedTransaction);
+function createAndExecuteTransaction(txBody) {
+  const tx = node.createTransaction(txBody);
   if (!tx) {
     return {
       tx_hash: null,

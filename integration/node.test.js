@@ -762,6 +762,43 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, "some value");
       })
 
+      it('set_value with timestamp', () => {
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with timestamp"
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with timestamp");
+      })
+      it('set_value with nonce', () => {
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with nonce"
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with nonce");
+      })
+
       it('set_value with a failing operation', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
