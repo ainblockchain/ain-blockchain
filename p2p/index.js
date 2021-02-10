@@ -57,7 +57,6 @@ class P2pClient {
     this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
   }
 
-  // TODO(minsu): make it REST API
   getConnectionInfo() {
     return {
       maxConnection: this.maxConnection,
