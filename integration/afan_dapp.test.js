@@ -14,16 +14,16 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
   },
   {
-    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
   },
 ];
 
@@ -54,6 +54,13 @@ function setUp() {
     json: {
       op_list: [
         {
+          type: 'SET_RULE',
+          ref: '/apps/afan',
+          value: {
+            ".write": true
+          }
+        },
+        {
           type: 'SET_OWNER',
           ref: '/apps/afan',
           value: {
@@ -69,15 +76,7 @@ function setUp() {
             }
           }
         },
-        {
-          type: 'SET_RULE',
-          ref: '/apps/afan',
-          value: {
-            ".write": true
-          }
-        },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
@@ -107,7 +106,6 @@ function cleanUp() {
           value: null
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;

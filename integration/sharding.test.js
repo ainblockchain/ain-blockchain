@@ -48,25 +48,29 @@ const ENV_VARIABLES = [
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9091, P2P_PORT: 6001, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
+    PORT: 9091, P2P_PORT: 6001,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9092, P2P_PORT: 6002, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
+    PORT: 9092, P2P_PORT: 6002,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9093, P2P_PORT: 6003, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
+    PORT: 9093, P2P_PORT: 6003,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9094, P2P_PORT: 6004, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
+    PORT: 9094, P2P_PORT: 6004,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -150,11 +154,13 @@ function setUp() {
           }
         }
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(shardServerList, res.tx_hash);
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
+    console.log(`Failed to check finalization of setUp() tx.`)
+  }
 }
 
 function cleanUp() {
@@ -162,8 +168,8 @@ function cleanUp() {
     json: {
       op_list: [
         {
-          type: 'SET_OWNER',
-          ref: '/test/test_owner/some/path',
+          type: 'SET_VALUE',
+          ref: 'test/test_value/some/path',
           value: null
         },
         {
@@ -177,82 +183,80 @@ function cleanUp() {
           value: null
         },
         {
-          type: 'SET_VALUE',
-          ref: 'test/test_value/some/path',
+          type: 'SET_OWNER',
+          ref: '/test/test_owner/some/path',
           value: null
-        }
+        },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  waitUntilTxFinalized(shardServerList, res.tx_hash);
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
+    console.log(`Failed to check finalization of cleanUp() tx.`)
+  }
 }
 
 function setUpForSharding(shardingConfig) {
   const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-  const res = parseOrLog(
-    syncRequest(
-      'POST',
-      parentServer + '/set',
-      {
-        json: {
-          op_list: [
-            {
-              type: WriteDbOperations.SET_OWNER,
-              ref: sharding_path,
-              value: {
-                [OwnerProperties.OWNER]: {
-                  [OwnerProperties.OWNERS]: {
-                    [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                    [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-                  }
-                }
+  const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
+    json: {
+      op_list: [
+        {
+          type: WriteDbOperations.SET_OWNER,
+          ref: sharding_path,
+          value: {
+            [OwnerProperties.OWNER]: {
+              [OwnerProperties.OWNERS]: {
+                [shard_owner]: buildOwnerPermissions(true ,true, true, true),
+                [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
               }
-            },
-            {
-              type: WriteDbOperations.SET_RULE,
-              ref: sharding_path,
-              value: {
-                [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
-              }
-            },
-            {
-              type: WriteDbOperations.SET_RULE,
-              ref: `${sharding_path}/${ShardingProperties.LATEST}`,
-              value: {
-                [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
-              }
-            },
-            {
-              type: WriteDbOperations.SET_FUNCTION,
-              ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
-              value: {
-                [FunctionProperties.FUNCTION]: {
-                  [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-                    [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                    [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
-                  }
-                }
-              }
-            },
-            {
-              type: WriteDbOperations.SET_VALUE,
-              ref: ChainUtil.formatPath([
-                PredefinedDbPaths.SHARDING,
-                PredefinedDbPaths.SHARDING_SHARD,
-                ainUtil.encode(sharding_path)
-              ]),
-              value: shardingConfig
             }
-          ],
-          timestamp: Date.now(),
-          nonce: -1,
+          }
+        },
+        {
+          type: WriteDbOperations.SET_RULE,
+          ref: sharding_path,
+          value: {
+            [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
+          }
+        },
+        {
+          type: WriteDbOperations.SET_RULE,
+          ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+          value: {
+            [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
+          }
+        },
+        {
+          type: WriteDbOperations.SET_FUNCTION,
+          ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
+          value: {
+            [FunctionProperties.FUNCTION]: {
+              [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+              }
+            }
+          }
+        },
+        {
+          type: WriteDbOperations.SET_VALUE,
+          ref: ChainUtil.formatPath([
+            PredefinedDbPaths.SHARDING,
+            PredefinedDbPaths.SHARDING_SHARD,
+            ainUtil.encode(sharding_path)
+          ]),
+          value: shardingConfig
         }
-      }
-    ).body.toString('utf-8')
-  ).result;
-  waitUntilTxFinalized(parentServerList, res.tx_hash);
+      ],
+      nonce: -1,
+    }
+  }).body.toString('utf-8')).result;
+  assert.equal(_.get(res, 'result'), true);
+  if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
+    console.log(`Failed to check finalization of setUpForSharding() tx.`)
+  }
 }
 
 describe('Sharding', () => {
@@ -1193,6 +1197,12 @@ describe('Sharding', () => {
 
       describe('/set_value', () => {
         it('/set_value with is_global = false', () => {
+          // Check the original value.
+          const resultBefore = parseOrLog(syncRequest(
+              'GET', server1 + '/get_value?ref=test/test_value/some/path')
+              .body.toString('utf-8')).result;
+          assert.deepEqual(resultBefore, 100);
+
           const request = {ref: 'test/test_value/some/path', value: "some value"};
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));

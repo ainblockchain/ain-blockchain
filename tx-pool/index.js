@@ -125,7 +125,7 @@ class TransactionPool {
         unvalidatedTransactions[address].sort((a, b) =>
             (a.tx_body.nonce < 0 || b.tx_body.nonce < 0) ?
                 ((a.tx_body.timestamp > b.tx_body.timestamp) ?
-                     1 : ((b.tx_body.timestamp > a.tx_body.timestamp) ? -1 : 0)) :
+                    1 : ((b.tx_body.timestamp > a.tx_body.timestamp) ? -1 : 0)) :
                 (a.tx_body.nonce > b.tx_body.nonce) ?
                     1 : ((b.tx_body.nonce > a.tx_body.nonce) ? -1 : 0));
       }
@@ -157,7 +157,8 @@ class TransactionPool {
           newList.push(listToTakeValue.shift());
         } else {
           const invalidNoncedTransaction = listToTakeValue.shift();
-          logger.info('Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction));
+          logger.error(
+              'Dropping transactions!: ' + JSON.stringify(invalidNoncedTransaction, null, 2));
           _.remove(this.transactions[invalidNoncedTransaction.address],
               (tx) => tx.hash === invalidNoncedTransaction.hash);
           delete this.transactionTracker[invalidNoncedTransaction.hash];
