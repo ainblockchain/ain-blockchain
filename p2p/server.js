@@ -51,12 +51,11 @@ class P2pServer {
     this.wsServer = null;
     this.client = p2pClient;
     this.node = node;
-    // TODO(minsu): Remove this from Consensus.
     this.consensus = new Consensus(this, node);
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
     this.inbound = {};
-    this.maxInbound = maxInbound
+    this.maxInbound = maxInbound;
   }
 
   listen() {
@@ -419,9 +418,6 @@ class P2pServer {
     }));
   }
 
-  // TODO(minsu): Seperate execute and broadcast
-  // XXX(minsu): disscussed this part off-line and it will be updated the next PR since this is
-  // also called at consensus and json-rpc.
   executeAndBroadcastTransaction(tx) {
     if (!tx) {
       return {

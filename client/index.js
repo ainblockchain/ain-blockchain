@@ -370,6 +370,14 @@ app.get('/dump_final_version', (req, res) => {
     .end();
 });
 
+app.get('/connection_info', (req, res) => {
+  const result = p2pClient.getConnectionInfo();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+})
+
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
