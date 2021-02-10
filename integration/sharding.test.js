@@ -149,7 +149,9 @@ function setUp() {
             }
           }
         }
-      ]
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
     }
   }).body.toString('utf-8')).result;
   waitUntilTxFinalized(shardServerList, res.tx_hash);
@@ -179,7 +181,9 @@ function cleanUp() {
           ref: 'test/test_value/some/path',
           value: null
         }
-      ]
+      ],
+      timestamp: Date.now(),
+      nonce: -1,
     }
   }).body.toString('utf-8')).result;
   waitUntilTxFinalized(shardServerList, res.tx_hash);
@@ -241,7 +245,9 @@ function setUpForSharding(shardingConfig) {
               ]),
               value: shardingConfig
             }
-          ]
+          ],
+          timestamp: Date.now(),
+          nonce: -1,
         }
       }
     ).body.toString('utf-8')
