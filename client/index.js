@@ -444,13 +444,9 @@ function createSingleSetTxBody(input, opType) {
   }
   if (input.nonce !== undefined) {
     txBody.nonce = input.nonce;
-  } else {
-    txBody.nonce = -1;
   }
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
-  } else {
-    txBody.timestamp = Date.now();
   }
   return txBody;
 }
@@ -467,13 +463,9 @@ function createMultiSetTxBody(input) {
   }
   if (input.nonce !== undefined) {
     txBody.nonce = input.nonce;
-  } else {
-    txBody.nonce = -1;
   }
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
-  } else {
-    txBody.timestamp = Date.now();
   }
   return txBody;
 }
@@ -481,9 +473,6 @@ function createMultiSetTxBody(input) {
 function createBatchTxBody(input) {
   const txList = [];
   for (const tx of input.tx_list) {
-    if (tx.timestamp === undefined) {
-      tx.timestamp = Date.now();
-    }
     txList.push(tx);
   }
   return { tx_list: txList };

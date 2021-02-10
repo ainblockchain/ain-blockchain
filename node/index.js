@@ -270,6 +270,9 @@ class BlockchainNode {
     if (txBody.nonce === undefined) {
       txBody.nonce = this.nonce++;
     }
+    if (txBody.timestamp === undefined) {
+      txBody.timestamp = Date.now();
+    }
     return Transaction.signTxBody(txBody, this.account.private_key);
   }
 

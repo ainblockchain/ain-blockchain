@@ -55,20 +55,6 @@ function setNodeForTesting(
 
 function getTransaction(node, inputTxBody) {
   const txBody = JSON.parse(JSON.stringify(inputTxBody));
-  if (Transaction.isBatchTxBody(txBody)) {
-    const txList = [];
-    for (const tx of txBody.tx_list) {
-      if (tx.timestamp === undefined) {
-        tx.timestamp = Date.now();
-      }
-      txList.push(tx);
-    }
-    txBody.tx_list = txList;
-  } else {
-    if (txBody.timestamp === undefined) {
-      txBody.timestamp = Date.now();
-    }
-  }
   return node.createTransaction(txBody);
 }
 

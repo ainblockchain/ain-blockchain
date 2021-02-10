@@ -25,22 +25,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -110,7 +110,6 @@ function setUp() {
           }
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
@@ -125,8 +124,8 @@ function cleanUp() {
     json: {
       op_list: [
         {
-          type: 'SET_OWNER',
-          ref: '/test/test_owner/some/path',
+          type: 'SET_VALUE',
+          ref: 'test/test_value/some/path',
           value: null
         },
         {
@@ -140,12 +139,11 @@ function cleanUp() {
           value: null
         },
         {
-          type: 'SET_VALUE',
-          ref: 'test/test_value/some/path',
+          type: 'SET_OWNER',
+          ref: '/test/test_owner/some/path',
           value: null
-        }
+        },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
@@ -212,7 +210,6 @@ function setUpForNativeFunctions() {
           }
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
@@ -247,7 +244,6 @@ function cleanUpForNativeFunctions() {
           value: null
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
@@ -744,8 +740,9 @@ describe('Blockchain Node', () => {
       it('set_value', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=some/wrong/path').body.toString('utf-8')).result;
-        assert.deepEqual(resultBefore, null);
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, 100);
 
         const request = {ref: 'test/test_value/some/path', value: "some value"};
         const body = parseOrLog(syncRequest(
