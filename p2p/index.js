@@ -3,10 +3,8 @@ const P2pServer = require('./server');
 const url = require('url');
 const Websocket = require('ws');
 const semver = require('semver');
-const _ = require('lodash');
 const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
-const Transaction = require('../tx-pool/transaction');
 const ChainUtil = require('../common/chain-util');
 const {
   P2P_PORT,

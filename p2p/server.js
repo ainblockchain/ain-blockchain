@@ -418,9 +418,6 @@ class P2pServer {
     }));
   }
 
-  // TODO(minsu): Seperate execute and broadcast
-  // XXX(minsu): disscussed this part off-line and it will be updated the next PR since this is
-  // also called at consensus and json-rpc.
   executeAndBroadcastTransaction(tx) {
     if (!tx) {
       return {
