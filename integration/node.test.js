@@ -68,6 +68,8 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
+// TODO(seo): Remove nonce values from the test transactions once the strict nonce bug 
+//            (https://github.com/ainblockchain/ain-blockchain/issues/213) is fixed.
 function setUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
