@@ -334,7 +334,7 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
     .end();
 });
 
-app.get('/protocol', (req, res) => {
+app.get('/protocol_versions', (req, res) => {
   const result = p2pClient.getProtocolInfo();
   res.status(200)
     .set('Content-Type', 'application/json')
@@ -342,7 +342,7 @@ app.get('/protocol', (req, res) => {
     .end();
 });
 
-app.get('/state_version', (req, res) => {
+app.get('/state_versions', (req, res) => {
   const result = p2pServer.getStateVersionStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
