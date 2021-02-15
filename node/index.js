@@ -238,17 +238,16 @@ class BlockchainNode {
     * instance
     *
     * @param {dict} operation - Database write operation to be converted to transaction
-    * @param {boolean} isNoncedTransaction - Indicates whether transaction should include nonce or
     *                                        not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(txBody, isNoncedTransaction = true) {
+  createTransaction(txBody) {
     const LOG_HEADER = 'createTransaction';
 
     if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
       for (const subTxBody of txBody.tx_list) {
-        const createdTx = this.createSingleTransaction(subTxBody, isNoncedTransaction);
+        const createdTx = this.createSingleTransaction(subTxBody);
         if (createdTx === null) {
           logger.info(`[${LOG_HEADER}] Failed to create a transaction with subTx: ` +
               `${JSON.stringify(subTxBody, null, 2)}`);
@@ -258,7 +257,7 @@ class BlockchainNode {
       }
       return { tx_list: txList };
     }
-    const createdTx = this.createSingleTransaction(txBody, isNoncedTransaction);
+    const createdTx = this.createSingleTransaction(txBody);
     if (createdTx === null) {
       logger.info(`[${LOG_HEADER}] Failed to create a transaction with txBody: ` +
           `${JSON.stringify(txBody, null, 2)}`);
@@ -267,16 +266,12 @@ class BlockchainNode {
     return createdTx;
   }
 
-  createSingleTransaction(txBody, isNoncedTransaction) {
+  createSingleTransaction(txBody) {
     if (txBody.nonce === undefined) {
-      let nonce;
-      if (isNoncedTransaction) {
-        nonce = this.nonce;
-        this.nonce++;
-      } else {
-        nonce = -1;
-      }
-      txBody.nonce = nonce;
+      txBody.nonce = this.nonce++;
+    }
+    if (txBody.timestamp === undefined) {
+      txBody.timestamp = Date.now();
     }
     return Transaction.signTxBody(txBody, this.account.private_key);
   }

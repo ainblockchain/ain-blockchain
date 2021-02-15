@@ -257,9 +257,6 @@ class Consensus {
       return null;
     }
 
-    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
-    const validTransactions = [];
-    const invalidTransactions = [];
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
@@ -284,13 +281,16 @@ class Consensus {
       }
     })
 
+    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
+    const validTransactions = [];
+    const invalidTransactions = [];
     transactions.forEach((tx) => {
       logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
       if (!ChainUtil.transactionFailed(tempDb.executeTransaction(tx))) {
         logger.debug(`[${LOG_HEADER}] tx: success`);
         validTransactions.push(tx);
       } else {
-        logger.debug(`[${LOG_HEADER}] tx: failed`);
+        logger.debug(`[${LOG_HEADER}] tx: failure`);
         invalidTransactions.push(tx);
       }
     })
@@ -353,7 +353,7 @@ class Consensus {
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
       proposalTx =
-          this.node.createTransaction({ operation: proposeOp, timestamp: Date.now() }, false);
+          this.node.createTransaction({ operation: proposeOp }, false);
     } else {
       const setOp = {
         type: WriteDbOperations.SET,
@@ -370,7 +370,7 @@ class Consensus {
           }
         ]
       };
-      proposalTx = this.node.createTransaction({ operation: setOp, timestamp: Date.now() }, false);
+      proposalTx = this.node.createTransaction({ operation: setOp }, false);
     }
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
@@ -680,7 +680,7 @@ class Consensus {
         [PredefinedDbPaths.STAKE]: myStake
       }
     };
-    const voteTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
+    const voteTx = this.node.createTransaction({ operation }, false);
 
     this.handleConsensusMessage({value: voteTx, type: ConsensusMessageTypes.VOTE});
   }
@@ -914,7 +914,7 @@ class Consensus {
       ]),
       value: amount
     };
-    const depositTx = this.node.createTransaction({ operation, timestamp: Date.now() }, false);
+    const depositTx = this.node.createTransaction({ operation }, false);
     return depositTx;
   }
 

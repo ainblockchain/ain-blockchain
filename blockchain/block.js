@@ -63,33 +63,13 @@ class Block {
   }
 
   toString() {
-    return `Block -
-            hash:              ${ChainUtil.shortenHash(this.hash)}
-            last_hash:         ${ChainUtil.shortenHash(this.last_hash)}
-            last_votes_hash:   ${ChainUtil.shortenHash(this.last_votes_hash)}
-            transactions_hash: ${ChainUtil.shortenHash(this.transactions_hash)}
-            number:            ${this.number}
-            epoch:             ${this.epoch}
-            timestamp:         ${this.timestamp}
-            state_proof_hash:  ${this.state_proof_hash}
-            proposer:          ${this.proposer}
-            validators:        ${this.validators}
-            size:              ${this.size}
-            last_votes len:    ${this.last_votes.length}
-            transactions len:  ${this.transactions.length}
-            last_votes:        ${stringify(this.last_votes)}
-            transactions:      ${stringify(this.transactions)}`;
+    return JSON.stringify(this, null, 2);
   }
 
   static sanitizeTransactions(transactions) {
     const sanitized = [];
     transactions.forEach((tx) => {
-      sanitized.push({
-        tx_body: Transaction.sanitizeTxBody(tx.tx_body),
-        signature: tx.signature,
-        hash: tx.hash,
-        address: tx.address
-      });
+      sanitized.push(Transaction.removeExtraFields(tx));
     });
     return sanitized;
   }
