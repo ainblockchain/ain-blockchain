@@ -14,6 +14,7 @@ const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
+  CURRENT_PROTOCOL_VERSION,
   BLOCKCHAINS_DIR,
   PredefinedDbPaths,
   WriteDbOperations,
@@ -35,7 +36,6 @@ const {
   waitUntilNodeSyncs,
   waitUntilTxFinalized,
 } = require('../unittest/test-util');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {

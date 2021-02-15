@@ -18,13 +18,17 @@ const Blockchain = require('../blockchain');
 const StateNode = require('../db/state-node');
 const DB = require('../db');
 const TransactionPool = require('../tx-pool');
-const { BLOCKCHAINS_DIR, PredefinedDbPaths, TransactionStatus } = require('../common/constants');
+const {
+  CURRENT_PROTOCOL_VERSION,
+  BLOCKCHAINS_DIR,
+  PredefinedDbPaths,
+  TransactionStatus
+} = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const { waitUntilTxFinalized } = require('../unittest/test-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const { waitForNewBlocks, waitUntilNodeSyncs, parseOrLog } = require('../unittest/test-util');
 
 const ENV_VARIABLES = [

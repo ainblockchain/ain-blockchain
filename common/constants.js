@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
+const semver = require('semver');
 const ChainUtil = require('./chain-util');
 
 // Genesis configs
@@ -12,8 +13,16 @@ const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
 // Constants
-const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
+  throw Error('Wrong version format is specified in package.json');
+}
 const PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
+if (!fs.existsSync(PROTOCOL_VERSIONS)) {
+  throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
+}
+const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
+const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
 const HASH_DELIMITER = '#';
 
 // Enums
@@ -543,8 +552,9 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 }
 
 module.exports = {
+  CURRENT_PROTOCOL_VERSION,
+  PROTOCOL_VERSION_MAP,
   BLOCKCHAINS_DIR,
-  PROTOCOL_VERSIONS,
   DEBUG,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,

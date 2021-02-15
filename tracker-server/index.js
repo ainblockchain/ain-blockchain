@@ -88,14 +88,15 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     const nodeInfo = Object.assign({ isAlive: true }, JSON.parse(message));
     wsList[ws.uuid] = nodeInfo.address;
-    nodeInfo.location = getNodeLocation(nodeInfo.ip);
+    nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
     // TODO(minsu): It will be managed via peers when heartbeat updates.
     peerNodes[nodeInfo.address] = nodeInfo;
     logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
     logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 
     let newManagedPeerInfoList = [];
-    if (Object.keys(nodeInfo.managedPeersInfo.outbound).length < nodeInfo.connectionInfo.maxOutbound) {
+    if (Object.keys(nodeInfo.networkStatus.managedPeersInfo.outbound).length <
+        nodeInfo.networkStatus.connectionInfo.maxOutbound) {
       newManagedPeerInfoList = assignRandomPeers(getPeerCandidates(nodeInfo.address));
     }
     const msgToNode = {
@@ -155,11 +156,12 @@ function getPeerCandidates(myself) {
   Object.values(peerNodes).forEach(nodeInfo => {
     if (nodeInfo.address !== myself &&
         nodeInfo.isAlive === true &&
-        !(myself in nodeInfo.managedPeersInfo.inbound) &&
-        Object.keys(nodeInfo.managedPeersInfo.inbound).length < nodeInfo.connectionInfo.maxInbound) {
+        !(myself in nodeInfo.networkStatus.managedPeersInfo.inbound) &&
+        Object.keys(nodeInfo.networkStatus.managedPeersInfo.inbound).length <
+            nodeInfo.networkStatus.connectionInfo.maxInbound) {
       candidates.push({
         address: nodeInfo.address,
-        url: nodeInfo.url
+        url: nodeInfo.networkStatus.p2p.url
       });
     }
   });
@@ -180,8 +182,8 @@ function printNodesInfo() {
         `Disk: ${diskAvailableMb}MB,\n` +
         `Memory: ${memoryFreeMb}MB,\n` +
         `Peers:\n` +
-        `  outbound(${Object.keys(nodeInfo.managedPeersInfo.outbound)}),\n` +
-        `  inbound(${Object.keys(nodeInfo.managedPeersInfo.inbound)}),\n` +
+        `  outbound(${Object.keys(nodeInfo.networkStatus.managedPeersInfo.outbound)}),\n` +
+        `  inbound(${Object.keys(nodeInfo.networkStatus.managedPeersInfo.inbound)}),\n` +
         `UpdatedAt: ${nodeInfo.updatedAt}`);
   });
 }
