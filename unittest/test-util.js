@@ -4,8 +4,7 @@ const syncRequest = require('sync-request');
 const sleep = require('sleep').msleep;
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { StateVersions } = require('../common/constants');
+const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 function readConfigFile(filePath) {
