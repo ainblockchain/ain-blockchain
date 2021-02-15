@@ -79,13 +79,6 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  getManagedPeersInfo() {
-    return {
-      outbound: ChainUtil.simplifyProperties(this.outbound),
-      inbound: ChainUtil.simplifyProperties(this.server.inbound),
-    };
-  }
-
   getProtocolInfo() {
     return {
       versionMap: PROTOCOL_VERSION_MAP,
@@ -121,7 +114,6 @@ class P2pClient {
         }),
         port: PORT,
       },
-      managedPeersInfo: this.getManagedPeersInfo(),
       connectionInfo: this.getConnectionInfo()
     }
   }

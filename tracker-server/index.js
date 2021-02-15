@@ -95,7 +95,7 @@ server.on('connection', (ws) => {
     logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 
     let newManagedPeerInfoList = [];
-    if (Object.keys(nodeInfo.networkStatus.managedPeersInfo.outbound).length <
+    if (nodeInfo.networkStatus.connectionInfo.outgoingPeers.length <
         nodeInfo.networkStatus.connectionInfo.maxOutbound) {
       newManagedPeerInfoList = assignRandomPeers(getPeerCandidates(nodeInfo.address));
     }
@@ -156,8 +156,8 @@ function getPeerCandidates(myself) {
   Object.values(peerNodes).forEach(nodeInfo => {
     if (nodeInfo.address !== myself &&
         nodeInfo.isAlive === true &&
-        !(myself in nodeInfo.networkStatus.managedPeersInfo.inbound) &&
-        Object.keys(nodeInfo.networkStatus.managedPeersInfo.inbound).length <
+        !nodeInfo.networkStatus.connectionInfo.incomingPeers.includes(myself) &&
+        nodeInfo.networkStatus.connectionInfo.incomingPeers.length <
             nodeInfo.networkStatus.connectionInfo.maxInbound) {
       candidates.push({
         address: nodeInfo.address,
@@ -182,8 +182,8 @@ function printNodesInfo() {
         `Disk: ${diskAvailableMb}MB,\n` +
         `Memory: ${memoryFreeMb}MB,\n` +
         `Peers:\n` +
-        `  outbound(${Object.keys(nodeInfo.networkStatus.managedPeersInfo.outbound)}),\n` +
-        `  inbound(${Object.keys(nodeInfo.networkStatus.managedPeersInfo.inbound)}),\n` +
+        `  outbound(${nodeInfo.networkStatus.connectionInfo.outgoingPeers}),\n` +
+        `  inbound(${nodeInfo.networkStatus.connectionInfo.incomingPeers}),\n` +
         `UpdatedAt: ${nodeInfo.updatedAt}`);
   });
 }
