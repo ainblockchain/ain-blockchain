@@ -25,22 +25,22 @@ const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -50,7 +50,7 @@ const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCO
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const SERVERS = [ server1, server2, server3, server4 ];
+const serverList = [ server1, server2, server3, server4 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -68,6 +68,8 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
+// TODO(seo): Remove nonce values from the test transactions once the strict nonce bug 
+//            (https://github.com/ainblockchain/ain-blockchain/issues/213) is fixed.
 function setUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
@@ -110,12 +112,11 @@ function setUp() {
           }
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
 }
@@ -125,8 +126,8 @@ function cleanUp() {
     json: {
       op_list: [
         {
-          type: 'SET_OWNER',
-          ref: '/test/test_owner/some/path',
+          type: 'SET_VALUE',
+          ref: 'test/test_value/some/path',
           value: null
         },
         {
@@ -140,17 +141,16 @@ function cleanUp() {
           value: null
         },
         {
-          type: 'SET_VALUE',
-          ref: 'test/test_value/some/path',
+          type: 'SET_OWNER',
+          ref: '/test/test_owner/some/path',
           value: null
-        }
+        },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
 }
@@ -212,12 +212,11 @@ function setUpForNativeFunctions() {
           }
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of setUpForNativeFunctions() tx.`)
   }
 }
@@ -247,12 +246,11 @@ function cleanUpForNativeFunctions() {
           value: null
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
+  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of cleanUpForNativeFunctions() tx.`)
   }
 }
@@ -744,8 +742,9 @@ describe('Blockchain Node', () => {
       it('set_value', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=some/wrong/path').body.toString('utf-8')).result;
-        assert.deepEqual(resultBefore, null);
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, 100);
 
         const request = {ref: 'test/test_value/some/path', value: "some value"};
         const body = parseOrLog(syncRequest(
@@ -755,11 +754,48 @@ describe('Blockchain Node', () => {
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, "some value");
+      })
+
+      it('set_value with timestamp', () => {
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with timestamp"
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with timestamp");
+      })
+      it('set_value with nonce', () => {
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with nonce"
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
+
+        // Confirm that the value is set properly.
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with nonce");
       })
 
       it('set_value with a failing operation', () => {
@@ -802,7 +838,7 @@ describe('Blockchain Node', () => {
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path2')
             .body.toString('utf-8')).result;
@@ -849,7 +885,7 @@ describe('Blockchain Node', () => {
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path3')
             .body.toString('utf-8')).result;
@@ -908,7 +944,7 @@ describe('Blockchain Node', () => {
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=test/test_function/some/path')
             .body.toString('utf-8')).result;
@@ -974,7 +1010,7 @@ describe('Blockchain Node', () => {
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
             .body.toString('utf-8')).result;
@@ -1053,7 +1089,7 @@ describe('Blockchain Node', () => {
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=test/test_owner/some/path')
             .body.toString('utf-8')).result;
@@ -1155,7 +1191,7 @@ describe('Blockchain Node', () => {
 
         // Confirm that the original value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some100/path')
             .body.toString('utf-8')).result;
@@ -2104,7 +2140,7 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
         const fromAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = parseOrLog(syncRequest('GET',
@@ -2238,7 +2274,7 @@ describe('Blockchain Node', () => {
           ]
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
       })
 
       it('deposit', () => {
@@ -2252,7 +2288,7 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
         const depositValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
@@ -2309,7 +2345,7 @@ describe('Blockchain Node', () => {
           ref: depositTransferPath + '/100/value',
           value: 1000
         }}).body.toString('utf-8')).result;
-        waitUntilTxFinalized(SERVERS, res.tx_hash);
+        waitUntilTxFinalized(serverList, res.tx_hash);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -2415,7 +2451,7 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
         const afterBalance = parseOrLog(syncRequest('GET',
@@ -2440,7 +2476,7 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.equal(_.get(body, 'result.result'), true);
         assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
         const depositValue = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
         const afterDepositAccountValue = parseOrLog(syncRequest('GET',

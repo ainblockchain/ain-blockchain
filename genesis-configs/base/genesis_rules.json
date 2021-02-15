@@ -7,14 +7,6 @@
       }
     }
   },
-  "afan": {
-    ".write": true
-  },
-  "apps": {
-    "chatbots": {
-      ".write": true
-    }
-  },
   "checkin": {
     "$user_addr": {
       "$checkin_id": {
