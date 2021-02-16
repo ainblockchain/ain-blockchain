@@ -14,6 +14,7 @@ const Consensus = require('../consensus');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
+  CURRENT_PROTOCOL_VERSION,
   P2P_PORT,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
@@ -41,7 +42,6 @@ const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/
     '/network-interfaces/0/access-configs/0/external-ip';
 const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/ip';
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
 // A peer-to-peer network server that broadcasts changes in the database.
@@ -91,20 +91,20 @@ class P2pServer {
     this.setUpIpAddresses().then(() => { });
   }
 
-  getAccount() {
+  getNodeAddress() {
     return this.node.account.address;
-  }
-
-  getStateVersions() {
-    return {
-      num_versions: this.node.stateManager.numVersions(),
-      version_list: this.node.stateManager.getVersionList(),
-      final_version: this.node.stateManager.getFinalVersion(),
-    };
   }
 
   getExternalIp() {
     return this.node.ipAddrExternal;
+  }
+
+  getStateVersionStatus() {
+    return {
+      numVersions: this.node.stateManager.numVersions(),
+      versionList: this.node.stateManager.getVersionList(),
+      finalVersion: this.node.stateManager.getFinalVersion(),
+    };
   }
 
   getConsensusStatus() {
@@ -118,7 +118,7 @@ class P2pServer {
     );
   }
 
-  getLastBlockSummary() {
+  getBlockStatus() {
     return {
       number: this.node.bc.lastBlockNumber(),
       epoch: this.node.bc.lastBlockEpoch(),
@@ -128,15 +128,15 @@ class P2pServer {
 
   getNodeStatus() {
     return {
-      address: this.getAccount(),
+      address: this.getNodeAddress(),
       status: this.node.status,
       nonce: this.node.nonce,
-      last_block_number: this.node.bc.lastBlockNumber(),
+      lastBlockNumber: this.node.bc.lastBlockNumber(),
       db: {
-        tree_size: this.node.db.getTreeSize('/'),
+        treeSize: this.node.db.getTreeSize('/'),
         proof: this.node.db.getProof('/'),
       },
-      state_versions: this.getStateVersions(),
+      stateVersionStatus: this.getStateVersionStatus(),
     };
   }
 
@@ -177,12 +177,17 @@ class P2pServer {
         hostname: os.hostname(),
         type: os.type(),
         release: os.release(),
+        // See: https://github.com/ainblockchain/ain-blockchain/issues/181
         // version: os.version(),
         uptime: os.uptime(),
       },
       env: {
         GENESIS_CONFIGS_DIR: process.env.GENESIS_CONFIGS_DIR,
+        MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
         ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+        P2P_PORT: process.env.P2P_PORT,
+        PORT: process.env.PORT,
+        HOSTING_ENV: process.env.HOSTING_ENV,
         DEBUG: process.env.DEBUG,
       },
     };
@@ -289,7 +294,7 @@ class P2pServer {
               this.inbound[data.account] = socket;
               socket.send(JSON.stringify({
                 type: MessageTypes.ACCOUNT_RESPONSE,
-                account: this.getAccount(),
+                account: this.getNodeAddress(),
                 protoVer: CURRENT_PROTOCOL_VERSION
               }));
             }

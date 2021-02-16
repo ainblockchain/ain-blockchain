@@ -56,13 +56,6 @@ function setUp() {
     json: {
       op_list: [
         {
-          type: 'SET_RULE',
-          ref: '/apps/afan',
-          value: {
-            ".write": true
-          }
-        },
-        {
           type: 'SET_OWNER',
           ref: '/apps/afan',
           value: {
@@ -76,6 +69,13 @@ function setUp() {
                 }
               }
             }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/apps/afan',
+          value: {
+            ".write": true
           }
         },
       ],

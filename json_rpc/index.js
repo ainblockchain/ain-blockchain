@@ -4,6 +4,7 @@ const semver = require('semver');
 const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
+  CURRENT_PROTOCOL_VERSION,
   BlockchainNodeStatus,
   ReadDbOperations,
   PredefinedDbPaths,
@@ -15,7 +16,6 @@ const {
   ConsensusConsts,
 } = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
