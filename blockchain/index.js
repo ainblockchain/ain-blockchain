@@ -53,9 +53,12 @@ class Blockchain {
       }
       const newChain = Blockchain.loadChain(this._blockchainDir());
       if (newChain) {
-        lastBlockWithoutProposal = newChain.pop();
-        const path = this.pathToBlock(lastBlockWithoutProposal);
-        fs.unlinkSync(path);
+        // Note(minsu): Deal with the case the only genesis block was generated.
+        if (newChain.length > 1) {
+          lastBlockWithoutProposal = newChain.pop();
+          const path = this.pathToBlock(lastBlockWithoutProposal);
+          fs.unlinkSync(path);
+        }
         this.chain = newChain;
       }
     }
