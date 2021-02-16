@@ -125,7 +125,7 @@ class P2pClient {
       updatedAt: Date.now(),
       lastBlockNumber: blockStatus.number,
       networkStatus: this.getNetworkStatus(),
-      blockStatus: this.server.getBlockStatus(),
+      blockStatus: blockStatus,
       txStatus: this.server.getTxStatus(),
       consensusStatus: this.server.getConsensusStatus(),
       nodeStatus: this.server.getNodeStatus(),
