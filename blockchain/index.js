@@ -5,9 +5,9 @@ const glob = require('glob');
 const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const logger = require('../logger')('BLOCKCHAIN');
-const {Block} = require('./block');
+const { Block } = require('./block');
 const BlockFilePatterns = require('./block-file-patterns');
-const {BLOCKCHAINS_DIR} = require('../common/constants');
+const { BLOCKCHAINS_DIR } = require('../common/constants');
 const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 
@@ -27,7 +27,7 @@ class Blockchain {
         logger.info('## Starting FIRST-NODE blockchain with a GENESIS block... ##');
         logger.info('############################################################');
         logger.info('\n');
-        this.chain = [Block.genesis()];
+        this.chain.push(Block.genesis());
         this.writeChain();
       } else {
         logger.info('\n');
@@ -35,7 +35,6 @@ class Blockchain {
         logger.info('## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##');
         logger.info('#############################################################');
         logger.info('\n');
-        this.chain = [];
         this.writeChain();
       }
     } else {
@@ -54,9 +53,12 @@ class Blockchain {
       }
       const newChain = Blockchain.loadChain(this._blockchainDir());
       if (newChain) {
-        lastBlockWithoutProposal = newChain.pop();
-        const path = this.pathToBlock(lastBlockWithoutProposal);
-        fs.unlinkSync(path);
+        // Note(minsu): Deal with the case the only genesis block was generated.
+        if (newChain.length > 1) {
+          lastBlockWithoutProposal = newChain.pop();
+          const path = this.pathToBlock(lastBlockWithoutProposal);
+          fs.unlinkSync(path);
+        }
         this.chain = newChain;
       }
     }
@@ -193,9 +195,15 @@ class Blockchain {
       dirs.push(this._blockchainDir());
     }
     dirs.forEach((directory) => {
-      if (!(fs.existsSync(directory))) {
+      if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory);
         created = true;
+      } else {
+        const files = fs.readdirSync(directory);
+        // Note(minsu): Added this check to avoid an only dir exists case without zip files at all.
+        if (!files.length) {
+          created = true;
+        }
       }
     });
     return created;
@@ -205,7 +213,7 @@ class Blockchain {
     for (let i = 0; i < this.chain.length; i++) {
       const block = this.chain[i];
       const filePath = this.pathToBlock(block);
-      if (!(fs.existsSync(filePath))) {
+      if (!fs.existsSync(filePath)) {
         // Change to async implementation
         zipper.sync.zip(Buffer.from(JSON.stringify(block))).compress().save(filePath);
       }
