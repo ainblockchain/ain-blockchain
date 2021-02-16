@@ -82,7 +82,7 @@ class Functions {
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
-            logger.info(
+            logger.debug(
                 `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
                 formattedParams);
             const auth = { fid: functionEntry.function_id, };
