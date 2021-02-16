@@ -2124,7 +2124,7 @@ describe('Blockchain Node', () => {
             server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
           .body.toString('utf-8')).result
         // Should be the tx hash value.
-        expect(_.get(lastTx, 'tx_hash', null)).to.equal(body.result.tx_hash);
+        assert.equal(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
       });
     });
 
