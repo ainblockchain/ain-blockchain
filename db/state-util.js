@@ -297,10 +297,10 @@ function updateProofHashForAllRootPaths(fullPath, root) {
     const label = fullPath[i];
     const child = node.getChild(label);
     if (child === null) {
-      logger.error(
+      logger.info(
           `[${LOG_HEADER}] Trying to update proof hash for non-existing path: ` +
           `${ChainUtil.formatPath(fullPath.slice(0, i + 1))}.`);
-      return 0;
+      break;
     }
     node = child;
   }
