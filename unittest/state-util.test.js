@@ -1225,7 +1225,7 @@ describe("state-util", () => {
   });
 
   describe("updateProofHashForAllRootPaths", () => {
-    it("updates proof hashes for a single path to a root", () => {
+    it("updates proof hashes for a single root path", () => {
       const jsObject = {
         level0: {
           level1: {
@@ -1264,7 +1264,7 @@ describe("state-util", () => {
       expect(rootNode.getTreeSize()).to.equal(5);
     });
 
-    it("updates proof hashes for multiple paths to roots", () => {
+    it("updates proof hashes for multiple root paths", () => {
       const jsObject = {
         level0: {
           level1: {
@@ -1314,7 +1314,7 @@ describe("state-util", () => {
       expect(rootClone.getProofHash()).to.equal(rootNode.getProofHash());
     });
 
-    it("updates proof hashes for multiple paths to roots with deleted nodes", () => {
+    it("updates proof hashes for multiple root paths with deleted nodes", () => {
       const jsObject = {
         level0: {
           level1: {
