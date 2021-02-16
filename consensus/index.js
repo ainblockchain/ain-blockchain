@@ -353,7 +353,7 @@ class Consensus {
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
       proposalTx =
-          this.node.createTransaction({ operation: proposeOp }, false);
+          this.node.createTransaction({ operation: proposeOp, nonce: -1 });
     } else {
       const setOp = {
         type: WriteDbOperations.SET,
@@ -370,7 +370,7 @@ class Consensus {
           }
         ]
       };
-      proposalTx = this.node.createTransaction({ operation: setOp }, false);
+      proposalTx = this.node.createTransaction({ operation: setOp, nonce: -1 });
     }
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
@@ -572,7 +572,7 @@ class Consensus {
       return false;
     }
     if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
-      logger.error(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
+      logger.info(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
           `(${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
       return false;
     }
@@ -680,7 +680,7 @@ class Consensus {
         [PredefinedDbPaths.STAKE]: myStake
       }
     };
-    const voteTx = this.node.createTransaction({ operation }, false);
+    const voteTx = this.node.createTransaction({ operation, nonce: -1 });
 
     this.handleConsensusMessage({value: voteTx, type: ConsensusMessageTypes.VOTE});
   }
@@ -914,7 +914,7 @@ class Consensus {
       ]),
       value: amount
     };
-    const depositTx = this.node.createTransaction({ operation }, false);
+    const depositTx = this.node.createTransaction({ operation, nonce: -1 });
     return depositTx;
   }
 
