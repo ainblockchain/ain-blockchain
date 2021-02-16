@@ -27,7 +27,7 @@ class Blockchain {
         logger.info('## Starting FIRST-NODE blockchain with a GENESIS block... ##');
         logger.info('############################################################');
         logger.info('\n');
-        this.chain = [Block.genesis()];
+        this.chain.push(Block.genesis());
         this.writeChain();
       } else {
         logger.info('\n');
@@ -195,11 +195,12 @@ class Blockchain {
       dirs.push(this._blockchainDir());
     }
     dirs.forEach((directory) => {
-      if (!(fs.existsSync(directory))) {
+      if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory);
         created = true;
       } else {
         const files = fs.readdirSync(directory);
+        // Note(minsu): Added this check to avoid an only dir exists case without zip files at all.
         if (!files.length) {
           created = true;
         }
@@ -212,7 +213,7 @@ class Blockchain {
     for (let i = 0; i < this.chain.length; i++) {
       const block = this.chain[i];
       const filePath = this.pathToBlock(block);
-      if (!(fs.existsSync(filePath))) {
+      if (!fs.existsSync(filePath)) {
         // Change to async implementation
         zipper.sync.zip(Buffer.from(JSON.stringify(block))).compress().save(filePath);
       }
