@@ -68,8 +68,6 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-// TODO(seo): Remove nonce values from the test transactions once the strict nonce bug 
-//            (https://github.com/ainblockchain/ain-blockchain/issues/213) is fixed.
 function setUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
@@ -746,14 +744,17 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, 100);
 
-        const request = {ref: 'test/test_value/some/path', value: "some value"};
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value"
+        };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
-        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path')
@@ -764,41 +765,70 @@ describe('Blockchain Node', () => {
       it('set_value with timestamp', () => {
         const request = {
           ref: 'test/test_value/some/path',
-          value: "some value with timestamp"
+          value: "some value with timestamp",
+          timestamp: Date.now(),
         };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
-        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, "some value with timestamp");
       })
-      it('set_value with nonce', () => {
+
+      it('set_value with nonce unordered (-1)', () => {
         const request = {
           ref: 'test/test_value/some/path',
-          value: "some value with nonce"
+          value: "some value with nonce unordered",
+          nonce: -1,
         };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         assert.equal(_.get(body, 'result.result'), true);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
-        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
         waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path')
             .body.toString('utf-8')).result;
-        assert.deepEqual(resultAfter, "some value with nonce");
+        assert.deepEqual(resultAfter, "some value with nonce unordered");
       })
 
-      it('set_value with a failing operation', () => {
+      // TODO(seo): Uncomment below once https://github.com/ainblockchain/ain-blockchain/issues/228
+      //            is fixed.
+      /*
+      it('set_value with nonce strictly ordered', () => {
+        const nonce = parseOrLog(
+            syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with nonce strictly ordered",
+          nonce,
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.equal(_.get(body, 'result.result'), true);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+
+        // Confirm that the value is set properly.
+        waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'));
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with nonce strictly ordered");
+      })
+      */
+
+      it('set_value with failing operation', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path')
@@ -1613,7 +1643,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_sendSignedTransaction', () => {
-      it('accepts a transaction', () => {
+      it('accepts a transaction with nonce unordered (-1)', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
@@ -1634,12 +1664,44 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           const result = _.get(res, 'result.result', null);
           expect(result).to.not.equal(null);
-          result.tx_hash = 'erased';
           assert.deepEqual(res.result, {
             protoVer: CURRENT_PROTOCOL_VERSION,
             result: {
               result: true,
-              tx_hash: "erased"
+              tx_hash: ChainUtil.hashSignature(signature),
+            }
+          });
+        })
+      })
+
+      it('accepts a transaction with nonce strictly ordered', () => {
+        const nonce = parseOrLog(
+            syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value 2',
+            ref: `test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce,  // strictly ordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: true,
+              tx_hash: ChainUtil.hashSignature(signature),
             }
           });
         })
@@ -1863,41 +1925,15 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(Array.isArray(resultList)).to.equal(true);
-          for (let i = 0; i < resultList.length; i++) {
-            const result = resultList[i];
-            result.tx_hash = 'erased';
+          const expected = [];
+          for (const tx of txList) {
+            expected.push({
+              result: true,
+              tx_hash: ChainUtil.hashSignature(tx.signature),
+            })
           }
           assert.deepEqual(res.result, {
-            result: [
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              }
-            ],
+            result: expected,
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
         })
