@@ -572,7 +572,7 @@ class Consensus {
       return false;
     }
     if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
-      logger.debug(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
+      logger.info(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
           `(${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
       return false;
     }
