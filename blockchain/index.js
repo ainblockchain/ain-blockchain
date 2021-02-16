@@ -5,9 +5,9 @@ const glob = require('glob');
 const zipper = require('zip-local');
 const naturalSort = require('node-natural-sort');
 const logger = require('../logger')('BLOCKCHAIN');
-const {Block} = require('./block');
+const { Block } = require('./block');
 const BlockFilePatterns = require('./block-file-patterns');
-const {BLOCKCHAINS_DIR} = require('../common/constants');
+const { BLOCKCHAINS_DIR } = require('../common/constants');
 const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 
@@ -35,7 +35,6 @@ class Blockchain {
         logger.info('## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##');
         logger.info('#############################################################');
         logger.info('\n');
-        this.chain = [];
         this.writeChain();
       }
     } else {
@@ -196,6 +195,11 @@ class Blockchain {
       if (!(fs.existsSync(directory))) {
         fs.mkdirSync(directory);
         created = true;
+      } else {
+        const files = fs.readdirSync(directory);
+        if (!files.length) {
+          created = true;
+        }
       }
     });
     return created;
