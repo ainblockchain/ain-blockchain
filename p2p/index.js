@@ -7,6 +7,9 @@ const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
 const ChainUtil = require('../common/chain-util');
 const {
+  CURRENT_PROTOCOL_VERSION,
+  PROTOCOL_VERSION_MAP,
+  PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
   MessageTypes,
@@ -18,10 +21,9 @@ const {
   MAX_OUTBOUND_LIMIT
 } = require('../common/constants');
 
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const RECONNECT_INTERVAL_MS = 10000;
-const UPDATE_TO_TRACKER_INTERVAL_MS = 10000;
-const HEARTBEAT_INTERVAL_MS = 1000;
+const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
+const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
+const HEARTBEAT_INTERVAL_MS = 1000;  // 1 second
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -77,35 +79,66 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  buildManagedPeersInfo() {
+  getProtocolInfo() {
     return {
-      outbound: ChainUtil.simplifyProperties(this.outbound),
-      inbound: ChainUtil.simplifyProperties(this.server.inbound),
+      versionMap: PROTOCOL_VERSION_MAP,
+      currentVersion: CURRENT_PROTOCOL_VERSION,
+    };
+  }
+
+  getNetworkStatus() {
+    return {
+      ip: this.server.getExternalIp(),
+      p2p: {
+        url: url.format({
+          protocol: 'ws',
+          hostname: this.server.getExternalIp(),
+          port: P2P_PORT
+        }),
+        port: P2P_PORT,
+      },
+      clientApi: {
+        url: url.format({
+          protocol: 'http',
+          hostname: this.server.getExternalIp(),
+          port: PORT
+        }),
+        port: PORT,
+      },
+      jsonRpc: {
+        url: url.format({
+          protocol: 'http',
+          hostname: this.server.getExternalIp(),
+          port: PORT,
+          pathname: '/json-rpc',
+        }),
+        port: PORT,
+      },
+      connectionInfo: this.getConnectionInfo()
+    }
+  }
+
+  getStatus() {
+    const blockStatus = this.server.getBlockStatus();
+    return {
+      address: this.server.getNodeAddress(),
+      updatedAt: Date.now(),
+      lastBlockNumber: blockStatus.number,
+      networkStatus: this.getNetworkStatus(),
+      blockStatus: this.server.getBlockStatus(),
+      txStatus: this.server.getTxStatus(),
+      consensusStatus: this.server.getConsensusStatus(),
+      nodeStatus: this.server.getNodeStatus(),
+      shardingStatus: this.server.getShardingStatus(),
+      memoryStatus: this.server.getMemoryUsage(),
+      diskStatus: this.server.getDiskUsage(),
+      runtimeInfo: this.server.getRuntimeInfo(),
+      protocolInfo: this.getProtocolInfo(),
     };
   }
 
   updateNodeStatusToTracker() {
-    const updateToTracker = {
-      address: this.server.getAccount(),
-      updatedAt: Date.now(),
-      url: url.format({
-        protocol: 'ws',
-        hostname: this.server.getExternalIp(),
-        port: P2P_PORT
-      }),
-      ip: this.server.getExternalIp(),
-      port: P2P_PORT,
-      lastBlock: this.server.getLastBlockSummary(),
-      consensusStatus: this.server.getConsensusStatus(),
-      nodeStatus: this.server.getNodeStatus(),
-      shardingStatus: this.server.getShardingStatus(),
-      txStatus: this.server.getTxStatus(),
-      memoryStatus: this.server.getMemoryUsage(),
-      diskStatus: this.server.getDiskUsage(),
-      runtimeInfo: this.server.getRuntimeInfo(),
-      managedPeersInfo: this.buildManagedPeersInfo(),
-      connectionInfo: this.getConnectionInfo()
-    };
+    const updateToTracker = this.getStatus();
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
       `${JSON.stringify(updateToTracker, null, 2)}`);
     this.trackerWebSocket.send(JSON.stringify(updateToTracker));
@@ -198,7 +231,7 @@ class P2pClient {
   }
 
   sendAccount(socket) {
-    const account = this.server.getAccount();
+    const account = this.server.getNodeAddress();
     logger.debug(`SENDING: account(${account}) to p2p server`);
     socket.send(JSON.stringify({
       type: MessageTypes.ACCOUNT_REQUEST,

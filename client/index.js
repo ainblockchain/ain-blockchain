@@ -1,7 +1,6 @@
 'use strict';
 
 const process = require('process');
-const fs = require('fs');
 const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
@@ -10,14 +9,14 @@ const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const ChainUtil = require('../common/chain-util');
 const {
+  CURRENT_PROTOCOL_VERSION,
+  PROTOCOL_VERSION_MAP,
   PORT,
-  PROTOCOL_VERSIONS,
   BlockchainNodeStatus,
   WriteDbOperations,
   TransactionStatus
 } = require('../common/constants');
 const { ConsensusStatus } = require('../consensus/constants');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const MAX_BLOCKS = 20;
 
@@ -32,13 +31,6 @@ process.on('SIGINT', (_) => {
   process.exit(1);
 });
 
-if (!fs.existsSync(PROTOCOL_VERSIONS)) {
-  throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
-}
-if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
-  throw Error('Wrong version format is specified in package.json');
-}
-const VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
@@ -268,6 +260,14 @@ app.post('/batch', (req, res, next) => {
     .end();
 });
 
+app.get('/status', (req, res, next) => {
+  const result = p2pClient.getStatus();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/node_status', (req, res, next) => {
   const result = p2pServer.getNodeStatus();
   res.status(200)
@@ -335,10 +335,7 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
 });
 
 app.get('/protocol_versions', (req, res) => {
-  const result = {
-    version_map: VERSION_MAP,
-    current_version: CURRENT_PROTOCOL_VERSION,
-  };
+  const result = p2pClient.getProtocolInfo();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -346,7 +343,7 @@ app.get('/protocol_versions', (req, res) => {
 });
 
 app.get('/state_versions', (req, res) => {
-  const result = p2pServer.getStateVersions();
+  const result = p2pServer.getStateVersionStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -508,17 +505,17 @@ function isValidVersionMatch(ver) {
 }
 
 function matchVersions(ver) {
-  let match = VERSION_MAP[ver];
+  let match = PROTOCOL_VERSION_MAP[ver];
   if (isValidVersionMatch(match)) {
     return match;
   }
   const majorVer = semver.major(ver);
   const majorMinorVer = `${majorVer}.${semver.minor(ver)}`;
-  match = VERSION_MAP[majorMinorVer];
+  match = PROTOCOL_VERSION_MAP[majorMinorVer];
   if (isValidVersionMatch(match)) {
     return match;
   }
-  match = VERSION_MAP[majorVer];
+  match = PROTOCOL_VERSION_MAP[majorVer];
   if (isValidVersionMatch(match)) {
     return match;
   }

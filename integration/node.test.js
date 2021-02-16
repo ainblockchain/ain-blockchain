@@ -12,6 +12,7 @@ const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
+  CURRENT_PROTOCOL_VERSION,
   BLOCKCHAINS_DIR,
   FunctionResultCode,
   MAX_TX_BYTES,
@@ -21,7 +22,6 @@ const {
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {

@@ -2,9 +2,8 @@ const _ = require('lodash');
 const axios = require('axios');
 const {sleep} = require('sleep');
 const ainUtil = require('@ainblockchain/ain-util');
+const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 function signTx(txBody, privateKey) {
   const keyBuffer = Buffer.from(privateKey, 'hex');
