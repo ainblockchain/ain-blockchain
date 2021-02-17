@@ -407,7 +407,7 @@ overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
 // Note(minsu): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
-// Full network connections are convinced (especially for dev mode) otherwise.
+// The minimum network connections are set based on the MIN_NUM_VALIDATORS otherwise.
 function initializeNetworkEnvronments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
