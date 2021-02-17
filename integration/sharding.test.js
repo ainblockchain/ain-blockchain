@@ -112,8 +112,6 @@ function waitUntilShardReporterStarts() {
   }
 }
 
-// TODO(seo): Remove nonce values from the test transactions once the strict nonce bug 
-//            (https://github.com/ainblockchain/ain-blockchain/issues/213) is fixed.
 function setUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
@@ -1484,12 +1482,11 @@ describe('Sharding', () => {
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
-              result.tx_hash = 'erased';
               assert.deepEqual(res.result, {
                 protoVer: CURRENT_PROTOCOL_VERSION,
                 result: {
                   result: true,
-                  tx_hash: "erased"
+                  tx_hash: ChainUtil.hashSignature(signature),
                 }
               });
             })
@@ -1515,12 +1512,11 @@ describe('Sharding', () => {
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
-              result.tx_hash = 'erased';
               assert.deepEqual(res.result, {
                 protoVer: CURRENT_PROTOCOL_VERSION,
                 result: {
                   result: true,
-                  tx_hash: "erased"
+                  tx_hash: ChainUtil.hashSignature(signature),
                 }
               });
             })
@@ -1546,12 +1542,11 @@ describe('Sharding', () => {
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
-              result.tx_hash = 'erased';
               assert.deepEqual(res.result, {
                 protoVer: CURRENT_PROTOCOL_VERSION,
                 result: {
                   result: true,
-                  tx_hash: "erased"
+                  tx_hash: ChainUtil.hashSignature(signature),
                 }
               });
             })
@@ -1585,16 +1580,12 @@ describe('Sharding', () => {
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
             expect(Array.isArray(resultList)).to.equal(true);
-            for (let i = 0; i < resultList.length; i++) {
-              const result = resultList[i];
-              result.tx_hash = 'erased';
-            }
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
                 {
                   result: true,
-                  tx_hash: "erased"
+                  tx_hash: ChainUtil.hashSignature(signature),
                 },
               ]
             });
@@ -1630,14 +1621,13 @@ describe('Sharding', () => {
             expect(Array.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
-              result.tx_hash = 'erased';
             }
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
                 {
                   result: true,
-                  tx_hash: "erased"
+                  tx_hash: ChainUtil.hashSignature(signature),
                 },
               ]
             });
@@ -1673,14 +1663,13 @@ describe('Sharding', () => {
             expect(Array.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
-              result.tx_hash = 'erased';
             }
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
                 {
                   result: true,
-                  tx_hash: "erased"
+                  tx_hash: ChainUtil.hashSignature(signature),
                 },
               ]
             });
