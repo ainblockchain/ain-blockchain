@@ -413,10 +413,10 @@ function initializeNetworkEnvronments() {
     return GenesisParams.network;
   } else {
     return {
-      MAX_OUTBOUND_LIMIT: 5,
-      MAX_INBOUND_LIMIT: 5,
+      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS,
+      MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS,
       DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS,
-      DEFAULT_MAX_INBOUND: 5
+      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS
     }
   }
 }
