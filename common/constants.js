@@ -406,17 +406,16 @@ function overwriteGenesisParams(overwritingParams, type) {
 overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
-// Note(minsu): If NON_COMPLETE_NETWORK env is set, it tightly limits the outbound connections.
+// Note(minsu): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
 // Full network connections are convinced (especially for dev mode) otherwise.
 function initializeNetworkEnvronments() {
-  if (process.env.NON_COMPLETE_NETWORK) {
+  if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
     return {
-      MAX_CONNECTION_LIMIT: 5,
       MAX_OUTBOUND_LIMIT: 5,
-      INITIAL_MAX_CONNECTION: 10,
-      INITIAL_MAX_OUTBOUND: 5,
+      MAX_INBOUND_LIMIT: 5,
+      INITIAL_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS,
       INITIAL_MAX_INBOUND: 5
     }
   }
