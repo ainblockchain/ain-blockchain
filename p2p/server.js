@@ -313,32 +313,36 @@ class P2pServer {
                 `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
-              break;
-            } else if (this.node.status === BlockchainNodeStatus.SERVING) {
-              const tx = data.transaction;
-              if (Transaction.isBatchTransaction(tx)) {
-                const newTxList = [];
-                for (const subTx of tx.tx_list) {
-                  const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
-                  if (!createdTx) {
-                    logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
-                        `${JSON.stringify(subTx, null, 2)}`);
-                    continue;
-                  }
-                  newTxList.push(createdTx);
-                }
-                if (newTxList.length > 0) {
-                  this.executeAndBroadcastTransaction(
-                      { tx_list: newTxList }, MessageTypes.TRANSACTION);
-                }
-              } else {
-                const createdTx = Transaction.create(tx.tx_body, tx.signature);
+              return;
+            }
+            if (this.node.statue !== BlockchainNodeStatus.SERVING) {
+              logger.debug(`[${LOG_HEADER}] Not ready to cope with transactions.\n` +
+                  `My node status is now ${this.node.status}.`);
+              return;
+            }
+            const tx = data.transaction;
+            if (Transaction.isBatchTransaction(tx)) {
+              const newTxList = [];
+              for (const subTx of tx.tx_list) {
+                const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
                 if (!createdTx) {
-                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
-                      `${JSON.stringify(tx, null, 2)}`);
-                } else {
-                  this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
+                    `${JSON.stringify(subTx, null, 2)}`);
+                  continue;
                 }
+                newTxList.push(createdTx);
+              }
+              if (newTxList.length > 0) {
+                this.executeAndBroadcastTransaction(
+                  { tx_list: newTxList }, MessageTypes.TRANSACTION);
+              }
+            } else {
+              const createdTx = Transaction.create(tx.tx_body, tx.signature);
+              if (!createdTx) {
+                logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
+                  `${JSON.stringify(tx, null, 2)}`);
+              } else {
+                this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
               }
             }
             break;
@@ -346,6 +350,11 @@ class P2pServer {
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(data.lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
+              return;
+            }
+            if (this.node.statue !== BlockchainNodeStatus.SERVING) {
+              logger.debug(`[${LOG_HEADER}] Not ready to cope with transactions.\n` +
+                  `My node status is now ${this.node.status}.`);
               return;
             }
             // Send a chunk of 20 blocks from your blockchain to the requester.
