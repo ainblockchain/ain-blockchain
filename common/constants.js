@@ -415,8 +415,8 @@ function initializeNetworkEnvronments() {
     return {
       MAX_OUTBOUND_LIMIT: 5,
       MAX_INBOUND_LIMIT: 5,
-      INITIAL_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS,
-      INITIAL_MAX_INBOUND: 5
+      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS,
+      DEFAULT_MAX_INBOUND: 5
     }
   }
 }

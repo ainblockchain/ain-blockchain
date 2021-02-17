@@ -13,8 +13,8 @@ const {
   TRACKER_WS_ADDR,
   MessageTypes,
   BlockchainNodeStatus,
-  INITIAL_MAX_OUTBOUND,
-  INITIAL_MAX_INBOUND,
+  DEFAULT_MAX_OUTBOUND,
+  DEFAULT_MAX_INBOUND,
   MAX_OUTBOUND_LIMIT,
   MAX_INBOUND_LIMIT
 } = require('../common/constants');
@@ -45,9 +45,9 @@ class P2pClient {
   // maxInbound is a rest of connection after maxOutbound is set.
   initConnections() {
     const numOutbound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : INITIAL_MAX_OUTBOUND;
+        Number(process.env.MAX_OUTBOUND) : DEFAULT_MAX_OUTBOUND;
     const numInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : INITIAL_MAX_INBOUND;
+        Number(process.env.MAX_INBOUND) : DEFAULT_MAX_INBOUND;
     this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
     this.maxInbound = Math.min(numInbound, MAX_INBOUND_LIMIT);
   }
