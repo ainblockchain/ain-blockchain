@@ -268,13 +268,12 @@ class P2pClient {
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
-            `${JSON.stringify(data.chainSegment, null, 2)}`);
+              `${JSON.stringify(data.chainSegment, null, 2)}`);
+          // Check catchup info is behind or equal to me
           if (data.number <= this.server.node.bc.lastBlockNumber()) {
             if (this.server.consensus.status === ConsensusStatus.STARTING) {
-              // XXX(minsu): need to be investigated
-              // ref: https://eslint.org/docs/rules/no-mixed-operators
-              if (!data.chainSegment && !data.catchUpInfo ||
-                data.number === this.server.node.bc.lastBlockNumber()) {
+              if ((!data.chainSegment && !data.catchUpInfo) ||
+                  data.number === this.server.node.bc.lastBlockNumber()) {
                 // Regard this situation as if you're synced.
                 // TODO(lia): ask the tracker server for another peer.
                 logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
@@ -287,9 +286,7 @@ class P2pClient {
             }
             return;
           }
-
-          // Check if chain segment is valid and can be
-          // merged ontop of your local blockchain
+          // Check if chain segment is valid and can be merged ontop of your local blockchain
           if (this.server.node.mergeChainSegment(data.chainSegment)) {
             if (data.number === this.server.node.bc.lastBlockNumber()) {
               // All caught up with the peer
@@ -323,7 +320,7 @@ class P2pClient {
             // FIXME: Could be that I'm on a wrong chain.
             if (data.number <= this.server.node.bc.lastBlockNumber()) {
               logger.info(`[${LOG_HEADER}] I am ahead ` +
-                `(${data.number} > ${this.server.node.bc.lastBlockNumber()}).`);
+                  `(${data.number} > ${this.server.node.bc.lastBlockNumber()}).`);
               if (this.server.consensus.status === ConsensusStatus.STARTING) {
                 this.server.consensus.init();
                 if (this.server.consensus.isRunning()) {
@@ -332,7 +329,7 @@ class P2pClient {
               }
             } else {
               logger.info(`[${LOG_HEADER}] I am behind ` +
-                `(${data.number} < ${this.server.node.bc.lastBlockNumber()}).`);
+                  `(${data.number} < ${this.server.node.bc.lastBlockNumber()}).`);
               setTimeout(() => {
                 this.requestChainSegment(socket, this.server.node.bc.lastBlock());
               }, 1000);

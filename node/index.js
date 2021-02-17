@@ -315,7 +315,6 @@ class BlockchainNode {
    */
   executeTransactionAndAddToPool(tx) {
     const LOG_HEADER = 'executeTransactionAndAddToPool';
-
     logger.debug(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     if (this.tp.isNotEligibleTransaction(tx)) {
       return ChainUtil.logAndReturnError(
@@ -324,8 +323,7 @@ class BlockchainNode {
     }
     if (this.status !== BlockchainNodeStatus.SERVING) {
       return ChainUtil.logAndReturnError(
-          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`,
-          0);
+          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`, 0);
     }
     const result = this.executeOrRollbackTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
