@@ -406,6 +406,24 @@ function overwriteGenesisParams(overwritingParams, type) {
 overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
+// Note(minsu): If NON_COMPLETE_NETWORK env is set, it tightly limits the outbound connections.
+// Full network connections are convinced (especially for dev mode) otherwise.
+function initializeNetworkEnvronments() {
+  if (process.env.NON_COMPLETE_NETWORK) {
+    return GenesisParams.network;
+  } else {
+    return {
+      MAX_CONNECTION_LIMIT: 5,
+      MAX_OUTBOUND_LIMIT: 5,
+      INITIAL_MAX_CONNECTION: 10,
+      INITIAL_MAX_OUTBOUND: 5,
+      INITIAL_MAX_INBOUND: 5
+    }
+  }
+}
+
+const networkEnv = initializeNetworkEnvronments();
+
 /**
  * Port number helper.
  * @param {number} defaultValue
@@ -593,5 +611,5 @@ module.exports = {
   buildOwnerPermissions,
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
-  ...GenesisParams.network,
+  ...networkEnv
 };

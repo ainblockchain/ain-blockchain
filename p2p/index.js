@@ -55,6 +55,7 @@ class P2pClient {
     this.maxConnection = Math.max(numConnection, MAX_CONNECTION_LIMIT);
     this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
     this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
+    console.log(numConnection, numOutbound, numInbound)
   }
 
   getConnectionInfo() {
@@ -402,7 +403,9 @@ class P2pClient {
   stop() {
     this.server.stop();
     logger.info('Disconnect from tracker server.');
-    this.trackerWebSocket.close();
+    // Note(minsu): The trackerWebsocket should be checked initialized in order not to get error
+    // in case trackerWebsocket is not properly setup.
+    if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from connected peers.');
     this.disconnectFromPeers();
     // XXX(minsu): This will be revoked when next updates.
