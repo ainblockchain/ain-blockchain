@@ -365,7 +365,7 @@ app.get('/connection_info', (req, res) => {
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
-})
+});
 
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
@@ -415,6 +415,15 @@ app.get('/get_raw_consensus_state', (req, res) => {
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
+    .end();
+});
+
+
+app.get('/get_node_state', (req, res) => {
+  const result = node.status;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result })
     .end();
 });
 
