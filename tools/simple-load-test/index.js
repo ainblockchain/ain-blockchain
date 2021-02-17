@@ -36,7 +36,6 @@ async function initPermission() {
           },
         },
       },
-      is_global: true,
     },
     nonce: -1,
   };
@@ -47,7 +46,6 @@ async function initPermission() {
       value: {
         '.write': true,
       },
-      is_global: true,
     },
     nonce: -1,
   };
@@ -56,7 +54,6 @@ async function initPermission() {
       type: 'SET_VALUE',
       ref: testPath,
       value: 0,
-      is_global: true,
     },
     nonce: -1,
   };
