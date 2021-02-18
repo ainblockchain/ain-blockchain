@@ -2,6 +2,7 @@ const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
@@ -251,6 +252,53 @@ class ChainUtil {
       logger.debug(message);
     }
     return ChainUtil.returnError(code, message);
+  }
+
+  static keyStackToMetricName(keyStack) {
+    return _.join(keyStack, ':');
+  }
+
+  static metricsToText(metrics) {
+    const lines = [];
+    for (const key in metrics) {
+      const value = metrics[key];
+      lines.push(`${key} ${value}`);
+    }
+    return _.join(lines, '\n');
+  }
+
+  static objToMetricsRecursive(obj, keyStack) {
+    if (ChainUtil.isArray(obj)) {
+      return {};  // Skip array structures.
+    }
+    if (!ChainUtil.isDict(obj)) {
+      if (!ChainUtil.isNumber(obj)) {
+        return {};  // Skip non-numeric values.
+      }
+      return {
+        [ChainUtil.keyStackToMetricName(keyStack)]: obj
+      };
+    }
+    const metrics = {};
+    for (const key in obj) {
+      const subObj = obj[key];
+      const subMetrics = ChainUtil.objToMetricsRecursive(subObj, [...keyStack, _.snakeCase(key)]);
+      Object.assign(metrics, subMetrics);
+    }
+    return metrics;
+  }
+
+  /**
+   * Converts given object to Prometheus metrics. * e.g. { aa: { bb: 10 }, cc: "x" } to
+   * 'aa:bb 10\ncc x'. Note that array structures or non-numeric values are skipped.
+   */
+  static objToMetrics(obj) {
+    if (!ChainUtil.isDict(obj)) {
+      return '';
+    }
+    const keyStack = [];
+    const metrics = ChainUtil.objToMetricsRecursive(obj, keyStack);
+    return ChainUtil.metricsToText(metrics);
   }
 }
 
