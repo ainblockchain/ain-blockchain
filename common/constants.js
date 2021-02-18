@@ -406,6 +406,23 @@ function overwriteGenesisParams(overwritingParams, type) {
 overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
+// Note(minsu): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
+// The minimum network connections are set based on the MIN_NUM_VALIDATORS otherwise.
+function initializeNetworkEnvronments() {
+  if (process.env.NETWORK_OPTIMIZATION) {
+    return GenesisParams.network;
+  } else {
+    return {
+      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS,
+      MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS,
+      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS,
+      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS
+    }
+  }
+}
+
+const networkEnv = initializeNetworkEnvronments();
+
 /**
  * Port number helper.
  * @param {number} defaultValue
@@ -593,5 +610,5 @@ module.exports = {
   buildOwnerPermissions,
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
-  ...GenesisParams.network,
+  ...networkEnv
 };

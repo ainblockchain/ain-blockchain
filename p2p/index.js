@@ -5,7 +5,6 @@ const Websocket = require('ws');
 const semver = require('semver');
 const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
-const ChainUtil = require('../common/chain-util');
 const {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
@@ -14,11 +13,10 @@ const {
   TRACKER_WS_ADDR,
   MessageTypes,
   BlockchainNodeStatus,
-  INITIAL_MAX_CONNECTION,
-  INITIAL_MAX_OUTBOUND,
-  INITIAL_MAX_INBOUND,
-  MAX_CONNECTION_LIMIT,
-  MAX_OUTBOUND_LIMIT
+  DEFAULT_MAX_OUTBOUND,
+  DEFAULT_MAX_INBOUND,
+  MAX_OUTBOUND_LIMIT,
+  MAX_INBOUND_LIMIT
 } = require('../common/constants');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -46,20 +44,16 @@ class P2pClient {
   // maxOutbound is for now limited equal or less than 2.
   // maxInbound is a rest of connection after maxOutbound is set.
   initConnections() {
-    const numConnection = process.env.MAX_CONNECTION ?
-        Number(process.env.MAX_CONNECTION) : INITIAL_MAX_CONNECTION;
     const numOutbound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : INITIAL_MAX_OUTBOUND;
+        Number(process.env.MAX_OUTBOUND) : DEFAULT_MAX_OUTBOUND;
     const numInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : INITIAL_MAX_INBOUND;
-    this.maxConnection = Math.max(numConnection, MAX_CONNECTION_LIMIT);
+        Number(process.env.MAX_INBOUND) : DEFAULT_MAX_INBOUND;
     this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
-    this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
+    this.maxInbound = Math.min(numInbound, MAX_INBOUND_LIMIT);
   }
 
   getConnectionInfo() {
     return {
-      maxConnection: this.maxConnection,
       maxOutbound: this.maxOutbound,
       maxInbound: this.maxInbound,
       incomingPeers: Object.keys(this.server.inbound),
@@ -402,7 +396,9 @@ class P2pClient {
   stop() {
     this.server.stop();
     logger.info('Disconnect from tracker server.');
-    this.trackerWebSocket.close();
+    // Note(minsu): The trackerWebsocket should be checked initialized in order not to get error
+    // in case trackerWebsocket is not properly setup.
+    if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from connected peers.');
     this.disconnectFromPeers();
     // XXX(minsu): This will be revoked when next updates.
