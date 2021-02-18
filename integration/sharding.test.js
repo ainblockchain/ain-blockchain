@@ -1203,7 +1203,7 @@ describe('Sharding', () => {
               .body.toString('utf-8')).result;
           assert.deepEqual(resultBefore, 100);
 
-          const request = {ref: 'test/test_value/some/path', value: "some value"};
+          const request = {ref: 'test/test_value/some/path', value: "some value", nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
@@ -1211,7 +1211,7 @@ describe('Sharding', () => {
         })
 
         it('/set_value with is_global = false (explicit)', () => {
-          const request = {ref: 'test/test_value/some/path', value: "some value", is_global: false};
+          const request = {ref: 'test/test_value/some/path', value: "some value", is_global: false, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
@@ -1220,7 +1220,7 @@ describe('Sharding', () => {
 
         it('/set_value with is_global = true', () => {
           const request = {
-            ref: 'apps/afan/test/test_value/some/path', value: "some value", is_global: true
+            ref: 'apps/afan/test/test_value/some/path', value: "some value", is_global: true, nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
@@ -1231,7 +1231,7 @@ describe('Sharding', () => {
 
       describe('/inc_value', () => {
         it('/inc_value with is_global = false', () => {
-          const request = {ref: 'test/test_value/some/path', value: 10};
+          const request = {ref: 'test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
@@ -1240,7 +1240,7 @@ describe('Sharding', () => {
 
         it('/inc_value with is_global = true', () => {
           const request = {
-            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
+            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true, nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
               .body.toString('utf-8'));
@@ -1251,7 +1251,7 @@ describe('Sharding', () => {
 
       describe('/dec_value', () => {
         it('/dec_value with is_global = false', () => {
-          const request = {ref: 'test/test_value/some/path', value: 10};
+          const request = {ref: 'test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body.result.result, true);
@@ -1260,7 +1260,7 @@ describe('Sharding', () => {
 
         it('/dec_value with is_global = true', () => {
           const request = {
-            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true
+            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true, nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
               .body.toString('utf-8'));
@@ -1277,7 +1277,8 @@ describe('Sharding', () => {
               ".function": {
                 "fid": "some other function config"
               }
-            }
+            },
+            nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
               .body.toString('utf-8'));
@@ -1294,6 +1295,7 @@ describe('Sharding', () => {
               }
             },
             is_global: true,
+            nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
               .body.toString('utf-8'));
@@ -1308,7 +1310,8 @@ describe('Sharding', () => {
             ref: "test/test_rule/other/path",
             value: {
               ".write": "some other rule config"
-            }
+            },
+            nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
               .body.toString('utf-8'));
@@ -1323,6 +1326,7 @@ describe('Sharding', () => {
               ".write": "some other rule config"
             },
             is_global: true,
+            nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
               .body.toString('utf-8'));
@@ -1337,7 +1341,8 @@ describe('Sharding', () => {
             ref: "test/test_owner/other/path",
             value: {
               ".owner": "some other owner config"
-            }
+            },
+            nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
               .body.toString('utf-8'));
@@ -1352,6 +1357,7 @@ describe('Sharding', () => {
               ".owner": "some other2 owner config"
             },
             is_global: true,
+            nonce: -1,
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
               .body.toString('utf-8'));
@@ -1400,7 +1406,8 @@ describe('Sharding', () => {
                   ".owner": "some other3 owner config"
                 }
               }
-            ]
+            ],
+            nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
@@ -1453,7 +1460,8 @@ describe('Sharding', () => {
                 },
                 is_global: true,
               }
-            ]
+            ],
+            nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
