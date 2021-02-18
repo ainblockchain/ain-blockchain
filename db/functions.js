@@ -154,7 +154,8 @@ class Functions {
 
   /**
    * Returns a new function created by applying the function change to the current function.
-   * 
+   *
+   * @param {Object} curFunction current function (modified and returned by this function)
    * @param {Object} functionChange function change
    */
   static applyFunctionChange(curFunction, functionChange) {
