@@ -352,7 +352,7 @@ class P2pServer {
             if (this.node.bc.chain.length === 0) {
               return;
             }
-            if (this.node.statue !== BlockchainNodeStatus.SERVING) {
+            if (this.node.status !== BlockchainNodeStatus.SERVING) {
               logger.debug(`[${LOG_HEADER}] Not ready to cope with transactions.\n` +
                   `My node status is now ${this.node.status}.`);
               return;
