@@ -85,6 +85,7 @@ const PredefinedDbPaths = {
   SAVE_LAST_TX_LAST_TX: '.last_tx',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
+  SERVICE_ACCOUNTS: 'service_accounts',
   BALANCE: 'balance',
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
