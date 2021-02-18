@@ -7,12 +7,12 @@
 const Ain = require('@ainblockchain/ain-js').default;
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const testPath = '/apps/loadtest';
-const ainUrl = 'http://localhost:8081';
+const targetUrl = 'http://localhost:8081';
 const ainPrivateKey = '4207f5dcacb1b601d3a1f8cb10afaca158f6ebe383c0b30d02b39f8d2060cce3';
 const ainAddress = '0xF2be7f1356347a8960630c112AcB6Da61eE94632';
 const numberOfTransactions = 300;
 const duration = 10; // 60: 1min
-const ain = new Ain(ainUrl);
+const ain = new Ain(targetUrl);
 
 function initAinJs() {
   ain.wallet.add(ainPrivateKey);
