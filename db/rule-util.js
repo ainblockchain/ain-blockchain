@@ -54,6 +54,10 @@ class RuleUtil {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
+  isServAcntName(name) {
+    return this.isString(name) && name.split('|').length === 3;
+  }
+
   isValShardProto(value) {
     const {ShardingProtocols} = require('../common/constants');
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
@@ -68,6 +72,15 @@ class RuleUtil {
       return ainUtil.toChecksumAddress(addr);
     } catch (e) {
       return '';
+    }
+  }
+
+  getBalancePath(addrOrServAcnt) {
+    if (this.isServAcntName(addrOrServAcnt)) {
+      const parsed = addrOrServAcnt.split('|');
+      return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/balance`;
+    } else {
+      return `/accounts/${addrOrServAcnt}/balance`;
     }
   }
 

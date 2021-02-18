@@ -77,7 +77,7 @@ class Functions {
           parsedValuePath, functionPath, timestamp, execTime, params, value, transaction);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
-          continue;  // Does nothing.
+          continue; // Does nothing.
         }
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
@@ -85,7 +85,7 @@ class Functions {
             logger.info(
                 `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
                 formattedParams);
-            const auth = { fid: functionEntry.function_id, };
+            const auth = { fid: functionEntry.function_id };
             // Execute the matched native function.
             nativeFunction(
                 value,
@@ -155,7 +155,6 @@ class Functions {
   /**
    * Returns a new function created by applying the function change to the current function.
    * 
-   * @param {Object} curFunction current function (modified and returned by this function)
    * @param {Object} functionChange function change
    */
   static applyFunctionChange(curFunction, functionChange) {
@@ -247,6 +246,33 @@ class Functions {
   }
 
   /**
+   * Adds a transfer entry from a service account to a regular account or vice versa. Used by 
+   * service-related native functions such as payments, deposit, and withdraw.
+   */
+  setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
+    const transferPath = this._getTransferValuePath(from, to, timestamp);
+    const transferResult = this.db.setValue(transferPath, value, auth, timestamp, transaction);
+    if (transferResult !== true) {
+      logger.error(
+          `  ==> Failed to setServiceAccountTransferOrLog on '${transferPath}' with error: ${JSON.stringify(transferResult)}`);
+    }
+    if (ChainUtil.isServAcntName(to)) {
+      const serviceAccountAdminPath = this._getServiceAccountAdminPath(to);
+      const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
+      if (serviceAccountAdmin === null) {
+        // set admin as the from address of the original transaction
+        const serviceAccountAdminAddrPath = this._getServiceAccountAdminAddrPath(to, transaction.address);
+        const adminSetupResult = this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
+        if (adminSetupResult !== true) {
+          logger.error(
+              ` ==> Failed to set admin for a service account ${to} with error: ${JSON.stringify(adminSetupResult)}`);
+        }
+      }
+    }
+    return transferResult;
+  }
+
+  /**
    * Saves the transaction's hash to a sibling path.
    * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
    */
@@ -274,9 +300,8 @@ class Functions {
     const from = context.params.from;
     const to = context.params.to;
     const key = context.params.key;
-
-    const fromBalancePath = this._getBalancePath(from);
-    const toBalancePath = this._getBalancePath(to);
+    const fromBalancePath = ChainUtil.getBalancePath(from);
+    const toBalancePath = ChainUtil.getBalancePath(to);
     const resultPath = this._getTransferResultPath(from, to, key);
     const transferResult =
         this._transferInternal(fromBalancePath, toBalancePath, value, context);
@@ -289,6 +314,8 @@ class Functions {
     }
   }
 
+  // TODO(lia): migrate from /deposit_accounts/{serviceName}/{userAddr}/value to
+  // /service_accounts/deposit/{serviceName}/{userAddr}/balance.
   _deposit(value, context) {
     const service = context.params.service;
     const user = context.params.user_addr;
@@ -304,7 +331,7 @@ class Functions {
       this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
-    const userBalancePath = this._getBalancePath(user);
+    const userBalancePath = ChainUtil.getBalancePath(user);
     const depositAmountPath = this._getDepositAmountPath(service, user);
     const transferResult =
         this._transferInternal(userBalancePath, depositAmountPath, value, context);
@@ -321,6 +348,8 @@ class Functions {
     }
   }
 
+  // TODO(lia): migrate from /deposit_accounts/{serviceName}/{userAddr}/value to
+  // /service_accounts/deposit/{serviceName}/{userAddr}/balance.
   _withdraw(value, context) {
     const service = context.params.service;
     const user = context.params.user_addr;
@@ -330,7 +359,7 @@ class Functions {
     const auth = context.auth;
 
     const depositAmountPath = this._getDepositAmountPath(service, user);
-    const userBalancePath = this._getBalancePath(user);
+    const userBalancePath = ChainUtil.getBalancePath(user);
     const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
     const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
@@ -370,15 +399,14 @@ class Functions {
     }
   }
 
-  // TODO(lia): migrate from /payments/{serviceName}/{userAddr}/balance to
-  // /service_accounts/payments/{serviceName}/{userAddr}/balance.
-  // TODO(lia): add test cases
   _pay(value, context) {
     const service = context.params.service;
     const user = context.params.user_addr;
     const recordId = context.params.record_id;
     const timestamp = context.timestamp;
+    const transaction = context.transaction;
     const execTime = context.execTime;
+    const auth = context.auth;
     const resultPath = this._getPaymentPayRecordsResultPath(service, user, recordId);
     const serviceAdminPath = this._getPaymentServiceAdminPath(service);
     const adminAddr = this.db.getValue(serviceAdminPath);
@@ -388,28 +416,24 @@ class Functions {
       return;
     }
 
-    const adminBalancePath = this._getBalancePath(adminAddr);
-    const paymentBalancePath = this._getPaymentBalancePath(service, user);
-    const transferResult =
-        this._transferInternal(adminBalancePath, paymentBalancePath, value.amount, context);
+    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, user);
+    const transferResult = this.setServiceAccountTransferOrLog(
+        adminAddr, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult === false) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
-  // TODO(lia): migrate from /payments/{serviceName}/{userAddr}/balance to
-  // /service_accounts/payments/{serviceName}/{userAddr}/balance.
-  // TODO(lia): add test cases
   _claim(value, context) {
     const service = context.params.service;
     const user = context.params.user_addr;
     const recordId = context.params.record_id;
+    const transaction = context.transaction;
     const timestamp = context.timestamp;
     const execTime = context.execTime;
+    const auth = context.auth;
     const resultPath = this._getPaymentClaimRecordsResultPath(service, user, recordId);
     const serviceAdminPath = this._getPaymentServiceAdminPath(service);
     const adminAddr = this.db.getValue(serviceAdminPath);
@@ -419,14 +443,11 @@ class Functions {
       return;
     }
 
-    const adminBalancePath = this._getBalancePath(adminAddr);
-    const paymentBalancePath = this._getPaymentBalancePath(service, user);
-    const transferResult =
-        this._transferInternal(paymentBalancePath, adminBalancePath, value.amount, context);
+    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, user);
+    const transferResult = this.setServiceAccountTransferOrLog(
+        userServiceAccountName, adminAddr, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult === false) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
@@ -650,8 +671,18 @@ class Functions {
     return true;
   }
 
-  _getBalancePath(address) {
-    return `${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.BALANCE}`;
+  _getServiceAccountAdminPath(accountName) {
+    const parsed = accountName.split('|');
+    return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/admin`;
+  }
+
+  _getServiceAccountAdminAddrPath(accountName, adminAddr) {
+    const parsed = accountName.split('|');
+    return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/admin/${adminAddr}`;
+  }
+
+  _getTransferValuePath(from, to, key) {
+    return `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_VALUE}`;
   }
 
   _getTransferResultPath(from, to, key) {
