@@ -2528,5 +2528,202 @@ describe('Blockchain Node', () => {
         expect(afterBalance).to.equal(beforeBalance - newDepositAmount);
       });
     });
+
+    describe('payments (_pay, _claim)', () => {
+      it('setup payments', () => {
+        const configPath = '/payments/test_service/config'
+        const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
+          op_list: [
+            {
+              type: 'SET_OWNER',
+              ref: configPath,
+              value: {
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_owner": false,
+                      "write_rule": false,
+                      "write_function": false
+                    },
+                    [serviceAdmin]: {
+                      "branch_owner": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                      "write_function": true
+                    }
+                  }
+                }
+              }
+            },
+            {
+              type: 'SET_VALUE',
+              ref: configPath,
+              value: { admin: serviceAdmin }
+            }
+          ]
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(0);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+      });
+
+      it('non-admin cannot overwrite payment config', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+              ref: `/payments/test_service/config`,
+              value: { admin: serviceUser }
+            }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('non-admin cannot write pay records', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+              ref: `/payment/test_service/${serviceUser}/pays/key1`,
+              value: {
+                amount: 100,
+                id: 'key1'
+              }
+            }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('amount = 0', () => {
+        const paymentRef = `/payments/test_service/${serviceUser}/pays/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: 0,
+            id: 'key1'
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('amount is not a number', () => {
+        const paymentRef = `/payments/test_service/${serviceUser}/pays/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: 'test',
+            id: 'key1'
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('invalid id value', () => {
+        const paymentRef = `/payments/test_service/${serviceUser}/pays/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: 10,
+            id: 'key2'
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('payment amount > admin balance', () => {
+        const adminBalance = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const paymentRef = `/payments/test_service/${serviceUser}/pays/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: adminBalance + 1,
+            id: 'key1'
+          }
+        }}).body.toString('utf-8'));
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const paymentResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${paymentRef}/result/code`).body.toString('utf-8')).result;
+        expect(paymentResult).to.equals(FunctionResultCode.INTERNAL_ERROR);
+      });
+
+      it('admin can write pay records', () => {
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const paymentRef = `/payments/test_service/${serviceUser}/pays/key2`;
+        const amount = adminBalanceBefore - 1;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount,
+            id: 'key2'
+          }
+        }}).body.toString('utf-8'));
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const paymentResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${paymentRef}/result/code`).body.toString('utf-8')).result;
+        expect(paymentResult).to.equals(FunctionResultCode.SUCCESS);
+        const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        expect(adminBalanceAfter).to.equals(adminBalanceBefore - amount);
+        const serviceAccount = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        assert.deepEqual(serviceAccount, {
+          balance: amount,
+          admin: {
+            [serviceAdmin]: true
+          }
+        });
+      });
+
+      it('non-admin cannot write claim records', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+              ref: `/payments/test_service/${serviceUser}/claims/key1`,
+              value: {
+                amount: 100,
+                id: 'key1'
+              }
+            }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+    });
+
+    it('claim amount > payment balance', () => {
+      const paymentBalance = parseOrLog(syncRequest('GET',
+          server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+          .body.toString('utf-8')).result;
+      const paymentRef = `/payments/test_service/${serviceUser}/claims/key1`;
+      const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: paymentRef,
+        value: {
+          amount: paymentBalance + 1,
+          id: 'key1'
+        }
+      }}).body.toString('utf-8'));
+      waitUntilTxFinalized(serverList, body.result.tx_hash);
+      const paymentResult = parseOrLog(syncRequest('GET',
+          server1 + `/get_value?ref=${paymentRef}/result/code`).body.toString('utf-8')).result;
+      expect(paymentResult).to.equals(FunctionResultCode.INTERNAL_ERROR);
+    });
+
+    it('admin can claim payments', () => {
+      const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+          `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+      const paymentClaimRef = `/payments/test_service/${serviceUser}/claims/key1`;
+      const paymentBalance = parseOrLog(syncRequest('GET',
+          server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+          .body.toString('utf-8')).result;
+      const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: paymentClaimRef,
+        value: {
+          amount: paymentBalance,
+          id: 'key1'
+        }
+      }}).body.toString('utf-8'));
+      waitUntilTxFinalized(serverList, body.result.tx_hash);
+      const paymentResult = parseOrLog(syncRequest('GET', server1 +
+          `/get_value?ref=${paymentClaimRef}/result/code`).body.toString('utf-8')).result;
+      expect(paymentResult).to.equals(FunctionResultCode.SUCCESS);
+      const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+          `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+      expect(adminBalanceAfter).to.equals(adminBalanceBefore + paymentBalance);
+      const serviceAccountsBalance = parseOrLog(syncRequest('GET',
+          server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+          .body.toString('utf-8')).result;
+      expect(serviceAccountsBalance).to.equals(0);
+    });
   });
 })
