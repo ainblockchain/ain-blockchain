@@ -276,6 +276,7 @@ class P2pClient {
                   data.number === this.server.node.bc.lastBlockNumber()) {
                 // Regard this situation as if you're synced.
                 // TODO(lia): ask the tracker server for another peer.
+                // XXX(minsu): Need to more discussion about this.
                 logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                 this.server.node.status = BlockchainNodeStatus.SERVING;
                 this.server.consensus.init();
