@@ -114,7 +114,16 @@ async function sendTxs() {
   return sendCnt;
 }
 
+function usage() {
+  console.log('Please modify numberOfTransactions & duration according to your test environment.');
+  console.log('Example commandlines:\n  node index.js\n');
+  process.exit(0);
+}
+
 async function main() {
+  if (process.argv.length !== 2) {
+    usage();
+  }
   initAinJs();
   console.log(`Initialize permission (${testPath})`);
   await initPermission();
