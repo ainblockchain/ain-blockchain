@@ -142,7 +142,9 @@ class P2pServer {
 
   getDiskUsage() {
     try {
-      return disk.checkSync(DISK_USAGE_PATH);
+      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
+      const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
+      return Object.assign({}, diskUsage, { used });
     } catch (err) {
       logger.error(err);
       return {};

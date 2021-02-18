@@ -276,6 +276,14 @@ app.get('/node_status', (req, res, next) => {
     .end();
 });
 
+app.get('/connection_status', (req, res) => {
+  const result = p2pClient.getConnectionStatus();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+})
+
 app.get('/blocks', (req, res, next) => {
   const blockEnd = node.bc.lastBlockNumber() + 1;
   const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
@@ -359,14 +367,6 @@ app.get('/dump_final_version', (req, res) => {
     .end();
 });
 
-app.get('/connection_info', (req, res) => {
-  const result = p2pClient.getConnectionInfo();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
@@ -423,6 +423,15 @@ app.get('/get_consensus_state', (req, res) => {
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
+    .end();
+});
+
+// Exports metrics for Prometheus.
+app.get('/metrics', (req, res, next) => {
+  const result = ChainUtil.objToMetrics(p2pClient.getStatus());
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send(result)
     .end();
 });
 
@@ -500,11 +509,6 @@ function createAndExecuteTransaction(txBody) {
     };
   }
   return p2pServer.executeAndBroadcastTransaction(tx);
-}
-
-function checkIfTransactionShouldBeNonced(input) {
-  // Default to true if noncing information is not specified
-  return input.is_nonced_transaction !== undefined ? input.is_nonced_transaction : true;
 }
 
 function isValidVersionMatch(ver) {
