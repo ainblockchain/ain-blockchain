@@ -418,15 +418,6 @@ app.get('/get_raw_consensus_state', (req, res) => {
     .end();
 });
 
-
-app.get('/get_node_state', (req, res) => {
-  const result = node.status;
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
-    .end();
-});
-
 app.get('/get_consensus_state', (req, res) => {
   const result = p2pServer.consensus.getState();
   res.status(200)
