@@ -128,7 +128,7 @@ async function main() {
   initAinJs();
   console.log(`Initialize permission (${testPath})`);
   await initPermission();
-  console.log(`Start to send transactions (${numberOfTransactions})`)
+  console.log(`Start to send transactions (${numberOfTransactions})`);
   const sendCnt = await sendTxs();
   console.log(`Finish load test! (${sendCnt}/${numberOfTransactions})`);
 }
