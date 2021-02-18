@@ -315,8 +315,8 @@ class P2pServer {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               return;
             }
-            if (this.node.statue !== BlockchainNodeStatus.SERVING) {
-              logger.debug(`[${LOG_HEADER}] Not ready to cope with transactions.\n` +
+            if (this.node.status !== BlockchainNodeStatus.SERVING) {
+              logger.debug(`[${LOG_HEADER}] Not ready to process transactions.\n` +
                   `My node status is now ${this.node.status}.`);
               return;
             }
@@ -353,7 +353,7 @@ class P2pServer {
               return;
             }
             if (this.node.status !== BlockchainNodeStatus.SERVING) {
-              logger.debug(`[${LOG_HEADER}] Not ready to cope with transactions.\n` +
+              logger.debug(`[${LOG_HEADER}] Not ready to accept chain segment request.\n` +
                   `My node status is now ${this.node.status}.`);
               return;
             }
