@@ -2,6 +2,7 @@
  For simple load testing
  This tool increases '/apps/loadtest/visit_count'
  Please modify numberOfTransactions & duration
+ Example command line: 'node index.js'
  */
 const Ain = require('@ainblockchain/ain-js').default;
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
@@ -116,7 +117,7 @@ async function sendTxs() {
 
 function usage() {
   console.log('Please modify numberOfTransactions & duration according to your test environment.');
-  console.log('Example commandlines:\n  node index.js\n');
+  console.log('Example command line:\n  node index.js\n');
   process.exit(0);
 }
 
