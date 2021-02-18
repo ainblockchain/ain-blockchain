@@ -1,7 +1,7 @@
-/*
-For simple load testing
-This tool increases '/apps/loadtest/visit_count'
-Please modify numberOfTransactions & duration
+/**
+ For simple load testing
+ This tool increases '/apps/loadtest/visit_count'
+ Please modify numberOfTransactions & duration
  */
 const Ain = require('@ainblockchain/ain-js').default;
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
