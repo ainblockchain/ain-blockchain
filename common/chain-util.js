@@ -68,6 +68,10 @@ class ChainUtil {
     return ruleUtil.isCksumAddr(addr);
   }
 
+  static isServAcntName(name) {
+    return ruleUtil.isServAcntName(name);
+  }
+
   static isValShardProto(value) {
     return ruleUtil.isValShardProto(value);
   }
@@ -90,6 +94,14 @@ class ChainUtil {
 
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
+  }
+
+  static parseServAcntName(accountName) {
+    return ruleUtil.parseServAcntName(accountName);
+  }
+
+  static toServiceAccountName(serviceType, serviceName, key) {
+    return `${serviceType}|${serviceName}|${key}`;
   }
 
   static toString(value) {
@@ -150,6 +162,10 @@ class ChainUtil {
       labels.push(...ChainUtil.parsePath(toAppend));
     }
     return ChainUtil.formatPath(labels);
+  }
+
+  static getBalancePath(addrOrServAcnt) {
+    return ruleUtil.getBalancePath(addrOrServAcnt);
   }
 
   static getJsObject(obj, path) {

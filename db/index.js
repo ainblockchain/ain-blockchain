@@ -406,7 +406,9 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     // NOTE(seo): As of now (2021-01), we don't allow recursive function triggering.
-    if (auth && auth.addr) {
+    // NOTE(lia): Allow recursive function triggering for service accounts. Should update this logic
+    // to prevent infinite recursion.
+    if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, timestamp, Date.now(), transaction);
     }
 

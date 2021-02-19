@@ -106,6 +106,22 @@
       }
     }
   },
+  "service_accounts": {
+    "$service_type": {
+      "$service_name": {
+        "$key": {
+          "admin": {
+            "$admin_addr": {
+              ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
+            }
+          },
+          "balance": {
+            ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
+          }
+        }
+      }
+    }
+  },
   "sharding": {
     "shard": {
       ".write": false,
@@ -119,7 +135,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "auth.addr === $from && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.length($from) !== 42 || util.isCksumAddr($from)) && (util.length($to) !== 42 || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue('accounts/' + $from + '/balance') >= newData"
+            ".write": "(auth.addr === $from || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
           },
           "result": {
             ".write": "auth.fid === '_transfer'"
