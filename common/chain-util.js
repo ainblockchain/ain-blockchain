@@ -100,8 +100,8 @@ class ChainUtil {
     return ruleUtil.parseServAcntName(accountName);
   }
 
-  static toServiceAccountName(serviceType, serviceName, user) {
-    return `${serviceType}|${serviceName}|${user}`;
+  static toServiceAccountName(serviceType, serviceName, key) {
+    return `${serviceType}|${serviceName}|${key}`;
   }
 
   static toString(value) {
