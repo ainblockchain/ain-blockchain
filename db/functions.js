@@ -252,23 +252,14 @@ class Functions {
    */
   setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
     const transferPath = this.getTransferValuePath(from, to, timestamp);
-    const transferResult = this.db.setValue(transferPath, value, auth, timestamp, transaction);
-    if (transferResult !== true) {
-      logger.error(
-          `  ==> Failed to setServiceAccountTransferOrLog on '${transferPath}' with error: ${JSON.stringify(transferResult)}`);
-    }
+    const transferResult = this.setValueOrLog(transferPath, value, auth, timestamp);
     if (ChainUtil.isServAcntName(to)) {
       const serviceAccountAdminPath = this.getServiceAccountAdminPath(to);
       const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
       if (serviceAccountAdmin === null) {
         // set admin as the from address of the original transaction
         const serviceAccountAdminAddrPath = this.getServiceAccountAdminAddrPath(to, transaction.address);
-        const serviceAccountAdminAddrPath = this._getServiceAccountAdminAddrPath(to, transaction.address);
-        const adminSetupResult = this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
-        if (adminSetupResult !== true) {
-          logger.error(
-              ` ==> Failed to set admin for a service account ${to} with error: ${JSON.stringify(adminSetupResult)}`);
-        }
+        this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
       }
     }
     return transferResult;
