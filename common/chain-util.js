@@ -96,6 +96,10 @@ class ChainUtil {
     return ruleUtil.toCksumAddr(addr);
   }
 
+  static parseServAcntName(accountName) {
+    return ruleUtil.parseServAcntName(accountName);
+  }
+
   static toServiceAccountName(serviceType, serviceName, user) {
     return `${serviceType}|${serviceName}|${user}`;
   }

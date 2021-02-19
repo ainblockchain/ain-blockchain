@@ -86,6 +86,7 @@ const PredefinedDbPaths = {
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
   SERVICE_ACCOUNTS: 'service_accounts',
+  SERVICE_ACCOUNTS_ADMIN: 'admin',
   BALANCE: 'balance',
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
