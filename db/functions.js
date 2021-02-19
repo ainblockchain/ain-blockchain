@@ -259,7 +259,7 @@ class Functions {
         const serviceAccountAdminAddrPath = this.getServiceAccountAdminAddrPath(to, transaction.address);
         const adminSetupResult = this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
         if (adminSetupResult !== true) {
-          return;
+          return adminSetupResult;
         }
       }
     }
