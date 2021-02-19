@@ -365,7 +365,7 @@ app.get('/connection_info', (req, res) => {
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
-})
+});
 
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
