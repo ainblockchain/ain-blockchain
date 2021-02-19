@@ -87,7 +87,7 @@ class RuleUtil {
   getBalancePath(addrOrServAcnt) {
     const { PredefinedDbPaths } = require('../common/constants');
     if (this.isServAcntName(addrOrServAcnt)) {
-      const parsed = addrOrServAcnt.split('|');
+      const parsed = this.parseServAcntName(addrOrServAcnt);
       return `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/${PredefinedDbPaths.BALANCE}`;
     } else {
       return `/${PredefinedDbPaths.ACCOUNTS}/${addrOrServAcnt}/${PredefinedDbPaths.BALANCE}`;
