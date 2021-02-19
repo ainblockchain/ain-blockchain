@@ -251,17 +251,18 @@ class Functions {
    * service-related native functions such as payments, deposit, and withdraw.
    */
   setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
-    const transferPath = this._getTransferValuePath(from, to, timestamp);
+    const transferPath = this.getTransferValuePath(from, to, timestamp);
     const transferResult = this.db.setValue(transferPath, value, auth, timestamp, transaction);
     if (transferResult !== true) {
       logger.error(
           `  ==> Failed to setServiceAccountTransferOrLog on '${transferPath}' with error: ${JSON.stringify(transferResult)}`);
     }
     if (ChainUtil.isServAcntName(to)) {
-      const serviceAccountAdminPath = this._getServiceAccountAdminPath(to);
+      const serviceAccountAdminPath = this.getServiceAccountAdminPath(to);
       const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
       if (serviceAccountAdmin === null) {
         // set admin as the from address of the original transaction
+        const serviceAccountAdminAddrPath = this.getServiceAccountAdminAddrPath(to, transaction.address);
         const serviceAccountAdminAddrPath = this._getServiceAccountAdminAddrPath(to, transaction.address);
         const adminSetupResult = this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
         if (adminSetupResult !== true) {
@@ -303,9 +304,9 @@ class Functions {
     const key = context.params.key;
     const fromBalancePath = ChainUtil.getBalancePath(from);
     const toBalancePath = ChainUtil.getBalancePath(to);
-    const resultPath = this._getTransferResultPath(from, to, key);
+    const resultPath = this.getTransferResultPath(from, to, key);
     const transferResult =
-        this._transferInternal(fromBalancePath, toBalancePath, value, context);
+        this.transferInternal(fromBalancePath, toBalancePath, value, context);
     if (transferResult === true) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
@@ -325,21 +326,21 @@ class Functions {
     const execTime = context.execTime;
     const auth = context.auth;
 
-    const resultPath = this._getDepositResultPath(service, user, depositId);
-    const depositCreatedAtPath = this._getDepositCreatedAtPath(service, user, depositId);
+    const resultPath = this.getDepositResultPath(service, user, depositId);
+    const depositCreatedAtPath = this.getDepositCreatedAtPath(service, user, depositId);
     this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp);
     if (timestamp > execTime) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
     const userBalancePath = ChainUtil.getBalancePath(user);
-    const depositAmountPath = this._getDepositAmountPath(service, user);
+    const depositAmountPath = this.getDepositAmountPath(service, user);
     const transferResult =
-        this._transferInternal(userBalancePath, depositAmountPath, value, context);
+        this.transferInternal(userBalancePath, depositAmountPath, value, context);
     if (transferResult === true) {
-      const lockup = this.db.getValue(this._getDepositLockupDurationPath(service)) ||
+      const lockup = this.db.getValue(this.getDepositLockupDurationPath(service)) ||
           DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
-      const expirationPath = this._getDepositExpirationPath(service, user);
+      const expirationPath = this.getDepositExpirationPath(service, user);
       this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), auth, timestamp);
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
@@ -359,11 +360,11 @@ class Functions {
     const execTime = context.execTime;
     const auth = context.auth;
 
-    const depositAmountPath = this._getDepositAmountPath(service, user);
+    const depositAmountPath = this.getDepositAmountPath(service, user);
     const userBalancePath = ChainUtil.getBalancePath(user);
-    const resultPath = this._getWithdrawResultPath(service, user, withdrawId);
-    const withdrawCreatedAtPath = this._getWithdrawCreatedAtPath(service, user, withdrawId);
-    const expireAt = this.db.getValue(this._getDepositExpirationPath(service, user));
+    const resultPath = this.getWithdrawResultPath(service, user, withdrawId);
+    const withdrawCreatedAtPath = this.getWithdrawCreatedAtPath(service, user, withdrawId);
+    const expireAt = this.db.getValue(this.getDepositExpirationPath(service, user));
     this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp);
     if (expireAt > execTime) {
       // Still in lock-up period.
@@ -389,7 +390,7 @@ class Functions {
       }
     }
     const transferResult =
-        this._transferInternal(depositAmountPath, userBalancePath, value, context);
+        this.transferInternal(depositAmountPath, userBalancePath, value, context);
     if (transferResult === true) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
@@ -408,8 +409,8 @@ class Functions {
     const transaction = context.transaction;
     const execTime = context.execTime;
     const auth = context.auth;
-    const resultPath = this._getPaymentPayRecordsResultPath(service, user, recordId);
-    const serviceAdminPath = this._getPaymentServiceAdminPath(service);
+    const resultPath = this.getPaymentPayRecordsResultPath(service, user, recordId);
+    const serviceAdminPath = this.getPaymentServiceAdminPath(service);
     const adminAddr = this.db.getValue(serviceAdminPath);
 
     if (!this.validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime)) {
@@ -435,8 +436,8 @@ class Functions {
     const timestamp = context.timestamp;
     const execTime = context.execTime;
     const auth = context.auth;
-    const resultPath = this._getPaymentClaimRecordsResultPath(service, user, recordId);
-    const serviceAdminPath = this._getPaymentServiceAdminPath(service);
+    const resultPath = this.getPaymentClaimRecordsResultPath(service, user, recordId);
+    const serviceAdminPath = this.getPaymentServiceAdminPath(service);
     const adminAddr = this.db.getValue(serviceAdminPath);
 
     if (!this.validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime)) {
@@ -472,7 +473,7 @@ class Functions {
 
   getLatestShardReportPathFromValuePath(valuePath) {
     const branchPath = ChainUtil.formatPath(valuePath.slice(0, -2));
-    return this._getLatestShardReportPath(branchPath);
+    return this.getLatestShardReportPath(branchPath);
   }
 
   _updateLatestShardReport(value, context) {
@@ -499,7 +500,7 @@ class Functions {
 
   getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
     const branchPath = ChainUtil.formatPath(valuePath.slice(0, -1));
-    return this._getCheckinParentFinalizeResultPath(branchPath, txHash);
+    return this.getCheckinParentFinalizeResultPath(branchPath, txHash);
   }
 
   // TODO(seo): Support refund feature.
@@ -512,10 +513,10 @@ class Functions {
       logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
       return;
     }
-    if (!this._validateCheckinParams(context.params)) {
+    if (!this.validateCheckinParams(context.params)) {
       return;
     }
-    if (!this._validateShardConfig()) {
+    if (!this.validateShardConfig()) {
       return;
     }
     if (!payloadTx || !payloadTx.tx_body || !payloadTx.signature) {
@@ -525,7 +526,7 @@ class Functions {
     const createdTx = Transaction.create(payloadTx.tx_body, payloadTx.signature);
     if (!createdTx ||
         !Transaction.verifyTransaction(createdTx) ||
-        !this._isTransferTx(createdTx.tx_body.operation)) {
+        !this.isTransferTx(createdTx.tx_body.operation)) {
       logger.info('  =>> Invalid payloadTx');
       return;
     }
@@ -549,7 +550,7 @@ class Functions {
 
   getCheckinPayloadPathFromValuePath(valuePath) {
     const branchPath = ChainUtil.formatPath(valuePath.slice(0, -3));
-    return this._getCheckinPayloadPath(branchPath);
+    return this.getCheckinPayloadPath(branchPath);
   }
 
   _closeCheckin(value, context) {
@@ -558,10 +559,10 @@ class Functions {
       logger.info('  =>> Skip sending transfer transaction to the shard blockchain');
       return;
     }
-    if (!this._validateCheckinParams(context.params)) {
+    if (!this.validateCheckinParams(context.params)) {
       return;
     }
-    if (!this._validateShardConfig()) {
+    if (!this.validateShardConfig()) {
       return;
     }
     if (value !== true) {
@@ -575,7 +576,7 @@ class Functions {
     const checkinAmount = _.get(checkinPayload, 'transaction.tx_body.operation.value', 0);
     const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
     const tokenToReceive = checkinAmount * tokenExchRate;
-    if (!this._validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
+    if (!this.validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
       return;
     }
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
@@ -604,7 +605,7 @@ class Functions {
     return signAndSendTx(endpoint, transferTx, ownerPrivateKey);
   }
 
-  _validateCheckinParams(params) {
+  validateCheckinParams(params) {
     const user = params.user_addr;
     const checkInId = params.checkin_id;
     if (!user || !ChainUtil.isCksumAddr(user)) {
@@ -618,7 +619,7 @@ class Functions {
     return true;
   }
 
-  _validateShardConfig() {
+  validateShardConfig() {
     if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
       logger.debug('  =>> Not a shard');
       return false;
@@ -630,7 +631,7 @@ class Functions {
     return true;
   }
 
-  _validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive) {
+  validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive) {
     if (!ChainUtil.isNumber(tokenExchRate) || tokenExchRate <= 0 || checkinAmount <= 0 ||
         tokenToReceive <= 0) {
       logger.debug('  =>> Invalid exchange rate or checkin amount');
@@ -645,7 +646,7 @@ class Functions {
     return true;
   }
 
-  _isTransferTx(txOp) {
+  isTransferTx(txOp) {
     if (txOp.type !== WriteDbOperations.SET_VALUE) {
       return false;
     }
@@ -653,7 +654,7 @@ class Functions {
     return parsedPath.length && parsedPath[0] === PredefinedDbPaths.TRANSFER;
   }
 
-  _transferInternal(fromPath, toPath, value, context) {
+  transferInternal(fromPath, toPath, value, context) {
     const timestamp = context.timestamp;
     const auth = context.auth;
 
@@ -672,84 +673,84 @@ class Functions {
     return true;
   }
 
-  _getServiceAccountAdminPath(accountName) {
+  getServiceAccountAdminPath(accountName) {
     const parsed = accountName.split('|');
     return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/admin`;
   }
 
-  _getServiceAccountAdminAddrPath(accountName, adminAddr) {
+  getServiceAccountAdminAddrPath(accountName, adminAddr) {
     const parsed = accountName.split('|');
     return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/admin/${adminAddr}`;
   }
 
-  _getTransferValuePath(from, to, key) {
+  getTransferValuePath(from, to, key) {
     return `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_VALUE}`;
   }
 
-  _getTransferResultPath(from, to, key) {
+  getTransferResultPath(from, to, key) {
     return (
       `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_RESULT}`);
   }
 
-  _getDepositLockupDurationPath(service) {
+  getDepositLockupDurationPath(service) {
     return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/` +
         `${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
   }
 
-  _getDepositAmountPath(service, user) {
+  getDepositAmountPath(service, user) {
     return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
         `${PredefinedDbPaths.DEPOSIT_VALUE}`);
   }
 
-  _getDepositExpirationPath(service, user) {
+  getDepositExpirationPath(service, user) {
     return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
         `${PredefinedDbPaths.DEPOSIT_EXPIRE_AT}`);
   }
 
-  _getDepositCreatedAtPath(service, user, depositId) {
+  getDepositCreatedAtPath(service, user, depositId) {
     return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
         `${PredefinedDbPaths.DEPOSIT_CREATED_AT}`);
   }
 
-  _getDepositResultPath(service, user, depositId) {
+  getDepositResultPath(service, user, depositId) {
     return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
         `${PredefinedDbPaths.DEPOSIT_RESULT}`);
   }
 
-  _getWithdrawCreatedAtPath(service, user, withdrawId) {
+  getWithdrawCreatedAtPath(service, user, withdrawId) {
     return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
         `${PredefinedDbPaths.WITHDRAW_CREATED_AT}`);
   }
 
-  _getWithdrawResultPath(service, user, withdrawId) {
+  getWithdrawResultPath(service, user, withdrawId) {
     return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
         `${PredefinedDbPaths.WITHDRAW_RESULT}`);
   }
 
-  _getPaymentServiceAdminPath(service) {
+  getPaymentServiceAdminPath(service) {
     return (`${PredefinedDbPaths.PAYMENTS}/${service}/${PredefinedDbPaths.PAYMENTS_CONFIG}/` +
         `${PredefinedDbPaths.PAYMENTS_ADMIN}`);
   }
 
-  _getPaymentBalancePath(service, user) {
+  getPaymentBalancePath(service, user) {
     return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.BALANCE}`);
   }
 
-  _getPaymentPayRecordsResultPath(service, user, recordId) {
+  getPaymentPayRecordsResultPath(service, user, recordId) {
     return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_PAYS}/` +
         `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 
-  _getPaymentClaimRecordsResultPath(service, user, recordId) {
+  getPaymentClaimRecordsResultPath(service, user, recordId) {
     return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_CLAIMS}/` +
         `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 
-  _getLatestShardReportPath(branchPath) {
+  getLatestShardReportPath(branchPath) {
     return `${branchPath}/${ShardingProperties.LATEST}`;
   }
 
-  _getCheckinParentFinalizeResultPath(branchPath, txHash) {
+  getCheckinParentFinalizeResultPath(branchPath, txHash) {
     const shardingPath = this.db.getShardingPath();
     return ChainUtil.appendPath(
         shardingPath,
@@ -757,13 +758,13 @@ class Functions {
             `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`);
   }
 
-  _getCheckinPayloadPath(branchPath) {
+  getCheckinPayloadPath(branchPath) {
     return ChainUtil.appendPath(
         branchPath,
         `${PredefinedDbPaths.CHECKIN_REQUEST}/${PredefinedDbPaths.CHECKIN_PAYLOAD}`);
   }
 
-  _getFullValuePath(parsedPath) {
+  getFullValuePath(parsedPath) {
     return this.db.constructor.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
   }
 }
