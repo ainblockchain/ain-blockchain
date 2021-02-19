@@ -54,6 +54,10 @@ class RuleUtil {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
+  isServAcntName(name) {
+    return this.isString(name) && name.split('|').length === 3;
+  }
+
   isValShardProto(value) {
     const {ShardingProtocols} = require('../common/constants');
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
@@ -68,6 +72,25 @@ class RuleUtil {
       return ainUtil.toChecksumAddress(addr);
     } catch (e) {
       return '';
+    }
+  }
+
+  parseServAcntName(accountName) {
+    if (this.isString(accountName)) {
+      const parsed = accountName.split('|');
+      return [_.get(parsed, '0', null), _.get(parsed, '1', null), _.get(parsed, '2', null)];
+    } else {
+      return [null, null, null];
+    }
+  }
+
+  getBalancePath(addrOrServAcnt) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    if (this.isServAcntName(addrOrServAcnt)) {
+      const parsed = this.parseServAcntName(addrOrServAcnt);
+      return `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/${PredefinedDbPaths.BALANCE}`;
+    } else {
+      return `/${PredefinedDbPaths.ACCOUNTS}/${addrOrServAcnt}/${PredefinedDbPaths.BALANCE}`;
     }
   }
 
