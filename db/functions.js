@@ -211,8 +211,8 @@ class Functions {
     };
   }
 
-  setValueOrLog(valuePath, value, auth, timestamp) {
-    const result = this.db.setValue(valuePath, value, auth, timestamp);
+  setValueOrLog(valuePath, value, auth, timestamp, transaction = null) {
+    const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
     if (result !== true) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -251,18 +251,20 @@ class Functions {
    * service-related native functions such as payments, deposit, and withdraw.
    */
   setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
-    const transferPath = this.getTransferValuePath(from, to, timestamp);
-    const transferResult = this.setValueOrLog(transferPath, value, auth, timestamp);
     if (ChainUtil.isServAcntName(to)) {
       const serviceAccountAdminPath = this.getServiceAccountAdminPath(to);
       const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
       if (serviceAccountAdmin === null) {
         // set admin as the from address of the original transaction
         const serviceAccountAdminAddrPath = this.getServiceAccountAdminAddrPath(to, transaction.address);
-        this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
+        const adminSetupResult = this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
+        if (adminSetupResult !== true) {
+          return;
+        }
       }
     }
-    return transferResult;
+    const transferPath = this.getTransferValuePath(from, to, timestamp);
+    return this.setValueOrLog(transferPath, value, auth, timestamp, transaction);
   }
 
   /**
