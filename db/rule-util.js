@@ -75,12 +75,22 @@ class RuleUtil {
     }
   }
 
+  parseServAcntName(accountName) {
+    if (this.isString(accountName)) {
+      const parsed = accountName.split('|');
+      return [_.get(parsed, '0', null), _.get(parsed, '1', null), _.get(parsed, '2', null)];
+    } else {
+      return [null, null, null];
+    }
+  }
+
   getBalancePath(addrOrServAcnt) {
+    const { PredefinedDbPaths } = require('../common/constants');
     if (this.isServAcntName(addrOrServAcnt)) {
       const parsed = addrOrServAcnt.split('|');
-      return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/balance`;
+      return `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/${PredefinedDbPaths.BALANCE}`;
     } else {
-      return `/accounts/${addrOrServAcnt}/balance`;
+      return `/${PredefinedDbPaths.ACCOUNTS}/${addrOrServAcnt}/${PredefinedDbPaths.BALANCE}`;
     }
   }
 

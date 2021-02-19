@@ -665,13 +665,15 @@ class Functions {
   }
 
   getServiceAccountAdminPath(accountName) {
-    const parsed = accountName.split('|');
-    return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/admin`;
+    const parsed = ChainUtil.parseServAcntName(accountName);
+    return `${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/` +
+        `${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}`;
   }
 
   getServiceAccountAdminAddrPath(accountName, adminAddr) {
-    const parsed = accountName.split('|');
-    return `/service_accounts/${parsed[0]}/${parsed[1]}/${parsed[2]}/admin/${adminAddr}`;
+    const parsed = ChainUtil.parseServAcntName(accountName);
+    return `${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/` +
+        `${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}/${adminAddr}`;
   }
 
   getTransferValuePath(from, to, key) {
