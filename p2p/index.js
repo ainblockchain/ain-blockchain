@@ -159,12 +159,12 @@ class P2pClient {
           logger.debug(`Updated MANAGED peers info: ` +
             `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
         }
-        if (node.status === BlockchainNodeStatus.STARTING) {
-          node.status = BlockchainNodeStatus.SYNCING;
+        if (node.state === BlockchainNodeStatus.STARTING) {
+          node.state = BlockchainNodeStatus.SYNCING;
           if (parsedMsg.numLivePeers === 0) {
             const lastBlockWithoutProposal = node.init(true);
             await this.server.tryInitializeShard();
-            node.status = BlockchainNodeStatus.SERVING;
+            node.state = BlockchainNodeStatus.SERVING;
             this.server.consensus.init(lastBlockWithoutProposal);
           } else {
             // Consensus will be initialized after syncing with peers
@@ -276,7 +276,7 @@ class P2pClient {
                 // TODO(lia): ask the tracker server for another peer.
                 // XXX(minsu): Need to more discussion about this.
                 logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-                this.server.node.status = BlockchainNodeStatus.SERVING;
+                this.server.node.state = BlockchainNodeStatus.SERVING;
                 this.server.consensus.init();
                 if (this.server.consensus.isRunning()) {
                   this.server.consensus.catchUp(data.catchUpInfo);
@@ -289,11 +289,11 @@ class P2pClient {
           if (this.server.node.mergeChainSegment(data.chainSegment)) {
             if (data.number === this.server.node.bc.lastBlockNumber()) {
               // All caught up with the peer
-              if (this.server.node.status !== BlockchainNodeStatus.SERVING) {
+              if (this.server.node.state !== BlockchainNodeStatus.SERVING) {
                 // Regard this situation as if you're synced.
                 // TODO(lia): ask the tracker server for another peer.
                 logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-                this.server.node.status = BlockchainNodeStatus.SERVING;
+                this.server.node.state = BlockchainNodeStatus.SERVING;
               }
               if (this.server.consensus.status === ConsensusStatus.STARTING) {
                 this.server.consensus.init();
