@@ -20,7 +20,7 @@ const {
   COMCOM_HOST_EXTERNAL_IP,
   COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
-  BlockchainNodeStatus,
+  BlockchainNodeStates,
   PredefinedDbPaths,
   WriteDbOperations,
   GenesisSharding,
@@ -305,7 +305,7 @@ class P2pServer {
           case MessageTypes.CONSENSUS:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
-            if (this.node.state === BlockchainNodeStatus.SERVING) {
+            if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
@@ -318,7 +318,7 @@ class P2pServer {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               return;
             }
-            if (this.node.state !== BlockchainNodeStatus.SERVING) {
+            if (this.node.state !== BlockchainNodeStates.SERVING) {
               logger.debug(`[${LOG_HEADER}] Not ready to process transactions.\n` +
                   `My node status is now ${this.node.state}.`);
               return;
@@ -355,7 +355,7 @@ class P2pServer {
             if (this.node.bc.chain.length === 0) {
               return;
             }
-            if (this.node.state !== BlockchainNodeStatus.SERVING) {
+            if (this.node.state !== BlockchainNodeStates.SERVING) {
               logger.debug(`[${LOG_HEADER}] Not ready to accept chain segment request.\n` +
                   `My node status is now ${this.node.state}.`);
               return;
