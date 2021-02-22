@@ -52,12 +52,16 @@ class P2pClient {
     this.maxInbound = Math.min(numInbound, MAX_INBOUND_LIMIT);
   }
 
-  getConnectionInfo() {
+  getConnectionStatus() {
+    const incomingPeers = Object.keys(this.server.inbound);
+    const outgoingPeers = Object.keys(this.outbound);
     return {
-      maxOutbound: this.maxOutbound,
       maxInbound: this.maxInbound,
-      incomingPeers: Object.keys(this.server.inbound),
-      outgoingPeers: Object.keys(this.outbound)
+      maxOutbound: this.maxOutbound,
+      numInbound: incomingPeers.length,
+      numOutbound: outgoingPeers.length,
+      incomingPeers: incomingPeers,
+      outgoingPeers: outgoingPeers,
     };
   }
 
@@ -108,7 +112,7 @@ class P2pClient {
         }),
         port: PORT,
       },
-      connectionInfo: this.getConnectionInfo()
+      connectionStatus: this.getConnectionStatus()
     }
   }
 
