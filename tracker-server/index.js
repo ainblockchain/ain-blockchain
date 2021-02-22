@@ -5,6 +5,7 @@ const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
 const { v4: uuidv4 } = require('uuid');
+const ChainUtil = require('../common/chain-util');
 const logger = require('../logger')('TRACKER_SERVER');
 
 const P2P_PORT = process.env.P2P_PORT || 5000;
@@ -25,10 +26,23 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/network_status', (req, res, next) => {
+  const result = getNetworkStatus();
   res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ network_info: getNetworkInfo() })
+      .send(result)
       .end();
+});
+
+// Exports metrics for Prometheus.
+app.get('/metrics', (req, res, next) => {
+  const status = {
+    numAliveNodes: getNumAliveNodes(),
+  };
+  const result = ChainUtil.objToMetrics(status);
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send(result)
+    .end();
 });
 
 const trackerServer = app.listen(PORT, () => {
@@ -95,13 +109,13 @@ server.on('connection', (ws) => {
     logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 
     let newManagedPeerInfoList = [];
-    if (nodeInfo.networkStatus.connectionInfo.outgoingPeers.length <
-        nodeInfo.networkStatus.connectionInfo.maxOutbound) {
+    if (nodeInfo.networkStatus.connectionStatus.outgoingPeers.length <
+        nodeInfo.networkStatus.connectionStatus.maxOutbound) {
       newManagedPeerInfoList = assignRandomPeers(getPeerCandidates(nodeInfo.address));
     }
     const msgToNode = {
       newManagedPeerInfoList,
-      numLivePeers: numAliveNodes() - 1   // except for me.
+      numLivePeers: getNumAliveNodes() - 1   // except for me.
     };
     logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
         `${JSON.stringify(msgToNode, null, 2)}`);
@@ -130,11 +144,11 @@ function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
 
-function numAliveNodes() {
+function getNumAliveNodes() {
   return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
 }
 
-function numNodes() {
+function getNumNodes() {
   return Object.keys(peerNodes).length;
 }
 
@@ -156,9 +170,9 @@ function getPeerCandidates(myself) {
   Object.values(peerNodes).forEach(nodeInfo => {
     if (nodeInfo.address !== myself &&
         nodeInfo.isAlive === true &&
-        !nodeInfo.networkStatus.connectionInfo.incomingPeers.includes(myself) &&
-        nodeInfo.networkStatus.connectionInfo.incomingPeers.length <
-            nodeInfo.networkStatus.connectionInfo.maxInbound) {
+        !nodeInfo.networkStatus.connectionStatus.incomingPeers.includes(myself) &&
+        nodeInfo.networkStatus.connectionStatus.incomingPeers.length <
+            nodeInfo.networkStatus.connectionStatus.maxInbound) {
       candidates.push({
         address: nodeInfo.address,
         url: nodeInfo.networkStatus.p2p.url
@@ -169,7 +183,7 @@ function getPeerCandidates(myself) {
 }
 
 function printNodesInfo() {
-  logger.info(`Updated [peerNodes]: Number of nodes: (${numAliveNodes()}/${numNodes()})`);
+  logger.info(`Updated [peerNodes]: Number of nodes: (${getNumAliveNodes()}/${getNumNodes()})`);
   const nodeInfoList = Object.values(peerNodes).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
@@ -182,8 +196,8 @@ function printNodesInfo() {
         `Disk: ${diskAvailableMb}MB,\n` +
         `Memory: ${memoryFreeMb}MB,\n` +
         `Peers:\n` +
-        `  outbound(${nodeInfo.networkStatus.connectionInfo.outgoingPeers}),\n` +
-        `  inbound(${nodeInfo.networkStatus.connectionInfo.incomingPeers}),\n` +
+        `  outbound(${nodeInfo.networkStatus.connectionStatus.outgoingPeers}),\n` +
+        `  inbound(${nodeInfo.networkStatus.connectionStatus.incomingPeers}),\n` +
         `UpdatedAt: ${nodeInfo.updatedAt}`);
   });
 }
@@ -210,9 +224,9 @@ function getNodeLocation(ip) {
   };
 }
 
-function getNetworkInfo() {
+function getNetworkStatus() {
   return {
-    numAliveNodes: numAliveNodes() ,
+    numAliveNodes: getNumAliveNodes(),
     peerNodes
   };
 }
