@@ -5,7 +5,7 @@ const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
   CURRENT_PROTOCOL_VERSION,
-  BlockchainNodeStatus,
+  BlockchainNodeStates,
   ReadDbOperations,
   PredefinedDbPaths,
   TransactionStatus,
@@ -386,7 +386,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     net_syncing: function(args, done) {
       // TODO(lia): return { starting, latest } with block numbers if the node is currently syncing.
-      done(null, addProtocolVersion({result: p2pServer.node.state === BlockchainNodeStatus.SYNCING}));
+      done(null, addProtocolVersion(
+          {result: p2pServer.node.state === BlockchainNodeStates.SYNCING}));
     },
 
     net_getNetworkId: function(args, done) {

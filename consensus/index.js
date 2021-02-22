@@ -216,7 +216,7 @@ class Consensus {
         // FIXME(lia): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
-        // this.node.state = BlockchainNodeStatus.SYNCING;
+        // this.node.state = BlockchainNodeStates.SYNCING;
         Object.values(this.server.client.outbound).forEach((socket) => {
           this.server.client.requestChainSegment(socket, this.node.bc.lastBlock());
         });
