@@ -113,7 +113,7 @@ class P2pServer {
       this.consensus.getState(),
       {
         longestNotarizedChainTipsSize: this.consensus.blockPool ?
-          this.consensus.blockPool.longestNotarizedChainTips.length : 0
+            this.consensus.blockPool.longestNotarizedChainTips.length : 0
       }
     );
   }
@@ -130,6 +130,7 @@ class P2pServer {
     return {
       address: this.getNodeAddress(),
       state: this.node.state,
+      stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.nonce,
       lastBlockNumber: this.node.bc.lastBlockNumber(),
       dbStatus: {
