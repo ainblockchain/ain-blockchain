@@ -1069,7 +1069,12 @@ class Consensus {
       health =
           (this.state.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
     }
-    return {health, status: this.status, epoch: this.state.epoch};
+    return {
+      health,
+      state: this.status,
+      stateNumeric: Object.keys(ConsensusStatus).indexOf(this.status),
+      epoch: this.state.epoch
+    };
   }
 
   static selectProposer(seed, validators) {
