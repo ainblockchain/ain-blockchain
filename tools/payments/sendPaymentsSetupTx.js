@@ -32,10 +32,8 @@ function buildPaymentsSetupTxBody(address, timestamp) {
         },
         {
           type: 'SET_VALUE',
-          ref: `/payments/test_service/config/`,
-          value: {
-            admin: address
-          }
+          ref: `/payments/test_service/config/admin/${address}`,
+          value: true
         }
       ]
     },
