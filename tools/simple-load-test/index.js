@@ -4,7 +4,9 @@
  Please modify numberOfTransactions & duration
  Example command line: 'node index.js'
  */
-const Ain = require('@ainblockchain/ain-js').default;
+const _ = require('lodash');
+const axios = require('axios');
+const {signTx} = require('../util');
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const testPath = '/apps/loadtest';
 const targetUrl = 'http://localhost:8081';
@@ -12,12 +14,22 @@ const ainPrivateKey = '4207f5dcacb1b601d3a1f8cb10afaca158f6ebe383c0b30d02b39f8d2
 const ainAddress = '0xF2be7f1356347a8960630c112AcB6Da61eE94632';
 const numberOfTransactions = 300;
 const duration = 10; // 60: 1min
-const ain = new Ain(targetUrl);
+const TIMEOUT_MS = 10 * 1000;
 
-function initAinJs() {
-  ain.wallet.add(ainPrivateKey);
-  ain.wallet.setDefaultAccount(ainAddress);
-  ain.provider.setDefaultTimeoutMs(60 * 1000);
+function sendTx(endpointUrl, signedTx) {
+  return axios.post(`${endpointUrl}/json-rpc`, {
+    method: 'ain_sendSignedTransaction',
+    params: signedTx,
+    jsonrpc: '2.0',
+    id: 0,
+  }, {
+    timeout: TIMEOUT_MS,
+  }).then((result) => {
+    return _.get(result, 'data.result.result.result', false);
+  }).catch((err) => {
+    console.error(err);
+    return false;
+  });
 }
 
 async function initPermission() {
@@ -38,6 +50,7 @@ async function initPermission() {
         },
       },
     },
+    timestamp: Date.now(),
     nonce: -1,
   };
   const setRuleTx = {
@@ -48,6 +61,7 @@ async function initPermission() {
         '.write': true,
       },
     },
+    timestamp: Date.now(),
     nonce: -1,
   };
   const setValueTx = {
@@ -56,14 +70,20 @@ async function initPermission() {
       ref: testPath,
       value: 0,
     },
+    timestamp: Date.now(),
     nonce: -1,
   };
-  await ain.sendTransactionBatch([
-    setOwnerTx,
-    setRuleTx,
-    setValueTx,
-  ]);
-
+  const {signedTx: signedSetOwnerTx} = signTx(setOwnerTx, ainPrivateKey);
+  const {signedTx: signedSetRuleTx} = signTx(setRuleTx, ainPrivateKey);
+  const {signedTx: signedSetValueTx} = signTx(setValueTx, ainPrivateKey);
+  const promiseList = [];
+  promiseList.push(sendTx(targetUrl, signedSetOwnerTx));
+  promiseList.push(sendTx(targetUrl, signedSetRuleTx));
+  promiseList.push(sendTx(targetUrl, signedSetValueTx));
+  const resultList = await Promise.all(promiseList);
+  if (resultList.includes(false)) {
+    throw Error(`Error while init permission`);
+  }
   await delay(10 * 1000);
 }
 
@@ -95,15 +115,14 @@ async function sendTxs() {
         new Promise((resolve, reject) => {
           setTimeout((txTimestamp) => {
             baseTx.timestamp = txTimestamp;
-            ain.sendTransaction(baseTx).then((result) => {
-              if (!result || !result.hasOwnProperty('tx_hash')) {
-                throw Error(`Wrong format`);
-              } else if (!result.result) {
-                throw Error('result !== true');
+            const {signedTx} = signTx(baseTx, ainPrivateKey);
+            sendTx(targetUrl, signedTx).then((result) => {
+              if (result === true) {
+                sendCnt++;
               }
-              sendCnt++;
-              resolve(true);
+              resolve(result);
             }).catch((err) => {
+              console.error(err);
               resolve(false);
             });
           }, 0, timestamp + i);
@@ -125,7 +144,6 @@ async function main() {
   if (process.argv.length !== 2) {
     usage();
   }
-  initAinJs();
   console.log(`Initialize permission (${testPath})`);
   await initPermission();
   console.log(`Start to send transactions (${numberOfTransactions})`);
