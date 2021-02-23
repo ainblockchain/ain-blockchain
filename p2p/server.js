@@ -119,10 +119,14 @@ class P2pServer {
   }
 
   getBlockStatus() {
+    const timestamp = this.node.bc.lastBlockTimestamp();
+    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
+    const elapsedTimeMs = (timestamp === genesisTime) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
       epoch: this.node.bc.lastBlockEpoch(),
-      timestamp: this.node.bc.lastBlockTimestamp(),
+      timestamp,
+      elapsedTimeMs,
     };
   }
 
@@ -132,7 +136,6 @@ class P2pServer {
       state: this.node.state,
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.nonce,
-      lastBlockNumber: this.node.bc.lastBlockNumber(),
       dbStatus: {
         treeSize: this.node.db.getTreeSize('/'),
         proof: this.node.db.getProof('/'),
