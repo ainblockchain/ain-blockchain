@@ -216,7 +216,7 @@ class Consensus {
         // FIXME(lia): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
-        // this.node.status = BlockchainNodeStatus.SYNCING;
+        // this.node.state = BlockchainNodeStates.SYNCING;
         Object.values(this.server.client.outbound).forEach((socket) => {
           this.server.client.requestChainSegment(socket, this.node.bc.lastBlock());
         });
@@ -1069,7 +1069,12 @@ class Consensus {
       health =
           (this.state.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
     }
-    return {health, status: this.status, epoch: this.state.epoch};
+    return {
+      health,
+      state: this.status,
+      stateNumeric: Object.keys(ConsensusStatus).indexOf(this.status),
+      epoch: this.state.epoch
+    };
   }
 
   static selectProposer(seed, validators) {

@@ -5,11 +5,17 @@ const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
 const { v4: uuidv4 } = require('uuid');
+const disk = require('diskusage');
+const os = require('os');
+const v8 = require('v8');
+const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const logger = require('../logger')('TRACKER_SERVER');
 
+const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
+
 const peerNodes = {};
 const wsList = {};
 
@@ -25,8 +31,8 @@ app.get('/', (req, res, next) => {
       .end();
 });
 
-app.get('/network_status', (req, res, next) => {
-  const result = getNetworkStatus();
+app.get('/status', (req, res, next) => {
+  const result = getStatus();
   res.status(200)
       .set('Content-Type', 'application/json')
       .send(result)
@@ -35,14 +41,20 @@ app.get('/network_status', (req, res, next) => {
 
 // Exports metrics for Prometheus.
 app.get('/metrics', (req, res, next) => {
-  const status = {
-    numAliveNodes: getNumAliveNodes(),
-  };
+  const status = getStatus();
   const result = ChainUtil.objToMetrics(status);
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
     .end();
+});
+
+app.get('/network_status', (req, res, next) => {
+  const result = getNetworkStatus();
+  res.status(200)
+      .set('Content-Type', 'application/json')
+      .send(result)
+      .end();
 });
 
 const trackerServer = app.listen(PORT, () => {
@@ -228,5 +240,79 @@ function getNetworkStatus() {
   return {
     numAliveNodes: getNumAliveNodes(),
     peerNodes
+  };
+}
+
+function getStatus() {
+  return {
+    networkStatus: {
+      numAliveNodes: getNumAliveNodes(),
+    },
+    memoryStatus: getMemoryUsage(),
+    diskStatus: getDiskUsage(),
+    runtimeInfo: getRuntimeInfo(),
+    protocolInfo: getProtocolInfo(),
+  };
+}
+
+function getDiskUsage() {
+  try {
+    const diskUsage = disk.checkSync(DISK_USAGE_PATH);
+    const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
+    return Object.assign({}, diskUsage, { used });
+  } catch (err) {
+    logger.error(err);
+    return {};
+  }
+}
+
+function getMemoryUsage() {
+  const free = os.freemem();
+  const total = os.totalmem();
+  const usage = total - free;
+  return {
+    os: {
+      free,
+      usage,
+      total,
+    },
+    heap: process.memoryUsage(),
+    heapStats: v8.getHeapStatistics(),
+  };
+}
+
+function getRuntimeInfo() {
+  return {
+    process: {
+      version: process.version,
+      platform: process.platform,
+      pid: process.pid,
+      uptime: Math.floor(process.uptime()),
+      v8Version: process.versions.v8,
+    },
+    os: {
+      hostname: os.hostname(),
+      type: os.type(),
+      release: os.release(),
+      // See: https://github.com/ainblockchain/ain-blockchain/issues/181
+      // version: os.version(),
+      uptime: os.uptime(),
+    },
+    env: {
+      NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
+      GENESIS_CONFIGS_DIR: process.env.GENESIS_CONFIGS_DIR,
+      MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
+      ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+      P2P_PORT: process.env.P2P_PORT,
+      PORT: process.env.PORT,
+      HOSTING_ENV: process.env.HOSTING_ENV,
+      DEBUG: process.env.DEBUG,
+    },
+  };
+}
+
+function getProtocolInfo() {
+  return {
+    currentVersion: CURRENT_PROTOCOL_VERSION,
   };
 }

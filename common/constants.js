@@ -47,7 +47,7 @@ const MessageTypes = {
  *
  * @enum {string}
  */
-const BlockchainNodeStatus = {
+const BlockchainNodeStates = {
   STARTING: 'STARTING',
   SYNCING: 'SYNCING',
   SERVING: 'SERVING',
@@ -582,7 +582,7 @@ module.exports = {
   LIGHTWEIGHT,
   HASH_DELIMITER,
   MessageTypes,
-  BlockchainNodeStatus,
+  BlockchainNodeStates,
   PredefinedDbPaths,
   TokenProperties,
   AccountProperties,
