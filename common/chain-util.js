@@ -268,16 +268,17 @@ class ChainUtil {
   }
 
   static objToMetricsRecursive(obj, keyStack) {
-    if (ChainUtil.isArray(obj)) {
-      return {};  // Skip array structures.
-    }
     if (!ChainUtil.isDict(obj)) {
-      if (!ChainUtil.isNumber(obj)) {
-        return {};  // Skip non-numeric values.
+      if (ChainUtil.isNumber(obj)) {
+        return {
+          [ChainUtil.keyStackToMetricName(keyStack)]: obj
+        };
+      } else if (ChainUtil.isBool(obj)) {
+        return {
+          [ChainUtil.keyStackToMetricName(keyStack)]: obj ? 1 : 0  // Convert to a numeric value
+        };
       }
-      return {
-        [ChainUtil.keyStackToMetricName(keyStack)]: obj
-      };
+      return {};  // Skip non-numeric / non-boolean values.
     }
     const metrics = {};
     for (const key in obj) {

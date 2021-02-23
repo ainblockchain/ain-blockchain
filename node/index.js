@@ -4,7 +4,7 @@ const logger = require('../logger')('NODE');
 const {
   PORT,
   ACCOUNT_INDEX,
-  BlockchainNodeStatus,
+  BlockchainNodeStates,
   PredefinedDbPaths,
   ShardingProperties,
   ShardingProtocols,
@@ -43,7 +43,7 @@ class BlockchainNode {
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;
-    this.status = BlockchainNodeStatus.STARTING;
+    this.state = BlockchainNodeStates.STARTING;
   }
 
   // For testing purpose only.
@@ -78,7 +78,7 @@ class BlockchainNode {
     this.nonce = this.getNonce();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
     this.db.executeTransactionList(this.tp.getValidTransactions());
-    this.status = BlockchainNodeStatus.SYNCING;
+    this.state = BlockchainNodeStates.SYNCING;
     return lastBlockWithoutProposal;
   }
 
@@ -321,9 +321,9 @@ class BlockchainNode {
           logger, 3,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
-    if (this.status !== BlockchainNodeStatus.SERVING) {
+    if (this.state !== BlockchainNodeStates.SERVING) {
       return ChainUtil.logAndReturnError(
-          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.status}`, 0);
+          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const result = this.executeOrRollbackTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
@@ -372,11 +372,11 @@ class BlockchainNode {
 
     if (!chainSegment || chainSegment.length === 0) {
       logger.info(`[${LOG_HEADER}] Empty chain segment`);
-      if (this.status !== BlockchainNodeStatus.SERVING) {
+      if (this.state !== BlockchainNodeStates.SERVING) {
         // Regard this situation as if you're synced.
         // TODO(lia): ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-        this.status = BlockchainNodeStatus.SERVING;
+        this.state = BlockchainNodeStates.SERVING;
       }
       return false;
     }
@@ -387,11 +387,11 @@ class BlockchainNode {
     }
     if (chainSegment[chainSegment.length - 1].number === this.bc.lastBlockNumber()) {
       logger.info(`[${LOG_HEADER}] Received chain is at the same block number`);
-      if (this.status !== BlockchainNodeStatus.SERVING) {
+      if (this.state !== BlockchainNodeStates.SERVING) {
         // Regard this situation as if you're synced.
         // TODO(lia): ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-        this.status = BlockchainNodeStatus.SERVING;
+        this.state = BlockchainNodeStates.SERVING;
       }
       return false;
     }

@@ -20,7 +20,7 @@ const {
   COMCOM_HOST_EXTERNAL_IP,
   COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
-  BlockchainNodeStatus,
+  BlockchainNodeStates,
   PredefinedDbPaths,
   WriteDbOperations,
   GenesisSharding,
@@ -113,26 +113,30 @@ class P2pServer {
       this.consensus.getState(),
       {
         longestNotarizedChainTipsSize: this.consensus.blockPool ?
-          this.consensus.blockPool.longestNotarizedChainTips.length : 0
+            this.consensus.blockPool.longestNotarizedChainTips.length : 0
       }
     );
   }
 
   getBlockStatus() {
+    const timestamp = this.node.bc.lastBlockTimestamp();
+    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
+    const elapsedTimeMs = (timestamp === genesisTime) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
       epoch: this.node.bc.lastBlockEpoch(),
-      timestamp: this.node.bc.lastBlockTimestamp(),
+      timestamp,
+      elapsedTimeMs,
     };
   }
 
   getNodeStatus() {
     return {
       address: this.getNodeAddress(),
-      status: this.node.status,
+      state: this.node.state,
+      stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.nonce,
-      lastBlockNumber: this.node.bc.lastBlockNumber(),
-      db: {
+      dbStatus: {
         treeSize: this.node.db.getTreeSize('/'),
         proof: this.node.db.getProof('/'),
       },
@@ -305,7 +309,7 @@ class P2pServer {
           case MessageTypes.CONSENSUS:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
-            if (this.node.status === BlockchainNodeStatus.SERVING) {
+            if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
@@ -318,9 +322,9 @@ class P2pServer {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               return;
             }
-            if (this.node.status !== BlockchainNodeStatus.SERVING) {
+            if (this.node.state !== BlockchainNodeStates.SERVING) {
               logger.debug(`[${LOG_HEADER}] Not ready to process transactions.\n` +
-                  `My node status is now ${this.node.status}.`);
+                  `My node status is now ${this.node.state}.`);
               return;
             }
             const tx = data.transaction;
@@ -355,9 +359,9 @@ class P2pServer {
             if (this.node.bc.chain.length === 0) {
               return;
             }
-            if (this.node.status !== BlockchainNodeStatus.SERVING) {
+            if (this.node.state !== BlockchainNodeStates.SERVING) {
               logger.debug(`[${LOG_HEADER}] Not ready to accept chain segment request.\n` +
-                  `My node status is now ${this.node.status}.`);
+                  `My node status is now ${this.node.state}.`);
               return;
             }
             // Send a chunk of 20 blocks from your blockchain to the requester.
