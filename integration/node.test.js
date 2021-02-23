@@ -2567,6 +2567,35 @@ describe('Blockchain Node', () => {
         waitUntilTxFinalized(serverList, body.result.tx_hash);
       });
 
+      it('original admin can add another admin', () => {
+        const configPath = `/payments/test_service/config/admin/${serviceUser}`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: configPath,
+          value: true
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(0);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const admins = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/payments/test_service/config/admin`).body.toString('utf-8')).result;
+        assert.deepEqual(admins, {
+          [serviceAdmin]: true,
+          [serviceUser]: true
+        });
+      });
+
+      it('original admin can remove other admin', () => {
+        const configPath = `/payments/test_service/config/admin/${serviceUser}`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: configPath,
+          value: null
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(0);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const admins = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/payments/test_service/config/admin`).body.toString('utf-8')).result;
+        assert.deepEqual(admins, { [serviceAdmin]: true });
+      });
+
       it('non-admin cannot overwrite payment config', () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
               ref: `/payments/test_service/config`,
