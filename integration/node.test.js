@@ -2558,13 +2558,42 @@ describe('Blockchain Node', () => {
             },
             {
               type: 'SET_VALUE',
-              ref: configPath,
-              value: { admin: serviceAdmin }
+              ref: `${configPath}/admin/${serviceAdmin}`,
+              value: true
             }
           ]
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(0);
         waitUntilTxFinalized(serverList, body.result.tx_hash);
+      });
+
+      it('original admin can add another admin', () => {
+        const configPath = `/payments/test_service/config/admin/${serviceUser}`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: configPath,
+          value: true
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(0);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const admins = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/payments/test_service/config/admin`).body.toString('utf-8')).result;
+        assert.deepEqual(admins, {
+          [serviceAdmin]: true,
+          [serviceUser]: true
+        });
+      });
+
+      it('original admin can remove other admin', () => {
+        const configPath = `/payments/test_service/config/admin/${serviceUser}`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: configPath,
+          value: null
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(0);
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const admins = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/payments/test_service/config/admin`).body.toString('utf-8')).result;
+        assert.deepEqual(admins, { [serviceAdmin]: true });
       });
 
       it('non-admin cannot overwrite payment config', () => {
@@ -2579,8 +2608,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
               ref: `/payment/test_service/${serviceUser}/pays/key1`,
               value: {
-                amount: 100,
-                id: 'key1'
+                amount: 100
               }
             }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
@@ -2591,8 +2619,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
-            amount: 0,
-            id: 'key1'
+            amount: 0
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
@@ -2603,20 +2630,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
-            amount: 'test',
-            id: 'key1'
-          }
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
-      });
-
-      it('invalid id value', () => {
-        const paymentRef = `/payments/test_service/${serviceUser}/pays/key1`;
-        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: paymentRef,
-          value: {
-            amount: 10,
-            id: 'key2'
+            amount: 'test'
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
@@ -2629,8 +2643,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
-            amount: adminBalance + 1,
-            id: 'key1'
+            amount: adminBalance + 1
           }
         }}).body.toString('utf-8'));
         waitUntilTxFinalized(serverList, body.result.tx_hash);
@@ -2647,8 +2660,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
-            amount,
-            id: 'key2'
+            amount
           }
         }}).body.toString('utf-8'));
         waitUntilTxFinalized(serverList, body.result.tx_hash);
@@ -2673,8 +2685,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
               ref: `/payments/test_service/${serviceUser}/claims/key1`,
               value: {
-                amount: 100,
-                id: 'key1'
+                amount: 100
               }
             }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
@@ -2688,8 +2699,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
-            amount: paymentBalance + 1,
-            id: 'key1'
+            amount: paymentBalance + 1
           }
         }}).body.toString('utf-8'));
         waitUntilTxFinalized(serverList, body.result.tx_hash);
@@ -2708,8 +2718,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentClaimRef,
           value: {
-            amount: paymentBalance,
-            id: 'key2'
+            amount: paymentBalance
           }
         }}).body.toString('utf-8'));
         waitUntilTxFinalized(serverList, body.result.tx_hash);

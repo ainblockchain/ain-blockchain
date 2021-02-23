@@ -403,17 +403,15 @@ class Functions {
     const execTime = context.execTime;
     const auth = context.auth;
     const resultPath = this.getPaymentPayRecordsResultPath(service, user, recordId);
-    const serviceAdminPath = this.getPaymentServiceAdminPath(service);
-    const adminAddr = this.db.getValue(serviceAdminPath);
 
-    if (!this.validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime)) {
+    if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
     const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, user);
     const transferResult = this.setServiceAccountTransferOrLog(
-        adminAddr, userServiceAccountName, value.amount, auth, timestamp, transaction);
+      transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
@@ -430,17 +428,15 @@ class Functions {
     const execTime = context.execTime;
     const auth = context.auth;
     const resultPath = this.getPaymentClaimRecordsResultPath(service, user, recordId);
-    const serviceAdminPath = this.getPaymentServiceAdminPath(service);
-    const adminAddr = this.db.getValue(serviceAdminPath);
 
-    if (!this.validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime)) {
+    if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
     const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, user);
     const transferResult = this.setServiceAccountTransferOrLog(
-        userServiceAccountName, adminAddr, value.amount, auth, timestamp, transaction);
+        userServiceAccountName, transaction.address, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
@@ -448,14 +444,11 @@ class Functions {
     }
   }
 
-  validatePaymentRecord(adminAddr, recordId, value, timestamp, execTime) {
+  validatePaymentRecord(adminAddr, value, timestamp, execTime) {
     if (!adminAddr) {
       return false;
     }
     if (!value || !value.amount || !ChainUtil.isNumber(value.amount)) {
-      return false;
-    }
-    if (value.id !== recordId) {
       return false;
     }
     if (timestamp > execTime) {

@@ -81,15 +81,16 @@
   "payments": {
     "$service": {
       "config": {
-        ".write": "evalOwner('/payments/' + $service + '/config', 'write_owner', auth) && data === null && util.isDict(newData)"
+        "admin": {
+          "$admin_addr": {
+            ".write": "evalOwner('/payments/' + $service + '/config', 'write_owner', auth) && (newData === true || newData === null)"
+          }
+        }
       },
       "$user_addr": {
-        "balance": {
-          ".write": "auth.fid === '_pay' || auth.fid === '_claim'"
-        },
         "claims": {
           "$record_id": {
-            ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
+            ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
             "result": {
               ".write": "auth.fid === '_claim'"
             }
@@ -97,7 +98,7 @@
         },
         "pays": {
           "$record_id": {
-            ".write": "util.isCksumAddr(auth.addr) && auth.addr === getValue('/payments/' + $service + '/config/admin') && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && newData.id === $record_id",
+            ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
             "result": {
               ".write": "auth.fid === '_pay'"
             }
