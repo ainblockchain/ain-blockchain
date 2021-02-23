@@ -83,7 +83,7 @@
       "config": {
         "admin": {
           "$admin_addr": {
-            ".write": "evalOwner('/payments/' + $service + '/config', 'write_owner', auth) && util.isBool(newData)"
+            ".write": "evalOwner('/payments/' + $service + '/config', 'write_owner', auth) && (newData === true || newData === null)"
           }
         }
       },
