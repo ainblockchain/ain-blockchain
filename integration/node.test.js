@@ -2558,8 +2558,8 @@ describe('Blockchain Node', () => {
             },
             {
               type: 'SET_VALUE',
-              ref: configPath,
-              value: { admin: serviceAdmin }
+              ref: `${configPath}/admin/${serviceAdmin}`,
+              value: true
             }
           ]
         }}).body.toString('utf-8'));
