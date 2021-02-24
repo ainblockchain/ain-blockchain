@@ -32,7 +32,7 @@ const optionDefinitions = [
     name: 'duration',
     alias: 'd',
     type: Number,
-    description: 'Duration of load test, (60 means 1 min, Default: 60)',
+    description: 'Duration of load test in seconds, (Default: 60)',
     group: 'optional',
   },
   {
