@@ -24,7 +24,7 @@ const optionDefinitions = [
     name: 'target_url',
     alias: 't',
     type: String,
-    description: 'Target AIN URL (ex: http://node.ainetwork.ai:8080)',
+    description: 'Target AIN URL (Default: http://localhost:8081)',
     defaultOption: true,
     group: 'required',
   },
