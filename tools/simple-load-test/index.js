@@ -2,19 +2,62 @@
  For simple load testing
  This tool increases '/apps/loadtest/visit_count'
  Please modify numberOfTransactions & duration
- Example command line: 'node index.js'
+ Usage: 'node index.js --help'
  */
 const _ = require('lodash');
 const axios = require('axios');
+const commandLineArgs = require('command-line-args');
+const getUsage = require('command-line-usage');
 const {signTx} = require('../util');
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const testPath = '/apps/loadtest';
-const targetUrl = 'http://localhost:8081';
 const ainPrivateKey = '4207f5dcacb1b601d3a1f8cb10afaca158f6ebe383c0b30d02b39f8d2060cce3';
 const ainAddress = '0xF2be7f1356347a8960630c112AcB6Da61eE94632';
-const numberOfTransactions = 300;
-const duration = 10; // 60: 1min
 const TIMEOUT_MS = 10 * 1000;
+const optionDefinitions = [
+  {
+    name: 'help',
+    description: 'Display this usage guide.',
+    alias: 'h',
+  },
+  {
+    name: 'target_url',
+    alias: 't',
+    type: String,
+    description: 'Target AIN URL (ex: http://node.ainetwork.ai:8080)',
+    defaultOption: true,
+    group: 'required',
+  },
+  {
+    name: 'duration',
+    alias: 'd',
+    type: Number,
+    description: 'Duration of load test, (60 means 1 min, Default: 60)',
+    group: 'optional',
+  },
+  {
+    name: 'number_txs',
+    alias: 'n',
+    type: Number,
+    description: 'Number of transactions (Default: 300)',
+    group: 'optional',
+  },
+];
+const sections = [
+  {
+    header: 'AIN Simple load test',
+  },
+  {
+    header: 'Required',
+    optionList: optionDefinitions,
+    group: 'required',
+  },
+  {
+    header: 'Optional',
+    optionList: optionDefinitions,
+    group: 'optional',
+  },
+];
 
 function sendTx(endpointUrl, signedTx) {
   return axios.post(`${endpointUrl}/json-rpc`, {
@@ -32,7 +75,7 @@ function sendTx(endpointUrl, signedTx) {
   });
 }
 
-async function initPermission() {
+async function initPermission(targetUrl) {
   const setOwnerTx = {
     operation: {
       type: 'SET_OWNER',
@@ -98,7 +141,7 @@ function makeBaseTransaction() {
   };
 }
 
-async function sendTxs() {
+async function sendTxs(targetUrl, duration, numberOfTransactions) {
   const delayTime = duration / numberOfTransactions * 1000;
   const sendTxPromiseList = [];
   const timestamp = Date.now();
@@ -134,20 +177,20 @@ async function sendTxs() {
   return sendCnt;
 }
 
-function usage() {
-  console.log('Please modify numberOfTransactions & duration according to your test environment.');
-  console.log('Example command line:\n  node index.js\n');
-  process.exit(0);
-}
-
 async function main() {
-  if (process.argv.length !== 2) {
-    usage();
+  const options = commandLineArgs(optionDefinitions);
+  const args = options._all;
+  if (Object.keys(args).includes('help') || !Object.keys(args).includes('target_url')) {
+    console.log(getUsage(sections));
+    process.exit(0);
   }
+  const targetUrl = args.target_url;
+  const duration = args.duration || 60; // 60: 1min
+  const numberOfTransactions = args.number_txs || 300;
   console.log(`Initialize permission (${testPath})`);
-  await initPermission();
+  await initPermission(targetUrl);
   console.log(`Start to send transactions (${numberOfTransactions})`);
-  const sendCnt = await sendTxs();
+  const sendCnt = await sendTxs(targetUrl, duration, numberOfTransactions);
   console.log(`Finish load test! (${sendCnt}/${numberOfTransactions})`);
 }
 
