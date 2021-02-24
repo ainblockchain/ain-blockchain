@@ -25,8 +25,7 @@ const optionDefinitions = [
     alias: 't',
     type: String,
     description: 'Target AIN URL (Default: http://localhost:8081)',
-    defaultOption: true,
-    group: 'required',
+    group: 'optional',
   },
   {
     name: 'duration',
@@ -46,11 +45,6 @@ const optionDefinitions = [
 const sections = [
   {
     header: 'AIN Simple load test',
-  },
-  {
-    header: 'Required',
-    optionList: optionDefinitions,
-    group: 'required',
   },
   {
     header: 'Optional',
@@ -184,7 +178,7 @@ async function main() {
     console.log(getUsage(sections));
     process.exit(0);
   }
-  const targetUrl = args.target_url;
+  const targetUrl = args.target_url || 'http://localhost:8081';
   const duration = args.duration || 60; // 60: 1min
   const numberOfTransactions = args.number_txs || 300;
   console.log(`Initialize permission (${testPath})`);
