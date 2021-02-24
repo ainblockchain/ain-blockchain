@@ -1,7 +1,8 @@
 #!/bin/sh
 
 if [ "$#" -lt 3 ]; then
-    echo "Usage: sh deploy_blockchain_gcp.sh dev lia 0"
+    echo "Usage: sh deploy_blockchain_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards>"
+    echo "Example: sh deploy_blockchain_gcp.sh dev lia 0"
     exit
 fi
 
@@ -21,6 +22,16 @@ echo "PROJECT_ID=$PROJECT_ID"
 
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
+
+# Get confirmation.
+echo
+read -p "Do you want to proceed? >> (y/N) " -n 1 -r
+echo
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+fi
 
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_tracker_gcp.sh setup_blockchain_ubuntu.sh start_tracker_gcp.sh"
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ json_rpc/ genesis-configs/ logger/ node/ tx-pool/ p2p/ package.json setup_node_gcp.sh setup_blockchain_ubuntu.sh start_node_gcp.sh"
