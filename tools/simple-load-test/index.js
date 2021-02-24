@@ -1,7 +1,6 @@
 /**
  * For simple load testing
  * This tool increases '/apps/loadtest/visit_count'
- * Please modify number_txs & duration
  * Usage: 'node index.js --help'
  */
 const _ = require('lodash');
