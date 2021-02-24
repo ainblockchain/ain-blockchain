@@ -1303,7 +1303,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Panel Titletx_status:tx_tracker_size",
+      "title": "tx_status:tx_tracker_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
