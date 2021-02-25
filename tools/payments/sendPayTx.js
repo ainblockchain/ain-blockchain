@@ -8,9 +8,8 @@ function buildPayTxBody(address, timestamp) {
       type: 'SET_VALUE',
       ref: `/payments/test_service/${address}/pays/${timestamp}`,
       value: {
-        id: String(timestamp),
         amount: 10000,
-        pay_method: 'PAYPAL'
+        pay_method: 'paypal'
       }
     },
     timestamp,
