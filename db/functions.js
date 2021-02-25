@@ -436,7 +436,7 @@ class Functions {
 
     const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, user);
     const transferResult = this.setServiceAccountTransferOrLog(
-        userServiceAccountName, transaction.address, value.amount, auth, timestamp, transaction);
+        userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
