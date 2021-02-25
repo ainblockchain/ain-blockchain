@@ -2,14 +2,14 @@ const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
-function buildClaimTxBody(address, timestamp) {
+function buildClaimTxBody(ownerAddr, userAddr, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/payments/test_service/${address}/claims/${timestamp}`,
+      ref: `/payments/test_service/${userAddr}/claims/${timestamp}`,
       value: {
-        id: String(timestamp),
-        amount: 10000
+        amount: 10000,
+        target: ownerAddr
       }
     },
     timestamp,
@@ -21,7 +21,7 @@ async function sendTransaction() {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
-  const txBody = buildClaimTxBody(config.userAddr, timestamp);
+  const txBody = buildClaimTxBody(config.serviceOwnerAddr, config.userAddr, timestamp);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
