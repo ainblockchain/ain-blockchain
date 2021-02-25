@@ -32,11 +32,11 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
-sh setup_ubuntu.sh
+sh setup_blockchain_ubuntu.sh
 ```
 - Copy files to a sharable folder & install npm packages
 ```
@@ -124,11 +124,11 @@ npm run test_integration
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
-sh setup_ubuntu.sh
+sh setup_blockchain_ubuntu.sh
 ```
 - Copy files to a sharable folder & install npm packages
 ```
