@@ -90,7 +90,7 @@
       "$user_addr": {
         "claims": {
           "$record_id": {
-            ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
+            ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
             "result": {
               ".write": "auth.fid === '_claim'"
             }
