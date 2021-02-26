@@ -22,7 +22,7 @@ class BlockPool {
     this.epochToBlock = {};
     // Mapping of a number to a set of block hashes proposed for the number.
     // e.g. { number: Set<block_hash> }
-    this.numberToBlock = {};
+    this.numberToBlockSet = {};
 
     this.longestNotarizedChainTips = [lastFinalizedBlock.hash];
 
@@ -46,15 +46,15 @@ class BlockPool {
         };
         this.hashToNextBlockSet[lastFinalizedBlockHash] = new Set([lastBlockHash]);
         this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
-        this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
+        this.numberToBlockSet[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
       }
       this.hashToBlockInfo[lastBlockHash] = {block: lastBlock};
       this.epochToBlock[lastBlockEpoch] = lastBlockHash;
-      this.numberToBlock[lastBlockNumber] = new Set([lastBlockHash]);
+      this.numberToBlockSet[lastBlockNumber] = new Set([lastBlockHash]);
     } else if (lastFinalizedBlock) {
       this.hashToBlockInfo[lastFinalizedBlockHash] = {block: lastFinalizedBlock, notarized: true};
       this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
-      this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
+      this.numberToBlockSet[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
     }
   }
 
@@ -265,10 +265,10 @@ class BlockPool {
 
     this.epochToBlock[block.epoch] = blockHash;
 
-    if (!this.numberToBlock[block.number]) {
-      this.numberToBlock[block.number] = new Set();
+    if (!this.numberToBlockSet[block.number]) {
+      this.numberToBlockSet[block.number] = new Set();
     }
-    this.numberToBlock[block.number].add(block.hash);
+    this.numberToBlockSet[block.number].add(block.hash);
 
     const lastHash = block.last_hash;
     if (!this.hashToNextBlockSet[lastHash]) {
@@ -369,12 +369,12 @@ class BlockPool {
 
   // Remove everything that came before lastBlock including lastBlock.
   cleanUpAfterFinalization(lastBlock) {
-    Object.keys(this.numberToBlock).forEach((key) => {
+    Object.keys(this.numberToBlockSet).forEach((key) => {
       if (key < number) {
-        this.numberToBlock[key].forEach((blockHash) => {
+        this.numberToBlockSet[key].forEach((blockHash) => {
           this.cleanUpForBlockHash(blockHash);
         });
-        delete this.numberToBlock[key];
+        delete this.numberToBlockSet[key];
       }
     });
     Object.keys(this.epochToBlock).forEach((epoch) => {
