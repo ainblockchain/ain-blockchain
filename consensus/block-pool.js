@@ -357,39 +357,32 @@ class BlockPool {
     }
   }
 
+  cleanUpForBlockHash(blockHash) {
+    delete this.hashToBlockInfo[blockHash];
+    delete this.hashToNextBlockSet[blockHash];
+    const db = this.hashToDb.get(blockHash);
+    if (db) {
+      this.node.destroyDb(db);
+      this.hashToDb.delete(blockHash);
+    }
+  }
+
   // Remove everything that came before lastBlock including lastBlock.
   cleanUpAfterFinalization(lastBlock) {
-    const number = lastBlock.number;
-    const blocksToRemove = Object.values(this.hashToBlockInfo)
-      .filter((val) => {
-        let blockNumber;
-        if (val.block) {
-          blockNumber = val.block.number;
-        } else if (val.votes || val.proposal) {
-          blockNumber = BlockPool.getBlockNumberFromTx(val.votes ? val.votes[0] : val.proposal);
-        }
-        return !blockNumber || blockNumber < number;
-      });
-    blocksToRemove.forEach((blockInfo) => {
-      const blockHash = blockInfo.block ? blockInfo.block.hash
-          : BlockPool.getBlockHashFromTx(blockInfo.votes && blockInfo.votes.length ?
-              blockInfo.votes[0] : blockInfo.proposal);
-      if (blockHash) {
-        delete this.hashToBlockInfo[blockHash];
-        delete this.numberToBlock[number];
-        delete this.hashToNextBlockSet[blockHash];
-        if (this.hashToDb.has(blockHash)) {
-          const db = this.hashToDb.get(blockHash);
-          this.node.destroyDb(db);
-          this.hashToDb.delete(blockHash);
-        }
+    Object.keys(this.numberToBlock).forEach((key) => {
+      if (key < number) {
+        this.numberToBlock[key].forEach((blockHash) => {
+          this.cleanUpForBlockHash(blockHash);
+        });
+        delete this.numberToBlock[key];
       }
     });
-    Object.keys(this.numberToBlock).forEach((key) => {
-      if (key < number) delete this.numberToBlock[key];
-    });
-    Object.keys(this.epochToBlock).forEach((key) => {
-      if (key < lastBlock.epoch) delete this.epochToBlock[key];
+    Object.keys(this.epochToBlock).forEach((epoch) => {
+      if (epoch < lastBlock.epoch) {
+        const blockHash = this.epochToBlock[epoch];
+        this.cleanUpForBlockHash(blockHash);
+        delete this.epochToBlock[epoch];
+      }
     });
     this.updateLongestNotarizedChains();
   }
