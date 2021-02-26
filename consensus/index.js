@@ -1028,7 +1028,7 @@ class Consensus {
    *     hashToDb,
    *     hashToNextBlockSet,
    *     epochToBlock,
-   *     numberToBlock,
+   *     numberToBlockSet,
    *     longestNotarizedChainTips
    *   }
    * }
@@ -1045,7 +1045,7 @@ class Consensus {
             return Object.assign(acc, {[curr]: [...this.blockPool.hashToNextBlockSet[curr]]})
           }, {}),
         epochToBlock: Object.keys(this.blockPool.epochToBlock),
-        numberToBlock: Object.keys(this.blockPool.numberToBlock),
+        numberToBlockSet: Object.keys(this.blockPool.numberToBlockSet),
         longestNotarizedChainTips: this.blockPool.longestNotarizedChainTips
       }
     }
