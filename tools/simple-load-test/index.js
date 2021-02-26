@@ -173,7 +173,7 @@ async function sendTxs(targetUrl, duration, numberOfTransactions) {
 async function main() {
   const options = commandLineArgs(optionDefinitions);
   const args = options._all;
-  if (Object.keys(args).includes('help') || !Object.keys(args).includes('target_url')) {
+  if (Object.keys(args).includes('help')) {
     console.log(getUsage(sections));
     process.exit(0);
   }
