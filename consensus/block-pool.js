@@ -369,12 +369,13 @@ class BlockPool {
 
   // Remove everything that came before lastBlock including lastBlock.
   cleanUpAfterFinalization(lastBlock) {
-    Object.keys(this.numberToBlockSet).forEach((key) => {
-      if (key < number) {
-        this.numberToBlockSet[key].forEach((blockHash) => {
+    const targetNumber = lastBlock.number;
+    Object.keys(this.numberToBlockSet).forEach((blockNumber) => {
+      if (blockNumber < targetNumber) {
+        this.numberToBlockSet[blockNumber].forEach((blockHash) => {
           this.cleanUpForBlockHash(blockHash);
         });
-        delete this.numberToBlockSet[key];
+        delete this.numberToBlockSet[blockNumber];
       }
     });
     Object.keys(this.epochToBlock).forEach((epoch) => {
