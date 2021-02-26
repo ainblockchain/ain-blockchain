@@ -107,7 +107,7 @@ function waitUntilShardReporterStarts() {
   while (true) {
     consensusState = parseOrLog(syncRequest('GET', server1 + '/get_consensus_state')
         .body.toString('utf-8')).result;
-    if (consensusState && consensusState.status === ConsensusStatus.RUNNING) return;
+    if (consensusState && consensusState.state === ConsensusStatus.RUNNING) return;
     sleep(1000);
   }
 }
