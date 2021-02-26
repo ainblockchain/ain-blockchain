@@ -16,29 +16,31 @@ const TIMEOUT_MS = 10 * 1000;
 const optionDefinitions = [
   {
     name: 'help',
+    type: Boolean,
     description: 'Display this usage guide.',
     alias: 'h',
+    group: 'options'
   },
   {
     name: 'target_url',
     alias: 't',
     type: String,
     description: 'Target AIN URL (Default: http://localhost:8081)',
-    group: 'optional',
+    group: 'options',
   },
   {
     name: 'duration',
     alias: 'd',
     type: Number,
     description: 'Duration of load test in seconds, (Default: 60)',
-    group: 'optional',
+    group: 'options',
   },
   {
     name: 'number_txs',
     alias: 'n',
     type: Number,
     description: 'Number of transactions (Default: 300)',
-    group: 'optional',
+    group: 'options',
   },
 ];
 const sections = [
@@ -46,10 +48,10 @@ const sections = [
     header: 'AIN Simple load test',
   },
   {
-    header: 'Optional',
+    header: 'Options',
     optionList: optionDefinitions,
-    group: 'optional',
-  },
+    group: 'options',
+  }
 ];
 
 function sendTx(endpointUrl, signedTx) {
