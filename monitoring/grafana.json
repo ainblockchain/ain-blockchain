@@ -15,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 4,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -56,7 +56,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -151,7 +151,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -246,7 +246,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -263,7 +263,9 @@
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "block_status:elapsed_time_ms",
       "tooltip": {
         "shared": true,
@@ -339,7 +341,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -417,7 +419,7 @@
         "y": 16
       },
       "hiddenSeries": false,
-      "id": 14,
+      "id": 12,
       "legend": {
         "avg": false,
         "current": false,
@@ -434,7 +436,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -444,7 +446,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "memory_status:heap_stats:used_heap_size",
+          "expr": "disk_status:used",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -454,7 +456,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "memory_status:heap_stats:used_heap_size",
+      "title": "disk_status:used",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -529,7 +531,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -607,7 +609,7 @@
         "y": 24
       },
       "hiddenSeries": false,
-      "id": 12,
+      "id": 14,
       "legend": {
         "avg": false,
         "current": false,
@@ -624,7 +626,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -634,7 +636,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "disk_status:used",
+          "expr": "memory_status:heap_stats:used_heap_size",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -644,7 +646,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "disk_status:used",
+      "title": "memory_status:heap_stats:used_heap_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -719,7 +721,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -736,7 +738,9 @@
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "consensus_status:health",
       "tooltip": {
         "shared": true,
@@ -795,7 +799,7 @@
         "y": 32
       },
       "hiddenSeries": false,
-      "id": 10,
+      "id": 30,
       "legend": {
         "avg": false,
         "current": false,
@@ -812,7 +816,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -822,7 +826,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_status:db_status:tree_size",
+          "expr": "memory_status:heap_stats:malloced_memory",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -832,7 +836,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "node_status:db_status:tree_size",
+      "title": "memory_status:heap_stats:malloced_memory",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -907,7 +911,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1002,7 +1006,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1097,7 +1101,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1118,6 +1122,101 @@
       "timeRegions": [],
       "timeShift": null,
       "title": "node_status:state_numeric",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "hiddenSeries": false,
+      "id": 10,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.4.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "node_status:db_status:tree_size",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "node_status:db_status:tree_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1192,7 +1291,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1209,7 +1308,9 @@
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "tx_status:tx_pool_size",
       "tooltip": {
         "shared": true,
@@ -1285,7 +1386,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.2",
+      "pluginVersion": "7.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1302,7 +1403,9 @@
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "tx_status:tx_tracker_size",
       "tooltip": {
         "shared": true,
@@ -1348,12 +1451,12 @@
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 17
+  "version": 2
 }
