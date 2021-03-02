@@ -1,15 +1,15 @@
 # PARENT CHAIN
 node ./tracker-server/index.js &
 sleep 5
-ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
+ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/base MIN_NUM_VALIDATORS=5 STAKE=100000 node ./client/index.js &
 sleep 10
-ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
+ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/base MIN_NUM_VALIDATORS=5 STAKE=100000 node ./client/index.js &
 sleep 10
-ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
+ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/base MIN_NUM_VALIDATORS=5 STAKE=100000 node ./client/index.js &
 sleep 10
-ACCOUNT_INDEX=3 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
+ACCOUNT_INDEX=3 GENESIS_CONFIGS_DIR=genesis-configs/base MIN_NUM_VALIDATORS=5 STAKE=100000 node ./client/index.js &
 sleep 10
-ACCOUNT_INDEX=4 GENESIS_CONFIGS_DIR=genesis-configs/base STAKE=100000 node ./client/index.js &
+ACCOUNT_INDEX=4 GENESIS_CONFIGS_DIR=genesis-configs/base MIN_NUM_VALIDATORS=5 STAKE=100000 node ./client/index.js &
 sleep 10
 
 # CHILD CHAIN 1
