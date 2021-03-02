@@ -127,7 +127,8 @@ describe("Functions", () => {
         }
       }
       return functions.triggerFunctions(
-          ChainUtil.parsePath(refPathRest), null, null, null, transaction).then((response) => {
+          ChainUtil.parsePath(refPathRest),
+          null, null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 1,
@@ -164,7 +165,8 @@ describe("Functions", () => {
         }
       }
       return functions.triggerFunctions(
-          ChainUtil.parsePath(refPathRestMulti), null, null, null, transaction).then((response) => {
+          ChainUtil.parsePath(refPathRestMulti),
+          null, null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 2,
           triggerCount: 2,
@@ -219,7 +221,7 @@ describe("Functions", () => {
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestWithoutListener),
-          null, null, null, transaction).then((response) => {
+          null, null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 1,
@@ -240,7 +242,7 @@ describe("Functions", () => {
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestNotWhitelisted),
-          null, null, null, transaction).then((response) => {
+          null, null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 0,
@@ -260,7 +262,8 @@ describe("Functions", () => {
         }
       }
       return functions.triggerFunctions(
-          ChainUtil.parsePath(refPathNull), null, null, null, transaction).then((response) => {
+          ChainUtil.parsePath(refPathNull),
+          null, null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 0,
