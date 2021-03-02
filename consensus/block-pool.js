@@ -22,7 +22,7 @@ class BlockPool {
     this.epochToBlock = {};
     // Mapping of a number to a set of block hashes proposed for the number.
     // e.g. { number: Set<block_hash> }
-    this.numberToBlock = {};
+    this.numberToBlockSet = {};
 
     this.longestNotarizedChainTips = [lastFinalizedBlock.hash];
 
@@ -46,15 +46,15 @@ class BlockPool {
         };
         this.hashToNextBlockSet[lastFinalizedBlockHash] = new Set([lastBlockHash]);
         this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
-        this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
+        this.numberToBlockSet[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
       }
       this.hashToBlockInfo[lastBlockHash] = {block: lastBlock};
       this.epochToBlock[lastBlockEpoch] = lastBlockHash;
-      this.numberToBlock[lastBlockNumber] = new Set([lastBlockHash]);
+      this.numberToBlockSet[lastBlockNumber] = new Set([lastBlockHash]);
     } else if (lastFinalizedBlock) {
       this.hashToBlockInfo[lastFinalizedBlockHash] = {block: lastFinalizedBlock, notarized: true};
       this.epochToBlock[lastFinalizedBlockEpoch] = lastFinalizedBlockHash;
-      this.numberToBlock[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
+      this.numberToBlockSet[lastFinalizedBlockNumber] = new Set([lastFinalizedBlockHash]);
     }
   }
 
@@ -265,10 +265,10 @@ class BlockPool {
 
     this.epochToBlock[block.epoch] = blockHash;
 
-    if (!this.numberToBlock[block.number]) {
-      this.numberToBlock[block.number] = new Set();
+    if (!this.numberToBlockSet[block.number]) {
+      this.numberToBlockSet[block.number] = new Set();
     }
-    this.numberToBlock[block.number].add(block.hash);
+    this.numberToBlockSet[block.number].add(block.hash);
 
     const lastHash = block.last_hash;
     if (!this.hashToNextBlockSet[lastHash]) {
@@ -357,39 +357,33 @@ class BlockPool {
     }
   }
 
+  cleanUpForBlockHash(blockHash) {
+    delete this.hashToBlockInfo[blockHash];
+    delete this.hashToNextBlockSet[blockHash];
+    const db = this.hashToDb.get(blockHash);
+    if (db) {
+      this.node.destroyDb(db);
+      this.hashToDb.delete(blockHash);
+    }
+  }
+
   // Remove everything that came before lastBlock including lastBlock.
   cleanUpAfterFinalization(lastBlock) {
-    const number = lastBlock.number;
-    const blocksToRemove = Object.values(this.hashToBlockInfo)
-      .filter((val) => {
-        let blockNumber;
-        if (val.block) {
-          blockNumber = val.block.number;
-        } else if (val.votes || val.proposal) {
-          blockNumber = BlockPool.getBlockNumberFromTx(val.votes ? val.votes[0] : val.proposal);
-        }
-        return !blockNumber || blockNumber < number;
-      });
-    blocksToRemove.forEach((blockInfo) => {
-      const blockHash = blockInfo.block ? blockInfo.block.hash
-          : BlockPool.getBlockHashFromTx(blockInfo.votes && blockInfo.votes.length ?
-              blockInfo.votes[0] : blockInfo.proposal);
-      if (blockHash) {
-        delete this.hashToBlockInfo[blockHash];
-        delete this.numberToBlock[number];
-        delete this.hashToNextBlockSet[blockHash];
-        if (this.hashToDb.has(blockHash)) {
-          const db = this.hashToDb.get(blockHash);
-          this.node.destroyDb(db);
-          this.hashToDb.delete(blockHash);
-        }
+    const targetNumber = lastBlock.number;
+    Object.keys(this.numberToBlockSet).forEach((blockNumber) => {
+      if (blockNumber < targetNumber) {
+        this.numberToBlockSet[blockNumber].forEach((blockHash) => {
+          this.cleanUpForBlockHash(blockHash);
+        });
+        delete this.numberToBlockSet[blockNumber];
       }
     });
-    Object.keys(this.numberToBlock).forEach((key) => {
-      if (key < number) delete this.numberToBlock[key];
-    });
-    Object.keys(this.epochToBlock).forEach((key) => {
-      if (key < lastBlock.epoch) delete this.epochToBlock[key];
+    Object.keys(this.epochToBlock).forEach((epoch) => {
+      if (epoch < lastBlock.epoch) {
+        const blockHash = this.epochToBlock[epoch];
+        this.cleanUpForBlockHash(blockHash);
+        delete this.epochToBlock[epoch];
+      }
     });
     this.updateLongestNotarizedChains();
   }
