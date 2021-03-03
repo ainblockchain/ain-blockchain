@@ -2606,7 +2606,7 @@ describe('Blockchain Node', () => {
 
       it('non-admin cannot write pay records', () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-              ref: `/payment/test_service/${serviceUser}/pay/key1`,
+              ref: `/payments/test_service/${serviceUser}/0/pay/key1`,
               value: {
                 amount: 100
               }
@@ -2615,7 +2615,7 @@ describe('Blockchain Node', () => {
       });
 
       it('amount = 0', () => {
-        const paymentRef = `/payments/test_service/${serviceUser}/pay/key1`;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key1`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
@@ -2626,7 +2626,7 @@ describe('Blockchain Node', () => {
       });
 
       it('amount is not a number', () => {
-        const paymentRef = `/payments/test_service/${serviceUser}/pay/key1`;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key1`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
@@ -2639,7 +2639,7 @@ describe('Blockchain Node', () => {
       it('payment amount > admin balance', () => {
         const adminBalance = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
-        const paymentRef = `/payments/test_service/${serviceUser}/pay/key1`;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key1`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
@@ -2655,7 +2655,7 @@ describe('Blockchain Node', () => {
       it('admin can write pay records', () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
-        const paymentRef = `/payments/test_service/${serviceUser}/pay/key2`;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key2`;
         const amount = adminBalanceBefore - 1;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
@@ -2671,7 +2671,7 @@ describe('Blockchain Node', () => {
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         expect(adminBalanceAfter).to.equals(adminBalanceBefore - amount);
         const serviceAccount = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0`)
             .body.toString('utf-8')).result;
         assert.deepEqual(serviceAccount, {
           balance: amount,
@@ -2683,7 +2683,7 @@ describe('Blockchain Node', () => {
 
       it('non-admin cannot write claim records', () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-              ref: `/payments/test_service/${serviceUser}/claim/key1`,
+              ref: `/payments/test_service/${serviceUser}/0/claim/key1`,
               value: {
                 amount: 100,
                 target: serviceAdmin
@@ -2694,9 +2694,9 @@ describe('Blockchain Node', () => {
 
       it('claim amount > payment balance', () => {
         const paymentBalance = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
-        const paymentRef = `/payments/test_service/${serviceUser}/claim/key1`;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/claim/key1`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
@@ -2712,9 +2712,9 @@ describe('Blockchain Node', () => {
 
       it('invalid claim target', () => {
         const paymentBalance = parseOrLog(syncRequest('GET',
-        server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
-        const paymentRef = `/payments/test_service/${serviceUser}/claim/key1`;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/claim/key1`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentRef,
           value: {
@@ -2728,9 +2728,9 @@ describe('Blockchain Node', () => {
       it('admin can claim payments (target = address)', () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
-        const paymentClaimRef = `/payments/test_service/${serviceUser}/claim/key2`;
+        const paymentClaimRef = `/payments/test_service/${serviceUser}/0/claim/key2`;
         const paymentBalance = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: paymentClaimRef,
@@ -2747,7 +2747,7 @@ describe('Blockchain Node', () => {
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         expect(adminBalanceAfter).to.equals(adminBalanceBefore + paymentBalance);
         const serviceAccountBalance = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                 .body.toString('utf-8')).result;
         expect(serviceAccountBalance).to.equals(0);
       });
@@ -2755,7 +2755,7 @@ describe('Blockchain Node', () => {
       it('admin can claim payments (target = service account)', () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
-        const payRef = `/payments/test_service/${serviceUser}/pay/key3`;
+        const payRef = `/payments/test_service/${serviceUser}/0/pay/key3`;
         const amount = adminBalanceBefore - 1;
         let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: payRef,
@@ -2768,15 +2768,15 @@ describe('Blockchain Node', () => {
             `/get_value?ref=${payRef}/result/code`).body.toString('utf-8')).result;
         expect(payResult).to.equals(FunctionResultCode.SUCCESS);
 
-        const claimRef = `/payments/test_service/${serviceUser}/claim/key3`;
+        const claimRef = `/payments/test_service/${serviceUser}/0/claim/key3`;
         const paymentBalance = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
         body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: claimRef,
           value: {
             amount: paymentBalance,
-            target: `payments|test_service|${serviceAdmin}`
+            target: `payments|test_service|${serviceAdmin}|0`
           }
         }}).body.toString('utf-8'));
         waitUntilTxFinalized(serverList, body.result.tx_hash);
@@ -2784,11 +2784,11 @@ describe('Blockchain Node', () => {
             `/get_value?ref=${claimRef}/result/code`).body.toString('utf-8')).result;
         expect(claimResult).to.equals(FunctionResultCode.SUCCESS);
         const adminServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceAdmin}/balance`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceAdmin}|0/balance`)
                 .body.toString('utf-8')).result;
         expect(adminServiceAccountBalanceAfter).to.equals(paymentBalance);
         const userServiceAccountBalance = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}/balance`)
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                 .body.toString('utf-8')).result;
         expect(userServiceAccountBalance).to.equals(0);
       });
