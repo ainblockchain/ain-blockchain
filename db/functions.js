@@ -723,12 +723,12 @@ class Functions {
   }
 
   getPaymentPayRecordsResultPath(service, user, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_PAYS}/` +
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_PAY}/` +
         `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 
   getPaymentClaimRecordsResultPath(service, user, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_CLAIMS}/` +
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_CLAIM}/` +
         `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 

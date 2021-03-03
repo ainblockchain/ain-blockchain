@@ -88,7 +88,7 @@
         }
       },
       "$user_addr": {
-        "claims": {
+        "claim": {
           "$record_id": {
             ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
             "result": {
@@ -96,7 +96,7 @@
             }
           }
         },
-        "pays": {
+        "pay": {
           "$record_id": {
             ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
             "result": {

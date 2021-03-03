@@ -110,9 +110,9 @@ const PredefinedDbPaths = {
   // Payments
   PAYMENTS: 'payments',
   PAYMENTS_ADMIN: 'admin',
-  PAYMENTS_CLAIMS: 'claims',
+  PAYMENTS_CLAIM: 'claim',
   PAYMENTS_CONFIG: 'config',
-  PAYMENTS_PAYS: 'pays',
+  PAYMENTS_PAY: 'pay',
   PAYMENTS_RESULT: 'result',
   // Remote transaction action
   REMOTE_TX_ACTION_RESULT: 'result',

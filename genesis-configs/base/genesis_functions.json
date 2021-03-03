@@ -44,7 +44,7 @@
   "payments": {
     "$service": {
       "$user_addr": {
-        "pays": {
+        "pay": {
           "$record_id": {
             ".function": {
               "_pay": {
@@ -54,7 +54,7 @@
             }
           }
         },
-        "claims": {
+        "claim": {
           "$record_id": {
             ".function": {
               "_claim": {
