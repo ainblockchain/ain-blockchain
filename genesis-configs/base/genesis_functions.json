@@ -44,22 +44,24 @@
   "payments": {
     "$service": {
       "$user_addr": {
-        "pays": {
-          "$record_id": {
-            ".function": {
-              "_pay": {
-                "function_type": "NATIVE",
-                "function_id": "_pay"
+        "$payment_key": {
+          "pay": {
+            "$record_id": {
+              ".function": {
+                "_pay": {
+                  "function_type": "NATIVE",
+                  "function_id": "_pay"
+                }
               }
             }
-          }
-        },
-        "claims": {
-          "$record_id": {
-            ".function": {
-              "_claim": {
-                "function_type": "NATIVE",
-                "function_id": "_claim"
+          },
+          "claim": {
+            "$record_id": {
+              ".function": {
+                "_claim": {
+                  "function_type": "NATIVE",
+                  "function_id": "_claim"
+                }
               }
             }
           }

@@ -6,7 +6,7 @@ function buildPayTxBody(address, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/payments/test_service/${address}/pays/${timestamp}`,
+      ref: `/payments/test_service/${address}/0/pay/${timestamp}`,
       value: {
         amount: 10000,
         pay_method: 'paypal'

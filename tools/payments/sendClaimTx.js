@@ -6,7 +6,7 @@ function buildClaimTxBody(ownerAddr, userAddr, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/payments/test_service/${userAddr}/claims/${timestamp}`,
+      ref: `/payments/test_service/${userAddr}/0/claim/${timestamp}`,
       value: {
         amount: 10000,
         target: ownerAddr
