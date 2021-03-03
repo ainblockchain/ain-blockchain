@@ -85,7 +85,7 @@ class Functions {
           if (nativeFunction) {
             // Execute the matched native function.
             logger.info(
-                `  ==> Triggering NATIVE function '${functionEntry.function_id}' with:\n` +
+                `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] with:\n` +
                 formattedParams);
             this.pushCall(
                 ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
@@ -107,13 +107,15 @@ class Functions {
             } finally {
               // Always pops from the call stack.
               const call = this.popCall();
-              const formattedResult =
-                  `  ==>| Execution result of NATIVE function '${functionEntry.function_id}': \n` +
-                  `${JSON.stringify(call.result, null, 2)}`;
-              if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
-                logger.info(formattedResult);
-              } else {
-                logger.error(formattedResult);
+              if (call.result) {
+                const formattedResult =
+                    `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]]: \n` +
+                    `${JSON.stringify(call.result, null, 2)}`;
+                if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
+                  logger.info(formattedResult);
+                } else {
+                  logger.error(formattedResult);
+                }
               }
               triggerCount++;
             }
@@ -122,7 +124,7 @@ class Functions {
           if (functionEntry.event_listener &&
               functionEntry.event_listener in EventListenerWhitelist) {
             logger.info(
-                `  ==> Triggering REST function '${functionEntry.function_id}' of ` +
+                `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
                 `event listener '${functionEntry.event_listener}' with:\n` +
                 formattedParams);
             promises.push(axios.post(functionEntry.event_listener, {
@@ -130,7 +132,7 @@ class Functions {
               transaction,
             }).catch((error) => {
               logger.error(
-                  `Failed to trigger REST function '${functionEntry.function_id}' of ` +
+                  `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
                   `event listener '${functionEntry.event_listener}' with error: \n` +
                   `${JSON.stringify(error)}` +
                   formattedParams);
@@ -252,11 +254,13 @@ class Functions {
     return params;
   }
 
-  static buildExecutionResult(timestamp, txHash, code) {
+  static buildExecutionResult(context, code) {
     // NOTE(seo): Allow only node-independent values to avoid state proof hash issues.
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
     return {
       timestamp,
-      tx_hash: txHash,
+      tx_hash: transaction.hash,
       code,
     };
   }
@@ -288,12 +292,16 @@ class Functions {
     return result;
   }
 
-  setExecutionResult(context, resultPath, code) {
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-    const execResult = Functions.buildExecutionResult(timestamp, transaction.hash, code);
+  setExecutionResult(context, code) {
+    const execResult = Functions.buildExecutionResult(context, code);
     this.setCallResult(execResult);
+  }
+
+  saveAndSetExecutionResult(context, resultPath, code) {
+    const execResult = Functions.buildExecutionResult(context, code);
+    this.setCallResult(execResult);
+    const timestamp = context.timestamp;
+    const auth = context.auth;
     return this.setValueOrLog(resultPath, execResult, auth, timestamp);
   }
 
@@ -352,11 +360,11 @@ class Functions {
     const transferResult =
         this.transferInternal(fromBalancePath, toBalancePath, value, context);
     if (transferResult === true) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -374,7 +382,7 @@ class Functions {
     const depositCreatedAtPath = this.getDepositCreatedAtPath(service, user, depositId);
     this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp);
     if (timestamp > execTime) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
     const userBalancePath = ChainUtil.getBalancePath(user);
@@ -386,11 +394,11 @@ class Functions {
           DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       const expirationPath = this.getDepositExpirationPath(service, user);
       this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), auth, timestamp);
-      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -412,7 +420,7 @@ class Functions {
     this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp);
     if (expireAt > execTime) {
       // Still in lock-up period.
-      this.setExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
       return;
     }
     if (service === PredefinedDbPaths.CONSENSUS) {
@@ -429,19 +437,19 @@ class Functions {
         }
       });
       if (numValidators <= MIN_NUM_VALIDATORS) {
-        this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
         return;
       }
     }
     const transferResult =
         this.transferInternal(depositAmountPath, userBalancePath, value, context);
     if (transferResult === true) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
       // Not enough deposit.
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -457,7 +465,7 @@ class Functions {
     const resultPath = this.getPaymentPayRecordsResultPath(service, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
@@ -465,9 +473,9 @@ class Functions {
     const transferResult = this.setServiceAccountTransferOrLog(
       transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -483,7 +491,7 @@ class Functions {
     const resultPath = this.getPaymentClaimRecordsResultPath(service, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
@@ -491,9 +499,9 @@ class Functions {
     const transferResult = this.setServiceAccountTransferOrLog(
         userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.setExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -525,16 +533,17 @@ class Functions {
       return false;
     }
     if (!ChainUtil.isString(value)) {
-      // Removing old report or invalid reporting
       return false;
     }
+    // Removing old report or invalid reporting
     const latestReportPath = this.getLatestShardReportPathFromValuePath(valuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
       return false;
     }
-    return this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp);
+    this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp);
+    this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
   getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
@@ -570,21 +579,25 @@ class Functions {
       return;
     }
     // Forward payload tx to parent chain
-    sendSignedTx(parentChainEndpoint, payloadTx)
-    .then((result) => {
-      if (!_.get(result, 'success', false) === true) {
-        logger.info(`  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
-        return;
-      }
-      logger.info(`  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
-    });
-    const action = {
-      ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
-      valueFunction: (success) => !!success,
-      is_global: true,
-      tx_body: payloadTx.tx_body,
-    };
-    this.tp.addRemoteTransaction(txHash, action);
+    try {
+      sendSignedTx(parentChainEndpoint, payloadTx)
+      .then((result) => {
+        if (!_.get(result, 'success', false) === true) {
+          logger.info(`  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+          return;
+        }
+        logger.info(`  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+        const action = {
+          ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
+          valueFunction: (success) => !!success,
+          is_global: true,
+          tx_body: payloadTx.tx_body,
+        };
+        this.tp.addRemoteTransaction(txHash, action);
+      });
+    } finally {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    }
   }
 
   getCheckinPayloadPathFromValuePath(valuePath) {
@@ -612,7 +625,7 @@ class Functions {
     const checkinId = context.params.checkin_id;
     const valuePath = context.valuePath;
     const checkinPayload = this.db.getValue(this.getCheckinPayloadPathFromValuePath(valuePath));
-    const checkinAmount = _.get(checkinPayload, 'transaction.tx_body.operation.value', 0);
+    const checkinAmount = _.get(checkinPayload, 'tx_body.operation.value', 0);
     const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
     const tokenToReceive = checkinAmount * tokenExchRate;
     if (!this.validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
@@ -641,7 +654,11 @@ class Functions {
     };
     // Sign and send transferTx to the node itself
     const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
-    return signAndSendTx(endpoint, transferTx, ownerPrivateKey);
+    try {
+      signAndSendTx(endpoint, transferTx, ownerPrivateKey);
+    } finally {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    }
   }
 
   validateCheckinParams(params) {
