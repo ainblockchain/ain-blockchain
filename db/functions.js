@@ -51,6 +51,7 @@ class Functions {
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
       [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
     };
+    this.callStack= [];
   }
 
   /**
@@ -82,31 +83,47 @@ class Functions {
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
-            logger.info(
-                `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
-                formattedParams);
-            const newAuth = Object.assign({}, auth, { fid: functionEntry.function_id });
             // Execute the matched native function.
-            nativeFunction(
-                value,
-                {
-                  valuePath: parsedValuePath,
-                  functionPath,
-                  params,
-                  timestamp,
-                  execTime,
-                  transaction,
-                  auth: newAuth,
-                });
-            triggerCount++;
-            failCount++;
+            logger.info(
+                `  ==> Triggering NATIVE function '${functionEntry.function_id}' with:\n` +
+                formattedParams);
+            this.pushCall(
+                ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
+                functionEntry.function_id);
+            const newAuth = Object.assign(
+                {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
+            try {
+              nativeFunction(
+                  value,
+                  {
+                    valuePath: parsedValuePath,
+                    functionPath,
+                    params,
+                    timestamp,
+                    execTime,
+                    transaction,
+                    auth: newAuth,
+                  });
+            } finally {
+              // Always pops from the call stack.
+              const call = this.popCall();
+              const formattedResult =
+                  `  ==>| Execution result of NATIVE function '${functionEntry.function_id}': \n` +
+                  `${JSON.stringify(call.result, null, 2)}`;
+              if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
+                logger.info(formattedResult);
+              } else {
+                logger.error(formattedResult);
+              }
+              triggerCount++;
+            }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
           if (functionEntry.event_listener &&
               functionEntry.event_listener in EventListenerWhitelist) {
             logger.info(
                 `  ==> Triggering REST function '${functionEntry.function_id}' of ` +
-                `event listener '${functionEntry.event_listener}' with\n` +
+                `event listener '${functionEntry.event_listener}' with:\n` +
                 formattedParams);
             promises.push(axios.post(functionEntry.event_listener, {
               function: functionEntry,
@@ -114,8 +131,8 @@ class Functions {
             }).catch((error) => {
               logger.error(
                   `Failed to trigger REST function '${functionEntry.function_id}' of ` +
-                  `event listener '${functionEntry.event_listener}' with\n` +
-                  `error: ${JSON.stringify(error)}` +
+                  `event listener '${functionEntry.event_listener}' with error: \n` +
+                  `${JSON.stringify(error)}` +
                   formattedParams);
               failCount++;
               return true;
@@ -133,6 +150,39 @@ class Functions {
             failCount,
           };
         });
+  }
+
+  pushCall(valuePath, value, functionPath, fid) {
+    this.callStack.push({
+      fid,
+      functionPath,
+      triggered_by: {
+        valuePath,
+        value
+      }
+    })
+  }
+
+  popCall() {
+    return this.callStack.pop();
+  }
+
+  setCallResult(result) {
+    const size = this.callStackSize();
+    if (size > 0) {
+      this.callStack[size - 1].result = result;
+    }
+  }
+
+  callStackSize() {
+    return this.callStack.length;
+  }
+
+  getFids() {
+    return this.callStack.reduce((acc, cur) => {
+      acc.push(cur.fid);
+      return acc;
+    }, []);
   }
 
   static formatFunctionParams(
@@ -243,6 +293,7 @@ class Functions {
     const transaction = context.transaction;
     const auth = context.auth;
     const execResult = Functions.buildExecutionResult(timestamp, transaction.hash, code);
+    this.setCallResult(execResult);
     return this.setValueOrLog(resultPath, execResult, auth, timestamp);
   }
 
