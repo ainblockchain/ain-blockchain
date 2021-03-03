@@ -533,9 +533,9 @@ class Functions {
       return false;
     }
     if (!ChainUtil.isString(value)) {
+      // Removing old report or invalid reporting
       return false;
     }
-    // Removing old report or invalid reporting
     const latestReportPath = this.getLatestShardReportPathFromValuePath(valuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
