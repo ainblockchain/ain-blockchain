@@ -1,30 +1,12 @@
 const _ = require('lodash');
 const axios = require('axios');
 const {sleep} = require('sleep');
-const ainUtil = require('@ainblockchain/ain-util');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
-function signTx(txBody, privateKey) {
-  const keyBuffer = Buffer.from(privateKey, 'hex');
-  const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
-  const sigBuffer = ainUtil.toBuffer(sig);
-  const lenHash = sigBuffer.length - 65;
-  const hashedData = sigBuffer.slice(0, lenHash);
-  const txHash = '0x' + hashedData.toString('hex');
-  return {
-    txHash,
-    signedTx: {
-      tx_body: txBody,
-      signature: sig,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-    }
-  };
-}
-
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const {txHash, signedTx} = signTx(txBody, privateKey);
+  const {txHash, signedTx} = ChainUtil.signTx(txBody, privateKey);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');
@@ -82,7 +64,6 @@ async function confirmTransaction(endpointUrl, timestamp, txHash) {
 }
 
 module.exports = {
-  signTx,
   signAndSendTx,
   sendGetTxByHashRequest,
   confirmTransaction,
