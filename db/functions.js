@@ -63,7 +63,7 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, timestamp, execTime, transaction) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, execTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionPath = matched.matchedFunction.path;
     const functionMap = matched.matchedFunction.config;
@@ -85,7 +85,7 @@ class Functions {
             logger.info(
                 `  ==> Triggering NATIVE function '${functionEntry.function_id}' with\n` +
                 formattedParams);
-            const auth = { fid: functionEntry.function_id };
+            const newAuth = Object.assign({}, auth, { fid: functionEntry.function_id });
             // Execute the matched native function.
             nativeFunction(
                 value,
@@ -96,7 +96,7 @@ class Functions {
                   timestamp,
                   execTime,
                   transaction,
-                  auth,
+                  auth: newAuth,
                 });
             triggerCount++;
             failCount++;
