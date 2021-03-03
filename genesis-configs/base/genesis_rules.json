@@ -88,19 +88,21 @@
         }
       },
       "$user_addr": {
-        "claims": {
-          "$record_id": {
-            ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
-            "result": {
-              ".write": "auth.fid === '_claim'"
+        "$payment_key": {
+          "claim": {
+            "$record_id": {
+              ".write": "getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
+              "result": {
+                ".write": "auth.fid === '_claim'"
+              }
             }
-          }
-        },
-        "pays": {
-          "$record_id": {
-            ".write": "util.isCksumAddr(auth.addr) && getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
-            "result": {
-              ".write": "auth.fid === '_pay'"
+          },
+          "pay": {
+            "$record_id": {
+              ".write": "getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
+              "result": {
+                ".write": "auth.fid === '_pay'"
+              }
             }
           }
         }

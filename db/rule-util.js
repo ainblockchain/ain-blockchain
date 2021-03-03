@@ -55,7 +55,7 @@ class RuleUtil {
   }
 
   isServAcntName(name) {
-    return this.isString(name) && name.split('|').length === 3;
+    return this.isString(name) && name.split('|').length >= 3;
   }
 
   isValShardProto(value) {
@@ -78,7 +78,13 @@ class RuleUtil {
   parseServAcntName(accountName) {
     if (this.isString(accountName)) {
       const parsed = accountName.split('|');
-      return [_.get(parsed, '0', null), _.get(parsed, '1', null), _.get(parsed, '2', null)];
+      const arr = [_.get(parsed, '0', null), _.get(parsed, '1', null)];
+      if (parsed.length <= 3) {
+        arr.push(_.get(parsed, '2', null));
+      } else {
+        arr.push(parsed.slice(2).join('|'));
+      }
+      return arr;
     } else {
       return [null, null, null];
     }
