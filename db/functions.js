@@ -110,7 +110,7 @@ class Functions {
               const formattedResult =
                   `  ==>| Execution result of NATIVE function '${functionEntry.function_id}': \n` +
                   `${JSON.stringify(call.result, null, 2)}`;
-              if (call.result.code === FunctionResultCode.SUCCESS) {
+              if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
                 logger.info(formattedResult);
               } else {
                 logger.error(formattedResult);
