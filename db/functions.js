@@ -83,35 +83,39 @@ class Functions {
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
+            // Execute the matched native function.
             logger.info(
                 `  ==> Triggering NATIVE function '${functionEntry.function_id}' with:\n` +
                 formattedParams);
             this.pushCall(
                 ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
                 functionEntry.function_id);
-            const newAuth =
-                Object.assign({}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
-            // Execute the matched native function.
-            nativeFunction(
-                value,
-                {
-                  valuePath: parsedValuePath,
-                  functionPath,
-                  params,
-                  timestamp,
-                  execTime,
-                  transaction,
-                  auth: newAuth,
-                });
-            const call = this.popCall();
-            triggerCount++;
-            const formattedResult =
-                `  ==>| Execution result of NATIVE function '${functionEntry.function_id}': \n` +
-                `${JSON.stringify(call.result, null, 2)}`;
-            if (call.result.code === FunctionResultCode.SUCCESS) {
-              logger.info(formattedResult);
-            } else {
-              logger.error(formattedResult);
+            const newAuth = Object.assign(
+                {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
+            try {
+              nativeFunction(
+                  value,
+                  {
+                    valuePath: parsedValuePath,
+                    functionPath,
+                    params,
+                    timestamp,
+                    execTime,
+                    transaction,
+                    auth: newAuth,
+                  });
+            } finally {
+              // Always pops from the call stack.
+              const call = this.popCall();
+              const formattedResult =
+                  `  ==>| Execution result of NATIVE function '${functionEntry.function_id}': \n` +
+                  `${JSON.stringify(call.result, null, 2)}`;
+              if (call.result.code === FunctionResultCode.SUCCESS) {
+                logger.info(formattedResult);
+              } else {
+                logger.error(formattedResult);
+              }
+              triggerCount++;
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
