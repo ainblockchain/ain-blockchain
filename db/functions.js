@@ -397,19 +397,20 @@ class Functions {
   _pay(value, context) {
     const service = context.params.service;
     const user = context.params.user_addr;
+    const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
     const timestamp = context.timestamp;
     const transaction = context.transaction;
     const execTime = context.execTime;
     const auth = context.auth;
-    const resultPath = this.getPaymentPayRecordsResultPath(service, user, recordId);
+    const resultPath = this.getPaymentPayRecordsResultPath(service, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
-    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, user);
+    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, `${user}|${paymentKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
       transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
@@ -422,19 +423,20 @@ class Functions {
   _claim(value, context) {
     const service = context.params.service;
     const user = context.params.user_addr;
+    const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
     const transaction = context.transaction;
     const timestamp = context.timestamp;
     const execTime = context.execTime;
     const auth = context.auth;
-    const resultPath = this.getPaymentClaimRecordsResultPath(service, user, recordId);
+    const resultPath = this.getPaymentClaimRecordsResultPath(service, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
       this.setExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
-    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, user);
+    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, `${user}|${paymentKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
         userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
@@ -718,18 +720,14 @@ class Functions {
         `${PredefinedDbPaths.PAYMENTS_ADMIN}`);
   }
 
-  getPaymentBalancePath(service, user) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.BALANCE}`);
+  getPaymentPayRecordsResultPath(service, user, paymentKey, recordId) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
+        `${PredefinedDbPaths.PAYMENTS_PAY}/${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 
-  getPaymentPayRecordsResultPath(service, user, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_PAY}/` +
-        `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
-  }
-
-  getPaymentClaimRecordsResultPath(service, user, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${PredefinedDbPaths.PAYMENTS_CLAIM}/` +
-        `${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
+  getPaymentClaimRecordsResultPath(service, user, paymentKey, recordId) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
+        `${PredefinedDbPaths.PAYMENTS_CLAIM}/${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 
   getLatestShardReportPath(branchPath) {
