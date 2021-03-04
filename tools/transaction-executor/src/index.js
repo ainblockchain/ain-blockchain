@@ -73,7 +73,7 @@ class TransactionExecutorCommand extends Command {
           if (typeof subTx.tx_body.nonce === 'undefined') {
             throw Error(`Nonce field should be specified:\n${line}`);
           }
-          txList.push(Transaction.signTxBody(subTx, privateKey));
+          txList.push(Transaction.fromTxBody(subTx, privateKey));
         })
         transactions.push({tx_list: txList});
       } else {
@@ -83,7 +83,7 @@ class TransactionExecutorCommand extends Command {
         if (typeof transactionData.nonce === 'undefined') {
           throw Error(`Nonce field should be specified:\n${line}`);
         }
-        const trans = Transaction.signTxBody(transactionData, privateKey);
+        const trans = Transaction.fromTxBody(transactionData, privateKey);
         transactions.push(trans);
       }
     });
@@ -104,7 +104,7 @@ class TransactionExecutorCommand extends Command {
             throw Error(`Nonce field should be specified:\n${line}`);
           }
           subData.skip_verif = true;
-          txList.push(Transaction.signTxBody(subData, ''));
+          txList.push(Transaction.fromTxBody(subData, ''));
         })
         transactions.push({tx_list: txList});
       } else {
@@ -115,7 +115,7 @@ class TransactionExecutorCommand extends Command {
           throw Error(`Nonce field should be specified:\n${line}`);
         }
         transactionData.skip_verif = true;
-        const trans = Transaction.signTxBody(transactionData, '');
+        const trans = Transaction.fromTxBody(transactionData, '');
         transactions.push(trans);
       }
     });

@@ -45,7 +45,7 @@ class Transaction {
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
   }
 
-  static signTxBody(txBody, privateKey) {
+  static fromTxBody(txBody, privateKey) {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }

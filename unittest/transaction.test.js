@@ -34,7 +34,7 @@ describe('Transaction', () => {
         value: 'val',
       }
     };
-    tx = Transaction.signTxBody(txBody, node.account.private_key);
+    tx = Transaction.fromTxBody(txBody, node.account.private_key);
 
     txBodyCustomAddress = {
       nonce: 10,
@@ -46,7 +46,7 @@ describe('Transaction', () => {
       },
       address: 'abcd',
     };
-    txCustomAddress = Transaction.signTxBody(txBodyCustomAddress, node.account.private_key);
+    txCustomAddress = Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
 
     txBodyParentHash = {
       nonce: 10,
@@ -58,7 +58,7 @@ describe('Transaction', () => {
       },
       parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
     };
-    txParentHash = Transaction.signTxBody(txBodyParentHash, node.account.private_key);
+    txParentHash = Transaction.fromTxBody(txBodyParentHash, node.account.private_key);
 
     txBodyForNode = {
       operation: {
@@ -74,7 +74,7 @@ describe('Transaction', () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  describe('signTxBody', () => {
+  describe('fromTxBody', () => {
     it('succeed', () => {
       expect(tx).to.not.equal(null);
       expect(tx.tx_body.nonce).to.equal(txBody.nonce);
@@ -105,19 +105,19 @@ describe('Transaction', () => {
 
     it('fail with missing timestamp', () => {
       delete txBody.timestamp;
-      tx2 = Transaction.signTxBody(txBody, node.account.private_key);
+      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
     });
 
     it('fail with missing nonce', () => {
       delete txBody.nonce;
-      const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
     });
 
     it('fail with missing operation', () => {
       delete txBody.operation;
-      const tx2 = Transaction.signTxBody(txBody, node.account.private_key);
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
     });
   });

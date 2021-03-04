@@ -206,7 +206,7 @@ class Block {
         op_list: opList,
       }
     };
-    return Transaction.signTxBody(firstTxBody, privateKey);
+    return Transaction.fromTxBody(firstTxBody, privateKey);
   }
 
   static buildAccountsSetupTx(ownerAddress, timestamp, privateKey) {
@@ -236,7 +236,7 @@ class Block {
         op_list: transferOps
       }
     };
-    return Transaction.signTxBody(secondTxBody, privateKey);
+    return Transaction.fromTxBody(secondTxBody, privateKey);
   }
 
   static buildGenesisStakingTxs(timestamp) {
@@ -262,7 +262,7 @@ class Block {
           value: amount
         }
       };
-      txs.push(Transaction.signTxBody(txBody, privateKey));
+      txs.push(Transaction.fromTxBody(txBody, privateKey));
     });
     return txs;
   }
