@@ -412,7 +412,14 @@ class P2pClient {
   heartbeat() {
     this.intervalHeartbeat = setInterval(() => {
       Object.values(this.outbound).forEach(socket => {
-        socket.ping();
+        if (socket.readyState !== 1) {
+          const account = this.getAccountFromSocket(socket);
+          this.removeFromOutboundIfExists(account);
+          logger.info(`A peer(${account}) is not ready to communicate with. ` +
+              `The readyState is(${socket.readyState})`);
+        } else {
+          socket.ping();
+        }
       });
     }, HEARTBEAT_INTERVAL_MS);
   }
