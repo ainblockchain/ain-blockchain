@@ -6,7 +6,6 @@
 
 const { sleep } = require('sleep');
 const axios = require('axios');
-const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const logger = require('../logger')('SERVER_UTIL');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
@@ -21,22 +20,6 @@ async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
     throw Error('Transaction did not finalize in time.' +
         'Try selecting a different parent_chain_poc.');
   }
-}
-
-function signTx(tx, privateKey) {
-  const keyBuffer = Buffer.from(privateKey, 'hex');
-  const sig = ainUtil.ecSignTransaction(tx, keyBuffer);
-  const sigBuffer = ainUtil.toBuffer(sig);
-  const lenHash = sigBuffer.length - 65;
-  const hashedData = sigBuffer.slice(0, lenHash);
-  const txHash = '0x' + hashedData.toString('hex');
-  return {
-    txHash,
-    signedTx: {
-      tx_body: tx,
-      signature: sig
-    }
-  };
 }
 
 async function sendSignedTx(endpoint, params) {
@@ -58,13 +41,8 @@ async function sendSignedTx(endpoint, params) {
 }
 
 async function signAndSendTx(endpoint, tx, privateKey) {
-  const {txHash, signedTx} = signTx(tx, privateKey);
-  const params = {
-    tx_body: signedTx.tx_body,
-    signature: signedTx.signature,
-    protoVer: CURRENT_PROTOCOL_VERSION,
-  };
-  const result = await sendSignedTx(endpoint, params);
+  const {txHash, signedTx} = ChainUtil.signTx(tx, privateKey);
+  const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, {txHash});
 }
 
