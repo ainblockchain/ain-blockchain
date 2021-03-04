@@ -69,7 +69,7 @@ class Block {
   static sanitizeTransactions(transactions) {
     const sanitized = [];
     transactions.forEach((tx) => {
-      sanitized.push(Transaction.removeExtraFields(tx));
+      sanitized.push(Transaction.toJsObject(tx));
     });
     return sanitized;
   }
