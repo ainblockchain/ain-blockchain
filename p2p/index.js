@@ -21,7 +21,7 @@ const {
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
-const HEARTBEAT_INTERVAL_MS = 1000;  // 1 second
+const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -30,9 +30,7 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
     this.trackerWebSocket = null;
     this.outbound = {};
-    // XXX(minsu): The comment out will be revoked when next heartbeat updates.
-    // this.isAlive = true;
-    // this.heartbeat();   // XXX(minsu): it won't run before updating p2p network.
+    this.heartbeat();
   }
 
   run() {
@@ -342,6 +340,11 @@ class P2pClient {
       }
     });
 
+    socket.on('pong', () => {
+      const account = this.getAccountFromSocket(socket);
+      logger.info(`The peer(${account}) is alive.`);
+    });
+
     socket.on('close', () => {
       const account = this.getAccountFromSocket(socket);
       this.removeFromOutboundIfExists(account);
@@ -407,13 +410,10 @@ class P2pClient {
     // this.clearIntervalHeartbeat(address);
   }
 
-  // TODO(minsu): Since the p2p network has not been built completely,
-  // it will be updated afterwards.
   heartbeat() {
-    logger.info(`Start heartbeat`);
     this.intervalHeartbeat = setInterval(() => {
-      this.server.clients.forEach((ws) => {
-        ws.ping();
+      Object.values(this.outbound).forEach(socket => {
+        socket.ping();
       });
     }, HEARTBEAT_INTERVAL_MS);
   }
