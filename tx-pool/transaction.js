@@ -56,7 +56,7 @@ class Transaction {
     return Transaction.create(sanitized, signature);
   }
 
-  static removeExtraFields(tx) {
+  static toJsObject(tx) {
     return {
       tx_body: tx.tx_body,
       signature: tx.signature,
