@@ -405,9 +405,8 @@ class P2pClient {
     // in case trackerWebsocket is not properly setup.
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from connected peers.');
+    this.clearIntervalHeartbeat();
     this.disconnectFromPeers();
-    // XXX(minsu): This will be revoked when next updates.
-    // this.clearIntervalHeartbeat(address);
   }
 
   heartbeat() {
@@ -418,11 +417,11 @@ class P2pClient {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-  // TODO(minsu): Finish it later on
-  // clearIntervalHeartbeat(address) {
-  //   clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
-  //   this.managedPeersInfo[address].intervalHeartbeat = null;
-  // }
+  clearIntervalHeartbeat() {
+    logger.info('Stop heartbeating.');
+    clearInterval(this.intervalHeartbeat);
+    this.intervalHeartbeat = null;
+  }
 }
 
 module.exports = P2pClient;
