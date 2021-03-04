@@ -4,7 +4,7 @@ rm -rf blockchain/blockchains logger/log
 node ./tracker-server/index.js &
 sleep 5
 ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/base node ./client/index.js &
-sleep 
+sleep 5
 ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/base node ./client/index.js &
 sleep 5
 ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/base node ./client/index.js &

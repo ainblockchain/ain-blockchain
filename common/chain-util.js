@@ -3,6 +3,7 @@ const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
@@ -16,6 +17,23 @@ class ChainUtil {
   static shortenHash(hash) {
     if (typeof hash !== 'string' || hash.length < 10) return hash;
     return hash.substring(0, 6) + '...' + hash.substring(hash.length - 4, hash.length);
+  }
+
+  static signTx(txBody, privateKey) {
+    const keyBuffer = Buffer.from(privateKey, 'hex');
+    const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
+    const sigBuffer = ainUtil.toBuffer(sig);
+    const lenHash = sigBuffer.length - 65;
+    const hashedData = sigBuffer.slice(0, lenHash);
+    const txHash = '0x' + hashedData.toString('hex');
+    return {
+      txHash,
+      signedTx: {
+        tx_body: txBody,
+        signature: sig,
+        protoVer: CURRENT_PROTOCOL_VERSION,
+      }
+    };
   }
 
   static hashSignature(sig) {
