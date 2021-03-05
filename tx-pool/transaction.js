@@ -20,9 +20,6 @@ class Transaction {
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
 
-  // TODO(seo): Move the validity check on transaction bodies to the request facing points (e.g.
-  //            ain_sendSignedTransaction, client APIs, and P2P message handler), i.e. do it
-  //            as early as possible.
   static create(txBody, signature) {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
