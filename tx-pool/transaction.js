@@ -201,8 +201,9 @@ class Transaction {
   }
 
   static isBatchTxBody(txBody) {
-    return tx && Array.isArray(tx.tx_list);
+    return txBody && Array.isArray(txBody.tx_list);
   }
+
   static isBatchTransaction(tx) {
     return Transaction.isBatchTxBody(tx);
   }
