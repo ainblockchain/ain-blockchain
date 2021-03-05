@@ -400,18 +400,20 @@ class P2pClient {
 
   stop() {
     this.server.stop();
-    logger.info('Disconnect from tracker server.');
     // Note(minsu): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
     if (this.trackerWebSocket) this.trackerWebSocket.close();
-    logger.info('Disconnect from connected peers.');
+    logger.info('Disconnect from tracker server.');
     this.clearIntervalHeartbeat();
     this.disconnectFromPeers();
+    logger.info('Disconnect from connected peers.');
   }
 
   heartbeat() {
     this.intervalHeartbeat = setInterval(() => {
       Object.values(this.outbound).forEach(socket => {
+        // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
         if (socket.readyState !== 1) {
           const account = this.getAccountFromSocket(socket);
           this.removeFromOutboundIfExists(account);
