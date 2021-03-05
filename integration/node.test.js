@@ -3107,7 +3107,7 @@ describe('Blockchain Node', () => {
           expect(escrowServiceAccountBalance).to.equals(paymentBalanceBefore);
         });
 
-        it("admin account can write release (ratio = 0, refund to payments)", () => {
+        it("admin account can write release (ratio = 0, refund to payments via _pay)", () => {
           const key = Date.now();
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
