@@ -47,11 +47,13 @@ class Transaction {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
-    const sanitized = Transaction.sanitizeTxBody(txBody);
     // A devel method for bypassing the transaction verification.
-    const signature = txBody.address !== undefined ?
-        '' : ainUtil.ecSignTransaction(sanitized, Buffer.from(privateKey, 'hex'));
-    return Transaction.create(sanitized, signature);
+    let signature = '';
+    if (!txBody.address) {
+      const signed = ChainUtil.signTx(txBody, privateKey);
+      signature = signed.signedTx.signature;
+    }
+    return Transaction.create(txBody, signature);
   }
 
   static toJsObject(tx) {
