@@ -407,11 +407,6 @@ class P2pServer {
       logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
     });
 
-    // TODO(minsu): heartbeat stuff
-    // socket.on('pong', (_) => {
-    //   logger.info(`peer(${address}) is alive.`);
-    // });
-
     socket.on('error', (error) => {
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);

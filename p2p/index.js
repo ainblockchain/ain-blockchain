@@ -21,7 +21,7 @@ const {
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
-const HEARTBEAT_INTERVAL_MS = 1000;  // 1 second
+const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -30,9 +30,7 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
     this.trackerWebSocket = null;
     this.outbound = {};
-    // XXX(minsu): The comment out will be revoked when next heartbeat updates.
-    // this.isAlive = true;
-    // this.heartbeat();   // XXX(minsu): it won't run before updating p2p network.
+    this.startHeartbeat();
   }
 
   run() {
@@ -342,6 +340,11 @@ class P2pClient {
       }
     });
 
+    socket.on('pong', () => {
+      const account = this.getAccountFromSocket(socket);
+      logger.info(`The peer(${account}) is alive.`);
+    });
+
     socket.on('close', () => {
       const account = this.getAccountFromSocket(socket);
       this.removeFromOutboundIfExists(account);
@@ -397,32 +400,37 @@ class P2pClient {
 
   stop() {
     this.server.stop();
-    logger.info('Disconnect from tracker server.');
     // Note(minsu): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
     if (this.trackerWebSocket) this.trackerWebSocket.close();
-    logger.info('Disconnect from connected peers.');
+    logger.info('Disconnect from tracker server.');
+    this.stopHeartbeat();
     this.disconnectFromPeers();
-    // XXX(minsu): This will be revoked when next updates.
-    // this.clearIntervalHeartbeat(address);
+    logger.info('Disconnect from connected peers.');
   }
 
-  // TODO(minsu): Since the p2p network has not been built completely,
-  // it will be updated afterwards.
-  heartbeat() {
-    logger.info(`Start heartbeat`);
+  startHeartbeat() {
     this.intervalHeartbeat = setInterval(() => {
-      this.server.clients.forEach((ws) => {
-        ws.ping();
+      Object.values(this.outbound).forEach(socket => {
+        // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
+        if (socket.readyState !== 1) {
+          const account = this.getAccountFromSocket(socket);
+          this.removeFromOutboundIfExists(account);
+          logger.info(`A peer(${account}) is not ready to communicate with. ` +
+              `The readyState is(${socket.readyState})`);
+        } else {
+          socket.ping();
+        }
       });
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-  // TODO(minsu): Finish it later on
-  // clearIntervalHeartbeat(address) {
-  //   clearInterval(this.managedPeersInfo[address].intervalHeartbeat);
-  //   this.managedPeersInfo[address].intervalHeartbeat = null;
-  // }
+  stopHeartbeat() {
+    clearInterval(this.intervalHeartbeat);
+    this.intervalHeartbeat = null;
+    logger.info('Stop heartbeating.');
+  }
 }
 
 module.exports = P2pClient;
