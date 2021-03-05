@@ -497,7 +497,7 @@ function createBatchTxBody(input) {
   for (const tx of input.tx_list) {
     txList.push(tx);
   }
-  return { tx_list: txList };
+  return { tx_body_list: txList };
 }
 
 function createAndExecuteTransaction(txBody) {

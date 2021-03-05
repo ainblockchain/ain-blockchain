@@ -276,7 +276,7 @@ describe('Sharding', () => {
     parent_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
     sleep(2000);
     parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], false);
-    sleep(10000);
+    sleep(15000);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
     sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], false);

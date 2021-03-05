@@ -201,11 +201,11 @@ class Transaction {
   }
 
   static isBatchTxBody(txBody) {
-    return txBody && Array.isArray(txBody.tx_list);
+    return txBody && Array.isArray(txBody.tx_body_list);
   }
 
   static isBatchTransaction(tx) {
-    return Transaction.isBatchTxBody(tx);
+    return tx && Array.isArray(tx.tx_list);
   }
 }
 
