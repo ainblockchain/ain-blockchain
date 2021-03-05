@@ -2,7 +2,6 @@
 
 const semver = require('semver');
 const sizeof = require('object-sizeof');
-const ainUtil = require('@ainblockchain/ain-util');
 const {
   CURRENT_PROTOCOL_VERSION,
   BlockchainNodeStates,
@@ -16,6 +15,7 @@ const {
   ConsensusConsts,
 } = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
+const ChainUtil = require('../common/chain-util');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -350,7 +350,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getNonce: function(args, done) {
       const address = args.address;
       if (args.from === 'pending') {
-        if (ainUtil.areSameAddresses(p2pServer.node.account.address, address)) {
+        if (ChainUtil.areSameAddrs(p2pServer.node.account.address, address)) {
           done(null, addProtocolVersion({result: p2pServer.node.nonce}));
         } else {
           const nonce = node.tp.pendingNonceTracker[address];

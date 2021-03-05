@@ -1,7 +1,6 @@
 const stringify = require('fast-json-stable-stringify');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
-const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
