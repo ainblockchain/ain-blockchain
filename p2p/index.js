@@ -30,7 +30,7 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
     this.trackerWebSocket = null;
     this.outbound = {};
-    this.heartbeat();
+    this.startHeartbeat();
   }
 
   run() {
@@ -404,12 +404,12 @@ class P2pClient {
     // in case trackerWebsocket is not properly setup.
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
-    this.clearIntervalHeartbeat();
+    this.stopHeartbeat();
     this.disconnectFromPeers();
     logger.info('Disconnect from connected peers.');
   }
 
-  heartbeat() {
+  startHeartbeat() {
     this.intervalHeartbeat = setInterval(() => {
       Object.values(this.outbound).forEach(socket => {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
@@ -426,10 +426,10 @@ class P2pClient {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-  clearIntervalHeartbeat() {
-    logger.info('Stop heartbeating.');
+  stopHeartbeat() {
     clearInterval(this.intervalHeartbeat);
     this.intervalHeartbeat = null;
+    logger.info('Stop heartbeating.');
   }
 }
 
