@@ -2,11 +2,11 @@ const rimraf = require('rimraf');
 const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
-const ainUtil = require('@ainblockchain/ain-util');
 const { BLOCKCHAINS_DIR } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
 const {setNodeForTesting, getTransaction} = require('./test-util');
+const ChainUtil = require('../common/chain-util');
 
 describe('Transaction', () => {
   let node;
@@ -79,16 +79,14 @@ describe('Transaction', () => {
       expect(tx).to.not.equal(null);
       expect(tx.tx_body.nonce).to.equal(txBody.nonce);
       expect(tx.tx_body.timestamp).to.equal(txBody.timestamp);
-      expect(tx.hash).to.equal(
-          '0x' + ainUtil.hashTransaction(txBody).toString('hex'));
+      expect(tx.hash).to.equal(ChainUtil.hashTxBody(txBody));
       expect(tx.address).to.equal(node.account.address);
       expect(tx.extra.created_at).to.not.equal(undefined);
       expect(tx.extra.skip_verif).to.equal(undefined);
 
       expect(txCustomAddress).to.not.equal(null);
       expect(txCustomAddress.tx_body.address).to.equal(txBodyCustomAddress.address);
-      expect(txCustomAddress.hash).to.equal(
-          '0x' + ainUtil.hashTransaction(txBodyCustomAddress).toString('hex'));
+      expect(txCustomAddress.hash).to.equal(ChainUtil.hashTxBody(txBodyCustomAddress));
       expect(txCustomAddress.address).to.equal(txBodyCustomAddress.address);
       expect(txCustomAddress.signature).to.equal('');
       expect(txCustomAddress.extra.created_at).to.not.equal(undefined);
@@ -96,8 +94,7 @@ describe('Transaction', () => {
 
       expect(txParentHash).to.not.equal(null);
       expect(txParentHash.tx_body.parent_tx_hash).to.equal(txBodyParentHash.parent_tx_hash);
-      expect(txParentHash.hash).to.equal(
-          '0x' + ainUtil.hashTransaction(txBodyParentHash).toString('hex'));
+      expect(txParentHash.hash).to.equal(ChainUtil.hashTxBody(txBodyParentHash));
       expect(txParentHash.address).to.equal(node.account.address);
       expect(txParentHash.extra.created_at).to.not.equal(undefined);
       expect(txParentHash.extra.skip_verif).to.equal(undefined);
@@ -128,8 +125,7 @@ describe('Transaction', () => {
       expect(txForNode.tx_body.operation.type).to.equal(txBodyForNode.operation.type);
       expect(txForNode.tx_body.operation.ref).to.equal(txBodyForNode.operation.ref);
       expect(txForNode.tx_body.operation.value).to.equal(txBodyForNode.operation.value);
-      expect(txForNode.hash).to.equal(
-          '0x' + ainUtil.hashTransaction(txForNode.tx_body).toString('hex'));
+      expect(txForNode.hash).to.equal(ChainUtil.hashTxBody(txForNode.tx_body));
       expect(txForNode.address).to.equal(node.account.address);
     });
 

@@ -28,8 +28,7 @@ class Transaction {
       return null;
     }
 
-    const hash = '0x' + ainUtil.hashTransaction(txBody).toString('hex');
-
+    const hash = signature ? ChainUtil.hashSignature(signature) : ChainUtil.hashTxBody(txBody);
     let address = null;
     let skipVerif = null;
     // A devel method for bypassing the transaction verification.

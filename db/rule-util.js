@@ -75,6 +75,10 @@ class RuleUtil {
     }
   }
 
+  areSameAddrs(addr1, addr2) {
+    return ainUtil.areSameAddresses(addr1, addr2);
+  }
+
   parseServAcntName(accountName) {
     if (this.isString(accountName)) {
       const parsed = accountName.split('|');

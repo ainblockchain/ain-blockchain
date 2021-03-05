@@ -31,7 +31,7 @@ class BlockchainNode {
     this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
     this.isShardReporter =
         this.isShardChain &&
-        ainUtil.areSameAddresses(
+        ChainUtil.areSameAddrs(
             GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
@@ -198,7 +198,7 @@ class BlockchainNode {
     let nonce = 0;
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
       for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
-        if (ainUtil.areSameAddresses(this.bc.chain[i].transactions[j].address,
+        if (ChainUtil.areSameAddrs(this.bc.chain[i].transactions[j].address,
             this.account.address) && this.bc.chain[i].transactions[j].tx_body.nonce > -1) {
           // If blockchain is being restarted, retreive nonce from blockchain
           nonce = this.bc.chain[i].transactions[j].tx_body.nonce + 1;

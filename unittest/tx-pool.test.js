@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
-const ainUtil = require('@ainblockchain/ain-util');
+const ChainUtil = require('../common/chain-util');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
 const {setNodeForTesting, getTransaction} = require('./test-util')
@@ -75,28 +75,28 @@ describe('TransactionPool', () => {
 
     it('transactions are correctly numbered', () => {
       const sortedNonces1 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.tx_body.nonce;
       });
       const sortedNonces2 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node2.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node2.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.tx_body.nonce;
       });
       const sortedNonces3 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node3.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node3.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.tx_body.nonce;
       });
       const sortedNonces4 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node4.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node4.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
