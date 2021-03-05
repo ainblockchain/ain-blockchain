@@ -2529,7 +2529,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('payments (_pay, _claim)', () => {
+    describe('Payments (_pay, _claim)', () => {
       it('setup payments', () => {
         const configPath = '/payments/test_service/config'
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
@@ -2752,6 +2752,73 @@ describe('Blockchain Node', () => {
         expect(serviceAccountBalance).to.equals(0);
       });
 
+      it('admin can claim payments + hold in escrow', () => {
+        // pay
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const payRef = `/payments/test_service/${serviceUser}/0/pay/key4`;
+        const amount = adminBalanceBefore - 1;
+        let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: payRef,
+          value: {
+            amount
+          }
+        }}).body.toString('utf-8'));
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const payResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${payRef}/result/code`).body.toString('utf-8')).result;
+        expect(payResult).to.equals(FunctionResultCode.SUCCESS);
+        // open escrow
+        const openEscrowRef = `/escrow/payments|test_service|${serviceUser}|0/${serviceAdmin}/0/open`;
+        body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: openEscrowRef,
+          value: {
+            admin: {
+              [serviceAdmin]: true
+            }
+          }
+        }}).body.toString('utf-8'));
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        // claim + hold in escrow
+        const claimRef = `/payments/test_service/${serviceUser}/0/claim/key4`;
+        const paymentBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: claimRef,
+          value: {
+            amount: paymentBalance,
+            target: serviceAdmin,
+            escrow_key: 0
+          }
+        }}).body.toString('utf-8'));
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const claimResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${claimRef}/result/code`).body.toString('utf-8')).result;
+        expect(claimResult).to.equals(FunctionResultCode.SUCCESS);
+        const serviceAccountName = `payments|test_service|${serviceUser}|0:${serviceAdmin}:0`;
+        const escrowServiceAccountBalance = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/service_accounts/escrow/escrow/${serviceAccountName}/balance`)
+            .body.toString('utf-8')).result;
+        expect(escrowServiceAccountBalance).to.equals(paymentBalance);
+        const userServiceAccountBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                .body.toString('utf-8')).result;
+        expect(userServiceAccountBalance).to.equals(0);
+        // release escrow
+        const releaseEscrowRef = `/escrow/payments|test_service|${serviceUser}|0/${serviceAdmin}/0/release/key0`;
+        body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: releaseEscrowRef,
+          value: {
+            ratio: 1
+          }
+        }}).body.toString('utf-8'));
+        waitUntilTxFinalized(serverList, body.result.tx_hash);
+        const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        expect(adminBalanceAfter).to.equals(adminBalanceBefore);
+      });
+
       it('admin can claim payments (target = service account)', () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
@@ -2791,6 +2858,338 @@ describe('Blockchain Node', () => {
             server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                 .body.toString('utf-8')).result;
         expect(userServiceAccountBalance).to.equals(0);
+      });
+    });
+
+    describe('Escrow (_openEscrow, _hold, _release)', () => {
+      describe('source = regular account, target = regular account', () => {
+        it('open escrow', () => {
+          const openRef = `/escrow/${serviceUser}/${serviceAdmin}/0/open`;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: openRef,
+            value: {
+              admin: {
+                [serviceAdmin]: true
+              }
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const escrowServiceAccountAdmin = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/admin/${serviceAdmin}`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountAdmin).to.equals(true);
+        });
+
+        it("cannot open escrow if it's already open", () => {
+          const openRef = `/escrow/${serviceUser}/${serviceAdmin}/0/open`;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: openRef,
+            value: {
+              admin: {
+                [serviceAdmin]: true
+              }
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("non-source account cannot write hold", () => {
+          const key = Date.now();
+          const holdRef = `/escrow/${serviceUser}/${serviceAdmin}/0/hold/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: userBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("source account can write hold", () => {
+          const key = Date.now();
+          const holdRef = `/escrow/${serviceUser}/${serviceAdmin}/0/hold/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: userBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${holdRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalance = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalance).to.equals(userBalanceBefore);
+        });
+
+        it("non-admin account cannot write release", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 1
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("invalid ratio (ratio = -1)", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: -1
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("invalid ratio (ratio = 1.1)", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 1.1
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("admin account can write release (ratio = 0)", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 0
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(0);
+          const userBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          expect(userBalanceAfter).to.equals(userBalanceBefore + escrowServiceAccountBalanceBefore);
+        });
+      });
+
+      describe('source = service account, target = regular account', () => {
+        it('open escrow', () => {
+          // set up payments & service accounts for payments
+          const configPath = '/payments/test_service/config'
+          let body = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
+            op_list: [
+              {
+                type: 'SET_OWNER',
+                ref: configPath,
+                value: {
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": false,
+                        "write_owner": false,
+                        "write_rule": false,
+                        "write_function": false
+                      },
+                      [serviceAdmin]: {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                type: 'SET_VALUE',
+                ref: `${configPath}/admin/${serviceAdmin}`,
+                value: true
+              }
+            ]
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const key = Date.now();
+          const payRef = `/payments/test_service/${serviceUser}/0/pay/${key}`;
+          const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+          const amount = adminBalanceBefore;
+          body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: payRef,
+            value: {
+              amount
+            }
+          }}).body.toString('utf-8'));
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          // open escrow
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const openRef = `/escrow/${source}/${target}/1/open`;
+          body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: openRef,
+            value: {
+              admin: {
+                [serviceAdmin]: true
+              }
+            },
+            nonce: -1
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const escrowServiceAccountAdmin = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/admin/${serviceAdmin}`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountAdmin).to.equals(true);
+        });
+
+        it("non-service account admin cannot write hold", () => {
+          const key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: paymentBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("service account admin can write hold", () => {
+          const key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: paymentBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${holdRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalance = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalance).to.equals(paymentBalanceBefore);
+        });
+
+        it("admin account can write release (ratio = 0, refund to payments)", () => {
+          const key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const releaseRef = `/escrow/${source}/${target}/1/release/${key}`;
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 0
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(0);
+          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          expect(paymentBalanceAfter).to.equals(paymentBalanceBefore + escrowServiceAccountBalanceBefore);
+        });
+
+        it("admin account can write release (ratio = 0.5)", () => {
+          // hold
+          let key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
+          let paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: paymentBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          // release
+          key = Date.now();
+          const releaseRef = `/escrow/${source}/${target}/1/release/${key}`;
+          paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 0.5
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          waitUntilTxFinalized(serverList, body.result.tx_hash);
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(0);
+          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          expect(paymentBalanceAfter).to.equals(paymentBalanceBefore + escrowServiceAccountBalanceBefore / 2);
+          const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+              `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+          expect(adminBalanceAfter).to.equals(adminBalanceBefore + escrowServiceAccountBalanceBefore / 2);
+        });
       });
     });
   });
