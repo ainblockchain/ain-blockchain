@@ -3107,7 +3107,7 @@ describe('Blockchain Node', () => {
           expect(escrowServiceAccountBalance).to.equals(paymentBalanceBefore);
         });
 
-        it("admin account can write release (ratio = 0, refund to payments via _pay)", () => {
+        it("admin account can write release (ratio = 0, refund to payments via _transfer)", () => {
           const key = Date.now();
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
@@ -3126,9 +3126,9 @@ describe('Blockchain Node', () => {
           }}).body.toString('utf-8'));
           expect(body.code).to.equals(0);
           waitUntilTxFinalized(serverList, body.result.tx_hash);
-          const holdResult = parseOrLog(syncRequest('GET', server1 +
+          const releaseResult = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
-          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          expect(releaseResult).to.equals(FunctionResultCode.SUCCESS);
           const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
               server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
               .body.toString('utf-8')).result;
@@ -3175,9 +3175,9 @@ describe('Blockchain Node', () => {
           }}).body.toString('utf-8'));
           expect(body.code).to.equals(0);
           waitUntilTxFinalized(serverList, body.result.tx_hash);
-          const holdResult = parseOrLog(syncRequest('GET', server1 +
+          const releaseResult = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
-          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          expect(releaseResult).to.equals(FunctionResultCode.SUCCESS);
           const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
               server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
               .body.toString('utf-8')).result;
