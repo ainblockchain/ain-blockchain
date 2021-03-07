@@ -542,7 +542,10 @@ class Functions {
     const serviceAccountPath = this.getServiceAccountPath(serviceAccountName);
     const serviceAccountSetupResult = this.setValueOrLog(serviceAccountPath, value, auth, timestamp);
     if (serviceAccountSetupResult !== true) {
-      return serviceAccountSetupResult;
+      logger.error(`  ==> Failed to open escrow`);
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     }
   }
 
@@ -561,7 +564,7 @@ class Functions {
     const escrowServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
     const transferResult = this.setServiceAccountTransferOrLog(
-        sourceAccount, escrowServiceAccountName, value.amount, auth, timestamp, transaction);
+        sourceAccount, escrowServiceAccountName, amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
