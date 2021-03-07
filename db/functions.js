@@ -475,8 +475,7 @@ class Functions {
     const userServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
-        value.source ? value.source : transaction.address, userServiceAccountName, value.amount,
-        auth, timestamp, transaction);
+        transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
@@ -508,7 +507,7 @@ class Functions {
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = this.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
-      result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
+      result = this.setValueOrLog(escrowHoldPath, value.amount, auth, timestamp, transaction);
     } else {
       result = this.setServiceAccountTransferOrLog(
           userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
@@ -574,27 +573,6 @@ class Functions {
     }
   }
 
-  releaseInternal(escrowAccount, recipient, amount, auth, timestamp, transaction) {
-    if (ChainUtil.isServAcntName(recipient)) {
-      const parsed = ChainUtil.parseServAcntName(recipient);
-      if (parsed[0] === PredefinedDbPaths.PAYMENTS) {
-        // trigger _pay
-        const paymentAccountNameParsed = parsed[2].split('|');
-        const payPath = this.getPaymentPayRecordPath(
-            parsed[1], paymentAccountNameParsed[0], paymentAccountNameParsed[1], timestamp);
-        return this.setValueOrLog(payPath, { amount, source: escrowAccount }, auth, timestamp, transaction);
-      } else {
-        // other service types not yet supported
-        logger.debug(`  ==> Service type not supported: ${parsed[0]}`);
-        return false;
-      }
-    } else {
-      // transfer to regular accounts
-      return this.setServiceAccountTransferOrLog(
-          escrowAccount, recipient, amount, auth, timestamp, transaction);
-    }
-  }
-
   _release(value, context) {
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
@@ -616,7 +594,7 @@ class Functions {
     logger.debug(`  =>> escrowAmount: ${escrowAmount}, ratio: ${ratio}, ` +
         `targetAmount: ${targetAmount}, sourceAmount: ${sourceAmount}`);
     if (targetAmount > 0) {
-      const result = this.releaseInternal(
+      const result = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, targetAccount, targetAmount, auth, timestamp, transaction);
       if (result !== true) {
         this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -624,7 +602,7 @@ class Functions {
       }
     }
     if (sourceAmount > 0) {
-      const result = this.releaseInternal(
+      const result = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, sourceAccount, sourceAmount, auth, timestamp, transaction);
       if (result !== true) {
         this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
