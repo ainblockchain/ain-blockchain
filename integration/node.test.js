@@ -3145,13 +3145,13 @@ describe('Blockchain Node', () => {
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
           const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
-          let paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalance = parseOrLog(syncRequest('GET', server1 + 
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
             ref: holdRef,
             value: {
-              amount: paymentBalanceBefore
+              amount: paymentBalance
             }
           }}).body.toString('utf-8'));
           expect(body.code).to.equals(0);
@@ -3159,7 +3159,7 @@ describe('Blockchain Node', () => {
           // release
           key = Date.now();
           const releaseRef = `/escrow/${source}/${target}/1/release/${key}`;
-          paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
