@@ -503,6 +503,8 @@ class Functions {
     let result;
     const userServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
+    // NOTE: By specifying `escrow_key`, the claimed payment is held in escrow instead of being
+    // transferred directly to the admin account
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = this.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
