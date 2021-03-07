@@ -19,6 +19,10 @@ class ChainUtil {
     return hash.substring(0, 6) + '...' + hash.substring(hash.length - 4, hash.length);
   }
 
+  static hashTxBody(txBody) {
+    return '0x' + ainUtil.hashTransaction(txBody).toString('hex');
+  }
+
   static signTx(txBody, privateKey) {
     const keyBuffer = Buffer.from(privateKey, 'hex');
     const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
@@ -113,6 +117,10 @@ class ChainUtil {
 
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
+  }
+
+  static areSameAddrs(addr1, addr2) {
+    return ruleUtil.areSameAddrs(addr1, addr2);
   }
 
   static parseServAcntName(accountName) {

@@ -1,5 +1,4 @@
 const seedrandom = require('seedrandom');
-const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const ntpsync = require('ntpsync');
 const sizeof = require('object-sizeof');
@@ -629,7 +628,8 @@ class Consensus {
           'but trying to propose at the same epoch');
       return;
     }
-    if (this.state.proposer && ainUtil.areSameAddresses(this.state.proposer, this.node.account.address)) {
+    if (this.state.proposer &&
+        ChainUtil.areSameAddrs(this.state.proposer, this.node.account.address)) {
       logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const proposal = this.createProposal();

@@ -1,7 +1,6 @@
 const stringify = require('fast-json-stable-stringify');
 const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
-const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -69,7 +68,7 @@ class Block {
   static sanitizeTransactions(transactions) {
     const sanitized = [];
     transactions.forEach((tx) => {
-      sanitized.push(Transaction.removeExtraFields(tx));
+      sanitized.push(Transaction.toJsObject(tx));
     });
     return sanitized;
   }
@@ -206,7 +205,7 @@ class Block {
         op_list: opList,
       }
     };
-    return Transaction.signTxBody(firstTxBody, privateKey);
+    return Transaction.fromTxBody(firstTxBody, privateKey);
   }
 
   static buildAccountsSetupTx(ownerAddress, timestamp, privateKey) {
@@ -236,7 +235,7 @@ class Block {
         op_list: transferOps
       }
     };
-    return Transaction.signTxBody(secondTxBody, privateKey);
+    return Transaction.fromTxBody(secondTxBody, privateKey);
   }
 
   static buildGenesisStakingTxs(timestamp) {
@@ -262,7 +261,7 @@ class Block {
           value: amount
         }
       };
-      txs.push(Transaction.signTxBody(txBody, privateKey));
+      txs.push(Transaction.fromTxBody(txBody, privateKey));
     });
     return txs;
   }
