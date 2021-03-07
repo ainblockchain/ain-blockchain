@@ -507,7 +507,7 @@ class Functions {
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = this.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
-      result = this.setValueOrLog(escrowHoldPath, value.amount, auth, timestamp, transaction);
+      result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
     } else {
       result = this.setServiceAccountTransferOrLog(
           userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
