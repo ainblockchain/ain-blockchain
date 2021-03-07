@@ -91,7 +91,7 @@
             }
           },
           "open": {
-            ".write": "util.isCksumAddr(auth.addr) && data === null && util.isDict(newData) && util.isDict(newData.admin) && (util.isCksumAddr($source_account) || util.isServAcntName($source_account)) && (util.isCksumAddr($target_account) || util.isServAcntName($target_account))"
+            ".write": "util.isCksumAddr(auth.addr) && data === null && util.isDict(newData) && util.isDict(newData.admin) && Object.entries(newData.admin).every(([k, v]) => util.isCksumAddr(k) && v === true) && (util.isCksumAddr($source_account) || util.isServAcntName($source_account)) && (util.isCksumAddr($target_account) || util.isServAcntName($target_account))"
           },
           "release": {
             "$record_id": {
