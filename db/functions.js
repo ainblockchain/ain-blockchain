@@ -583,6 +583,7 @@ class Functions {
         return this.setValueOrLog(payPath, { amount, source: escrowAccount }, auth, timestamp, transaction);
       } else {
         // other service types not yet supported
+        logger.debug(`  ==> Service type not supported: ${parsed[0]}`);
         return false;
       }
     } else {
