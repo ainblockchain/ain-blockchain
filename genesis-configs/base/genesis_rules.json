@@ -78,6 +78,33 @@
       }
     }
   },
+  "escrow": {
+    "$source_account": {
+      "$target_account": {
+        "$escrow_key": {
+          "hold": {
+            "$record_id": {
+              ".write": "((util.isServAcntName($source_account) && getValue(util.getServAcntAdminPath($source_account) + '/' + auth.addr) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue(util.getServAcntAdminPath(util.toServiceAccountName('escrow', 'escrow', util.toEscrowAccountName($source_account, $target_account, $escrow_key)))) !== null && data === null && util.isDict(newData)",
+              "result": {
+                ".write": "auth.fid === '_hold'"
+              }
+            }
+          },
+          "open": {
+            ".write": "util.isCksumAddr(auth.addr) && data === null && util.isDict(newData) && util.isDict(newData.admin) && Object.entries(newData.admin).every(([k, v]) => util.isCksumAddr(k) && v === true) && (util.isCksumAddr($source_account) || util.isServAcntName($source_account)) && (util.isCksumAddr($target_account) || util.isServAcntName($target_account))"
+          },
+          "release": {
+            "$record_id": {
+              ".write": "getValue(util.getServAcntAdminPath(util.toServiceAccountName('escrow', 'escrow', util.toEscrowAccountName($source_account, $target_account, $escrow_key))) + '/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.ratio) && 0 <= newData.ratio && newData.ratio <= 1",
+              "result": {
+                ".write": "auth.fid === '_release'"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "payments": {
     "$service": {
       "config": {
@@ -113,13 +140,14 @@
     "$service_type": {
       "$service_name": {
         "$key": {
+          ".write": "auth.fid === '_openEscrow'",
           "admin": {
             "$admin_addr": {
               ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
             }
           },
           "balance": {
-            ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
+            ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release'"
           }
         }
       }
@@ -138,7 +166,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "(auth.addr === $from || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+            ".write": "(auth.addr === $from || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
           },
           "result": {
             ".write": "auth.fid === '_transfer'"

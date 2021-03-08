@@ -75,6 +75,14 @@ class RuleUtil {
     }
   }
 
+  toEscrowAccountName(source, target, escrowKey) {
+    return `${source}:${target}:${escrowKey}`;
+  }
+
+  toServiceAccountName(serviceType, serviceName, key) {
+    return `${serviceType}|${serviceName}|${key}`;
+  }
+
   areSameAddrs(addr1, addr2) {
     return ainUtil.areSameAddresses(addr1, addr2);
   }
@@ -92,6 +100,13 @@ class RuleUtil {
     } else {
       return [null, null, null];
     }
+  }
+
+  getServAcntAdminPath(accountName) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const parsed = this.parseServAcntName(accountName);
+    return `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/` +
+        `${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}`;
   }
 
   getBalancePath(addrOrServAcnt) {

@@ -114,6 +114,13 @@ const PredefinedDbPaths = {
   PAYMENTS_CONFIG: 'config',
   PAYMENTS_PAY: 'pay',
   PAYMENTS_RESULT: 'result',
+  // Escrow
+  ESCROW: 'escrow',
+  ESCROW_ADMIN: 'admin',
+  ESCROW_HOLD: 'hold',
+  ESCROW_OPEN: 'open',
+  ESCROW_RELEASE: 'release',
+  ESCROW_RESULT: 'result',
   // Remote transaction action
   REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
@@ -219,8 +226,11 @@ const NativeFunctionIds = {
   CLAIM: '_claim',
   CLOSE_CHECKIN: '_closeCheckin',
   DEPOSIT: '_deposit',
+  HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
+  OPEN_ESCROW: '_openEscrow',
   PAY: '_pay',
+  RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
   TRANSFER: '_transfer',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',

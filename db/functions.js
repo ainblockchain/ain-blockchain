@@ -44,8 +44,11 @@ class Functions {
       [NativeFunctionIds.CLAIM]: this._claim.bind(this),
       [NativeFunctionIds.CLOSE_CHECKIN]: this._closeCheckin.bind(this),
       [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
+      [NativeFunctionIds.HOLD]: this._hold.bind(this),
       [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
+      [NativeFunctionIds.OPEN_ESCROW]: this._openEscrow.bind(this),
       [NativeFunctionIds.PAY]: this._pay.bind(this),
+      [NativeFunctionIds.RELEASE]: this._release.bind(this),
       [NativeFunctionIds.SAVE_LAST_TX]: this._saveLastTx.bind(this),
       [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
@@ -462,16 +465,17 @@ class Functions {
     const transaction = context.transaction;
     const execTime = context.execTime;
     const auth = context.auth;
-    const resultPath = this.getPaymentPayRecordsResultPath(service, user, paymentKey, recordId);
+    const resultPath = this.getPaymentPayRecordResultPath(service, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
-    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, `${user}|${paymentKey}`);
+    const userServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
-      transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
+        transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
@@ -488,17 +492,27 @@ class Functions {
     const timestamp = context.timestamp;
     const execTime = context.execTime;
     const auth = context.auth;
-    const resultPath = this.getPaymentClaimRecordsResultPath(service, user, paymentKey, recordId);
+    const resultPath = this.getPaymentClaimRecordResultPath(service, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
 
-    const userServiceAccountName = ChainUtil.toServiceAccountName('payments', service, `${user}|${paymentKey}`);
-    const transferResult = this.setServiceAccountTransferOrLog(
-        userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
-    if (transferResult === true) {
+    let result;
+    const userServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
+    // NOTE: By specifying `escrow_key`, the claimed payment is held in escrow instead of being
+    // transferred directly to the admin account
+    if (value.escrow_key !== undefined) {
+      const escrowHoldPath = this.getEscrowHoldRecordPath(
+          userServiceAccountName, value.target, value.escrow_key, timestamp);
+      result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
+    } else {
+      result = this.setServiceAccountTransferOrLog(
+          userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
+    }
+    if (result === true) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -516,6 +530,87 @@ class Functions {
       return false;
     }
     return true;
+  }
+
+  _openEscrow(value, context) {
+    const sourceAccount = context.params.source_account;
+    const targetAccount = context.params.target_account;
+    const escrowKey = context.params.escrow_key;
+    const { timestamp, auth } = context;
+    const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
+    const serviceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
+    const serviceAccountPath = this.getServiceAccountPath(serviceAccountName);
+    const serviceAccountSetupResult = this.setValueOrLog(serviceAccountPath, value, auth, timestamp);
+    if (serviceAccountSetupResult !== true) {
+      logger.error(`  ==> Failed to open escrow`);
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    }
+  }
+
+  _hold(value, context) {
+    const sourceAccount = context.params.source_account;
+    const targetAccount = context.params.target_account;
+    const escrowKey = context.params.escrow_key;
+    const recordId = context.params.record_id;
+    const { transaction, timestamp, auth } = context;
+    const amount = _.get(value, 'amount');
+    const resultPath = this.getEscrowHoldRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
+    if (!ChainUtil.isNumber(amount)) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+    }
+    const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
+    const escrowServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
+    const transferResult = this.setServiceAccountTransferOrLog(
+        sourceAccount, escrowServiceAccountName, amount, auth, timestamp, transaction);
+    if (transferResult === true) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+    }
+  }
+
+  _release(value, context) {
+    const sourceAccount = context.params.source_account;
+    const targetAccount = context.params.target_account;
+    const escrowKey = context.params.escrow_key;
+    const recordId = context.params.record_id;
+    const { transaction, timestamp, auth } = context;
+    const ratio = _.get(value, 'ratio');
+    const resultPath = this.getEscrowReleaseRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
+    if (!ChainUtil.isNumber(ratio) || ratio < 0 || ratio > 1) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+    }
+    const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
+    const escrowServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
+    const serviceAccountBalancePath = this.getServiceAccountBalancePath(escrowServiceAccountName);
+    const escrowAmount = this.db.getValue(serviceAccountBalancePath);
+    const targetAmount = escrowAmount * ratio;
+    const sourceAmount = escrowAmount - targetAmount;
+    logger.debug(`  =>> escrowAmount: ${escrowAmount}, ratio: ${ratio}, ` +
+        `targetAmount: ${targetAmount}, sourceAmount: ${sourceAmount}`);
+    if (targetAmount > 0) {
+      const result = this.setServiceAccountTransferOrLog(
+          escrowServiceAccountName, targetAccount, targetAmount, auth, timestamp, transaction);
+      if (result !== true) {
+        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+        return;
+      }
+    }
+    if (sourceAmount > 0) {
+      const result = this.setServiceAccountTransferOrLog(
+          escrowServiceAccountName, sourceAccount, sourceAmount, auth, timestamp, transaction);
+      if (result !== true) {
+        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+        // TODO(lia): revert the release to target_account if there was any
+        return;
+      }
+    }
+    this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
   }
 
   getLatestShardReportPathFromValuePath(valuePath) {
@@ -729,14 +824,21 @@ class Functions {
     return true;
   }
 
-  getServiceAccountAdminPath(accountName) {
+  getServiceAccountPath(accountName) {
     const parsed = ChainUtil.parseServAcntName(accountName);
-    return `${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/` +
-        `${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}`;
+    return `${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}`;
+  }
+
+  getServiceAccountAdminPath(accountName) {
+    return `${this.getServiceAccountPath(accountName)}/${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}`;
   }
 
   getServiceAccountAdminAddrPath(accountName, adminAddr) {
     return `${this.getServiceAccountAdminPath(accountName)}/${adminAddr}`;
+  }
+
+  getServiceAccountBalancePath(accountName) {
+    return `${this.getServiceAccountPath(accountName)}/${PredefinedDbPaths.BALANCE}`;
   }
 
   getTransferValuePath(from, to, key) {
@@ -788,14 +890,39 @@ class Functions {
         `${PredefinedDbPaths.PAYMENTS_ADMIN}`);
   }
 
-  getPaymentPayRecordsResultPath(service, user, paymentKey, recordId) {
+  getPaymentPayRecordPath(service, user, paymentKey, recordId) {
     return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
-        `${PredefinedDbPaths.PAYMENTS_PAY}/${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
+        `${PredefinedDbPaths.PAYMENTS_PAY}/${recordId}`);
   }
 
-  getPaymentClaimRecordsResultPath(service, user, paymentKey, recordId) {
+  getPaymentClaimRecordPath(service, user, paymentKey, recordId) {
     return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
-        `${PredefinedDbPaths.PAYMENTS_CLAIM}/${recordId}/${PredefinedDbPaths.PAYMENTS_RESULT}`);
+        `${PredefinedDbPaths.PAYMENTS_CLAIM}/${recordId}`);
+  }
+
+  getPaymentPayRecordResultPath(service, user, paymentKey, recordId) {
+    return (`${this.getPaymentPayRecordPath(service, user, paymentKey, recordId)}/` +
+        `${PredefinedDbPaths.PAYMENTS_RESULT}`);
+  }
+
+  getPaymentClaimRecordResultPath(service, user, paymentKey, recordId) {
+    return (`${this.getPaymentClaimRecordPath(service, user, paymentKey, recordId)}/` +
+        `${PredefinedDbPaths.PAYMENTS_RESULT}`);
+  }
+
+  getEscrowHoldRecordPath(source, target, escrowKey, recordId) {
+    return (`${PredefinedDbPaths.ESCROW}/${source}/${target}/${escrowKey}/` +
+        `${PredefinedDbPaths.ESCROW_HOLD}/${recordId}`);
+  }
+
+  getEscrowHoldRecordResultPath(source, target, escrowKey, recordId) {
+    return (`${this.getEscrowHoldRecordPath(source, target, escrowKey, recordId)}/` +
+        `${PredefinedDbPaths.ESCROW_RESULT}`);
+  }
+
+  getEscrowReleaseRecordResultPath(source, target, escrowKey, recordId) {
+    return (`${PredefinedDbPaths.ESCROW}/${source}/${target}/${escrowKey}/` +
+        `${PredefinedDbPaths.ESCROW_RELEASE}/${recordId}/${PredefinedDbPaths.ESCROW_RESULT}`);
   }
 
   getLatestShardReportPath(branchPath) {
