@@ -73,7 +73,7 @@ async function processArguments() {
     usage();
   }
   config = require(path.resolve(__dirname, process.argv[2]));
-  await sendTransaction(process.argv[3]);
+  await sendTransaction(!!process.argv[3]);
 }
 
 function usage() {
