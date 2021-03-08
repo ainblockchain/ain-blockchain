@@ -40,7 +40,7 @@ describe('Blockchain', () => {
         node1.account.address, {}));
     assert.deepEqual(
         node1.bc.chain[node1.bc.chain.length -1].transactions[0],
-        Transaction.removeExtraFields(tx));
+        Transaction.toJsObject(tx));
   });
 
   // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)

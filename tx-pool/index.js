@@ -40,7 +40,7 @@ class TransactionPool {
     // (closer to the communication layers where the node first receives transactions)
     if (!LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(tx)) {
-        logger.info('Invalid transaction');
+        logger.error('Invalid transaction');
         logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
         return false;
       }
