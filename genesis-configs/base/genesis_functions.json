@@ -41,6 +41,42 @@
       }
     }
   },
+  "escrow": {
+    "$source_account": {
+      "$target_account": {
+        "$escrow_key": {
+          "hold": {
+            "$record_id": {
+              ".function": {
+                "_hold": {
+                  "function_type": "NATIVE",
+                  "function_id": "_hold"
+                }
+              }
+            }
+          },
+          "open": {
+            ".function": {
+              "_openEscrow": {
+                "function_type": "NATIVE",
+                "function_id": "_openEscrow"
+              }
+            }
+          },
+          "release": {
+            "$record_id": {
+              ".function": {
+                "_release": {
+                  "function_type": "NATIVE",
+                  "function_id": "_release"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "payments": {
     "$service": {
       "$user_addr": {

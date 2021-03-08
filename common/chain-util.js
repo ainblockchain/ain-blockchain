@@ -128,7 +128,11 @@ class ChainUtil {
   }
 
   static toServiceAccountName(serviceType, serviceName, key) {
-    return `${serviceType}|${serviceName}|${key}`;
+    return ruleUtil.toServiceAccountName(serviceType, serviceName, key);
+  }
+
+  static toEscrowAccountName(source, target, escrowKey) {
+    return ruleUtil.toEscrowAccountName(source, target, escrowKey);
   }
 
   static toString(value) {

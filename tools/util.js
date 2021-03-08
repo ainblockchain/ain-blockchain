@@ -20,7 +20,7 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
       id: 0
     }
   ).then((resp) => {
-    const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
+    const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result.result.result', null));
     console.log(`result: ${JSON.stringify(success, null, 2)}`);
     return {txHash, signedTx, success};
   }).catch((err) => {
