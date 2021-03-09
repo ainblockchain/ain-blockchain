@@ -182,7 +182,7 @@ class Blockchain {
   }
 
   pathToBlock(block) {
-    return BlockFileUtil.getFilename(block);
+    return BlockFileUtil.getBlockFilePath(this._blockchainDir(), block.number);
   }
 
   writeChain() {
