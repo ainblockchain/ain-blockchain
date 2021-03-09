@@ -72,7 +72,7 @@ class Blockchain {
     */
   getBlockByHash(hash) {
     if (!hash) return null;
-    const blockFileName = BlockFileUtil.getBlockFilePath(this.hashToNumber[hash]);
+    const blockFileName = BlockFileUtil.getBlockFilePath(this._blockchainDir(), this.hashToNumber[hash]);
     if (blockFileName === undefined) {
       const found = this.chain.filter((block) => block.hash === hash);
       return found.length ? found[0] : null;
