@@ -1,12 +1,9 @@
 const rimraf = require('rimraf');
 const path = require('path');
 const fs = require('fs');
-const glob = require('glob');
-const zipper = require('zip-local');
-const naturalSort = require('node-natural-sort');
 const logger = require('../logger')('BLOCKCHAIN');
 const { Block } = require('./block');
-const BlockFilePatterns = require('./block-file-patterns');
+const BlockFileUtil = require('./block-file-util');
 const { BLOCKCHAINS_DIR } = require('../common/constants');
 const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
@@ -16,11 +13,12 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainDir = blockchainDir;
+    this.hashToNumber = {}; // TODO(csh): Move to file (./hash-to-number/0x~~~)
   }
 
   init(isFirstNode) {
     let lastBlockWithoutProposal;
-    if (this.createBlockchainDir()) {
+    if (BlockFileUtil.createBlockchainDir(this._blockchainDir())) {
       if (isFirstNode) {
         logger.info('\n');
         logger.info('############################################################');
@@ -74,8 +72,7 @@ class Blockchain {
     */
   getBlockByHash(hash) {
     if (!hash) return null;
-    const blockFileName =
-        glob.sync(BlockFilePatterns.getBlockFilenameByHash(this._blockchainDir(), hash)).pop();
+    const blockFileName = BlockFileUtil.getBlockFilePath(this.hashToNumber[hash]);
     if (blockFileName === undefined) {
       const found = this.chain.filter((block) => block.hash === hash);
       return found.length ? found[0] : null;
@@ -92,7 +89,7 @@ class Blockchain {
 ]   */
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
-    const blockFileName = this.getBlockFiles(number, number + 1).pop();
+    const blockFileName = BlockFileUtil.getBlockFiles(this._blockchainDir(), number, number + 1).pop();
     if (blockFileName === undefined || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
       const found = this.chain.filter((block) => block.number === number);
       return found.length ? found[0] : null;
@@ -185,28 +182,7 @@ class Blockchain {
   }
 
   pathToBlock(block) {
-    return path.resolve(this._blockchainDir(), Block.getFileName(block));
-  }
-
-  createBlockchainDir() {
-    let created = false;
-    const dirs = [BLOCKCHAINS_DIR];
-    if (this.blockchainDir) {
-      dirs.push(this._blockchainDir());
-    }
-    dirs.forEach((directory) => {
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory);
-        created = true;
-      } else {
-        const files = fs.readdirSync(directory);
-        // Note(minsu): Added this check to avoid an only dir exists case without zip files at all.
-        if (!files.length) {
-          created = true;
-        }
-      }
-    });
-    return created;
+    return BlockFileUtil.getFilename(block);
   }
 
   writeChain() {
@@ -215,7 +191,8 @@ class Blockchain {
       const filePath = this.pathToBlock(block);
       if (!fs.existsSync(filePath)) {
         // Change to async implementation
-        zipper.sync.zip(Buffer.from(JSON.stringify(block))).compress().save(filePath);
+        BlockFileUtil.writeBlock(filePath, block);
+        this.hashToNumber[block.hash] = block.number;
       }
     }
   }
@@ -235,7 +212,7 @@ class Blockchain {
     logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
                 `Requester's last block number: ${refBlockNumber}`);
 
-    const blockFiles = this.getBlockFiles(nextBlockNumber, nextBlockNumber + CHAIN_SEGMENT_LENGTH);
+    const blockFiles = BlockFileUtil.getBlockFiles(this._blockchainDir(), nextBlockNumber, nextBlockNumber + CHAIN_SEGMENT_LENGTH);
 
     if (blockFiles.length > 0 &&
         (!!(refBlock) && Block.loadBlock(blockFiles[0]).last_hash !== refBlock.hash)) {
@@ -282,7 +259,7 @@ class Blockchain {
     }
     if (!Blockchain.isValidChainSegment(chainSegment)) {
       logger.error(`Invalid chain segment`);
-      return validBlocks; 
+      return validBlocks;
     }
     for (const block of chainSegment) {
       if (block.number <= this.lastBlockNumber()) {
@@ -295,7 +272,7 @@ class Blockchain {
 
   static loadChain(chainPath) {
     const newChain = [];
-    const blockFiles = Blockchain.getAllBlockFiles(chainPath);
+    const blockFiles = BlockFileUtil.getAllBlockFiles(chainPath);
 
     blockFiles.forEach((block) => {
       newChain.push(Block.loadBlock(block));
@@ -310,16 +287,6 @@ class Blockchain {
     return null;
   }
 
-  static getAllBlockFiles(chainPath) {
-    return glob.sync(BlockFilePatterns.getAllBlockFiles(chainPath)).sort(naturalSort());
-  }
-
-  getBlockFiles(from, to) {
-    // Here we use (to - 1) so files can be queried like normal array index querying.
-    return glob.sync(BlockFilePatterns.getBlockFilesInRange(
-        this._blockchainDir(), from, to)).sort(naturalSort());
-  }
-
   getChainSection(from, to) {
     if (!Number.isInteger(from) || from < 0) {
       from = 0;
@@ -328,7 +295,7 @@ class Blockchain {
       to = this.lastBlockNumber() + 1;
     }
     const chain = [];
-    const blockFiles = this.getBlockFiles(from, to);
+    const blockFiles = BlockFileUtil.getBlockFiles(this._blockchainDir(), from, to);
     blockFiles.forEach((blockFile) => {
       const block = Block.loadBlock(blockFile);
       chain.push(block);
