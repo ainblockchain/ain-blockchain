@@ -15,6 +15,7 @@ const {
   AccountProperties,
   TokenExchangeSchemes,
   FunctionProperties,
+  FeatureFlags,
   MIN_NUM_VALIDATORS,
   MIN_STAKE_PER_VALIDATOR,
 } = require('../common/constants');
@@ -93,9 +94,11 @@ class Functions {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
             // Execute the matched native function.
-            logger.info(
-                `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] with:\n` +
-                formattedParams);
+            if (FeatureFlags.enableRichFunctionLogging) {
+              logger.info(
+                  `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] with:\n` +
+                  formattedParams);
+            }
             this.pushCall(
                 ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
                 functionEntry.function_id);
@@ -116,14 +119,16 @@ class Functions {
             } finally {
               // Always pops from the call stack.
               const call = this.popCall();
-              if (call.result) {
-                const formattedResult =
-                    `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]]: \n` +
-                    `${JSON.stringify(call.result, null, 2)}`;
-                if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
-                  logger.info(formattedResult);
-                } else {
-                  logger.error(formattedResult);
+              if (FeatureFlags.enableRichFunctionLogging) {
+                if (call.result) {
+                  const formattedResult =
+                      `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]]: \n` +
+                      `${JSON.stringify(call.result, null, 2)}`;
+                  if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
+                    logger.info(formattedResult);
+                  } else {
+                    logger.error(formattedResult);
+                  }
                 }
               }
               triggerCount++;
@@ -132,19 +137,23 @@ class Functions {
         } else if (functionEntry.function_type === FunctionTypes.REST) {
           if (functionEntry.event_listener &&
               functionEntry.event_listener in EventListenerWhitelist) {
-            logger.info(
-                `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
-                `event listener '${functionEntry.event_listener}' with:\n` +
-                formattedParams);
+            if (FeatureFlags.enableRichFunctionLogging) {
+              logger.info(
+                  `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
+                  `event listener '${functionEntry.event_listener}' with:\n` +
+                  formattedParams);
+            }
             promises.push(axios.post(functionEntry.event_listener, {
               function: functionEntry,
               transaction,
             }).catch((error) => {
-              logger.error(
-                  `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
-                  `event listener '${functionEntry.event_listener}' with error: \n` +
-                  `${JSON.stringify(error)}` +
-                  formattedParams);
+              if (FeatureFlags.enableRichFunctionLogging) {
+                logger.error(
+                    `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
+                    `event listener '${functionEntry.event_listener}' with error: \n` +
+                    `${JSON.stringify(error)}` +
+                    formattedParams);
+              }
               failCount++;
               return true;
             }));
