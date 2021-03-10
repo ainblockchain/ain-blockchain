@@ -51,7 +51,7 @@ class Blockchain {
         logger.info('################################################################');
         logger.info('\n');
       }
-      const newChain = Blockchain.loadChain(this._blockchainDir());
+      const newChain = this.loadChain();
       if (newChain) {
         // Note(minsu): Deal with the case the only genesis block was generated.
         if (newChain.length > 1) {
@@ -293,7 +293,8 @@ class Blockchain {
     return validBlocks;
   }
 
-  static loadChain(chainPath) {
+  loadChain() {
+    const chainPath = this._blockchainDir();
     const newChain = [];
     const blockFiles = Blockchain.getAllBlockFiles(chainPath);
 
