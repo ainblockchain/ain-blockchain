@@ -158,8 +158,12 @@ class Functions {
   }
 
   pushCall(valuePath, value, functionPath, fid) {
+    const topCall = this.getTopCall();
+    const fidList = topCall ? topCall.fidList : [];
+    fidList.push(fid);
     this.callStack.push({
       fid,
+      fidList,
       functionPath,
       triggered_by: {
         valuePath,
@@ -172,10 +176,18 @@ class Functions {
     return this.callStack.pop();
   }
 
-  setCallResult(result) {
+  getTopCall() {
     const size = this.callStackSize();
     if (size > 0) {
-      this.callStack[size - 1].result = result;
+      return this.callStack[size - 1];
+    }
+    return null;
+  }
+
+  setCallResult(result) {
+    const call = this.getTopCall();
+    if (call) {
+      call.result = result;
     }
   }
 
@@ -184,10 +196,8 @@ class Functions {
   }
 
   getFids() {
-    return this.callStack.reduce((acc, cur) => {
-      acc.push(cur.fid);
-      return acc;
-    }, []);
+    const call = this.getTopCall();
+    return call ? call.fidList : [];
   }
 
   static formatFunctionParams(
