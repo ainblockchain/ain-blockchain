@@ -1,5 +1,6 @@
 const logger = require('../logger')('DATABASE');
 const {
+  AccountProperties,
   ReadDbOperations,
   WriteDbOperations,
   PredefinedDbPaths,
@@ -7,6 +8,7 @@ const {
   RuleProperties,
   ProofProperties,
   ShardingProperties,
+  GenesisAccounts,
   GenesisSharding,
   FeatureFlags,
   LIGHTWEIGHT,
@@ -43,6 +45,8 @@ class DB {
     this.bc = bc;
     this.isNodeDb = isNodeDb;
     this.blockNumberSnapshot = blockNumberSnapshot;
+    this.ownerAddress = ChainUtil.getJsObject(
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   }
 
   initDbStates() {
@@ -435,7 +439,6 @@ class DB {
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
   }
 
-  // TODO(seo): Do not allow users to set native functions to arbitrary paths.
   setFunction(functionPath, functionChange, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
@@ -446,13 +449,20 @@ class DB {
     if (!isValidPath.isValid) {
       return ChainUtil.returnError(402, `Invalid path: ${isValidPath.invalidPath}`);
     }
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    if (!auth || auth.addr !== this.ownerAddress) {
+      const ownerOnlyFid = this.func.hasOwnerOnlyFunction(functionChange);
+      if (ownerOnlyFid !== null) {
+        return ChainUtil.returnError(403, `Trying to write owner-only function: ${ownerOnlyFid}`);
+      }
+    }
+    const localPath = isGlobal === true ?
+        DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
       return true;
     }
     if (!this.getPermissionForFunction(localPath, auth)) {
-      return ChainUtil.returnError(403, `No write_function permission on: ${functionPath}`);
+      return ChainUtil.returnError(404, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
