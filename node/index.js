@@ -444,6 +444,7 @@ class BlockchainNode {
       if (!db.executeTransactionList(transactions)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions`)
       }
+      this.tp.cleanUpForNewBlock(block);
       this.tp.updateNonceTrackers(transactions);
     });
   }
