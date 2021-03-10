@@ -81,9 +81,15 @@ class Functions {
           parsedValuePath, functionPath, timestamp, execTime, params, value, transaction);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
-          continue; // Does nothing.
+          continue;  // Does nothing.
         }
         if (functionEntry.function_type === FunctionTypes.NATIVE) {
+          if (this.isCircularCall(functionEntry.function_id)) {
+            logger.error(
+                `Circular function call [[ ${functionEntry.function_id} ]] ` +
+                `with call stack ${JSON.stringify(this.getFids(), null, 2)}`);
+            continue;  // Skips function.
+          }
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
             // Execute the matched native function.
@@ -198,6 +204,11 @@ class Functions {
   getFids() {
     const call = this.getTopCall();
     return call ? call.fidList : [];
+  }
+
+  isCircularCall(fid) {
+    const call = this.getTopCall();
+    return call && call.fidList && call.fidList.includes(fid);
   }
 
   static formatFunctionParams(
