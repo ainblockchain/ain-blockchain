@@ -254,11 +254,11 @@ class P2pClient {
       switch (data.type) {
         case MessageTypes.ACCOUNT_RESPONSE:
           if (!data.account) {
-            logger.error(`Broken websocket(account unknown) is established.`);
+            logger.error(`Broken websocket (account unknown) is established.`);
             socket.close();
             return;
           } else {
-            logger.info(`A new websocket(${data.account}) is established.`);
+            logger.info(`A new websocket (${data.account}) is established.`);
             this.outbound[data.account] = socket;
           }
           break;
