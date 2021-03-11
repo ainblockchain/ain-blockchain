@@ -232,7 +232,7 @@ function setUpForNativeFunctions() {
           type: 'SET_RULE',
           ref: '/test/test_native_function/allowed_path_with_fids/.last_tx/value',
           value: {
-            ".write": "auth.fids.includes('_saveLastTx')",
+            ".write": "util.includes(auth.fids, '_saveLastTx')",
           }
         },
         {
@@ -258,7 +258,7 @@ function setUpForNativeFunctions() {
           type: 'SET_RULE',
           ref: '/test/test_native_function/not_allowed_path_with_fids/.last_tx/value',
           value: {
-            ".write": "auth.fids.includes('some function id')",
+            ".write": "util.includes(auth.fids, 'some function id')",
           }
         },
       ],
