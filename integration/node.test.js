@@ -2199,80 +2199,84 @@ describe('Blockchain Node', () => {
     })
 
     describe('Function permission (_saveLastTx)', () => {
-      it('fid rule: without function permission', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: saveLastTxNotAllowedPath + '/value',
-          value: 'some value',
-          timestamp: Date.now(),
-          nonce: -1,
-        }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/.last_tx/value'}`)
-          .body.toString('utf-8')).result
-        // Should be null.
-        expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+      describe('Write rule: auth.fid', () => {
+        it('write rule: auth.fid: without function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxNotAllowedPath + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.equal(_.get(body, 'result.result'), true);
+          assert.equal(body.code, 0);
+          if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+            console.log(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be null.
+          expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+        });
+
+        it('write rule: auth.fid: with function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxAllowedPath + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.equal(_.get(body, 'result.result'), true);
+          assert.equal(body.code, 0);
+          if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+            console.log(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be the tx hash value.
+          assert.equal(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        });
       });
 
-      it('fid rule: with function permission', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: saveLastTxAllowedPath + '/value',
-          value: 'some value',
-          timestamp: Date.now(),
-          nonce: -1,
-        }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
-          .body.toString('utf-8')).result
-        // Should be the tx hash value.
-        assert.equal(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
-      });
+      describe('Write rule: auth.fids', () => {
+        it('write rule: auth.fids: without function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxNotAllowedPathWithFids + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.equal(_.get(body, 'result.result'), true);
+          assert.equal(body.code, 0);
+          if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+            console.log(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxNotAllowedPathWithFids + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be null.
+          expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+        });
 
-      it('fids rule: without function permission', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: saveLastTxNotAllowedPathWithFids + '/value',
-          value: 'some value',
-          timestamp: Date.now(),
-          nonce: -1,
-        }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxNotAllowedPathWithFids + '/.last_tx/value'}`)
-          .body.toString('utf-8')).result
-        // Should be null.
-        expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
-      });
-
-      it('fids rule: with function permission', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: saveLastTxAllowedPathWithFids + '/value',
-          value: 'some value',
-          timestamp: Date.now(),
-          nonce: -1,
-        }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxAllowedPathWithFids + '/.last_tx/value'}`)
-          .body.toString('utf-8')).result
-        // Should be the tx hash value.
-        assert.equal(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        it('write rule: auth.fids: with function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxAllowedPathWithFids + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.equal(_.get(body, 'result.result'), true);
+          assert.equal(body.code, 0);
+          if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
+            console.log(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxAllowedPathWithFids + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be the tx hash value.
+          assert.equal(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        });
       });
     });
 
