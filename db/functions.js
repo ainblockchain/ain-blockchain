@@ -177,7 +177,7 @@ class Functions {
 
   pushCall(valuePath, value, functionPath, fid) {
     const topCall = this.getTopCall();
-    const fidList = topCall ? JSON.parse(JSON.stringify(topCall.fidList)) : [];
+    const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
     this.callStack.push({
       fid,
