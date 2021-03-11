@@ -205,17 +205,18 @@ function printNodesInfo() {
 }
 
 function getNodeSummary(nodeInfo) {
+  const ip = _.get(nodeInfo, 'networkStatus.ip', '');
   const diskAvailableMb = Math.floor(_.get(nodeInfo, 'diskStatus.available') / 1000 / 1000);
   const memoryFreeMb =
       Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
-  return `[${abbrAddr(nodeInfo.address)}]:\n` +
+  return `[${abbrAddr(nodeInfo.address)} (${ip})]:\n` +
     `  isAlive: ${nodeInfo.isAlive},\n` +
     `  state: ${_.get(nodeInfo, 'nodeStatus.state')},\n` +
     `  disk: ${diskAvailableMb}MB,\n` +
     `  memory: ${memoryFreeMb}MB,\n` +
     `  peers:\n` +
-    `    outbound(${_.get(nodeInfo, 'networkStatus.connectionStatus.outgoingPeers')}),\n` +
-    `    inbound(${_.get(nodeInfo, 'networkStatus.connectionStatus.incomingPeers')}),\n` +
+    `    outbound (${_.get(nodeInfo, 'networkStatus.connectionStatus.outgoingPeers')}),\n` +
+    `    inbound (${_.get(nodeInfo, 'networkStatus.connectionStatus.incomingPeers')}),\n` +
     `  updatedAt: ${nodeInfo.updatedAt}`;
 }
 

@@ -1005,7 +1005,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 403,
+          "code": 404,
           "error_message": "No write_function permission on: /some/wrong/path"
         });
 

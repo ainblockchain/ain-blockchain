@@ -42,18 +42,30 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
-      [NativeFunctionIds.CLAIM]: this._claim.bind(this),
-      [NativeFunctionIds.CLOSE_CHECKIN]: this._closeCheckin.bind(this),
-      [NativeFunctionIds.DEPOSIT]: this._deposit.bind(this),
-      [NativeFunctionIds.HOLD]: this._hold.bind(this),
-      [NativeFunctionIds.OPEN_CHECKIN]: this._openCheckin.bind(this),
-      [NativeFunctionIds.OPEN_ESCROW]: this._openEscrow.bind(this),
-      [NativeFunctionIds.PAY]: this._pay.bind(this),
-      [NativeFunctionIds.RELEASE]: this._release.bind(this),
-      [NativeFunctionIds.SAVE_LAST_TX]: this._saveLastTx.bind(this),
-      [NativeFunctionIds.TRANSFER]: this._transfer.bind(this),
-      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: this._updateLatestShardReport.bind(this),
-      [NativeFunctionIds.WITHDRAW]: this._withdraw.bind(this),
+      [NativeFunctionIds.CLAIM]: {
+        func: this._claim.bind(this), ownerOnly: true },
+      [NativeFunctionIds.CLOSE_CHECKIN]: {
+        func: this._closeCheckin.bind(this), ownerOnly: true },
+      [NativeFunctionIds.DEPOSIT]: {
+        func: this._deposit.bind(this), ownerOnly: true },
+      [NativeFunctionIds.HOLD]: {
+        func: this._hold.bind(this), ownerOnly: true },
+      [NativeFunctionIds.OPEN_CHECKIN]: {
+        func: this._openCheckin.bind(this), ownerOnly: true },
+      [NativeFunctionIds.OPEN_ESCROW]: {
+        func: this._openEscrow.bind(this), ownerOnly: true },
+      [NativeFunctionIds.PAY]: {
+        func: this._pay.bind(this), ownerOnly: true },
+      [NativeFunctionIds.RELEASE]: {
+        func: this._release.bind(this), ownerOnly: true },
+      [NativeFunctionIds.SAVE_LAST_TX]: {
+        func: this._saveLastTx.bind(this), ownerOnly: false },
+      [NativeFunctionIds.TRANSFER]: {
+        func: this._transfer.bind(this), ownerOnly: true },
+      [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+        func: this._updateLatestShardReport.bind(this), ownerOnly: false },
+      [NativeFunctionIds.WITHDRAW]: {
+        func: this._withdraw.bind(this), ownerOnly: true },
     };
     this.callStack= [];
   }
@@ -105,7 +117,7 @@ class Functions {
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             try {
-              nativeFunction(
+              nativeFunction.func(
                   value,
                   {
                     valuePath: parsedValuePath,
@@ -238,9 +250,40 @@ class Functions {
   }
 
   /**
+   * Checks whether any owner only function is included in the given object.
+   *
+   * @param {Object} obj object
+   */
+  hasOwnerOnlyFunction(obj) {
+    if (!ChainUtil.isDict(obj) || ChainUtil.isEmpty(obj)) {
+      return null;
+    }
+
+    for (const key in obj) {
+      const childObj = obj[key];
+      if (key === FunctionProperties.FUNCTION) {
+        if (ChainUtil.isDict(childObj) && !ChainUtil.isEmpty(childObj)) {
+          for (const fid in childObj) {
+            const nativeFunction = this.nativeFunctionMap[fid];
+            if (nativeFunction && nativeFunction.ownerOnly) {
+              return fid;
+            }
+          }
+        }
+      } else {
+        const ownerOnlyFid = this.hasOwnerOnlyFunction(childObj);
+        if (ownerOnlyFid !== null) {
+          return ownerOnlyFid;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Returns a new function created by applying the function change to the current function.
    *
-   * @param {Object} curFunction current function (modified and returned by this function)
+   * @param {Object} curFunction current function (to be modified and returned by this function)
    * @param {Object} functionChange function change
    */
   static applyFunctionChange(curFunction, functionChange) {
