@@ -88,7 +88,8 @@ class Functions {
           if (this.isCircularCall(functionEntry.function_id)) {
             logger.error(
                 `Circular function call [[ ${functionEntry.function_id} ]] ` +
-                `with call stack ${JSON.stringify(this.getFids(), null, 2)}`);
+                `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
+                formattedParams);
             continue;  // Skips function.
           }
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
@@ -96,7 +97,8 @@ class Functions {
             // Execute the matched native function.
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
-                  `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] with:\n` +
+                  `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] ` +
+                  `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                   formattedParams);
             }
             this.pushCall(
@@ -122,7 +124,8 @@ class Functions {
               if (FeatureFlags.enableRichFunctionLogging) {
                 if (call.result) {
                   const formattedResult =
-                      `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]]: \n` +
+                      `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]] ` +
+                      `with call stack ${JSON.stringify(this.getFids())}:\n` +
                       `${JSON.stringify(call.result, null, 2)}`;
                   if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
                     logger.info(formattedResult);
@@ -174,7 +177,7 @@ class Functions {
 
   pushCall(valuePath, value, functionPath, fid) {
     const topCall = this.getTopCall();
-    const fidList = topCall ? topCall.fidList : [];
+    const fidList = topCall ? JSON.parse(JSON.stringify(topCall.fidList)) : [];
     fidList.push(fid);
     this.callStack.push({
       fid,
