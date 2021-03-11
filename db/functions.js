@@ -63,7 +63,7 @@ class Functions {
       [NativeFunctionIds.TRANSFER]: {
         func: this._transfer.bind(this), ownerOnly: true },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-        func: this._updateLatestShardReport.bind(this), ownerOnly: true },
+        func: this._updateLatestShardReport.bind(this), ownerOnly: false },
       [NativeFunctionIds.WITHDRAW]: {
         func: this._withdraw.bind(this), ownerOnly: true },
     };
