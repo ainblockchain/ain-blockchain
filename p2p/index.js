@@ -3,6 +3,7 @@ const P2pServer = require('./server');
 const url = require('url');
 const Websocket = require('ws');
 const semver = require('semver');
+const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
 const {
@@ -208,6 +209,15 @@ class P2pClient {
   }
 
   requestChainSegment(socket, lastBlock) {
+    const keyBuffer = Buffer.from(this.server.node.account.private_key, 'hex');
+    const payload = JSON.stringify({
+      type: MessageTypes.CHAIN_SEGMENT_REQUEST,
+      lastBlock,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    });
+    const signature = ainUtil.ecSignMessage(payload, keyBuffer);
+    console.log(signature);
+
     socket.send(JSON.stringify({
       type: MessageTypes.CHAIN_SEGMENT_REQUEST,
       lastBlock,
