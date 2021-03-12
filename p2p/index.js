@@ -372,6 +372,25 @@ class P2pClient {
     }
   }
 
+  setIntervalWaitingForPeerInit(socket) {
+    let timeout = 0;
+    const intervalId = setInterval(() => {
+      if (timeout === 5) {
+        logger.error('Broken connection has been established. Closing socket.');
+        socket.close();
+        clearInterval(intervalId);
+      }
+      timeout += 1;
+      const account = this.getAccountFromSocket(socket);
+      if (account) {
+        logger.info(`Ready to communicate with ${account}`);
+        clearInterval(intervalId);
+      } else {
+        logger.info('Waiting for updating peer info.');
+      }
+    }, RECONNECT_INTERVAL_MS);
+  }
+
   connectToPeers(newPeerInfoList) {
     let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
@@ -385,6 +404,7 @@ class P2pClient {
           logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
           this.setPeerEventHandlers(socket);
           this.sendAccountInfo(socket);
+          this.setIntervalWaitingForPeerInit(socket);
           this.requestChainSegment(socket, this.server.node.bc.lastBlock());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
