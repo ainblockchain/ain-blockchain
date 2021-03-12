@@ -95,6 +95,10 @@ class P2pServer {
     return this.node.account.address;
   }
 
+  getPublicKey() {
+    return Buffer.from(this.node.account.public_key, 'hex');
+  }
+
   getExternalIp() {
     return this.node.ipAddrExternal;
   }
@@ -269,8 +273,8 @@ class P2pServer {
   }
 
   disconnectFromPeers() {
-    Object.values(this.inbound).forEach(socket => {
-      socket.close();
+    Object.values(this.inbound).forEach(accountInfo => {
+      accountInfo.socket.close();
     });
   }
 
@@ -291,16 +295,20 @@ class P2pServer {
         }
 
         switch (data.type) {
-          case MessageTypes.ACCOUNT_REQUEST:
-            if (!data.account) {
-              logger.error(`Broken websocket(account unknown) is established.`);
+          case MessageTypes.ACCOUNT_INFO_REQUEST:
+            if (!data.account || !data.publicKey) {
+              logger.error(`Broken websocket(account: ${data.account}, ` +
+                  `publickKey: ${data.publicKey}) is established.`);
               socket.close();
               return;
             } else {
               logger.info(`A new websocket(${data.account}) is established.`);
-              this.inbound[data.account] = socket;
+              this.inbound[data.account] = {
+                socket: socket,
+                publicKey: data.publicKey
+              }
               socket.send(JSON.stringify({
-                type: MessageTypes.ACCOUNT_RESPONSE,
+                type: MessageTypes.ACCOUNT_INFO_RESPONSE,
                 account: this.getNodeAddress(),
                 protoVer: CURRENT_PROTOCOL_VERSION
               }));
@@ -414,7 +422,7 @@ class P2pServer {
   }
 
   getAccountFromSocket(socket) {
-    return Object.keys(this.inbound).filter(account => this.inbound[account] === socket);
+    return Object.keys(this.inbound).filter(account => this.inbound[account].socket === socket);
   }
 
   removeFromInboundIfExists(address) {

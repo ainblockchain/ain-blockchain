@@ -156,7 +156,7 @@ class P2pClient {
         logger.info(`\n << Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
           logger.debug(`Updated MANAGED peers info: ` +
-            `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
+              `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
         }
         if (node.state === BlockchainNodeStates.STARTING) {
           node.state = BlockchainNodeStates.SYNCING;
@@ -199,7 +199,7 @@ class P2pClient {
 
   broadcastConsensusMessage(msg) {
     logger.debug(`SENDING: ${JSON.stringify(msg)}`);
-    Object.values(this.outbound).forEach((socket) => {
+    Object.values(this.outbound).forEach(socket => {
       socket.send(JSON.stringify({
         type: MessageTypes.CONSENSUS,
         message: msg,
@@ -227,7 +227,7 @@ class P2pClient {
 
   broadcastTransaction(transaction) {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
-    Object.values(this.outbound).forEach((socket) => {
+    Object.values(this.outbound).forEach(socket => {
       socket.send(JSON.stringify({
         type: MessageTypes.TRANSACTION,
         transaction,
@@ -236,12 +236,11 @@ class P2pClient {
     });
   }
 
-  sendAccount(socket) {
-    const account = this.server.getNodeAddress();
-    logger.debug(`SENDING: account(${account}) to p2p server`);
+  sendAccountInfo(socket) {
     socket.send(JSON.stringify({
-      type: MessageTypes.ACCOUNT_REQUEST,
-      account: account,
+      type: MessageTypes.ACCOUNT_INFO_REQUEST,
+      account: this.server.getNodeAddress(),
+      publicKey: this.server.getPublicKey(),
       protoVer: CURRENT_PROTOCOL_VERSION
     }));
   }
@@ -262,9 +261,9 @@ class P2pClient {
       }
 
       switch (data.type) {
-        case MessageTypes.ACCOUNT_RESPONSE:
+        case MessageTypes.ACCOUNT_INFO_RESPONSE:
           if (!data.account) {
-            logger.error(`Broken websocket(account unknown) is established.`);
+            logger.error(`Broken websocket(account: ${data.account}) is established.`);
             socket.close();
             return;
           } else {
@@ -385,7 +384,7 @@ class P2pClient {
         socket.on('open', () => {
           logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
           this.setPeerEventHandlers(socket);
-          this.sendAccount(socket);
+          this.sendAccountInfo(socket);
           this.requestChainSegment(socket, this.server.node.bc.lastBlock());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
