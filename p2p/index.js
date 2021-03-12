@@ -384,6 +384,11 @@ class P2pClient {
       const account = this.getAccountFromSocket(socket);
       if (account) {
         logger.info(`Ready to communicate with ${account}`);
+        this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+        if (this.server.consensus.stakeTx) {
+          this.broadcastTransaction(this.server.consensus.stakeTx);
+          this.server.consensus.stakeTx = null;
+        }
         clearInterval(intervalId);
       } else {
         logger.info('Waiting for updating peer info.');
@@ -404,12 +409,8 @@ class P2pClient {
           logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
           this.setPeerEventHandlers(socket);
           this.sendAccountInfo(socket);
+          // NOTE(minsu): Waiting for both account and public key is setup on the other sides.
           this.setIntervalWaitingForPeerInit(socket);
-          this.requestChainSegment(socket, this.server.node.bc.lastBlock());
-          if (this.server.consensus.stakeTx) {
-            this.broadcastTransaction(this.server.consensus.stakeTx);
-            this.server.consensus.stakeTx = null;
-          }
         });
       }
     });
