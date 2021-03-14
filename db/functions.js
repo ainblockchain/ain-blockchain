@@ -79,6 +79,7 @@ class Functions {
    * @param {Number} execTime execution time
    * @param {Object} transaction transaction
    */
+  // NOTE(seo): Validity checks on individual addresses are done by .write rules.
   // TODO(seo): Trigger subtree functions.
   triggerFunctions(parsedValuePath, value, auth, timestamp, execTime, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -428,7 +429,6 @@ class Functions {
         ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp);
   }
 
-  // TODO(seo): Add adress validity check.
   _transfer(value, context) {
     const from = context.params.from;
     const to = context.params.to;

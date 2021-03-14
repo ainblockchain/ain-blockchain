@@ -46,6 +46,13 @@ class RuleUtil {
     return 0;
   }
 
+  includes(arr, value) {
+    if (!this.isArray(arr)) {
+      return false;
+    }
+    return arr.includes(value);
+  }
+
   isValAddr(addr) {
     return this.isString(addr) && ainUtil.isValidAddress(addr);
   }
