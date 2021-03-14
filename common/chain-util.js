@@ -87,6 +87,10 @@ class ChainUtil {
     return ruleUtil.isValAddr(value);
   }
 
+  static includes(arr, value) {
+    return ruleUtil.includes(arr, value);
+  }
+
   static isCksumAddr(addr) {
     return ruleUtil.isCksumAddr(addr);
   }

@@ -196,6 +196,59 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("includes", () => {
+    it("returns false with invalid input", () => {
+      expect(util.includes(true, 'a')).to.equal(false);
+      expect(util.includes(false, 'a')).to.equal(false);
+      expect(util.includes(0, 'a')).to.equal(false);
+      expect(util.includes(10, 'a')).to.equal(false);
+      expect(util.includes(null, 'a')).to.equal(false);
+      expect(util.includes(undefined, 'a')).to.equal(false);
+      expect(util.includes(Infinity, 'a')).to.equal(false);
+      expect(util.includes(NaN, 'a')).to.equal(false);
+      expect(util.includes('', 'a')).to.equal(false);
+      expect(util.includes('abc', 'a')).to.equal(false);
+      expect(util.includes('0', 'a')).to.equal(false);
+      expect(util.includes([], 'a')).to.equal(false);
+      expect(util.includes([10], 'a')).to.equal(false);
+      expect(util.includes({a: 'A'}, 'a')).to.equal(false);
+    })
+
+    it("returns false with valid input", () => {
+      expect(util.includes([], 'a')).to.equal(false);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'b'],
+          'a')).to.equal(false);
+    })
+
+    it("returns true with valid input", () => {
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          false)).to.equal(true);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          0)).to.equal(true);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          null)).to.equal(true);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          undefined)).to.equal(true);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          Infinity)).to.equal(true);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          NaN)).to.equal(true);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          '')).to.equal(true);
+      expect(util.includes(
+          [true, false, 0, 10, null, undefined, Infinity, NaN, '', 'aa', 'a'],
+          'a')).to.equal(true);
+    })
+  })
+
   describe("toBool", () => {
     it("returns false", () => {
       expect(util.toBool(0)).to.equal(false);
