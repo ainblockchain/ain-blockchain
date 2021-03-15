@@ -2,7 +2,8 @@ const fs = require('fs');
 const glob = require('glob');
 const path = require('path');
 const naturalSort = require('node-natural-sort');
-const zipper = require('zip-local');
+const zlib = require('zlib');
+// const zipper = require('zip-local');
 const {BLOCKCHAINS_DIR} = require('../common/constants');
 const FILE_NAME_SUFFIX = 'json.zip';
 
@@ -57,8 +58,8 @@ class BlockFileUtil {
   }
 
   static readBlock(filePath) {
-    const unzippedFs = zipper.sync.unzip(filePath).memory();
-    return JSON.parse(unzippedFs.read(unzippedFs.contents()[0], 'buffer').toString());
+    const zippedFs = fs.readFileSync(filePath);
+    return JSON.parse(zlib.gunzipSync(zippedFs).toString());
   }
 
   static readBlockByNumber(chainPath, blockNumber) {
@@ -67,7 +68,8 @@ class BlockFileUtil {
   }
 
   static writeBlock(filePath, block) {
-    zipper.sync.zip(Buffer.from(JSON.stringify(block))).compress().save(filePath);
+    const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
+    fs.writeFileSync(filePath, compressed);
   }
 }
 
