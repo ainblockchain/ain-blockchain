@@ -19,6 +19,7 @@ class BlockFileUtil {
     return this.getFilenameByNumber(block.number);
   }
 
+  // TODO(csh): Don't use glob?
   static getAllBlockFiles(chainPath) {
     const allBlockFilesPattern = `${chainPath}/*.${FILE_NAME_SUFFIX}`;
     return glob.sync(allBlockFilesPattern).sort(compare());
