@@ -56,7 +56,8 @@ class BlockFileUtil {
     return created;
   }
 
-  static readBlock(filePath) { // TODO(csh): Change to asynchronous
+  // TODO(csh): Change to asynchronous
+  static readBlock(filePath) {
     const zippedFs = fs.readFileSync(filePath);
     return JSON.parse(zlib.gunzipSync(zippedFs).toString());
   }
@@ -66,7 +67,8 @@ class BlockFileUtil {
     return this.readBlock(file);
   }
 
-  static writeBlock(filePath, block) { // TODO(csh): Change to asynchronous
+  // TODO(csh): Change to asynchronous
+  static writeBlock(filePath, block) {
     const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
     fs.writeFileSync(filePath, compressed);
   }
