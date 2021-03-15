@@ -197,52 +197,59 @@ class P2pClient {
     });
   }
 
+  _signPayload(payload) {
+    const keyBuffer = Buffer.from(this.server.node.account.private_key, 'hex');
+    const stringPayload = JSON.stringify(payload);
+    return ainUtil.ecSignMessage(stringPayload, keyBuffer);
+  }
+
   broadcastConsensusMessage(msg) {
-    logger.debug(`SENDING: ${JSON.stringify(msg)}`);
+    const payload = {
+      type: MessageTypes.CONSENSUS,
+      message: msg,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    };
+    payload.signature = this._signPayload(payload);
+    const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
-      socket.send(JSON.stringify({
-        type: MessageTypes.CONSENSUS,
-        message: msg,
-        protoVer: CURRENT_PROTOCOL_VERSION
-      }));
+      socket.send(stringPayload);
     });
+    logger.debug(`SENDING: ${JSON.stringify(msg)}`);
   }
 
   requestChainSegment(socket, lastBlock) {
-    const keyBuffer = Buffer.from(this.server.node.account.private_key, 'hex');
-    const payload = JSON.stringify({
+    const payload = {
       type: MessageTypes.CHAIN_SEGMENT_REQUEST,
       lastBlock,
       protoVer: CURRENT_PROTOCOL_VERSION
-    });
-    const signature = ainUtil.ecSignMessage(payload, keyBuffer);
-    console.log(signature);
-
-    socket.send(JSON.stringify({
-      type: MessageTypes.CHAIN_SEGMENT_REQUEST,
-      lastBlock,
-      protoVer: CURRENT_PROTOCOL_VERSION
-    }));
+    };
+    payload.signature = this._signPayload(payload);
+    socket.send(JSON.stringify(payload));
   }
 
   broadcastTransaction(transaction) {
-    logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
+    const payload = {
+      type: MessageTypes.TRANSACTION,
+      transaction,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    };
+    payload.signature = this._signPayload(payload);
+    const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
-      socket.send(JSON.stringify({
-        type: MessageTypes.TRANSACTION,
-        transaction,
-        protoVer: CURRENT_PROTOCOL_VERSION
-      }));
+      socket.send(stringPayload);
     });
+    logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
   sendAccountInfo(socket) {
-    socket.send(JSON.stringify({
+    const payload = {
       type: MessageTypes.ACCOUNT_INFO_REQUEST,
       account: this.server.getNodeAddress(),
       publicKey: this.server.getPublicKey(),
       protoVer: CURRENT_PROTOCOL_VERSION
-    }));
+    };
+    payload.signature = this._signPayload(payload);
+    socket.send(JSON.stringify(payload));
   }
 
   setPeerEventHandlers(socket) {
