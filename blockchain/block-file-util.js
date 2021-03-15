@@ -3,7 +3,6 @@ const glob = require('glob');
 const path = require('path');
 const naturalSort = require('node-natural-sort');
 const zlib = require('zlib');
-// const zipper = require('zip-local');
 const {BLOCKCHAINS_DIR} = require('../common/constants');
 const FILE_NAME_SUFFIX = 'json.zip';
 
