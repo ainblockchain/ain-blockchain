@@ -1,7 +1,7 @@
 const fs = require('fs');
 const glob = require('glob');
 const path = require('path');
-const naturalSort = require('node-natural-sort');
+const {compare} = require('natural-orderby');
 const zlib = require('zlib');
 const {BLOCKCHAINS_DIR} = require('../common/constants');
 const FILE_NAME_SUFFIX = 'json.zip';
@@ -21,7 +21,7 @@ class BlockFileUtil {
 
   static getAllBlockFiles(chainPath) {
     const allBlockFilesPattern = `${chainPath}/*.${FILE_NAME_SUFFIX}`;
-    return glob.sync(allBlockFilesPattern).sort(naturalSort());
+    return glob.sync(allBlockFilesPattern).sort(compare());
   }
 
   static getBlockFiles(chainPath, from, to) {
