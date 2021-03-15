@@ -569,10 +569,10 @@ class Consensus {
         return false;
       }
     }
-    this.blockPool.hashToDb.set(proposalBlock.hash, newDb);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       return false;
     }
+    this.blockPool.hashToDb.set(proposalBlock.hash, newDb);
     if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
       logger.info(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
           `(${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
