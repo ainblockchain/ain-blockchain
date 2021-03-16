@@ -48,8 +48,8 @@
     "jayson": "^3.1.1",
     "lodash": "^4.17.19",
     "moment": "^2.24.0",
+    "natural-orderby": "^2.0.3",
     "node-cron": "^2.0.3",
-    "node-natural-sort": "^0.8.7",
     "ntpsync": "^0.2.3",
     "object-sizeof": "^1.5.1",
     "public-ip": "^3.2.0",
@@ -66,8 +66,7 @@
     "uuid": "^3.4.0",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.4.2",
-    "ws": "^6.1.2",
-    "zip-local": "^0.3.4"
+    "ws": "^6.1.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
