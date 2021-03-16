@@ -203,6 +203,15 @@ class P2pClient {
     return ainUtil.ecSignMessage(stringPayload, keyBuffer);
   }
 
+  // TODO(minsu): duplicate. need refactored.
+  _verifyData(data) {
+    const signature = data.signature;
+    const address = data.address;
+    delete data.signature;
+    if (data.type !== MessageTypes.ADDRESS_RESPONSE) delete data.address;
+    return ainUtil.ecVerifySig(JSON.stringify(data), signature, address);
+  }
+
   broadcastConsensusMessage(msg) {
     const payload = {
       type: MessageTypes.CONSENSUS,
@@ -281,9 +290,7 @@ class P2pClient {
             socket.close();   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
-            const signature = data.signature;
-            delete data.signature;
-            if (!ainUtil.ecVerifySig(JSON.stringify(data), signature, data.address)) {
+            if (!this._verifyData(data)) {
               logger.error('The message is not correctly signed. Discard the message!!');
               return;
             }
@@ -294,6 +301,10 @@ class P2pClient {
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(data.chainSegment, null, 2)}`);
+          if (!this._verifyData(data)) {
+            logger.error('The message is not correctly signed. Discard the message!!');
+            return;
+          }
           // Check catchup info is behind or equal to me
           if (data.number <= this.server.node.bc.lastBlockNumber()) {
             if (this.server.consensus.status === ConsensusStatus.STARTING) {
