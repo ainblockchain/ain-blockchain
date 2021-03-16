@@ -95,10 +95,6 @@ class P2pServer {
     return this.node.account.address;
   }
 
-  getPublicKey() {
-    return Buffer.from(this.node.account.public_key, 'hex');
-  }
-
   getExternalIp() {
     return this.node.ipAddrExternal;
   }
@@ -273,8 +269,8 @@ class P2pServer {
   }
 
   disconnectFromPeers() {
-    Object.values(this.inbound).forEach(accountInfo => {
-      accountInfo.socket.close();
+    Object.values(this.inbound).forEach(socket => {
+      socket.close();
     });
   }
 
@@ -295,21 +291,18 @@ class P2pServer {
         }
 
         switch (data.type) {
-          case MessageTypes.ACCOUNT_INFO_REQUEST:
-            if (!data.account || !data.publicKey || !data.signature || !data.address) {
-              logger.error(`Broken websocket(account: ${data.account}, ` +
+          case MessageTypes.ADDRESS_REQUEST:
+            if (!data.signature || !data.address) {
+              logger.error(`Broken websocket(address: ${data.address}, ` +
                   `publickKey: ${data.publicKey}) is established.`);
               socket.close();
               return;
             } else {
-              logger.info(`A new websocket(${data.account}) is established.`);
-              this.inbound[data.account] = {
-                socket: socket,
-                publicKey: data.publicKey
-              }
+              logger.info(`A new websocket(${data.address}) is established.`);
+              this.inbound[data.address] = socket;
               socket.send(JSON.stringify({
-                type: MessageTypes.ACCOUNT_INFO_RESPONSE,
-                account: this.getNodeAddress(),
+                type: MessageTypes.ADDRESS_RESPONSE,
+                address: this.getNodeAddress(),
                 protoVer: CURRENT_PROTOCOL_VERSION
               }));
             }
@@ -410,9 +403,9 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      const account = this.getAccountFromSocket(socket);
-      this.removeFromInboundIfExists(account);
-      logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
+      const address = this.getAddressFromSocket(socket);
+      this.removeFromInboundIfExists(address);
+      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
 
     socket.on('error', (error) => {
@@ -421,8 +414,8 @@ class P2pServer {
     });
   }
 
-  getAccountFromSocket(socket) {
-    return Object.keys(this.inbound).filter(account => this.inbound[account].socket === socket);
+  getAddressFromSocket(socket) {
+    return Object.keys(this.inbound).filter(address => this.inbound[address] === socket);
   }
 
   removeFromInboundIfExists(address) {
