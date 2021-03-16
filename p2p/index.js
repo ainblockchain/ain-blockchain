@@ -269,11 +269,15 @@ class P2pClient {
       const data = JSON.parse(message);
       const version = data.protoVer;
       if (!version || !semver.valid(version)) {
+        const address = this.getAddressFromSocket(socket);
+        this.removeSocketFromOutboundIfExists(address);
         socket.close();
         return;
       }
       if (semver.gt(this.server.minProtocolVersion, version) ||
         (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
+        const address = this.getAddressFromSocket(socket);
+        this.removeSocketFromOutboundIfExists(address);
         socket.close();
         return;
       }
