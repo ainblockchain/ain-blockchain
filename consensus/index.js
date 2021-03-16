@@ -570,6 +570,7 @@ class Consensus {
       }
     }
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
+      this.node.destroyDb(newDb);
       return false;
     }
     this.blockPool.hashToDb.set(proposalBlock.hash, newDb);
