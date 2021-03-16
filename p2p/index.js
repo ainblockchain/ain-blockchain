@@ -210,6 +210,7 @@ class P2pClient {
       protoVer: CURRENT_PROTOCOL_VERSION
     };
     payload.signature = this._signPayload(payload);
+    payload.address = this.server.getNodeAddress();
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
       socket.send(stringPayload);
@@ -224,6 +225,7 @@ class P2pClient {
       protoVer: CURRENT_PROTOCOL_VERSION
     };
     payload.signature = this._signPayload(payload);
+    payload.address = this.server.getNodeAddress();
     socket.send(JSON.stringify(payload));
   }
 
@@ -234,6 +236,7 @@ class P2pClient {
       protoVer: CURRENT_PROTOCOL_VERSION
     };
     payload.signature = this._signPayload(payload);
+    payload.address = this.server.getNodeAddress();
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
       socket.send(stringPayload);
@@ -249,6 +252,7 @@ class P2pClient {
       protoVer: CURRENT_PROTOCOL_VERSION
     };
     payload.signature = this._signPayload(payload);
+    payload.address = this.server.getNodeAddress();
     socket.send(JSON.stringify(payload));
   }
 
