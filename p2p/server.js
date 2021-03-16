@@ -292,19 +292,31 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.ADDRESS_REQUEST:
-            if (!data.signature || !data.address) {
-              logger.error(`Broken websocket(address: ${data.address}, ` +
-                  `publickKey: ${data.publicKey}) is established.`);
+            if (!data.address) {
+              logger.error(`Providing an address is compulsary when initiating p2p communication.`);
               socket.close();
               return;
+            } else if (!data.signature) {
+              logger.error(`A sinature of the peer(${data.address}) is missing during p2p ` +
+                  `communication. Cannot proceed the further communication.`);
+              socket.close();   // NOTE(minsu): strictly close socket necessary??
+              return;
             } else {
+              const signature = data.signature;
+              delete data.signature;
+              if (!ainUtil.ecVerifySig(JSON.stringify(data), signature, data.address)) {
+                logger.error('The message is not correctly signed. Discard the message!!');
+                return;
+              }
               logger.info(`A new websocket(${data.address}) is established.`);
               this.inbound[data.address] = socket;
-              socket.send(JSON.stringify({
+              const payload = {
                 type: MessageTypes.ADDRESS_RESPONSE,
                 address: this.getNodeAddress(),
                 protoVer: CURRENT_PROTOCOL_VERSION
-              }));
+              };
+              payload.signature = this._signPayload(payload);
+              socket.send(JSON.stringify(payload));
             }
             break;
           case MessageTypes.CONSENSUS:
@@ -414,10 +426,19 @@ class P2pServer {
     });
   }
 
+  // TODO(minsu): duplicate. need refactored.
+  _signPayload(payload) {
+    const keyBuffer = Buffer.from(this.node.account.private_key, 'hex');
+    const stringPayload = JSON.stringify(payload);
+    return ainUtil.ecSignMessage(stringPayload, keyBuffer);
+  }
+
+  // TODO(minsu): duplicate. need refactored.
   getAddressFromSocket(socket) {
     return Object.keys(this.inbound).filter(address => this.inbound[address] === socket);
   }
 
+  // TODO(minsu): duplicate. need refactored.
   removeFromInboundIfExists(address) {
     if (address in this.inbound) {
       delete this.inbound[address];
