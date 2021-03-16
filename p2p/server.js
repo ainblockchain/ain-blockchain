@@ -320,6 +320,11 @@ class P2pServer {
           case MessageTypes.CONSENSUS:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            if (!data.address || !data.signature) {
+              logger.error('The message should have address and signature.' +
+                  'Cannot proceed further and Discard this message.');
+              return;
+            }
             if (!this._verifyData(data)) {
               logger.error('The message is not correctly signed. Discard the message!!');
               return;
@@ -333,6 +338,11 @@ class P2pServer {
           case MessageTypes.TRANSACTION:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
+            if (!data.address || !data.signature) {
+              logger.error('The message should have address and signature.' +
+                  'Cannot proceed further and Discard this message.');
+              return;
+            }
             if (!this._verifyData(data)) {
               logger.error('The message is not correctly signed. Discard the message!!');
               return;
@@ -375,6 +385,11 @@ class P2pServer {
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(data.lastBlock, null, 2)}`);
+            if (!data.address || !data.signature) {
+              logger.error('The message should have address and signature.' +
+                  'Cannot proceed further and Discard this message.');
+              return;
+            }
             if (!this._verifyData(data)) {
               logger.error('The message is not correctly signed. Discard the message!!');
               return;
