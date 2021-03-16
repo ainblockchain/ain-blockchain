@@ -296,7 +296,7 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.ACCOUNT_INFO_REQUEST:
-            if (!data.account || !data.publicKey || !data.signature) {
+            if (!data.account || !data.publicKey || !data.signature || !data.address) {
               logger.error(`Broken websocket(account: ${data.account}, ` +
                   `publickKey: ${data.publicKey}) is established.`);
               socket.close();
