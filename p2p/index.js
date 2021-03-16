@@ -244,15 +244,13 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
-  sendAccountInfo(socket) {
+  sendAddress(socket) {
     const payload = {
-      type: MessageTypes.ACCOUNT_INFO_REQUEST,
-      account: this.server.getNodeAddress(),
-      publicKey: this.server.getPublicKey(),
+      type: MessageTypes.ADDRESS_REQUEST,
+      address: this.server.getNodeAddress(),
       protoVer: CURRENT_PROTOCOL_VERSION
     };
     payload.signature = this._signPayload(payload);
-    payload.address = this.server.getNodeAddress();
     socket.send(JSON.stringify(payload));
   }
 
@@ -272,14 +270,14 @@ class P2pClient {
       }
 
       switch (data.type) {
-        case MessageTypes.ACCOUNT_INFO_RESPONSE:
-          if (!data.account) {
-            logger.error(`Broken websocket(account: ${data.account}) is established.`);
+        case MessageTypes.ADDRESS_RESPONSE:
+          if (!data.address) {
+            logger.error(`Broken websocket(address: ${data.address}) is established.`);
             socket.close();
             return;
           } else {
-            logger.info(`A new websocket(${data.account}) is established.`);
-            this.outbound[data.account] = socket;
+            logger.info(`A new websocket(${data.address}) is established.`);
+            this.outbound[data.address] = socket;
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
@@ -361,50 +359,26 @@ class P2pClient {
     });
 
     socket.on('pong', () => {
-      const account = this.getAccountFromSocket(socket);
-      logger.info(`The peer(${account}) is alive.`);
+      const address = this.getAddressFromSocket(socket);
+      logger.info(`The peer(${address}) is alive.`);
     });
 
     socket.on('close', () => {
-      const account = this.getAccountFromSocket(socket);
-      this.removeFromOutboundIfExists(account);
-      logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
+      const address = this.getAddressFromSocket(socket);
+      this.removeSocketFromOutboundIfExists(address);
+      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
   }
 
-  getAccountFromSocket(socket) {
-    return Object.keys(this.outbound).filter(account => this.outbound[account] === socket);
+  getAddressFromSocket(socket) {
+    return Object.keys(this.outbound).filter(address => this.outbound[address] === socket);
   }
 
-  removeFromOutboundIfExists(account) {
-    if (account in this.outbound) {
-      delete this.outbound[account];
+  removeSocketFromOutboundIfExists(address) {
+    if (address in this.outbound) {
+      delete this.outbound[address];
       logger.info(` => Updated managed peers info: ${Object.keys(this.outbound)}`);
     }
-  }
-
-  setIntervalWaitingForPeerInit(socket) {
-    let timeout = 0;
-    const intervalId = setInterval(() => {
-      if (timeout === 5) {
-        logger.error('Broken connection has been established. Closing socket.');
-        socket.close();
-        clearInterval(intervalId);
-      }
-      timeout += 1;
-      const account = this.getAccountFromSocket(socket);
-      if (account) {
-        logger.info(`Ready to communicate with ${account}`);
-        this.requestChainSegment(socket, this.server.node.bc.lastBlock());
-        if (this.server.consensus.stakeTx) {
-          this.broadcastTransaction(this.server.consensus.stakeTx);
-          this.server.consensus.stakeTx = null;
-        }
-        clearInterval(intervalId);
-      } else {
-        logger.info('Waiting for updating peer info.');
-      }
-    }, RECONNECT_INTERVAL_MS);
   }
 
   connectToPeers(newPeerInfoList) {
@@ -419,9 +393,12 @@ class P2pClient {
         socket.on('open', () => {
           logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
           this.setPeerEventHandlers(socket);
-          this.sendAccountInfo(socket);
-          // NOTE(minsu): Waiting for both account and public key is setup on the other sides.
-          this.setIntervalWaitingForPeerInit(socket);
+          this.sendAddress(socket);
+          this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+          if (this.server.consensus.stakeTx) {
+            this.broadcastTransaction(this.server.consensus.stakeTx);
+            this.server.consensus.stakeTx = null;
+          }
         });
       }
     });
@@ -456,9 +433,9 @@ class P2pClient {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
         if (socket.readyState !== 1) {
-          const account = this.getAccountFromSocket(socket);
-          this.removeFromOutboundIfExists(account);
-          logger.info(`A peer(${account}) is not ready to communicate with. ` +
+          const address = this.getAddressFromSocket(socket);
+          this.removeFromOutboundIfExists(address);
+          logger.info(`A peer(${address}) is not ready to communicate with. ` +
               `The readyState is(${socket.readyState})`);
         } else {
           socket.ping();
