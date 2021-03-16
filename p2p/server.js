@@ -302,9 +302,7 @@ class P2pServer {
               socket.close();   // NOTE(minsu): strictly close socket necessary??
               return;
             } else {
-              const signature = data.signature;
-              delete data.signature;
-              if (!ainUtil.ecVerifySig(JSON.stringify(data), signature, data.address)) {
+              if (!this._verifyData(data)) {
                 logger.error('The message is not correctly signed. Discard the message!!');
                 return;
               }
@@ -322,6 +320,10 @@ class P2pServer {
           case MessageTypes.CONSENSUS:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            if (!this._verifyData(data)) {
+              logger.error('The message is not correctly signed. Discard the message!!');
+              return;
+            }
             if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
@@ -331,6 +333,10 @@ class P2pServer {
           case MessageTypes.TRANSACTION:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
+            if (!this._verifyData(data)) {
+              logger.error('The message is not correctly signed. Discard the message!!');
+              return;
+            }
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               return;
@@ -369,6 +375,10 @@ class P2pServer {
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(data.lastBlock, null, 2)}`);
+            if (!this._verifyData(data)) {
+              logger.error('The message is not correctly signed. Discard the message!!');
+              return;
+            }
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -424,6 +434,14 @@ class P2pServer {
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
+  }
+
+  _verifyData(data) {
+    const signature = data.signature;
+    const address = data.address;
+    delete data.signature;
+    if (data.type !== MessageTypes.ADDRESS_REQUEST) delete data.address;
+    return ainUtil.ecVerifySig(JSON.stringify(data), signature, address);
   }
 
   // TODO(minsu): duplicate. need refactored.
