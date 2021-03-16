@@ -465,13 +465,16 @@ class P2pServer {
   }
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    socket.send(JSON.stringify({
+    const payload = {
       type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
       chainSegment,
       number,
       catchUpInfo,
       protoVer: CURRENT_PROTOCOL_VERSION
-    }));
+    };
+    payload.signature = this._signPayload(payload);
+    payload.address = this.getNodeAddress();
+    socket.send(JSON.stringify(payload));
   }
 
   executeAndBroadcastTransaction(tx) {
