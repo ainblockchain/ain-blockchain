@@ -301,6 +301,11 @@ class P2pClient {
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(data.chainSegment, null, 2)}`);
+          if (!data.address || !data.signature) {
+            logger.error('The message should have address and signature.' +
+                'Cannot proceed further and Discard this message.');
+            return;
+          }
           if (!this._verifyData(data)) {
             logger.error('The message is not correctly signed. Discard the message!!');
             return;
