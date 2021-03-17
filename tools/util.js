@@ -5,7 +5,7 @@ const ChainUtil = require('../common/chain-util');
 
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const {txHash, signedTx} = ChainUtil.signTx(txBody, privateKey);
+  const {txHash, signedTx} = ChainUtil.signTransaction(txBody, privateKey);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');

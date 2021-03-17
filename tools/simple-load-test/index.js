@@ -112,9 +112,9 @@ async function initPermission(targetUrl) {
     timestamp: Date.now(),
     nonce: -1,
   };
-  const {signedTx: signedSetOwnerTx} = ChainUtil.signTx(setOwnerTx, ainPrivateKey);
-  const {signedTx: signedSetRuleTx} = ChainUtil.signTx(setRuleTx, ainPrivateKey);
-  const {signedTx: signedSetValueTx} = ChainUtil.signTx(setValueTx, ainPrivateKey);
+  const {signedTx: signedSetOwnerTx} = ChainUtil.signTransaction(setOwnerTx, ainPrivateKey);
+  const {signedTx: signedSetRuleTx} = ChainUtil.signTransaction(setRuleTx, ainPrivateKey);
+  const {signedTx: signedSetValueTx} = ChainUtil.signTransaction(setValueTx, ainPrivateKey);
   const promiseList = [];
   promiseList.push(sendTx(targetUrl, signedSetOwnerTx));
   promiseList.push(sendTx(targetUrl, signedSetRuleTx));
@@ -154,7 +154,7 @@ async function sendTxs(targetUrl, duration, numberOfTransactions) {
         new Promise((resolve, reject) => {
           setTimeout((txTimestamp) => {
             baseTx.timestamp = txTimestamp;
-            const {signedTx} = ChainUtil.signTx(baseTx, ainPrivateKey);
+            const {signedTx} = ChainUtil.signTransaction(baseTx, ainPrivateKey);
             sendTx(targetUrl, signedTx).then((result) => {
               if (result === true) {
                 sendCnt++;

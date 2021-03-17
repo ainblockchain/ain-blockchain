@@ -156,7 +156,6 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       }
     },
 
-    // TODO(lia): add test cases
     ain_sendSignedTransactionBatch: function(args, done) {
       if (sizeof(args) > MAX_TX_BYTES) {
         done(null, addProtocolVersion({
