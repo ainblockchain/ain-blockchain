@@ -1,12 +1,11 @@
 const _ = require('lodash');
 const axios = require('axios');
-const {sleep} = require('sleep');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const {txHash, signedTx} = ChainUtil.signTx(txBody, privateKey);
+  const {txHash, signedTx} = ChainUtil.signTransaction(txBody, privateKey);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');
@@ -54,7 +53,7 @@ async function confirmTransaction(endpointUrl, timestamp, txHash) {
   while (true) {
     iteration++;
     result = await sendGetTxByHashRequest(endpointUrl, txHash);
-    sleep(1);
+    await ChainUtil.sleep(1000);
     if (_.get(result, 'is_finalized')) {
       break;
     }
