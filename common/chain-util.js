@@ -23,7 +23,7 @@ class ChainUtil {
     return '0x' + ainUtil.hashTransaction(txBody).toString('hex');
   }
 
-  static signTx(txBody, privateKey) {
+  static signTransaction(txBody, privateKey) {
     const keyBuffer = Buffer.from(privateKey, 'hex');
     const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
     const sigBuffer = ainUtil.toBuffer(sig);
@@ -335,6 +335,12 @@ class ChainUtil {
     const metrics = ChainUtil.objToMetricsRecursive(obj, keyStack);
     return ChainUtil.metricsToText(metrics);
   }
+
+  static sleep = (ms) => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  };
 }
 
 module.exports = ChainUtil;
