@@ -40,7 +40,7 @@ async function sendSignedTx(endpoint, params) {
 }
 
 async function signAndSendTx(endpoint, tx, privateKey) {
-  const {txHash, signedTx} = ChainUtil.signTx(tx, privateKey);
+  const {txHash, signedTx} = ChainUtil.signTransaction(tx, privateKey);
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, {txHash});
 }
