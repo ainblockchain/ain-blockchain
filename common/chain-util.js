@@ -335,6 +335,12 @@ class ChainUtil {
     const metrics = ChainUtil.objToMetricsRecursive(obj, keyStack);
     return ChainUtil.metricsToText(metrics);
   }
+
+  static sleep = (ms) => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+  };
 }
 
 module.exports = ChainUtil;

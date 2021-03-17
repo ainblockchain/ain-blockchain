@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const axios = require('axios');
-const {sleep} = require('sleep');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
@@ -54,7 +53,7 @@ async function confirmTransaction(endpointUrl, timestamp, txHash) {
   while (true) {
     iteration++;
     result = await sendGetTxByHashRequest(endpointUrl, txHash);
-    sleep(1);
+    await ChainUtil.sleep(1000);
     if (_.get(result, 'is_finalized')) {
       break;
     }
