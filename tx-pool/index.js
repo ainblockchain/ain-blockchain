@@ -266,10 +266,6 @@ class TransactionPool {
         tracked_at: finalizedAt,
       };
       inBlockTxs.add(voteTx.hash);
-      const timestamp = addrToTimestamp[voteTx.address];
-      if (timestamp === undefined || txTimestamp > timestamp) {
-        addrToTimestamp[voteTx.address] = txTimestamp;
-      }
     }
     for (let i = 0; i < block.transactions.length; i++) {
       const tx = block.transactions[i];
@@ -287,23 +283,25 @@ class TransactionPool {
         tracked_at: finalizedAt,
       };
       inBlockTxs.add(tx.hash);
-      const nonce = addrToNonce[tx.address];
-      const timestamp = addrToTimestamp[tx.address];
-      if (nonce === undefined || txNonce > nonce) {
+      const lastNonce = addrToNonce[tx.address];
+      const lastTimestamp = addrToTimestamp[tx.address];
+      if (txNonce >= 0 && (lastNonce === undefined || txNonce > lastNonce)) {
         addrToNonce[tx.address] = txNonce;
       }
-      if (timestamp === undefined || txTimestamp > timestamp) {
+      if (txNonce === -2 && (lastTimestamp === undefined || txTimestamp > lastTimestamp)) {
         addrToTimestamp[tx.address] = txTimestamp;
       }
     }
 
     for (const address in this.transactions) {
       // Remove transactions from the pool.
+      const lastNonce = addrToNonce[address];
+      const lastTimestamp = addrToTimestamp[address];
       this.transactions[address] = this.transactions[address].filter((tx) => {
-        if (addrToNonce[address] !== undefined && tx.tx_body.nonce <= addrToNonce[address]) {
+        if (lastNonce !== undefined && tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= lastNonce) {
           return false;
         }
-        if (addrToTimestamp[address] !== undefined && tx.tx_body.timestamp <= addrToTimestamp[address]) {
+        if (lastTimestamp !== undefined && tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= lastTimestamp) {
           return false;
         }
         return !inBlockTxs.has(tx.hash);
