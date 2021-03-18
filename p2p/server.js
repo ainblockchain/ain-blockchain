@@ -38,6 +38,8 @@ const {
 const ChainUtil = require('../common/chain-util');
 const {
   sendTxAndWaitForFinalization,
+  getAddressFromSocket,
+  removeSocketConnectionIfExists,
   signPayload,
   verifyData
 } = require('./util');
@@ -285,15 +287,15 @@ class P2pServer {
         const data = JSON.parse(message);
         const version = data.protoVer;
         if (!version || !semver.valid(version)) {
-          const address = this.getAddressFromSocket(socket);
-          this.removeSocketFromOutboundIfExists(address);
+          const address = getAddressFromSocket(this.inbound, socket);
+          removeSocketConnectionIfExists(this.inbound, address);
           socket.close();
           return;
         }
         if (semver.gt(this.minProtocolVersion, version) ||
             (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
-          const address = this.getAddressFromSocket(socket);
-          this.removeSocketFromOutboundIfExists(address);
+          const address = this.getAddressFromSocket(this.inbound, socket);
+          removeSocketConnectionIfExists(this.inbound, address);
           socket.close();
           return;
         }
@@ -421,8 +423,8 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      const address = this.getAddressFromSocket(socket);
-      this.removeFromInboundIfExists(address);
+      const address = getAddressFromSocket(this.inbound, socket);
+      removeSocketConnectionIfExists(this.inbound, address);
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
 
@@ -430,19 +432,6 @@ class P2pServer {
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
-  }
-
-  // TODO(minsu): duplicate. need refactored.
-  getAddressFromSocket(socket) {
-    return Object.keys(this.inbound).filter(address => this.inbound[address] === socket);
-  }
-
-  // TODO(minsu): duplicate. need refactored.
-  removeFromInboundIfExists(address) {
-    if (address in this.inbound) {
-      delete this.inbound[address];
-      logger.info(` => Updated managed peers info: ${Object.keys(this.inbound)}`);
-    }
   }
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
