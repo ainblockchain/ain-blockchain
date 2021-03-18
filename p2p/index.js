@@ -21,8 +21,8 @@ const {
 const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
-  signPayload,
-  verifyData
+  signMessage,
+  verifySignedMessage
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -238,12 +238,17 @@ class P2pClient {
   }
 
   sendAddress(socket) {
+    const body = {
+      address: this.server.getNodeAddress(),
+      timestamp: Date.now(),
+    };
+    const signature = signMessage(this.server.node.account.private_key, body);
     const payload = {
       type: MessageTypes.ADDRESS_REQUEST,
-      address: this.server.getNodeAddress(),
+      body,
+      signature,
       protoVer: CURRENT_PROTOCOL_VERSION
     };
-    payload.signature = signPayload(this.server.node.account.private_key, payload);
     socket.send(JSON.stringify(payload));
   }
 
@@ -268,7 +273,7 @@ class P2pClient {
 
       switch (data.type) {
         case MessageTypes.ADDRESS_RESPONSE:
-          if (!data.address) {
+          if (!data.body.address) {
             logger.error(`Providing an address is compulsary when initiating p2p communication.`);
             socket.close();
             return;
@@ -278,12 +283,12 @@ class P2pClient {
             socket.close();   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
-            if (!verifyData(data)) {
+            if (!verifySignedMessage(data)) {
               logger.error('The message is not correctly signed. Discard the message!!');
               return;
             }
             logger.info(`A new websocket(${data.address}) is established.`);
-            this.outbound[data.address] = socket;
+            this.outbound[data.body.address] = socket;
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:

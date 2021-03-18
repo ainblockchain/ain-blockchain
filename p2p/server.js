@@ -40,8 +40,8 @@ const {
   sendTxAndWaitForFinalization,
   getAddressFromSocket,
   removeSocketConnectionIfExists,
-  signPayload,
-  verifyData
+  signMessage,
+  verifySignedMessage
 } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -302,7 +302,7 @@ class P2pServer {
 
         switch (data.type) {
           case MessageTypes.ADDRESS_REQUEST:
-            if (!data.address) {
+            if (!data.body.address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
               socket.close();
               return;
@@ -312,18 +312,23 @@ class P2pServer {
               socket.close();   // NOTE(minsu): strictly close socket necessary??
               return;
             } else {
-              if (!verifyData(data)) {
+              if (!verifySignedMessage(data)) {
                 logger.error('The message is not correctly signed. Discard the message!!');
                 return;
               }
               logger.info(`A new websocket(${data.address}) is established.`);
-              this.inbound[data.address] = socket;
+              this.inbound[data.body.address] = socket;
+              const body = {
+                address: this.getNodeAddress(),
+                timestamp: Date.now(),
+              };
+              const signature = signMessage(this.node.account.private_key, body);
               const payload = {
                 type: MessageTypes.ADDRESS_RESPONSE,
-                address: this.getNodeAddress(),
+                body,
+                signature,
                 protoVer: CURRENT_PROTOCOL_VERSION
               };
-              payload.signature = signPayload(this.node.account.private_key, payload);
               socket.send(JSON.stringify(payload));
             }
             break;
