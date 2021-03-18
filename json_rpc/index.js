@@ -350,19 +350,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_getNonce: function(args, done) {
-      const address = args.address;
-      if (args.from === 'pending') {
-        if (ChainUtil.areSameAddrs(p2pServer.node.account.address, address)) {
-          done(null, addProtocolVersion({result: p2pServer.node.nonce}));
-        } else {
-          const nonce = node.tp.pendingNonceTracker[address];
-          done(null, addProtocolVersion({result: nonce === undefined ? -1 : nonce}));
-        }
-      } else {
-        // get the "committed nonce" by default
-        const nonce = node.tp.committedNonceTracker[address];
-        done(null, addProtocolVersion({result: nonce === undefined ? -1 : nonce}));
-      }
+      done(null, addProtocolVersion({
+          result: p2pServer.node.getNonceForAddr(args.address, args.from === 'pending')
+        }));
     },
 
     ain_isValidator: function(args, done) {
