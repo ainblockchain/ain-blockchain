@@ -87,6 +87,17 @@ function sendGetRequest(endpoint, method, params) {
   });
 }
 
+function getAddressFromSocket(connectionObj, socket) {
+  return Object.keys(connectionObj).filter(address => connectionObj[address] === socket);
+}
+
+function removeSocketConnectionIfExists(connectionObj, address) {
+  if (address in connectionObj) {
+    delete connectionObj[address];
+    logger.info(` => Updated managed peers info: ${Object.keys(connectionObj)}`);
+  }
+}
+
 function signPayload(privateKey, payload) {
   const keyBuffer = Buffer.from(privateKey, 'hex');
   const stringPayload = JSON.stringify(payload);
@@ -105,6 +116,8 @@ module.exports = {
   sendSignedTx,
   signAndSendTx,
   sendGetRequest,
+  getAddressFromSocket,
+  removeSocketConnectionIfExists,
   signPayload,
   verifyData
 };

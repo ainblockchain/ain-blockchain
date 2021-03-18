@@ -19,6 +19,8 @@ const {
   MAX_INBOUND_LIMIT
 } = require('../common/constants');
 const {
+  getAddressFromSocket,
+  removeSocketConnectionIfExists,
   signPayload,
   verifyData
 } = require('./util');
@@ -251,15 +253,15 @@ class P2pClient {
       const data = JSON.parse(message);
       const version = data.protoVer;
       if (!version || !semver.valid(version)) {
-        const address = this.getAddressFromSocket(socket);
-        this.removeSocketFromOutboundIfExists(address);
+        const address = getAddressFromSocket(this.outbound, socket);
+        removeSocketConnectionIfExists(this.outbound, address);
         socket.close();
         return;
       }
       if (semver.gt(this.server.minProtocolVersion, version) ||
         (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
-        const address = this.getAddressFromSocket(socket);
-        this.removeSocketFromOutboundIfExists(address);
+        const address = getAddressFromSocket(this.outbound, socket);
+        removeSocketConnectionIfExists(this.outbound, address);
         socket.close();
         return;
       }
@@ -363,26 +365,15 @@ class P2pClient {
     });
 
     socket.on('pong', () => {
-      const address = this.getAddressFromSocket(socket);
+      const address = getAddressFromSocket(this.outbound, socket);
       logger.info(`The peer(${address}) is alive.`);
     });
 
     socket.on('close', () => {
-      const address = this.getAddressFromSocket(socket);
-      this.removeSocketFromOutboundIfExists(address);
+      const address = getAddressFromSocket(this.outbound, socket);
+      removeSocketConnectionIfExists(this.outbound, address);
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
-  }
-
-  getAddressFromSocket(socket) {
-    return Object.keys(this.outbound).filter(address => this.outbound[address] === socket);
-  }
-
-  removeSocketFromOutboundIfExists(address) {
-    if (address in this.outbound) {
-      delete this.outbound[address];
-      logger.info(` => Updated managed peers info: ${Object.keys(this.outbound)}`);
-    }
   }
 
   connectToPeers(newPeerInfoList) {
@@ -437,8 +428,8 @@ class P2pClient {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
         if (socket.readyState !== 1) {
-          const address = this.getAddressFromSocket(socket);
-          this.removeFromOutboundIfExists(address);
+          const address = getAddressFromSocket(this.outbound, socket);
+          removeSocketConnectionIfExists(this.outbound, address);
           logger.info(`A peer(${address}) is not ready to communicate with. ` +
               `The readyState is(${socket.readyState})`);
         } else {
