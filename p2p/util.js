@@ -98,7 +98,7 @@ function removeSocketConnectionIfExists(connectionObj, address) {
   }
 }
 
-function signMessage(privateKey, messageBody) {
+function signMessage(messageBody, privateKey) {
   return ainUtil.ecSignMessage(JSON.stringify(messageBody), Buffer.from(privateKey, 'hex'));
 }
 

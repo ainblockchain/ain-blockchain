@@ -326,7 +326,7 @@ class P2pServer {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),
               };
-              const signature = signMessage(this.getNodePrivateKey(), body);
+              const signature = signMessage(body, this.getNodePrivateKey());
               const payload = {
                 type: MessageTypes.ADDRESS_RESPONSE,
                 body,
