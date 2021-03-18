@@ -5,7 +5,8 @@ const shuffleSeed = require('shuffle-seed');
 const ChainUtil = require('../common/chain-util');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const {setNodeForTesting, getTransaction} = require('./test-util')
+const {setNodeForTesting, getTransaction} = require('./test-util');
+const { msleep } = require('sleep');
 
 describe('TransactionPool', () => {
   let node, transaction;
@@ -13,16 +14,16 @@ describe('TransactionPool', () => {
   beforeEach(() => {
     node = new BlockchainNode();
     setNodeForTesting(node);
-
     transaction = getTransaction(node, {
       operation: {
         type: 'SET_VALUE',
         ref: 'REF',
-        value:
-        'VALUE'
-      }
+        value: 'VALUE'
+      },
+      nonce: node.nonce++
     });
     node.tp.addTransaction(transaction);
+    msleep(1);
   });
 
   it('adds a transaction to the pool', () => {
@@ -41,9 +42,11 @@ describe('TransactionPool', () => {
             type: 'SET_VALUE',
             ref: 'REF',
             value: 'VALUE',
-          }
+          },
+          nonce: node.nonce++
         });
         node.tp.addTransaction(t);
+        msleep(1);
       }
       node.tp.transactions[node.account.address] =
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
@@ -62,9 +65,11 @@ describe('TransactionPool', () => {
               type: 'SET_VALUE',
               ref: 'REF',
               value: 'VALUE',
-            }
-          }, true);
+            },
+            nonce: nodes[j].nonce++
+          });
           node.tp.addTransaction(t);
+          msleep(1);
         }
         node.tp.transactions[nodes[j].account.address] =
             shuffleSeed.shuffle(node.tp.transactions[nodes[j].account.address]);
@@ -122,7 +127,8 @@ describe('TransactionPool', () => {
             type: 'SET_VALUE',
             ref: 'REF',
             value: 'VALUE',
-          }
+          },
+          nonce: node.nonce++
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
