@@ -242,7 +242,7 @@ class P2pClient {
       address: this.server.getNodeAddress(),
       timestamp: Date.now(),
     };
-    const signature = signMessage(this.server.node.account.private_key, body);
+    const signature = signMessage(this.server.getNodePrivateKey(), body);
     const payload = {
       type: MessageTypes.ADDRESS_REQUEST,
       body,
