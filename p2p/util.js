@@ -88,7 +88,7 @@ function sendGetRequest(endpoint, method, params) {
 }
 
 function getAddressFromSocket(connectionObj, socket) {
-  return Object.keys(connectionObj).filter(address => connectionObj[address] === socket);
+  return Object.keys(connectionObj).find(address => connectionObj[address] === socket);
 }
 
 function removeSocketConnectionIfExists(connectionObj, address) {

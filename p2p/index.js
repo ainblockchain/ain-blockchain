@@ -278,7 +278,7 @@ class P2pClient {
             socket.close();
             return;
           } else if (!data.signature) {
-            logger.error(`A sinature of the peer(${data.address}) is missing during p2p ` +
+            logger.error(`A sinature of the peer(${data.body.address}) is missing during p2p ` +
                 `communication. Cannot proceed the further communication.`);
             socket.close();   // NOTE(minsu): strictly close socket necessary??
             return;
@@ -287,7 +287,7 @@ class P2pClient {
               logger.error('The message is not correctly signed. Discard the message!!');
               return;
             }
-            logger.info(`A new websocket(${data.address}) is established.`);
+            logger.info(`A new websocket(${data.body.address}) is established.`);
             this.outbound[data.body.address] = socket;
           }
           break;
