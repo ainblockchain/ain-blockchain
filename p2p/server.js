@@ -101,6 +101,10 @@ class P2pServer {
     return this.node.account.address;
   }
 
+  getNodePrivateKey() {
+    return this.node.account.private_key;
+  }
+
   getExternalIp() {
     return this.node.ipAddrExternal;
   }
@@ -322,7 +326,7 @@ class P2pServer {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),
               };
-              const signature = signMessage(this.node.account.private_key, body);
+              const signature = signMessage(this.getNodePrivateKey(), body);
               const payload = {
                 type: MessageTypes.ADDRESS_RESPONSE,
                 body,
