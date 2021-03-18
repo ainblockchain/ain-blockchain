@@ -49,28 +49,28 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9091, P2P_PORT: 6001,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9092, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9093, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9094, P2P_PORT: 6004,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -154,7 +154,6 @@ function setUp() {
           }
         }
       ],
-      nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.equal(_.get(res, 'result'), true);
@@ -188,7 +187,6 @@ function cleanUp() {
           value: null
         },
       ],
-      nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.equal(_.get(res, 'result'), true);
@@ -250,7 +248,6 @@ function setUpForSharding(shardingConfig) {
           value: shardingConfig
         }
       ],
-      nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.equal(_.get(res, 'result'), true);
@@ -488,7 +485,7 @@ describe('Sharding', () => {
         waitForNewBlocks(server2, sharding.reporting_period);
         console.log(`Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
-        waitForNewBlocks(server2, sharding.reporting_period);
+        waitForNewBlocks(server2, sharding.reporting_period * 2);
         waitUntilNodeSyncs(server1);
         waitForNewBlocks(server1, sharding.reporting_period);
         const reportsAfter = parseOrLog(syncRequest(

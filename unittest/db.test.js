@@ -1397,6 +1397,10 @@ describe("DB operations", () => {
 
   describe("batch operations", () => {
     it("when batch applied successfully", () => {
+      let now = Date.now();
+      const address = node.account.address;
+      let nonce = node.db.getValue(`/accounts/${address}/nonce`);
+      if (nonce === null) nonce = 0;
       assert.deepEqual(node.db.batch([
         {
           tx_body: {
@@ -1406,8 +1410,11 @@ describe("DB operations", () => {
               value: {
                 "new": 12345
               }
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1415,8 +1422,11 @@ describe("DB operations", () => {
               type: "INC_VALUE",
               ref: "test/increment/value",
               value: 10
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1424,8 +1434,11 @@ describe("DB operations", () => {
               type: "DEC_VALUE",
               ref: "test/decrement/value",
               value: 10
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1437,8 +1450,11 @@ describe("DB operations", () => {
                   "fid": "other function config"
                 }
               }
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1448,8 +1464,11 @@ describe("DB operations", () => {
               value: {
                 ".write": "other rule config"
               }
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1459,7 +1478,9 @@ describe("DB operations", () => {
               value: {
                 ".owner": "other owner config"
               }
-            }
+            },
+            nonce: -1,
+            timestamp: now++
           },
           address: 'abcd'
         }
@@ -2622,7 +2643,7 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = true", () => {
       expect(node.db.setFunction(
-          "apps/afan/test/test_sharding/some/path/to", funcChange, { addr: 'known_user' }, true))
+          "apps/afan/test/test_sharding/some/path/to", funcChange, { addr: 'known_user' }, null, true))
         .to.equal(true);
       assert.deepEqual(
           node.db.getFunction("apps/afan/test/test_sharding/some/path/to", true), newFunc);
@@ -2630,7 +2651,7 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = true and non-existing path", () => {
       expect(node.db.setFunction(
-          "some/non-existing/path", funcChange, { addr: 'known_user' }, true))
+          "some/non-existing/path", funcChange, { addr: 'known_user' }, null, true))
         .to.equal(true);
     })
 
@@ -2721,14 +2742,14 @@ describe("DB sharding config", () => {
 
     it("setRule with isGlobal = true", () => {
       expect(node.db.setRule(
-          "apps/afan/test/test_sharding/some/path/to", newRule, { addr: 'known_user' }, true))
+          "apps/afan/test/test_sharding/some/path/to", newRule, { addr: 'known_user' }, null, true))
         .to.equal(true);
       assert.deepEqual(
           node.db.getRule("apps/afan/test/test_sharding/some/path/to", true), newRule);
     })
 
     it("setRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.setRule("some/non-existing/path", newRule, { addr: 'known_user' }, true))
+      expect(node.db.setRule("some/non-existing/path", newRule, { addr: 'known_user' }, null, true))
         .to.equal(true);
     })
 
@@ -2851,14 +2872,14 @@ describe("DB sharding config", () => {
 
     it("setOwner with isGlobal = true", () => {
       expect(node.db.setOwner(
-          "apps/afan/test/test_sharding/some/path/to", newOwner, { addr: 'known_user' }, true))
+          "apps/afan/test/test_sharding/some/path/to", newOwner, { addr: 'known_user' }, null, true))
         .to.equal(true);
       assert.deepEqual(
           node.db.getOwner("apps/afan/test/test_sharding/some/path/to", true), newOwner);
     })
 
     it("setOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.setOwner("some/non-existing/path", newOwner, { addr: 'known_user' }, true))
+      expect(node.db.setOwner("some/non-existing/path", newOwner, { addr: 'known_user' }, null, true))
         .to.equal(true);
     })
 

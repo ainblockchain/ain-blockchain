@@ -65,15 +65,17 @@ describe("BlockPool", () => {
     const block = Block.create(
         lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr, {[addr]: 100000});
     const proposalTx = getTransaction(node1, {
-        operation: 'SET_VALUE',
-        ref: `/consensus/number/${block.number}/propose`,
-        value: {
-          number: block.number,
-          epoch: block.epoch,
-          validators: {[addr]: 100000},
-          total_at_stake: 100000,
-          proposer: addr,
-          block_hash: block.hash
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/consensus/number/${block.number}/propose`,
+          value: {
+            number: block.number,
+            epoch: block.epoch,
+            validators: {[addr]: 100000},
+            total_at_stake: 100000,
+            proposer: addr,
+            block_hash: block.hash
+          }
         }
       }
     );
@@ -90,15 +92,17 @@ describe("BlockPool", () => {
     const block = Block.create(
         lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr, {[addr]: 100000});
     const proposalTx = getTransaction(node1, {
-        operation: 'SET_VALUE',
-        ref: `/consensus/number/${block.number}/propose`,
-        value: {
-          number: block.number,
-          epoch: block.epoch,
-          validators: {[addr]: 100000},
-          total_at_stake: 100000,
-          proposer: addr,
-          block_hash: block.hash
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/consensus/number/${block.number}/propose`,
+          value: {
+            number: block.number,
+            epoch: block.epoch,
+            validators: {[addr]: 100000},
+            total_at_stake: 100000,
+            proposer: addr,
+            block_hash: block.hash
+          }
         }
       }
     );
