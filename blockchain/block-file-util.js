@@ -7,28 +7,28 @@ const {BLOCKCHAINS_DIR} = require('../common/constants');
 const FILE_NAME_SUFFIX = 'json.zip';
 
 class BlockFileUtil {
-  static getBlockFilePath(chainPath, blockNumber) {
-    return path.resolve(chainPath, this.getFilenameByNumber(blockNumber));
+  static getBlockPath(chainPath, blockNumber) {
+    return path.resolve(chainPath, this.getBlockFilenameByNumber(blockNumber));
   }
 
-  static getFilenameByNumber(blockNumber) {
+  static getBlockFilenameByNumber(blockNumber) {
     return `${blockNumber}.${FILE_NAME_SUFFIX}`;
   }
 
-  static getFilename(block) {
-    return this.getFilenameByNumber(block.number);
+  static getBlockFilename(block) {
+    return this.getBlockFilenameByNumber(block.number);
   }
 
   // TODO(csh): Don't use glob?
-  static getAllBlockFiles(chainPath) {
+  static getAllBlockPaths(chainPath) {
     const allBlockFilesPattern = `${chainPath}/*.${FILE_NAME_SUFFIX}`;
     return glob.sync(allBlockFilesPattern).sort(compare());
   }
 
-  static getBlockFiles(chainPath, from, to) {
+  static getBlockPaths(chainPath, from, to) {
     const blockFiles = [];
     for (let number = from; number < to; number++) {
-      const blockFile = `${this.getBlockFilePath(chainPath, number)}`;
+      const blockFile = this.getBlockPath(chainPath, number);
       if (fs.existsSync(blockFile)) {
         blockFiles.push(blockFile);
       }
@@ -58,20 +58,23 @@ class BlockFileUtil {
   }
 
   // TODO(csh): Change to asynchronous
-  static readBlock(filePath) {
-    const zippedFs = fs.readFileSync(filePath);
+  static readBlock(blockPath) {
+    const zippedFs = fs.readFileSync(blockPath);
     return JSON.parse(zlib.gunzipSync(zippedFs).toString());
   }
 
   static readBlockByNumber(chainPath, blockNumber) {
-    const file = this.getBlockFilePath(chainPath, blockNumber);
-    return this.readBlock(file);
+    const blockPath = this.getBlockPath(chainPath, blockNumber);
+    return this.readBlock(blockPath);
   }
 
   // TODO(csh): Change to asynchronous
-  static writeBlock(filePath, block) {
-    const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
-    fs.writeFileSync(filePath, compressed);
+  static writeBlock(chainPath, block) {
+    const blockPath = this.getBlockPath(chainPath, block.number);
+    if (!fs.existsSync(blockPath)) {
+      const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
+      fs.writeFileSync(blockPath, compressed);
+    }
   }
 }
 
