@@ -22,7 +22,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
+const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchains');
 const HASH_DELIMITER = '#';
 
 // Enums
