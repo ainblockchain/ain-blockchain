@@ -3,12 +3,12 @@ const glob = require('glob');
 const path = require('path');
 const {compare} = require('natural-orderby');
 const zlib = require('zlib');
-const {BLOCKCHAINS_DIR} = require('../common/constants');
+const {BLOCKCHAINS_N2B_DIR_NAME} = require('../common/constants');
 const FILE_NAME_SUFFIX = 'json.zip';
 
 class BlockFileUtil {
   static getBlockPath(chainPath, blockNumber) {
-    return path.resolve(chainPath, this.getBlockFilenameByNumber(blockNumber));
+    return path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -21,7 +21,7 @@ class BlockFileUtil {
 
   // TODO(csh): Don't use glob?
   static getAllBlockPaths(chainPath) {
-    const allBlockFilesPattern = `${chainPath}/*.${FILE_NAME_SUFFIX}`;
+    const allBlockFilesPattern = `${chainPath}/${BLOCKCHAINS_N2B_DIR_NAME}/*.${FILE_NAME_SUFFIX}`;
     return glob.sync(allBlockFilesPattern).sort(compare());
   }
 
@@ -37,24 +37,16 @@ class BlockFileUtil {
   }
 
   static createBlockchainDir(chainPath) {
-    let created = false;
-    const dirs = [BLOCKCHAINS_DIR];
-    if (chainPath) {
-      dirs.push(chainPath);
+    const n2bPath = path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME);
+
+    if (!fs.existsSync(chainPath)) {
+      fs.mkdirSync(chainPath, {recursive: true});
+      fs.mkdirSync(n2bPath);
+      return true;
+    } else if (!fs.readdirSync(n2bPath).length) {
+      return true;
     }
-    dirs.forEach((directory) => {
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory);
-        created = true;
-      } else {
-        const files = fs.readdirSync(directory);
-        // Note(minsu): Added this check to avoid an only dir exists case without zip files at all.
-        if (!files.length) {
-          created = true;
-        }
-      }
-    });
-    return created;
+    return false;
   }
 
   // TODO(csh): Change to asynchronous
