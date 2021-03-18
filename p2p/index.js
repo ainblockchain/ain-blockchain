@@ -3,7 +3,6 @@ const P2pServer = require('./server');
 const url = require('url');
 const Websocket = require('ws');
 const semver = require('semver');
-const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
 const {
@@ -19,6 +18,10 @@ const {
   MAX_OUTBOUND_LIMIT,
   MAX_INBOUND_LIMIT
 } = require('../common/constants');
+const {
+  signPayload,
+  verifyData
+} = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -197,21 +200,6 @@ class P2pClient {
     });
   }
 
-  _signPayload(payload) {
-    const keyBuffer = Buffer.from(this.server.node.account.private_key, 'hex');
-    const stringPayload = JSON.stringify(payload);
-    return ainUtil.ecSignMessage(stringPayload, keyBuffer);
-  }
-
-  // TODO(minsu): duplicate. need refactored.
-  _verifyData(data) {
-    const signature = data.signature;
-    const address = data.address;
-    delete data.signature;
-    if (data.type !== MessageTypes.ADDRESS_RESPONSE) delete data.address;
-    return ainUtil.ecVerifySig(JSON.stringify(data), signature, address);
-  }
-
   broadcastConsensusMessage(msg) {
     const payload = {
       type: MessageTypes.CONSENSUS,
@@ -253,7 +241,7 @@ class P2pClient {
       address: this.server.getNodeAddress(),
       protoVer: CURRENT_PROTOCOL_VERSION
     };
-    payload.signature = this._signPayload(payload);
+    payload.signature = signPayload(this.server.node.account.private_key, payload);
     socket.send(JSON.stringify(payload));
   }
 
@@ -288,7 +276,7 @@ class P2pClient {
             socket.close();   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
-            if (!this._verifyData(data)) {
+            if (!verifyData(data)) {
               logger.error('The message is not correctly signed. Discard the message!!');
               return;
             }
