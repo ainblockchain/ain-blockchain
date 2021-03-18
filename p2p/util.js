@@ -98,17 +98,12 @@ function removeSocketConnectionIfExists(connectionObj, address) {
   }
 }
 
-function signPayload(privateKey, payload) {
-  const keyBuffer = Buffer.from(privateKey, 'hex');
-  const stringPayload = JSON.stringify(payload);
-  return ainUtil.ecSignMessage(stringPayload, keyBuffer);
+function signMessage(privateKey, messageBody) {
+  return ainUtil.ecSignMessage(JSON.stringify(messageBody), Buffer.from(privateKey, 'hex'));
 }
 
-function verifyData(data) {
-  const signature = data.signature;
-  const address = data.address;
-  delete data.signature;
-  return ainUtil.ecVerifySig(JSON.stringify(data), signature, address);
+function verifySignedMessage(message) {
+  return ainUtil.ecVerifySig(JSON.stringify(message.body), message.signature, message.body.address);
 }
 
 module.exports = {
@@ -118,6 +113,6 @@ module.exports = {
   sendGetRequest,
   getAddressFromSocket,
   removeSocketConnectionIfExists,
-  signPayload,
-  verifyData
+  signMessage,
+  verifySignedMessage
 };
