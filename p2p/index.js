@@ -218,8 +218,6 @@ class P2pClient {
       message: msg,
       protoVer: CURRENT_PROTOCOL_VERSION
     };
-    payload.signature = this._signPayload(payload);
-    payload.address = this.server.getNodeAddress();
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
       socket.send(stringPayload);
@@ -233,8 +231,6 @@ class P2pClient {
       lastBlock,
       protoVer: CURRENT_PROTOCOL_VERSION
     };
-    payload.signature = this._signPayload(payload);
-    payload.address = this.server.getNodeAddress();
     socket.send(JSON.stringify(payload));
   }
 
@@ -244,8 +240,6 @@ class P2pClient {
       transaction,
       protoVer: CURRENT_PROTOCOL_VERSION
     };
-    payload.signature = this._signPayload(payload);
-    payload.address = this.server.getNodeAddress();
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
       socket.send(stringPayload);
@@ -305,15 +299,6 @@ class P2pClient {
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(data.chainSegment, null, 2)}`);
-          if (!data.address || !data.signature) {
-            logger.error('The message should have address and signature.' +
-                'Cannot proceed further and Discard this message.');
-            return;
-          }
-          if (!this._verifyData(data)) {
-            logger.error('The message is not correctly signed. Discard the message!!');
-            return;
-          }
           // Check catchup info is behind or equal to me
           if (data.number <= this.server.node.bc.lastBlockNumber()) {
             if (this.server.consensus.status === ConsensusStatus.STARTING) {

@@ -324,15 +324,6 @@ class P2pServer {
           case MessageTypes.CONSENSUS:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
-            if (!data.address || !data.signature) {
-              logger.error('The message should have address and signature.' +
-                  'Cannot proceed further and Discard this message.');
-              return;
-            }
-            if (!this._verifyData(data)) {
-              logger.error('The message is not correctly signed. Discard the message!!');
-              return;
-            }
             if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
@@ -342,15 +333,6 @@ class P2pServer {
           case MessageTypes.TRANSACTION:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
-            if (!data.address || !data.signature) {
-              logger.error('The message should have address and signature.' +
-                  'Cannot proceed further and Discard this message.');
-              return;
-            }
-            if (!this._verifyData(data)) {
-              logger.error('The message is not correctly signed. Discard the message!!');
-              return;
-            }
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               return;
@@ -389,15 +371,6 @@ class P2pServer {
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(data.lastBlock, null, 2)}`);
-            if (!data.address || !data.signature) {
-              logger.error('The message should have address and signature.' +
-                  'Cannot proceed further and Discard this message.');
-              return;
-            }
-            if (!this._verifyData(data)) {
-              logger.error('The message is not correctly signed. Discard the message!!');
-              return;
-            }
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -491,8 +464,6 @@ class P2pServer {
       catchUpInfo,
       protoVer: CURRENT_PROTOCOL_VERSION
     };
-    payload.signature = this._signPayload(payload);
-    payload.address = this.getNodeAddress();
     socket.send(JSON.stringify(payload));
   }
 
