@@ -36,7 +36,11 @@ const {
   LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const { sendTxAndWaitForFinalization } = require('../p2p/util');
+const {
+  sendTxAndWaitForFinalization,
+  signPayload,
+  verifyData
+} = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
@@ -306,7 +310,7 @@ class P2pServer {
               socket.close();   // NOTE(minsu): strictly close socket necessary??
               return;
             } else {
-              if (!this._verifyData(data)) {
+              if (!verifyData(data)) {
                 logger.error('The message is not correctly signed. Discard the message!!');
                 return;
               }
@@ -317,7 +321,7 @@ class P2pServer {
                 address: this.getNodeAddress(),
                 protoVer: CURRENT_PROTOCOL_VERSION
               };
-              payload.signature = this._signPayload(payload);
+              payload.signature = signPayload(this.node.account.private_key, payload);
               socket.send(JSON.stringify(payload));
             }
             break;
@@ -426,21 +430,6 @@ class P2pServer {
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
-  }
-
-  _verifyData(data) {
-    const signature = data.signature;
-    const address = data.address;
-    delete data.signature;
-    if (data.type !== MessageTypes.ADDRESS_REQUEST) delete data.address;
-    return ainUtil.ecVerifySig(JSON.stringify(data), signature, address);
-  }
-
-  // TODO(minsu): duplicate. need refactored.
-  _signPayload(payload) {
-    const keyBuffer = Buffer.from(this.node.account.private_key, 'hex');
-    const stringPayload = JSON.stringify(payload);
-    return ainUtil.ecSignMessage(stringPayload, keyBuffer);
   }
 
   // TODO(minsu): duplicate. need refactored.

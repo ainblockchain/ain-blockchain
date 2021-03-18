@@ -7,6 +7,7 @@
 const { sleep } = require('sleep');
 const axios = require('axios');
 const _ = require('lodash');
+const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -86,9 +87,24 @@ function sendGetRequest(endpoint, method, params) {
   });
 }
 
+function signPayload(privateKey, payload) {
+  const keyBuffer = Buffer.from(privateKey, 'hex');
+  const stringPayload = JSON.stringify(payload);
+  return ainUtil.ecSignMessage(stringPayload, keyBuffer);
+}
+
+function verifyData(data) {
+  const signature = data.signature;
+  const address = data.address;
+  delete data.signature;
+  return ainUtil.ecVerifySig(JSON.stringify(data), signature, address);
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
   signAndSendTx,
-  sendGetRequest
+  sendGetRequest,
+  signPayload,
+  verifyData
 };
