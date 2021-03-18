@@ -204,8 +204,6 @@ class P2pServer {
     return {
       txPoolSize: this.node.tp.getPoolSize(),
       txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
-      committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
-      pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
     };
   }
 

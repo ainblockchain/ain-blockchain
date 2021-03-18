@@ -24,6 +24,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
 const HASH_DELIMITER = '#';
+const TX_NONCE_ERROR_CODES = [105, 405, 504, 604, 702];
 
 // Enums
 /**
@@ -85,6 +86,8 @@ const PredefinedDbPaths = {
   SAVE_LAST_TX_LAST_TX: '.last_tx',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
+  ACCOUNTS_NONCE: 'nonce',
+  ACCOUNTS_TIMESTAMP: 'timestamp',
   SERVICE_ACCOUNTS: 'service_accounts',
   SERVICE_ACCOUNTS_ADMIN: 'admin',
   BALANCE: 'balance',
@@ -593,6 +596,7 @@ module.exports = {
   P2P_PORT,
   LIGHTWEIGHT,
   HASH_DELIMITER,
+  TX_NONCE_ERROR_CODES,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,

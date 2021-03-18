@@ -33,6 +33,7 @@ const {
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
+const _ = require('lodash');
 
 class DB {
   constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot) {
@@ -373,12 +374,42 @@ class DB {
     return resultList;
   }
 
+  getAccountsNonceAndTimestamp(address) {
+    let nonce = this.getValue(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`, false);
+    let timestamp = this.getValue(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`, false);
+    if (nonce === null) {
+      nonce = 0;
+    }
+    if (timestamp === null) {
+      timestamp = 0;
+    }
+    return { nonce, timestamp };
+  }
+
+  updateAccountNonceAndTimestamp(address, nonce, timestamp) {
+    if (nonce === undefined || timestamp === undefined) return;
+    const parsedNoncePath = ChainUtil.parsePath(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`);
+    const parsedTimestampPath = ChainUtil.parsePath(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`);
+    const fullNoncePath = DB.getFullPath(parsedNoncePath, PredefinedDbPaths.VALUES_ROOT);
+    const fullTimestampPath = DB.getFullPath(parsedTimestampPath, PredefinedDbPaths.VALUES_ROOT);
+    if (nonce >= 0) { // strictly ordered
+      this.writeDatabase(fullNoncePath, nonce + 1);
+    }
+    if (nonce === -2) { // loosely ordered
+      this.writeDatabase(fullTimestampPath, timestamp);
+    }
+  }
+
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
   // TODO(seo): Apply isWritablePathWithSharding() to setFunction(), setRule(), and setOwner()
   //            as well.
-  setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
+  setValue(valuePath, value, auth, timestamp, transaction, isGlobal, fromSetOp) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(101, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -392,6 +423,15 @@ class DB {
     if (localPath === null) {
       // There is nothing to do.
       return true;
+    }
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
+        return ChainUtil.returnError(105, `Invalid nonce: ${transaction.tx_body.nonce}`);
+      }
+      if (transaction.tx_body.nonce === -2 && transaction.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnError(106, `Invalid timestamp: ${transaction.tx_body.timestamp}`);
+      }
     }
     if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
       return ChainUtil.returnError(103, `No .write permission on: ${valuePath}`);
@@ -409,6 +449,9 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      this.updateAccountNonceAndTimestamp(auth.addr, transaction.tx_body.nonce, transaction.tx_body.timestamp);
+    }
     // NOTE(seo): As of now (2021-01), we don't allow recursive function triggering.
     // NOTE(lia): Allow recursive function triggering for service accounts. Should update this logic
     // to prevent infinite recursion.
@@ -419,27 +462,27 @@ class DB {
     return true;
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
+  incValue(valuePath, delta, auth, timestamp, transaction, isGlobal, fromSetOp) {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnError(201, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal, fromSetOp);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
+  decValue(valuePath, delta, auth, timestamp, transaction, isGlobal, fromSetOp) {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnError(301, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal, fromSetOp);
   }
 
-  setFunction(functionPath, functionChange, auth, isGlobal) {
+  setFunction(functionPath, functionChange, auth, transaction, isGlobal, fromSetOp) {
     const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(401, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -461,6 +504,15 @@ class DB {
       // There is nothing to do.
       return true;
     }
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
+        return ChainUtil.returnError(405, `Invalid nonce: ${transaction.tx_body.nonce}`);
+      }
+      if (transaction.tx_body.nonce === -2 && transaction.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnError(406, `Invalid timestamp: ${transaction.tx_body.timestamp}`);
+      }
+    }
     if (!this.getPermissionForFunction(localPath, auth)) {
       return ChainUtil.returnError(404, `No write_function permission on: ${functionPath}`);
     }
@@ -468,13 +520,16 @@ class DB {
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      this.updateAccountNonceAndTimestamp(auth.addr, transaction.tx_body.nonce, transaction.tx_body.timestamp);
+    }
 
     return true;
   }
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
   //            multiple path variables).
-  setRule(rulePath, rule, auth, isGlobal) {
+  setRule(rulePath, rule, auth, transaction, isGlobal, fromSetOp) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(501, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -489,18 +544,30 @@ class DB {
       // There is nothing to do.
       return true;
     }
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
+        return ChainUtil.returnError(504, `Invalid nonce: ${transaction.tx_body.nonce}`);
+      }
+      if (transaction.tx_body.nonce === -2 && transaction.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnError(505, `Invalid timestamp: ${transaction.tx_body.timestamp}`);
+      }
+    }
     if (!this.getPermissionForRule(localPath, auth)) {
       return ChainUtil.returnError(503, `No write_rule permission on: ${rulePath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      this.updateAccountNonceAndTimestamp(auth.addr, transaction.tx_body.nonce, transaction.tx_body.timestamp);
+    }
 
     return true;
   }
 
   // TODO(seo): Add owner config sanitization logic.
-  setOwner(ownerPath, owner, auth, isGlobal) {
+  setOwner(ownerPath, owner, auth, transaction, isGlobal, fromSetOp) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return ChainUtil.returnError(601, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -515,6 +582,15 @@ class DB {
       // There is nothing to do.
       return true;
     }
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
+        return ChainUtil.returnError(604, `Invalid nonce: ${transaction.tx_body.nonce}`);
+      }
+      if (transaction.tx_body.nonce === -2 && transaction.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnError(605, `Invalid timestamp: ${transaction.tx_body.timestamp}`);
+      }
+    }
     if (!this.getPermissionForOwner(localPath, auth)) {
       return ChainUtil.returnError(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
@@ -522,41 +598,53 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
+    if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
+      this.updateAccountNonceAndTimestamp(auth.addr, transaction.tx_body.nonce, transaction.tx_body.timestamp);
+    }
 
     return true;
   }
 
   set(opList, auth, timestamp, transaction) {
     let ret = true;
+    if (transaction && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
+        return ChainUtil.returnError(702, `Invalid nonce: ${transaction.tx_body.nonce}`);
+      }
+      if (transaction.tx_body.nonce === -2 && transaction.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnError(703, `Invalid timestamp: ${transaction.tx_body.timestamp}`);
+      }
+    }
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        ret = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global, true);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        ret = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global, true);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        ret = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global, true);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, auth, op.is_global);
+        ret = this.setFunction(op.ref, op.value, auth, transaction, op.is_global, true);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, auth, op.is_global);
+        ret = this.setRule(op.ref, op.value, auth, transaction, op.is_global, true);
         if (ret !== true) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, auth, op.is_global);
+        ret = this.setOwner(op.ref, op.value, auth, transaction, op.is_global, true);
         if (ret !== true) {
           break;
         }
@@ -564,6 +652,9 @@ class DB {
         // Invalid Operation
         return ChainUtil.returnError(701, `Invalid opeartion type: ${op.type}`);
       }
+    }
+    if (ret === true && transaction && auth && auth.addr && !auth.fid) {
+      this.updateAccountNonceAndTimestamp(auth.addr, transaction.tx_body.nonce, transaction.tx_body.timestamp);
     }
     return ret;
   }
@@ -663,11 +754,11 @@ class DB {
       case WriteDbOperations.DEC_VALUE:
         return this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(op.ref, op.value, auth, op.is_global);
+        return this.setFunction(op.ref, op.value, auth, tx, op.is_global);
       case WriteDbOperations.SET_RULE:
-        return this.setRule(op.ref, op.value, auth, op.is_global);
+        return this.setRule(op.ref, op.value, auth, tx, op.is_global);
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(op.ref, op.value, auth, op.is_global);
+        return this.setOwner(op.ref, op.value, auth, tx, op.is_global);
       case WriteDbOperations.SET:
         return this.set(op.op_list, auth, timestamp, tx);
     }
@@ -684,7 +775,7 @@ class DB {
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-    return this.executeOperation(txBody.operation, { addr: tx.address}, txBody.timestamp, tx);
+    return this.executeOperation(txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
   }
 
   executeTransactionList(txList) {
@@ -723,6 +814,12 @@ class DB {
     try {
       evalRuleRes = !!this.evalRuleString(
         matched.closestRule.config, matched.pathVars, data, newData, auth, timestamp);
+      if (!evalRuleRes) {
+        logger.error(`[${LOG_HEADER}] evalRuleRes ${evalRuleRes}, ` +
+          `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
+          `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
+          `timestamp: ${timestamp}\n`);
+      }
     } catch (e) {
       logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
