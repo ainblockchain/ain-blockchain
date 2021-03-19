@@ -163,7 +163,7 @@ class BlockchainNode {
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDb(nodeVersion);
-    const newNonce = this.db.getAccountsNonceAndTimestamp(this.account.address).nonce;
+    const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
     this.nonce = newNonce;
   }
 
@@ -222,7 +222,7 @@ class BlockchainNode {
   getNonceForAddr(address, pending) {
     if (!isCksumAddr(address)) return -1;
     if (pending) {
-      const { nonce } = this.db.getAccountsNonceAndTimestamp(address);
+      const { nonce } = this.db.getAccountNonceAndTimestamp(address);
       return nonce;
     }
     if (address === this.account.address) {
@@ -289,7 +289,7 @@ class BlockchainNode {
   createSingleTransaction(txBody, baseDb) {
     if (txBody.nonce === undefined) {
       const db = baseDb ? baseDb : this.db;
-      const { nonce } = db.getAccountsNonceAndTimestamp(this.account.address);
+      const { nonce } = db.getAccountNonceAndTimestamp(this.account.address);
       txBody.nonce = nonce;
     }
     if (txBody.timestamp === undefined) {

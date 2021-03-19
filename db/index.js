@@ -374,7 +374,7 @@ class DB {
     return resultList;
   }
 
-  getAccountsNonceAndTimestamp(address) {
+  getAccountNonceAndTimestamp(address) {
     let nonce = this.getValue(
         `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`, false);
     let timestamp = this.getValue(
@@ -425,7 +425,7 @@ class DB {
       return true;
     }
     if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
         return ChainUtil.returnError(105, `Invalid nonce: ${transaction.tx_body.nonce}`);
       }
@@ -505,7 +505,7 @@ class DB {
       return true;
     }
     if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
         return ChainUtil.returnError(405, `Invalid nonce: ${transaction.tx_body.nonce}`);
       }
@@ -545,7 +545,7 @@ class DB {
       return true;
     }
     if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
         return ChainUtil.returnError(504, `Invalid nonce: ${transaction.tx_body.nonce}`);
       }
@@ -583,7 +583,7 @@ class DB {
       return true;
     }
     if (!fromSetOp && transaction && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
         return ChainUtil.returnError(604, `Invalid nonce: ${transaction.tx_body.nonce}`);
       }
@@ -608,7 +608,7 @@ class DB {
   set(opList, auth, timestamp, transaction) {
     let ret = true;
     if (transaction && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountsNonceAndTimestamp(auth.addr);
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (transaction.tx_body.nonce >= 0 && transaction.tx_body.nonce !== nonce) {
         return ChainUtil.returnError(702, `Invalid nonce: ${transaction.tx_body.nonce}`);
       }
