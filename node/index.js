@@ -5,7 +5,8 @@ const logger = require('../logger')('NODE');
 const {
   PORT,
   ACCOUNT_INDEX,
-  TX_NONCE_ERROR_CODES,
+  TX_NONCE_ERROR_CODE,
+  TX_TIMESTAMP_ERROR_CODE,
   BlockchainNodeStates,
   PredefinedDbPaths,
   ShardingProperties,
@@ -350,7 +351,8 @@ class BlockchainNode {
     if (ChainUtil.transactionFailed(result)) {
       logger.info(`[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(tx, null, 2)}\n ` +
           `WITH RESULT:${JSON.stringify(result)}`);
-      if (TX_NONCE_ERROR_CODES.includes(_.get(result, 'code'))) {
+      const errorCode = _.get(result, 'code');
+      if (errorCode === TX_NONCE_ERROR_CODE || errorCode === TX_TIMESTAMP_ERROR_CODE) {
         this.tp.addTransaction(tx);
       }
     } else {
