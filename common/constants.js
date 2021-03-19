@@ -24,6 +24,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchains');
 const BLOCKCHAINS_N2B_DIR_NAME = 'n2b';
+const BLOCKCHAINS_H2N_DIR_NAME = 'h2n';
 const HASH_DELIMITER = '#';
 
 // Enums
@@ -588,6 +589,7 @@ module.exports = {
   PROTOCOL_VERSION_MAP,
   BLOCKCHAINS_DIR,
   BLOCKCHAINS_N2B_DIR_NAME,
+  BLOCKCHAINS_H2N_DIR_NAME,
   DEBUG,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
