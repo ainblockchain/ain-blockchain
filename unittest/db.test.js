@@ -2643,7 +2643,7 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = true", () => {
       expect(node.db.setFunction(
-          "apps/afan/test/test_sharding/some/path/to", funcChange, { addr: 'known_user' }, null, true))
+          "apps/afan/test/test_sharding/some/path/to", funcChange, { addr: 'known_user' }, true))
         .to.equal(true);
       assert.deepEqual(
           node.db.getFunction("apps/afan/test/test_sharding/some/path/to", true), newFunc);
@@ -2651,7 +2651,7 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = true and non-existing path", () => {
       expect(node.db.setFunction(
-          "some/non-existing/path", funcChange, { addr: 'known_user' }, null, true))
+          "some/non-existing/path", funcChange, { addr: 'known_user' }, true))
         .to.equal(true);
     })
 
@@ -2742,14 +2742,14 @@ describe("DB sharding config", () => {
 
     it("setRule with isGlobal = true", () => {
       expect(node.db.setRule(
-          "apps/afan/test/test_sharding/some/path/to", newRule, { addr: 'known_user' }, null, true))
+          "apps/afan/test/test_sharding/some/path/to", newRule, { addr: 'known_user' }, true))
         .to.equal(true);
       assert.deepEqual(
           node.db.getRule("apps/afan/test/test_sharding/some/path/to", true), newRule);
     })
 
     it("setRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.setRule("some/non-existing/path", newRule, { addr: 'known_user' }, null, true))
+      expect(node.db.setRule("some/non-existing/path", newRule, { addr: 'known_user' }, true))
         .to.equal(true);
     })
 
@@ -2798,20 +2798,20 @@ describe("DB sharding config", () => {
     })
 
     it("evalRule with isGlobal = false", () => {
-      expect(node.db.evalRule("/test/test_sharding/some/path/to", newValue, {addr: "known_user" }))
+      expect(node.db.evalRule("/test/test_sharding/some/path/to", newValue, { addr: "known_user" }))
         .to.equal(true);
     })
 
     it("evalRule with isGlobal = true", () => {
       expect(node.db.evalRule(
-          "/apps/afan/test/test_sharding/some/path/to", newValue, {addr: "known_user" },
+          "/apps/afan/test/test_sharding/some/path/to", newValue, { addr: "known_user" },
           null, true))
         .to.equal(true);
     })
 
     it("evalRule with isGlobal = true and non-existing path", () => {
       expect(node.db.evalRule(
-          "/some/non-existing/path", newValue, {addr: "known_user" }, null, true))
+          "/some/non-existing/path", newValue, { addr: "known_user" }, null, true))
         .to.equal(null);
     })
   })
@@ -2872,14 +2872,14 @@ describe("DB sharding config", () => {
 
     it("setOwner with isGlobal = true", () => {
       expect(node.db.setOwner(
-          "apps/afan/test/test_sharding/some/path/to", newOwner, { addr: 'known_user' }, null, true))
+          "apps/afan/test/test_sharding/some/path/to", newOwner, { addr: 'known_user' }, true))
         .to.equal(true);
       assert.deepEqual(
           node.db.getOwner("apps/afan/test/test_sharding/some/path/to", true), newOwner);
     })
 
     it("setOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.setOwner("some/non-existing/path", newOwner, { addr: 'known_user' }, null, true))
+      expect(node.db.setOwner("some/non-existing/path", newOwner, { addr: 'known_user' }, true))
         .to.equal(true);
     })
 
