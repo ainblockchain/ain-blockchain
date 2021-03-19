@@ -389,7 +389,7 @@ class DB {
   }
 
   updateAccountNonceAndTimestamp(address, nonce, timestamp) {
-    if (nonce === undefined || timestamp === undefined) return;
+    if (!ChainUtil.isNumber(nonce) || !ChainUtil.isNumber(timestamp)) return;
     const parsedNoncePath = ChainUtil.parsePath(
         `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`);
     const parsedTimestampPath = ChainUtil.parsePath(
