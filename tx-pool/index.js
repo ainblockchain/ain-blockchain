@@ -82,7 +82,26 @@ class TransactionPool {
         tx.hash in this.transactionTracker;
   }
 
-  getValidTransactions(excludeBlockList, baseStateVersion) {
+  static isCorrectlyNoncedOrTimestamped(txNonce, txTimestamp, accountNonce, accountTimestamp) {
+    return txNonce === -1 || // unordered
+        (txNonce === -2 && txTimestamp > accountTimestamp) || // loosely ordered
+        txNonce === accountNonce; // strictly ordered
+  }
+
+  static excludeConsensusTransactions(txList) {
+    return txList.filter((tx) => {
+        const type = _.get(tx, 'tx_body.operation.type');
+        if (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) {
+          return true;
+        }
+        const ref = _.get(tx, 'tx_body.operation.ref');
+        const innerRef = _.get(tx, 'tx_body.operation.op_list.0.ref');
+        return ((ref && !ref.startsWith('/consensus/number')) ||
+            (innerRef && !innerRef.startsWith('/consensus/number')));
+      });
+  }
+
+  static filterAndSortTransactions(addrToTxList, excludeBlockList) {
     let excludeTransactions = [];
     if (excludeBlockList && excludeBlockList.length) {
       excludeBlockList.forEach((block) => {
@@ -90,65 +109,66 @@ class TransactionPool {
         excludeTransactions = excludeTransactions.concat(block.transactions);
       })
     }
-    const unvalidatedTransactions = JSON.parse(JSON.stringify(this.transactions));
-    // Transactions are first ordered by nonce in their individual lists by address
-    for (const address in unvalidatedTransactions) {
-      let tempFilteredTransactions = _.differenceWith(
-          unvalidatedTransactions[address],
+    for (const address in addrToTxList) {
+      // exclude transactions in excludeBlockList
+      let filteredTransactions = _.differenceWith(
+          addrToTxList[address],
           excludeTransactions,
           (a, b) => {
             return a.hash === b.hash;
-          }
-        );
-      tempFilteredTransactions = tempFilteredTransactions.filter((tx) => {
-          const type = _.get(tx, 'tx_body.operation.type');
-          if (type !== WriteDbOperations.SET_VALUE && type !== WriteDbOperations.SET) {
-            return true;
-          }
-          const ref = _.get(tx, 'tx_body.operation.ref');
-          const innerRef = _.get(tx, 'tx_body.operation.op_list.0.ref');
-          return ((ref && !ref.startsWith('/consensus/number')) ||
-              (innerRef && !innerRef.startsWith('/consensus/number')));
-        });
-      if (!tempFilteredTransactions.length) {
-        delete unvalidatedTransactions[address];
+          });
+      // exclude consensus transactions
+      filteredTransactions = this.excludeConsensusTransactions(filteredTransactions);
+      if (!filteredTransactions.length) {
+        delete addrToTxList[address];
       } else {
-        unvalidatedTransactions[address] = tempFilteredTransactions;
-        unvalidatedTransactions[address].sort((a, b) => {
+        addrToTxList[address] = filteredTransactions;
+        // sort transactions
+        addrToTxList[address].sort((a, b) => {
           if (a.tx_body.nonce === b.tx_body.nonce) {
-            if (a.tx_body.nonce >= -1) { // both ordered / unordered
+            if (a.tx_body.nonce >= -1) { // both strictly ordered / unordered
               return 0;
             }
             return a.tx_body.timestamp - b.tx_body.timestamp; // both loosely ordered
           }
-          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both ordered
+          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both strictly ordered
             return a.tx_body.nonce - b.tx_body.nonce;
           }
           return 0;
         });
       }
     }
+  }
+
+  getValidTransactions(excludeBlockList, baseStateVersion) {
+    const addrToTxList = JSON.parse(JSON.stringify(this.transactions));
+    TransactionPool.filterAndSortTransactions(addrToTxList, excludeBlockList);
     // Remove incorrectly nonced / timestamped transactions
     const noncesAndTimestamps = baseStateVersion ?
         this.node.getValueWithStateVersion(PredefinedDbPaths.ACCOUNTS, false, baseStateVersion) : {};
-    for (const [addr, txList] of Object.entries(unvalidatedTransactions)) {
+    for (const [addr, txList] of Object.entries(addrToTxList)) {
       const newTxList = [];
       for (let index = 0; index < txList.length; index++) {
         const tx = txList[index];
+        const txNonce = tx.tx_body.nonce;
+        const txTimestamp = tx.tx_body.timestamp;
         const accountNonce = _.get(noncesAndTimestamps, `${addr}.nonce`, 0);
         const accountTimestamp = _.get(noncesAndTimestamps, `${addr}.timestamp`, 0);
-        if ((tx.tx_body.nonce < 0 || tx.tx_body.nonce === accountNonce) &&
-            (tx.tx_body.nonce !== -2 || tx.tx_body.timestamp > accountTimestamp)) {
+        if (TransactionPool.isCorrectlyNoncedOrTimestamped(
+            txNonce, txTimestamp, accountNonce, accountTimestamp)) {
           newTxList.push(tx);
-          if (!noncesAndTimestamps[addr]) noncesAndTimestamps[addr] = {};
-          if (tx.tx_body.nonce >= 0) noncesAndTimestamps[addr].nonce = tx.tx_body.nonce + 1;
-          if (tx.tx_body.nonce === -2) noncesAndTimestamps[addr].timestamp = tx.tx_body.timestamp;
+          if (txNonce >= 0) {
+            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'nonce'], txNonce + 1);
+          }
+          if (txNonce === -2) {
+            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'timestamp'], txTimestamp);
+          }
         }
       }
-      unvalidatedTransactions[addr] = newTxList;
+      addrToTxList[addr] = newTxList;
     }
-    // Merge list of transactions while ordering by timestamp. Initial ordering by nonce is preserved.
-    return this.mergeMultipleSortedArrays(Object.values(unvalidatedTransactions));
+    // Merge lists of transactions while ordering by timestamp. Initial ordering by nonce is preserved.
+    return this.mergeMultipleSortedArrays(Object.values(addrToTxList));
   }
 
   mergeMultipleSortedArrays(arrays) {
