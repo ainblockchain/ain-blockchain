@@ -118,7 +118,7 @@ class TransactionPool {
             return a.hash === b.hash;
           });
       // exclude consensus transactions
-      filteredTransactions = this.excludeConsensusTransactions(filteredTransactions);
+      filteredTransactions = TransactionPool.excludeConsensusTransactions(filteredTransactions);
       if (!filteredTransactions.length) {
         delete addrToTxList[address];
       } else {
@@ -168,15 +168,15 @@ class TransactionPool {
       addrToTxList[addr] = newTxList;
     }
     // Merge lists of transactions while ordering by timestamp. Initial ordering by nonce is preserved.
-    return this.mergeMultipleSortedArrays(Object.values(addrToTxList));
+    return TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
   }
 
-  mergeMultipleSortedArrays(arrays) {
+  static mergeMultipleSortedArrays(arrays) {
     while (arrays.length > 1) {
       const newArr = [];
       for (let i = 0; i < arrays.length; i += 2) {
         if (i + 1 < arrays.length) {
-          newArr.push(this.mergeTwoSortedArrays(arrays[i], arrays[i + 1]));
+          newArr.push(TransactionPool.mergeTwoSortedArrays(arrays[i], arrays[i + 1]));
         } else {
           newArr.push(arrays[i]);
         }
@@ -186,7 +186,7 @@ class TransactionPool {
     return arrays.length === 1 ? arrays[0] : [];
   }
 
-  mergeTwoSortedArrays(arr1, arr2) {
+  static mergeTwoSortedArrays(arr1, arr2) {
     const newArr = [];
     let i = 0;
     let j = 0;
