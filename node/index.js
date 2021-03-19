@@ -261,13 +261,13 @@ class BlockchainNode {
     *                                        not
     * @return {Transaction} Instance of the transaction class
     */
-  createTransaction(txBody, baseDb) {
+  createTransaction(txBody) {
     const LOG_HEADER = 'createTransaction';
 
     if (Transaction.isBatchTxBody(txBody)) {
       const txList = [];
       for (const subTxBody of txBody.tx_body_list) {
-        const createdTx = this.createSingleTransaction(subTxBody, baseDb);
+        const createdTx = this.createSingleTransaction(subTxBody);
         if (createdTx === null) {
           logger.info(`[${LOG_HEADER}] Failed to create a transaction with subTx: ` +
               `${JSON.stringify(subTxBody, null, 2)}`);
@@ -277,7 +277,7 @@ class BlockchainNode {
       }
       return { tx_list: txList };
     }
-    const createdTx = this.createSingleTransaction(txBody, baseDb);
+    const createdTx = this.createSingleTransaction(txBody);
     if (createdTx === null) {
       logger.info(`[${LOG_HEADER}] Failed to create a transaction with txBody: ` +
           `${JSON.stringify(txBody, null, 2)}`);
@@ -286,10 +286,9 @@ class BlockchainNode {
     return createdTx;
   }
 
-  createSingleTransaction(txBody, baseDb) {
+  createSingleTransaction(txBody) {
     if (txBody.nonce === undefined) {
-      const db = baseDb ? baseDb : this.db;
-      const { nonce } = db.getAccountNonceAndTimestamp(this.account.address);
+      const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
       txBody.nonce = nonce;
     }
     if (txBody.timestamp === undefined) {
