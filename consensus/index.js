@@ -303,8 +303,7 @@ class Consensus {
       } else {
         logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
         invalidTransactions.push(tx);
-        this.node.stateManager.renameVersion(backupVersion, tempVersion);
-        this.node.stateManager.deleteVersion(backupVersion);
+        tempDb.setStateVersion(backupRoot, backupVersion);
         backupRoot = this.node.stateManager.cloneVersion(tempVersion, backupVersion);
         if (!backupRoot) {
           logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempVersion}`);
