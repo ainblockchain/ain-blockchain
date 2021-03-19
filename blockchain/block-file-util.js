@@ -3,12 +3,17 @@ const glob = require('glob');
 const path = require('path');
 const {compare} = require('natural-orderby');
 const zlib = require('zlib');
-const {BLOCKCHAINS_N2B_DIR_NAME} = require('../common/constants');
+const {BLOCKCHAINS_N2B_DIR_NAME, BLOCKCHAINS_H2N_DIR_NAME} = require('../common/constants');
 const FILE_NAME_SUFFIX = 'json.zip';
+const logger = require('../logger')('BLOCK-FILE-UTIL');
 
 class BlockFileUtil {
   static getBlockPath(chainPath, blockNumber) {
     return path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
+  }
+
+  static getHashToNumberPath(chainPath, blockHash) {
+    return path.join(chainPath, BLOCKCHAINS_H2N_DIR_NAME, blockHash);
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -38,10 +43,12 @@ class BlockFileUtil {
 
   static createBlockchainDir(chainPath) {
     const n2bPath = path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME);
+    const h2nPath = path.join(chainPath, BLOCKCHAINS_H2N_DIR_NAME);
 
     if (!fs.existsSync(chainPath)) {
       fs.mkdirSync(chainPath, {recursive: true});
       fs.mkdirSync(n2bPath);
+      fs.mkdirSync(h2nPath);
       return true;
     } else if (!fs.readdirSync(n2bPath).length) {
       return true;
@@ -67,6 +74,22 @@ class BlockFileUtil {
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     }
+  }
+
+  static writeHashToNumber(chainPath, blockHash, blockNumber) {
+    if (!blockHash || (blockNumber !== 0 && !blockNumber)) {
+      logger.error(`Invalid writeHashToNumber parameters (${blockHash}, ${blockNumber})`);
+      return;
+    }
+    const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
+    if (!fs.existsSync(hashToNumberPath)) {
+      fs.writeFileSync(hashToNumberPath, blockNumber);
+    }
+  }
+
+  static readHashToNumber(chainPath, blockHash) {
+    const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
+    return Number(fs.readFileSync(hashToNumberPath).toString());
   }
 }
 

@@ -13,7 +13,6 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainPath = path.resolve(BLOCKCHAINS_DIR, basePath);
-    this.hashToNumber = {}; // TODO(csh): Move to file (./hash-to-number/0x~~~)
   }
 
   init(isFirstNode) {
@@ -73,7 +72,8 @@ class Blockchain {
     */
   getBlockByHash(hash) {
     if (!hash) return null;
-    const blockPath = BlockFileUtil.getBlockPath(this.blockchainPath, this.hashToNumber[hash]);
+    const blockPath = BlockFileUtil.getBlockPath(this.blockchainPath,
+        BlockFileUtil.readHashToNumber(this.blockchainPath, hash));
     if (blockPath === undefined) {
       const found = this.chain.filter((block) => block.hash === hash);
       return found.length ? found[0] : null;
@@ -182,7 +182,7 @@ class Blockchain {
     for (let i = 0; i < this.chain.length; i++) {
       const block = this.chain[i];
       BlockFileUtil.writeBlock(this.blockchainPath, block);
-      this.hashToNumber[block.hash] = block.number;
+      BlockFileUtil.writeHashToNumber(this.blockchainPath, block.hash, block.number);
     }
   }
 
