@@ -132,6 +132,8 @@ class BlockchainNode {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${oldVersion}`);
       }
     }
+    const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
+    this.nonce = newNonce;
     return true;
   }
 
@@ -163,8 +165,6 @@ class BlockchainNode {
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDb(nodeVersion);
-    const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
-    this.nonce = newNonce;
   }
 
   dumpFinalVersion(withDetails) {
