@@ -880,9 +880,6 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, "some value with nonce unordered");
       })
 
-      // TODO(seo): Uncomment below once https://github.com/ainblockchain/ain-blockchain/issues/228
-      //            is fixed.
-      /*
       it('set_value with nonce strictly ordered', () => {
         const nonce = parseOrLog(
             syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
@@ -906,7 +903,6 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, "some value with nonce strictly ordered");
       })
-      */
 
       it('set_value with failing operation', () => {
         // Check the original value.
