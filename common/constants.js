@@ -22,7 +22,9 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchain/blockchains');
+const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchains');
+const BLOCKCHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
+const BLOCKCHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
 const HASH_DELIMITER = '#';
 
 // Enums
@@ -585,6 +587,8 @@ module.exports = {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   BLOCKCHAINS_DIR,
+  BLOCKCHAINS_N2B_DIR_NAME,
+  BLOCKCHAINS_H2N_DIR_NAME,
   DEBUG,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
