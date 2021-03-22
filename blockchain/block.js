@@ -1,11 +1,11 @@
 const stringify = require('fast-json-stable-stringify');
-const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('../db/state-node');
 const DB = require('../db');
+const BlockFileUtil = require('./block-file-util');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
@@ -18,7 +18,6 @@ const {
   ProofProperties,
   StateVersions,
 } = require('../common/constants');
-const BlockFilePatterns = require('./block-file-patterns');
 
 class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
@@ -89,13 +88,8 @@ class Block {
         stateProofHash, proposer, validators);
   }
 
-  static getFileName(block) {
-    return BlockFilePatterns.getBlockFileName(block);
-  }
-
   static loadBlock(blockZipFile) {
-    const unzippedfs = zipper.sync.unzip(blockZipFile).memory();
-    const blockInfo = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], 'buffer').toString());
+    const blockInfo = BlockFileUtil.readBlock(blockZipFile);
     return Block.parse(blockInfo);
   }
 

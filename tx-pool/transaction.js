@@ -46,7 +46,7 @@ class Transaction {
     // A devel method for bypassing the transaction verification.
     let signature = '';
     if (!txBody.address) {
-      const signed = ChainUtil.signTx(txBody, privateKey);
+      const signed = ChainUtil.signTransaction(txBody, privateKey);
       signature = signed.signedTx.signature;
     }
     return Transaction.create(txBody, signature);
