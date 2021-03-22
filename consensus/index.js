@@ -239,16 +239,7 @@ class Consensus {
 
   executeLastVoteOrAbort(db, tx) {
     const LOG_HEADER = 'executeLastVoteOrAbort';
-    const dbVersion = db.stateVersion;
-    const backupVersion = this.node.stateManager.createUniqueVersionName(
-      `${StateVersions.BACKUP}:${dbVersion}`);
-    const backupRoot = this.node.stateManager.cloneVersion(dbVersion, backupVersion);
-    if (!backupRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${dbVersion}`);
-      return false;
-    }
     const txRes = db.executeTransaction(tx);
-    this.node.stateManager.deleteVersion(backupVersion);
     if (!ChainUtil.transactionFailed(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       return true;
