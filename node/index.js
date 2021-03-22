@@ -22,7 +22,7 @@ const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
-const { isCksumAddr } = require('../common/chain-util');
+const { isValAddr, toCksumAddr } = require('../common/chain-util');
 
 class BlockchainNode {
   constructor() {
@@ -221,16 +221,17 @@ class BlockchainNode {
   }
 
   getNonceForAddr(address, pending) {
-    if (!isCksumAddr(address)) return -1;
+    if (!isValAddr(address)) return -1;
+    const cksumAddr = toCksumAddr(address);
     if (pending) {
-      const { nonce } = this.db.getAccountNonceAndTimestamp(address);
+      const { nonce } = this.db.getAccountNonceAndTimestamp(cksumAddr);
       return nonce;
     }
-    if (address === this.account.address) {
+    if (cksumAddr === this.account.address) {
       return this.nonce;
     }
     const nonce = this.getValueWithStateVersion(
-        `${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`,
+        `${PredefinedDbPaths.ACCOUNTS}/${cksumAddr}/${PredefinedDbPaths.ACCOUNTS_NONCE}`,
         false, this.stateManager.finalVersion);
     return nonce === null ? 0 : nonce;
   }
