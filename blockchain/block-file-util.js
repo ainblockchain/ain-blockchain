@@ -4,6 +4,7 @@ const path = require('path');
 const {compare} = require('natural-orderby');
 const zlib = require('zlib');
 const {BLOCKCHAINS_N2B_DIR_NAME, BLOCKCHAINS_H2N_DIR_NAME} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const FILE_NAME_SUFFIX = 'json.zip';
 const logger = require('../logger')('BLOCK-FILE-UTIL');
 
@@ -85,7 +86,7 @@ class BlockFileUtil {
   }
 
   static writeHashToNumber(chainPath, blockHash, blockNumber) {
-    if (!blockHash || (blockNumber !== 0 && !blockNumber)) {
+    if (!blockHash || ChainUtil.isNumber(blockNumber) || blockNumber < 0) {
       logger.error(`Invalid writeHashToNumber parameters (${blockHash}, ${blockNumber})`);
       return;
     }
