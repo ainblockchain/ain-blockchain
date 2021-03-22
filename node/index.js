@@ -114,8 +114,8 @@ class BlockchainNode {
     return this.stateManager.deleteVersion(db.stateVersion);
   }
 
-  syncDb(newVersion) {
-    const LOG_HEADER = 'syncDb';
+  syncDbAndNonce(newVersion) {
+    const LOG_HEADER = 'syncDbAndNonce';
 
     const oldVersion = this.db.stateVersion;
     if (newVersion === oldVersion) {
@@ -165,7 +165,7 @@ class BlockchainNode {
       }
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
-    this.syncDb(nodeVersion);
+    this.syncDbAndNonce(nodeVersion);
   }
 
   dumpFinalVersion(withDetails) {
