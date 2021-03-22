@@ -323,10 +323,10 @@ class BlockchainNode {
           logger.error(`[${LOG_HEADER}] Failed to finalize version: ${backupVersion}`);
         }
       }
+      this.db.setStateVersion(backupRoot, backupVersion);
       if (!this.stateManager.deleteVersion(this.db.stateVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.db.stateVersion}`);
       }
-      this.db.setStateVersion(backupRoot, backupVersion);
     } else {
       if (!this.stateManager.deleteVersion(backupVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${backupVersion}`);
