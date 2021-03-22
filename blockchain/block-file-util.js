@@ -3,75 +3,106 @@ const glob = require('glob');
 const path = require('path');
 const {compare} = require('natural-orderby');
 const zlib = require('zlib');
-const {BLOCKCHAINS_DIR} = require('../common/constants');
+const {BLOCKCHAINS_N2B_DIR_NAME, BLOCKCHAINS_H2N_DIR_NAME} = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const FILE_NAME_SUFFIX = 'json.zip';
+const logger = require('../logger')('BLOCK-FILE-UTIL');
 
 class BlockFileUtil {
-  static getBlockFilePath(chainPath, blockNumber) {
-    return path.resolve(chainPath, this.getFilenameByNumber(blockNumber));
+  static getBlockPath(chainPath, blockNumber) {
+    return path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
   }
 
-  static getFilenameByNumber(blockNumber) {
+  static getHashToNumberPath(chainPath, blockHash) {
+    return path.join(chainPath, BLOCKCHAINS_H2N_DIR_NAME, blockHash);
+  }
+
+  static getBlockFilenameByNumber(blockNumber) {
     return `${blockNumber}.${FILE_NAME_SUFFIX}`;
   }
 
-  static getFilename(block) {
-    return this.getFilenameByNumber(block.number);
+  static getBlockFilename(block) {
+    return this.getBlockFilenameByNumber(block.number);
   }
 
   // TODO(csh): Don't use glob?
-  static getAllBlockFiles(chainPath) {
-    const allBlockFilesPattern = `${chainPath}/*.${FILE_NAME_SUFFIX}`;
+  static getAllBlockPaths(chainPath) {
+    const allBlockFilesPattern = `${chainPath}/${BLOCKCHAINS_N2B_DIR_NAME}/*.${FILE_NAME_SUFFIX}`;
     return glob.sync(allBlockFilesPattern).sort(compare());
   }
 
-  static getBlockFiles(chainPath, from, to) {
-    const blockFiles = [];
+  static getBlockPaths(chainPath, from, to) {
+    const blockPaths = [];
     for (let number = from; number < to; number++) {
-      const blockFile = `${this.getBlockFilePath(chainPath, number)}`;
+      const blockFile = this.getBlockPath(chainPath, number);
       if (fs.existsSync(blockFile)) {
-        blockFiles.push(blockFile);
+        blockPaths.push(blockFile);
       }
     }
-    return blockFiles;
+    return blockPaths;
   }
 
   static createBlockchainDir(chainPath) {
-    let created = false;
-    const dirs = [BLOCKCHAINS_DIR];
-    if (chainPath) {
-      dirs.push(chainPath);
+    const n2bPath = path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME);
+    const h2nPath = path.join(chainPath, BLOCKCHAINS_H2N_DIR_NAME);
+    let isBlockEmpty = true;
+
+    if (!fs.existsSync(chainPath)) {
+      fs.mkdirSync(chainPath, {recursive: true});
     }
-    dirs.forEach((directory) => {
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory);
-        created = true;
-      } else {
-        const files = fs.readdirSync(directory);
-        // Note(minsu): Added this check to avoid an only dir exists case without zip files at all.
-        if (!files.length) {
-          created = true;
-        }
-      }
-    });
-    return created;
+
+    if (!fs.existsSync(n2bPath)) {
+      fs.mkdirSync(n2bPath);
+    }
+
+    if (!fs.existsSync(h2nPath)) {
+      fs.mkdirSync(h2nPath);
+    }
+
+    if (fs.readdirSync(n2bPath).length > 0) {
+      isBlockEmpty = false;
+    }
+    return isBlockEmpty;
   }
 
   // TODO(csh): Change to asynchronous
-  static readBlock(filePath) {
-    const zippedFs = fs.readFileSync(filePath);
+  static readBlock(blockPath) {
+    const zippedFs = fs.readFileSync(blockPath);
     return JSON.parse(zlib.gunzipSync(zippedFs).toString());
   }
 
   static readBlockByNumber(chainPath, blockNumber) {
-    const file = this.getBlockFilePath(chainPath, blockNumber);
-    return this.readBlock(file);
+    const blockPath = this.getBlockPath(chainPath, blockNumber);
+    return this.readBlock(blockPath);
   }
 
   // TODO(csh): Change to asynchronous
-  static writeBlock(filePath, block) {
-    const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
-    fs.writeFileSync(filePath, compressed);
+  static writeBlock(chainPath, block) {
+    const blockPath = this.getBlockPath(chainPath, block.number);
+    if (!fs.existsSync(blockPath)) {
+      const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
+      fs.writeFileSync(blockPath, compressed);
+    } else {
+      logger.info(`${blockPath} file already exists!`);
+    }
+  }
+
+  static writeHashToNumber(chainPath, blockHash, blockNumber) {
+    if (!blockHash || !ChainUtil.isNumber(blockNumber) || blockNumber < 0) {
+      logger.error(`Invalid writeHashToNumber parameters (${blockHash}, ${blockNumber})`);
+      return;
+    }
+    const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
+    if (!fs.existsSync(hashToNumberPath)) {
+      fs.writeFileSync(hashToNumberPath, blockNumber);
+    } else {
+      logger.info(`${hashToNumberPath} file already exists!`);
+    }
+  }
+
+  static readHashToNumber(chainPath, blockHash) {
+    const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
+    return Number(fs.readFileSync(hashToNumberPath).toString());
   }
 }
 

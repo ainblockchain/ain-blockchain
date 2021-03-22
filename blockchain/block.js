@@ -5,7 +5,6 @@ const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('../db/state-node');
 const DB = require('../db');
-const BlockFileUtil = require('./block-file-util');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
@@ -86,11 +85,6 @@ class Block {
       stateProofHash, proposer, validators) {
     return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(),
         stateProofHash, proposer, validators);
-  }
-
-  static loadBlock(blockZipFile) {
-    const blockInfo = BlockFileUtil.readBlock(blockZipFile);
-    return Block.parse(blockInfo);
   }
 
   static parse(blockInfo) {
