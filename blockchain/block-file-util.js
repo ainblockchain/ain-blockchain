@@ -31,14 +31,14 @@ class BlockFileUtil {
   }
 
   static getBlockPaths(chainPath, from, to) {
-    const blockFiles = [];
+    const blockPaths = [];
     for (let number = from; number < to; number++) {
       const blockFile = this.getBlockPath(chainPath, number);
       if (fs.existsSync(blockFile)) {
-        blockFiles.push(blockFile);
+        blockPaths.push(blockFile);
       }
     }
-    return blockFiles;
+    return blockPaths;
   }
 
   static createBlockchainDir(chainPath) {
