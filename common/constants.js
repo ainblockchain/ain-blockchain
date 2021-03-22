@@ -371,6 +371,8 @@ const FeatureFlags = {
   enableStateVersionOpt: true,
   // Enables state version renaming.
   enableVersionRenaming: true,
+  // Enables rich logging for functions.
+  enableRichFunctionLogging: false,
 };
 
 /**

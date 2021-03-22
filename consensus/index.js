@@ -531,10 +531,12 @@ class Consensus {
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
+      this.node.destroyDb(newDb);
       return false;
     }
     if (!newDb.executeTransactionList(proposalBlock.transactions)) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
+      this.node.destroyDb(newDb);
       return false;
     }
 
@@ -563,13 +565,15 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getProof('/')[ProofProperties.PROOF_HASH]} / ` +
             `${proposalBlock.state_proof_hash}`);
+        this.node.destroyDb(newDb);
         return false;
       }
     }
-    this.blockPool.hashToDb.set(proposalBlock.hash, newDb);
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
+      this.node.destroyDb(newDb);
       return false;
     }
+    this.blockPool.hashToDb.set(proposalBlock.hash, newDb);
     if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
       logger.info(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
           `(${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
