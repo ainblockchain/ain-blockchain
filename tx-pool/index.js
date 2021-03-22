@@ -126,10 +126,10 @@ class TransactionPool {
         // sort transactions
         addrToTxList[address].sort((a, b) => {
           if (a.tx_body.nonce === b.tx_body.nonce) {
-            if (a.tx_body.nonce >= -1) { // both strictly ordered / unordered
+            if (a.tx_body.nonce >= 0) { // both strictly ordered
               return 0;
             }
-            return a.tx_body.timestamp - b.tx_body.timestamp; // both loosely ordered
+            return a.tx_body.timestamp - b.tx_body.timestamp; // both loosely ordered / unordered
           }
           if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both strictly ordered
             return a.tx_body.nonce - b.tx_body.nonce;
