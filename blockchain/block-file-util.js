@@ -88,7 +88,7 @@ class BlockFileUtil {
   }
 
   static writeHashToNumber(chainPath, blockHash, blockNumber) {
-    if (!blockHash || ChainUtil.isNumber(blockNumber) || blockNumber < 0) {
+    if (!blockHash || !ChainUtil.isNumber(blockNumber) || blockNumber < 0) {
       logger.error(`Invalid writeHashToNumber parameters (${blockHash}, ${blockNumber})`);
       return;
     }
