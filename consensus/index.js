@@ -277,14 +277,22 @@ class Consensus {
     let backupRoot = this.node.stateManager.cloneVersion(tempVersion, backupVersion);
     if (!backupRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempVersion}`);
+      this.node.destroyDb(tempDb);
+      return null;
     }
     for (const voteTx of lastVotes) {
       const txRes = tempDb.executeTransaction(voteTx);
+      this.node.stateManager.deleteVersion(backupVersion);
       if (!ChainUtil.transactionFailed(txRes)) {
         logger.debug(`[${LOG_HEADER}] last vote: success`);
+        backupRoot = this.node.stateManager.cloneVersion(tempVersion, backupVersion);
+        if (!backupRoot) {
+          logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempVersion}`);
+          this.node.stateManager.deleteVersion(tempVersion);
+          return null;
+        }
       } else {
         logger.error(`[${LOG_HEADER}] last vote: failure\n ${JSON.stringify(txRes)}`);
-        this.node.stateManager.deleteVersion(backupVersion);
         this.node.stateManager.deleteVersion(tempVersion);
         return null;
       }
@@ -300,16 +308,18 @@ class Consensus {
       if (!ChainUtil.transactionFailed(txRes)) {
         logger.debug(`[${LOG_HEADER}] tx: success`);
         validTransactions.push(tx);
-      } else {
-        logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
-        invalidTransactions.push(tx);
-        tempDb.setStateVersion(backupRoot, backupVersion);
+        this.node.stateManager.deleteVersion(backupVersion);
         backupRoot = this.node.stateManager.cloneVersion(tempVersion, backupVersion);
         if (!backupRoot) {
           logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempVersion}`);
           this.node.stateManager.deleteVersion(tempVersion);
           return null;
         }
+      } else {
+        logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
+        invalidTransactions.push(tx);
+        tempDb.setStateVersion(backupRoot, backupVersion);
+        this.node.stateManager.deleteVersion(tempVersion);
       }
     }
     this.node.stateManager.deleteVersion(backupVersion);
