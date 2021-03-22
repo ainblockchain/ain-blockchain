@@ -316,7 +316,7 @@ class Consensus {
           return null;
         }
       } else {
-        logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
+        logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
         invalidTransactions.push(tx);
         tempDb.setStateVersion(backupRoot, backupVersion);
         this.node.stateManager.deleteVersion(tempVersion);
