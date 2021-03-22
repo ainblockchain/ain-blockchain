@@ -1,4 +1,5 @@
 /* eslint no-mixed-operators: "off" */
+const _ = require('lodash');
 const P2pServer = require('./server');
 const url = require('url');
 const Websocket = require('ws');
@@ -18,6 +19,13 @@ const {
   MAX_OUTBOUND_LIMIT,
   MAX_INBOUND_LIMIT
 } = require('../common/constants');
+const {
+  getAddressFromSocket,
+  removeSocketConnectionIfExists,
+  signMessage,
+  getAddressFromSignature,
+  verifySignedMessage
+} = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -155,7 +163,7 @@ class P2pClient {
         logger.info(`\n << Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
         if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
           logger.debug(`Updated MANAGED peers info: ` +
-            `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
+              `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
         }
         if (node.state === BlockchainNodeStates.STARTING) {
           node.state = BlockchainNodeStates.SYNCING;
@@ -197,69 +205,100 @@ class P2pClient {
   }
 
   broadcastConsensusMessage(msg) {
-    logger.debug(`SENDING: ${JSON.stringify(msg)}`);
-    Object.values(this.outbound).forEach((socket) => {
-      socket.send(JSON.stringify({
-        type: MessageTypes.CONSENSUS,
-        message: msg,
-        protoVer: CURRENT_PROTOCOL_VERSION
-      }));
+    const payload = {
+      type: MessageTypes.CONSENSUS,
+      message: msg,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    };
+    const stringPayload = JSON.stringify(payload);
+    Object.values(this.outbound).forEach(socket => {
+      socket.send(stringPayload);
     });
+    logger.debug(`SENDING: ${JSON.stringify(msg)}`);
   }
 
   requestChainSegment(socket, lastBlock) {
-    socket.send(JSON.stringify({
+    const payload = {
       type: MessageTypes.CHAIN_SEGMENT_REQUEST,
       lastBlock,
       protoVer: CURRENT_PROTOCOL_VERSION
-    }));
+    };
+    socket.send(JSON.stringify(payload));
   }
 
   broadcastTransaction(transaction) {
-    logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
-    Object.values(this.outbound).forEach((socket) => {
-      socket.send(JSON.stringify({
-        type: MessageTypes.TRANSACTION,
-        transaction,
-        protoVer: CURRENT_PROTOCOL_VERSION
-      }));
-    });
-  }
-
-  sendAccount(socket) {
-    const account = this.server.getNodeAddress();
-    logger.debug(`SENDING: account(${account}) to p2p server`);
-    socket.send(JSON.stringify({
-      type: MessageTypes.ACCOUNT_REQUEST,
-      account: account,
+    const payload = {
+      type: MessageTypes.TRANSACTION,
+      transaction,
       protoVer: CURRENT_PROTOCOL_VERSION
-    }));
+    };
+    const stringPayload = JSON.stringify(payload);
+    Object.values(this.outbound).forEach(socket => {
+      socket.send(stringPayload);
+    });
+    logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
+  sendAddress(socket) {
+    const body = {
+      address: this.server.getNodeAddress(),
+      timestamp: Date.now(),
+    };
+    const signature = signMessage(body, this.server.getNodePrivateKey());
+    const payload = {
+      type: MessageTypes.ADDRESS_REQUEST,
+      body,
+      signature,
+      protoVer: CURRENT_PROTOCOL_VERSION
+    };
+    socket.send(JSON.stringify(payload));
+  }
+
+  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const data = JSON.parse(message);
       const version = data.protoVer;
       if (!version || !semver.valid(version)) {
+        const address = getAddressFromSocket(this.outbound, socket);
+        removeSocketConnectionIfExists(this.outbound, address);
         socket.close();
         return;
       }
       if (semver.gt(this.server.minProtocolVersion, version) ||
         (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
+        const address = getAddressFromSocket(this.outbound, socket);
+        removeSocketConnectionIfExists(this.outbound, address);
         socket.close();
         return;
       }
 
       switch (data.type) {
-        case MessageTypes.ACCOUNT_RESPONSE:
-          if (!data.account) {
-            logger.error(`Broken websocket (account unknown) is established.`);
+        case MessageTypes.ADDRESS_RESPONSE:
+          const address = _.get(data, 'body.address');
+          if (!address) {
+            logger.error(`Providing an address is compulsary when initiating p2p communication.`);
             socket.close();
             return;
+          } else if (!data.signature) {
+            logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
+                `communication. Cannot proceed the further communication.`);
+            socket.close();   // NOTE(minsu): strictly close socket necessary??
+            return;
           } else {
-            logger.info(`A new websocket (${data.account}) is established.`);
-            this.outbound[data.account] = socket;
+            const addressFromSig = getAddressFromSignature(data);
+            if (addressFromSig !== address) {
+              logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
+              socket.close();
+              return;
+            }
+            if (!verifySignedMessage(data, addressFromSig)) {
+              logger.error('The message is not correctly signed. Discard the message!!');
+              return;
+            }
+            logger.info(`A new websocket(${address}) is established.`);
+            this.outbound[address] = socket;
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
@@ -341,26 +380,15 @@ class P2pClient {
     });
 
     socket.on('pong', () => {
-      const account = this.getAccountFromSocket(socket);
-      logger.info(`The peer(${account}) is alive.`);
+      const address = getAddressFromSocket(this.outbound, socket);
+      logger.info(`The peer(${address}) is alive.`);
     });
 
     socket.on('close', () => {
-      const account = this.getAccountFromSocket(socket);
-      this.removeFromOutboundIfExists(account);
-      logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
+      const address = getAddressFromSocket(this.outbound, socket);
+      removeSocketConnectionIfExists(this.outbound, address);
+      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
-  }
-
-  getAccountFromSocket(socket) {
-    return Object.keys(this.outbound).filter(account => this.outbound[account] === socket);
-  }
-
-  removeFromOutboundIfExists(account) {
-    if (account in this.outbound) {
-      delete this.outbound[account];
-      logger.info(` => Updated managed peers info: ${Object.keys(this.outbound)}`);
-    }
   }
 
   connectToPeers(newPeerInfoList) {
@@ -375,7 +403,7 @@ class P2pClient {
         socket.on('open', () => {
           logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
           this.setPeerEventHandlers(socket);
-          this.sendAccount(socket);
+          this.sendAddress(socket);
           this.requestChainSegment(socket, this.server.node.bc.lastBlock());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
@@ -415,9 +443,9 @@ class P2pClient {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
         if (socket.readyState !== 1) {
-          const account = this.getAccountFromSocket(socket);
-          this.removeFromOutboundIfExists(account);
-          logger.info(`A peer(${account}) is not ready to communicate with. ` +
+          const address = getAddressFromSocket(this.outbound, socket);
+          removeSocketConnectionIfExists(this.outbound, address);
+          logger.info(`A peer(${address}) is not ready to communicate with. ` +
               `The readyState is(${socket.readyState})`);
         } else {
           socket.ping();
