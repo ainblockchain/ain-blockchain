@@ -36,7 +36,14 @@ const {
   LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const { sendTxAndWaitForFinalization } = require('../p2p/util');
+const {
+  sendTxAndWaitForFinalization,
+  getAddressFromSocket,
+  removeSocketConnectionIfExists,
+  signMessage,
+  getAddressFromSignature,
+  verifySignedMessage
+} = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
@@ -93,6 +100,10 @@ class P2pServer {
 
   getNodeAddress() {
     return this.node.account.address;
+  }
+
+  getNodePrivateKey() {
+    return this.node.account.private_key;
   }
 
   getExternalIp() {
@@ -274,6 +285,7 @@ class P2pServer {
     });
   }
 
+  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -281,29 +293,56 @@ class P2pServer {
         const data = JSON.parse(message);
         const version = data.protoVer;
         if (!version || !semver.valid(version)) {
+          const address = getAddressFromSocket(this.inbound, socket);
+          removeSocketConnectionIfExists(this.inbound, address);
           socket.close();
           return;
         }
         if (semver.gt(this.minProtocolVersion, version) ||
             (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
+          const address = this.getAddressFromSocket(this.inbound, socket);
+          removeSocketConnectionIfExists(this.inbound, address);
           socket.close();
           return;
         }
 
         switch (data.type) {
-          case MessageTypes.ACCOUNT_REQUEST:
-            if (!data.account) {
-              logger.error(`Broken websocket (account unknown) is established.`);
+          case MessageTypes.ADDRESS_REQUEST:
+            const address = _.get(data, 'body.address');
+            if (!address) {
+              logger.error(`Providing an address is compulsary when initiating p2p communication.`);
               socket.close();
               return;
+            } else if (!data.signature) {
+              logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
+                  `communication. Cannot proceed the further communication.`);
+              socket.close();   // NOTE(minsu): strictly close socket necessary??
+              return;
             } else {
-              logger.info(`A new websocket (${data.account}) is established.`);
-              this.inbound[data.account] = socket;
-              socket.send(JSON.stringify({
-                type: MessageTypes.ACCOUNT_RESPONSE,
-                account: this.getNodeAddress(),
+              const addressFromSig = getAddressFromSignature(data);
+              if (addressFromSig !== address) {
+                logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
+                socket.close();
+                return;
+              }
+              if (!verifySignedMessage(data, addressFromSig)) {
+                logger.error('The message is not correctly signed. Discard the message!!');
+                return;
+              }
+              logger.info(`A new websocket(${address}) is established.`);
+              this.inbound[address] = socket;
+              const body = {
+                address: this.getNodeAddress(),
+                timestamp: Date.now(),
+              };
+              const signature = signMessage(body, this.getNodePrivateKey());
+              const payload = {
+                type: MessageTypes.ADDRESS_RESPONSE,
+                body,
+                signature,
                 protoVer: CURRENT_PROTOCOL_VERSION
-              }));
+              };
+              socket.send(JSON.stringify(payload));
             }
             break;
           case MessageTypes.CONSENSUS:
@@ -402,9 +441,9 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      const account = this.getAccountFromSocket(socket);
-      this.removeFromInboundIfExists(account);
-      logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
+      const address = getAddressFromSocket(this.inbound, socket);
+      removeSocketConnectionIfExists(this.inbound, address);
+      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
 
     socket.on('error', (error) => {
@@ -413,25 +452,15 @@ class P2pServer {
     });
   }
 
-  getAccountFromSocket(socket) {
-    return Object.keys(this.inbound).filter(account => this.inbound[account] === socket);
-  }
-
-  removeFromInboundIfExists(address) {
-    if (address in this.inbound) {
-      delete this.inbound[address];
-      logger.info(` => Updated managed peers info: ${Object.keys(this.inbound)}`);
-    }
-  }
-
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    socket.send(JSON.stringify({
+    const payload = {
       type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
       chainSegment,
       number,
       catchUpInfo,
       protoVer: CURRENT_PROTOCOL_VERSION
-    }));
+    };
+    socket.send(JSON.stringify(payload));
   }
 
   executeAndBroadcastTransaction(tx) {
