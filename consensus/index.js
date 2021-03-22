@@ -237,6 +237,52 @@ class Consensus {
     }
   }
 
+  executeLastVoteOrAbort(db, tx) {
+    const LOG_HEADER = 'executeLastVoteOrAbort';
+    const dbVersion = db.stateVersion;
+    const backupVersion = this.node.stateManager.createUniqueVersionName(
+      `${StateVersions.BACKUP}:${dbVersion}`);
+    const backupRoot = this.node.stateManager.cloneVersion(dbVersion, backupVersion);
+    if (!backupRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${dbVersion}`);
+      return false;
+    }
+    const txRes = db.executeTransaction(tx);
+    this.node.stateManager.deleteVersion(backupVersion);
+    if (!ChainUtil.transactionFailed(txRes)) {
+      logger.debug(`[${LOG_HEADER}] tx: success`);
+      return true;
+    } else {
+      logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
+      return false;
+    }
+  }
+
+  executeOrRollbackTransaction(db, tx, validTransactions, invalidTransactions) {
+    const LOG_HEADER = 'executeOrRollbackTransaction';
+    const dbVersion = db.stateVersion;
+    const backupVersion = this.node.stateManager.createUniqueVersionName(
+      `${StateVersions.BACKUP}:${dbVersion}`);
+    const backupRoot = this.node.stateManager.cloneVersion(dbVersion, backupVersion);
+    if (!backupRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${dbVersion}`);
+      return false;
+    }
+    logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
+    const txRes = db.executeTransaction(tx);
+    if (!ChainUtil.transactionFailed(txRes)) {
+      logger.debug(`[${LOG_HEADER}] tx: success`);
+      validTransactions.push(tx);
+      this.node.stateManager.deleteVersion(backupVersion);
+    } else {
+      logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
+      invalidTransactions.push(tx);
+      db.setStateVersion(backupRoot, backupVersion);
+      this.node.stateManager.deleteVersion(dbVersion);
+    }
+    return true;
+  }
+
   // proposing for block #N :
   //    1. create a block (with last_votes)
   //    2. create a tx (/consensus/number/N/propose: { block_hash, ... })
@@ -272,28 +318,10 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
 
-    const backupVersion = this.node.stateManager.createUniqueVersionName(
-      `${StateVersions.BACKUP}:${tempVersion}`);
-    let backupRoot = this.node.stateManager.cloneVersion(tempVersion, backupVersion);
-    if (!backupRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempVersion}`);
-      this.node.destroyDb(tempDb);
-      return null;
-    }
     for (const voteTx of lastVotes) {
-      const txRes = tempDb.executeTransaction(voteTx);
-      this.node.stateManager.deleteVersion(backupVersion);
-      if (!ChainUtil.transactionFailed(txRes)) {
-        logger.debug(`[${LOG_HEADER}] last vote: success`);
-        backupRoot = this.node.stateManager.cloneVersion(tempVersion, backupVersion);
-        if (!backupRoot) {
-          logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempVersion}`);
-          this.node.stateManager.deleteVersion(tempVersion);
-          return null;
-        }
-      } else {
-        logger.error(`[${LOG_HEADER}] last vote: failure\n ${JSON.stringify(txRes)}`);
-        this.node.stateManager.deleteVersion(tempVersion);
+      const res = this.executeLastVoteOrAbort(tempDb, voteTx);
+      if (!res) {
+        this.node.destroyDb(tempDb);
         return null;
       }
     }
@@ -303,26 +331,12 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     for (const tx of transactions) {
-      logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
-      const txRes = tempDb.executeTransaction(tx);
-      if (!ChainUtil.transactionFailed(txRes)) {
-        logger.debug(`[${LOG_HEADER}] tx: success`);
-        validTransactions.push(tx);
-        this.node.stateManager.deleteVersion(backupVersion);
-        backupRoot = this.node.stateManager.cloneVersion(tempVersion, backupVersion);
-        if (!backupRoot) {
-          logger.error(`[${LOG_HEADER}] Failed to clone state version: ${tempVersion}`);
-          this.node.stateManager.deleteVersion(tempVersion);
-          return null;
-        }
-      } else {
-        logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
-        invalidTransactions.push(tx);
-        tempDb.setStateVersion(backupRoot, backupVersion);
-        this.node.stateManager.deleteVersion(tempVersion);
+      const res = this.executeOrRollbackTransaction(tempDb, tx, validTransactions, invalidTransactions);
+      if (!res) {
+        this.node.destroyDb(tempDb);
+        return null;
       }
     }
-    this.node.stateManager.deleteVersion(backupVersion);
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
