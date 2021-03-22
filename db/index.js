@@ -774,7 +774,7 @@ class DB {
       evalRuleRes = !!this.evalRuleString(
         matched.closestRule.config, matched.pathVars, data, newData, auth, timestamp);
       if (!evalRuleRes) {
-        logger.error(`[${LOG_HEADER}] evalRuleRes ${evalRuleRes}, ` +
+        logger.debug(`[${LOG_HEADER}] evalRuleRes ${evalRuleRes}, ` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
           `timestamp: ${timestamp}\n`);
