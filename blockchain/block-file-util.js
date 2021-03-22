@@ -44,16 +44,24 @@ class BlockFileUtil {
   static createBlockchainDir(chainPath) {
     const n2bPath = path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME);
     const h2nPath = path.join(chainPath, BLOCKCHAINS_H2N_DIR_NAME);
+    let isBlockEmpty = true;
 
     if (!fs.existsSync(chainPath)) {
       fs.mkdirSync(chainPath, {recursive: true});
-      fs.mkdirSync(n2bPath);
-      fs.mkdirSync(h2nPath);
-      return true;
-    } else if (!fs.readdirSync(n2bPath).length) {
-      return true;
     }
-    return false;
+
+    if (!fs.existsSync(n2bPath)) {
+      fs.mkdirSync(n2bPath);
+    }
+
+    if (!fs.existsSync(h2nPath)) {
+      fs.mkdirSync(h2nPath);
+    }
+
+    if (fs.readdirSync(n2bPath).length > 0) {
+      isBlockEmpty = false;
+    }
+    return isBlockEmpty;
   }
 
   // TODO(csh): Change to asynchronous
