@@ -285,6 +285,7 @@ class P2pServer {
     });
   }
 
+  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {

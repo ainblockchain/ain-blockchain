@@ -254,6 +254,7 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
+  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
