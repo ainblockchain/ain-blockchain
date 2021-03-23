@@ -237,6 +237,43 @@ class Consensus {
     }
   }
 
+  executeLastVoteOrAbort(db, tx) {
+    const LOG_HEADER = 'executeLastVoteOrAbort';
+    const txRes = db.executeTransaction(tx);
+    if (!ChainUtil.transactionFailed(txRes)) {
+      logger.debug(`[${LOG_HEADER}] tx: success`);
+      return true;
+    } else {
+      logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
+      return false;
+    }
+  }
+
+  executeOrRollbackTransaction(db, tx, validTransactions, invalidTransactions) {
+    const LOG_HEADER = 'executeOrRollbackTransaction';
+    const dbVersion = db.stateVersion;
+    const backupVersion = this.node.stateManager.createUniqueVersionName(
+      `${StateVersions.BACKUP}:${dbVersion}`);
+    const backupRoot = this.node.stateManager.cloneVersion(dbVersion, backupVersion);
+    if (!backupRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${dbVersion}`);
+      return false;
+    }
+    logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
+    const txRes = db.executeTransaction(tx);
+    if (!ChainUtil.transactionFailed(txRes)) {
+      logger.debug(`[${LOG_HEADER}] tx: success`);
+      validTransactions.push(tx);
+      this.node.stateManager.deleteVersion(backupVersion);
+    } else {
+      logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
+      invalidTransactions.push(tx);
+      db.setStateVersion(backupRoot, backupVersion);
+      this.node.stateManager.deleteVersion(dbVersion);
+    }
+    return true;
+  }
+
   // proposing for block #N :
   //    1. create a block (with last_votes)
   //    2. create a tx (/consensus/number/N/propose: { block_hash, ... })
@@ -262,7 +299,6 @@ class Consensus {
     const tempVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`);
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
-    logger.debug(`[${LOG_HEADER}] Created a temp state for tx checks`);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     // FIXME(minsu or lia): When I am behind and a newly coming node is ahead of me, then I cannot
@@ -272,27 +308,26 @@ class Consensus {
     if (lastBlockInfo && lastBlockInfo.proposal) {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
-    lastVotes.forEach((voteTx) => {
-      if (!ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
-        logger.debug(`[${LOG_HEADER}] last vote: success`);
-      } else {
-        logger.error(`[${LOG_HEADER}] last vote: failed`);
-      }
-    })
 
-    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain);
+    for (const voteTx of lastVotes) {
+      const res = this.executeLastVoteOrAbort(tempDb, voteTx);
+      if (!res) {
+        this.node.destroyDb(tempDb);
+        return null;
+      }
+    }
+
+    // TODO(lia): restrict the size / number of txs
+    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
     const validTransactions = [];
     const invalidTransactions = [];
-    transactions.forEach((tx) => {
-      logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
-      if (!ChainUtil.transactionFailed(tempDb.executeTransaction(tx))) {
-        logger.debug(`[${LOG_HEADER}] tx: success`);
-        validTransactions.push(tx);
-      } else {
-        logger.debug(`[${LOG_HEADER}] tx: failure`);
-        invalidTransactions.push(tx);
+    for (const tx of transactions) {
+      const res = this.executeOrRollbackTransaction(tempDb, tx, validTransactions, invalidTransactions);
+      if (!res) {
+        this.node.destroyDb(tempDb);
+        return null;
       }
-    })
+    }
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
@@ -510,9 +545,9 @@ class Consensus {
       return false;
     }
     // TODO(lia): Check last_votes if they indeed voted for the previous block
-    // TODO(lia): Check the timestamps and nonces of the last_votes and transactions
     let baseVersion;
     let prevDb;
+    let isSnapDb = false;
     if (prevBlock.number === this.node.bc.lastBlockNumber()) {
       baseVersion = this.node.stateManager.getFinalVersion();
     } else if (this.blockPool.hashToDb.has(last_hash)) {
@@ -523,12 +558,15 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
         return false;
       }
+      isSnapDb = true;
       baseVersion = prevDb.stateVersion;
-      this.node.destroyDb(prevDb);
     }
     const newVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.POOL}:${prevBlock.number}:${number}`);
     const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
+    if (isSnapDb) {
+      this.node.destroyDb(prevDb);
+    }
     if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       this.node.destroyDb(newDb);
@@ -705,11 +743,11 @@ class Consensus {
       if (blockToFinalize.number <= this.node.bc.lastBlockNumber()) {
         continue;
       }
-      const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
-      this.node.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
       if (this.node.addNewBlock(blockToFinalize)) {
         logger.info(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
+        const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
+        this.node.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             `${JSON.stringify(blockToFinalize, null, 2)}`);

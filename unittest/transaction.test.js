@@ -7,6 +7,7 @@ const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
 const {setNodeForTesting, getTransaction} = require('./test-util');
 const ChainUtil = require('../common/chain-util');
+const { msleep } = require('sleep');
 
 describe('Transaction', () => {
   let node;
@@ -63,7 +64,7 @@ describe('Transaction', () => {
     txBodyForNode = {
       operation: {
         type: 'SET_VALUE',
-        ref: 'path',
+        ref: 'test/comcom',
         value: 'val'
       }
     };
@@ -135,6 +136,8 @@ describe('Transaction', () => {
       for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
         delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
+        node.db.executeTransaction(tx2);
+        msleep(1);
       }
       expect(tx2).to.not.equal(null);
       expect(tx2.tx_body.nonce).to.equal(currentNonce);

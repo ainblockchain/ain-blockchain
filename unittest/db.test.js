@@ -1397,6 +1397,10 @@ describe("DB operations", () => {
 
   describe("batch operations", () => {
     it("when batch applied successfully", () => {
+      let now = Date.now();
+      const address = node.account.address;
+      let nonce = node.db.getValue(`/accounts/${address}/nonce`);
+      if (nonce === null) nonce = 0;
       assert.deepEqual(node.db.batch([
         {
           tx_body: {
@@ -1406,8 +1410,11 @@ describe("DB operations", () => {
               value: {
                 "new": 12345
               }
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1415,8 +1422,11 @@ describe("DB operations", () => {
               type: "INC_VALUE",
               ref: "test/increment/value",
               value: 10
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1424,8 +1434,11 @@ describe("DB operations", () => {
               type: "DEC_VALUE",
               ref: "test/decrement/value",
               value: 10
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1437,8 +1450,11 @@ describe("DB operations", () => {
                   "fid": "other function config"
                 }
               }
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1448,8 +1464,11 @@ describe("DB operations", () => {
               value: {
                 ".write": "other rule config"
               }
-            }
-          }
+            },
+            nonce: nonce++,
+            timestamp: now++
+          },
+          address
         },
         {
           tx_body: {
@@ -1459,7 +1478,9 @@ describe("DB operations", () => {
               value: {
                 ".owner": "other owner config"
               }
-            }
+            },
+            nonce: -1,
+            timestamp: now++
           },
           address: 'abcd'
         }
@@ -2777,20 +2798,20 @@ describe("DB sharding config", () => {
     })
 
     it("evalRule with isGlobal = false", () => {
-      expect(node.db.evalRule("/test/test_sharding/some/path/to", newValue, {addr: "known_user" }))
+      expect(node.db.evalRule("/test/test_sharding/some/path/to", newValue, { addr: "known_user" }))
         .to.equal(true);
     })
 
     it("evalRule with isGlobal = true", () => {
       expect(node.db.evalRule(
-          "/apps/afan/test/test_sharding/some/path/to", newValue, {addr: "known_user" },
+          "/apps/afan/test/test_sharding/some/path/to", newValue, { addr: "known_user" },
           null, true))
         .to.equal(true);
     })
 
     it("evalRule with isGlobal = true and non-existing path", () => {
       expect(node.db.evalRule(
-          "/some/non-existing/path", newValue, {addr: "known_user" }, null, true))
+          "/some/non-existing/path", newValue, { addr: "known_user" }, null, true))
         .to.equal(null);
     })
   })
