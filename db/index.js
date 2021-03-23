@@ -33,6 +33,7 @@ const {
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
+const _ = require('lodash');
 
 class DB {
   constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot) {
@@ -373,6 +374,36 @@ class DB {
     return resultList;
   }
 
+  getAccountNonceAndTimestamp(address) {
+    let nonce = this.getValue(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`, false);
+    let timestamp = this.getValue(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`, false);
+    if (nonce === null) {
+      nonce = 0;
+    }
+    if (timestamp === null) {
+      timestamp = 0;
+    }
+    return { nonce, timestamp };
+  }
+
+  updateAccountNonceAndTimestamp(address, nonce, timestamp) {
+    if (!ChainUtil.isNumber(nonce) || !ChainUtil.isNumber(timestamp)) return;
+    const parsedNoncePath = ChainUtil.parsePath(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`);
+    const parsedTimestampPath = ChainUtil.parsePath(
+        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`);
+    const fullNoncePath = DB.getFullPath(parsedNoncePath, PredefinedDbPaths.VALUES_ROOT);
+    const fullTimestampPath = DB.getFullPath(parsedTimestampPath, PredefinedDbPaths.VALUES_ROOT);
+    if (nonce >= 0) { // strictly ordered
+      this.writeDatabase(fullNoncePath, nonce + 1);
+    }
+    if (nonce === -2) { // loosely ordered
+      this.writeDatabase(fullTimestampPath, timestamp);
+    }
+  }
+
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
@@ -409,9 +440,7 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    // NOTE(seo): As of now (2021-01), we don't allow recursive function triggering.
-    // NOTE(lia): Allow recursive function triggering for service accounts. Should update this logic
-    // to prevent infinite recursion.
+    // NOTE(lia): Allow chained function triggering but no circular calls.
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, Date.now(), transaction);
     }
@@ -654,23 +683,44 @@ class DB {
     if (!op) {
       return null;
     }
+    if (tx && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
+      if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
+        return ChainUtil.returnError(900, `Invalid nonce: ${tx.tx_body.nonce}`);
+      }
+      if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnError(901, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+      }
+    }
+    let ret;
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        return this.setValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        ret = this.setValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        break;
       case WriteDbOperations.INC_VALUE:
-        return this.incValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        ret = this.incValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        break;
       case WriteDbOperations.DEC_VALUE:
-        return this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        ret = this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        break;
       case WriteDbOperations.SET_FUNCTION:
-        return this.setFunction(op.ref, op.value, auth, op.is_global);
+        ret = this.setFunction(op.ref, op.value, auth, op.is_global);
+        break;
       case WriteDbOperations.SET_RULE:
-        return this.setRule(op.ref, op.value, auth, op.is_global);
+        ret = this.setRule(op.ref, op.value, auth, op.is_global);
+        break;
       case WriteDbOperations.SET_OWNER:
-        return this.setOwner(op.ref, op.value, auth, op.is_global);
+        ret = this.setOwner(op.ref, op.value, auth, op.is_global);
+        break;
       case WriteDbOperations.SET:
-        return this.set(op.op_list, auth, timestamp, tx);
+        ret = this.set(op.op_list, auth, timestamp, tx);
+        break;
     }
+    if (ret === true && tx && auth && auth.addr && !auth.fid) {
+      this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
+    }
+    return ret;
   }
 
   executeTransaction(tx) {
@@ -684,7 +734,7 @@ class DB {
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-    return this.executeOperation(txBody.operation, { addr: tx.address}, txBody.timestamp, tx);
+    return this.executeOperation(txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
   }
 
   executeTransactionList(txList) {
@@ -723,6 +773,12 @@ class DB {
     try {
       evalRuleRes = !!this.evalRuleString(
         matched.closestRule.config, matched.pathVars, data, newData, auth, timestamp);
+      if (!evalRuleRes) {
+        logger.debug(`[${LOG_HEADER}] evalRuleRes ${evalRuleRes}, ` +
+          `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
+          `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
+          `timestamp: ${timestamp}\n`);
+      }
     } catch (e) {
       logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +

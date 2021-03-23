@@ -4,6 +4,7 @@ const process = require('process');
 const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
+const _ = require('lodash');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
@@ -14,7 +15,7 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
-  TransactionStatus
+  TransactionStatus,
 } = require('../common/constants');
 const { ConsensusStatus } = require('../consensus/constants');
 
@@ -373,11 +374,14 @@ app.get('/get_transaction', (req, res, next) => {
     if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
-      transactionInfo.transaction = block.transactions[index];
+      if (index >= 0) {
+        transactionInfo.transaction = block.transactions[index];
+      } else {
+        transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
+      }
     } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
       const address = transactionInfo.address;
-      const index = transactionInfo.index;
-      transactionInfo.transaction = node.tp.transactions[address][index];
+      transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
     }
   }
   res.status(200)

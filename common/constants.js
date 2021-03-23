@@ -26,6 +26,8 @@ const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchains');
 const BLOCKCHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
 const BLOCKCHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
 const HASH_DELIMITER = '#';
+const TX_NONCE_ERROR_CODE = 900;
+const TX_TIMESTAMP_ERROR_CODE = 901;
 
 // Enums
 /**
@@ -86,6 +88,8 @@ const PredefinedDbPaths = {
   SAVE_LAST_TX_LAST_TX: '.last_tx',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
+  ACCOUNTS_NONCE: 'nonce',
+  ACCOUNTS_TIMESTAMP: 'timestamp',
   SERVICE_ACCOUNTS: 'service_accounts',
   SERVICE_ACCOUNTS_ADMIN: 'admin',
   BALANCE: 'balance',
@@ -596,6 +600,8 @@ module.exports = {
   P2P_PORT,
   LIGHTWEIGHT,
   HASH_DELIMITER,
+  TX_NONCE_ERROR_CODE,
+  TX_TIMESTAMP_ERROR_CODE,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,

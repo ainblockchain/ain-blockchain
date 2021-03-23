@@ -130,7 +130,7 @@ RANDOM_OPERATION = [
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep',
       value: {'place': {'next': 1, 'level': 'down'}}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
-      value: {'range': [1, 4, 5], 'another': [234]}}}]}],
+      value: {'range': 1, 'another': 2}}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
       value: 'very nested'}}]}],
   ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
@@ -196,14 +196,43 @@ function waitUntilNodeStakes() {
 }
 
 function sendTransactions(sentOperations) {
+  const txHashList = [];
   for (let i = 0; i < NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
     const randomOperation =
         RANDOM_OPERATION[Math.floor(Math.random() * RANDOM_OPERATION.length)];
     sentOperations.push(randomOperation);
     const serverIndex = Math.floor(Math.random() * serverList.length);
-    syncRequest('POST', serverList[serverIndex] + '/' + randomOperation[0],
-                {json: randomOperation[1]});
-    sleep(200);
+    const value = JSON.parse(JSON.stringify(randomOperation[1]));
+    const address =
+            parseOrLog(syncRequest('GET', serverList[serverIndex] + '/get_address').body.toString('utf-8')).result;
+    let nonce = parseOrLog(syncRequest(
+      'POST', serverList[serverIndex] + '/json-rpc', {
+        json: {
+          jsonrpc: '2.0',
+          method: 'ain_getNonce',
+          id: 0,
+          params: {
+            address,
+            from: 'pending',
+            protoVer: CURRENT_PROTOCOL_VERSION
+          }
+        }
+      }).body.toString('utf-8')).result.result;
+    if (randomOperation[0] === 'batch') {
+      for (const tx of value.tx_list) {
+        tx.nonce = nonce++;
+      }
+      const res = parseOrLog(syncRequest('POST', serverList[serverIndex] + '/' + randomOperation[0],
+          {json: value}).body.toString('utf-8')).result;
+      res.forEach(txRes => txHashList.push(txRes.tx_hash));
+    } else {
+      txHashList.push(parseOrLog(syncRequest('POST',
+          serverList[serverIndex] + '/' + randomOperation[0], {json: value}).body.toString('utf-8'))
+              .result.tx_hash);
+    }
+    for (const txHash of txHashList) {
+      waitUntilTxFinalized(serverList, txHash);
+    }
   }
 }
 
@@ -260,7 +289,6 @@ describe('Blockchain Cluster', () => {
     it('syncs across all blockchain nodes', () => {
       for (let i = 1; i < serverList.length; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(serverList[i]);
         return new Promise((resolve) => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)
           .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
@@ -349,7 +377,6 @@ describe('Blockchain Cluster', () => {
     it('blocks have correct validators and voting data', () => {
       for (let i = 0; i < serverList.length; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(server1);
         const blocks = parseOrLog(syncRequest(
             'POST', serverList[i] + '/json-rpc', {
               json: {
@@ -406,7 +433,6 @@ describe('Blockchain Cluster', () => {
       }
       for (let i = 0; i < serverList.length; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(server1);
         const blocks = parseOrLog(syncRequest('POST', serverList[i] + '/json-rpc',
             {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                     params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
@@ -475,7 +501,6 @@ describe('Blockchain Cluster', () => {
   describe('Database', () => {
     it('rules correctly prevent users from restricted areas', () => {
       sendTransactions(sentOperations);
-      waitForNewBlocks(server1);
       const body = parseOrLog(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
         ref: 'restricted/path', value: 'anything' 
       }}).body.toString('utf-8'));
@@ -501,7 +526,6 @@ describe('Blockchain Cluster', () => {
   describe('Block APIs', () => {
     it('ain_getBlockHeadersList', () => {
       sendTransactions(sentOperations);
-      waitForNewBlocks(server1);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
                               {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
@@ -518,7 +542,6 @@ describe('Blockchain Cluster', () => {
 
     it('ain_getBlockByHash and ain_getBlockByNumber', () => {
       sendTransactions(sentOperations);
-      waitForNewBlocks(server1);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
             {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
@@ -559,15 +582,15 @@ describe('Blockchain Cluster', () => {
           promises = [];
           const committedNonceBefore = res[0].result.result;
           const pendingNonceBefore = res[1].result.result;
-          syncRequest('POST', server2 + '/' + 'set_value',
+          const txHash = parseOrLog(syncRequest('POST', server2 + '/' + 'set_value',
                 {
                   json: {
                     ref: '/test/nonce_test',
                     value: 'testing...'
                   }
-                });
+                }).body.toString('utf-8')).result.tx_hash;
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-            { address, protoVer: CURRENT_PROTOCOL_VERSION }));
+              { address, protoVer: CURRENT_PROTOCOL_VERSION }));
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
               { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
           Promise.all(promises).then(resAfterBroadcast => {
@@ -576,7 +599,12 @@ describe('Blockchain Cluster', () => {
             pendingNonceAfterBroadcast = resAfterBroadcast[1].result.result;
             expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
             expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
+            waitUntilTxFinalized(serverList, txHash);
             resolve();
+          })
+          .catch((e) => {
+            console.log("error:", e);
+            reject();
           });
         });
       });
@@ -584,7 +612,7 @@ describe('Blockchain Cluster', () => {
 
     it('committedNonceTracker', () => {
       return new Promise((resolve, reject) => {
-        waitForNewBlocks(server1);
+        waitForNewBlocks(server2);
         let promises = [];
         promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
             { address, protoVer: CURRENT_PROTOCOL_VERSION }));
@@ -596,6 +624,10 @@ describe('Blockchain Cluster', () => {
           expect(committedNonceAfterCommit).to.be.at.least(committedNonceAfterBroadcast);
           expect(pendingNonceAfterCommit).to.be.at.least(pendingNonceAfterBroadcast);
           resolve();
+        })
+        .catch((e) => {
+          console.log("error:", e);
+          reject();
         });
       });
     });
@@ -610,7 +642,6 @@ describe('Blockchain Cluster', () => {
       waitUntilNodeSyncs(server1);
       for (let i = 0; i < 4; i++) {
         sendTransactions(sentOperations);
-        waitForNewBlocks(server1);
       }
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)

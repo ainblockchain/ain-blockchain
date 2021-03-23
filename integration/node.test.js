@@ -880,9 +880,6 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, "some value with nonce unordered");
       })
 
-      // TODO(seo): Uncomment below once https://github.com/ainblockchain/ain-blockchain/issues/228
-      //            is fixed.
-      /*
       it('set_value with nonce strictly ordered', () => {
         const nonce = parseOrLog(
             syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
@@ -906,7 +903,6 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, "some value with nonce strictly ordered");
       })
-      */
 
       it('set_value with failing operation', () => {
         // Check the original value.
@@ -1400,6 +1396,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
 
+        const nonce = parseOrLog(syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
         const request = {
           tx_list: [
             {
@@ -1408,7 +1405,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some200/path",
                 value: "some other200 value",
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce
             },
             {
               operation: {
@@ -1416,7 +1414,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some200/path2",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 1
             },
             {
               operation: {
@@ -1424,7 +1423,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some200/path3",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 2
             },
             {
               operation: {
@@ -1434,7 +1434,8 @@ describe('Blockchain Node', () => {
                   ".function": "some other200 function config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1444,7 +1445,8 @@ describe('Blockchain Node', () => {
                   ".write": "some other200 rule config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 4
             },
             {
               operation: {
@@ -1454,7 +1456,8 @@ describe('Blockchain Node', () => {
                   ".owner": "some other200 owner config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 5
             },
             {
               operation: {
@@ -1498,7 +1501,8 @@ describe('Blockchain Node', () => {
                   }
                 ]
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 6
             }
           ]
         };
@@ -1564,6 +1568,7 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_value?ref=test/test_value/some203/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
+        const nonce = parseOrLog(syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
 
         const request = {
           tx_list: [
@@ -1573,7 +1578,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some202/path",
                 value: "some other202 value",
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce
             },
             {
               operation: {
@@ -1581,7 +1587,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some202/path2",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 1
             },
             {
               operation: {
@@ -1589,7 +1596,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some202/path3",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 2
             },
             {
               operation: {
@@ -1597,7 +1605,8 @@ describe('Blockchain Node', () => {
                 ref: "some/wrong/path",
                 value: "some other202 value",
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1607,7 +1616,8 @@ describe('Blockchain Node', () => {
                   ".function": "some other202 function config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1617,7 +1627,8 @@ describe('Blockchain Node', () => {
                   ".write": "some other202 rule config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 4
             },
             {
               operation: {
@@ -1627,7 +1638,8 @@ describe('Blockchain Node', () => {
                   ".owner": "some other202 owner config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 5
             },
             {
               operation: {
@@ -1671,7 +1683,8 @@ describe('Blockchain Node', () => {
                   }
                 ]
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 6
             }
           ]
         };
@@ -1767,36 +1780,43 @@ describe('Blockchain Node', () => {
       })
 
       it('accepts a transaction with nonce strictly ordered', () => {
-        const nonce = parseOrLog(
-            syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        const txBody = {
-          operation: {
-            type: 'SET_VALUE',
-            value: 'some other value 2',
-            ref: `test/test_value/some/path`
-          },
-          timestamp: Date.now(),
-          nonce,  // strictly ordered nonce
-        };
-        const signature =
-            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
-          tx_body: txBody,
-          signature,
+        return client.request('ain_getNonce', {
+          address: account.address,
+          from: 'pending',
           protoVer: CURRENT_PROTOCOL_VERSION
-        }).then((res) => {
-          const result = _.get(res, 'result.result', null);
-          expect(result).to.not.equal(null);
-          assert.deepEqual(res.result, {
-            protoVer: CURRENT_PROTOCOL_VERSION,
-            result: {
-              result: true,
-              tx_hash: ChainUtil.hashSignature(signature),
-            }
-          });
         })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value 2',
+              ref: `test/test_value/some/path`
+            },
+            timestamp: Date.now(),
+            nonce,  // strictly ordered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: true,
+                tx_hash: ChainUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
       })
 
       it('rejects a transaction that exceeds the size limit.', () => {

@@ -2,6 +2,7 @@
 
 const semver = require('semver');
 const sizeof = require('object-sizeof');
+const _ = require('lodash');
 const {
   CURRENT_PROTOCOL_VERSION,
   BlockchainNodeStates,
@@ -15,7 +16,6 @@ const {
   ConsensusConsts,
 } = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
-const ChainUtil = require('../common/chain-util');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -208,11 +208,14 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          transactionInfo.transaction = block.transactions[index];
+          if (index >= 0) {
+            transactionInfo.transaction = block.transactions[index];
+          } else {
+            transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
+          }
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
           const address = transactionInfo.address;
-          const index = transactionInfo.index;
-          transactionInfo.transaction = node.tp.transactions[address][index];
+          transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === args.hash);
         }
       }
       done(null, addProtocolVersion({result: transactionInfo}));
@@ -347,19 +350,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_getNonce: function(args, done) {
-      const address = args.address;
-      if (args.from === 'pending') {
-        if (ChainUtil.areSameAddrs(p2pServer.node.account.address, address)) {
-          done(null, addProtocolVersion({result: p2pServer.node.nonce}));
-        } else {
-          const nonce = node.tp.pendingNonceTracker[address];
-          done(null, addProtocolVersion({result: nonce === undefined ? -1 : nonce}));
-        }
-      } else {
-        // get the "committed nonce" by default
-        const nonce = node.tp.committedNonceTracker[address];
-        done(null, addProtocolVersion({result: nonce === undefined ? -1 : nonce}));
-      }
+      done(null, addProtocolVersion({
+          result: p2pServer.node.getNonceForAddr(args.address, args.from === 'pending')
+        }));
     },
 
     ain_isValidator: function(args, done) {
