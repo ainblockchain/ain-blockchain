@@ -23,7 +23,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const LOGS_DIR = path.resolve(__dirname, '../logs');
-const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchains');
+const BLOCKCHAINS_DIR = path.resolve(__dirname, '../chains');
 const BLOCKCHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
 const BLOCKCHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
 const HASH_DELIMITER = '#';
