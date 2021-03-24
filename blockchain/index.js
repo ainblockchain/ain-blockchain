@@ -4,7 +4,7 @@ const fs = require('fs');
 const logger = require('../logger')('BLOCKCHAIN');
 const { Block } = require('./block');
 const BlockFileUtil = require('./block-file-util');
-const { BLOCKCHAINS_DIR } = require('../common/constants');
+const { CHAINS_DIR } = require('../common/constants');
 const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 
@@ -12,7 +12,7 @@ class Blockchain {
   constructor(basePath) {
     // Finalized chain
     this.chain = [];
-    this.blockchainPath = path.resolve(BLOCKCHAINS_DIR, basePath);
+    this.blockchainPath = path.resolve(CHAINS_DIR, basePath);
   }
 
   init(isFirstNode) {

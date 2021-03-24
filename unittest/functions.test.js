@@ -5,7 +5,7 @@ const assert = chai.assert;
 const nock = require('nock');
 const _ = require('lodash');
 const {
-  BLOCKCHAINS_DIR,
+  CHAINS_DIR,
 } = require('../common/constants')
 const BlockchainNode = require('../node')
 const {
@@ -25,7 +25,7 @@ describe("Functions", () => {
     let requestBody1 = null, requestBody2 = null;
 
     beforeEach(() => {
-      rimraf.sync(BLOCKCHAINS_DIR);
+      rimraf.sync(CHAINS_DIR);
 
       node = new BlockchainNode();
       setNodeForTesting(node);
@@ -113,7 +113,7 @@ describe("Functions", () => {
     })
 
     afterEach(() => {
-      rimraf.sync(BLOCKCHAINS_DIR);
+      rimraf.sync(CHAINS_DIR);
     });
 
     it("REST function", () => {

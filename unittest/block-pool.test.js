@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const { BLOCKCHAINS_DIR } = require('../common/constants');
+const { CHAINS_DIR } = require('../common/constants');
 const BlockPool = require('../consensus/block-pool');
 const BlockchainNode = require('../node');
 const { Block } = require('../blockchain/block');
@@ -12,14 +12,14 @@ describe("BlockPool", () => {
   let node1;
 
   beforeEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0, true);
   });
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   function createAndAddBlock(node, blockPool, lastBlock, number, epoch) {
