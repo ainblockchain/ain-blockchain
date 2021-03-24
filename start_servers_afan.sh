@@ -1,4 +1,4 @@
-rm -rf ./chains/ ./log/
+rm -rf ./chains/ ./logs/
 
 # PARENT CHAIN
 node ./tracker-server/index.js &
