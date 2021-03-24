@@ -3,18 +3,18 @@ const glob = require('glob');
 const path = require('path');
 const {compare} = require('natural-orderby');
 const zlib = require('zlib');
-const {BLOCKCHAINS_N2B_DIR_NAME, BLOCKCHAINS_H2N_DIR_NAME} = require('../common/constants');
+const {CHAINS_N2B_DIR_NAME, CHAINS_H2N_DIR_NAME} = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const FILE_NAME_SUFFIX = 'json.gz';
 const logger = require('../logger')('BLOCK-FILE-UTIL');
 
 class BlockFileUtil {
   static getBlockPath(chainPath, blockNumber) {
-    return path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
+    return path.join(chainPath, CHAINS_N2B_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
   }
 
   static getHashToNumberPath(chainPath, blockHash) {
-    return path.join(chainPath, BLOCKCHAINS_H2N_DIR_NAME, blockHash);
+    return path.join(chainPath, CHAINS_H2N_DIR_NAME, blockHash);
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -27,7 +27,7 @@ class BlockFileUtil {
 
   // TODO(csh): Don't use glob?
   static getAllBlockPaths(chainPath) {
-    const allBlockFilesPattern = `${chainPath}/${BLOCKCHAINS_N2B_DIR_NAME}/*.${FILE_NAME_SUFFIX}`;
+    const allBlockFilesPattern = `${chainPath}/${CHAINS_N2B_DIR_NAME}/*.${FILE_NAME_SUFFIX}`;
     return glob.sync(allBlockFilesPattern).sort(compare());
   }
 
@@ -43,8 +43,8 @@ class BlockFileUtil {
   }
 
   static createBlockchainDir(chainPath) {
-    const n2bPath = path.join(chainPath, BLOCKCHAINS_N2B_DIR_NAME);
-    const h2nPath = path.join(chainPath, BLOCKCHAINS_H2N_DIR_NAME);
+    const n2bPath = path.join(chainPath, CHAINS_N2B_DIR_NAME);
+    const h2nPath = path.join(chainPath, CHAINS_H2N_DIR_NAME);
     let isBlockEmpty = true;
 
     if (!fs.existsSync(chainPath)) {

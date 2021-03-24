@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const { BLOCKCHAINS_DIR } = require('../common/constants');
+const { CHAINS_DIR } = require('../common/constants');
 const Blockchain = require('../blockchain/');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
@@ -13,7 +13,7 @@ describe('Blockchain', () => {
   let node1, node2;
 
   beforeEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -22,7 +22,7 @@ describe('Blockchain', () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   it('starts with genesis block', () => {

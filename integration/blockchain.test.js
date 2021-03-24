@@ -20,7 +20,7 @@ const DB = require('../db');
 const TransactionPool = require('../tx-pool');
 const {
   CURRENT_PROTOCOL_VERSION,
-  BLOCKCHAINS_DIR,
+  CHAINS_DIR,
   PredefinedDbPaths,
   TransactionStatus
 } = require('../common/constants');
@@ -245,7 +245,7 @@ describe('Blockchain Cluster', () => {
   const nodeAddressList = [];
 
   before(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
@@ -282,7 +282,7 @@ describe('Blockchain Cluster', () => {
     }
     trackerProc.kill();
 
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   describe(`Synchronization`, () => {
