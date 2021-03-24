@@ -311,7 +311,8 @@ function verifyProofHashForAllRootPathsRecursive(node) {
   let verification = true;
   if (!node.getIsLeaf()) {
     for (const childNode of node.getChildNodes()) {
-      verification = verification && node.verifyProofHash() && verifyProofHashForAllRootPathsRecursive(childNode);
+      const decendentVerifications = verifyProofHashForAllRootPathsRecursive(childNode);
+      verification = verification && node.verifyProofHash() && decendentVerifications;
     }
   } else {
     return node.verifyProofHash();

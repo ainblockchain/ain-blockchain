@@ -1368,7 +1368,7 @@ describe("state-util", () => {
   });
 
   describe("verifyProofHashForAllRootPaths", () => {
-    it("verify proof hashes for a single root path", () => {
+    it("verify correct proof hashes as true", () => {
       const jsObject = {
         level0: {
           level1: {
@@ -1384,8 +1384,29 @@ describe("state-util", () => {
       };
       const rootNode = StateNode.fromJsObject(jsObject);
       setProofHashForStateTree(rootNode);
-      const result = verifyProofHashForAllRootPaths(rootNode);
-      console.log(result);
+      expect(verifyProofHashForAllRootPaths(rootNode)).to.equal(true);
+    });
+
+    it("verify wrong proof hashes as false", () => {
+      const jsObject = {
+        level0: {
+          level1: {
+            level2: {
+              foo: 'bar',
+              baz: 'caz'
+            }
+          },
+          another_route: {
+            test: -1000
+          }
+        }
+      };
+      const rootNode = StateNode.fromJsObject(jsObject);
+      const level0Node = rootNode.getChild('level0');
+      const level1Node = level0Node.getChild('level1');
+      setProofHashForStateTree(rootNode);
+      level1Node.setProofHash('0xdeadbeaf');
+      expect(verifyProofHashForAllRootPaths(rootNode)).to.equal(false);
     });
   });
 })
