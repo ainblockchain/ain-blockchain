@@ -83,7 +83,7 @@ class BlockFileUtil {
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     } else {
-      logger.info(`${blockPath} file already exists!`);
+      logger.debug(`${blockPath} file already exists!`);
     }
   }
 
@@ -96,7 +96,7 @@ class BlockFileUtil {
     if (!fs.existsSync(hashToNumberPath)) {
       fs.writeFileSync(hashToNumberPath, blockNumber);
     } else {
-      logger.info(`${hashToNumberPath} file already exists!`);
+      logger.debug(`${hashToNumberPath} file already exists!`);
     }
   }
 
