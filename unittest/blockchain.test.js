@@ -25,12 +25,9 @@ describe('Blockchain', () => {
     rimraf.sync(BLOCKCHAINS_DIR);
   });
 
-  // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
-  /*
   it('starts with genesis block', () => {
     assert.deepEqual(node1.bc.chain[0], Block.genesis());
   });
-  */
 
   it('adds new block', () => {
     const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
