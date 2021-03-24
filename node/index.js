@@ -152,10 +152,11 @@ class BlockchainNode {
     if (!this.stateManager.finalizeVersion(newFinalVersion)) {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
-    if (FeatureFlags.enableVersionRenaming) {
-      logger.info(`[${LOG_HEADER}] Renaming version: ${version} -> ${newFinalVersion}`);
-      if (!this.stateManager.renameVersion(version, newFinalVersion)) {
-        logger.error(`[${LOG_HEADER}] Failed to rename version: ${version} -> ${newFinalVersion}`);
+    if (FeatureFlags.enableStateTreeTransfer) {
+      logger.info(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
+      if (!this.stateManager.transferStateTree(version, newFinalVersion)) {
+        logger.error(
+            `[${LOG_HEADER}] Failed to transfer state tree: ${version} -> ${newFinalVersion}`);
       }
     }
     if (oldFinalVersion) {

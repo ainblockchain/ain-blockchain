@@ -13,7 +13,7 @@ const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   CURRENT_PROTOCOL_VERSION,
-  BLOCKCHAINS_DIR,
+  CHAINS_DIR,
   FunctionResultCode,
   MAX_TX_BYTES,
   GenesisAccounts,
@@ -329,7 +329,7 @@ describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(() => {
-    rimraf.sync(BLOCKCHAINS_DIR)
+    rimraf.sync(CHAINS_DIR)
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
@@ -350,7 +350,7 @@ describe('Blockchain Node', () => {
     server3_proc.kill()
     server4_proc.kill()
 
-    rimraf.sync(BLOCKCHAINS_DIR)
+    rimraf.sync(CHAINS_DIR)
   });
 
   describe('APIs (gets)', () => {

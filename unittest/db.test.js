@@ -4,7 +4,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const {
-  BLOCKCHAINS_DIR,
+  CHAINS_DIR,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
@@ -23,14 +23,14 @@ describe("DB initialization", () => {
   let node;
 
   beforeEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, true);
   })
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   describe("sharding path", () => {
@@ -95,7 +95,7 @@ describe("DB operations", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -224,7 +224,7 @@ describe("DB operations", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   describe("getValue operations", () => {
@@ -1866,7 +1866,7 @@ describe("DB rule config", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -1908,7 +1908,7 @@ describe("DB rule config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
@@ -1986,7 +1986,7 @@ describe("DB owner config", () => {
   let node;
 
   beforeEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -2097,7 +2097,7 @@ describe("DB owner config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   // Known user
@@ -2294,7 +2294,7 @@ describe("DB sharding config", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, false, false);
@@ -2390,7 +2390,7 @@ describe("DB sharding config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   describe("sharding path", () => {
@@ -2967,7 +2967,7 @@ describe("Test proof with database", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -2996,7 +2996,7 @@ describe("Test proof with database", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
