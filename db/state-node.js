@@ -246,7 +246,11 @@ class StateNode {
     }
     return ChainUtil.hashString(ChainUtil.toString(preimage));
   }
-  
+
+  verifyProofHash() {
+    return this.getProofHash() === this.buildProofHash();
+  }
+
   computeTreeSize() {
     if (this.getIsLeaf()) {
       return 1;

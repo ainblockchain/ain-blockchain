@@ -14,6 +14,7 @@ const {
   equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
+  verifyProofHashForAllRootPaths
 } = require('../db/state-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
@@ -1363,6 +1364,28 @@ describe("state-util", () => {
       expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
       expect(rootClone.getProofHash()).to.equal(rootClone.buildProofHash());
       expect(rootClone.getProofHash()).to.equal(rootNode.getProofHash());
+    });
+  });
+
+  describe("verifyProofHashForAllRootPaths", () => {
+    it("verify proof hashes for a single root path", () => {
+      const jsObject = {
+        level0: {
+          level1: {
+            level2: {
+              foo: 'bar',
+              baz: 'caz'
+            }
+          },
+          another_route: {
+            test: -1000
+          }
+        }
+      };
+      const rootNode = StateNode.fromJsObject(jsObject);
+      setProofHashForStateTree(rootNode);
+      const result = verifyProofHashForAllRootPaths(rootNode);
+      console.log(result);
     });
   });
 })
