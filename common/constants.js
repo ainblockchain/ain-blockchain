@@ -376,8 +376,8 @@ const StateVersions = {
 const FeatureFlags = {
   // Enables state version optimization.
   enableStateVersionOpt: true,
-  // Enables state version renaming.
-  enableVersionRenaming: true,
+  // Enables state tree transfer.
+  enableStateTreeTransfer: true,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
 };
