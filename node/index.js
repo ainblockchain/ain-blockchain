@@ -154,7 +154,7 @@ class BlockchainNode {
     }
     if (FeatureFlags.enableVersionRenaming) {
       logger.info(`[${LOG_HEADER}] Renaming version: ${version} -> ${newFinalVersion}`);
-      if (!this.stateManager.renameVersion(version, newFinalVersion)) {
+      if (!this.stateManager.transferStateTree(version, newFinalVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to rename version: ${version} -> ${newFinalVersion}`);
       }
     }
