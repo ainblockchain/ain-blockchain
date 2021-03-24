@@ -5,7 +5,7 @@ const {compare} = require('natural-orderby');
 const zlib = require('zlib');
 const {BLOCKCHAINS_N2B_DIR_NAME, BLOCKCHAINS_H2N_DIR_NAME} = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const FILE_NAME_SUFFIX = 'json.zip';
+const FILE_NAME_SUFFIX = 'json.gz';
 const logger = require('../logger')('BLOCK-FILE-UTIL');
 
 class BlockFileUtil {
