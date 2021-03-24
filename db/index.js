@@ -407,8 +407,8 @@ class DB {
   // TODO(seo): Define error code explicitly.
   // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
   //            the former if the latter fails.
-  // TODO(seo): Apply isWritablePathWithSharding() to setFunction(), setRule(), and setOwner()
-  //            as well.
+  // TODO(seo): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
+  //            and setOwner() as well.
   setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
@@ -1185,8 +1185,8 @@ class DB {
     if (auth) {
       if (auth.addr) {
         permissions = owners[auth.addr];
-      } else if (auth.fid) {
-        permissions = owners[auth.fid];
+      } else {
+        return null;
       }
     }
     // Step 2: If not, check permissions for anyone ('*').

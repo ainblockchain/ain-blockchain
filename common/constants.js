@@ -22,9 +22,10 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const BLOCKCHAINS_DIR = path.resolve(__dirname, '../blockchains');
-const BLOCKCHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
-const BLOCKCHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
+const LOGS_DIR = path.resolve(__dirname, '../logs');
+const CHAINS_DIR = path.resolve(__dirname, '../chains');
+const CHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
+const CHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
@@ -375,8 +376,8 @@ const StateVersions = {
 const FeatureFlags = {
   // Enables state version optimization.
   enableStateVersionOpt: true,
-  // Enables state version renaming.
-  enableVersionRenaming: true,
+  // Enables state tree transfer.
+  enableStateTreeTransfer: true,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
 };
@@ -590,9 +591,10 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 module.exports = {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
-  BLOCKCHAINS_DIR,
-  BLOCKCHAINS_N2B_DIR_NAME,
-  BLOCKCHAINS_H2N_DIR_NAME,
+  LOGS_DIR,
+  CHAINS_DIR,
+  CHAINS_N2B_DIR_NAME,
+  CHAINS_H2N_DIR_NAME,
   DEBUG,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
