@@ -1185,8 +1185,8 @@ class DB {
     if (auth) {
       if (auth.addr) {
         permissions = owners[auth.addr];
-      } else if (auth.fid) {
-        permissions = owners[auth.fid];
+      } else {
+        return null;
       }
     }
     // Step 2: If not, check permissions for anyone ('*').
