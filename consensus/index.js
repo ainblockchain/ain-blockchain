@@ -34,9 +34,6 @@ const {
   signAndSendTx,
   sendGetRequest
 } = require('../p2p/util');
-const {
-  verifyProofHashForStateTree
-} = require('../db/state-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];

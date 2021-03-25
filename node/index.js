@@ -15,6 +15,7 @@ const {
   GenesisSharding,
   StateVersions,
   FeatureFlags,
+  LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Blockchain = require('../blockchain');
@@ -389,22 +390,16 @@ class BlockchainNode {
             `${JSON.stringify(block, null, 2)}`);
         return false;
       }
-      if (db.stateRoot.getProofHash() !== block.state_proof_hash) {
-        logger.error(`[${LOG_HEADER}] Failed to validate state proof of block: ` +
-            `${JSON.stringify(block, null, 2)}`);
-        return false;
+      if (!LIGHTWEIGHT) {
+        if (db.stateRoot.getProofHash() !== block.state_proof_hash) {
+          logger.error(`[${LOG_HEADER}] Failed to validate state proof of block: ` +
+              `${JSON.stringify(block, null, 2)}`);
+          return false;
+        }
       }
     }
     return true;
   }
-
-  // createTempStateNode() {
-
-  // }
-
-  // checkBlockValidity(number) {
-  //   const tempStateNode = 
-  // }
 
   mergeChainSegment(chainSegment) {
     const LOG_HEADER = 'mergeChainSegment';
@@ -448,12 +443,6 @@ class BlockchainNode {
         return false;
       }
       for (const block of validBlocks) {
-        // if (!this.checkBlockValidity(block.number)) {
-        //   logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
-        //       `${JSON.stringify(block, null, 2)}`);
-        //   this.destroyDb(tempDb);
-        //   return false;
-        // }
         if (!this.bc.addNewBlockToChain(block)) {
           logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
               `${JSON.stringify(block, null, 2)}`);
