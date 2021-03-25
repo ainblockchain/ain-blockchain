@@ -379,7 +379,6 @@ class BlockchainNode {
     const LOG_HEADER = 'applyBlocksToDb';
 
     for (const block of blockList) {
-      // TODO(lia): validate the state proof of each block
       if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
             `${JSON.stringify(block, null, 2)}`);
@@ -390,9 +389,22 @@ class BlockchainNode {
             `${JSON.stringify(block, null, 2)}`);
         return false;
       }
+      if (db.stateRoot.getProofHash() !== block.state_proof_hash) {
+        logger.error(`[${LOG_HEADER}] Failed to validate state proof of block: ` +
+            `${JSON.stringify(block, null, 2)}`);
+        return false;
+      }
     }
     return true;
   }
+
+  // createTempStateNode() {
+
+  // }
+
+  // checkBlockValidity(number) {
+  //   const tempStateNode = 
+  // }
 
   mergeChainSegment(chainSegment) {
     const LOG_HEADER = 'mergeChainSegment';
@@ -426,8 +438,7 @@ class BlockchainNode {
     const baseVersion = this.stateManager.getFinalVersion();
     const tempVersion = this.stateManager.createUniqueVersionName(
         `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`);
-    const tempDb = this.createTempDb(
-        baseVersion, tempVersion, this.bc.lastBlockNumber());
+    const tempDb = this.createTempDb(baseVersion, tempVersion, this.bc.lastBlockNumber());
     const validBlocks = this.bc.getValidBlocks(chainSegment);
     if (validBlocks.length > 0) {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {
@@ -437,7 +448,12 @@ class BlockchainNode {
         return false;
       }
       for (const block of validBlocks) {
-        // TODO(lia): validate the state proof of each block
+        // if (!this.checkBlockValidity(block.number)) {
+        //   logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
+        //       `${JSON.stringify(block, null, 2)}`);
+        //   this.destroyDb(tempDb);
+        //   return false;
+        // }
         if (!this.bc.addNewBlockToChain(block)) {
           logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
               `${JSON.stringify(block, null, 2)}`);
