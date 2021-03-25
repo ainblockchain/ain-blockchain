@@ -34,8 +34,6 @@ class TransactionPool {
 
   addTransaction(tx) {
     // Quick verification of transaction on entry
-    // TODO(lia): pull verification out to the very front
-    // (closer to the communication layers where the node first receives transactions)
     if (!LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(tx)) {
         logger.error('Invalid transaction');
