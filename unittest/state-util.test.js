@@ -14,7 +14,7 @@ const {
   equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
-  verifyProofHashForAllRootPaths
+  verifyProofHashForStateTree
 } = require('../db/state-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
@@ -1367,7 +1367,7 @@ describe("state-util", () => {
     });
   });
 
-  describe("verifyProofHashForAllRootPaths", () => {
+  describe("verifyProofHashForStateTree", () => {
     it("verify correct proof hashes as true", () => {
       const jsObject = {
         level0: {
@@ -1384,7 +1384,7 @@ describe("state-util", () => {
       };
       const rootNode = StateNode.fromJsObject(jsObject);
       setProofHashForStateTree(rootNode);
-      expect(verifyProofHashForAllRootPaths(rootNode)).to.equal(true);
+      expect(verifyProofHashForStateTree(rootNode)).to.equal(true);
     });
 
     it("verify wrong proof hashes as false", () => {
@@ -1406,7 +1406,7 @@ describe("state-util", () => {
       const level1Node = level0Node.getChild('level1');
       setProofHashForStateTree(rootNode);
       level1Node.setProofHash('0xdeadbeaf');
-      expect(verifyProofHashForAllRootPaths(rootNode)).to.equal(false);
+      expect(verifyProofHashForStateTree(rootNode)).to.equal(false);
     });
   });
 })

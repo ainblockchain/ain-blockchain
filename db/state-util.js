@@ -307,25 +307,17 @@ function updateProofHashForAllRootPaths(fullPath, root) {
   return updateProofHashForAllRootPathsRecursive(node);
 }
 
-function verifyProofHashForAllRootPathsRecursive(node) {
+function verifyProofHashForStateTree(stateTree) {
   let verification = true;
-  if (!node.getIsLeaf()) {
-    for (const childNode of node.getChildNodes()) {
-      const decendantVerifications = verifyProofHashForAllRootPathsRecursive(childNode);
-      verification = verification && node.verifyProofHash() && decendantVerifications;
+  if (!stateTree.getIsLeaf()) {
+    for (const childNode of stateTree.getChildNodes()) {
+      const decendantVerifications = verifyProofHashForStateTree(childNode);
+      verification = verification && stateTree.verifyProofHash() && decendantVerifications;
+      return verification;
     }
   } else {
-    return node.verifyProofHash();
+    return stateTree.verifyProofHash();
   }
-  return verification;
-}
-
-function verifyProofHashForAllRootPaths(root) {
-  if (!root) {
-    logger.error(`[${LOG_HEADER}] Trying to verify proof hash for invalid root: ${root}.`);
-    return false;
-  }
-  return verifyProofHashForAllRootPathsRecursive(root);
 }
 
 module.exports = {
@@ -353,5 +345,5 @@ module.exports = {
   equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
-  verifyProofHashForAllRootPaths,
+  verifyProofHashForStateTree
 };
