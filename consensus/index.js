@@ -736,8 +736,8 @@ class Consensus {
         continue;
       }
       const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
-      const state = this.node.stateManager.getRoot(versionToFinalize);
-      if (!verifyProofHashForAllRootPaths(state)) {
+      const root = this.node.stateManager.getRoot(versionToFinalize);
+      if (!verifyProofHashForAllRootPaths(root)) {
         return false;
       }
     }
