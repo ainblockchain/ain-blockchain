@@ -35,7 +35,7 @@ const {
   sendGetRequest
 } = require('../p2p/util');
 const {
-  verifyProofHashForAllRootPaths
+  verifyProofHashForStateTree
 } = require('../db/state-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -737,7 +737,7 @@ class Consensus {
       }
       const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
       const root = this.node.stateManager.getRoot(versionToFinalize);
-      if (!verifyProofHashForAllRootPaths(root)) {
+      if (!verifyProofHashForStateTree(root)) {
         return false;
       }
     }
@@ -754,7 +754,7 @@ class Consensus {
       logger.debug(`[${LOG_HEADER}] No notarized chain with 3 consecutive epochs yet`);
       return;
     }
-    // XXX(minsu): neeeeeeeeed discussion how to deal with it!
+    // TODO(minsu): neeeeeeeeed discussion how to deal with it!
     if (!this.checkStateValidity(finalizableChain)) {
       logger.error(`[${LOG_HEADER}] FinalizableChain has been contaminated. cannot proceed!`);
       return;
