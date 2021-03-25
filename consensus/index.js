@@ -34,6 +34,9 @@ const {
   signAndSendTx,
   sendGetRequest
 } = require('../p2p/util');
+const {
+  verifyProofHashForAllRootPaths
+} = require('../db/state-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -727,6 +730,20 @@ class Consensus {
     this.handleConsensusMessage({value: voteTx, type: ConsensusMessageTypes.VOTE});
   }
 
+  checkStateValidity(finalizableChain) {
+    for (const blockToFinalize of finalizableChain) {
+      if (blockToFinalize.number <= this.node.bc.lastBlockNumber()) {
+        continue;
+      }
+      const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
+      const state = this.node.stateManager.getRoot(versionToFinalize);
+      if (!verifyProofHashForAllRootPaths(state)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   // If there's a notarized chain that ends with 3 blocks, which have 3 consecutive epoch numbers,
   // finalize up to second to the last block of that notarized chain.
   tryFinalize() {
@@ -735,6 +752,11 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] finalizableChain: ${JSON.stringify(finalizableChain, null, 2)}`);
     if (!finalizableChain || !finalizableChain.length) {
       logger.debug(`[${LOG_HEADER}] No notarized chain with 3 consecutive epochs yet`);
+      return;
+    }
+    // XXX(minsu): neeeeeeeeed discussion how to deal with it!
+    if (!this.checkStateValidity(finalizableChain)) {
+      logger.error(`[${LOG_HEADER}] FinalizableChain has been contaminated. cannot proceed!`);
       return;
     }
     // Discard the last block (but save it for a future finalization)

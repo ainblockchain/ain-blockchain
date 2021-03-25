@@ -1,7 +1,7 @@
 const get = require('lodash/get');
 const logger = require('../logger')('BLOCK_POOL');
-const {ConsensusConsts} = require('./constants');
-const {WriteDbOperations} = require('../common/constants');
+const { ConsensusConsts } = require('./constants');
+const { WriteDbOperations } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 class BlockPool {
@@ -158,7 +158,7 @@ class BlockPool {
   //  1. all of its blocks are notarized
   //  2. ends with three blocks that have consecutive epoch numbers
   getFinalizableChain() {
-    const lastFinalized = {block: this.node.bc.lastBlock(), notarized: true};
+    const lastFinalized = { block: this.node.bc.lastBlock(), notarized: true };
     return this.dfsFinalizable(lastFinalized, []);
   }
 
