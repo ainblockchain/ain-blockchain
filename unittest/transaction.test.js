@@ -142,6 +142,13 @@ describe('Transaction', () => {
       tx.extra.created_at = 'erased';
       assert.deepEqual(executable, tx);
     });
+
+    it('setExecutedAt', () => {
+      const executable = Transaction.toExecutable(Transaction.toJsObject(tx));
+      assert.equal(executable.extra.executed_at, null);
+      executable.setExecutedAt(123456789);
+      assert.equal(executable.extra.executed_at, 123456789);
+    });
   });
 
   describe('getTransaction', () => {
