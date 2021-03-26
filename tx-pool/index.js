@@ -33,6 +33,7 @@ class TransactionPool {
   }
 
   addTransaction(tx) {
+    // NOTE(seo): A transaction needs to be converted to an executable form before being added.
     if (!Transaction.isExecutable(tx)) {
       logger.error(`Not executable transaction: ${JSON.stringify(tx, null, 2)}`);
       return false;

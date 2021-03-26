@@ -693,6 +693,7 @@ class DB {
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
+    // NOTE(seo): A transaction needs to be converted to an executable form before being executed.
     if (!Transaction.isExecutable(tx)) {
       logger.error(`[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`);
       return false;
