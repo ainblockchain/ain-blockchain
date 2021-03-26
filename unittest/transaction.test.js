@@ -5,7 +5,7 @@ const expect = chai.expect;
 const { CHAINS_DIR } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
-const {setNodeForTesting, getTransaction} = require('./test-util');
+const { setNodeForTesting, getTransaction } = require('./test-util');
 const ChainUtil = require('../common/chain-util');
 const { msleep } = require('sleep');
 

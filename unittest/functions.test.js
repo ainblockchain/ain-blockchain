@@ -118,13 +118,15 @@ describe("Functions", () => {
 
     it("REST function", () => {
       transaction = {
-        "nonce": 123,
-        "timestamp": 1566736760322,
-        "operation": {
-          "ref": refPathRest,
-          "type": "SET_VALUE",
-          "value": 1000
-        }
+        "tx_body": {
+          "operation": {
+            "ref": refPathRest,
+            "type": "SET_VALUE",
+            "value": 1000
+          },
+          "nonce": 123,
+          "timestamp": 1566736760322,
+        },
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRest),
@@ -142,13 +144,15 @@ describe("Functions", () => {
             "service_name": "https://ainetwork.ai",
           },
           "transaction": {
-            "nonce": 123,
-            "operation": {
-              "ref": refPathRest,
-              "type": "SET_VALUE",
-              "value": 1000,
+            "tx_body": {
+              "operation": {
+                "ref": refPathRest,
+                "type": "SET_VALUE",
+                "value": 1000,
+              },
+              "nonce": 123,
+              "timestamp": 1566736760322,
             },
-            "timestamp": 1566736760322,
           }
         });
       });
@@ -156,13 +160,15 @@ describe("Functions", () => {
 
     it("REST function multi", () => {
       transaction = {
-        "nonce": 123,
-        "timestamp": 1566736760322,
-        "operation": {
-          "ref": refPathRestMulti,
-          "type": "SET_VALUE",
-          "value": 1000
-        }
+        "tx_body": {
+          "operation": {
+            "ref": refPathRestMulti,
+            "type": "SET_VALUE",
+            "value": 1000
+          },
+          "nonce": 123,
+          "timestamp": 1566736760322,
+        },
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestMulti),
@@ -180,13 +186,15 @@ describe("Functions", () => {
             "service_name": "https://ainetwork.ai",
           },
           "transaction": {
-            "nonce": 123,
-            "operation": {
-              "ref": refPathRestMulti,
-              "type": "SET_VALUE",
-              "value": 1000,
+            "tx_body": {
+              "operation": {
+                "ref": refPathRestMulti,
+                "type": "SET_VALUE",
+                "value": 1000,
+              },
+              "nonce": 123,
+              "timestamp": 1566736760322,
             },
-            "timestamp": 1566736760322,
           }
         });
         assert.deepEqual(requestBody2, {
@@ -197,13 +205,15 @@ describe("Functions", () => {
             "service_name": "https://ainize.ai",
           },
           "transaction": {
-            "nonce": 123,
-            "operation": {
-              "ref": refPathRestMulti,
-              "type": "SET_VALUE",
-              "value": 1000,
+            "tx_body": {
+              "operation": {
+                "ref": refPathRestMulti,
+                "type": "SET_VALUE",
+                "value": 1000,
+              },
+              "nonce": 123,
+              "timestamp": 1566736760322,
             },
-            "timestamp": 1566736760322,
           }
         });
       });
@@ -211,13 +221,15 @@ describe("Functions", () => {
 
     it("REST function without listener", () => {
       transaction = {
-        "nonce": 123,
-        "timestamp": 1566736760322,
-        "operation": {
-          "ref": refPathRestWithoutListener,
-          "type": "SET_VALUE",
-          "value": 1000
-        }
+        "tx_body": {
+          "operation": {
+            "ref": refPathRestWithoutListener,
+            "type": "SET_VALUE",
+            "value": 1000
+          },
+          "nonce": 123,
+          "timestamp": 1566736760322,
+        },
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestWithoutListener),
@@ -232,13 +244,15 @@ describe("Functions", () => {
 
     it("REST function NOT whitelisted", () => {
       transaction = {
-        "nonce": 123,
-        "timestamp": 1566736760322,
-        "operation": {
-          "ref": refPathRestNotWhitelisted,
-          "type": "SET_VALUE",
-          "value": 1000
-        }
+        "tx_body": {
+          "operation": {
+            "ref": refPathRestNotWhitelisted,
+            "type": "SET_VALUE",
+            "value": 1000
+          },
+          "nonce": 123,
+          "timestamp": 1566736760322,
+        },
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestNotWhitelisted),
@@ -253,13 +267,15 @@ describe("Functions", () => {
 
     it("null function", () => {
       transaction = {
-        "nonce": 123,
-        "timestamp": 1566736760322,
-        "operation": {
-          "ref": refPathNull,
-          "type": "SET_VALUE",
-          "value": 1000
-        }
+        "tx_body": {
+          "operation": {
+            "ref": refPathNull,
+            "type": "SET_VALUE",
+            "value": 1000
+          },
+          "nonce": 123,
+          "timestamp": 1566736760322,
+        },
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathNull),
