@@ -693,13 +693,15 @@ class DB {
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
-    const txBody = tx.tx_body;
+    const executableTx = Transaction.isJsObject(tx) ? Transaction.fromJsObject(tx) : tx;
+    const txBody = executableTx.tx_body;
     if (!txBody) {
-      logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
+      logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(executableTx, null, 2)}`);
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-    return this.executeOperation(txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
+    return this.executeOperation(
+        txBody.operation, { addr: executableTx.address }, txBody.timestamp, executableTx);
   }
 
   executeTransactionList(txList) {
