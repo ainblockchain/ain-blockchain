@@ -52,13 +52,13 @@ class Transaction {
     return Transaction.create(txBody, signature);
   }
 
-  static isJsObject(tx) {
-    return !tx.extra;
+  static isExecutable(tx) {
+    return !!tx.extra;
   }
 
-  static fromJsObject(tx) {
-    if (!Transaction.isValidTxBody(tx.tx_body)) {
-      return null;
+  static toExecutable(tx) {
+    if (this.isExecutable(tx)) {
+      return tx;
     }
     return Transaction.create(tx.tx_body, tx.signature);
   }
@@ -70,6 +70,10 @@ class Transaction {
       hash: tx.hash,
       address: tx.address
     };
+  }
+
+  setExecutedAt(executedAt) {
+    ChainUtil.setJsObject(this, ['extra', 'executed_at'], executedAt);
   }
 
   toString() {
