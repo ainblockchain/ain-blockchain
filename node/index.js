@@ -354,16 +354,18 @@ class BlockchainNode {
       return ChainUtil.logAndReturnError(
           logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
-    const result = this.executeOrRollbackTransaction(tx);
+    const executableTx = Transaction.toExecutable(tx);
+    const result = this.executeOrRollbackTransaction(executableTx);
     if (ChainUtil.transactionFailed(result)) {
-      logger.info(`[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(tx, null, 2)}\n ` +
+      logger.info(
+          `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
           `WITH RESULT:${JSON.stringify(result)}`);
       const errorCode = _.get(result, 'code');
       if (errorCode === TX_NONCE_ERROR_CODE || errorCode === TX_TIMESTAMP_ERROR_CODE) {
-        this.tp.addTransaction(tx);
+        this.tp.addTransaction(executableTx);
       }
     } else {
-      this.tp.addTransaction(tx);
+      this.tp.addTransaction(executableTx);
     }
 
     return result;

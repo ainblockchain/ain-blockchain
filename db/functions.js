@@ -81,7 +81,8 @@ class Functions {
    */
   // NOTE(seo): Validity checks on individual addresses are done by .write rules.
   // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, executedAt, transaction) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
+    const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionPath = matched.matchedFunction.path;
     const functionMap = matched.matchedFunction.config;

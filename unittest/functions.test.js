@@ -127,10 +127,14 @@ describe("Functions", () => {
           "nonce": 123,
           "timestamp": 1566736760322,
         },
+        "extra": {
+          "created_at": 1566736760323,
+          "executed_at": 1566736760324,
+        }
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRest),
-          null, null, null, null, transaction).then((response) => {
+          null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 1,
@@ -153,6 +157,10 @@ describe("Functions", () => {
               "nonce": 123,
               "timestamp": 1566736760322,
             },
+            "extra": {
+              "created_at": 1566736760323,
+              "executed_at": 1566736760324,
+            }
           }
         });
       });
@@ -169,10 +177,14 @@ describe("Functions", () => {
           "nonce": 123,
           "timestamp": 1566736760322,
         },
+        "extra": {
+          "created_at": 1566736760323,
+          "executed_at": 1566736760324,
+        }
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestMulti),
-          null, null, null, null, transaction).then((response) => {
+          null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 2,
           triggerCount: 2,
@@ -195,6 +207,10 @@ describe("Functions", () => {
               "nonce": 123,
               "timestamp": 1566736760322,
             },
+            "extra": {
+              "created_at": 1566736760323,
+              "executed_at": 1566736760324,
+            }
           }
         });
         assert.deepEqual(requestBody2, {
@@ -214,6 +230,10 @@ describe("Functions", () => {
               "nonce": 123,
               "timestamp": 1566736760322,
             },
+            "extra": {
+              "created_at": 1566736760323,
+              "executed_at": 1566736760324,
+            }
           }
         });
       });
@@ -230,10 +250,14 @@ describe("Functions", () => {
           "nonce": 123,
           "timestamp": 1566736760322,
         },
+        "extra": {
+          "created_at": 1566736760323,
+          "executed_at": 1566736760324,
+        }
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestWithoutListener),
-          null, null, null, null, transaction).then((response) => {
+          null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 1,
@@ -253,10 +277,14 @@ describe("Functions", () => {
           "nonce": 123,
           "timestamp": 1566736760322,
         },
+        "extra": {
+          "created_at": 1566736760323,
+          "executed_at": 1566736760324,
+        }
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathRestNotWhitelisted),
-          null, null, null, null, transaction).then((response) => {
+          null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 0,
@@ -276,10 +304,14 @@ describe("Functions", () => {
           "nonce": 123,
           "timestamp": 1566736760322,
         },
+        "extra": {
+          "created_at": 1566736760323,
+          "executed_at": 1566736760324,
+        }
       }
       return functions.triggerFunctions(
           ChainUtil.parsePath(refPathNull),
-          null, null, null, null, transaction).then((response) => {
+          null, null, null, transaction).then((response) => {
         assert.deepEqual(response, {
           functionCount: 1,
           triggerCount: 0,

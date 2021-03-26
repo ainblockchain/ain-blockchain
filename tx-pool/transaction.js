@@ -12,6 +12,7 @@ class Transaction {
     this.address = address;
     this.extra = {
       created_at: createdAt,
+      executed_at: null,
     };
     if (skipVerif) {
       this.extra.skip_verif = skipVerif;

@@ -442,7 +442,7 @@ class DB {
     this.writeDatabase(fullPath, valueCopy);
     // NOTE(lia): Allow chained function triggering but no circular calls.
     if (auth && (auth.addr || auth.fid)) {
-      this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, Date.now(), transaction);
+      this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
     }
 
     return true;
@@ -693,24 +693,30 @@ class DB {
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
-    const executableTx = Transaction.isJsObject(tx) ? Transaction.fromJsObject(tx) : tx;
-    const txBody = executableTx.tx_body;
+    if (!Transaction.isExecutable(tx)) {
+      logger.error(`[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`);
+      return false;
+    }
+    // Record when the tx was executed.
+    tx.setExecutedAt(Date.now());
+    const txBody = tx.tx_body;
     if (!txBody) {
-      logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(executableTx, null, 2)}`);
+      logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
     return this.executeOperation(
-        txBody.operation, { addr: executableTx.address }, txBody.timestamp, executableTx);
+        txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
   }
 
   executeTransactionList(txList) {
     const LOG_HEADER = 'executeTransactionList';
     for (const tx of txList) {
-      const res = this.executeTransaction(tx);
+      const executableTx = Transaction.toExecutable(tx);
+      const res = this.executeTransaction(executableTx);
       if (ChainUtil.transactionFailed(res)) {
         // FIXME: remove the failed transaction from tx pool?
-        logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(tx, null, 2)}` +
+        logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
         return false;
       }
