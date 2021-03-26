@@ -76,12 +76,12 @@ class Functions {
    * @param {Array} parsedValuePath parsed value path
    * @param {Object} value value set on the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
-   * @param {Number} execTime execution time
+   * @param {Number} executedAt execution time
    * @param {Object} transaction transaction
    */
   // NOTE(seo): Validity checks on individual addresses are done by .write rules.
   // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, execTime, transaction) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, executedAt, transaction) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionPath = matched.matchedFunction.path;
     const functionMap = matched.matchedFunction.config;
@@ -92,7 +92,7 @@ class Functions {
     const promises = [];
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, execTime, params, value, transaction);
+          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -127,7 +127,7 @@ class Functions {
                     functionPath,
                     params,
                     timestamp,
-                    execTime,
+                    executedAt,
                     transaction,
                     auth: newAuth,
                   });
@@ -237,10 +237,10 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, execTime, params, value, transaction) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction) {
     return `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${ChainUtil.formatPath(functionPath)}', ` +
-      `timestamp: '${timestamp}', execTime: '${execTime}', ` +
+      `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
       `params: ${JSON.stringify(params, null, 2)}, ` +
       `value: '${JSON.stringify(value, null, 2)}', ` +
       `transaction: ${JSON.stringify(transaction, null, 2)}`;
@@ -345,7 +345,7 @@ class Functions {
     };
   }
 
-  setValueOrLog(valuePath, value, auth, timestamp, transaction = null) {
+  setValueOrLog(valuePath, value, auth, timestamp, transaction) {
     const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
     if (result !== true) {
       logger.error(
@@ -354,8 +354,8 @@ class Functions {
     return result;
   }
 
-  incValueOrLog(valuePath, delta, auth, timestamp) {
-    const result = this.db.incValue(valuePath, delta, auth, timestamp);
+  incValueOrLog(valuePath, delta, auth, timestamp, transaction) {
+    const result = this.db.incValue(valuePath, delta, auth, timestamp, transaction);
     if (result !== true) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -363,8 +363,8 @@ class Functions {
     return result;
   }
 
-  decValueOrLog(valuePath, delta, auth, timestamp) {
-    const result = this.db.decValue(valuePath, delta, auth, timestamp);
+  decValueOrLog(valuePath, delta, auth, timestamp, transaction) {
+    const result = this.db.decValue(valuePath, delta, auth, timestamp, transaction);
     if (result !== true) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -381,8 +381,9 @@ class Functions {
     const execResult = Functions.buildExecutionResult(context, code);
     this.setCallResult(execResult);
     const timestamp = context.timestamp;
+    const transaction = context.transaction;
     const auth = context.auth;
-    return this.setValueOrLog(resultPath, execResult, auth, timestamp);
+    return this.setValueOrLog(resultPath, execResult, auth, timestamp, transaction);
   }
 
   /**
@@ -395,8 +396,10 @@ class Functions {
       const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
       if (serviceAccountAdmin === null) {
         // set admin as the from address of the original transaction
-        const serviceAccountAdminAddrPath = this.getServiceAccountAdminAddrPath(to, transaction.address);
-        const adminSetupResult = this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp);
+        const serviceAccountAdminAddrPath =
+            this.getServiceAccountAdminAddrPath(to, transaction.address);
+        const adminSetupResult =
+            this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp, transaction);
         if (adminSetupResult !== true) {
           return adminSetupResult;
         }
@@ -411,8 +414,8 @@ class Functions {
    * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
    */
   _saveLastTx(value, context) {
-    const transaction = context.transaction;
     const timestamp = context.timestamp;
+    const transaction = context.transaction;
     const auth = context.auth;
 
     const valuePath = context.valuePath;
@@ -426,7 +429,8 @@ class Functions {
     lastTxPath.push(lastLabel);
 
     return this.setValueOrLog(
-        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp);
+        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp,
+        transaction);
   }
 
   _transfer(value, context) {
@@ -454,13 +458,14 @@ class Functions {
     const user = context.params.user_addr;
     const depositId = context.params.deposit_id;
     const timestamp = context.timestamp;
-    const execTime = context.execTime;
+    const executedAt = context.executedAt;
+    const transaction = context.transaction;
     const auth = context.auth;
 
     const resultPath = this.getDepositResultPath(service, user, depositId);
     const depositCreatedAtPath = this.getDepositCreatedAtPath(service, user, depositId);
-    this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp);
-    if (timestamp > execTime) {
+    this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp, transaction);
+    if (timestamp > executedAt) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
@@ -472,7 +477,8 @@ class Functions {
       const lockup = this.db.getValue(this.getDepositLockupDurationPath(service)) ||
           DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
       const expirationPath = this.getDepositExpirationPath(service, user);
-      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), auth, timestamp);
+      this.setValueOrLog(
+          expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
@@ -488,7 +494,8 @@ class Functions {
     const user = context.params.user_addr;
     const withdrawId = context.params.withdraw_id;
     const timestamp = context.timestamp;
-    const execTime = context.execTime;
+    const executedAt = context.executedAt;
+    const transaction = context.transaction;
     const auth = context.auth;
 
     const depositAmountPath = this.getDepositAmountPath(service, user);
@@ -496,8 +503,8 @@ class Functions {
     const resultPath = this.getWithdrawResultPath(service, user, withdrawId);
     const withdrawCreatedAtPath = this.getWithdrawCreatedAtPath(service, user, withdrawId);
     const expireAt = this.db.getValue(this.getDepositExpirationPath(service, user));
-    this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp);
-    if (expireAt > execTime) {
+    this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp, transaction);
+    if (expireAt > executedAt) {
       // Still in lock-up period.
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
       return;
@@ -538,12 +545,12 @@ class Functions {
     const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
     const timestamp = context.timestamp;
+    const executedAt = context.executedAt;
     const transaction = context.transaction;
-    const execTime = context.execTime;
     const auth = context.auth;
     const resultPath = this.getPaymentPayRecordResultPath(service, user, paymentKey, recordId);
 
-    if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
+    if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
@@ -564,13 +571,13 @@ class Functions {
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
-    const transaction = context.transaction;
     const timestamp = context.timestamp;
-    const execTime = context.execTime;
+    const executedAt = context.executedAt;
+    const transaction = context.transaction;
     const auth = context.auth;
     const resultPath = this.getPaymentClaimRecordResultPath(service, user, paymentKey, recordId);
 
-    if (!this.validatePaymentRecord(transaction.address, value, timestamp, execTime)) {
+    if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
@@ -583,7 +590,8 @@ class Functions {
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = this.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
-      result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
+      result = this.setValueOrLog(
+          escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
     } else {
       result = this.setServiceAccountTransferOrLog(
           userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
@@ -595,14 +603,14 @@ class Functions {
     }
   }
 
-  validatePaymentRecord(adminAddr, value, timestamp, execTime) {
+  validatePaymentRecord(adminAddr, value, timestamp, executedAt) {
     if (!adminAddr) {
       return false;
     }
     if (!value || !value.amount || !ChainUtil.isNumber(value.amount)) {
       return false;
     }
-    if (timestamp > execTime) {
+    if (timestamp > executedAt) {
       return false;
     }
     return true;
@@ -612,12 +620,13 @@ class Functions {
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
-    const { timestamp, auth } = context;
+    const { timestamp, auth, transaction } = context;
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const serviceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
     const serviceAccountPath = this.getServiceAccountPath(serviceAccountName);
-    const serviceAccountSetupResult = this.setValueOrLog(serviceAccountPath, value, auth, timestamp);
+    const serviceAccountSetupResult =
+        this.setValueOrLog(serviceAccountPath, value, auth, timestamp, transaction);
     if (serviceAccountSetupResult !== true) {
       logger.error(`  ==> Failed to open escrow`);
       this.setExecutionResult(context, FunctionResultCode.FAILURE);
@@ -696,6 +705,7 @@ class Functions {
 
   _updateLatestShardReport(value, context) {
     const timestamp = context.timestamp;
+    const transaction = context.transaction;
     const auth = context.auth;
 
     const blockNumber = Number(context.params.block_number);
@@ -713,7 +723,7 @@ class Functions {
       // Nothing to update
       return false;
     }
-    this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp);
+    this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp, transaction);
     this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
@@ -883,17 +893,18 @@ class Functions {
 
   transferInternal(fromPath, toPath, value, context) {
     const timestamp = context.timestamp;
+    const transaction = context.transaction;
     const auth = context.auth;
 
     const fromBalance = this.db.getValue(fromPath);
     if (fromBalance < value) {
       return false;
     }
-    const decResult = this.decValueOrLog(fromPath, value, auth, timestamp);
+    const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);
     if (decResult !== true) {
       return decResult;
     }
-    const incResult = this.incValueOrLog(toPath, value, auth, timestamp);
+    const incResult = this.incValueOrLog(toPath, value, auth, timestamp, transaction);
     if (incResult !== true) {
       return incResult;
     }
