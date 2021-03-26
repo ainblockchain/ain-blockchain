@@ -597,38 +597,6 @@ class DB {
     return ret;
   }
 
-  batch(txList) {
-    const resultList = [];
-    for (const tx of txList) {
-      const txBody = tx.tx_body;
-      if (!txBody) {
-        resultList.push(ChainUtil.returnError(801, 'No tx_body'));
-        continue;
-      }
-      const op = txBody.operation;
-      if (!op) {
-        resultList.push(ChainUtil.returnError(802, 'No operation'));
-        continue;
-      }
-      switch (op.type) {
-        case undefined:
-        case WriteDbOperations.SET_VALUE:
-        case WriteDbOperations.INC_VALUE:
-        case WriteDbOperations.DEC_VALUE:
-        case WriteDbOperations.SET_FUNCTION:
-        case WriteDbOperations.SET_RULE:
-        case WriteDbOperations.SET_OWNER:
-        case WriteDbOperations.SET:
-          // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-          resultList.push(this.executeOperation(op, { addr: tx.address }, txBody.timestamp, tx));
-          break;
-        default:
-          resultList.push(ChainUtil.returnError(803, `Invalid operation type: ${op.type}`));
-      }
-    }
-    return resultList;
-  }
-
   /**
    * Returns full path with given root node.
    */
@@ -725,9 +693,6 @@ class DB {
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
-    if (Transaction.isBatchTransaction(tx)) {
-      return this.batch(tx.tx_list);
-    }
     const txBody = tx.tx_body;
     if (!txBody) {
       logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
