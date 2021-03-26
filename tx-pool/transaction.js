@@ -54,7 +54,7 @@ class Transaction {
   }
 
   static isExecutable(tx) {
-    return !!tx.extra;
+    return !!tx && typeof tx.setExecutedAt === 'function';
   }
 
   static toExecutable(tx) {
