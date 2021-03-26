@@ -84,7 +84,7 @@ class Consensus {
       } else if (targetStake > 0 && currentStake < targetStake) {
         const stakeAmount = targetStake - currentStake;
         const stakeTx = this.stake(stakeAmount);
-        this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
+        this.server.executeAndBroadcastTransaction(stakeTx);
       }
       this.blockPool = new BlockPool(this.node, lastBlockWithoutProposal);
       this.setStatus(ConsensusStatus.RUNNING, 'init');

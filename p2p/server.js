@@ -377,8 +377,7 @@ class P2pServer {
                 newTxList.push(createdTx);
               }
               if (newTxList.length > 0) {
-                this.executeAndBroadcastTransaction(
-                  { tx_list: newTxList }, MessageTypes.TRANSACTION);
+                this.executeAndBroadcastTransaction({ tx_list: newTxList });
               }
             } else {
               const createdTx = Transaction.create(tx.tx_body, tx.signature);
@@ -386,7 +385,7 @@ class P2pServer {
                 logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
                   `${JSON.stringify(tx, null, 2)}`);
               } else {
-                this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                this.executeAndBroadcastTransaction(createdTx);
               }
             }
             break;
