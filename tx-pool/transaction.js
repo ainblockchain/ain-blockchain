@@ -52,6 +52,17 @@ class Transaction {
     return Transaction.create(txBody, signature);
   }
 
+  static isJsObject(tx) {
+    return !tx.extra;
+  }
+
+  static fromJsObject(tx) {
+    if (!Transaction.isValidTxBody(tx.tx_body)) {
+      return null;
+    }
+    return Transaction.create(tx.tx_body, tx.signature);
+  }
+
   static toJsObject(tx) {
     return {
       tx_body: tx.tx_body,
