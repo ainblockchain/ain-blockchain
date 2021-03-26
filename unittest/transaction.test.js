@@ -120,6 +120,30 @@ describe('Transaction', () => {
     });
   });
 
+  describe('isExecutable / toExecutable / toJsObject', () => {
+    it('isExecutable', () => {
+      expect(Transaction.isExecutable(null)).to.equal(false);
+      expect(Transaction.isExecutable(txBody)).to.equal(false);
+      expect(Transaction.isExecutable(tx)).to.equal(true);
+      expect(Transaction.isExecutable(Transaction.toJsObject(tx))).to.equal(false);
+      expect(Transaction.isExecutable(
+          Transaction.toExecutable(Transaction.toJsObject(tx)))).to.equal(true);
+    });
+
+    it('toJsObject', () => {
+      const jsObjectInput = Transaction.toJsObject(tx);
+      const jsObjectOutput = Transaction.toJsObject(Transaction.toExecutable(jsObjectInput));
+      assert.deepEqual(jsObjectOutput, jsObjectInput);
+    });
+
+    it('toExecutable', () => {
+      const executable = Transaction.toExecutable(Transaction.toJsObject(tx));
+      executable.extra.created_at = 'erased';
+      tx.extra.created_at = 'erased';
+      assert.deepEqual(executable, tx);
+    });
+  });
+
   describe('getTransaction', () => {
     it('construction', () => {
       expect(txForNode).to.not.equal(null);
