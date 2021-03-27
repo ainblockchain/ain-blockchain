@@ -133,7 +133,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setValue("test", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbFuncs = {
       "some": {
@@ -157,7 +157,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setFunction("test/test_function", dbFuncs);
-    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbRules = {
       "some": {
@@ -175,7 +175,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setRule("test/test_rule", dbRules);
-    console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbOwners = {
       "some": {
@@ -220,7 +220,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setOwner("test/test_owner", dbOwners);
-    console.log(`Result of setOwner(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   });
 
   afterEach(() => {
@@ -1412,7 +1412,7 @@ describe("DB operations", () => {
         }
       };
       const valueResult = node.db.setValue("/test/empty_values/node_0", emptyValues);
-      console.log(`Result of setValue(): ${JSON.stringify(valueResult, null, 2)}`);
+      assert.deepEqual(valueResult, true);
 
       emptyRules = {
         "terminal_1a": null,
@@ -1431,7 +1431,7 @@ describe("DB operations", () => {
         }
       };
       const ruleResult = node.db.setRule("/test/empty_rules/node_0", emptyRules);
-      console.log(`Result of setRule(): ${JSON.stringify(ruleResult, null, 2)}`);
+      assert.deepEqual(ruleResult, true);
 
       emptyOwners = {
         "terminal_1a": null,
@@ -1459,18 +1459,18 @@ describe("DB operations", () => {
         }
       };
       const ownerResult = node.db.setOwner("/test/empty_owners/node_0", emptyOwners);
-      console.log(`Result of setOwner(): ${JSON.stringify(ownerResult, null, 2)}`);
+      assert.deepEqual(ownerResult, true);
     });
 
     afterEach(() => {
       const valueResult = node.db.setValue("/test/empty_values/node_0", null);
-      console.log(`Result of setValue(): ${JSON.stringify(valueResult, null, 2)}`);
+      assert.deepEqual(valueResult, true);
 
       const ruleResult = node.db.setRule("/test/empty_rules/node_0", null);
-      console.log(`Result of setRule(): ${JSON.stringify(ruleResult, null, 2)}`);
+      assert.deepEqual(ruleResult, true);
 
       const ownerResult = node.db.setRule("/test/empty_owners/node_0", null);
-      console.log(`Result of setOwner(): ${JSON.stringify(ownerResult, null, 2)}`);
+      assert.deepEqual(ownerResult, true);
     });
 
     it("when setValue() with non-empty value", () => {
@@ -1633,9 +1633,9 @@ describe("DB rule config", () => {
     dbValues["second_users"][node1.account.address]["something_else"] = "i can write";
 
     result = node1.db.setValue("test", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
     result = node2.db.setValue("test", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   })
 
   afterEach(() => {
@@ -2055,7 +2055,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setValue("test/test_sharding", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbFuncs = {
       "some": {
@@ -2074,7 +2074,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setFunction("test/test_sharding", dbFuncs);
-    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbRules = {
       "some": {
@@ -2090,7 +2090,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setRule("test/test_sharding", dbRules);
-    console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbOwners = {
       "some": {
@@ -2117,7 +2117,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setOwner("test/test_sharding", dbOwners);
-    console.log(`Result of setOwner(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   })
 
   afterEach(() => {
@@ -2727,7 +2727,7 @@ describe("Test proof with database", () => {
       }
     };
     result = node.db.setValue("test", valuesObject);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   });
 
   afterEach(() => {
