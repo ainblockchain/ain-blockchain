@@ -18,6 +18,7 @@ const {
   setNodeForTesting,
 } = require('./test-util');
 const DB = require('../db');
+const Transaction = require('../tx-pool/transaction');
 
 describe("DB initialization", () => {
   let node;
@@ -2842,6 +2843,51 @@ describe("Test proof with database", () => {
       assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
       assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
       assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
+    });
+  });
+});
+
+describe("Transaction execution", () => {
+  let node;
+  let txBody;
+  let executableTx;
+  let objectTx;
+
+  beforeEach(() => {
+    rimraf.sync(CHAINS_DIR);
+
+    node = new BlockchainNode();
+    setNodeForTesting(node);
+
+    txBody = {
+      operation: {
+        type: 'SET_VALUE',
+        ref: '/test/some/path/for/tx',
+        value: 'some value',
+      },
+      nonce: -1,
+      timestamp: 1568798344000,
+    };
+    executableTx = Transaction.fromTxBody(txBody, node.account.private_key);
+    objectTx = Transaction.toJsObject(executableTx);
+  });
+
+  afterEach(() => {
+    rimraf.sync(CHAINS_DIR);
+  });
+
+  describe("executeTransaction()", () => {
+    it("returns true for executable transaction", () => {
+      expect(executableTx.extra).to.not.equal(undefined);
+      expect(executableTx.extra.executed_at).to.equal(null);
+      assert.equal(node.db.executeTransaction(executableTx), true);
+      // extra.executed_at is updated with a non-null value.
+      expect(executableTx.extra.executed_at).to.not.equal(null);
+    });
+
+    it("returns false for object transaction", () => {
+      assert.equal(node.db.executeTransaction(objectTx), false);
+      assert.equal(objectTx.extra, undefined);
     });
   });
 });

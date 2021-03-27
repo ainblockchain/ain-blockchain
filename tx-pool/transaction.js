@@ -54,7 +54,7 @@ class Transaction {
   }
 
   static isExecutable(tx) {
-    return !!tx && typeof tx.setExecutedAt === 'function';
+    return tx instanceof Transaction;
   }
 
   static toExecutable(tx) {
