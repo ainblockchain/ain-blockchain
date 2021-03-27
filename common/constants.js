@@ -4,13 +4,34 @@ const moment = require('moment');
 const semver = require('semver');
 const ChainUtil = require('./chain-util');
 
-// Genesis configs
+// Genesis configs.
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
 const GenesisParams = getGenesisConfig('genesis_params.json');
 const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
+
+// Feature flags.
+const FeatureFlags = {
+  // Enables state version optimization.
+  enableStateVersionOpt: true,
+  // Enables state tree transfer.
+  enableStateTreeTransfer: true,
+  // Enables rich logging for functions.
+  enableRichFunctionLogging: false,
+};
+
+// Environment variables.
+const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
+const CONSOLE_LOG = process.env.CONSOLE_LOG ? !!process.env.CONSOLE_LOG : false;
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
+const PORT = process.env.PORT || getPortNumber(8080, 8080);
+const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
+const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
+    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
 
 // Constants
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -371,30 +392,6 @@ const StateVersions = {
 };
 
 /**
- * Feature flags.
- */
-const FeatureFlags = {
-  // Enables state version optimization.
-  enableStateVersionOpt: true,
-  // Enables state tree transfer.
-  enableStateTreeTransfer: true,
-  // Enables rich logging for functions.
-  enableRichFunctionLogging: false,
-};
-
-/**
- * Environment variables.
- */
-const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
-const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
-    process.env.COMCOM_HOST_EXTERNAL_IP : '';
-const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
-const PORT = process.env.PORT || getPortNumber(8080, 8080);
-const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
-    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
-
-/**
  * Overwriting environment variables.
  * These parameters are defined in genesis_params.json, but if specified as environment variables,
  * the env vars take precedence.
@@ -596,6 +593,7 @@ module.exports = {
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
   DEBUG,
+  CONSOLE_LOG,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
   PORT,
