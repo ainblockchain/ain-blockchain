@@ -322,9 +322,8 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     for (const tx of transactions) {
-      const res = this.executeOrRollbackTransaction(
-          tempDb, Transaction.toExecutable(Transaction.toJsObject(tx)), validTransactions,
-          invalidTransactions);
+      const res =
+          this.executeOrRollbackTransaction(tempDb, tx, validTransactions, invalidTransactions);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;
