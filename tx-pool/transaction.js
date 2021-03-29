@@ -12,6 +12,7 @@ class Transaction {
     this.address = address;
     this.extra = {
       created_at: createdAt,
+      executed_at: null,
     };
     if (skipVerif) {
       this.extra.skip_verif = skipVerif;
@@ -52,6 +53,17 @@ class Transaction {
     return Transaction.create(txBody, signature);
   }
 
+  static isExecutable(tx) {
+    return tx instanceof Transaction;
+  }
+
+  static toExecutable(tx) {
+    if (this.isExecutable(tx)) {
+      return tx;
+    }
+    return Transaction.create(tx.tx_body, tx.signature);
+  }
+
   static toJsObject(tx) {
     return {
       tx_body: tx.tx_body,
@@ -59,6 +71,10 @@ class Transaction {
       hash: tx.hash,
       address: tx.address
     };
+  }
+
+  setExecutedAt(executedAt) {
+    ChainUtil.setJsObject(this, ['extra', 'executed_at'], executedAt);
   }
 
   toString() {

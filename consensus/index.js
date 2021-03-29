@@ -84,7 +84,7 @@ class Consensus {
       } else if (targetStake > 0 && currentStake < targetStake) {
         const stakeAmount = targetStake - currentStake;
         const stakeTx = this.stake(stakeAmount);
-        this.server.executeAndBroadcastTransaction(stakeTx, MessageTypes.TRANSACTION);
+        this.server.executeAndBroadcastTransaction(stakeTx);
       }
       this.blockPool = new BlockPool(this.node, lastBlockWithoutProposal);
       this.setStatus(ConsensusStatus.RUNNING, 'init');
@@ -239,7 +239,7 @@ class Consensus {
 
   executeLastVoteOrAbort(db, tx) {
     const LOG_HEADER = 'executeLastVoteOrAbort';
-    const txRes = db.executeTransaction(tx);
+    const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.transactionFailed(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       return true;
@@ -253,14 +253,14 @@ class Consensus {
     const LOG_HEADER = 'executeOrRollbackTransaction';
     const dbVersion = db.stateVersion;
     const backupVersion = this.node.stateManager.createUniqueVersionName(
-      `${StateVersions.BACKUP}:${dbVersion}`);
+        `${StateVersions.BACKUP}:${dbVersion}`);
     const backupRoot = this.node.stateManager.cloneVersion(dbVersion, backupVersion);
     if (!backupRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${dbVersion}`);
       return false;
     }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
-    const txRes = db.executeTransaction(tx);
+    const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.transactionFailed(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
@@ -322,7 +322,8 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     for (const tx of transactions) {
-      const res = this.executeOrRollbackTransaction(tempDb, tx, validTransactions, invalidTransactions);
+      const res =
+          this.executeOrRollbackTransaction(tempDb, tx, validTransactions, invalidTransactions);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;
@@ -410,7 +411,7 @@ class Consensus {
       this.cache[blockNumber] = proposalBlock.hash;
     }
     this.node.destroyDb(tempDb);
-    return {proposalBlock, proposalTx};
+    return { proposalBlock, proposalTx: Transaction.toJsObject(proposalTx) };
   }
 
   checkProposal(proposalBlock, proposalTx) {
@@ -510,7 +511,8 @@ class Consensus {
       for (const voteTx of proposalBlock.last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
-            ChainUtil.transactionFailed(tempDb.executeTransaction(voteTx))) {
+            ChainUtil.transactionFailed(
+                tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           hasInvalidLastVote = true;
         } else {
@@ -579,24 +581,24 @@ class Consensus {
     }
 
     // Try executing the proposal tx on the proposal block's db state
+    const executableTx = Transaction.toExecutable(proposalTx);
+    if (!executableTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
+          `${JSON.stringify(proposalTx, null, 2)}`);
+      this.node.destroyDb(newDb);
+      return false;
+    }
     const tempVersion = this.node.stateManager.createUniqueVersionName(
       `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(proposalTx))) {
+    if (ChainUtil.transactionFailed(tempDb.executeTransaction(executableTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
       this.node.destroyDb(tempDb);
       this.node.destroyDb(newDb);
       return false;
     }
     this.node.destroyDb(tempDb);
-    const createdTx = Transaction.create(proposalTx.tx_body, proposalTx.signature);
-    if (!createdTx) {
-      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
-          `${JSON.stringify(proposalTx, null, 2)}`);
-      this.node.destroyDb(newDb);
-      return false;
-    }
-    this.node.tp.addTransaction(createdTx);
+    this.node.tp.addTransaction(executableTx);
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
       if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
@@ -638,25 +640,25 @@ class Consensus {
       // FIXME: ask for the block from peers
       return false;
     }
+    const executableTx = Transaction.toExecutable(voteTx);
+    if (!executableTx) {
+      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a vote: ` +
+          `${JSON.stringify(voteTx, null, 2)}`);
+      return false;
+    }
     const tempDb = this.getSnapDb(block);
     if (!tempDb) {
       logger.debug(
-          `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(voteTx)}`);
+          `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(voteTx);
+    const voteTxRes = tempDb.executeTransaction(executableTx);
     this.node.destroyDb(tempDb);
     if (ChainUtil.transactionFailed(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
       return false;
     }
-    const createdTx = Transaction.create(voteTx.tx_body, voteTx.signature);
-    if (!createdTx) {
-      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a vote: ` +
-          `${JSON.stringify(voteTx, null, 2)}`);
-      return false;
-    }
-    this.node.tp.addTransaction(createdTx);
+    this.node.tp.addTransaction(executableTx);
     this.blockPool.addSeenVote(voteTx, this.state.epoch);
     return true;
   }
@@ -676,7 +678,7 @@ class Consensus {
       try {
         const proposal = this.createProposal();
         if (proposal !== null) {
-          this.handleConsensusMessage({value: proposal, type: ConsensusMessageTypes.PROPOSE});
+          this.handleConsensusMessage({ value: proposal, type: ConsensusMessageTypes.PROPOSE });
         }
       } catch (e) {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${e}`);
@@ -724,7 +726,8 @@ class Consensus {
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1 });
 
-    this.handleConsensusMessage({value: voteTx, type: ConsensusMessageTypes.VOTE});
+    this.handleConsensusMessage(
+        { value: Transaction.toJsObject(voteTx), type: ConsensusMessageTypes.VOTE });
   }
 
   // If there's a notarized chain that ends with 3 blocks, which have 3 consecutive epoch numbers,

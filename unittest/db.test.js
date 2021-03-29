@@ -18,6 +18,7 @@ const {
   setNodeForTesting,
 } = require('./test-util');
 const DB = require('../db');
+const Transaction = require('../tx-pool/transaction');
 
 describe("DB initialization", () => {
   let node;
@@ -133,7 +134,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setValue("test", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbFuncs = {
       "some": {
@@ -157,7 +158,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setFunction("test/test_function", dbFuncs);
-    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbRules = {
       "some": {
@@ -175,7 +176,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setRule("test/test_rule", dbRules);
-    console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbOwners = {
       "some": {
@@ -220,7 +221,7 @@ describe("DB operations", () => {
       }
     };
     result = node.db.setOwner("test/test_owner", dbOwners);
-    console.log(`Result of setOwner(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   });
 
   afterEach(() => {
@@ -1326,7 +1327,7 @@ describe("DB operations", () => {
             ".owner": "other owner config"
           }
         }
-      ], { addr: 'abcd' })).to.equal(true)
+      ], { addr: 'abcd' }, null, { extra: { executed_at: 123456789 }})).to.equal(true)
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(node.db.getValue("test/increment/value")).to.equal(30)
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
@@ -1395,275 +1396,6 @@ describe("DB operations", () => {
     })
   })
 
-  describe("batch operations", () => {
-    it("when batch applied successfully", () => {
-      let now = Date.now();
-      const address = node.account.address;
-      let nonce = node.db.getValue(`/accounts/${address}/nonce`);
-      if (nonce === null) nonce = 0;
-      assert.deepEqual(node.db.batch([
-        {
-          tx_body: {
-            operation: {
-              // Default type: SET_VALUE
-              ref: "test/nested/far/down",
-              value: {
-                "new": 12345
-              }
-            },
-            nonce: nonce++,
-            timestamp: now++
-          },
-          address
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "INC_VALUE",
-              ref: "test/increment/value",
-              value: 10
-            },
-            nonce: nonce++,
-            timestamp: now++
-          },
-          address
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "DEC_VALUE",
-              ref: "test/decrement/value",
-              value: 10
-            },
-            nonce: nonce++,
-            timestamp: now++
-          },
-          address
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "SET_FUNCTION",
-              ref: "/test/test_function/some/path",
-              value: {
-                ".function": {
-                  "fid": "other function config"
-                }
-              }
-            },
-            nonce: nonce++,
-            timestamp: now++
-          },
-          address
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "SET_RULE",
-              ref: "/test/test_rule/some/path",
-              value: {
-                ".write": "other rule config"
-              }
-            },
-            nonce: nonce++,
-            timestamp: now++
-          },
-          address
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "SET_OWNER",
-              ref: "/test/test_owner/some/path",
-              value: {
-                ".owner": "other owner config"
-              }
-            },
-            nonce: -1,
-            timestamp: now++
-          },
-          address: 'abcd'
-        }
-      ]), [ true, true, true, true, true, true ])
-      assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
-      expect(node.db.getValue("test/increment/value")).to.equal(30)
-      expect(node.db.getValue("test/decrement/value")).to.equal(10)
-      assert.deepEqual(
-          node.db.getFunction("/test/test_function/some/path"),
-          {
-            ".function": {
-              "fid": "other function config"  // modified
-            },
-            "deeper": {
-              "path": {
-                ".function": {
-                  "fid_deeper": "some function config deeper"
-                }
-              }
-            }
-          });
-      assert.deepEqual(
-          node.db.getRule("/test/test_rule/some/path"), { ".write": "other rule config" });
-      assert.deepEqual(
-          node.db.getOwner("/test/test_owner/some/path"), { ".owner": "other owner config" });
-    })
-
-    it("returning error code and leaving value unchanged if no operation is given", () => {
-      assert.deepEqual(node.db.batch([
-        {
-          tx_body: {
-            operation: {
-              type: "SET_VALUE",
-              ref: "test/nested/far/down",
-              value: {
-                "new": 12345
-              }
-            }
-          }
-        },
-        {},
-        {
-          tx_body: {}
-        }
-      ]), [
-        true,
-        {
-          "code": 801,
-          "error_message": "No tx_body"
-        },
-        {
-          "code": 802,
-          "error_message": "No operation"
-        }
-      ])
-      expect(node.db.getValue("test/ai/foo")).to.equal("bar")
-    })
-
-    it("returning error code and leaving value unchanged if invalid operation type is given",
-        () => {
-      assert.deepEqual(node.db.batch([
-        {
-          tx_body: {
-            operation: {
-              type: "SET_VALUE",
-              ref: "test/nested/far/down",
-              value: {
-                "new": 12345
-              }
-            }
-          }
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "GET_VALUE",
-              ref: "test/ai/foo",
-              value: 10
-            }
-          }
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "DEC_VALUE",
-              ref: "test/decrement/value",
-              value: 10
-            }
-          }
-        }
-      ]), [
-        true,
-        {
-          "code": 803,
-          "error_message": "Invalid operation type: GET_VALUE"
-        },
-        true])
-      expect(node.db.getValue("test/ai/foo")).to.equal("bar")
-    })
-
-    it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
-      assert.deepEqual(node.db.batch([
-        {
-          tx_body: {
-            operation: {
-              type: "SET_VALUE",
-              ref: "test/nested/far/down",
-              value: {
-                "new": 12345
-              }
-            }
-          }
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "INC_VALUE",
-              ref: "test/ai/foo",
-              value: 10
-            }
-          }
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "DEC_VALUE",
-              ref: "test/decrement/value",
-              value: 10
-            }
-          }
-        }
-      ]), [
-        true,
-        {
-          "code": 201,
-          "error_message": "Not a number type: bar or 10"
-        },
-        true])
-      expect(node.db.getValue("test/ai/foo")).to.equal("bar")
-    })
-
-    it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
-      assert.deepEqual(node.db.batch([
-        {
-          tx_body: {
-            operation: {
-              type: "SET_VALUE",
-              ref: "test/nested/far/down",
-              value: {
-                "new": 12345
-              }
-            }
-          }
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "DEC_VALUE",
-              ref: "test/ai/foo",
-              value: 10
-            }
-          }
-        },
-        {
-          tx_body: {
-            operation: {
-              type: "INC_VALUE",
-              ref: "test/increment/value",
-              value: 10
-            }
-          }
-        }
-      ]), [
-        true,
-        {
-          "code": 301,
-          "error_message": "Not a number type: bar or 10"
-        },
-        true])
-      expect(node.db.getValue("test/ai/foo")).to.equal("bar")
-    })
-  })
-
   describe("remove empty terminals (garbage collection)", () => {
     beforeEach(() => {
       emptyValues = {
@@ -1681,7 +1413,7 @@ describe("DB operations", () => {
         }
       };
       const valueResult = node.db.setValue("/test/empty_values/node_0", emptyValues);
-      console.log(`Result of setValue(): ${JSON.stringify(valueResult, null, 2)}`);
+      assert.deepEqual(valueResult, true);
 
       emptyRules = {
         "terminal_1a": null,
@@ -1700,7 +1432,7 @@ describe("DB operations", () => {
         }
       };
       const ruleResult = node.db.setRule("/test/empty_rules/node_0", emptyRules);
-      console.log(`Result of setRule(): ${JSON.stringify(ruleResult, null, 2)}`);
+      assert.deepEqual(ruleResult, true);
 
       emptyOwners = {
         "terminal_1a": null,
@@ -1728,18 +1460,18 @@ describe("DB operations", () => {
         }
       };
       const ownerResult = node.db.setOwner("/test/empty_owners/node_0", emptyOwners);
-      console.log(`Result of setOwner(): ${JSON.stringify(ownerResult, null, 2)}`);
+      assert.deepEqual(ownerResult, true);
     });
 
     afterEach(() => {
       const valueResult = node.db.setValue("/test/empty_values/node_0", null);
-      console.log(`Result of setValue(): ${JSON.stringify(valueResult, null, 2)}`);
+      assert.deepEqual(valueResult, true);
 
       const ruleResult = node.db.setRule("/test/empty_rules/node_0", null);
-      console.log(`Result of setRule(): ${JSON.stringify(ruleResult, null, 2)}`);
+      assert.deepEqual(ruleResult, true);
 
       const ownerResult = node.db.setRule("/test/empty_owners/node_0", null);
-      console.log(`Result of setOwner(): ${JSON.stringify(ownerResult, null, 2)}`);
+      assert.deepEqual(ownerResult, true);
     });
 
     it("when setValue() with non-empty value", () => {
@@ -1902,9 +1634,9 @@ describe("DB rule config", () => {
     dbValues["second_users"][node1.account.address]["something_else"] = "i can write";
 
     result = node1.db.setValue("test", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
     result = node2.db.setValue("test", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   })
 
   afterEach(() => {
@@ -2324,7 +2056,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setValue("test/test_sharding", dbValues);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbFuncs = {
       "some": {
@@ -2343,7 +2075,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setFunction("test/test_sharding", dbFuncs);
-    console.log(`Result of setFunction(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbRules = {
       "some": {
@@ -2359,7 +2091,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setRule("test/test_sharding", dbRules);
-    console.log(`Result of setRule(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
 
     dbOwners = {
       "some": {
@@ -2386,7 +2118,7 @@ describe("DB sharding config", () => {
       }
     };
     result = node.db.setOwner("test/test_sharding", dbOwners);
-    console.log(`Result of setOwner(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   })
 
   afterEach(() => {
@@ -2431,7 +2163,8 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = false", () => {
       expect(node.db.setValue(
-          "test/test_sharding/some/path/to/value", newValue, { addr: 'known_user' }))
+          "test/test_sharding/some/path/to/value", newValue, { addr: 'known_user' },
+          null, { extra: { executed_at: 123456789 }}))
         .to.equal(true);
       expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
     })
@@ -2439,14 +2172,15 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true", () => {
       expect(node.db.setValue(
           "apps/afan/test/test_sharding/some/path/to/value", newValue, { addr: 'known_user' },
-          null, null, true))
+          null, { extra: { executed_at: 123456789 }}, true))
         .to.equal(true);
       expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
     })
 
     it("setValue with isGlobal = true and non-existing path", () => {
       expect(node.db.setValue(
-          "some/non-existing/path", newValue, { addr: 'known_user' }, null, null, true))
+          "some/non-existing/path", newValue, { addr: 'known_user' },
+          null, { extra: { executed_at: 123456789 }}, true))
         .to.equal(true);
     })
 
@@ -2476,7 +2210,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.setValue(
           "apps/afan/test/test_sharding/shards/disabled_shard/path", 20, { addr: 'known_user' },
-          null, null, true))
+          null, { extra: { executed_at: 123456789 }}, true))
         .to.equal(true);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
         .to.equal(20);  // value changed
@@ -2484,7 +2218,8 @@ describe("DB sharding config", () => {
 
     it("incValue with isGlobal = false", () => {
       expect(node.db.incValue(
-          "test/test_sharding/some/path/to/number", incDelta, { addr: 'known_user' }))
+          "test/test_sharding/some/path/to/number", incDelta, { addr: 'known_user' },
+          null, { extra: { executed_at: 123456789 }}))
         .to.equal(true);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
     })
@@ -2492,7 +2227,7 @@ describe("DB sharding config", () => {
     it("incValue with isGlobal = true", () => {
       expect(node.db.incValue(
           "apps/afan/test/test_sharding/some/path/to/number", incDelta, { addr: 'known_user' },
-          null, null, true))
+          null, { extra: { executed_at: 123456789 }}, true))
         .to.equal(true);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
     })
@@ -2530,7 +2265,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.incValue(
           "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: 'known_user' },
-          null, null, true))
+          null, { extra: { executed_at: 123456789 }}, true))
         .to.equal(true);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
         .to.equal(15);  // value changed
@@ -2538,7 +2273,8 @@ describe("DB sharding config", () => {
 
     it("decValue with isGlobal = false", () => {
       expect(node.db.decValue(
-          "test/test_sharding/some/path/to/number", decDelta, { addr: 'known_user' }))
+          "test/test_sharding/some/path/to/number", decDelta, { addr: 'known_user' },
+          null, { extra: { executed_at: 123456789 }}))
         .to.equal(true);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
     })
@@ -2546,7 +2282,7 @@ describe("DB sharding config", () => {
     it("decValue with isGlobal = true", () => {
       expect(node.db.decValue(
           "apps/afan/test/test_sharding/some/path/to/number", decDelta, { addr: 'known_user' },
-          null, null, true))
+          null, { extra: { executed_at: 123456789 }}, true))
         .to.equal(true);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
     })
@@ -2584,7 +2320,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.decValue(
           "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: 'known_user' },
-          null, null, true))
+          null, { extra: { executed_at: 123456789 }}, true))
         .to.equal(true);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
         .to.equal(5);  // value changed
@@ -2992,7 +2728,7 @@ describe("Test proof with database", () => {
       }
     };
     result = node.db.setValue("test", valuesObject);
-    console.log(`Result of setValue(): ${JSON.stringify(result, null, 2)}`);
+    assert.deepEqual(result, true);
   });
 
   afterEach(() => {
@@ -3107,6 +2843,51 @@ describe("Test proof with database", () => {
       assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
       assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
       assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
+    });
+  });
+});
+
+describe("Transaction execution", () => {
+  let node;
+  let txBody;
+  let executableTx;
+  let objectTx;
+
+  beforeEach(() => {
+    rimraf.sync(CHAINS_DIR);
+
+    node = new BlockchainNode();
+    setNodeForTesting(node);
+
+    txBody = {
+      operation: {
+        type: 'SET_VALUE',
+        ref: '/test/some/path/for/tx',
+        value: 'some value',
+      },
+      nonce: -1,
+      timestamp: 1568798344000,
+    };
+    executableTx = Transaction.fromTxBody(txBody, node.account.private_key);
+    objectTx = Transaction.toJsObject(executableTx);
+  });
+
+  afterEach(() => {
+    rimraf.sync(CHAINS_DIR);
+  });
+
+  describe("executeTransaction()", () => {
+    it("returns true for executable transaction", () => {
+      expect(executableTx.extra).to.not.equal(undefined);
+      expect(executableTx.extra.executed_at).to.equal(null);
+      assert.equal(node.db.executeTransaction(executableTx), true);
+      // extra.executed_at is updated with a non-null value.
+      expect(executableTx.extra.executed_at).to.not.equal(null);
+    });
+
+    it("returns false for object transaction", () => {
+      assert.equal(node.db.executeTransaction(objectTx), false);
+      assert.equal(objectTx.extra, undefined);
     });
   });
 });

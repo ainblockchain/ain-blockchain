@@ -5,7 +5,7 @@ const expect = chai.expect;
 const { CHAINS_DIR } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
-const {setNodeForTesting, getTransaction} = require('./test-util');
+const { setNodeForTesting, getTransaction } = require('./test-util');
 const ChainUtil = require('../common/chain-util');
 const { msleep } = require('sleep');
 
@@ -117,6 +117,37 @@ describe('Transaction', () => {
       delete txBody.operation;
       const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
+    });
+  });
+
+  describe('isExecutable / toExecutable / toJsObject', () => {
+    it('isExecutable', () => {
+      expect(Transaction.isExecutable(null)).to.equal(false);
+      expect(Transaction.isExecutable(txBody)).to.equal(false);
+      expect(Transaction.isExecutable(tx)).to.equal(true);
+      expect(Transaction.isExecutable(Transaction.toJsObject(tx))).to.equal(false);
+      expect(Transaction.isExecutable(
+          Transaction.toExecutable(Transaction.toJsObject(tx)))).to.equal(true);
+    });
+
+    it('toJsObject', () => {
+      const jsObjectInput = Transaction.toJsObject(tx);
+      const jsObjectOutput = Transaction.toJsObject(Transaction.toExecutable(jsObjectInput));
+      assert.deepEqual(jsObjectOutput, jsObjectInput);
+    });
+
+    it('toExecutable', () => {
+      const executable = Transaction.toExecutable(Transaction.toJsObject(tx));
+      executable.extra.created_at = 'erased';
+      tx.extra.created_at = 'erased';
+      assert.deepEqual(executable, tx);
+    });
+
+    it('setExecutedAt', () => {
+      const executable = Transaction.toExecutable(Transaction.toJsObject(tx));
+      assert.equal(executable.extra.executed_at, null);
+      executable.setExecutedAt(123456789);
+      assert.equal(executable.extra.executed_at, 123456789);
     });
   });
 

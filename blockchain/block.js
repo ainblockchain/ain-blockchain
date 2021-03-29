@@ -275,7 +275,7 @@ class Block {
     const genesisTransactions = Block.getGenesisBlockData(
         GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
-      const res = tempGenesisDb.executeTransaction(tx);
+      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx));
       if (ChainUtil.transactionFailed(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)
