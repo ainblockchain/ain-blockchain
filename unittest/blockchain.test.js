@@ -7,7 +7,7 @@ const Blockchain = require('../blockchain/');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const { setNodeForTesting, getTransaction } = require('./test-util')
+const { setNodeForTesting, getTransaction } = require('./test-util');
 
 describe('Blockchain', () => {
   let node1, node2;
@@ -81,9 +81,10 @@ describe('Blockchain', () => {
           }
         });
         const lastBlock = node1.bc.lastBlock();
+        const finalRoot = node1.stateManager.getFinalRoot();
         const block = Block.create(
-            lastBlock.hash, [], node1.tp.getValidTransactions(), lastBlock.number + 1, i, '',
-            node1.account.address, []);
+            lastBlock.hash, [], node1.tp.getValidTransactions(), lastBlock.number + 1, i,
+            finalRoot.getProofHash(), node1.account.address, []);
         if (block.number === 500) {
           blockHash = block.hash;
         }
