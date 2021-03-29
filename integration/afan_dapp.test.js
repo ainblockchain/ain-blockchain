@@ -6,7 +6,7 @@ const sleep = require('sleep').msleep;
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
-const { BLOCKCHAINS_DIR } = require('../common/constants');
+const { CHAINS_DIR } = require('../common/constants');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
@@ -119,7 +119,7 @@ describe('DApp Test', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
   before(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
@@ -140,7 +140,7 @@ describe('DApp Test', () => {
     server3_proc.kill();
     server4_proc.kill();
 
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
   set_value = (ref, value) => {

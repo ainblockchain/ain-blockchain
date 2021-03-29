@@ -37,7 +37,7 @@ FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ l
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ json_rpc/ genesis-configs/ logger/ node/ tx-pool/ p2p/ package.json setup_node_gcp.sh setup_blockchain_ubuntu.sh start_node_gcp.sh"
 
 printf "\nRemoving redundant files..."
-rm -rf blockchain/blockchains logger/logs tracker-server/node_modules tracker-server/logs
+rm -rf chains logs
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"

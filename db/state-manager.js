@@ -144,15 +144,15 @@ class StateManager {
   }
 
   /**
-   * Renames the state tree's version of the given to-version. Each node's version of
-   * the state tree rooted with the given to-version is set with the to-version if its value
-   * is equal to the given from-version.
+   * Transfers a state version's state tree to another state version, i.e., each node's version of
+   * the state tree rooted at the given to-version is set to to-version if its version is equal to
+   * the given from-version.
    * 
    * @param {string} fromVersion state version to rename
    * @param {string} toVersion version of the state tree to apply the renaming
    */
-  renameVersion(fromVersion, toVersion) {
-    const LOG_HEADER = 'renameVersion';
+  transferStateTree(fromVersion, toVersion) {
+    const LOG_HEADER = 'transferStateTree';
     logger.debug(
         `[${LOG_HEADER}] Renaming version ${fromVersion} -> ${toVersion} (${this.numVersions()})`);
     if (!this.hasVersion(toVersion)) {
