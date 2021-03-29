@@ -15,6 +15,7 @@ const {
   GenesisSharding,
   StateVersions,
   FeatureFlags,
+  LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Blockchain = require('../blockchain');
@@ -381,7 +382,6 @@ class BlockchainNode {
     const LOG_HEADER = 'applyBlocksToDb';
 
     for (const block of blockList) {
-      // TODO(lia): validate the state proof of each block
       if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
             `${JSON.stringify(block, null, 2)}`);
@@ -391,6 +391,13 @@ class BlockchainNode {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
+      }
+      if (!LIGHTWEIGHT) {
+        if (db.stateRoot.getProofHash() !== block.state_proof_hash) {
+          logger.error(`[${LOG_HEADER}] Failed to validate state proof of block: ` +
+              `${JSON.stringify(block, null, 2)}`);
+          return false;
+        }
       }
     }
     return true;
@@ -428,8 +435,7 @@ class BlockchainNode {
     const baseVersion = this.stateManager.getFinalVersion();
     const tempVersion = this.stateManager.createUniqueVersionName(
         `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`);
-    const tempDb = this.createTempDb(
-        baseVersion, tempVersion, this.bc.lastBlockNumber());
+    const tempDb = this.createTempDb(baseVersion, tempVersion, this.bc.lastBlockNumber());
     const validBlocks = this.bc.getValidBlocks(chainSegment);
     if (validBlocks.length > 0) {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {
@@ -439,7 +445,6 @@ class BlockchainNode {
         return false;
       }
       for (const block of validBlocks) {
-        // TODO(lia): validate the state proof of each block
         if (!this.bc.addNewBlockToChain(block)) {
           logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
               `${JSON.stringify(block, null, 2)}`);

@@ -307,6 +307,20 @@ function updateProofHashForAllRootPaths(fullPath, root) {
   return updateProofHashForAllRootPathsRecursive(node);
 }
 
+function verifyProofHashForStateTree(stateTree) {
+  if (!stateTree.verifyProofHash()) {
+    return false;
+  }
+  if (!stateTree.getIsLeaf()) {
+    for (const childNode of stateTree.getChildNodes()) {
+      if (!verifyProofHashForStateTree(childNode)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 module.exports = {
   isEmptyNode,
   hasShardConfig,
@@ -332,4 +346,5 @@ module.exports = {
   equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
+  verifyProofHashForStateTree
 };

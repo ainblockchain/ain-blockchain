@@ -14,6 +14,7 @@ const {
   equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
+  verifyProofHashForStateTree
 } = require('../db/state-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
@@ -1363,6 +1364,54 @@ describe("state-util", () => {
       expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
       expect(rootClone.getProofHash()).to.equal(rootClone.buildProofHash());
       expect(rootClone.getProofHash()).to.equal(rootNode.getProofHash());
+    });
+  });
+
+  describe("verifyProofHashForStateTree", () => {
+    it("verify correct proof hashes as true", () => {
+      const jsObject = {
+        level0: {
+          level1: {
+            level2: {
+              foo: 'bar',
+              baz: 'caz'
+            }
+          },
+          another_route: {
+            test: -1000
+          }
+        }
+      };
+      const rootNode = StateNode.fromJsObject(jsObject);
+      setProofHashForStateTree(rootNode);
+      expect(verifyProofHashForStateTree(rootNode)).to.equal(true);
+    });
+
+    it("verify wrong proof hashes as false", () => {
+      const jsObject = {
+        level0: {
+          level11: {
+            level2: {
+              foo: 'bar',
+              baz: 'caz'
+            }
+          },
+          level12: {
+            level2: {
+              foo2: 'bar2'
+            }
+          },
+          another_route: {
+            test: -1000
+          }
+        }
+      };
+      const rootNode = StateNode.fromJsObject(jsObject);
+      const level0Node = rootNode.getChild('level0');
+      const level12Node = level0Node.getChild('level12');
+      setProofHashForStateTree(rootNode);
+      level12Node.setProofHash('0xdeadbeaf');
+      expect(verifyProofHashForStateTree(rootNode)).to.equal(false);
     });
   });
 })
