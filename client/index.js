@@ -144,7 +144,6 @@ app.get('/match_owner', (req, res, next) => {
     .end();
 });
 
-// TODO(seo): Add tests for body.fid.
 app.post('/eval_rule', (req, res, next) => {
   const body = req.body;
   const auth = {};
@@ -163,7 +162,6 @@ app.post('/eval_rule', (req, res, next) => {
     .end();
 });
 
-// TODO(seo): Add tests for body.fid.
 app.post('/eval_owner', (req, res, next) => {
   const body = req.body;
   const auth = {};

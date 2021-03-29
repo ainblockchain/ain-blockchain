@@ -2,14 +2,14 @@
 /* eslint func-call-spacing: "off" */
 /* eslint new-parens: "off" */
 const winston = require('winston');
-const {LoggingWinston} = require('@google-cloud/logging-winston');
+const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
-const {DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT} = require('../common/constants');
+const { LOGS_DIR, DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT } = require('../common/constants');
 
-const {combine, timestamp, label, printf, colorize} = winston.format;
+const { combine, timestamp, label, printf, colorize } = winston.format;
 
-const logDir = path.join(__dirname, '.', 'logs', String(PORT));
+const logDir = path.join(LOGS_DIR, String(PORT));
 const prefix = ACCOUNT_INDEX ? `node-${ACCOUNT_INDEX}-${PORT}` : `tracker-${PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
