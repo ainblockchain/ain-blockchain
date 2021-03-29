@@ -344,7 +344,9 @@ class BlockchainNode {
    */
   executeTransactionAndAddToPool(tx) {
     const LOG_HEADER = 'executeTransactionAndAddToPool';
-    logger.debug(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
+    if (FeatureFlags.enableRichTransactionLogging) {
+      logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
+    }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return ChainUtil.logAndReturnError(
           logger, 3,
@@ -357,9 +359,11 @@ class BlockchainNode {
     const executableTx = Transaction.toExecutable(tx);
     const result = this.executeOrRollbackTransaction(executableTx);
     if (ChainUtil.transactionFailed(result)) {
-      logger.info(
-          `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
-          `WITH RESULT:${JSON.stringify(result)}`);
+      if (FeatureFlags.enableRichTransactionLogging) {
+        logger.error(
+            `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
+            `WITH RESULT:${JSON.stringify(result)}`);
+      }
       const errorCode = _.get(result, 'code');
       if (errorCode === TX_NONCE_ERROR_CODE || errorCode === TX_TIMESTAMP_ERROR_CODE) {
         this.tp.addTransaction(executableTx);
