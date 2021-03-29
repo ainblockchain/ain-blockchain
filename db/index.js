@@ -442,7 +442,7 @@ class DB {
     this.writeDatabase(fullPath, valueCopy);
     // NOTE(lia): Allow chained function triggering but no circular calls.
     if (auth && (auth.addr || auth.fid)) {
-      this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, Date.now(), transaction);
+      this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
     }
 
     return true;
@@ -597,38 +597,6 @@ class DB {
     return ret;
   }
 
-  batch(txList) {
-    const resultList = [];
-    for (const tx of txList) {
-      const txBody = tx.tx_body;
-      if (!txBody) {
-        resultList.push(ChainUtil.returnError(801, 'No tx_body'));
-        continue;
-      }
-      const op = txBody.operation;
-      if (!op) {
-        resultList.push(ChainUtil.returnError(802, 'No operation'));
-        continue;
-      }
-      switch (op.type) {
-        case undefined:
-        case WriteDbOperations.SET_VALUE:
-        case WriteDbOperations.INC_VALUE:
-        case WriteDbOperations.DEC_VALUE:
-        case WriteDbOperations.SET_FUNCTION:
-        case WriteDbOperations.SET_RULE:
-        case WriteDbOperations.SET_OWNER:
-        case WriteDbOperations.SET:
-          // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-          resultList.push(this.executeOperation(op, { addr: tx.address }, txBody.timestamp, tx));
-          break;
-        default:
-          resultList.push(ChainUtil.returnError(803, `Invalid operation type: ${op.type}`));
-      }
-    }
-    return resultList;
-  }
-
   /**
    * Returns full path with given root node.
    */
@@ -725,25 +693,31 @@ class DB {
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
-    if (Transaction.isBatchTransaction(tx)) {
-      return this.batch(tx.tx_list);
+    // NOTE(seo): A transaction needs to be converted to an executable form before being executed.
+    if (!Transaction.isExecutable(tx)) {
+      logger.error(`[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`);
+      return false;
     }
+    // Record when the tx was executed.
+    tx.setExecutedAt(Date.now());
     const txBody = tx.tx_body;
     if (!txBody) {
       logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-    return this.executeOperation(txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
+    return this.executeOperation(
+        txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
   }
 
   executeTransactionList(txList) {
     const LOG_HEADER = 'executeTransactionList';
     for (const tx of txList) {
-      const res = this.executeTransaction(tx);
+      const executableTx = Transaction.toExecutable(tx);
+      const res = this.executeTransaction(executableTx);
       if (ChainUtil.transactionFailed(res)) {
         // FIXME: remove the failed transaction from tx pool?
-        logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(tx, null, 2)}` +
+        logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
         return false;
       }
