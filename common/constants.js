@@ -20,6 +20,8 @@ const FeatureFlags = {
   enableStateTreeTransfer: true,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
+  // Enables rich logging for transactions.
+  enableRichTransactionLogging: false,
 };
 
 // Environment variables.
