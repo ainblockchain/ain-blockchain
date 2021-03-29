@@ -1390,10 +1390,15 @@ describe("state-util", () => {
     it("verify wrong proof hashes as false", () => {
       const jsObject = {
         level0: {
-          level1: {
+          level11: {
             level2: {
               foo: 'bar',
               baz: 'caz'
+            }
+          },
+          level12: {
+            level2: {
+              foo2: 'bar2'
             }
           },
           another_route: {
@@ -1403,9 +1408,9 @@ describe("state-util", () => {
       };
       const rootNode = StateNode.fromJsObject(jsObject);
       const level0Node = rootNode.getChild('level0');
-      const level1Node = level0Node.getChild('level1');
+      const level12Node = level0Node.getChild('level12');
       setProofHashForStateTree(rootNode);
-      level1Node.setProofHash('0xdeadbeaf');
+      level12Node.setProofHash('0xdeadbeaf');
       expect(verifyProofHashForStateTree(rootNode)).to.equal(false);
     });
   });

@@ -308,16 +308,17 @@ function updateProofHashForAllRootPaths(fullPath, root) {
 }
 
 function verifyProofHashForStateTree(stateTree) {
-  let verification = true;
+  if (!stateTree.verifyProofHash()) {
+    return false;
+  }
   if (!stateTree.getIsLeaf()) {
     for (const childNode of stateTree.getChildNodes()) {
-      const decendantVerifications = verifyProofHashForStateTree(childNode);
-      verification = verification && stateTree.verifyProofHash() && decendantVerifications;
-      return verification;
+      if (!verifyProofHashForStateTree(childNode)) {
+        return false;
+      }
     }
-  } else {
-    return stateTree.verifyProofHash();
   }
+  return true;
 }
 
 module.exports = {
