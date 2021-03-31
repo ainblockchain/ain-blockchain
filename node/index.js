@@ -105,15 +105,15 @@ class BlockchainNode {
     if (finalizeVersion) {
       this.stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot);
+    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, this.stateManager);
   }
 
   destroyDb(db) {
     const LOG_HEADER = 'destroyDb';
 
     logger.info(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
-    db.deleteStateVersion(this.stateManager);
-    db.deleteBackupStateVersion(this.stateManager);
+    db.deleteStateVersion();
+    db.deleteBackupStateVersion();
   }
 
   syncDbAndNonce(newVersion) {
@@ -129,7 +129,7 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to clone the final state version: ` +
           `${this.stateManager.getFinalVersion()}`);
     }
-    this.db.setStateVersion(newVersion, clonedRoot, this.stateManager);
+    this.db.setStateVersion(newVersion, clonedRoot);
     const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
     this.nonce = newNonce;
     return true;
@@ -305,10 +305,10 @@ class BlockchainNode {
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
 
-    this.db.backupDb(this.stateManager);
+    this.db.backupDb();
     const result = this.db.executeTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
-      this.db.restoreDb(this.stateManager);
+      this.db.restoreDb();
     }
     return result;
   }

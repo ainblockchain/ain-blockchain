@@ -37,7 +37,7 @@ const RuleUtil = require('./rule-util');
 const _ = require('lodash');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot) {
+  constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot, stateManager) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -49,6 +49,7 @@ class DB {
     this.bc = bc;
     this.isNodeDb = isNodeDb;
     this.blockNumberSnapshot = blockNumberSnapshot;
+    this.stateManager = stateManager;
     this.ownerAddress = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   }
@@ -74,8 +75,8 @@ class DB {
    * @param {string} stateVersion state version
    * @param {StateNode} stateRoot state root
    */
-  setStateVersion(stateVersion, stateRoot, stateManager) {
-    this.deleteStateVersion(stateManager);
+  setStateVersion(stateVersion, stateRoot) {
+    this.deleteStateVersion();
 
     this.stateVersion = stateVersion;
     this.stateRoot = stateRoot;
@@ -87,8 +88,8 @@ class DB {
    * @param {string} stateVersion state version
    * @param {StateNode} stateRoot state root
    */
-  setBackupStateVersion(stateVersion, stateRoot, stateManager) {
-    this.deleteBackupStateVersion(stateManager);
+  setBackupStateVersion(stateVersion, stateRoot) {
+    this.deleteBackupStateVersion();
 
     this.backupStateVersion = stateVersion;
     this.backupStateRoot = stateRoot;
@@ -97,10 +98,14 @@ class DB {
   /**
    * Deletes state version with its state root.
    */
-  deleteStateVersion(stateManager) {
+  deleteStateVersion() {
     const LOG_HEADER = 'deleteStateVersion';
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return;
+    }
     if (this.stateVersion) {
-      if (!stateManager.deleteVersion(this.stateVersion)) {
+      if (!this.stateManager.deleteVersion(this.stateVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.stateVersion}`);
       }
     }
@@ -109,10 +114,14 @@ class DB {
   /**
    * Deletes backup state version with its state root.
    */
-  deleteBackupStateVersion(stateManager) {
+  deleteBackupStateVersion() {
     const LOG_HEADER = 'deleteBackupStateVersion';
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return;
+    }
     if (this.backupStateVersion) {
-      if (!stateManager.deleteVersion(this.backupStateVersion)) {
+      if (!this.stateManager.deleteVersion(this.backupStateVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.backupStateVersion}`);
       }
     }
@@ -121,37 +130,45 @@ class DB {
   /**
    * Backs up database.
    */
-  backupDb(stateManager) {
+  backupDb() {
     const LOG_HEADER = 'backupDb';
-    const backupVersion = stateManager.createUniqueVersionName(
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return;
+    }
+    const backupVersion = this.stateManager.createUniqueVersionName(
         `${StateVersions.BACKUP}:${this.lastBlockNumber()}`);
-    const backupRoot = stateManager.cloneVersion(this.stateVersion, backupVersion);
+    const backupRoot = this.stateManager.cloneVersion(this.stateVersion, backupVersion);
     if (!backupRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.stateVersion}`);
       return false;
     }
-    this.setBackupStateVersion(backupVersion, backupRoot, stateManager);
+    this.setBackupStateVersion(backupVersion, backupRoot);
     return true;
   }
 
   /**
    * Restores backup database.
    */
-  restoreDb(stateManager) {
+  restoreDb() {
     const LOG_HEADER = 'restoreDb';
-    const restoreVersion = stateManager.createUniqueVersionName(
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return;
+    }
+    const restoreVersion = this.stateManager.createUniqueVersionName(
       `${StateVersions.NODE}:${this.lastBlockNumber()}`);
-    const restoreRoot = stateManager.cloneVersion(this.backupStateVersion, restoreVersion);
+    const restoreRoot = this.stateManager.cloneVersion(this.backupStateVersion, restoreVersion);
     if (!restoreRoot) {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.backupStateVersion}`);
       return false;
     }
-    if (stateManager.isFinalVersion(this.stateVersion)) {
-      if (!stateManager.finalizeVersion(restoreVersion)) {
+    if (this.stateManager.isFinalVersion(this.stateVersion)) {
+      if (!this.stateManager.finalizeVersion(restoreVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to finalize version: ${restoreVersion}`);
       }
     }
-    this.setStateVersion(restoreVersion, restoreRoot, stateManager);
+    this.setStateVersion(restoreVersion, restoreRoot);
   }
 
   dumpDbStates() {
