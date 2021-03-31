@@ -12,7 +12,6 @@ const {
   WriteDbOperations,
   ReadDbOperations,
   PredefinedDbPaths,
-  MessageTypes,
   GenesisSharding,
   ShardingProperties,
   ProofProperties,
@@ -251,25 +250,16 @@ class Consensus {
 
   executeOrRollbackTransaction(db, tx, validTransactions, invalidTransactions) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
-    const dbVersion = db.stateVersion;
-    const backupVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.BACKUP}:${dbVersion}`);
-    const backupRoot = this.node.stateManager.cloneVersion(dbVersion, backupVersion);
-    if (!backupRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${dbVersion}`);
-      return false;
-    }
+    db.backupDb(this.node.stateManager);
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.transactionFailed(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
-      this.node.stateManager.deleteVersion(backupVersion);
     } else {
       logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
       invalidTransactions.push(tx);
-      db.setStateVersion(backupRoot, backupVersion);
-      this.node.stateManager.deleteVersion(dbVersion);
+      db.restoreDb(this.node.stateManager);
     }
     return true;
   }
