@@ -250,7 +250,7 @@ class Consensus {
 
   executeOrRollbackTransaction(db, tx, validTransactions, invalidTransactions) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
-    db.backupDb(this.node.stateManager);
+    db.backupDb();
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.transactionFailed(txRes)) {
@@ -259,7 +259,7 @@ class Consensus {
     } else {
       logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
       invalidTransactions.push(tx);
-      db.restoreDb(this.node.stateManager);
+      db.restoreDb();
     }
     return true;
   }
