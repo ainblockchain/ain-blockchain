@@ -112,8 +112,8 @@ class BlockchainNode {
     const LOG_HEADER = 'destroyDb';
 
     logger.info(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
-    db.clearStateVersion(this.stateManager);
-    db.clearBackupStateVersion(this.stateManager);
+    db.deleteStateVersion(this.stateManager);
+    db.deleteBackupStateVersion(this.stateManager);
   }
 
   syncDbAndNonce(newVersion) {
@@ -129,8 +129,7 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to clone the final state version: ` +
           `${this.stateManager.getFinalVersion()}`);
     }
-    this.db.clearStateVersion(this.stateManager);
-    this.db.setStateVersion(newVersion, clonedRoot);
+    this.db.setStateVersion(newVersion, clonedRoot, this.stateManager);
     const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
     this.nonce = newNonce;
     return true;

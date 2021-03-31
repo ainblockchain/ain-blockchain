@@ -74,7 +74,9 @@ class DB {
    * @param {string} stateVersion state version
    * @param {StateNode} stateRoot state root
    */
-  setStateVersion(stateVersion, stateRoot) {
+  setStateVersion(stateVersion, stateRoot, stateManager) {
+    this.deleteStateVersion(stateManager);
+
     this.stateVersion = stateVersion;
     this.stateRoot = stateRoot;
   }
@@ -85,35 +87,35 @@ class DB {
    * @param {string} stateVersion state version
    * @param {StateNode} stateRoot state root
    */
-  setBackupStateVersion(stateVersion, stateRoot) {
+  setBackupStateVersion(stateVersion, stateRoot, stateManager) {
+    this.deleteBackupStateVersion(stateManager);
+
     this.backupStateVersion = stateVersion;
     this.backupStateRoot = stateRoot;
   }
 
   /**
-   * Clears state version with its state root.
+   * Deletes state version with its state root.
    */
-  clearStateVersion(stateManager) {
-    const LOG_HEADER = 'clearStateVersion';
+  deleteStateVersion(stateManager) {
+    const LOG_HEADER = 'deleteStateVersion';
     if (this.stateVersion) {
       if (!stateManager.deleteVersion(this.stateVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.stateVersion}`);
       }
     }
-    this.setStateVersion(null, null);
   }
 
   /**
-   * Clears backup state version with its state root.
+   * Deletes backup state version with its state root.
    */
-  clearBackupStateVersion(stateManager) {
-    const LOG_HEADER = 'clearBackupStateVersion';
+  deleteBackupStateVersion(stateManager) {
+    const LOG_HEADER = 'deleteBackupStateVersion';
     if (this.backupStateVersion) {
       if (!stateManager.deleteVersion(this.backupStateVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.backupStateVersion}`);
       }
     }
-    this.setBackupStateVersion(null, null);
   }
 
   /**
@@ -128,8 +130,7 @@ class DB {
       logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.stateVersion}`);
       return false;
     }
-    this.clearBackupStateVersion(stateManager);
-    this.setBackupStateVersion(backupVersion, backupRoot);
+    this.setBackupStateVersion(backupVersion, backupRoot, stateManager);
     return true;
   }
 
@@ -150,8 +151,7 @@ class DB {
         logger.error(`[${LOG_HEADER}] Failed to finalize version: ${restoreVersion}`);
       }
     }
-    this.clearStateVersion(stateManager);
-    this.setStateVersion(restoreVersion, restoreRoot);
+    this.setStateVersion(restoreVersion, restoreRoot, stateManager);
   }
 
   dumpDbStates() {
