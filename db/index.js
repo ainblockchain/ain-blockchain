@@ -1,5 +1,6 @@
 const logger = require('../logger')('DATABASE');
 const {
+  FeatureFlags,
   AccountProperties,
   ReadDbOperations,
   WriteDbOperations,
@@ -10,7 +11,7 @@ const {
   ShardingProperties,
   GenesisAccounts,
   GenesisSharding,
-  FeatureFlags,
+  StateVersions,
   LIGHTWEIGHT,
   buildOwnerPermissions,
 } = require('../common/constants');
@@ -41,6 +42,8 @@ class DB {
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
     this.stateVersion = stateVersion;
+    this.backupStateRoot = null;
+    this.backupStateVersion = null;
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this, tp);
     this.bc = bc;
@@ -63,6 +66,92 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
       [RuleProperties.WRITE]: true
     });
+  }
+
+  /**
+   * Sets state version with its state root.
+   * 
+   * @param {string} stateVersion state version
+   * @param {StateNode} stateRoot state root
+   */
+  setStateVersion(stateVersion, stateRoot) {
+    this.stateVersion = stateVersion;
+    this.stateRoot = stateRoot;
+  }
+
+  /**
+   * Sets backup state version with its state root.
+   * 
+   * @param {string} stateVersion state version
+   * @param {StateNode} stateRoot state root
+   */
+  setBackupStateVersion(stateVersion, stateRoot) {
+    this.backupStateVersion = stateVersion;
+    this.backupStateRoot = stateRoot;
+  }
+
+  /**
+   * Clears state version with its state root.
+   */
+  clearStateVersion(stateManager) {
+    const LOG_HEADER = 'clearStateVersion';
+    if (this.stateVersion) {
+      if (!stateManager.deleteVersion(this.stateVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.stateVersion}`);
+      }
+    }
+    this.setStateVersion(null, null);
+  }
+
+  /**
+   * Clears backup state version with its state root.
+   */
+  clearBackupStateVersion(stateManager) {
+    const LOG_HEADER = 'clearBackupStateVersion';
+    if (this.backupStateVersion) {
+      if (!stateManager.deleteVersion(this.backupStateVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.backupStateVersion}`);
+      }
+    }
+    this.setBackupStateVersion(null, null);
+  }
+
+  /**
+   * Backs up database.
+   */
+  backupDb(stateManager) {
+    const LOG_HEADER = 'backupDb';
+    const backupVersion = stateManager.createUniqueVersionName(
+        `${StateVersions.BACKUP}:${this.lastBlockNumber()}`);
+    const backupRoot = stateManager.cloneVersion(this.stateVersion, backupVersion);
+    if (!backupRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.stateVersion}`);
+      return false;
+    }
+    this.clearBackupStateVersion(stateManager);
+    this.setBackupStateVersion(backupVersion, backupRoot);
+    return true;
+  }
+
+  /**
+   * Restores backup database.
+   */
+  restoreDb(stateManager) {
+    const LOG_HEADER = 'restoreDb';
+    const restoreVersion = stateManager.createUniqueVersionName(
+      `${StateVersions.NODE}:${this.lastBlockNumber()}`);
+    const restoreRoot = stateManager.cloneVersion(this.backupStateVersion, restoreVersion);
+    if (!restoreRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.backupStateVersion}`);
+      return false;
+    }
+    if (stateManager.isFinalVersion(this.stateVersion)) {
+      if (!stateManager.finalizeVersion(restoreVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to finalize version: ${restoreVersion}`);
+      }
+    }
+    this.clearStateVersion(stateManager);
+    this.setStateVersion(restoreVersion, restoreRoot);
   }
 
   dumpDbStates() {
@@ -634,17 +723,6 @@ class DB {
     const globalPath = parsedPath.slice();
     globalPath.unshift(...this.shardingPath);
     return globalPath;
-  }
-
-  /**
-   * Sets state version with its state root.
-   * 
-   * @param {StateNode} stateRoot state root
-   * @param {string} stateVersion state version
-   */
-  setStateVersion(stateRoot, stateVersion) {
-    this.stateRoot = stateRoot;
-    this.stateVersion = stateVersion;
   }
 
   executeOperation(op, auth, timestamp, tx) {
