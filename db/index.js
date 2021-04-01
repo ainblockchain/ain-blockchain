@@ -1,5 +1,6 @@
 const logger = require('../logger')('DATABASE');
 const {
+  FeatureFlags,
   AccountProperties,
   ReadDbOperations,
   WriteDbOperations,
@@ -10,7 +11,7 @@ const {
   ShardingProperties,
   GenesisAccounts,
   GenesisSharding,
-  FeatureFlags,
+  StateVersions,
   LIGHTWEIGHT,
   buildOwnerPermissions,
 } = require('../common/constants');
@@ -36,16 +37,19 @@ const RuleUtil = require('./rule-util');
 const _ = require('lodash');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot) {
+  constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot, stateManager) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
     this.stateVersion = stateVersion;
+    this.backupStateRoot = null;
+    this.backupStateVersion = null;
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this, tp);
     this.bc = bc;
     this.isNodeDb = isNodeDb;
     this.blockNumberSnapshot = blockNumberSnapshot;
+    this.stateManager = stateManager;
     this.ownerAddress = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   }
@@ -63,6 +67,141 @@ class DB {
     this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
       [RuleProperties.WRITE]: true
     });
+  }
+
+  /**
+   * Sets state version with its state root.
+   * 
+   * @param {string} stateVersion state version
+   * @param {StateNode} stateRoot state root
+   */
+  setStateVersion(stateVersion, stateRoot) {
+    const LOG_HEADER = 'setStateVersion';
+    if (!this.stateVersion === stateVersion) {
+      logger.error(`[${LOG_HEADER}] State version already set with version: ${stateVersion}`);
+      return false;
+    }
+    if (this.backupStateVersion === stateVersion) {
+      logger.error(
+          `[${LOG_HEADER}] State version equals to backup state version: ${stateVersion}`);
+      return false;
+    }
+    this.deleteStateVersion();
+
+    this.stateVersion = stateVersion;
+    this.stateRoot = stateRoot;
+
+    return true;
+  }
+
+  /**
+   * Sets backup state version with its state root.
+   * 
+   * @param {string} backupStateVersion backup state version
+   * @param {StateNode} backupStateRoot backup state root
+   */
+  setBackupStateVersion(backupStateVersion, backupStateRoot) {
+    const LOG_HEADER = 'setBackupStateVersion';
+    if (!this.backupStateVersion === backupStateVersion) {
+      logger.error(
+          `[${LOG_HEADER}] Backup state version already set with version: ${backupStateVersion}`);
+      return false;
+    }
+    if (this.stateVersion === backupStateVersion) {
+      logger.error(
+          `[${LOG_HEADER}] Backup state version equals to state version: ${backupStateVersion}`);
+      return false;
+    }
+    this.deleteBackupStateVersion();
+
+    this.backupStateVersion = backupStateVersion;
+    this.backupStateRoot = backupStateRoot;
+
+    return true;
+  }
+
+  /**
+   * Deletes state version with its state root.
+   */
+  deleteStateVersion() {
+    const LOG_HEADER = 'deleteStateVersion';
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return false;
+    }
+    if (this.stateVersion) {
+      if (!this.stateManager.deleteVersion(this.stateVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.stateVersion}`);
+      }
+      this.stateVersion = null;
+      this.stateRoot = null;
+    }
+    return true;
+  }
+
+  /**
+   * Deletes backup state version with its state root.
+   */
+  deleteBackupStateVersion() {
+    const LOG_HEADER = 'deleteBackupStateVersion';
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return false;
+    }
+    if (this.backupStateVersion) {
+      if (!this.stateManager.deleteVersion(this.backupStateVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.backupStateVersion}`);
+      }
+      this.backupStateVersion = null;
+      this.backupStateRoot = null;
+    }
+    return true;
+  }
+
+  /**
+   * Backs up database.
+   */
+  backupDb() {
+    const LOG_HEADER = 'backupDb';
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return false;
+    }
+    const backupVersion = this.stateManager.createUniqueVersionName(
+        `${StateVersions.BACKUP}:${this.lastBlockNumber()}`);
+    const backupRoot = this.stateManager.cloneVersion(this.stateVersion, backupVersion);
+    if (!backupRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.stateVersion}`);
+      return false;
+    }
+    this.setBackupStateVersion(backupVersion, backupRoot);
+    return true;
+  }
+
+  /**
+   * Restores backup database.
+   */
+  restoreDb() {
+    const LOG_HEADER = 'restoreDb';
+    if (!this.stateManager) {
+      logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
+      return false;
+    }
+    const restoreVersion = this.stateManager.createUniqueVersionName(
+      `${StateVersions.NODE}:${this.lastBlockNumber()}`);
+    const restoreRoot = this.stateManager.cloneVersion(this.backupStateVersion, restoreVersion);
+    if (!restoreRoot) {
+      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${this.backupStateVersion}`);
+      return false;
+    }
+    if (this.stateManager.isFinalVersion(this.stateVersion)) {
+      if (!this.stateManager.finalizeVersion(restoreVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to finalize version: ${restoreVersion}`);
+      }
+    }
+    this.setStateVersion(restoreVersion, restoreRoot);
+    this.deleteBackupStateVersion();
+    return true;
   }
 
   dumpDbStates() {
@@ -634,17 +773,6 @@ class DB {
     const globalPath = parsedPath.slice();
     globalPath.unshift(...this.shardingPath);
     return globalPath;
-  }
-
-  /**
-   * Sets state version with its state root.
-   * 
-   * @param {StateNode} stateRoot state root
-   * @param {string} stateVersion state version
-   */
-  setStateVersion(stateRoot, stateVersion) {
-    this.stateRoot = stateRoot;
-    this.stateVersion = stateVersion;
   }
 
   executeOperation(op, auth, timestamp, tx) {

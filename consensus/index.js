@@ -12,7 +12,6 @@ const {
   WriteDbOperations,
   ReadDbOperations,
   PredefinedDbPaths,
-  MessageTypes,
   GenesisSharding,
   ShardingProperties,
   ProofProperties,
@@ -249,27 +248,24 @@ class Consensus {
     }
   }
 
-  executeOrRollbackTransaction(db, tx, validTransactions, invalidTransactions) {
-    const LOG_HEADER = 'executeOrRollbackTransaction';
-    const dbVersion = db.stateVersion;
-    const backupVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.BACKUP}:${dbVersion}`);
-    const backupRoot = this.node.stateManager.cloneVersion(dbVersion, backupVersion);
-    if (!backupRoot) {
-      logger.error(`[${LOG_HEADER}] Failed to clone state version: ${dbVersion}`);
-      return false;
+  executeOrRollbackTransactionForBlock(db, tx, validTransactions, invalidTransactions) {
+    const LOG_HEADER = 'executeOrRollbackTransactionForBlock';
+    if (!db.backupDb()) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
     }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.transactionFailed(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
-      this.node.stateManager.deleteVersion(backupVersion);
     } else {
       logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
       invalidTransactions.push(tx);
-      db.setStateVersion(backupRoot, backupVersion);
-      this.node.stateManager.deleteVersion(dbVersion);
+      if (!db.restoreDb()) {
+        logger.error(
+            `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
+      }
     }
     return true;
   }
@@ -322,8 +318,8 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     for (const tx of transactions) {
-      const res =
-          this.executeOrRollbackTransaction(tempDb, tx, validTransactions, invalidTransactions);
+      const res = this.executeOrRollbackTransactionForBlock(
+          tempDb, tx, validTransactions, invalidTransactions);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;

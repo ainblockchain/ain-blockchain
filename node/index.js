@@ -105,14 +105,15 @@ class BlockchainNode {
     if (finalizeVersion) {
       this.stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot);
+    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, this.stateManager);
   }
 
   destroyDb(db) {
     const LOG_HEADER = 'destroyDb';
 
     logger.info(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
-    return this.stateManager.deleteVersion(db.stateVersion);
+    db.deleteStateVersion();
+    db.deleteBackupStateVersion();
   }
 
   syncDbAndNonce(newVersion) {
@@ -128,12 +129,7 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to clone the final state version: ` +
           `${this.stateManager.getFinalVersion()}`);
     }
-    this.db.setStateVersion(clonedRoot, newVersion);
-    if (oldVersion) {
-      if (!this.stateManager.deleteVersion(oldVersion)) {
-        logger.error(`[${LOG_HEADER}] Failed to delete version: ${oldVersion}`);
-      }
-    }
+    this.db.setStateVersion(newVersion, clonedRoot);
     const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
     this.nonce = newNonce;
     return true;
@@ -308,31 +304,16 @@ class BlockchainNode {
    */
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
-
-    const backupVersion = this.stateManager.createUniqueVersionName(
-        `${StateVersions.BACKUP}:${this.bc.lastBlockNumber()}`);
-    const backupRoot = this.stateManager.cloneVersion(this.db.stateVersion, backupVersion);
-    if (!backupRoot) {
+    if (!this.db.backupDb()) {
       return ChainUtil.logAndReturnError(
-          logger, 11, `[${LOG_HEADER}] Failed to clone state version: ${this.db.stateVersion}`,
-          0);
+          logger, 3,
+          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
     }
     const result = this.db.executeTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
-      // Changes are rolled back.
-      if (this.stateManager.isFinalVersion(this.db.stateVersion)) {
-        if (!this.stateManager.finalizeVersion(backupVersion)) {
-          logger.error(`[${LOG_HEADER}] Failed to finalize version: ${backupVersion}`);
-        }
-      }
-      const prevDbStateVersion = this.db.stateVersion;
-      this.db.setStateVersion(backupRoot, backupVersion);
-      if (!this.stateManager.deleteVersion(prevDbStateVersion)) {
-        logger.error(`[${LOG_HEADER}] Failed to delete version: ${prevDbStateVersion}`);
-      }
-    } else {
-      if (!this.stateManager.deleteVersion(backupVersion)) {
-        logger.error(`[${LOG_HEADER}] Failed to delete version: ${backupVersion}`);
+      if (!this.db.restoreDb()) {
+        logger.error(
+          `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
       }
     }
     return result;
@@ -349,12 +330,12 @@ class BlockchainNode {
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return ChainUtil.logAndReturnError(
-          logger, 3,
+          logger, 1,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.state !== BlockchainNodeStates.SERVING) {
       return ChainUtil.logAndReturnError(
-          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
+          logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
     const result = this.executeOrRollbackTransaction(executableTx);
