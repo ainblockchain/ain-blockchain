@@ -2892,72 +2892,122 @@ describe("State version handling", () => {
       expect(node.db.deleteBackupStateVersion()).to.equal(true);
       const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const child21 = child2.getChild('child_21');
+      const child212 = child21.getChild('child_212');
 
       expect(
           DB.getRefForReading(node.db.stateRoot,
-          ['values', 'test', 'child_2', 'child_21'])).to.not.equal(null);
+          ['values', 'test', 'child_2', 'child_21', 'child_212'])).to.not.equal(null);
 
       // The nodes on the path are not affected.
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
+      const newChild212 = newChild21.getChild('child_212');
       expect(newChild2 === child2).to.equal(true);
       expect(newChild21 === child21).to.equal(true);
+      expect(newChild212 === child212).to.equal(true);
     });
   });
 
   describe("getRefForWriting", () => {
-    it("the nodes with a single parent on the path are not cloned", () => {
-      // First referencing to make the number of roots = 1.
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+    it("the nodes of single access path are not cloned", () => {
+      // First referencing to make the number of access paths = 1.
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
       const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const child21 = child2.getChild('child_21');
+      const child212 = child21.getChild('child_212');
 
       // Second referencing.
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
-      // The nodes on the path are cloned.
+      // The nodes on the path are not cloned.
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
+      const newChild212 = newChild21.getChild('child_212');
       expect(newChild2 === child2).to.equal(true);
       expect(newChild21 === child21).to.equal(true);
+      expect(newChild212 === child212).to.equal(true);
     });
 
-    it("the nodes with multiple roots on the path are cloned", () => {
-      // Add another root to make the number of roots = 2.
-      assert.deepEqual(node.db.backupDb(), true);
+    it("the nodes of multiple access paths are cloned - multiple roots", () => {
+      // Make the number of roots = 2.
+      const otherRoot = node.stateManager.cloneVersion(node.db.stateVersion, 'new version');
+      expect(otherRoot).to.not.equal(null);
       const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const child21 = child2.getChild('child_21');
+      const child212 = child21.getChild('child_212');
 
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path are cloned.
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
-      expect(newChild2 === child2).to.equal(false);
-      expect(newChild21 === child21).to.equal(false);
+      const newChild212 = newChild21.getChild('child_212');
+      expect(newChild2 === child2).to.equal(false);  // Cloned.
+      expect(newChild21 === child21).to.equal(false);  // Cloned.
+      expect(newChild212 === child212).to.equal(false);  // Cloned.
     });
 
-    it("the paths from other roots are not affected", () => {
-      assert.deepEqual(node.db.backupDb(), true);
+    it("the nodes of multiple access paths are cloned - multiple parents case 1", () => {
+      const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const child21 = child2.getChild('child_21');
+      const child212 = child21.getChild('child_212');
+      // Make child21's number of parents = 2.
+      const clonedChild2 = child2.clone('new version');
 
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+          .to.not.equal(null);
+
+      // Only the nodes of multiple paths are cloned.
+      const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const newChild21 = newChild2.getChild('child_21');
+      const newChild212 = newChild21.getChild('child_212');
+      expect(newChild2 === child2).to.equal(true);  // Not cloned.
+      expect(newChild21 === child21).to.equal(false);  // Cloned.
+      expect(newChild212 === child212).to.equal(false);  // Cloned.
+    });
+
+    it("the nodes of multiple access paths are cloned - multiple parents case 2", () => {
+      const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const child21 = child2.getChild('child_21');
+      const child212 = child21.getChild('child_212');
+      // Make child212's number of parents = 2.
+      const clonedChild21 = child21.clone('new version');
+
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+          .to.not.equal(null);
+
+      // Only the nodes of multiple paths are cloned.
+      const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const newChild21 = newChild2.getChild('child_21');
+      const newChild212 = newChild21.getChild('child_212');
+      expect(newChild2 === child2).to.equal(true);  // Not cloned.
+      expect(newChild21 === child21).to.equal(true);  // Not cloned
+      expect(newChild212 === child212).to.equal(false);  // Cloned.
+    });
+
+    it("the on other ref paths are not affected", () => {
+      const otherRoot = node.stateManager.cloneVersion(node.db.stateVersion, 'new version');
+      expect(otherRoot).to.not.equal(null);
+      const beforeOtherChild2 = otherRoot.getChild('values').getChild('test').getChild('child_2');
+      const beforeOtherChild21 = beforeOtherChild2.getChild('child_21');
+      const beforeOtherChild212 = beforeOtherChild21.getChild('child_212');
+
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path from other roots are not affected.
-      const backupChild2 =
-          node.db.backupStateRoot.getChild('values').getChild('test').getChild('child_2');
-      const backupChild21 = backupChild2.getChild('child_21');
-      const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
-      const newChild21 = newChild2.getChild('child_21');
-      expect(newChild2 === backupChild2).to.equal(false);
-      expect(newChild21 === backupChild21).to.equal(false);
+      const afterOtherChild2 = otherRoot.getChild('values').getChild('test').getChild('child_2');
+      const afterOtherChild21 = afterOtherChild2.getChild('child_21');
+      const afterOtherChild212 = afterOtherChild21.getChild('child_212');
+      expect(afterOtherChild2 === beforeOtherChild2).to.equal(true);
+      expect(afterOtherChild21 === beforeOtherChild21).to.equal(true);
+      expect(afterOtherChild212 === beforeOtherChild212).to.equal(true);
 
       // The state values of other roots are not affected.
-      assert.deepEqual(
-          node.db.backupStateRoot.getChild('values').getChild('test').toJsObject(), dbValues);
+      assert.deepEqual(otherRoot.getChild('values').getChild('test').toJsObject(), dbValues);
     });
   });
 

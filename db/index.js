@@ -281,6 +281,8 @@ class DB {
       if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
+          // NOTE(seo): The nodes with multiple ref paths should be cloned in order not to affect
+          //            other ref paths to this node.
           if (maxNumParents > 1 || child.numParents() > 1) {
             const clonedChild = child.clone(this.stateVersion);
             clonedChild.resetValue();
