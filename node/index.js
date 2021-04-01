@@ -319,7 +319,6 @@ class BlockchainNode {
     return result;
   }
 
-
   /**
    * Executes a transaction and add it to the transaction pool if the execution was successful.
    * @param {Object} tx transaction
