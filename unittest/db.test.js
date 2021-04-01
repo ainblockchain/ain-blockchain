@@ -2906,12 +2906,32 @@ describe("State version handling", () => {
   });
 
   describe("getRefForWriting", () => {
-    it("the nodes on the path are cloned", () => {
+    it("the nodes with a single parent on the path are not cloned", () => {
+      // First referencing to make the number of roots = 1.
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+          .to.not.equal(null);
       const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const child21 = child2.getChild('child_21');
 
-      expect(
-          node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21'])).to.not.equal(null);
+      // Second referencing.
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+          .to.not.equal(null);
+
+      // The nodes on the path are cloned.
+      const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const newChild21 = newChild2.getChild('child_21');
+      expect(newChild2 === child2).to.equal(true);
+      expect(newChild21 === child21).to.equal(true);
+    });
+
+    it("the nodes with multiple roots on the path are cloned", () => {
+      // Add another root to make the number of roots = 2.
+      assert.deepEqual(node.db.backupDb(), true);
+      const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const child21 = child2.getChild('child_21');
+
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+          .to.not.equal(null);
 
       // The nodes on the path are cloned.
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
@@ -2923,8 +2943,8 @@ describe("State version handling", () => {
     it("the paths from other roots are not affected", () => {
       assert.deepEqual(node.db.backupDb(), true);
 
-      expect(
-          node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21'])).to.not.equal(null);
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21']))
+          .to.not.equal(null);
 
       // The nodes on the path from other roots are not affected.
       const backupChild2 =
@@ -2932,8 +2952,8 @@ describe("State version handling", () => {
       const backupChild21 = backupChild2.getChild('child_21');
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
-      assert.strictEqual(newChild2 === backupChild2, false);
-      assert.strictEqual(newChild21 === backupChild21, false);
+      expect(newChild2 === backupChild2).to.equal(false);
+      expect(newChild21 === backupChild21).to.equal(false);
 
       // The state values of other roots are not affected.
       assert.deepEqual(

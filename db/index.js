@@ -275,20 +275,27 @@ class DB {
    */
   getRefForWriting(fullPath) {
     let node = this.stateRoot;
+    let maxNumParents = node.numParents();
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
-          const clonedChild = child.clone(this.stateVersion);
-          clonedChild.resetValue();
-          node.setChild(label, clonedChild);
-          node = clonedChild;
+          if (maxNumParents > 1 || child.numParents() > 1) {
+            const clonedChild = child.clone(this.stateVersion);
+            clonedChild.resetValue();
+            node.setChild(label, clonedChild);
+            node = clonedChild;
+          } else {
+            child.resetValue();
+            node = child;
+          }
         } else {
           const newChild = new StateNode(this.stateVersion);
           node.setChild(label, newChild);
           node = newChild;
         }
+        maxNumParents = Math.max(maxNumParents, node.numParents());
       } else {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
