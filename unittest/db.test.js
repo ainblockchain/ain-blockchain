@@ -2876,7 +2876,7 @@ describe("Transaction execution", () => {
     rimraf.sync(CHAINS_DIR);
   });
 
-  describe("executeTransaction()", () => {
+  describe("executeTransaction", () => {
     it("returns true for executable transaction", () => {
       expect(executableTx.extra).to.not.equal(undefined);
       expect(executableTx.extra.executed_at).to.equal(null);
@@ -2888,6 +2888,32 @@ describe("Transaction execution", () => {
     it("returns false for object transaction", () => {
       assert.equal(node.db.executeTransaction(objectTx), false);
       assert.equal(objectTx.extra, undefined);
+    });
+  });
+
+  // TODO(seo): Uncomment after bug fix: https://github.com/ainblockchain/ain-blockchain/issues/297
+  describe("backupDb / restoreDb", () => {
+    it("backuped values are restored", () => {
+      /*
+      assert.deepEqual(node.db.setValue('/test/some/path', { 'to': 'some value' }), true);
+      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some value' });
+      */
+      assert.deepEqual(node.db.getValue('/test/some/path'), null);
+      assert.equal(node.db.backupDb(), true);
+      expect(node.db.backupStateVersion).to.not.equal(null);
+      expect(node.db.backupStateRoot).to.not.equal(null);
+      /*
+      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some value' });
+      */
+      assert.deepEqual(node.db.setValue('/test/some/path', { 'to': 'some other value' }), true);
+      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some other value' });
+      assert.equal(node.db.restoreDb(), true);
+      expect(node.db.backupStateVersion).to.equal(null);
+      expect(node.db.backupStateRoot).to.equal(null);
+      /*
+      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some value' });
+      */
+      assert.deepEqual(node.db.getValue('/test/some/path'), null);
     });
   });
 });
