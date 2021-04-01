@@ -15,7 +15,7 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 // Feature flags.
 const FeatureFlags = {
   // Forces console logging.
-  forceConsoleLogging: true,
+  forceConsoleLogging: false,
   // Enables state version optimization.
   enableStateVersionOpt: true,
   // Enables state tree transfer.
