@@ -248,9 +248,12 @@ class Consensus {
     }
   }
 
-  executeOrRollbackTransaction(db, tx, validTransactions, invalidTransactions) {
-    const LOG_HEADER = 'executeOrRollbackTransaction';
-    db.backupDb();
+  executeOrRollbackTransactionForBlock(db, tx, validTransactions, invalidTransactions) {
+    const LOG_HEADER = 'executeOrRollbackTransactionForBlock';
+    if (!db.backupDb()) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
+    }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.transactionFailed(txRes)) {
@@ -259,7 +262,10 @@ class Consensus {
     } else {
       logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
       invalidTransactions.push(tx);
-      db.restoreDb();
+      if (!db.restoreDb()) {
+        logger.error(
+            `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
+      }
     }
     return true;
   }
@@ -312,8 +318,8 @@ class Consensus {
     const validTransactions = [];
     const invalidTransactions = [];
     for (const tx of transactions) {
-      const res =
-          this.executeOrRollbackTransaction(tempDb, tx, validTransactions, invalidTransactions);
+      const res = this.executeOrRollbackTransactionForBlock(
+          tempDb, tx, validTransactions, invalidTransactions);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;

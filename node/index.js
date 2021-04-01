@@ -304,11 +304,17 @@ class BlockchainNode {
    */
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
-
-    this.db.backupDb();
+    if (!this.db.backupDb()) {
+      return ChainUtil.logAndReturnError(
+          logger, 3,
+          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
+    }
     const result = this.db.executeTransaction(tx);
     if (ChainUtil.transactionFailed(result)) {
-      this.db.restoreDb();
+      if (!this.db.restoreDb()) {
+        logger.error(
+          `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
+      }
     }
     return result;
   }
@@ -325,12 +331,12 @@ class BlockchainNode {
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return ChainUtil.logAndReturnError(
-          logger, 3,
+          logger, 1,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.state !== BlockchainNodeStates.SERVING) {
       return ChainUtil.logAndReturnError(
-          logger, 1, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
+          logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
     const result = this.executeOrRollbackTransaction(executableTx);

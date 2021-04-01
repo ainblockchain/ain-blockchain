@@ -76,23 +76,48 @@ class DB {
    * @param {StateNode} stateRoot state root
    */
   setStateVersion(stateVersion, stateRoot) {
+    const LOG_HEADER = 'setStateVersion';
+    if (!this.stateVersion === stateVersion) {
+      logger.error(`[${LOG_HEADER}] State version already set with version: ${stateVersion}`);
+      return false;
+    }
+    if (this.backupStateVersion === stateVersion) {
+      logger.error(
+          `[${LOG_HEADER}] State version equals to backup state version: ${stateVersion}`);
+      return false;
+    }
     this.deleteStateVersion();
 
     this.stateVersion = stateVersion;
     this.stateRoot = stateRoot;
+
+    return true;
   }
 
   /**
    * Sets backup state version with its state root.
    * 
-   * @param {string} stateVersion state version
-   * @param {StateNode} stateRoot state root
+   * @param {string} backupStateVersion backup state version
+   * @param {StateNode} backupStateRoot backup state root
    */
-  setBackupStateVersion(stateVersion, stateRoot) {
+  setBackupStateVersion(backupStateVersion, backupStateRoot) {
+    const LOG_HEADER = 'setBackupStateVersion';
+    if (!this.backupStateVersion === backupStateVersion) {
+      logger.error(
+          `[${LOG_HEADER}] Backup state version already set with version: ${backupStateVersion}`);
+      return false;
+    }
+    if (this.stateVersion === backupStateVersion) {
+      logger.error(
+          `[${LOG_HEADER}] Backup state version equals to state version: ${backupStateVersion}`);
+      return false;
+    }
     this.deleteBackupStateVersion();
 
-    this.backupStateVersion = stateVersion;
-    this.backupStateRoot = stateRoot;
+    this.backupStateVersion = backupStateVersion;
+    this.backupStateRoot = backupStateRoot;
+
+    return true;
   }
 
   /**
@@ -102,13 +127,16 @@ class DB {
     const LOG_HEADER = 'deleteStateVersion';
     if (!this.stateManager) {
       logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
-      return;
+      return false;
     }
     if (this.stateVersion) {
       if (!this.stateManager.deleteVersion(this.stateVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.stateVersion}`);
       }
+      this.stateVersion = null;
+      this.stateRoot = null;
     }
+    return true;
   }
 
   /**
@@ -118,13 +146,16 @@ class DB {
     const LOG_HEADER = 'deleteBackupStateVersion';
     if (!this.stateManager) {
       logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
-      return;
+      return false;
     }
     if (this.backupStateVersion) {
       if (!this.stateManager.deleteVersion(this.backupStateVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete version: ${this.backupStateVersion}`);
       }
+      this.backupStateVersion = null;
+      this.backupStateRoot = null;
     }
+    return true;
   }
 
   /**
@@ -134,7 +165,7 @@ class DB {
     const LOG_HEADER = 'backupDb';
     if (!this.stateManager) {
       logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
-      return;
+      return false;
     }
     const backupVersion = this.stateManager.createUniqueVersionName(
         `${StateVersions.BACKUP}:${this.lastBlockNumber()}`);
@@ -154,7 +185,7 @@ class DB {
     const LOG_HEADER = 'restoreDb';
     if (!this.stateManager) {
       logger.error(`[${LOG_HEADER}] No state manager: ${this.stateManager}`);
-      return;
+      return false;
     }
     const restoreVersion = this.stateManager.createUniqueVersionName(
       `${StateVersions.NODE}:${this.lastBlockNumber()}`);
@@ -169,6 +200,8 @@ class DB {
       }
     }
     this.setStateVersion(restoreVersion, restoreRoot);
+    this.deleteBackupStateVersion();
+    return true;
   }
 
   dumpDbStates() {
