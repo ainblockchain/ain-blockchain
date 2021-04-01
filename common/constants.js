@@ -14,6 +14,8 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
 // Feature flags.
 const FeatureFlags = {
+  // Forces console logging.
+  forceConsoleLogging: true,
   // Enables state version optimization.
   enableStateVersionOpt: true,
   // Enables state tree transfer.
@@ -26,9 +28,10 @@ const FeatureFlags = {
 
 // Environment variables.
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
-const CONSOLE_LOG = process.env.CONSOLE_LOG ? !!process.env.CONSOLE_LOG : false;
-const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
-    process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const CONSOLE_LOG = FeatureFlags.forceConsoleLogging ||
+    (process.env.CONSOLE_LOG ? !!process.env.CONSOLE_LOG : false);
+const COMCOM_HOST_EXTERNAL_IP =
+    process.env.COMCOM_HOST_EXTERNAL_IP ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
