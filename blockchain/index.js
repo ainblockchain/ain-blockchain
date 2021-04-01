@@ -285,6 +285,9 @@ class Blockchain {
     if (!Number.isInteger(to) || to < 0) {
       to = this.lastBlockNumber() + 1;
     }
+    if (to - from > CHAIN_SEGMENT_LENGTH) { // Note: To prevent large query
+      to = from + CHAIN_SEGMENT_LENGTH;
+    }
     const chain = [];
     const blockPaths = BlockFileUtil.getBlockPaths(this.blockchainPath, from, to);
     blockPaths.forEach((blockPath) => {
