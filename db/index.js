@@ -280,15 +280,10 @@ class DB {
       if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
-          if (child.getVersion() === this.stateVersion) {
-            child.resetValue();
-            node = child;
-          } else {
-            const clonedChild = child.clone(this.stateVersion);
-            clonedChild.resetValue();
-            node.setChild(label, clonedChild);
-            node = clonedChild;
-          }
+          const clonedChild = child.clone(this.stateVersion);
+          clonedChild.resetValue();
+          node.setChild(label, clonedChild);
+          node = clonedChild;
         } else {
           const newChild = new StateNode(this.stateVersion);
           node.setChild(label, newChild);
