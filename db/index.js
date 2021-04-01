@@ -273,27 +273,42 @@ class DB {
   /**
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
+  // NOTE(seo): The nodes with multiple ref paths should be cloned in order not to affect
+  //            other ref paths to the altered node.
+  //
+  // Typical case:
+  // - root_a has subtree child_1a -> child_2 -> child_3 
+  // - root_b has subtree child_1b -> child_2 -> child_3 (child_2 and child_3 are shared)
+  // - Want to change child_3 -> child_3a from root_a
+  // 
+  // Expected behavior:
+  // - Shared node child_2 is cloned along with child_3
+  // - Reference from root_a: child_1a -> child_2a -> child_3a
+  // - Reference from root_b: child_1b -> child_2 -> child_3 (not affected)
+  //
   getRefForWriting(fullPath) {
     let node = this.stateRoot;
+    let maxNumParents = node.numParents();
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
-          if (child.getVersion() === this.stateVersion) {
-            child.resetValue();
-            node = child;
-          } else {
+          if (maxNumParents > 1 || child.numParents() > 1) {
             const clonedChild = child.clone(this.stateVersion);
             clonedChild.resetValue();
             node.setChild(label, clonedChild);
             node = clonedChild;
+          } else {
+            child.resetValue();
+            node = child;
           }
         } else {
           const newChild = new StateNode(this.stateVersion);
           node.setChild(label, newChild);
           node = newChild;
         }
+        maxNumParents = Math.max(maxNumParents, node.numParents());
       } else {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
