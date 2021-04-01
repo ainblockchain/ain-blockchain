@@ -106,8 +106,8 @@ describe('Blockchain', () => {
     it('can be queried by index', () => {
       assert.deepEqual(JSON.stringify(node1.bc.getChainSection(10, 30)),
           JSON.stringify(blocks.slice(9, 29)));
-      assert.deepEqual(JSON.stringify(node1.bc.getChainSection(980, 1010)),
-          JSON.stringify(blocks.slice(979, 1010)));
+      assert.deepEqual(JSON.stringify(node1.bc.getChainSection(980, 1000)),
+          JSON.stringify(blocks.slice(979, 999)));
     });
 
     it('can be queried by block number', () => {
