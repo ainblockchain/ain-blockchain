@@ -2847,6 +2847,120 @@ describe("Test proof with database", () => {
   });
 });
 
+describe("State version handling", () => {
+  let node;
+  let dbValues;
+
+  beforeEach(() => {
+    rimraf.sync(CHAINS_DIR);
+
+    node = new BlockchainNode();
+    setNodeForTesting(node);
+
+    dbValues = {
+      "child_1": {
+        "child_11": {
+          "child_111": "value_111",
+          "child_112": "value_112",
+        },
+        "child_12": {
+          "child_121": "value_121",
+          "child_122": "value_122",
+        }
+      },
+      "child_2": {
+        "child_21": {
+          "child_211": "value_211",
+          "child_212": "value_212",
+        },
+        "child_22": {
+          "child_221": "value_221",
+          "child_222": "value_222",
+        }
+      }
+    };
+    result = node.db.setValue("test", dbValues);
+    assert.deepEqual(result, true);
+  });
+
+  afterEach(() => {
+    rimraf.sync(CHAINS_DIR);
+  });
+
+  describe("getRefForReading", () => {
+    it("the nodes on the path are not affected", () => {
+      expect(node.db.deleteBackupStateVersion()).to.equal(true);
+      const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const child21 = child2.getChild('child_21');
+
+      expect(
+          DB.getRefForReading(node.db.stateRoot,
+          ['values', 'test', 'child_2', 'child_21'])).to.not.equal(null);
+
+      // The nodes on the path are not affected.
+      const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const newChild21 = newChild2.getChild('child_21');
+      expect(newChild2 === child2).to.equal(true);
+      expect(newChild21 === child21).to.equal(true);
+    });
+  });
+
+  describe("getRefForWriting", () => {
+    it("the nodes on the path are cloned", () => {
+      const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const child21 = child2.getChild('child_21');
+
+      expect(
+          node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21'])).to.not.equal(null);
+
+      // The nodes on the path are cloned.
+      const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const newChild21 = newChild2.getChild('child_21');
+      expect(newChild2 === child2).to.equal(false);
+      expect(newChild21 === child21).to.equal(false);
+    });
+
+    it("the paths from other roots are not affected", () => {
+      assert.deepEqual(node.db.backupDb(), true);
+
+      expect(
+          node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21'])).to.not.equal(null);
+
+      // The nodes on the path from other roots are not affected.
+      const backupChild2 =
+          node.db.backupStateRoot.getChild('values').getChild('test').getChild('child_2');
+      const backupChild21 = backupChild2.getChild('child_21');
+      const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
+      const newChild21 = newChild2.getChild('child_21');
+      assert.strictEqual(newChild2 === backupChild2, false);
+      assert.strictEqual(newChild21 === backupChild21, false);
+
+      // The state values of other roots are not affected.
+      assert.deepEqual(
+          node.db.backupStateRoot.getChild('values').getChild('test').toJsObject(), dbValues);
+    });
+  });
+
+  describe("backupDb / restoreDb", () => {
+    it("backuped states are restored", () => {
+      assert.deepEqual(node.db.getValue('test'), dbValues);
+
+      assert.equal(node.db.backupDb(), true);
+      expect(node.db.backupStateVersion).to.not.equal(null);
+      expect(node.db.backupStateRoot).to.not.equal(null);
+      assert.deepEqual(node.db.getValue('test'), dbValues);
+      assert.deepEqual(
+          node.db.setValue('/test/child_2/child_21', { 'new_child': 'new_value' }), true);
+      assert.deepEqual(node.db.getValue('/test/child_2/child_21'), { 'new_child': 'new_value' });
+
+      assert.equal(node.db.restoreDb(), true);
+      expect(node.db.backupStateVersion).to.equal(null);
+      expect(node.db.backupStateRoot).to.equal(null);
+      assert.deepEqual(node.db.getValue('test'), dbValues);
+    });
+  });
+});
+
 describe("Transaction execution", () => {
   let node;
   let txBody;
@@ -2888,32 +3002,6 @@ describe("Transaction execution", () => {
     it("returns false for object transaction", () => {
       assert.equal(node.db.executeTransaction(objectTx), false);
       assert.equal(objectTx.extra, undefined);
-    });
-  });
-
-  // TODO(seo): Uncomment after bug fix: https://github.com/ainblockchain/ain-blockchain/issues/297
-  describe("backupDb / restoreDb", () => {
-    it("backuped values are restored", () => {
-      /*
-      assert.deepEqual(node.db.setValue('/test/some/path', { 'to': 'some value' }), true);
-      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some value' });
-      */
-      assert.deepEqual(node.db.getValue('/test/some/path'), null);
-      assert.equal(node.db.backupDb(), true);
-      expect(node.db.backupStateVersion).to.not.equal(null);
-      expect(node.db.backupStateRoot).to.not.equal(null);
-      /*
-      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some value' });
-      */
-      assert.deepEqual(node.db.setValue('/test/some/path', { 'to': 'some other value' }), true);
-      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some other value' });
-      assert.equal(node.db.restoreDb(), true);
-      expect(node.db.backupStateVersion).to.equal(null);
-      expect(node.db.backupStateRoot).to.equal(null);
-      /*
-      assert.deepEqual(node.db.getValue('/test/some/path'), { 'to': 'some value' });
-      */
-      assert.deepEqual(node.db.getValue('/test/some/path'), null);
     });
   });
 });
