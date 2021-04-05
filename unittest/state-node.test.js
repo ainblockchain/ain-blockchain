@@ -8,6 +8,7 @@ const { HASH_DELIMITER } = require('../common/constants');
 
 describe("state-node", () => {
   let node;
+
   let child1;
   let child2;
   let child3;
@@ -316,6 +317,7 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
+      // Tree info (proof hash, tree size, tree depth) is not updated.
       assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(true), {
         ".version": "ver1",
         ".version:bool": "ver1",
@@ -341,6 +343,14 @@ describe("state-node", () => {
         ".proofHash:number": null,
         ".proofHash:str": null,
         ".proofHash:undef": null,
+        ".treeDepth": 1,
+        ".treeDepth:bool": 1,
+        ".treeDepth:empty_obj": 1,
+        ".treeDepth:empty_str": 1,
+        ".treeDepth:null": 1,
+        ".treeDepth:number": 1,
+        ".treeDepth:str": 1,
+        ".treeDepth:undef": 1,
         ".treeSize": 1,
         ".treeSize:bool": 1,
         ".treeSize:empty_obj": 1,
@@ -381,6 +391,14 @@ describe("state-node", () => {
           ".proofHash:number": null,
           ".proofHash:str": null,
           ".proofHash:undef": null,
+          ".treeDepth": 1,
+          ".treeDepth:bool": 1,
+          ".treeDepth:empty_obj": 1,
+          ".treeDepth:empty_str": 1,
+          ".treeDepth:null": 1,
+          ".treeDepth:number": 1,
+          ".treeDepth:str": 1,
+          ".treeDepth:undef": 1,
           ".treeSize": 1,
           ".treeSize:bool": 1,
           ".treeSize:empty_obj": 1,
@@ -422,6 +440,14 @@ describe("state-node", () => {
           ".proofHash:number": null,
           ".proofHash:str": null,
           ".proofHash:undef": null,
+          ".treeDepth": 1,
+          ".treeDepth:bool": 1,
+          ".treeDepth:empty_obj": 1,
+          ".treeDepth:empty_str": 1,
+          ".treeDepth:null": 1,
+          ".treeDepth:number": 1,
+          ".treeDepth:str": 1,
+          ".treeDepth:undef": 1,
           ".treeSize": 1,
           ".treeSize:bool": 1,
           ".treeSize:empty_obj": 1,
@@ -982,35 +1008,68 @@ describe("state-node", () => {
     });
   });
 
-  describe("updateProofHashAndTreeSize", () => {
+  describe("computeTreeDepth", () => {
     it("leaf node", () => {
       node.setValue(true);
-      node.updateProofHashAndTreeSize();
+      expect(node.computeTreeDepth()).to.equal(1);
+      node.setValue(10);
+      expect(node.computeTreeDepth()).to.equal(1);
+      node.setValue(-200);
+      expect(node.computeTreeDepth()).to.equal(1);
+      node.setValue('');
+      expect(node.computeTreeDepth()).to.equal(1);
+      node.setValue('unittest');
+      expect(node.computeTreeDepth()).to.equal(1);
+      node.setValue(null);
+      expect(node.computeTreeDepth()).to.equal(1);
+      node.setValue(undefined);
+      expect(node.computeTreeDepth()).to.equal(1);
+    });
+
+    it("internal node", () => {
+      child1.setTreeDepth(1);
+      child2.setTreeDepth(2);
+      child3.setTreeDepth(3);
+      expect(stateTree.computeTreeDepth()).to.equal(4);
+    });
+  });
+
+  describe("updateProofHashAndTreeInfo", () => {
+    it("leaf node", () => {
+      node.setValue(true);
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(10);
-      node.updateProofHashAndTreeSize();
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(-200);
-      node.updateProofHashAndTreeSize();
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue('');
-      node.updateProofHashAndTreeSize();
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue('unittest');
-      node.updateProofHashAndTreeSize();
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(null);
-      node.updateProofHashAndTreeSize();
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(undefined);
-      node.updateProofHashAndTreeSize();
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
     });
 
@@ -1018,11 +1077,15 @@ describe("state-node", () => {
       child1.setProofHash('proofHash1');
       child2.setProofHash('proofHash2');
       child3.setProofHash('proofHash3');
+      child1.setTreeDepth(1);
+      child2.setTreeDepth(2);
+      child3.setTreeDepth(3);
       child1.setTreeSize(2);
       child2.setTreeSize(3);
       child3.setTreeSize(5);
-      node.updateProofHashAndTreeSize();
+      node.updateProofHashAndTreeInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
+      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
     });
   });
