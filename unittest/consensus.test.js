@@ -47,20 +47,20 @@ describe("Consensus", () => {
 
   it("Staked nodes can vote", () => {
     const addr = node1.account.address;
-    const depositTx = getTransaction(node1,
+    const stakeTx = getTransaction(node1,
       { operation: 
         { 
           type: 'SET_VALUE', 
-          ref: `/deposit/consensus/${addr}/key1/value`, 
+          ref: `/staking/consensus/${addr}/0/stake/key1/value`, 
           value: 200
         } 
       }
     );
-    addBlock(node1, [depositTx], [], {});
+    addBlock(node1, [stakeTx], [], {});
     const lastBlock = node1.bc.lastBlock();
     const voteTx = getTransaction(node1,
       { operation: 
-        { 
+        {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number}/vote/${addr}`,
           value: { block_hash: lastBlock.hash, stake: 200 }
