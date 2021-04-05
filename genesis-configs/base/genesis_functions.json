@@ -25,22 +25,6 @@
       }
     }
   },
-  "deposit": {
-    "$service": {
-      "$user_addr": {
-        "$deposit_id": {
-          "value": {
-            ".function": {
-              "_deposit": {
-                "function_type": "NATIVE",
-                "function_id": "_deposit"
-              }
-            }
-          }
-        }
-      }
-    }
-  },
   "escrow": {
     "$source_account": {
       "$target_account": {
@@ -77,8 +61,22 @@
       }
     }
   },
+  "manage_app": {
+    "$app_name": {
+      "create": {
+        "$record_id": {
+          ".function": {
+            "_createApp": {
+              "function_type": "NATIVE",
+              "function_id": "_createApp"
+            }
+          }
+        }
+      }
+    }
+  },
   "payments": {
-    "$service": {
+    "$service_name": {
       "$user_addr": {
         "$payment_key": {
           "pay": {
@@ -105,6 +103,38 @@
       }
     }
   },
+  "staking": {
+    "$service_name": {
+      "$user_addr": {
+        "$staking_key": {
+          "stake": {
+            "$record_id": {
+              "value": {
+                ".function": {
+                  "_stake": {
+                    "function_type": "NATIVE",
+                    "function_id": "_stake"
+                  }
+                }
+              }
+            }
+          },
+          "unstake": {
+            "$record_id": {
+              "value": {
+                ".function": {
+                  "_unstake": {
+                    "function_type": "NATIVE",
+                    "function_id": "_unstake"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "transfer": {
     "$from": {
       "$to": {
@@ -114,22 +144,6 @@
               "_transfer": {
                 "function_type": "NATIVE",
                 "function_id": "_transfer"
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "withdraw":{
-    "$service": {
-      "$user_addr": {
-        "$withdraw_id": {
-          "value": {
-            ".function": {
-              "_withdraw": {
-                "function_type": "NATIVE",
-                "function_id": "_withdraw"
               }
             }
           }
