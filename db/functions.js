@@ -6,7 +6,6 @@ const {
   FunctionTypes,
   FunctionResultCode,
   NativeFunctionIds,
-  DefaultValues,
   ShardingProperties,
   GenesisSharding,
   WriteDbOperations,
@@ -46,8 +45,8 @@ class Functions {
         func: this._claim.bind(this), ownerOnly: true },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
         func: this._closeCheckin.bind(this), ownerOnly: true },
-      [NativeFunctionIds.DEPOSIT]: {
-        func: this._deposit.bind(this), ownerOnly: true },
+      [NativeFunctionIds.CREATE_APP]: {
+        func: this._createApp.bind(this), ownerOnly: true },
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true },
       [NativeFunctionIds.OPEN_CHECKIN]: {
@@ -60,12 +59,14 @@ class Functions {
         func: this._release.bind(this), ownerOnly: true },
       [NativeFunctionIds.SAVE_LAST_TX]: {
         func: this._saveLastTx.bind(this), ownerOnly: false },
+      [NativeFunctionIds.STAKE]: {
+        func: this._stake.bind(this), ownerOnly: true },
+      [NativeFunctionIds.UNSTAKE]: {
+        func: this._unstake.bind(this), ownerOnly: true },
       [NativeFunctionIds.TRANSFER]: {
         func: this._transfer.bind(this), ownerOnly: true },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false },
-      [NativeFunctionIds.WITHDRAW]: {
-        func: this._withdraw.bind(this), ownerOnly: true },
     };
     this.callStack= [];
   }
@@ -389,8 +390,8 @@ class Functions {
   }
 
   /**
-   * Adds a transfer entry from a service account to a regular account or vice versa. Used by 
-   * service-related native functions such as payments, deposit, and withdraw.
+   * Adds a transfer entry from a service account to a regular account or vice versa. Used by
+   * service-related native functions such as payments and staking
    */
   setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
     if (ChainUtil.isServAcntName(to)) {
@@ -453,34 +454,81 @@ class Functions {
     }
   }
 
-  // TODO(lia): migrate from /deposit_accounts/{serviceName}/{userAddr}/value to
-  // /service_accounts/deposit/{serviceName}/{userAddr}/balance.
-  _deposit(value, context) {
-    const service = context.params.service;
+  _createApp(value, context) {
+    const appName = context.params.app_name;
+    const recordId = context.params.record_id;
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+    const resultPath = this.getCreateAppResultPath(appName, recordId);
+    const lockupDurationKey = `${PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE}.` +
+        `${PredefinedDbPaths.STAKING}.${PredefinedDbPaths.STAKING_LOCKUP_DURATION}`;
+    const lockupDurationVal = _.get(value, lockupDurationKey);
+    if (!ChainUtil.isDict(_.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN)) ||
+        !ChainUtil.isNumber(lockupDurationVal)) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return;
+    }
+    const sanitizedVal = {};
+    const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
+    const billingUsersConfig = _.get(value,
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}.${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}`);
+    const serviceConfig = {
+      [PredefinedDbPaths.STAKING]: {
+        [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: lockupDurationVal
+      }
+    };
+    if (adminConfig) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
+    }
+    if (billingUsersConfig) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingUsersConfig;
+    }
+    if (serviceConfig) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
+    };
+    const manageAppConfigPath = this.getManageAppConfigPath(appName);
+    const setConfigRes = this.setValueOrLog(
+        manageAppConfigPath, sanitizedVal, auth, timestamp, transaction);
+    if (setConfigRes === true) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+    }
+  }
+
+  _stake(value, context) {
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
-    const depositId = context.params.deposit_id;
+    const stakingKey = context.params.staking_key;
+    const recordId = context.params.record_id;
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-
-    const resultPath = this.getDepositResultPath(service, user, depositId);
-    const depositCreatedAtPath = this.getDepositCreatedAtPath(service, user, depositId);
-    this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp, transaction);
+    const resultPath = this.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
+    const expirationPath = this.getStakingExpirationPath(serviceName, user, stakingKey);
+    const lockup = this.db.getValue(this.getStakingLockupDurationPath(serviceName));
     if (timestamp > executedAt) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
-    const userBalancePath = ChainUtil.getBalancePath(user);
-    const depositAmountPath = this.getDepositAmountPath(service, user);
-    const transferResult =
-        this.transferInternal(userBalancePath, depositAmountPath, value, context);
+    if (value === 0) {
+      // Just update the expiration time
+      this.setValueOrLog(
+        expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return;
+    }
+    const stakingServiceAccountName = ChainUtil.toServiceAccountName(
+          PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
+    const transferResult = this.setServiceAccountTransferOrLog(
+        user, stakingServiceAccountName, value, auth, timestamp, transaction);
     if (transferResult === true) {
-      const lockup = this.db.getValue(this.getDepositLockupDurationPath(service)) ||
-          DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
-      const expirationPath = this.getDepositExpirationPath(service, user);
       this.setValueOrLog(
           expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
+      const balanceTotalPath = this.getStakingBalanceTotalPath(serviceName);
+      this.incValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
@@ -489,38 +537,35 @@ class Functions {
     }
   }
 
-  // TODO(lia): migrate from /deposit_accounts/{serviceName}/{userAddr}/value to
-  // /service_accounts/deposit/{serviceName}/{userAddr}/balance.
-  _withdraw(value, context) {
-    const service = context.params.service;
+  _unstake(value, context) {
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
-    const withdrawId = context.params.withdraw_id;
+    const stakingKey = context.params.staking_key;
+    const recordId = context.params.record_id;
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-
-    const depositAmountPath = this.getDepositAmountPath(service, user);
-    const userBalancePath = ChainUtil.getBalancePath(user);
-    const resultPath = this.getWithdrawResultPath(service, user, withdrawId);
-    const withdrawCreatedAtPath = this.getWithdrawCreatedAtPath(service, user, withdrawId);
-    const expireAt = this.db.getValue(this.getDepositExpirationPath(service, user));
-    this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp, transaction);
+    const resultPath = this.getStakingUnstakeResultPath(serviceName, user, stakingKey, recordId);
+    const expireAt = this.db.getValue(this.getStakingExpirationPath(serviceName, user, stakingKey));
     if (expireAt > executedAt) {
       // Still in lock-up period.
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
       return;
     }
-    if (service === PredefinedDbPaths.CONSENSUS) {
-      // Reject withdrawing consensus deposits if it reduces the number of validators to less than
+    if (serviceName === PredefinedDbPaths.CONSENSUS) {
+      // Reject withdrawing consensus stakes if it reduces the number of validators to less than
       // MIN_NUM_VALIDATORS.
       const whitelist = this.db.getValue(
           ChainUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST]));
       let numValidators = 0;
       Object.keys(whitelist).forEach((address) => {
-        const deposit = this.db.getValue(
-            ChainUtil.formatPath([PredefinedDbPaths.DEPOSIT_CONSENSUS, address]));
-        if (deposit && deposit.value > MIN_STAKE_PER_VALIDATOR) {
+        const accountName = ChainUtil.toServiceAccountName(
+            PredefinedDbPaths.STAKING, serviceName, `${address}|0`);
+        const stakingAccount = this.db.getValue(
+            ChainUtil.formatPath([PredefinedDbPaths.SERVICE_ACCOUNTS, PredefinedDbPaths.STAKING,
+                PredefinedDbPaths.CONSENSUS, accountName]));
+        if (stakingAccount && stakingAccount.balance > MIN_STAKE_PER_VALIDATOR) {
           numValidators++;
         }
       });
@@ -529,12 +574,15 @@ class Functions {
         return;
       }
     }
-    const transferResult =
-        this.transferInternal(depositAmountPath, userBalancePath, value, context);
+    const stakingServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
+    const transferResult = this.setServiceAccountTransferOrLog(
+        stakingServiceAccountName, user, value, auth, timestamp, transaction);
     if (transferResult === true) {
+      const balanceTotalPath = this.getStakingBalanceTotalPath(serviceName);
+      this.decValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
-      // Not enough deposit.
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -542,7 +590,7 @@ class Functions {
   }
 
   _pay(value, context) {
-    const service = context.params.service;
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
@@ -550,7 +598,7 @@ class Functions {
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-    const resultPath = this.getPaymentPayRecordResultPath(service, user, paymentKey, recordId);
+    const resultPath = this.getPaymentPayRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
@@ -558,7 +606,7 @@ class Functions {
     }
 
     const userServiceAccountName = ChainUtil.toServiceAccountName(
-        PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
+        PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
         transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
@@ -569,7 +617,7 @@ class Functions {
   }
 
   _claim(value, context) {
-    const service = context.params.service;
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
@@ -577,7 +625,7 @@ class Functions {
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-    const resultPath = this.getPaymentClaimRecordResultPath(service, user, paymentKey, recordId);
+    const resultPath = this.getPaymentClaimRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
@@ -586,7 +634,7 @@ class Functions {
 
     let result;
     const userServiceAccountName = ChainUtil.toServiceAccountName(
-        PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
+        PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     // NOTE: By specifying `escrow_key`, the claimed payment is held in escrow instead of being
     // transferred directly to the admin account
     if (value.escrow_key !== undefined) {
@@ -939,63 +987,73 @@ class Functions {
       `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_RESULT}`);
   }
 
-  getDepositLockupDurationPath(service) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/` +
-        `${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
+  getCreateAppResultPath(appName, recordId) {
+    return `${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CREATE}/` +
+        `${recordId}/${PredefinedDbPaths.MANAGE_APP_RESULT}`;
   }
 
-  getDepositAmountPath(service, user) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
-        `${PredefinedDbPaths.DEPOSIT_VALUE}`);
+  getManageAppConfigPath(appName) {
+    return `${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}`;
   }
 
-  getDepositExpirationPath(service, user) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
-        `${PredefinedDbPaths.DEPOSIT_EXPIRE_AT}`);
+  getStakingLockupDurationPath(serviceName) {
+    return (
+        `${PredefinedDbPaths.MANAGE_APP}/${serviceName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE}/${PredefinedDbPaths.STAKING}/` +
+        `${PredefinedDbPaths.STAKING_LOCKUP_DURATION}`);
   }
 
-  getDepositCreatedAtPath(service, user, depositId) {
-    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
-        `${PredefinedDbPaths.DEPOSIT_CREATED_AT}`);
+  getStakingExpirationPath(serviceName, user, stakingKey) {
+    return (`${PredefinedDbPaths.STAKING}/${serviceName}/${user}/${stakingKey}/` +
+        `${PredefinedDbPaths.STAKING_EXPIRE_AT}`);
   }
 
-  getDepositResultPath(service, user, depositId) {
-    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
-        `${PredefinedDbPaths.DEPOSIT_RESULT}`);
+  getStakingStakeRecordPath(serviceName, user, stakingKey, recordId) {
+    return (`${PredefinedDbPaths.STAKING}/${serviceName}/${user}/${stakingKey}/` +
+        `${PredefinedDbPaths.STAKING_STAKE}/${recordId}`);
   }
 
-  getWithdrawCreatedAtPath(service, user, withdrawId) {
-    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
-        `${PredefinedDbPaths.WITHDRAW_CREATED_AT}`);
+  getStakingUnstakeRecordPath(serviceName, user, stakingKey, recordId) {
+    return (`${PredefinedDbPaths.STAKING}/${serviceName}/${user}/${stakingKey}/` +
+        `${PredefinedDbPaths.STAKING_UNSTAKE}/${recordId}`);
   }
 
-  getWithdrawResultPath(service, user, withdrawId) {
-    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
-        `${PredefinedDbPaths.WITHDRAW_RESULT}`);
+  getStakingStakeResultPath(serviceName, user, stakingKey, recordId) {
+    return (`${this.getStakingStakeRecordPath(serviceName, user, stakingKey, recordId)}/` +
+        `${PredefinedDbPaths.STAKING_RESULT}`);
   }
 
-  getPaymentServiceAdminPath(service) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${PredefinedDbPaths.PAYMENTS_CONFIG}/` +
+  getStakingUnstakeResultPath(serviceName, user, stakingKey, recordId) {
+    return (`${this.getStakingUnstakeRecordPath(serviceName, user, stakingKey, recordId)}/` +
+        `${PredefinedDbPaths.STAKING_RESULT}`);
+  }
+
+  getStakingBalanceTotalPath(serviceName) {
+    return `${PredefinedDbPaths.STAKING}/${serviceName}/${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`;
+  }
+
+  getPaymentServiceAdminPath(serviceName) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${serviceName}/${PredefinedDbPaths.PAYMENTS_CONFIG}/` +
         `${PredefinedDbPaths.PAYMENTS_ADMIN}`);
   }
 
-  getPaymentPayRecordPath(service, user, paymentKey, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
+  getPaymentPayRecordPath(serviceName, user, paymentKey, recordId) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${serviceName}/${user}/${paymentKey}/` +
         `${PredefinedDbPaths.PAYMENTS_PAY}/${recordId}`);
   }
 
-  getPaymentClaimRecordPath(service, user, paymentKey, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
+  getPaymentClaimRecordPath(serviceName, user, paymentKey, recordId) {
+    return (`${PredefinedDbPaths.PAYMENTS}/${serviceName}/${user}/${paymentKey}/` +
         `${PredefinedDbPaths.PAYMENTS_CLAIM}/${recordId}`);
   }
 
-  getPaymentPayRecordResultPath(service, user, paymentKey, recordId) {
-    return (`${this.getPaymentPayRecordPath(service, user, paymentKey, recordId)}/` +
+  getPaymentPayRecordResultPath(serviceName, user, paymentKey, recordId) {
+    return (`${this.getPaymentPayRecordPath(serviceName, user, paymentKey, recordId)}/` +
         `${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 
-  getPaymentClaimRecordResultPath(service, user, paymentKey, recordId) {
-    return (`${this.getPaymentClaimRecordPath(service, user, paymentKey, recordId)}/` +
+  getPaymentClaimRecordResultPath(serviceName, user, paymentKey, recordId) {
+    return (`${this.getPaymentClaimRecordPath(serviceName, user, paymentKey, recordId)}/` +
         `${PredefinedDbPaths.PAYMENTS_RESULT}`);
   }
 

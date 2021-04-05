@@ -3,7 +3,7 @@
   "accounts": {
     "$user_addr": {
       "balance": {
-        ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
+        ".write": "auth.fid === '_transfer' || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim'"
       }
     }
   },
@@ -28,11 +28,11 @@
       "$number": {
         ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
         "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth.addr + '/value') >= util.getMinStakeAmount())"
+          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount())"
         },
         "vote": {
           "$user_addr": {
-            ".write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/deposit_accounts/consensus/' + auth.addr + '/value') >= util.getMinStakeAmount())"
+            ".write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount())"
           }
         }
       }
@@ -40,41 +40,6 @@
     "whitelist": {
       "$user_addr": {
         ".write": "auth.addr === util.getOwnerAddr() && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
-      }
-    }
-  },
-  "deposit": {
-    "$service": {
-      "$user_addr": {
-        "$deposit_id": {
-          "value": {
-            ".write": "auth.addr === $user_addr && !getValue('/deposit/' + $service + '/' + $user_addr + '/' + $deposit_id) && (util.length($user_addr) !== 42 || util.isCksumAddr($user_addr)) && util.isNumber(newData) && getValue('/accounts/' + $user_addr + '/balance') >= newData"
-          },
-          "created_at": {
-            ".write": "auth.fid === '_deposit'"
-          },
-          "result": {
-            ".write": "auth.fid === '_deposit'"
-          }
-        }
-      }
-    }
-  },
-  "deposit_accounts": {
-    "$service": {
-      "config": {
-        ".write": "!getValue('/deposit_accounts/' + $service) || (getOwner('/deposit_accounts/' + $service) && getOwner('/deposit_accounts/' + $service).owners && getOwner('/deposit_accounts/' + $service).owners[auth.addr])"
-      },
-      "$user_addr": {
-        ".write": "auth.fid === '_deposit' || auth.fid === '_withdraw'"
-      }
-    },
-    "consensus": {
-      "config": {
-        ".write": false
-      },
-      "$user_addr": {
-        ".write": "auth.fid === '_deposit' || auth.fid === '_withdraw'"
       }
     }
   },
@@ -105,12 +70,27 @@
       }
     }
   },
+  "manage_app": {
+    "$app_name": {
+      "config": {
+        ".write": "auth.fid === '_createApp'"
+      },
+      "create": {
+        "$record_id": {
+          ".write": "data === null && getValue('/manage_app/' + $app_name + '/config') === null && util.isDict(newData)",
+          "result": {
+            ".write": "auth.fid === '_createApp'"
+          }
+        }
+      }
+    }
+  },
   "payments": {
-    "$service": {
+    "$service_name": {
       "config": {
         "admin": {
           "$admin_addr": {
-            ".write": "evalOwner('/payments/' + $service + '/config', 'write_owner', auth) && (newData === true || newData === null)"
+            ".write": "evalOwner('/payments/' + $service_name + '/config', 'write_owner', auth) && (newData === true || newData === null)"
           }
         }
       },
@@ -118,7 +98,7 @@
         "$payment_key": {
           "claim": {
             "$record_id": {
-              ".write": "getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
+              ".write": "getValue('/payments/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
               "result": {
                 ".write": "auth.fid === '_claim'"
               }
@@ -126,7 +106,7 @@
           },
           "pay": {
             "$record_id": {
-              ".write": "getValue('/payments/' + $service + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
+              ".write": "getValue('/payments/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
               "result": {
                 ".write": "auth.fid === '_pay'"
               }
@@ -143,11 +123,11 @@
           ".write": "auth.fid === '_openEscrow'",
           "admin": {
             "$admin_addr": {
-              ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim'"
+              ".write": "auth.fid === '_transfer' || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim'"
             }
           },
           "balance": {
-            ".write": "auth.fid === '_transfer' || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release'"
+            ".write": "auth.fid === '_transfer' || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release'"
           }
         }
       }
@@ -161,32 +141,49 @@
       }
     }
   },
-  "transfer": {
-    "$from": {
-      "$to": {
-        "$key": {
-          "value": {
-            ".write": "(auth.addr === $from || auth.fid === '_deposit' || auth.fid === '_withdraw' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+  "staking": {
+    "$service_name": {
+      "balance_total": {
+        ".write": "auth.fid === '_stake' || auth.fid === '_unstake'"
+      },
+      "$user_addr": {
+        "$staking_key": {
+          "expire_at": {
+            ".write": "auth.fid === '_stake'"
           },
-          "result": {
-            ".write": "auth.fid === '_transfer'"
+          "stake": {
+            "$record_id": {
+              "value": {
+                ".write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData >= 0 && getValue('/accounts/' + $user_addr + '/balance') >= newData"
+              },
+              "result": {
+                ".write": "auth.fid === '_stake'"
+              }
+            }
+          },
+          "unstake": {
+            "$record_id": {
+              "value": {
+                ".write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData > 0 && newData <= getValue(util.getBalancePath(util.toServiceAccountName('staking', $service_name, $user_addr + '|' + $staking_key)))"
+              },
+              "result": {
+                ".write": "auth.fid === '_unstake'"
+              }
+            }
           }
         }
       }
     }
   },
-  "withdraw":{
-    "$service": {
-      "$user_addr": {
-        "$withdraw_id": {
+  "transfer": {
+    "$from": {
+      "$to": {
+        "$key": {
           "value": {
-            ".write": "auth.addr === $user_addr && !getValue('/withdraw/' + $service + '/' + $user_addr + '/' + $withdraw_id) && util.isNumber(newData) && getValue('/deposit_accounts/' + $service + '/' + $user_addr + '/value') >= newData"
-          },
-          "created_at": {
-            ".write": "auth.fid === '_withdraw'"
+            ".write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
           },
           "result": {
-            ".write": "auth.fid === '_withdraw'"
+            ".write": "auth.fid === '_transfer'"
           }
         }
       }
