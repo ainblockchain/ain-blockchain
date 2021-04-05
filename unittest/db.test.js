@@ -2847,7 +2847,7 @@ describe("Proof hash", () => {
   });
 });
 
-describe("Tree info (getTreeDepth, getTreeSize)", () => {
+describe("Tree info (getStateInfo)", () => {
   let node, valuesObject;
 
   beforeEach(() => {
@@ -2887,25 +2887,28 @@ describe("Tree info (getTreeDepth, getTreeSize)", () => {
       });
       assert.deepEqual(result, true);
 
-      // Tree depth
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1'), 3);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label11'), 1);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12'), 2);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12/label121'), 1);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12/label122'), 1);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2'), 2);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21'), 1);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label22'), 1);
+      // Existing paths.
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1'), { tree_depth: 3, tree_size: 5 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label11'), { tree_depth: 1, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label12'), { tree_depth: 2, tree_size: 3 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label12/label121'),
+          { tree_depth: 1, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label12/label122'),
+          { tree_depth: 1, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2'), { tree_depth: 2, tree_size: 3 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21'), { tree_depth: 1, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label22'), { tree_depth: 1, tree_size: 1 });
 
-      // Tree size
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1'), 5);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label11'), 1);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12'), 3);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12/label121'), 1);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12/label122'), 1);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2'), 3);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21'), 1);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label22'), 1);
+      // Non-existing paths.
+      assert.deepEqual(node.db.getStateInfo('/values/test/non-existing/path'), null);
     });
   });
 
@@ -2914,17 +2917,13 @@ describe("Tree info (getTreeDepth, getTreeSize)", () => {
       result = node.db.setValue("test/label1/label12", null);  // Reduce tree
       assert.deepEqual(result, true);
 
-      // Tree depth
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1'), 2);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label11'), 1);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12'), 0);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2'), 2);
-
-      // Tree size
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1'), 2);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label11'), 1);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12'), 0);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2'), 3);
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1'), { tree_depth: 2, tree_size: 2 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label11'), { tree_depth: 1, tree_size: 1 });
+      assert.deepEqual(node.db.getStateInfo('/values/test/label1/label12'), null);
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2'), { tree_depth: 2, tree_size: 3 });
     });
   });
 
@@ -2936,21 +2935,20 @@ describe("Tree info (getTreeDepth, getTreeSize)", () => {
       });
       assert.deepEqual(result, true);
 
-      // Tree depth
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label1'), 3);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2'), 3);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21'), 2);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21/label211'), 1);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21/label212'), 1);
-      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label22'), 1);
-
-      // Tree size
-      assert.strictEqual(node.db.getTreeSize('/values/test/label1'), 5);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2'), 5);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21'), 3);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21/label211'), 1);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21/label212'), 1);
-      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label22'), 1);
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1'), { tree_depth: 3, tree_size: 5 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2'), { tree_depth: 3, tree_size: 5 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21'), { tree_depth: 2, tree_size: 3 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21/label211'),
+          { tree_depth: 1, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21/label212'),
+          { tree_depth: 1, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label22'), { tree_depth: 1, tree_size: 1 });
     });
   });
 });

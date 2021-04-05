@@ -463,21 +463,12 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_tree_depth', () => {
-      it('get_tree_depth', () => {
-        const depthBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_tree_depth?ref=/values/test/test_tree_info/some/path`)
+    describe('/get_state_info', () => {
+      it('get_state_info', () => {
+        const infoBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_info?ref=/values/test/test_tree_info/some/path`)
                 .body.toString('utf-8'));
-        assert.deepEqual(depthBody, { code: 0, result: 3 });
-      });
-    });
-
-    describe('/get_tree_size', () => {
-      it('get_tree_size', () => {
-        const depthBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_tree_size?ref=/values/test/test_tree_info/some/path`)
-                .body.toString('utf-8'));
-        assert.deepEqual(depthBody, { code: 0, result: 5 });
+        assert.deepEqual(infoBody, { code: 0, result: { tree_depth: 3, tree_size: 5 }});
       });
     });
 

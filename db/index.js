@@ -8,6 +8,7 @@ const {
   OwnerProperties,
   RuleProperties,
   ProofProperties,
+  StateInfoProperties,
   ShardingProperties,
   GenesisAccounts,
   GenesisSharding,
@@ -401,11 +402,11 @@ class DB {
 
   /**
    * Returns a proof of a state node.
-   * @param {string} treePath full database path to the state node to be proved.
+   * @param {string} statePath full database path to the state node
    */
   // TODO(seo): Consider supporting global path for getProof().
-  getProof(treePath) {
-    const parsedPath = ChainUtil.parsePath(treePath);
+  getProof(statePath) {
+    const parsedPath = ChainUtil.parsePath(statePath);
     let node = this.stateRoot;
     const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
@@ -424,22 +425,20 @@ class DB {
     return rootProof;
   }
 
-  getTreeDepth(treePath) {
-    const parsedPath = ChainUtil.parsePath(treePath);
+  /**
+   * Returns a state node's information.
+   * @param {string} statePath full database path to the state node
+   */
+  getStateInfo(statePath) {
+    const parsedPath = ChainUtil.parsePath(statePath);
     const stateNode = DB.getRefForReading(this.stateRoot, parsedPath);
     if (stateNode === null) {
-      return 0;
+      return null;
     }
-    return stateNode.getTreeDepth();
-  }
-
-  getTreeSize(treePath) {
-    const parsedPath = ChainUtil.parsePath(treePath);
-    const stateNode = DB.getRefForReading(this.stateRoot, parsedPath);
-    if (stateNode === null) {
-      return 0;
-    }
-    return stateNode.getTreeSize();
+    return {
+      [StateInfoProperties.TREE_DEPTH]: stateNode.getTreeDepth(),
+      [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
+    };
   }
 
   matchFunction(funcPath, isGlobal) {

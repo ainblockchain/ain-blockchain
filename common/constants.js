@@ -241,12 +241,22 @@ const FunctionTypes = {
 };
 
 /**
- * Properties of proof configs.
+ * Properties of state proof.
  *
  * @enum {string}
  */
 const ProofProperties = {
   PROOF_HASH: '.proof_hash',
+};
+
+/**
+ * Properties of state info.
+ *
+ * @enum {string}
+ */
+const StateInfoProperties = {
+  TREE_DEPTH: 'tree_depth',
+  TREE_SIZE: 'tree_size',
 };
 
 /**
@@ -618,6 +628,7 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   ProofProperties,
+  StateInfoProperties,
   NativeFunctionIds,
   ShardingProperties,
   ShardingProtocols,
