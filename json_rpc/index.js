@@ -357,11 +357,14 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_isValidator: function(args, done) {
       const whitelisted = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${PredefinedDbPaths.WHITELIST}/${args.address}`);
-      const deposit = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
-      const stakeValid = deposit && deposit.value > 0 &&
-          deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
+          `${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.WHITELIST}/${args.address}`);
+      const stake = p2pServer.node.db.getValue(
+          `${PredefinedDbPaths.SERVICE_ACCOUNTS}/${PredefinedDbPaths.STAKING}/` +
+          `${PredefinedDbPaths.CONSENSUS}/${args.address}|0/balance`);
+      const expireAt = p2pServer.node.db.getValue(
+          `${PredefinedDbPaths.STAKING}/${PredefinedDbPaths.CONSENSUS}/${args.address}/0/` +
+          `${PredefinedDbPaths.STAKING_EXPIRE_AT}`);
+      const stakeValid = stake && stake > 0 && expireAt > Date.now() + ConsensusConsts.DAY_MS;
       done(null, addProtocolVersion({result: stakeValid && whitelisted ? stakeValid : 0}));
     },
 
