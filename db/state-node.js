@@ -13,21 +13,23 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.proofHash = null;
+    this.treeDepth = 1;
     this.treeSize = 1;
   }
 
-  static _create(version, isLeaf, value, proofHash, treeSize) {
+  static _create(version, isLeaf, value, proofHash, treeDepth, treeSize) {
     const node = new StateNode(version);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
     node.setProofHash(proofHash);
+    node.setTreeDepth(treeDepth);
     node.setTreeSize(treeSize);
     return node;
   }
 
   clone(version) {
     const cloned = StateNode._create(version ? version : this.version,
-        this.isLeaf, this.value, this.proofHash, this.treeSize);
+        this.isLeaf, this.value, this.proofHash, this.treeDepth, this.treeSize);
     for (const label of this.getChildLabels()) {
       const child = this.getChild(label);
       cloned.setChild(label, child);
@@ -49,6 +51,7 @@ class StateNode {
         that.value === this.value &&
         that.proofHash === this.proofHash &&
         that.version === this.version &&
+        that.treeDepth === this.treeDepth &&
         that.treeSize === this.treeSize);
   }
 
@@ -80,6 +83,7 @@ class StateNode {
           obj[`.version:${label}`] = childNode.getVersion();
           obj[`.numParents:${label}`] = childNode.numParents();
           obj[`.proofHash:${label}`] = childNode.getProofHash();
+          obj[`.treeDepth:${label}`] = childNode.getTreeDepth();
           obj[`.treeSize:${label}`] = childNode.getTreeSize();
         }
       }
@@ -88,6 +92,7 @@ class StateNode {
       obj['.version'] = this.getVersion();
       obj['.numParents'] = this.numParents();
       obj[`.proofHash`] = this.getProofHash();
+      obj[`.treeDepth`] = this.getTreeDepth();
       obj[`.treeSize`] = this.getTreeSize();
     }
 
@@ -227,6 +232,14 @@ class StateNode {
     this.version = version;
   }
 
+  getTreeDepth() {
+    return this.treeDepth;
+  }
+
+  setTreeDepth(treeDepth) {
+    this.treeDepth = treeDepth;
+  }
+
   getTreeSize() {
     return this.treeSize;
   }
@@ -251,6 +264,14 @@ class StateNode {
     return this.getProofHash() === this.buildProofHash();
   }
 
+  computeTreeDepth() {
+    if (this.getIsLeaf()) {
+      return 1;
+    } else {
+      return 1 + this.getChildNodes().reduce((max, cur) => Math.max(max, cur.getTreeDepth()), 0);
+    }
+  }
+
   computeTreeSize() {
     if (this.getIsLeaf()) {
       return 1;
@@ -259,8 +280,9 @@ class StateNode {
     }
   }
 
-  updateProofHashAndTreeSize() {
+  updateProofHashAndTreeInfo() {
     this.setProofHash(this.buildProofHash());
+    this.setTreeDepth(this.computeTreeDepth());
     this.setTreeSize(this.computeTreeSize());
   }
 }
