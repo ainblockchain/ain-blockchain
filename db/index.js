@@ -273,8 +273,8 @@ class DB {
   /**
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
-  // NOTE(seo): The nodes with multiple ref paths should be cloned in order not to affect
-  //            other ref paths to the altered node.
+  // NOTE(seo): The nodes with multiple ref paths (i.e., multiple roots) should be cloned
+  //            in order not to affect other ref paths to the altered node.
   //
   // Typical case:
   // - root_a has subtree child_1a -> child_2 -> child_3 
@@ -288,13 +288,13 @@ class DB {
   //
   getRefForWriting(fullPath) {
     let node = this.stateRoot;
-    let maxNumParents = node.numParents();
+    let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
-          if (maxNumParents > 1 || child.numParents() > 1) {
+          if (hasMultipleRoots || child.numParents() > 1) {
             const clonedChild = child.clone(this.stateVersion);
             clonedChild.resetValue();
             node.setChild(label, clonedChild);
@@ -308,7 +308,7 @@ class DB {
           node.setChild(label, newChild);
           node = newChild;
         }
-        maxNumParents = Math.max(maxNumParents, node.numParents());
+        hasMultipleRoots = hasMultipleRoots || node.numParents() > 1;
       } else {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
