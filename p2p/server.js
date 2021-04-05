@@ -149,7 +149,7 @@ class P2pServer {
       nonce: this.node.nonce,
       dbStatus: {
         stateInfo: this.node.db.getStateInfo('/'),
-        proof: this.node.db.getProof('/'),
+        stateProof: this.node.db.getStateProof('/'),
       },
       stateVersionStatus: this.getStateVersionStatus(),
     };

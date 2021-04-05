@@ -317,7 +317,7 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      // Expect no updates on proof hash and tree info (tree size, tree depth).
+      // Expect no updates on proof hash and state info (tree depth and tree size).
       assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(true), {
         ".version": "ver1",
         ".version:bool": "ver1",
@@ -1034,40 +1034,40 @@ describe("state-node", () => {
     });
   });
 
-  describe("updateProofHashAndTreeInfo", () => {
+  describe("updateProofHashAndStateInfo", () => {
     it("leaf node", () => {
       node.setValue(true);
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(10);
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(-200);
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue('');
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue('unittest');
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(null);
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(undefined);
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
@@ -1083,7 +1083,7 @@ describe("state-node", () => {
       child1.setTreeSize(2);
       child2.setTreeSize(3);
       child3.setTreeSize(5);
-      node.updateProofHashAndTreeInfo();
+      node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
       expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());

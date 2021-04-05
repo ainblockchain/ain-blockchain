@@ -404,8 +404,8 @@ class DB {
    * Returns a proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  // TODO(seo): Consider supporting global path for getProof().
-  getProof(statePath) {
+  // TODO(seo): Consider supporting global path for getStateProof().
+  getStateProof(statePath) {
     const parsedPath = ChainUtil.parsePath(statePath);
     let node = this.stateRoot;
     const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
@@ -504,8 +504,6 @@ class DB {
         resultList.push(this.getFunction(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(op.ref, op.is_global));
-      } else if (op.type === ReadDbOperations.GET_PROOF) {
-        resultList.push(this.getProof(op.ref));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
         resultList.push(this.matchFunction(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {

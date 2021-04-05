@@ -1247,7 +1247,9 @@ describe("state-util", () => {
       const bazNode = level1Node.getChild('baz');
       const anotherNode = stateTree.getChild('another_route');
       const testNode = anotherNode.getChild('test');
-      setProofHashForStateTree(level0Node);
+
+      const numAffectedNodes = setProofHashForStateTree(level0Node);
+      expect(numAffectedNodes).to.equal(4);
       // Checks proof hashes.
       expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
       expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
@@ -1256,6 +1258,13 @@ describe("state-util", () => {
       expect(stateTree.getChild('another_route').getChild('test').getProofHash()).to.equal(null);
       expect(stateTree.getChild('another_route').getProofHash()).to.equal(null);
       expect(stateTree.getProofHash()).to.equal(null);
+      // Checks tree depths.
+      expect(fooNode.getTreeDepth()).to.equal(1);
+      expect(bazNode.getTreeDepth()).to.equal(1);
+      expect(level1Node.getTreeDepth()).to.equal(2);
+      expect(level0Node.getTreeDepth()).to.equal(3);
+      expect(anotherNode.getTreeDepth()).to.equal(1);
+      expect(testNode.getTreeDepth()).to.equal(1);
       // Checks tree sizes.
       expect(fooNode.getTreeSize()).to.equal(1);
       expect(bazNode.getTreeSize()).to.equal(1);
@@ -1289,7 +1298,6 @@ describe("state-util", () => {
 
       const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
       expect(numAffectedNodes).to.equal(3);
-
       // Checks proof hashes.
       expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
       expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
@@ -1299,7 +1307,10 @@ describe("state-util", () => {
       expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
       expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
       expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
-
+      // Checks tree depths.
+      expect(level1Node.getTreeDepth()).to.equal(2);
+      expect(level0Node.getTreeDepth()).to.equal(3);
+      expect(rootNode.getTreeDepth()).to.equal(4);
       // Checks tree sizes.
       expect(level1Node.getTreeSize()).to.equal(2);
       expect(level0Node.getTreeSize()).to.equal(4);

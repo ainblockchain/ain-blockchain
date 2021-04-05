@@ -101,8 +101,8 @@ app.get('/get_owner', (req, res, next) => {
 /**
  * Returns the state proof at the given full database path.
  */
-app.get('/get_proof', (req, res, next) => {
-  const result = node.db.getProof(req.query.ref);
+app.get('/get_state_proof', (req, res, next) => {
+  const result = node.db.getStateProof(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
