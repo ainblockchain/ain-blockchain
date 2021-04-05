@@ -1,5 +1,6 @@
 const stringify = require('fast-json-stable-stringify');
 const sizeof = require('object-sizeof');
+const moment = require('moment');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -226,6 +227,29 @@ class Block {
     return Transaction.fromTxBody(secondTxBody, privateKey);
   }
 
+  static buildConsensusAppTx(timestamp, privateKey) {
+    const thirdTxBody = {
+      nonce: -1,
+      timestamp,
+      operation: {
+        type: 'SET_VALUE',
+        ref: `${PredefinedDbPaths.MANAGE_APP}/${PredefinedDbPaths.CONSENSUS}/` +
+            `${PredefinedDbPaths.MANAGE_APP_CREATE}/${timestamp}`,
+        value: {
+          [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
+            AI_NETWORK: true
+          },
+          [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
+            [PredefinedDbPaths.STAKING]: {
+              [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: moment.duration(180, 'days').as('milliseconds')
+            }
+          }
+        }
+      }
+    }
+    return Transaction.fromTxBody(thirdTxBody, privateKey);
+  }
+
   static buildGenesisStakingTxs(timestamp) {
     const _ = require('lodash');
     const txs = [];
@@ -241,10 +265,13 @@ class Block {
         operation: {
           type: 'SET_VALUE',
           ref: ChainUtil.formatPath([
-            PredefinedDbPaths.DEPOSIT_CONSENSUS,
+            PredefinedDbPaths.STAKING,
+            PredefinedDbPaths.CONSENSUS,
             address,
-            1,
-            PredefinedDbPaths.DEPOSIT_VALUE
+            0,
+            PredefinedDbPaths.STAKING_STAKE,
+            timestamp,
+            PredefinedDbPaths.STAKING_VALUE
           ]),
           value: amount
         }
@@ -262,10 +289,11 @@ class Block {
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
     const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
+    const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey);
     // TODO(lia): Change the logic to staking & signing by the current node
     const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
-    return [firstTx, secondTx, ...stakingTxs];
+    return [firstTx, secondTx, thirdTx, ...stakingTxs];
   }
 
   static getGenesisStateProofHash() {
