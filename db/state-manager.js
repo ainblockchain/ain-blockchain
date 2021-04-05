@@ -154,7 +154,8 @@ class StateManager {
   transferStateTree(fromVersion, toVersion) {
     const LOG_HEADER = 'transferStateTree';
     logger.debug(
-        `[${LOG_HEADER}] Renaming version ${fromVersion} -> ${toVersion} (${this.numVersions()})`);
+        `[${LOG_HEADER}] Transfering state tree: ` +
+        `${fromVersion} -> ${toVersion} (${this.numVersions()})`);
     if (!this.hasVersion(toVersion)) {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${toVersion}`);
       return false;
