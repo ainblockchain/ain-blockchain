@@ -436,7 +436,7 @@ class DB {
       return null;
     }
     return {
-      [StateInfoProperties.TREE_DEPTH]: stateNode.getTreeDepth(),
+      [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
     };
   }

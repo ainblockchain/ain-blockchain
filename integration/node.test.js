@@ -638,7 +638,7 @@ describe('Blockchain Node', () => {
         const infoBody = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_info?ref=/values/test/test_state_info/some/path`)
                 .body.toString('utf-8'));
-        assert.deepEqual(infoBody, { code: 0, result: { tree_depth: 3, tree_size: 5 }});
+        assert.deepEqual(infoBody, { code: 0, result: { tree_height: 2, tree_size: 5 }});
       });
     });
 
@@ -804,7 +804,7 @@ describe('Blockchain Node', () => {
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateInfo', request)
         .then(res => {
-          assert.deepEqual(res.result.result, { tree_depth: 3, tree_size: 5 });
+          assert.deepEqual(res.result.result, { tree_height: 2, tree_size: 5 });
         })
       })
     })
