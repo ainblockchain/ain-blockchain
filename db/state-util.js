@@ -270,7 +270,7 @@ function setProofHashForStateTree(stateTree) {
       numAffectedNodes += setProofHashForStateTree(node);
     }
   }
-  stateTree.updateProofHashAndTreeInfo();
+  stateTree.updateProofHashAndStateInfo();
   numAffectedNodes++;
 
   return numAffectedNodes;
@@ -278,7 +278,7 @@ function setProofHashForStateTree(stateTree) {
 
 function updateProofHashForAllRootPathsRecursive(node) {
   let numAffectedNodes = 0;
-  node.updateProofHashAndTreeInfo();
+  node.updateProofHashAndStateInfo();
   numAffectedNodes++;
   for (const parent of node.getParentNodes()) {
     numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);

@@ -356,7 +356,7 @@ class Consensus {
     const totalAtStake = Object.values(validators).reduce(function(a, b) {
       return a + b;
     }, 0);
-    const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getProof('/')[ProofProperties.PROOF_HASH];
+    const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch,
         stateProofHash, myAddr, validators);
@@ -597,9 +597,9 @@ class Consensus {
     this.node.tp.addTransaction(executableTx);
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
-      if (newDb.getProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
+      if (newDb.getStateProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
-            `${newDb.getProof('/')[ProofProperties.PROOF_HASH]} / ` +
+            `${newDb.getStateProof('/')[ProofProperties.PROOF_HASH]} / ` +
             `${proposalBlock.state_proof_hash}`);
         this.node.destroyDb(newDb);
         return false;

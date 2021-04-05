@@ -79,7 +79,7 @@ function setUp() {
         },
         {
           type: 'SET_VALUE',
-          ref: 'test/test_tree_info/some/path',
+          ref: 'test/test_state_info/some/path',
           value: {
             label1: {
               label11: 'value11',
@@ -435,43 +435,6 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_proof', () => {
-      it('get_proof', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof?ref=/')
-            .body.toString('utf-8'));
-        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/owners`)
-            .body.toString('utf-8'));
-        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/rules`)
-            .body.toString('utf-8'));
-        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/values`)
-            .body.toString('utf-8'));
-        const functionsBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_proof?ref=/functions`)
-            .body.toString('utf-8'));
-        const dump = parseOrLog(syncRequest('GET', server1 + '/dump_final_version')
-            .body.toString('utf-8'));
-        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
-        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
-        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
-        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
-            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
-            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
-            `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-        assert.deepEqual(body, { code: 0, result: { [ProofProperties.PROOF_HASH]: proofHash } });
-      });
-    });
-
-    describe('/get_state_info', () => {
-      it('get_state_info', () => {
-        const infoBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_state_info?ref=/values/test/test_tree_info/some/path`)
-                .body.toString('utf-8'));
-        assert.deepEqual(infoBody, { code: 0, result: { tree_depth: 3, tree_size: 5 }});
-      });
-    });
-
     describe('/match_function', () => {
       it('match_function', () => {
         const ref = "/test/test_function/some/path";
@@ -644,6 +607,41 @@ describe('Blockchain Node', () => {
       })
     })
 
+    describe('/get_state_proof', () => {
+      it('get_state_proof', () => {
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
+            .body.toString('utf-8'));
+        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
+            .body.toString('utf-8'));
+        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
+            .body.toString('utf-8'));
+        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
+            .body.toString('utf-8'));
+        const functionsBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_proof?ref=/functions`)
+            .body.toString('utf-8'));
+        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
+        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
+        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
+        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
+        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
+            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
+            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
+            `functions${HASH_DELIMITER}${functionProof}`;
+        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+        assert.deepEqual(body, { code: 0, result: { '.proof_hash': proofHash } });
+      });
+    });
+
+    describe('/get_state_info', () => {
+      it('get_state_info', () => {
+        const infoBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_info?ref=/values/test/test_state_info/some/path`)
+                .body.toString('utf-8'));
+        assert.deepEqual(infoBody, { code: 0, result: { tree_depth: 3, tree_size: 5 }});
+      });
+    });
+
     describe('ain_get', () => {
       it('returns the correct value', () => {
         const expected = 100;
@@ -766,6 +764,47 @@ describe('Blockchain Node', () => {
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
         .then(res => {
           assert.deepEqual(res.result.result, true);
+        })
+      })
+    })
+
+    describe('ain_getStateProof', () => {
+      it('returns correct value', () => {
+        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
+            .body.toString('utf-8'));
+        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
+            .body.toString('utf-8'));
+        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
+            .body.toString('utf-8'));
+        const functionsBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_proof?ref=/functions`)
+            .body.toString('utf-8'));
+        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
+        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
+        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
+        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
+        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
+            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
+            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
+            `functions${HASH_DELIMITER}${functionProof}`;
+        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+
+        const ref = '/';
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, { '.proof_hash': proofHash });
+        })
+      })
+    })
+
+    describe('ain_getStateInfo', () => {
+      it('returns correct value', () => {
+        const ref = '/values/test/test_state_info/some/path';
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateInfo', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, { tree_depth: 3, tree_size: 5 });
         })
       })
     })

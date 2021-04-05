@@ -2800,10 +2800,10 @@ describe("Proof hash", () => {
     });
   });
 
-  describe("getProof", () => {
+  describe("State proof (getStateProof)", () => {
     it("tests proof with a null case", () => {
       const rootNode = node.db.stateRoot;
-      assert.deepEqual(null, node.db.getProof('/test/test'));
+      assert.deepEqual(null, node.db.getStateProof('/test/test'));
     });
 
     it("tests proof with owners, rules, values and functions", () => {
@@ -2838,16 +2838,16 @@ describe("Proof hash", () => {
         Object.assign(functionsProof.functions,
           { [label]: { [ProofProperties.PROOF_HASH]: functionNode.getChild(label).getProofHash() } });
       });
-      assert.deepEqual(rootProof, node.db.getProof('/'));
-      assert.deepEqual(ownersProof, node.db.getProof('/owners/test'));
-      assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
-      assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
-      assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
+      assert.deepEqual(rootProof, node.db.getStateProof('/'));
+      assert.deepEqual(ownersProof, node.db.getStateProof('/owners/test'));
+      assert.deepEqual(rulesProof, node.db.getStateProof('/rules/test'));
+      assert.deepEqual(valuesProof, node.db.getStateProof('/values/test'));
+      assert.deepEqual(functionsProof, node.db.getStateProof('/functions/test'));
     });
   });
 });
 
-describe("Tree info (getStateInfo)", () => {
+describe("State info (getStateInfo)", () => {
   let node, valuesObject;
 
   beforeEach(() => {

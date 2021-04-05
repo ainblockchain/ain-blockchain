@@ -280,7 +280,7 @@ class StateNode {
     }
   }
 
-  updateProofHashAndTreeInfo() {
+  updateProofHashAndStateInfo() {
     this.setProofHash(this.buildProofHash());
     this.setTreeDepth(this.computeTreeDepth());
     this.setTreeSize(this.computeTreeSize());

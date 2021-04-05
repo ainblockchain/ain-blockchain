@@ -274,11 +274,6 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
             result: p2pServer.node.db.getOwner(args.ref, args.is_global)
           }));
           return;
-        case ReadDbOperations.GET_PROOF:
-          done(null, addProtocolVersion({
-            result: p2pServer.node.db.getProof(args.ref)
-          }));
-          return;
         case ReadDbOperations.GET:
           done(null, addProtocolVersion({
             result: p2pServer.node.db.get(args.op_list, args.is_global)
@@ -330,8 +325,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result}));
     },
 
-    ain_getProof: function(args, done) {
-      const result = p2pServer.node.db.getProof(args.ref);
+    ain_getStateProof: function(args, done) {
+      const result = p2pServer.node.db.getStateProof(args.ref);
+      done(null, addProtocolVersion({result}));
+    },
+
+    ain_getStateInfo: function(args, done) {
+      const result = p2pServer.node.db.getStateInfo(args.ref);
       done(null, addProtocolVersion({result}));
     },
 

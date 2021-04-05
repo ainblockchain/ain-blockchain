@@ -282,7 +282,7 @@ class Block {
         return null;
       }
     }
-    return tempGenesisDb.getProof('/')[ProofProperties.PROOF_HASH];
+    return tempGenesisDb.getStateProof('/')[ProofProperties.PROOF_HASH];
   }
 
   static genesis() {
