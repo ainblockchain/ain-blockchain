@@ -78,6 +78,17 @@ function setUp() {
           value: 100
         },
         {
+          type: 'SET_VALUE',
+          ref: 'test/test_tree_info/some/path',
+          value: {
+            label1: {
+              label11: 'value11',
+              label12: 'value12',
+            },
+            label2: 'value2'
+          }
+        },
+        {
           type: 'SET_RULE',
           ref: '/test/test_rule/some/path',
           value: {
@@ -449,6 +460,24 @@ describe('Blockchain Node', () => {
             `functions${HASH_DELIMITER}${functionProof}`;
         const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
         assert.deepEqual(body, { code: 0, result: { [ProofProperties.PROOF_HASH]: proofHash } });
+      });
+    });
+
+    describe('/get_tree_depth', () => {
+      it('get_tree_depth', () => {
+        const depthBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_tree_depth?ref=/values/test/test_tree_info/some/path`)
+                .body.toString('utf-8'));
+        assert.deepEqual(depthBody, { code: 0, result: 3 });
+      });
+    });
+
+    describe('/get_tree_size', () => {
+      it('get_tree_size', () => {
+        const depthBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_tree_size?ref=/values/test/test_tree_info/some/path`)
+                .body.toString('utf-8'));
+        assert.deepEqual(depthBody, { code: 0, result: 5 });
       });
     });
 

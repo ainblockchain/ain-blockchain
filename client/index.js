@@ -110,6 +110,17 @@ app.get('/get_proof', (req, res, next) => {
 });
 
 /**
+ * Returns the depth of the state tree in the given full database path.
+ */
+app.get('/get_tree_depth', (req, res, next) => {
+  const result = node.db.getTreeDepth(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
+/**
  * Returns the size of the state tree in the given full database path.
  */
 app.get('/get_tree_size', (req, res, next) => {
