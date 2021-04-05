@@ -255,7 +255,7 @@ const ProofProperties = {
  * @enum {string}
  */
 const StateInfoProperties = {
-  TREE_DEPTH: 'tree_depth',
+  TREE_HEIGHT: 'tree_height',
   TREE_SIZE: 'tree_size',
 };
 

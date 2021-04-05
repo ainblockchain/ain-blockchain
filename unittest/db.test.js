@@ -2889,23 +2889,23 @@ describe("State info (getStateInfo)", () => {
 
       // Existing paths.
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label1'), { tree_depth: 3, tree_size: 5 });
+          node.db.getStateInfo('/values/test/label1'), { tree_height: 2, tree_size: 5 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label1/label11'), { tree_depth: 1, tree_size: 1 });
+          node.db.getStateInfo('/values/test/label1/label11'), { tree_height: 0, tree_size: 1 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label1/label12'), { tree_depth: 2, tree_size: 3 });
+          node.db.getStateInfo('/values/test/label1/label12'), { tree_height: 1, tree_size: 3 });
       assert.deepEqual(
           node.db.getStateInfo('/values/test/label1/label12/label121'),
-          { tree_depth: 1, tree_size: 1 });
+          { tree_height: 0, tree_size: 1 });
       assert.deepEqual(
           node.db.getStateInfo('/values/test/label1/label12/label122'),
-          { tree_depth: 1, tree_size: 1 });
+          { tree_height: 0, tree_size: 1 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label2'), { tree_depth: 2, tree_size: 3 });
+          node.db.getStateInfo('/values/test/label2'), { tree_height: 1, tree_size: 3 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label2/label21'), { tree_depth: 1, tree_size: 1 });
+          node.db.getStateInfo('/values/test/label2/label21'), { tree_height: 0, tree_size: 1 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label2/label22'), { tree_depth: 1, tree_size: 1 });
+          node.db.getStateInfo('/values/test/label2/label22'), { tree_height: 0, tree_size: 1 });
 
       // Non-existing paths.
       assert.deepEqual(node.db.getStateInfo('/values/test/non-existing/path'), null);
@@ -2918,12 +2918,12 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result, true);
 
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label1'), { tree_depth: 2, tree_size: 2 });
+          node.db.getStateInfo('/values/test/label1'), { tree_height: 1, tree_size: 2 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label1/label11'), { tree_depth: 1, tree_size: 1 });
+          node.db.getStateInfo('/values/test/label1/label11'), { tree_height: 0, tree_size: 1 });
       assert.deepEqual(node.db.getStateInfo('/values/test/label1/label12'), null);
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label2'), { tree_depth: 2, tree_size: 3 });
+          node.db.getStateInfo('/values/test/label2'), { tree_height: 1, tree_size: 3 });
     });
   });
 
@@ -2936,19 +2936,19 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result, true);
 
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label1'), { tree_depth: 3, tree_size: 5 });
+          node.db.getStateInfo('/values/test/label1'), { tree_height: 2, tree_size: 5 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label2'), { tree_depth: 3, tree_size: 5 });
+          node.db.getStateInfo('/values/test/label2'), { tree_height: 2, tree_size: 5 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label2/label21'), { tree_depth: 2, tree_size: 3 });
+          node.db.getStateInfo('/values/test/label2/label21'), { tree_height: 1, tree_size: 3 });
       assert.deepEqual(
           node.db.getStateInfo('/values/test/label2/label21/label211'),
-          { tree_depth: 1, tree_size: 1 });
+          { tree_height: 0, tree_size: 1 });
       assert.deepEqual(
           node.db.getStateInfo('/values/test/label2/label21/label212'),
-          { tree_depth: 1, tree_size: 1 });
+          { tree_height: 0, tree_size: 1 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/test/label2/label22'), { tree_depth: 1, tree_size: 1 });
+          node.db.getStateInfo('/values/test/label2/label22'), { tree_height: 0, tree_size: 1 });
     });
   });
 });

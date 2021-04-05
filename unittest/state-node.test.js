@@ -317,7 +317,7 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      // Expect no updates on proof hash and state info (tree depth and tree size).
+      // Expect no updates on proof hash and state info (tree height and tree size).
       assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(true), {
         ".version": "ver1",
         ".version:bool": "ver1",
@@ -343,22 +343,22 @@ describe("state-node", () => {
         ".proofHash:number": null,
         ".proofHash:str": null,
         ".proofHash:undef": null,
-        ".treeDepth": 1,
-        ".treeDepth:bool": 1,
-        ".treeDepth:empty_obj": 1,
-        ".treeDepth:empty_str": 1,
-        ".treeDepth:null": 1,
-        ".treeDepth:number": 1,
-        ".treeDepth:str": 1,
-        ".treeDepth:undef": 1,
-        ".treeSize": 1,
-        ".treeSize:bool": 1,
-        ".treeSize:empty_obj": 1,
-        ".treeSize:empty_str": 1,
-        ".treeSize:null": 1,
-        ".treeSize:number": 1,
-        ".treeSize:str": 1,
-        ".treeSize:undef": 1,
+        ".treeHeight": null,
+        ".treeHeight:bool": null,
+        ".treeHeight:empty_obj": null,
+        ".treeHeight:empty_str": null,
+        ".treeHeight:null": null,
+        ".treeHeight:number": null,
+        ".treeHeight:str": null,
+        ".treeHeight:undef": null,
+        ".treeSize": null,
+        ".treeSize:bool": null,
+        ".treeSize:empty_obj": null,
+        ".treeSize:empty_str": null,
+        ".treeSize:null": null,
+        ".treeSize:number": null,
+        ".treeSize:str": null,
+        ".treeSize:undef": null,
         bool: false,
         number: 10,
         str: 'str',
@@ -391,22 +391,22 @@ describe("state-node", () => {
           ".proofHash:number": null,
           ".proofHash:str": null,
           ".proofHash:undef": null,
-          ".treeDepth": 1,
-          ".treeDepth:bool": 1,
-          ".treeDepth:empty_obj": 1,
-          ".treeDepth:empty_str": 1,
-          ".treeDepth:null": 1,
-          ".treeDepth:number": 1,
-          ".treeDepth:str": 1,
-          ".treeDepth:undef": 1,
-          ".treeSize": 1,
-          ".treeSize:bool": 1,
-          ".treeSize:empty_obj": 1,
-          ".treeSize:empty_str": 1,
-          ".treeSize:null": 1,
-          ".treeSize:number": 1,
-          ".treeSize:str": 1,
-          ".treeSize:undef": 1,
+          ".treeHeight": null,
+          ".treeHeight:bool": null,
+          ".treeHeight:empty_obj": null,
+          ".treeHeight:empty_str": null,
+          ".treeHeight:null": null,
+          ".treeHeight:number": null,
+          ".treeHeight:str": null,
+          ".treeHeight:undef": null,
+          ".treeSize": null,
+          ".treeSize:bool": null,
+          ".treeSize:empty_obj": null,
+          ".treeSize:empty_str": null,
+          ".treeSize:null": null,
+          ".treeSize:number": null,
+          ".treeSize:str": null,
+          ".treeSize:undef": null,
           bool: true,
           number: 20,
           str: 'str2',
@@ -440,22 +440,22 @@ describe("state-node", () => {
           ".proofHash:number": null,
           ".proofHash:str": null,
           ".proofHash:undef": null,
-          ".treeDepth": 1,
-          ".treeDepth:bool": 1,
-          ".treeDepth:empty_obj": 1,
-          ".treeDepth:empty_str": 1,
-          ".treeDepth:null": 1,
-          ".treeDepth:number": 1,
-          ".treeDepth:str": 1,
-          ".treeDepth:undef": 1,
-          ".treeSize": 1,
-          ".treeSize:bool": 1,
-          ".treeSize:empty_obj": 1,
-          ".treeSize:empty_str": 1,
-          ".treeSize:null": 1,
-          ".treeSize:number": 1,
-          ".treeSize:str": 1,
-          ".treeSize:undef": 1,
+          ".treeHeight": null,
+          ".treeHeight:bool": null,
+          ".treeHeight:empty_obj": null,
+          ".treeHeight:empty_str": null,
+          ".treeHeight:null": null,
+          ".treeHeight:number": null,
+          ".treeHeight:str": null,
+          ".treeHeight:undef": null,
+          ".treeSize": null,
+          ".treeSize:bool": null,
+          ".treeSize:empty_obj": null,
+          ".treeSize:empty_str": null,
+          ".treeSize:null": null,
+          ".treeSize:number": null,
+          ".treeSize:str": null,
+          ".treeSize:undef": null,
           bool: true,
           number: -10,
           str: 'str3',
@@ -919,8 +919,8 @@ describe("state-node", () => {
     });
   });
 
-  describe("proofHash", () => {
-    it("get / set / reset", () => {
+  describe("proof hash", () => {
+    it("getProofHash / setProofHash / resetProofHash", () => {
       expect(node.getProofHash()).to.equal(null);
       node.setProofHash('hash');
       expect(node.getProofHash()).to.equal('hash');
@@ -930,7 +930,7 @@ describe("state-node", () => {
   });
 
   describe("version", () => {
-    it("get / set", () => {
+    it("getVersion / setVersion", () => {
       const version1 = 'version1';
       const version2 = 'version2';
       expect(node.getVersion()).to.equal(null);
@@ -941,9 +941,19 @@ describe("state-node", () => {
     });
   });
 
-  describe("treeSize", () => {
-    it("get / set", () => {
-      expect(node.getTreeSize()).to.equal(1);
+  describe("tree height", () => {
+    it("getTreeHeight / setTreeHeight", () => {
+      expect(node.getTreeHeight()).to.equal(null);
+      node.setTreeHeight(10);
+      expect(node.getTreeHeight()).to.equal(10);
+      node.setTreeHeight(5);
+      expect(node.getTreeHeight()).to.equal(5);
+    });
+  });
+
+  describe("tree size", () => {
+    it("getTreeSize / setTreeSize", () => {
+      expect(node.getTreeSize()).to.equal(null);
       node.setTreeSize(10);
       expect(node.getTreeSize()).to.equal(10);
       node.setTreeSize(5);
@@ -1008,29 +1018,29 @@ describe("state-node", () => {
     });
   });
 
-  describe("computeTreeDepth", () => {
+  describe("computeTreeHeight", () => {
     it("leaf node", () => {
       node.setValue(true);
-      expect(node.computeTreeDepth()).to.equal(1);
+      expect(node.computeTreeHeight()).to.equal(0);
       node.setValue(10);
-      expect(node.computeTreeDepth()).to.equal(1);
+      expect(node.computeTreeHeight()).to.equal(0);
       node.setValue(-200);
-      expect(node.computeTreeDepth()).to.equal(1);
+      expect(node.computeTreeHeight()).to.equal(0);
       node.setValue('');
-      expect(node.computeTreeDepth()).to.equal(1);
+      expect(node.computeTreeHeight()).to.equal(0);
       node.setValue('unittest');
-      expect(node.computeTreeDepth()).to.equal(1);
+      expect(node.computeTreeHeight()).to.equal(0);
       node.setValue(null);
-      expect(node.computeTreeDepth()).to.equal(1);
+      expect(node.computeTreeHeight()).to.equal(0);
       node.setValue(undefined);
-      expect(node.computeTreeDepth()).to.equal(1);
+      expect(node.computeTreeHeight()).to.equal(0);
     });
 
     it("internal node", () => {
-      child1.setTreeDepth(1);
-      child2.setTreeDepth(2);
-      child3.setTreeDepth(3);
-      expect(stateTree.computeTreeDepth()).to.equal(4);
+      child1.setTreeHeight(0);
+      child2.setTreeHeight(1);
+      child3.setTreeHeight(2);
+      expect(stateTree.computeTreeHeight()).to.equal(3);
     });
   });
 
@@ -1039,37 +1049,37 @@ describe("state-node", () => {
       node.setValue(true);
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(10);
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(-200);
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue('');
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue('unittest');
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(null);
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
       node.setValue(undefined);
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
     });
 
@@ -1077,15 +1087,15 @@ describe("state-node", () => {
       child1.setProofHash('proofHash1');
       child2.setProofHash('proofHash2');
       child3.setProofHash('proofHash3');
-      child1.setTreeDepth(1);
-      child2.setTreeDepth(2);
-      child3.setTreeDepth(3);
+      child1.setTreeHeight(1);
+      child2.setTreeHeight(2);
+      child3.setTreeHeight(3);
       child1.setTreeSize(2);
       child2.setTreeSize(3);
       child3.setTreeSize(5);
       node.updateProofHashAndStateInfo();
       expect(node.getProofHash()).to.equal(node.buildProofHash());
-      expect(node.getTreeDepth()).to.equal(node.computeTreeDepth());
+      expect(node.getTreeHeight()).to.equal(node.computeTreeHeight());
       expect(node.getTreeSize()).to.equal(node.computeTreeSize());
     });
   });
