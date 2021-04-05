@@ -317,7 +317,7 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      // Tree info (proof hash, tree size, tree depth) is not updated.
+      // Expect no updates on proof hash and tree info (tree size, tree depth).
       assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(true), {
         ".version": "ver1",
         ".version:bool": "ver1",

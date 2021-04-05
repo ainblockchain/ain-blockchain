@@ -424,6 +424,15 @@ class DB {
     return rootProof;
   }
 
+  getTreeDepth(treePath) {
+    const parsedPath = ChainUtil.parsePath(treePath);
+    const stateNode = DB.getRefForReading(this.stateRoot, parsedPath);
+    if (stateNode === null) {
+      return 0;
+    }
+    return stateNode.getTreeDepth();
+  }
+
   getTreeSize(treePath) {
     const parsedPath = ChainUtil.parsePath(treePath);
     const stateNode = DB.getRefForReading(this.stateRoot, parsedPath);
