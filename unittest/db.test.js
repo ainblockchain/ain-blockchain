@@ -2697,7 +2697,7 @@ describe("DB sharding config", () => {
   })
 })
 
-describe("Test proof with database", () => {
+describe("Proof hash", () => {
   let node, valuesObject;
 
   beforeEach(() => {
@@ -2843,6 +2843,114 @@ describe("Test proof with database", () => {
       assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
       assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
       assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
+    });
+  });
+});
+
+describe("Tree info (getTreeDepth, getTreeSize)", () => {
+  let node, valuesObject;
+
+  beforeEach(() => {
+    let result;
+
+    rimraf.sync(CHAINS_DIR);
+
+    node = new BlockchainNode();
+    setNodeForTesting(node);
+
+    valuesObject = {
+      label1: {
+        label11: 'value11',
+        label12: {
+          label121: 'value121',
+          label122: 'value122',
+        }
+      },
+      label2: {
+        label21: 'value11',
+        label22: 'value12',
+      }
+    };
+    result = node.db.setValue("test", valuesObject);
+    assert.deepEqual(result, true);
+  });
+
+  afterEach(() => {
+    rimraf.sync(CHAINS_DIR);
+  });
+
+  describe("No tree structure change", () => {
+    it("replace node values", () => {
+      result = node.db.setValue('test/label1/label12', {  // Only value updates
+        label121: 'new_value121',
+        label122: 'new_value122'
+      });
+      assert.deepEqual(result, true);
+
+      // Tree depth
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1'), 3);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label11'), 1);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12'), 2);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12/label121'), 1);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12/label122'), 1);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2'), 2);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21'), 1);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label22'), 1);
+
+      // Tree size
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1'), 5);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label11'), 1);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12'), 3);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12/label121'), 1);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12/label122'), 1);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2'), 3);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21'), 1);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label22'), 1);
+    });
+  });
+
+  describe("Tree reduction", () => {
+    it("remove state nodes", () => {
+      result = node.db.setValue("test/label1/label12", null);  // Reduce tree
+      assert.deepEqual(result, true);
+
+      // Tree depth
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1'), 2);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label11'), 1);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1/label12'), 0);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2'), 2);
+
+      // Tree size
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1'), 2);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label11'), 1);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1/label12'), 0);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2'), 3);
+    });
+  });
+
+  describe("Tree expansion", () => {
+    it("add state nodes", () => {
+      result = node.db.setValue('test/label2/label21', {  // Expand tree
+        label211: 'value211',
+        label212: 'value212'
+      });
+      assert.deepEqual(result, true);
+
+      // Tree depth
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label1'), 3);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2'), 3);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21'), 2);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21/label211'), 1);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label21/label212'), 1);
+      assert.strictEqual(node.db.getTreeDepth('/values/test/label2/label22'), 1);
+
+      // Tree size
+      assert.strictEqual(node.db.getTreeSize('/values/test/label1'), 5);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2'), 5);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21'), 3);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21/label211'), 1);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label21/label212'), 1);
+      assert.strictEqual(node.db.getTreeSize('/values/test/label2/label22'), 1);
     });
   });
 });

@@ -268,7 +268,7 @@ class StateNode {
     if (this.getIsLeaf()) {
       return 1;
     } else {
-      return 1 + this.getChildNodes().reduce((max, cur) => Math.max(max, cur.getTreeDepth()), 0);
+      return this.getChildNodes().reduce((max, cur) => Math.max(max, cur.getTreeDepth() + 1), 1);
     }
   }
 
