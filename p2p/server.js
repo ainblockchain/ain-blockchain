@@ -148,7 +148,7 @@ class P2pServer {
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.nonce,
       dbStatus: {
-        treeSize: this.node.db.getTreeSize('/'),
+        stateInfo: this.node.db.getStateInfo('/'),
         proof: this.node.db.getProof('/'),
       },
       stateVersionStatus: this.getStateVersionStatus(),
