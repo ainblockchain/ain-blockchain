@@ -73,7 +73,7 @@
   "manage_app": {
     "$app_name": {
       "config": {
-        ".write": "auth.fid === '_createApp'"
+        ".write": "auth.fid === '_createApp' || getValue('/manage_app/' + $app_name + '/config/admin/' + auth.addr) === true"
       },
       "create": {
         "$record_id": {
