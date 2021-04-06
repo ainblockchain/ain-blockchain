@@ -203,7 +203,7 @@ class Block {
     return Transaction.fromTxBody(firstTxBody, privateKey);
   }
 
-  static buildAccountsSetupTx(ownerAddress, timestamp, privateKey) {
+  static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -232,7 +232,7 @@ class Block {
     return Transaction.fromTxBody(secondTxBody, privateKey);
   }
 
-  static buildConsensusAppTx(timestamp, privateKey) {
+  static buildConsensusAppTx(timestamp, privateKey, ownerAddress) {
     const thirdTxBody = {
       nonce: -1,
       timestamp,
@@ -241,7 +241,7 @@ class Block {
         ref: getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
         value: {
           [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
-            [AI_NETWORK]: true // NOTE: there is no admin for consensus
+            [ownerAddress]: true
           },
           [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
             [PredefinedDbPaths.STAKING]: {
@@ -284,8 +284,8 @@ class Block {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
-    const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
-    const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey);
+    const secondTx = this.buildAccountsSetupTx(genesisTime, ownerPrivateKey, ownerAddress);
+    const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey, ownerAddress);
     // TODO(lia): Change the logic to staking & signing by the current node
     const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
