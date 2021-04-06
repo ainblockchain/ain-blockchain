@@ -17,7 +17,13 @@ const {
   AccountProperties,
   ProofProperties,
   StateVersions,
+  AI_NETWORK,
 } = require('../common/constants');
+const {
+  getTransferValuePath,
+  getCreateAppRecordPath,
+  getStakingStakeRecordValuePath,
+} = require('../db/path-util');
 
 class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
@@ -207,8 +213,7 @@ class Block {
         // Transfer operation
         const op = {
           type: 'SET_VALUE',
-          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAddress}/` +
-              `${accountAddress}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
+          ref: getTransferValuePath(ownerAddress, accountAddress, i),
           value: GenesisAccounts[AccountProperties.SHARES],
         };
         transferOps.push(op);
@@ -233,11 +238,10 @@ class Block {
       timestamp,
       operation: {
         type: 'SET_VALUE',
-        ref: `${PredefinedDbPaths.MANAGE_APP}/${PredefinedDbPaths.CONSENSUS}/` +
-            `${PredefinedDbPaths.MANAGE_APP_CREATE}/${timestamp}`,
+        ref: getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
         value: {
           [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
-            AI_NETWORK: true
+            [AI_NETWORK]: true
           },
           [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
             [PredefinedDbPaths.STAKING]: {
@@ -264,15 +268,7 @@ class Block {
         timestamp,
         operation: {
           type: 'SET_VALUE',
-          ref: ChainUtil.formatPath([
-            PredefinedDbPaths.STAKING,
-            PredefinedDbPaths.CONSENSUS,
-            address,
-            0,
-            PredefinedDbPaths.STAKING_STAKE,
-            timestamp,
-            PredefinedDbPaths.STAKING_VALUE
-          ]),
+          ref: getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
           value: amount
         }
       };
