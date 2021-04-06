@@ -241,7 +241,7 @@ class Block {
         ref: getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
         value: {
           [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
-            [AI_NETWORK]: true
+            [AI_NETWORK]: true // NOTE: there is no admin for consensus
           },
           [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
             [PredefinedDbPaths.STAKING]: {
