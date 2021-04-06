@@ -17,7 +17,6 @@ const {
   AccountProperties,
   ProofProperties,
   StateVersions,
-  AI_NETWORK,
 } = require('../common/constants');
 const {
   getTransferValuePath,
