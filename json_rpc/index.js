@@ -367,12 +367,12 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     // Network API
     net_listening: function(args, done) {
-      const peerCount = p2pServer.sockets.length;
+      const peerCount = Object.keys(p2pServer.inbound).length;
       done(null, addProtocolVersion({result: !!peerCount}));
     },
 
     net_peerCount: function(args, done) {
-      const peerCount = p2pServer.sockets.length;
+      const peerCount = Object.keys(p2pServer.inbound).length;
       done(null, addProtocolVersion({result: peerCount}));
     },
 
