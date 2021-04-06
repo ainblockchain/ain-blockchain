@@ -547,27 +547,6 @@ class Functions {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
       return;
     }
-    if (serviceName === PredefinedDbPaths.CONSENSUS) {
-      // Reject withdrawing consensus stakes if it reduces the number of validators to less than
-      // MIN_NUM_VALIDATORS.
-      const whitelist = this.db.getValue(
-          ChainUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST]));
-      let numValidators = 0;
-      Object.keys(whitelist).forEach((address) => {
-        const accountName = ChainUtil.toServiceAccountName(
-            PredefinedDbPaths.STAKING, serviceName, `${address}|0`);
-        const stakingAccount = this.db.getValue(
-            ChainUtil.formatPath([PredefinedDbPaths.SERVICE_ACCOUNTS, PredefinedDbPaths.STAKING,
-                PredefinedDbPaths.CONSENSUS, accountName]));
-        if (stakingAccount && stakingAccount.balance > MIN_STAKE_PER_VALIDATOR) {
-          numValidators++;
-        }
-      });
-      if (numValidators <= MIN_NUM_VALIDATORS) {
-        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-        return;
-      }
-    }
     const stakingServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
