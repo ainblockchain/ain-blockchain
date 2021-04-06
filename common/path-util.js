@@ -1,5 +1,5 @@
-const { PredefinedDbPaths, ShardingProperties } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const { PredefinedDbPaths, ShardingProperties } = require('./constants');
+const ChainUtil = require('./chain-util');
 
 function getAccountBalancePath(address) {
   return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, balance]);

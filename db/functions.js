@@ -17,7 +17,7 @@ const {
   FeatureFlags,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const PathUtil = require('./path-util');
+const PathUtil = require('../common/path-util');
 const {
   sendSignedTx,
   signAndSendTx

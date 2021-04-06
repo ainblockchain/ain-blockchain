@@ -39,7 +39,7 @@ const {
   getConsensusProposePath,
   getConsensusVotePath,
   getStakingStakeRecordValuePath,
-} = require('../db/path-util');
+} = require('../common/path-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
