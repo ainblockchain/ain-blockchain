@@ -2697,7 +2697,7 @@ describe("DB sharding config", () => {
   })
 })
 
-describe("Test proof with database", () => {
+describe("Proof hash", () => {
   let node, valuesObject;
 
   beforeEach(() => {
@@ -2800,10 +2800,10 @@ describe("Test proof with database", () => {
     });
   });
 
-  describe("getProof", () => {
+  describe("State proof (getStateProof)", () => {
     it("tests proof with a null case", () => {
       const rootNode = node.db.stateRoot;
-      assert.deepEqual(null, node.db.getProof('/test/test'));
+      assert.deepEqual(null, node.db.getStateProof('/test/test'));
     });
 
     it("tests proof with owners, rules, values and functions", () => {
@@ -2838,11 +2838,117 @@ describe("Test proof with database", () => {
         Object.assign(functionsProof.functions,
           { [label]: { [ProofProperties.PROOF_HASH]: functionNode.getChild(label).getProofHash() } });
       });
-      assert.deepEqual(rootProof, node.db.getProof('/'));
-      assert.deepEqual(ownersProof, node.db.getProof('/owners/test'));
-      assert.deepEqual(rulesProof, node.db.getProof('/rules/test'));
-      assert.deepEqual(valuesProof, node.db.getProof('/values/test'));
-      assert.deepEqual(functionsProof, node.db.getProof('/functions/test'));
+      assert.deepEqual(rootProof, node.db.getStateProof('/'));
+      assert.deepEqual(ownersProof, node.db.getStateProof('/owners/test'));
+      assert.deepEqual(rulesProof, node.db.getStateProof('/rules/test'));
+      assert.deepEqual(valuesProof, node.db.getStateProof('/values/test'));
+      assert.deepEqual(functionsProof, node.db.getStateProof('/functions/test'));
+    });
+  });
+});
+
+describe("State info (getStateInfo)", () => {
+  let node, valuesObject;
+
+  beforeEach(() => {
+    let result;
+
+    rimraf.sync(CHAINS_DIR);
+
+    node = new BlockchainNode();
+    setNodeForTesting(node);
+
+    valuesObject = {
+      label1: {
+        label11: 'value11',
+        label12: {
+          label121: 'value121',
+          label122: 'value122',
+        }
+      },
+      label2: {
+        label21: 'value11',
+        label22: 'value12',
+      }
+    };
+    result = node.db.setValue("test", valuesObject);
+    assert.deepEqual(result, true);
+  });
+
+  afterEach(() => {
+    rimraf.sync(CHAINS_DIR);
+  });
+
+  describe("No tree structure change", () => {
+    it("replace node values", () => {
+      result = node.db.setValue('test/label1/label12', {  // Only value updates
+        label121: 'new_value121',
+        label122: 'new_value122'
+      });
+      assert.deepEqual(result, true);
+
+      // Existing paths.
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1'), { tree_height: 2, tree_size: 5 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label11'), { tree_height: 0, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label12'), { tree_height: 1, tree_size: 3 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label12/label121'),
+          { tree_height: 0, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label12/label122'),
+          { tree_height: 0, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2'), { tree_height: 1, tree_size: 3 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21'), { tree_height: 0, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label22'), { tree_height: 0, tree_size: 1 });
+
+      // Non-existing paths.
+      assert.deepEqual(node.db.getStateInfo('/values/test/non-existing/path'), null);
+    });
+  });
+
+  describe("Tree reduction", () => {
+    it("remove state nodes", () => {
+      result = node.db.setValue("test/label1/label12", null);  // Reduce tree
+      assert.deepEqual(result, true);
+
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1'), { tree_height: 1, tree_size: 2 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1/label11'), { tree_height: 0, tree_size: 1 });
+      assert.deepEqual(node.db.getStateInfo('/values/test/label1/label12'), null);
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2'), { tree_height: 1, tree_size: 3 });
+    });
+  });
+
+  describe("Tree expansion", () => {
+    it("add state nodes", () => {
+      result = node.db.setValue('test/label2/label21', {  // Expand tree
+        label211: 'value211',
+        label212: 'value212'
+      });
+      assert.deepEqual(result, true);
+
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label1'), { tree_height: 2, tree_size: 5 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2'), { tree_height: 2, tree_size: 5 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21'), { tree_height: 1, tree_size: 3 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21/label211'),
+          { tree_height: 0, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label21/label212'),
+          { tree_height: 0, tree_size: 1 });
+      assert.deepEqual(
+          node.db.getStateInfo('/values/test/label2/label22'), { tree_height: 0, tree_size: 1 });
     });
   });
 });
