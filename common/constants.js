@@ -54,6 +54,7 @@ const CHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
+const AI_NETWORK = 'AI_Network';
 
 // Enums
 /**
@@ -602,6 +603,7 @@ module.exports = {
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
+  AI_NETWORK,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
