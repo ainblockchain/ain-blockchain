@@ -460,11 +460,8 @@ class Functions {
     const transaction = context.transaction;
     const auth = context.auth;
     const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
-    const lockupDurationKey = `${PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE}.` +
-        `${PredefinedDbPaths.STAKING}.${PredefinedDbPaths.STAKING_LOCKUP_DURATION}`;
-    const lockupDurationVal = _.get(value, lockupDurationKey);
     if (!ChainUtil.isDict(_.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN)) ||
-        !ChainUtil.isNumber(lockupDurationVal)) {
+        !ChainUtil.isDict(_.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE))) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
