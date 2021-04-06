@@ -241,12 +241,22 @@ const FunctionTypes = {
 };
 
 /**
- * Properties of proof configs.
+ * Properties of state proof.
  *
  * @enum {string}
  */
 const ProofProperties = {
   PROOF_HASH: '.proof_hash',
+};
+
+/**
+ * Properties of state info.
+ *
+ * @enum {string}
+ */
+const StateInfoProperties = {
+  TREE_HEIGHT: 'tree_height',
+  TREE_SIZE: 'tree_size',
 };
 
 /**
@@ -321,7 +331,6 @@ const ReadDbOperations = {
   GET_FUNCTION: 'GET_FUNCTION',
   GET_RULE: 'GET_RULE',
   GET_OWNER: 'GET_OWNER',
-  GET_PROOF: 'GET_PROOF',
   MATCH_FUNCTION: 'MATCH_FUNCTION',
   MATCH_RULE: 'MATCH_RULE',
   MATCH_OWNER: 'MATCH_OWNER',
@@ -618,6 +627,7 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   ProofProperties,
+  StateInfoProperties,
   NativeFunctionIds,
   ShardingProperties,
   ShardingProtocols,

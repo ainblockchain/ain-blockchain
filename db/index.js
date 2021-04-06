@@ -8,6 +8,7 @@ const {
   OwnerProperties,
   RuleProperties,
   ProofProperties,
+  StateInfoProperties,
   ShardingProperties,
   GenesisAccounts,
   GenesisSharding,
@@ -273,8 +274,8 @@ class DB {
   /**
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
-  // NOTE(seo): The nodes with multiple ref paths should be cloned in order not to affect
-  //            other ref paths to the altered node.
+  // NOTE(seo): The nodes with multiple ref paths (i.e., multiple roots) should be cloned
+  //            in order not to affect other ref paths to the altered node.
   //
   // Typical case:
   // - root_a has subtree child_1a -> child_2 -> child_3 
@@ -288,13 +289,13 @@ class DB {
   //
   getRefForWriting(fullPath) {
     let node = this.stateRoot;
-    let maxNumParents = node.numParents();
+    let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (FeatureFlags.enableStateVersionOpt) {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
-          if (maxNumParents > 1 || child.numParents() > 1) {
+          if (hasMultipleRoots || child.numParents() > 1) {
             const clonedChild = child.clone(this.stateVersion);
             clonedChild.resetValue();
             node.setChild(label, clonedChild);
@@ -308,7 +309,7 @@ class DB {
           node.setChild(label, newChild);
           node = newChild;
         }
-        maxNumParents = Math.max(maxNumParents, node.numParents());
+        hasMultipleRoots = hasMultipleRoots || node.numParents() > 1;
       } else {
         if (node.hasChild(label)) {
           const child = node.getChild(label);
@@ -401,11 +402,11 @@ class DB {
 
   /**
    * Returns a proof of a state node.
-   * @param {string} treePath full database path to the state node to be proved.
+   * @param {string} statePath full database path to the state node
    */
-  // TODO(seo): Consider supporting global path for getProof().
-  getProof(treePath) {
-    const parsedPath = ChainUtil.parsePath(treePath);
+  // TODO(seo): Consider supporting global path for getStateProof().
+  getStateProof(statePath) {
+    const parsedPath = ChainUtil.parsePath(statePath);
     let node = this.stateRoot;
     const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
     let proof = rootProof;
@@ -424,13 +425,20 @@ class DB {
     return rootProof;
   }
 
-  getTreeSize(treePath) {
-    const parsedPath = ChainUtil.parsePath(treePath);
+  /**
+   * Returns a state node's information.
+   * @param {string} statePath full database path to the state node
+   */
+  getStateInfo(statePath) {
+    const parsedPath = ChainUtil.parsePath(statePath);
     const stateNode = DB.getRefForReading(this.stateRoot, parsedPath);
     if (stateNode === null) {
-      return 0;
+      return null;
     }
-    return stateNode.getTreeSize();
+    return {
+      [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
+      [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
+    };
   }
 
   matchFunction(funcPath, isGlobal) {
@@ -496,8 +504,6 @@ class DB {
         resultList.push(this.getFunction(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(op.ref, op.is_global));
-      } else if (op.type === ReadDbOperations.GET_PROOF) {
-        resultList.push(this.getProof(op.ref));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
         resultList.push(this.matchFunction(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {

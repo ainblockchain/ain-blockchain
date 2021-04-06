@@ -99,10 +99,10 @@ app.get('/get_owner', (req, res, next) => {
 });
 
 /**
- * Returns a proof of the state node in the given full database path.
+ * Returns the state proof at the given full database path.
  */
-app.get('/get_proof', (req, res, next) => {
-  const result = node.db.getProof(req.query.ref);
+app.get('/get_state_proof', (req, res, next) => {
+  const result = node.db.getStateProof(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -110,10 +110,10 @@ app.get('/get_proof', (req, res, next) => {
 });
 
 /**
- * Returns the size of the state tree in the given full database path.
+ * Returns the state information at the given full database path.
  */
-app.get('/get_tree_size', (req, res, next) => {
-  const result = node.db.getTreeSize(req.query.ref);
+app.get('/get_state_info', (req, res, next) => {
+  const result = node.db.getStateInfo(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
