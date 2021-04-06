@@ -460,15 +460,14 @@ class Functions {
     const transaction = context.transaction;
     const auth = context.auth;
     const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
-    if (!ChainUtil.isDict(_.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN)) ||
-        !ChainUtil.isDict(_.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE))) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
-    }
     const sanitizedVal = {};
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
+    if (!ChainUtil.isDict(adminConfig) || !ChainUtil.isDict(serviceConfig)) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return;
+    }
     if (adminConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
     }
