@@ -470,18 +470,13 @@ class Functions {
     }
     const sanitizedVal = {};
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
-    const billingUsersConfig = _.get(value,
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}.${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}`);
-    const serviceConfig = {
-      [PredefinedDbPaths.STAKING]: {
-        [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: lockupDurationVal
-      }
-    };
+    const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
+    const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
     if (adminConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
     }
-    if (billingUsersConfig) {
-      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingUsersConfig;
+    if (billingConfig) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingConfig;
     }
     if (serviceConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
