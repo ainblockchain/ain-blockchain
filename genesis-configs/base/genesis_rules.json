@@ -3,7 +3,7 @@
   "accounts": {
     "$user_addr": {
       "balance": {
-        ".write": "auth.fid === '_transfer' || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim'"
+        ".write": "auth.fid === '_transfer'"
       }
     }
   },
@@ -127,7 +127,7 @@
             }
           },
           "balance": {
-            ".write": "auth.fid === '_transfer' || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release'"
+            ".write": "auth.fid === '_transfer'"
           }
         }
       }
