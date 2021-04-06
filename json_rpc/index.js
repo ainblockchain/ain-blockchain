@@ -16,7 +16,7 @@ const {
   getAccountBalancePath,
   getConsensusWhitelistAddrPath,
   getServiceAccountBalancePath,
-} = require('../db/path-util');
+} = require('../common/path-util');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the

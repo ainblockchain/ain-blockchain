@@ -23,7 +23,7 @@ const {
   getTransferValuePath,
   getCreateAppRecordPath,
   getStakingStakeRecordValuePath,
-} = require('../db/path-util');
+} = require('../common/path-util');
 
 class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
