@@ -14,6 +14,7 @@ const {
   GenesisSharding,
   StateVersions,
   LIGHTWEIGHT,
+  TREE_HEIGHT_LIMIT,
   buildOwnerPermissions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -72,7 +73,7 @@ class DB {
 
   /**
    * Sets state version with its state root.
-   * 
+   *
    * @param {string} stateVersion state version
    * @param {StateNode} stateRoot state root
    */
@@ -97,7 +98,7 @@ class DB {
 
   /**
    * Sets backup state version with its state root.
-   * 
+   *
    * @param {string} backupStateVersion backup state version
    * @param {StateNode} backupStateRoot backup state root
    */
@@ -278,10 +279,10 @@ class DB {
   //            in order not to affect other ref paths to the altered node.
   //
   // Typical case:
-  // - root_a has subtree child_1a -> child_2 -> child_3 
+  // - root_a has subtree child_1a -> child_2 -> child_3
   // - root_b has subtree child_1b -> child_2 -> child_3 (child_2 and child_3 are shared)
   // - Want to change child_3 -> child_3a from root_a
-  // 
+  //
   // Expected behavior:
   // - Shared node child_2 is cloned along with child_3
   // - Reference from root_a: child_1a -> child_2a -> child_3a
@@ -855,8 +856,14 @@ class DB {
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-    return this.executeOperation(
+    const executedResult = this.executeOperation(
         txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
+    const executedStateInfo = this.getStateInfo();
+    if (executedResult && executedStateInfo[StateInfoProperties.TREE_HEIGHT] > TREE_HEIGHT_LIMIT) {
+      return ChainUtil.returnError(910, `Out of tree height limit ` +
+          `(${executedStateInfo[StateInfoProperties.TREE_HEIGHT]} > ${TREE_HEIGHT_LIMIT})`);
+    }
+    return executedResult;
   }
 
   executeTransactionList(txList) {
