@@ -24,5 +24,8 @@
     "MAX_INBOUND_LIMIT": 3,
     "DEFAULT_MAX_OUTBOUND": 2,
     "DEFAULT_MAX_INBOUND": 3
+  },
+  "resource": {
+    "TREE_HEIGHT_LIMIT": 20
   }
 }
