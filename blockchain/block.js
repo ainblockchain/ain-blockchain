@@ -1,5 +1,6 @@
 const stringify = require('fast-json-stable-stringify');
 const sizeof = require('object-sizeof');
+const moment = require('moment');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -17,6 +18,11 @@ const {
   ProofProperties,
   StateVersions,
 } = require('../common/constants');
+const {
+  getTransferValuePath,
+  getCreateAppRecordPath,
+  getStakingStakeRecordValuePath,
+} = require('../common/path-util');
 
 class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
@@ -196,7 +202,7 @@ class Block {
     return Transaction.fromTxBody(firstTxBody, privateKey);
   }
 
-  static buildAccountsSetupTx(ownerAddress, timestamp, privateKey) {
+  static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -206,8 +212,7 @@ class Block {
         // Transfer operation
         const op = {
           type: 'SET_VALUE',
-          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAddress}/` +
-              `${accountAddress}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
+          ref: getTransferValuePath(ownerAddress, accountAddress, i),
           value: GenesisAccounts[AccountProperties.SHARES],
         };
         transferOps.push(op);
@@ -226,6 +231,28 @@ class Block {
     return Transaction.fromTxBody(secondTxBody, privateKey);
   }
 
+  static buildConsensusAppTx(timestamp, privateKey, ownerAddress) {
+    const thirdTxBody = {
+      nonce: -1,
+      timestamp,
+      operation: {
+        type: 'SET_VALUE',
+        ref: getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
+        value: {
+          [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
+            [ownerAddress]: true
+          },
+          [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
+            [PredefinedDbPaths.STAKING]: {
+              [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: moment.duration(180, 'days').as('milliseconds')
+            }
+          }
+        }
+      }
+    }
+    return Transaction.fromTxBody(thirdTxBody, privateKey);
+  }
+
   static buildGenesisStakingTxs(timestamp) {
     const _ = require('lodash');
     const txs = [];
@@ -240,12 +267,7 @@ class Block {
         timestamp,
         operation: {
           type: 'SET_VALUE',
-          ref: ChainUtil.formatPath([
-            PredefinedDbPaths.DEPOSIT_CONSENSUS,
-            address,
-            1,
-            PredefinedDbPaths.DEPOSIT_VALUE
-          ]),
+          ref: getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
           value: amount
         }
       };
@@ -261,11 +283,12 @@ class Block {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
-    const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
+    const secondTx = this.buildAccountsSetupTx(genesisTime, ownerPrivateKey, ownerAddress);
+    const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey, ownerAddress);
     // TODO(lia): Change the logic to staking & signing by the current node
     const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
-    return [firstTx, secondTx, ...stakingTxs];
+    return [firstTx, secondTx, thirdTx, ...stakingTxs];
   }
 
   static getGenesisStateProofHash() {

@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const moment = require('moment');
 const semver = require('semver');
 const ChainUtil = require('./chain-util');
 
@@ -87,7 +86,6 @@ const BlockchainNodeStates = {
  * Predefined database paths.
  * @enum {string}
  */
-// TODO(lia): Pick one convention: full-paths (e.g. /deposit/consensus) or keys (e.g. token)
 // TODO(seo): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
 const PredefinedDbPaths = {
   // Roots
@@ -123,22 +121,25 @@ const PredefinedDbPaths = {
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',
   TRANSFER_RESULT: 'result',
-  // Deposit & Withdraw
-  DEPOSIT: 'deposit',
-  DEPOSIT_ACCOUNTS: 'deposit_accounts',
-  DEPOSIT_CONFIG: 'config',
-  DEPOSIT_CREATED_AT: 'created_at',
-  DEPOSIT_EXPIRE_AT: 'expire_at',
-  DEPOSIT_LOCKUP_DURATION: 'lockup_duration',
-  DEPOSIT_RESULT: 'result',
-  DEPOSIT_VALUE: 'value',
-  WITHDRAW: 'withdraw',
-  WITHDRAW_CREATED_AT: 'created_at',
-  WITHDRAW_RESULT: 'result',
-  WITHDRAW_VALUE: 'value',
-  DEPOSIT_ACCOUNTS_CONSENSUS: 'deposit_accounts/consensus',
-  DEPOSIT_CONSENSUS: 'deposit/consensus',
-  WITHDRAW_CONSENSUS: 'withdraw/consensus',
+  // Apps & Manage app
+  APPS: 'apps',
+  MANAGE_APP: 'manage_app',
+  MANAGE_APP_CONFIG: 'config',
+  MANAGE_APP_CONFIG_ADMIN: 'admin',
+  MANAGE_APP_CONFIG_BILLING: 'billing',
+  MANAGE_APP_CONFIG_BILLING_USERS: 'users',
+  MANAGE_APP_CONFIG_SERVICE: 'service',
+  MANAGE_APP_CREATE: 'create',
+  MANAGE_APP_RESULT: 'result',
+  // Staking
+  STAKING: 'staking',
+  STAKING_BALANCE_TOTAL: 'balance_total',
+  STAKING_EXPIRE_AT: 'expire_at',
+  STAKING_LOCKUP_DURATION: 'lockup_duration',
+  STAKING_RESULT: 'result',
+  STAKING_STAKE: 'stake',
+  STAKING_UNSTAKE: 'unstake',
+  STAKING_VALUE: 'value',
   // Payments
   PAYMENTS: 'payments',
   PAYMENTS_ADMIN: 'admin',
@@ -267,16 +268,17 @@ const StateInfoProperties = {
 const NativeFunctionIds = {
   CLAIM: '_claim',
   CLOSE_CHECKIN: '_closeCheckin',
-  DEPOSIT: '_deposit',
+  CREATE_APP: '_createApp',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
   OPEN_ESCROW: '_openEscrow',
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
+  STAKE: '_stake',
   TRANSFER: '_transfer',
+  UNSTAKE: '_unstake',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
-  WITHDRAW: '_withdraw',
 };
 
 /**
@@ -377,13 +379,6 @@ const TransactionStatus = {
   POOL_STATUS: 'POOL',
   TIMEOUT_STATUS: 'TIMEOUT',
   FAIL_STATUS: 'FAIL'
-};
-
-/**
- * Default values.
- */
-const DefaultValues = {
-  DEPOSIT_LOCKUP_DURATION_MS: moment.duration(180, 'days').as('milliseconds')
 };
 
 /**
@@ -635,7 +630,6 @@ module.exports = {
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
-  DefaultValues,
   StateVersions,
   FeatureFlags,
   GenesisToken,
