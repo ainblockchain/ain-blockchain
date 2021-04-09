@@ -33,6 +33,13 @@ const {
   signAndSendTx,
   sendGetRequest
 } = require('../p2p/util');
+const {
+  getConsensusStakingAccountPath,
+  getConsensusWhitelistPath,
+  getConsensusProposePath,
+  getConsensusVotePath,
+  getStakingStakeRecordValuePath,
+} = require('../common/path-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -75,7 +82,7 @@ class Consensus {
     const myAddr = this.node.account.address;
     try {
       const targetStake = process.env.STAKE ? Number(process.env.STAKE) : 0;
-      const currentStake = this.getValidConsensusDeposit(myAddr);
+      const currentStake = this.getValidConsensusStake(myAddr);
       logger.info(`[${LOG_HEADER}] Current stake: ${currentStake} / Target stake: ${targetStake}`);
       if (!targetStake && !currentStake) {
         logger.info(`[${LOG_HEADER}] Node doesn't have any stakes. ` +
@@ -163,7 +170,7 @@ class Consensus {
     if (!lastNotarizedBlock) {
       logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.state.epoch})`);
     }
-    // Need the block#1 to be finalized to have the deposits reflected in the state
+    // Need the block#1 to be finalized to have the stakes reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators
         : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
 
@@ -331,16 +338,15 @@ class Consensus {
     this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
 
     const myAddr = this.node.account.address;
-    // Need the block#1 to be finalized to have the deposits reflected in the state
+    // Need the block#1 to be finalized to have the stakes reflected in the state
     let validators = {};
     if (this.node.bc.lastBlockNumber() < 1) {
       const whitelist = GENESIS_WHITELIST;
       for (const address in whitelist) {
         if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
-          const deposit = tempDb.getValue(`/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`);
-          if (whitelist[address] === true && deposit &&
-              deposit.value >= MIN_STAKE_PER_VALIDATOR) {
-            validators[address] = deposit.value;
+          const stakingAccount = tempDb.getValue(getConsensusStakingAccountPath(address));
+          if (whitelist[address] === true && stakingAccount && stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
+            validators[address] = stakingAccount.balance;
           }
         }
       }
@@ -364,12 +370,7 @@ class Consensus {
     let proposalTx;
     const proposeOp = {
       type: WriteDbOperations.SET_VALUE,
-      ref: ChainUtil.formatPath([
-        PredefinedDbPaths.CONSENSUS,
-        PredefinedDbPaths.NUMBER,
-        blockNumber,
-        PredefinedDbPaths.PROPOSE
-      ]),
+      ref: getConsensusProposePath(blockNumber),
       value: {
         number: blockNumber,
         epoch: this.state.epoch,
@@ -708,13 +709,7 @@ class Consensus {
     }
     const operation = {
       type: WriteDbOperations.SET_VALUE,
-      ref: ChainUtil.formatPath([
-        PredefinedDbPaths.CONSENSUS,
-        PredefinedDbPaths.NUMBER,
-        block.number,
-        PredefinedDbPaths.VOTE,
-        myAddr
-      ]),
+      ref: getConsensusVotePath(block.number, myAddr),
       value: {
         [PredefinedDbPaths.BLOCK_HASH]: block.hash,
         [PredefinedDbPaths.STAKE]: myStake
@@ -887,8 +882,7 @@ class Consensus {
   getWhitelist() {
     const LOG_HEADER = 'getWhitelist';
     const whitelist = this.node.getValueWithStateVersion(
-        `/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.WHITELIST}`, false,
-        this.node.stateManager.getFinalVersion());
+        getConsensusWhitelistPath(), false, this.node.stateManager.getFinalVersion());
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
@@ -904,14 +898,14 @@ class Consensus {
       throw Error(err);
     }
     const whitelist = this.node.getValueWithStateVersion(
-        `/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.WHITELIST}`, false, stateVersion) || {};
+        getConsensusWhitelistPath(), false, stateVersion) || {};
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
-      const deposit = this.node.getValueWithStateVersion(
-        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false, stateVersion) || {};
-      if (whitelist[address] === true && deposit &&
-          deposit.value >= MIN_STAKE_PER_VALIDATOR) {
-        validators[address] = deposit.value;
+      const stakingAccount = this.node.getValueWithStateVersion(
+          getConsensusStakingAccountPath(address), false, stateVersion);
+      if (whitelist[address] === true && stakingAccount &&
+          stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
+        validators[address] = stakingAccount.balance;
       }
     });
     logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
@@ -919,12 +913,11 @@ class Consensus {
     return validators;
   }
 
-  getValidConsensusDeposit(address) {
-    const deposit = this.node.getValueWithStateVersion(
-        `/${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${address}`, false,
-        this.node.stateManager.getFinalVersion()) || {};
-    if (deposit && deposit.value > 0) {
-      return deposit.value;
+  getValidConsensusStake(address) {
+    const stakingAccount = this.node.getValueWithStateVersion(
+        getConsensusStakingAccountPath(address), false, this.node.stateManager.getFinalVersion());
+    if (stakingAccount && stakingAccount.balance > 0) {
+      return stakingAccount.balance;
     }
     return 0;
   }
@@ -947,16 +940,12 @@ class Consensus {
 
     const operation = {
       type: WriteDbOperations.SET_VALUE,
-      ref: ChainUtil.formatPath([
-        PredefinedDbPaths.DEPOSIT_CONSENSUS,
-        this.node.account.address,
-        PushId.generate(),
-        PredefinedDbPaths.DEPOSIT_VALUE
-      ]),
+      ref: getStakingStakeRecordValuePath(
+          PredefinedDbPaths.CONSENSUS, this.node.account.address, 0, PushId.generate()),
       value: amount
     };
-    const depositTx = this.node.createTransaction({ operation, nonce: -1 });
-    return depositTx;
+    const stakeTx = this.node.createTransaction({ operation, nonce: -1 });
+    return stakeTx;
   }
 
   async reportStateProofHashes() {
@@ -1161,10 +1150,10 @@ class Consensus {
     }
   }
 
-  static filterDepositTxs(txs) {
+  static filterStakeTxs(txs) {
     return txs.filter((tx) => {
       const ref = _.get(tx, 'tx_body.operation.ref');
-      return ref && ref.startsWith(`/${PredefinedDbPaths.DEPOSIT_CONSENSUS}`) &&
+      return ref && ref.startsWith(`/${PredefinedDbPaths.STAKING}/${PredefinedDbPaths.CONSENSUS}`) &&
         _.get(tx, 'tx_body.operation.type') === WriteDbOperations.SET_VALUE;
     });
   }

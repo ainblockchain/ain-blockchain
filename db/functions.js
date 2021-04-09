@@ -6,7 +6,6 @@ const {
   FunctionTypes,
   FunctionResultCode,
   NativeFunctionIds,
-  DefaultValues,
   ShardingProperties,
   GenesisSharding,
   WriteDbOperations,
@@ -16,10 +15,9 @@ const {
   TokenExchangeSchemes,
   FunctionProperties,
   FeatureFlags,
-  MIN_NUM_VALIDATORS,
-  MIN_STAKE_PER_VALIDATOR,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
+const PathUtil = require('../common/path-util');
 const {
   sendSignedTx,
   signAndSendTx
@@ -46,8 +44,8 @@ class Functions {
         func: this._claim.bind(this), ownerOnly: true },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
         func: this._closeCheckin.bind(this), ownerOnly: true },
-      [NativeFunctionIds.DEPOSIT]: {
-        func: this._deposit.bind(this), ownerOnly: true },
+      [NativeFunctionIds.CREATE_APP]: {
+        func: this._createApp.bind(this), ownerOnly: true },
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true },
       [NativeFunctionIds.OPEN_CHECKIN]: {
@@ -60,12 +58,14 @@ class Functions {
         func: this._release.bind(this), ownerOnly: true },
       [NativeFunctionIds.SAVE_LAST_TX]: {
         func: this._saveLastTx.bind(this), ownerOnly: false },
+      [NativeFunctionIds.STAKE]: {
+        func: this._stake.bind(this), ownerOnly: true },
+      [NativeFunctionIds.UNSTAKE]: {
+        func: this._unstake.bind(this), ownerOnly: true },
       [NativeFunctionIds.TRANSFER]: {
         func: this._transfer.bind(this), ownerOnly: true },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false },
-      [NativeFunctionIds.WITHDRAW]: {
-        func: this._withdraw.bind(this), ownerOnly: true },
     };
     this.callStack= [];
   }
@@ -389,25 +389,25 @@ class Functions {
   }
 
   /**
-   * Adds a transfer entry from a service account to a regular account or vice versa. Used by 
-   * service-related native functions such as payments, deposit, and withdraw.
+   * Adds a transfer entry from a service account to a regular account or vice versa. Used by
+   * service-related native functions such as payments and staking
    */
   setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
     if (ChainUtil.isServAcntName(to)) {
-      const serviceAccountAdminPath = this.getServiceAccountAdminPath(to);
+      const serviceAccountAdminPath = PathUtil.getServiceAccountAdminPathFromAccountName(to);
       const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
       if (serviceAccountAdmin === null) {
         // set admin as the from address of the original transaction
-        const serviceAccountAdminAddrPath =
-            this.getServiceAccountAdminAddrPath(to, transaction.address);
-        const adminSetupResult =
-            this.setValueOrLog(serviceAccountAdminAddrPath, true, auth, timestamp, transaction);
+        const serviceAccountAdminAddrPath = PathUtil
+            .getServiceAccountAdminAddrPathFromAccountName(to, transaction.address);
+        const adminSetupResult = this.setValueOrLog(
+            serviceAccountAdminAddrPath, true, auth, timestamp, transaction);
         if (adminSetupResult !== true) {
           return adminSetupResult;
         }
       }
     }
-    const transferPath = this.getTransferValuePath(from, to, timestamp);
+    const transferPath = PathUtil.getTransferValuePath(from, to, timestamp);
     return this.setValueOrLog(transferPath, value, auth, timestamp, transaction);
   }
 
@@ -441,7 +441,7 @@ class Functions {
     const key = context.params.key;
     const fromBalancePath = ChainUtil.getBalancePath(from);
     const toBalancePath = ChainUtil.getBalancePath(to);
-    const resultPath = this.getTransferResultPath(from, to, key);
+    const resultPath = PathUtil.getTransferResultPath(from, to, key);
     const transferResult =
         this.transferInternal(fromBalancePath, toBalancePath, value, context);
     if (transferResult === true) {
@@ -453,34 +453,72 @@ class Functions {
     }
   }
 
-  // TODO(lia): migrate from /deposit_accounts/{serviceName}/{userAddr}/value to
-  // /service_accounts/deposit/{serviceName}/{userAddr}/balance.
-  _deposit(value, context) {
-    const service = context.params.service;
+  _createApp(value, context) {
+    const appName = context.params.app_name;
+    const recordId = context.params.record_id;
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+    const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
+    const sanitizedVal = {};
+    const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
+    const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
+    const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
+    if (!ChainUtil.isDict(adminConfig) || !ChainUtil.isDict(serviceConfig)) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return;
+    }
+    if (adminConfig) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
+    }
+    if (billingConfig) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingConfig;
+    }
+    if (serviceConfig) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
+    };
+    const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
+    const setConfigRes = this.setValueOrLog(
+        manageAppConfigPath, sanitizedVal, auth, timestamp, transaction);
+    if (setConfigRes === true) {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    } else {
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+    }
+  }
+
+  _stake(value, context) {
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
-    const depositId = context.params.deposit_id;
+    const stakingKey = context.params.staking_key;
+    const recordId = context.params.record_id;
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-
-    const resultPath = this.getDepositResultPath(service, user, depositId);
-    const depositCreatedAtPath = this.getDepositCreatedAtPath(service, user, depositId);
-    this.setValueOrLog(depositCreatedAtPath, timestamp, auth, timestamp, transaction);
+    const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
+    const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
+    const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName));
     if (timestamp > executedAt) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
-    const userBalancePath = ChainUtil.getBalancePath(user);
-    const depositAmountPath = this.getDepositAmountPath(service, user);
-    const transferResult =
-        this.transferInternal(userBalancePath, depositAmountPath, value, context);
+    if (value === 0) {
+      // Just update the expiration time
+      this.setValueOrLog(
+        expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
+      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return;
+    }
+    const stakingServiceAccountName = ChainUtil.toServiceAccountName(
+          PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
+    const transferResult = this.setServiceAccountTransferOrLog(
+        user, stakingServiceAccountName, value, auth, timestamp, transaction);
     if (transferResult === true) {
-      const lockup = this.db.getValue(this.getDepositLockupDurationPath(service)) ||
-          DefaultValues.DEPOSIT_LOCKUP_DURATION_MS;
-      const expirationPath = this.getDepositExpirationPath(service, user);
       this.setValueOrLog(
           expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
+      const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
+      this.incValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
@@ -489,52 +527,31 @@ class Functions {
     }
   }
 
-  // TODO(lia): migrate from /deposit_accounts/{serviceName}/{userAddr}/value to
-  // /service_accounts/deposit/{serviceName}/{userAddr}/balance.
-  _withdraw(value, context) {
-    const service = context.params.service;
+  _unstake(value, context) {
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
-    const withdrawId = context.params.withdraw_id;
+    const stakingKey = context.params.staking_key;
+    const recordId = context.params.record_id;
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-
-    const depositAmountPath = this.getDepositAmountPath(service, user);
-    const userBalancePath = ChainUtil.getBalancePath(user);
-    const resultPath = this.getWithdrawResultPath(service, user, withdrawId);
-    const withdrawCreatedAtPath = this.getWithdrawCreatedAtPath(service, user, withdrawId);
-    const expireAt = this.db.getValue(this.getDepositExpirationPath(service, user));
-    this.setValueOrLog(withdrawCreatedAtPath, timestamp, auth, timestamp, transaction);
+    const resultPath = PathUtil.getStakingUnstakeResultPath(serviceName, user, stakingKey, recordId);
+    const expireAt = this.db.getValue(PathUtil.getStakingExpirationPath(serviceName, user, stakingKey));
     if (expireAt > executedAt) {
       // Still in lock-up period.
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
       return;
     }
-    if (service === PredefinedDbPaths.CONSENSUS) {
-      // Reject withdrawing consensus deposits if it reduces the number of validators to less than
-      // MIN_NUM_VALIDATORS.
-      const whitelist = this.db.getValue(
-          ChainUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST]));
-      let numValidators = 0;
-      Object.keys(whitelist).forEach((address) => {
-        const deposit = this.db.getValue(
-            ChainUtil.formatPath([PredefinedDbPaths.DEPOSIT_CONSENSUS, address]));
-        if (deposit && deposit.value > MIN_STAKE_PER_VALIDATOR) {
-          numValidators++;
-        }
-      });
-      if (numValidators <= MIN_NUM_VALIDATORS) {
-        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-        return;
-      }
-    }
-    const transferResult =
-        this.transferInternal(depositAmountPath, userBalancePath, value, context);
+    const stakingServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
+    const transferResult = this.setServiceAccountTransferOrLog(
+        stakingServiceAccountName, user, value, auth, timestamp, transaction);
     if (transferResult === true) {
+      const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
+      this.decValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (transferResult === false) {
-      // Not enough deposit.
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -542,7 +559,7 @@ class Functions {
   }
 
   _pay(value, context) {
-    const service = context.params.service;
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
@@ -550,7 +567,7 @@ class Functions {
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-    const resultPath = this.getPaymentPayRecordResultPath(service, user, paymentKey, recordId);
+    const resultPath = PathUtil.getPaymentPayRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
@@ -558,7 +575,7 @@ class Functions {
     }
 
     const userServiceAccountName = ChainUtil.toServiceAccountName(
-        PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
+        PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
         transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
     if (transferResult === true) {
@@ -569,7 +586,7 @@ class Functions {
   }
 
   _claim(value, context) {
-    const service = context.params.service;
+    const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
     const recordId = context.params.record_id;
@@ -577,7 +594,7 @@ class Functions {
     const executedAt = context.executedAt;
     const transaction = context.transaction;
     const auth = context.auth;
-    const resultPath = this.getPaymentClaimRecordResultPath(service, user, paymentKey, recordId);
+    const resultPath = PathUtil.getPaymentClaimRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
@@ -586,11 +603,11 @@ class Functions {
 
     let result;
     const userServiceAccountName = ChainUtil.toServiceAccountName(
-        PredefinedDbPaths.PAYMENTS, service, `${user}|${paymentKey}`);
+        PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     // NOTE: By specifying `escrow_key`, the claimed payment is held in escrow instead of being
     // transferred directly to the admin account
     if (value.escrow_key !== undefined) {
-      const escrowHoldPath = this.getEscrowHoldRecordPath(
+      const escrowHoldPath = PathUtil.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
       result = this.setValueOrLog(
           escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
@@ -626,7 +643,7 @@ class Functions {
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const serviceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
-    const serviceAccountPath = this.getServiceAccountPath(serviceAccountName);
+    const serviceAccountPath = PathUtil.getServiceAccountPathFromAccountName(serviceAccountName);
     const serviceAccountSetupResult =
         this.setValueOrLog(serviceAccountPath, value, auth, timestamp, transaction);
     if (serviceAccountSetupResult !== true) {
@@ -644,7 +661,7 @@ class Functions {
     const recordId = context.params.record_id;
     const { transaction, timestamp, auth } = context;
     const amount = _.get(value, 'amount');
-    const resultPath = this.getEscrowHoldRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
+    const resultPath = PathUtil.getEscrowHoldRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
     if (!ChainUtil.isNumber(amount)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
@@ -667,14 +684,14 @@ class Functions {
     const recordId = context.params.record_id;
     const { transaction, timestamp, auth } = context;
     const ratio = _.get(value, 'ratio');
-    const resultPath = this.getEscrowReleaseRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
+    const resultPath = PathUtil.getEscrowReleaseRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
     if (!ChainUtil.isNumber(ratio) || ratio < 0 || ratio > 1) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
-    const serviceAccountBalancePath = this.getServiceAccountBalancePath(escrowServiceAccountName);
+    const serviceAccountBalancePath = PathUtil.getServiceAccountBalancePathFromAccountName(escrowServiceAccountName);
     const escrowAmount = this.db.getValue(serviceAccountBalancePath);
     const targetAmount = escrowAmount * ratio;
     const sourceAmount = escrowAmount - targetAmount;
@@ -700,11 +717,6 @@ class Functions {
     this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
   }
 
-  getLatestShardReportPathFromValuePath(valuePath) {
-    const branchPath = ChainUtil.formatPath(valuePath.slice(0, -2));
-    return this.getLatestShardReportPath(branchPath);
-  }
-
   _updateLatestShardReport(value, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
@@ -719,7 +731,7 @@ class Functions {
       // Removing old report or invalid reporting
       return false;
     }
-    const latestReportPath = this.getLatestShardReportPathFromValuePath(valuePath);
+    const latestReportPath = PathUtil.getLatestShardReportPathFromValuePath(valuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
@@ -727,11 +739,6 @@ class Functions {
     }
     this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp, transaction);
     this.setExecutionResult(context, FunctionResultCode.SUCCESS);
-  }
-
-  getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash) {
-    const branchPath = ChainUtil.formatPath(valuePath.slice(0, -1));
-    return this.getCheckinParentFinalizeResultPath(branchPath, txHash);
   }
 
   // TODO(seo): Support refund feature.
@@ -770,8 +777,9 @@ class Functions {
           return;
         }
         logger.info(`  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+        const shardingPath = this.db.getShardingPath();
         const action = {
-          ref: this.getCheckinParentFinalizeResultPathFromValuePath(valuePath, txHash),
+          ref: PathUtil.getCheckinParentFinalizeResultPathFromValuePath(shardingPath, valuePath, txHash),
           valueFunction: (success) => !!success,
           is_global: true,
           tx_body: payloadTx.tx_body,
@@ -785,7 +793,7 @@ class Functions {
 
   getCheckinPayloadPathFromValuePath(valuePath) {
     const branchPath = ChainUtil.formatPath(valuePath.slice(0, -3));
-    return this.getCheckinPayloadPath(branchPath);
+    return PathUtil.getCheckinPayloadPath(branchPath);
   }
 
   _closeCheckin(value, context) {
@@ -807,7 +815,7 @@ class Functions {
     const user = context.params.user_addr;
     const checkinId = context.params.checkin_id;
     const valuePath = context.valuePath;
-    const checkinPayload = this.db.getValue(this.getCheckinPayloadPathFromValuePath(valuePath));
+    const checkinPayload = this.db.getValue(PathUtil.getCheckinPayloadPathFromValuePath(valuePath));
     const checkinAmount = _.get(checkinPayload, 'tx_body.operation.value', 0);
     const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
     const tokenToReceive = checkinAmount * tokenExchRate;
@@ -911,129 +919,6 @@ class Functions {
       return incResult;
     }
     return true;
-  }
-
-  getServiceAccountPath(accountName) {
-    const parsed = ChainUtil.parseServAcntName(accountName);
-    return `${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}`;
-  }
-
-  getServiceAccountAdminPath(accountName) {
-    return `${this.getServiceAccountPath(accountName)}/${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}`;
-  }
-
-  getServiceAccountAdminAddrPath(accountName, adminAddr) {
-    return `${this.getServiceAccountAdminPath(accountName)}/${adminAddr}`;
-  }
-
-  getServiceAccountBalancePath(accountName) {
-    return `${this.getServiceAccountPath(accountName)}/${PredefinedDbPaths.BALANCE}`;
-  }
-
-  getTransferValuePath(from, to, key) {
-    return `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_VALUE}`;
-  }
-
-  getTransferResultPath(from, to, key) {
-    return (
-      `${PredefinedDbPaths.TRANSFER}/${from}/${to}/${key}/${PredefinedDbPaths.TRANSFER_RESULT}`);
-  }
-
-  getDepositLockupDurationPath(service) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/` +
-        `${PredefinedDbPaths.DEPOSIT_CONFIG}/${PredefinedDbPaths.DEPOSIT_LOCKUP_DURATION}`);
-  }
-
-  getDepositAmountPath(service, user) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
-        `${PredefinedDbPaths.DEPOSIT_VALUE}`);
-  }
-
-  getDepositExpirationPath(service, user) {
-    return (`${PredefinedDbPaths.DEPOSIT_ACCOUNTS}/${service}/${user}/` +
-        `${PredefinedDbPaths.DEPOSIT_EXPIRE_AT}`);
-  }
-
-  getDepositCreatedAtPath(service, user, depositId) {
-    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
-        `${PredefinedDbPaths.DEPOSIT_CREATED_AT}`);
-  }
-
-  getDepositResultPath(service, user, depositId) {
-    return (`${PredefinedDbPaths.DEPOSIT}/${service}/${user}/${depositId}/` +
-        `${PredefinedDbPaths.DEPOSIT_RESULT}`);
-  }
-
-  getWithdrawCreatedAtPath(service, user, withdrawId) {
-    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
-        `${PredefinedDbPaths.WITHDRAW_CREATED_AT}`);
-  }
-
-  getWithdrawResultPath(service, user, withdrawId) {
-    return (`${PredefinedDbPaths.WITHDRAW}/${service}/${user}/${withdrawId}/` +
-        `${PredefinedDbPaths.WITHDRAW_RESULT}`);
-  }
-
-  getPaymentServiceAdminPath(service) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${PredefinedDbPaths.PAYMENTS_CONFIG}/` +
-        `${PredefinedDbPaths.PAYMENTS_ADMIN}`);
-  }
-
-  getPaymentPayRecordPath(service, user, paymentKey, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
-        `${PredefinedDbPaths.PAYMENTS_PAY}/${recordId}`);
-  }
-
-  getPaymentClaimRecordPath(service, user, paymentKey, recordId) {
-    return (`${PredefinedDbPaths.PAYMENTS}/${service}/${user}/${paymentKey}/` +
-        `${PredefinedDbPaths.PAYMENTS_CLAIM}/${recordId}`);
-  }
-
-  getPaymentPayRecordResultPath(service, user, paymentKey, recordId) {
-    return (`${this.getPaymentPayRecordPath(service, user, paymentKey, recordId)}/` +
-        `${PredefinedDbPaths.PAYMENTS_RESULT}`);
-  }
-
-  getPaymentClaimRecordResultPath(service, user, paymentKey, recordId) {
-    return (`${this.getPaymentClaimRecordPath(service, user, paymentKey, recordId)}/` +
-        `${PredefinedDbPaths.PAYMENTS_RESULT}`);
-  }
-
-  getEscrowHoldRecordPath(source, target, escrowKey, recordId) {
-    return (`${PredefinedDbPaths.ESCROW}/${source}/${target}/${escrowKey}/` +
-        `${PredefinedDbPaths.ESCROW_HOLD}/${recordId}`);
-  }
-
-  getEscrowHoldRecordResultPath(source, target, escrowKey, recordId) {
-    return (`${this.getEscrowHoldRecordPath(source, target, escrowKey, recordId)}/` +
-        `${PredefinedDbPaths.ESCROW_RESULT}`);
-  }
-
-  getEscrowReleaseRecordResultPath(source, target, escrowKey, recordId) {
-    return (`${PredefinedDbPaths.ESCROW}/${source}/${target}/${escrowKey}/` +
-        `${PredefinedDbPaths.ESCROW_RELEASE}/${recordId}/${PredefinedDbPaths.ESCROW_RESULT}`);
-  }
-
-  getLatestShardReportPath(branchPath) {
-    return `${branchPath}/${ShardingProperties.LATEST}`;
-  }
-
-  getCheckinParentFinalizeResultPath(branchPath, txHash) {
-    const shardingPath = this.db.getShardingPath();
-    return ChainUtil.appendPath(
-        shardingPath,
-        `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/${txHash}/` +
-            `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`);
-  }
-
-  getCheckinPayloadPath(branchPath) {
-    return ChainUtil.appendPath(
-        branchPath,
-        `${PredefinedDbPaths.CHECKIN_REQUEST}/${PredefinedDbPaths.CHECKIN_PAYLOAD}`);
-  }
-
-  getFullValuePath(parsedPath) {
-    return this.db.constructor.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
   }
 }
 

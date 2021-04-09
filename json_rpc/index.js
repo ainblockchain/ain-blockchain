@@ -7,15 +7,16 @@ const {
   CURRENT_PROTOCOL_VERSION,
   BlockchainNodeStates,
   ReadDbOperations,
-  PredefinedDbPaths,
   TransactionStatus,
   MAX_TX_BYTES,
   NETWORK_ID,
 } = require('../common/constants');
-const {
-  ConsensusConsts,
-} = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
+const {
+  getAccountBalancePath,
+  getConsensusWhitelistAddrPath,
+  getServiceAccountBalancePath,
+} = require('../common/path-util');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -344,8 +345,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_getBalance: function(args, done) {
       const address = args.address;
-      const balance =
-          p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
+      const balance = p2pServer.node.db.getValue(getAccountBalancePath(address)) || 0;
       done(null, addProtocolVersion({result: balance}));
     },
 
@@ -356,13 +356,10 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_isValidator: function(args, done) {
-      const whitelisted = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${PredefinedDbPaths.WHITELIST}/${args.address}`);
-      const deposit = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
-      const stakeValid = deposit && deposit.value > 0 &&
-          deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
-      done(null, addProtocolVersion({result: stakeValid && whitelisted ? stakeValid : 0}));
+      const addr = args.address;
+      const whitelisted = p2pServer.node.db.getValue(getConsensusWhitelistAddrPath(addr));
+      const stake = p2pServer.node.db.getValue(getServiceAccountBalancePath(addr));
+      done(null, addProtocolVersion({result: stake && whitelisted ? stake : 0}));
     },
 
     // Network API
