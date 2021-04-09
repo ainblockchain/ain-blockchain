@@ -16,7 +16,7 @@ const {
   ShardingProperties,
   ProofProperties,
   StateVersions,
-  MAX_TX_BYTES,
+  TX_BYTES_LIMIT,
   MAX_SHARD_REPORT,
   GENESIS_WHITELIST,
   LIGHTWEIGHT,
@@ -37,7 +37,7 @@ const {
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
-const txSizeThreshold = MAX_TX_BYTES * 0.9;
+const txSizeThreshold = TX_BYTES_LIMIT * 0.9;
 
 class Consensus {
   constructor(server, node) {
