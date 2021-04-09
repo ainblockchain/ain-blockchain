@@ -401,6 +401,15 @@ const StateVersions = {
 };
 
 /**
+ * Gas fee constants.
+ *
+ * @enum {number}
+ */
+const GasFeeConstants = {
+  EXTERNAL_RPC_CALL_GAS_AMOUNT: 10,
+};
+
+/**
  * Overwriting environment variables.
  * These parameters are defined in genesis_params.json, but if specified as environment variables,
  * the env vars take precedence.
@@ -639,6 +648,7 @@ module.exports = {
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
+  GasFeeConstants,
   buildOwnerPermissions,
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,

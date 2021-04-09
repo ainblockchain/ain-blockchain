@@ -2,6 +2,7 @@ const logger = require('../logger')('FUNCTIONS');
 const axios = require('axios');
 const _ = require('lodash');
 const {
+  FeatureFlags,
   PredefinedDbPaths,
   FunctionTypes,
   FunctionResultCode,
@@ -14,7 +15,7 @@ const {
   AccountProperties,
   TokenExchangeSchemes,
   FunctionProperties,
-  FeatureFlags,
+  GasFeeConstants,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
@@ -35,39 +36,43 @@ const EventListenerWhitelist = {
 /**
  * Built-in functions with function paths.
  */
+// NOTE(platfowner): ownerOnly means that the function can be set only by the blockchain owner.
+// NOTE(platfowner): execGasAmount means the amount of gas required to execute the function, which
+//                   reflects the number of database write operations and external RPC calls.
 class Functions {
   constructor(db, tp) {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
       [NativeFunctionIds.CLAIM]: {
-        func: this._claim.bind(this), ownerOnly: true },
+        func: this._claim.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
-        func: this._closeCheckin.bind(this), ownerOnly: true },
+        func: this._closeCheckin.bind(this), ownerOnly: true, execGasAmount: 11 },
       [NativeFunctionIds.CREATE_APP]: {
-        func: this._createApp.bind(this), ownerOnly: true },
+        func: this._createApp.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.HOLD]: {
-        func: this._hold.bind(this), ownerOnly: true },
+        func: this._hold.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
-        func: this._openCheckin.bind(this), ownerOnly: true },
+        func: this._openCheckin.bind(this), ownerOnly: true, execGasAmount: 62 },
       [NativeFunctionIds.OPEN_ESCROW]: {
-        func: this._openEscrow.bind(this), ownerOnly: true },
+        func: this._openEscrow.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.PAY]: {
-        func: this._pay.bind(this), ownerOnly: true },
+        func: this._pay.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.RELEASE]: {
-        func: this._release.bind(this), ownerOnly: true },
+        func: this._release.bind(this), ownerOnly: true, execGasAmount: 3 },
       [NativeFunctionIds.SAVE_LAST_TX]: {
-        func: this._saveLastTx.bind(this), ownerOnly: false },
+        func: this._saveLastTx.bind(this), ownerOnly: false, execGasAmount: 1 },
       [NativeFunctionIds.STAKE]: {
-        func: this._stake.bind(this), ownerOnly: true },
+        func: this._stake.bind(this), ownerOnly: true, execGasAmount: 4 },
       [NativeFunctionIds.UNSTAKE]: {
-        func: this._unstake.bind(this), ownerOnly: true },
+        func: this._unstake.bind(this), ownerOnly: true, execGasAmount: 3 },
       [NativeFunctionIds.TRANSFER]: {
-        func: this._transfer.bind(this), ownerOnly: true },
+        func: this._transfer.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-        func: this._updateLatestShardReport.bind(this), ownerOnly: false },
+        func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 2 },
     };
-    this.callStack= [];
+    this.callStack = [];
+    this.totalGasAmount = 0;
   }
 
   /**
@@ -81,7 +86,7 @@ class Functions {
    */
   // NOTE(seo): Validity checks on individual addresses are done by .write rules.
   // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, isChainedCall) {
     // NOTE(seo): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -92,6 +97,9 @@ class Functions {
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
+    if (this.callStackSize() === 0) {
+      this.clearTotalGasAmount();
+    }
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
           parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
@@ -110,15 +118,18 @@ class Functions {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
             // Execute the matched native function.
+            this.pushCall(
+                ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
+                functionEntry.function_id, nativeFunction);
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] ` +
                   `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                   formattedParams);
+              logger.info(
+                  `    totalGasAmount: ${this.getTotalGasAmount()} with pushed call: ` +
+                  `${JSON.stringify(this.getTopCall(), null, 2)}\n`);
             }
-            this.pushCall(
-                ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
-                functionEntry.function_id);
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             try {
@@ -147,6 +158,9 @@ class Functions {
                   } else {
                     logger.error(formattedResult);
                   }
+                  logger.info(
+                      `    totalGasAmount: ${this.getTotalGasAmount()} with popped call: ` +
+                      `${JSON.stringify(call, null, 2)}\n`);
                 }
               }
               triggerCount++;
@@ -160,6 +174,9 @@ class Functions {
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
                   `event listener '${functionEntry.event_listener}' with:\n` +
                   formattedParams);
+              logger.info(
+                  `    totalGasAmount: ${this.getTotalGasAmount()} before adding REST function: ` +
+                  `${functionEntry.function_id}\n`);
             }
             promises.push(axios.post(functionEntry.event_listener, {
               function: functionEntry,
@@ -175,6 +192,12 @@ class Functions {
               failCount++;
               return true;
             }));
+            this.addToTotalGasAmount(GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT);
+            if (FeatureFlags.enableRichFunctionLogging) {
+              logger.info(
+                  `    totalGasAmount: ${this.getTotalGasAmount()} after adding REST function: ` +
+                  `${functionEntry.function_id}\n`);
+            }
             triggerCount++;
           }
         }
@@ -190,10 +213,12 @@ class Functions {
         });
   }
 
-  pushCall(valuePath, value, functionPath, fid) {
+  pushCall(valuePath, value, functionPath, fid, nativeFunction) {
     const topCall = this.getTopCall();
     const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
+    const callDepth = this.callStackSize();
+    const gasAmount = nativeFunction.execGasAmount;
     this.callStack.push({
       fid,
       fidList,
@@ -201,12 +226,16 @@ class Functions {
       triggered_by: {
         valuePath,
         value
-      }
-    })
+      },
+      callDepth,
+      gasAmount,
+    });
   }
 
   popCall() {
-    return this.callStack.pop();
+    const call = this.callStack.pop();
+    this.addToTotalGasAmount(call.gasAmount);
+    return call;
   }
 
   getTopCall() {
@@ -236,6 +265,18 @@ class Functions {
   isCircularCall(fid) {
     const call = this.getTopCall();
     return call && call.fidList && call.fidList.includes(fid);
+  }
+
+  getTotalGasAmount() {
+    return this.totalGasAmount;
+  }
+
+  clearTotalGasAmount() {
+    this.totalGasAmount = 0;
+  }
+
+  addToTotalGasAmount(amount) {
+    this.totalGasAmount += amount;
   }
 
   static formatFunctionParams(

@@ -601,7 +601,6 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    // NOTE(lia): Allow chained function triggering but no circular calls.
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
     }
