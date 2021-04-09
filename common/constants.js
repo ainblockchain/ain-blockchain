@@ -648,5 +648,6 @@ module.exports = {
   buildOwnerPermissions,
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
+  ...GenesisParams.resource,
   ...networkEnv
 };
