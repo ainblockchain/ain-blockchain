@@ -9,7 +9,7 @@ const {
   ReadDbOperations,
   PredefinedDbPaths,
   TransactionStatus,
-  MAX_TX_BYTES,
+  TX_BYTES_LIMIT,
   NETWORK_ID,
 } = require('../common/constants');
 const {
@@ -126,11 +126,11 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     // TODO(seo): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
-      if (sizeof(args) > MAX_TX_BYTES) {
+      if (sizeof(args) > TX_BYTES_LIMIT) {
         done(null, addProtocolVersion({
           result: {
             code: 1,
-            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`
+            message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`
           }
         }));
       } else if (!args.tx_body || !args.signature) {
@@ -157,11 +157,11 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_sendSignedTransactionBatch: function(args, done) {
-      if (sizeof(args) > MAX_TX_BYTES) {
+      if (sizeof(args) > TX_BYTES_LIMIT) {
         done(null, addProtocolVersion({
           result: {
             code: 1,
-            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`
+            message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`
           }
         }));
       } else if (!args.tx_list || !Array.isArray(args.tx_list)) {
