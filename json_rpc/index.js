@@ -12,11 +12,7 @@ const {
   NETWORK_ID,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
-const {
-  getAccountBalancePath,
-  getConsensusWhitelistAddrPath,
-  getServiceAccountBalancePath,
-} = require('../common/path-util');
+const PathUtil = require('../common/path-util');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -345,7 +341,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_getBalance: function(args, done) {
       const address = args.address;
-      const balance = p2pServer.node.db.getValue(getAccountBalancePath(address)) || 0;
+      const balance = p2pServer.node.db.getValue(PathUtil.getAccountBalancePath(address)) || 0;
       done(null, addProtocolVersion({result: balance}));
     },
 
@@ -357,8 +353,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_isValidator: function(args, done) {
       const addr = args.address;
-      const whitelisted = p2pServer.node.db.getValue(getConsensusWhitelistAddrPath(addr));
-      const stake = p2pServer.node.db.getValue(getServiceAccountBalancePath(addr));
+      const whitelisted = p2pServer.node.db.getValue(PathUtil.getConsensusWhitelistAddrPath(addr));
+      const stake = p2pServer.node.db.getValue(PathUtil.getServiceAccountBalancePath(addr));
       done(null, addProtocolVersion({result: stake && whitelisted ? stake : 0}));
     },
 
