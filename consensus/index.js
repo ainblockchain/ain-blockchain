@@ -33,13 +33,7 @@ const {
   signAndSendTx,
   sendGetRequest
 } = require('../p2p/util');
-const {
-  getConsensusStakingAccountPath,
-  getConsensusWhitelistPath,
-  getConsensusProposePath,
-  getConsensusVotePath,
-  getStakingStakeRecordValuePath,
-} = require('../common/path-util');
+const PathUtil = require('../common/path-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -246,7 +240,7 @@ class Consensus {
   executeLastVoteOrAbort(db, tx) {
     const LOG_HEADER = 'executeLastVoteOrAbort';
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
-    if (!ChainUtil.transactionFailed(txRes)) {
+    if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       return true;
     } else {
@@ -263,7 +257,7 @@ class Consensus {
     }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
-    if (!ChainUtil.transactionFailed(txRes)) {
+    if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
     } else {
@@ -344,8 +338,9 @@ class Consensus {
       const whitelist = GENESIS_WHITELIST;
       for (const address in whitelist) {
         if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
-          const stakingAccount = tempDb.getValue(getConsensusStakingAccountPath(address));
-          if (whitelist[address] === true && stakingAccount && stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
+          const stakingAccount = tempDb.getValue(PathUtil.getConsensusStakingAccountPath(address));
+          if (whitelist[address] === true && stakingAccount &&
+              stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
             validators[address] = stakingAccount.balance;
           }
         }
@@ -370,7 +365,7 @@ class Consensus {
     let proposalTx;
     const proposeOp = {
       type: WriteDbOperations.SET_VALUE,
-      ref: getConsensusProposePath(blockNumber),
+      ref: PathUtil.getConsensusProposePath(blockNumber),
       value: {
         number: blockNumber,
         epoch: this.state.epoch,
@@ -508,7 +503,7 @@ class Consensus {
       for (const voteTx of proposalBlock.last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
-            ChainUtil.transactionFailed(
+            ChainUtil.isFailedTx(
                 tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           hasInvalidLastVote = true;
@@ -588,7 +583,7 @@ class Consensus {
     const tempVersion = this.node.stateManager.createUniqueVersionName(
       `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(executableTx))) {
+    if (ChainUtil.isFailedTx(tempDb.executeTransaction(executableTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
       this.node.destroyDb(tempDb);
       this.node.destroyDb(newDb);
@@ -651,7 +646,7 @@ class Consensus {
     }
     const voteTxRes = tempDb.executeTransaction(executableTx);
     this.node.destroyDb(tempDb);
-    if (ChainUtil.transactionFailed(voteTxRes)) {
+    if (ChainUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
       return false;
     }
@@ -709,7 +704,7 @@ class Consensus {
     }
     const operation = {
       type: WriteDbOperations.SET_VALUE,
-      ref: getConsensusVotePath(block.number, myAddr),
+      ref: PathUtil.getConsensusVotePath(block.number, myAddr),
       value: {
         [PredefinedDbPaths.BLOCK_HASH]: block.hash,
         [PredefinedDbPaths.STAKE]: myStake
@@ -882,7 +877,7 @@ class Consensus {
   getWhitelist() {
     const LOG_HEADER = 'getWhitelist';
     const whitelist = this.node.getValueWithStateVersion(
-        getConsensusWhitelistPath(), false, this.node.stateManager.getFinalVersion());
+        PathUtil.getConsensusWhitelistPath(), false, this.node.stateManager.getFinalVersion());
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
@@ -898,11 +893,11 @@ class Consensus {
       throw Error(err);
     }
     const whitelist = this.node.getValueWithStateVersion(
-        getConsensusWhitelistPath(), false, stateVersion) || {};
+        PathUtil.getConsensusWhitelistPath(), false, stateVersion) || {};
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
       const stakingAccount = this.node.getValueWithStateVersion(
-          getConsensusStakingAccountPath(address), false, stateVersion);
+          PathUtil.getConsensusStakingAccountPath(address), false, stateVersion);
       if (whitelist[address] === true && stakingAccount &&
           stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
         validators[address] = stakingAccount.balance;
@@ -915,7 +910,8 @@ class Consensus {
 
   getValidConsensusStake(address) {
     const stakingAccount = this.node.getValueWithStateVersion(
-        getConsensusStakingAccountPath(address), false, this.node.stateManager.getFinalVersion());
+        PathUtil.getConsensusStakingAccountPath(address), false,
+        this.node.stateManager.getFinalVersion());
     if (stakingAccount && stakingAccount.balance > 0) {
       return stakingAccount.balance;
     }
@@ -940,7 +936,7 @@ class Consensus {
 
     const operation = {
       type: WriteDbOperations.SET_VALUE,
-      ref: getStakingStakeRecordValuePath(
+      ref: PathUtil.getStakingStakeRecordValuePath(
           PredefinedDbPaths.CONSENSUS, this.node.account.address, 0, PushId.generate()),
       value: amount
     };

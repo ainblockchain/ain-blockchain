@@ -67,6 +67,6 @@ describe("Consensus", () => {
         }
       }
     );
-    expect(node1.db.executeTransaction(voteTx)).to.equal(true);
+    expect(node1.db.executeTransaction(voteTx).code).to.equal(0);
   });
 });

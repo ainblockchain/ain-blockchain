@@ -269,4 +269,35 @@ describe("ChainUtil", () => {
       assert.deepEqual(obj.b.ba, value);
     })
   })
+
+  describe("isFailedTx", () => {
+    it("when normal input", () => {
+      expect(ChainUtil.isFailedTx({
+        code: 0,
+        error_message: null
+      })).to.equal(false);
+
+      expect(ChainUtil.isFailedTx({
+        code: 1,
+        error_message: null
+      })).to.equal(true);
+
+      expect(ChainUtil.isFailedTx({
+        code: 100,
+        error_message: 'some message'
+      })).to.equal(true);
+    })
+
+    it("when abnormal input", () => {
+      expect(ChainUtil.isFailedTx(null)).to.equal(true);
+      expect(ChainUtil.isFailedTx(undefined)).to.equal(true);
+      expect(ChainUtil.isFailedTx(true)).to.equal(true);
+      expect(ChainUtil.isFailedTx(false)).to.equal(true);
+      expect(ChainUtil.isFailedTx('true')).to.equal(true);
+      expect(ChainUtil.isFailedTx({})).to.equal(true);
+      expect(ChainUtil.isFailedTx({
+        error_message: 'some message'
+      })).to.equal(true);
+    })
+  })
 })

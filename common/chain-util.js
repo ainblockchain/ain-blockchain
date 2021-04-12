@@ -249,23 +249,29 @@ class ChainUtil {
     return newObj;
   }
 
-  static transactionFailed(response) {
-    if (Array.isArray(response)) {
-      for (const result of response) {
-        if (ChainUtil.checkForTransactionErrorCode(result)) {
+  /**
+   * Returns true if the given result is from failed transaction or transaction list.
+   */
+  static isFailedTx(result) {
+    if (!result) {
+      return true;
+    }
+    if (Array.isArray(result)) {
+      for (const elem of result) {
+        if (ChainUtil.isFailedTxResultCode(elem.code)) {
           return true;
         }
       }
       return false;
     }
-    return ChainUtil.checkForTransactionErrorCode(response);
+    return ChainUtil.isFailedTxResultCode(result.code);
   }
 
-  static checkForTransactionErrorCode(result) {
-    return result === null || (result.code !== undefined && result.code !== 0);
+  static isFailedTxResultCode(code) {
+    return code !== 0;
   }
 
-  static returnError(code, message) {
+  static returnTxResult(code, message = null) {
     return { code, error_message: message };
   }
 
@@ -277,7 +283,7 @@ class ChainUtil {
    * @param {*} message error message
    * @param {*} level level to log with
    */
-  static logAndReturnError(logger, code, message, level = 1) {
+  static logAndReturnTxResult(logger, code, message = null, level = 1) {
     if (level === 0) {
       logger.error(message);
     } else if (level === 1) {
@@ -285,7 +291,7 @@ class ChainUtil {
     } else {
       logger.debug(message);
     }
-    return ChainUtil.returnError(code, message);
+    return ChainUtil.returnTxResult(code, message);
   }
 
   static keyStackToMetricName(keyStack) {
