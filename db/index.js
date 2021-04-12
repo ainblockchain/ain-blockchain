@@ -275,8 +275,8 @@ class DB {
   /**
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
-  // NOTE(seo): The nodes with multiple ref paths (i.e., multiple roots) should be cloned
-  //            in order not to affect other ref paths to the altered node.
+  // NOTE(platfowner): The nodes with multiple ref paths (i.e., multiple roots) should be cloned
+  //                   in order not to affect other ref paths to the altered node.
   //
   // Typical case:
   // - root_a has subtree child_1a -> child_2 -> child_3
@@ -866,7 +866,8 @@ class DB {
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
-    // NOTE(seo): A transaction needs to be converted to an executable form before being executed.
+    // NOTE(platfowner): A transaction needs to be converted to an executable form
+    //                   before being executed.
     if (!Transaction.isExecutable(tx)) {
       return ChainUtil.logAndReturnTxResult(
           logger, 21,
@@ -879,7 +880,7 @@ class DB {
       return ChainUtil.logAndReturnTxResult(
           logger, 22, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`, 0);
     }
-    // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
+    // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const executionResult = this.executeOperation(
         txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
     const stateInfo = this.getStateInfo('/');

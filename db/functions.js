@@ -84,11 +84,11 @@ class Functions {
    * @param {Number} executedAt execution time
    * @param {Object} transaction transaction
    */
-  // NOTE(seo): Validity checks on individual addresses are done by .write rules.
+  // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
   // TODO(platfowner): Add account registration gas amount.
   triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, isChainedCall) {
-    // NOTE(seo): It is assumed that the given transaction is in an executable form.
+    // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionPath = matched.matchedFunction.path;
@@ -379,7 +379,7 @@ class Functions {
   }
 
   static buildExecutionResult(context, code) {
-    // NOTE(seo): Allow only node-independent values to avoid state proof hash issues.
+    // NOTE(platfowner): Allow only node-independent values to avoid state proof hash issues.
     const timestamp = context.timestamp;
     const transaction = context.transaction;
     return {

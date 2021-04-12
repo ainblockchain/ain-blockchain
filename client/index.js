@@ -21,7 +21,7 @@ const { ConsensusStatus } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
-// NOTE(seo): This is very useful when the server dies without any logs.
+// NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
 });
