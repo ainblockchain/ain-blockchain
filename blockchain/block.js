@@ -18,11 +18,7 @@ const {
   ProofProperties,
   StateVersions,
 } = require('../common/constants');
-const {
-  getTransferValuePath,
-  getCreateAppRecordPath,
-  getStakingStakeRecordValuePath,
-} = require('../common/path-util');
+const PathUtil = require('../common/path-util');
 
 class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
@@ -212,7 +208,7 @@ class Block {
         // Transfer operation
         const op = {
           type: 'SET_VALUE',
-          ref: getTransferValuePath(ownerAddress, accountAddress, i),
+          ref: PathUtil.getTransferValuePath(ownerAddress, accountAddress, i),
           value: GenesisAccounts[AccountProperties.SHARES],
         };
         transferOps.push(op);
@@ -237,7 +233,7 @@ class Block {
       timestamp,
       operation: {
         type: 'SET_VALUE',
-        ref: getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
+        ref: PathUtil.getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
         value: {
           [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
             [ownerAddress]: true
@@ -267,7 +263,7 @@ class Block {
         timestamp,
         operation: {
           type: 'SET_VALUE',
-          ref: getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
+          ref: PathUtil.getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
           value: amount
         }
       };
@@ -299,7 +295,7 @@ class Block {
         GenesisAccounts[AccountProperties.TIMESTAMP]);
     for (const tx of genesisTransactions) {
       const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx));
-      if (ChainUtil.transactionFailed(res)) {
+      if (ChainUtil.isFailedTx(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)
         return null;

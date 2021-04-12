@@ -81,13 +81,13 @@ describe("Functions", () => {
           "0x12345": null
         }
       };
-      assert.deepEqual(node.db.setFunction(refPathRest, restFunction), true);
-      assert.deepEqual(node.db.setFunction(refPathRestMulti, restFunctionMulti), true);
+      assert.deepEqual(node.db.setFunction(refPathRest, restFunction).code, 0);
+      assert.deepEqual(node.db.setFunction(refPathRestMulti, restFunctionMulti).code, 0);
       assert.deepEqual(
-          node.db.setFunction(refPathRestWithoutListener, restFunctionWithoutListener), true);
+          node.db.setFunction(refPathRestWithoutListener, restFunctionWithoutListener).code, 0);
       assert.deepEqual(
-          node.db.setFunction(refPathRestNotWhitelisted, restFunctionNotWhitelisted), true);
-      assert.deepEqual(node.db.setFunction(refPathNull, nullFunction), true);
+          node.db.setFunction(refPathRestNotWhitelisted, restFunctionNotWhitelisted).code, 0);
+      assert.deepEqual(node.db.setFunction(refPathNull, nullFunction).code, 0);
       functions = new Functions(node.db, null);
 
       // Setup mock for REST API calls.

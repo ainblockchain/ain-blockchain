@@ -80,7 +80,7 @@ function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
@@ -109,7 +109,7 @@ function cleanUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
