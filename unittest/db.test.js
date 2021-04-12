@@ -3179,5 +3179,19 @@ describe("Transaction execution", () => {
       assert.equal(node.db.executeTransaction(objectTx), false);
       assert.equal(objectTx.extra, undefined);
     });
+
+    it("blocks over-height transaction", () => {
+      const overHeightTxBody = {
+        operation: {
+          type: 'SET_VALUE',
+          ref: '/test/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
+          value: 'some value',
+        },
+        nonce: -1,
+        timestamp: 1568798344000,
+      };
+      const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
+      assert.equal(node.db.executeTransaction(overHeightTx).code, 910);
+    })
   });
 });
