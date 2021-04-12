@@ -33,7 +33,7 @@ async function sendSignedTx(endpoint, params) {
         id: 0
       }
   ).then((resp) => {
-    const success = !ChainUtil.transactionFailed(_.get(resp, 'data.result'), null);
+    const success = !ChainUtil.isFailedTx(_.get(resp, 'data.result'), null);
     return {success};
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);

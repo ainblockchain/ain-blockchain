@@ -876,7 +876,7 @@ class DB {
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
       const res = this.executeTransaction(executableTx);
-      if (ChainUtil.transactionFailed(res)) {
+      if (ChainUtil.isFailedTx(res)) {
         // FIXME: remove the failed transaction from tx pool?
         logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);

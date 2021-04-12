@@ -310,7 +310,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
     }
     const result = this.db.executeTransaction(tx);
-    if (ChainUtil.transactionFailed(result)) {
+    if (ChainUtil.isFailedTx(result)) {
       if (!this.db.restoreDb()) {
         logger.error(
           `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
@@ -339,7 +339,7 @@ class BlockchainNode {
     }
     const executableTx = Transaction.toExecutable(tx);
     const result = this.executeOrRollbackTransaction(executableTx);
-    if (ChainUtil.transactionFailed(result)) {
+    if (ChainUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
         logger.error(
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +

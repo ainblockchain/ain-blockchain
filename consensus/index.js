@@ -246,7 +246,7 @@ class Consensus {
   executeLastVoteOrAbort(db, tx) {
     const LOG_HEADER = 'executeLastVoteOrAbort';
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
-    if (!ChainUtil.transactionFailed(txRes)) {
+    if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       return true;
     } else {
@@ -263,7 +263,7 @@ class Consensus {
     }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
-    if (!ChainUtil.transactionFailed(txRes)) {
+    if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
     } else {
@@ -508,7 +508,7 @@ class Consensus {
       for (const voteTx of proposalBlock.last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
-            ChainUtil.transactionFailed(
+            ChainUtil.isFailedTx(
                 tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           hasInvalidLastVote = true;
@@ -588,7 +588,7 @@ class Consensus {
     const tempVersion = this.node.stateManager.createUniqueVersionName(
       `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
-    if (ChainUtil.transactionFailed(tempDb.executeTransaction(executableTx))) {
+    if (ChainUtil.isFailedTx(tempDb.executeTransaction(executableTx))) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
       this.node.destroyDb(tempDb);
       this.node.destroyDb(newDb);
@@ -651,7 +651,7 @@ class Consensus {
     }
     const voteTxRes = tempDb.executeTransaction(executableTx);
     this.node.destroyDb(tempDb);
-    if (ChainUtil.transactionFailed(voteTxRes)) {
+    if (ChainUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
       return false;
     }
