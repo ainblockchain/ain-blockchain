@@ -1,5 +1,7 @@
 const { PredefinedDbPaths, ShardingProperties } = require('./constants');
 const ChainUtil = require('./chain-util');
+const RuleUtil = require('../db/rule-util');
+const ruleUtil = new RuleUtil();
 
 class PathUtil {
   static getAccountBalancePath(address) {
@@ -17,14 +19,6 @@ class PathUtil {
   static getServiceAccountPathFromAccountName(accountName) {
     const parsed = ChainUtil.parseServAcntName(accountName);
     return ChainUtil.formatPath([PredefinedDbPaths.SERVICE_ACCOUNTS, parsed[0], parsed[1], parsed[2]]);
-  }
-
-  static getServiceAccountAdminPathFromAccountName(accountName) {
-    return `${PathUtil.getServiceAccountPathFromAccountName(accountName)}/${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}`;
-  }
-
-  static getServiceAccountAdminAddrPathFromAccountName(accountName, adminAddr) {
-    return `${PathUtil.getServiceAccountAdminPathFromAccountName(accountName)}/${adminAddr}`;
   }
 
   static getServiceAccountBalancePathFromAccountName(accountName) {
@@ -50,6 +44,10 @@ class PathUtil {
 
   static getManageAppConfigPath(appName) {
     return ChainUtil.formatPath([PredefinedDbPaths.MANAGE_APP, appName, PredefinedDbPaths.MANAGE_APP_CONFIG]);
+  }
+
+  static getAppAdminPathFromServiceAccountName(accountName) {
+    return ruleUtil.getAppAdminPath(accountName);
   }
 
   static getStakingLockupDurationPath(serviceName) {
