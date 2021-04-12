@@ -349,7 +349,7 @@ class Functions {
 
   setValueOrLog(valuePath, value, auth, timestamp, transaction) {
     const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
-    if (result !== true) {
+    if (result.code !== 0) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
@@ -358,7 +358,7 @@ class Functions {
 
   incValueOrLog(valuePath, delta, auth, timestamp, transaction) {
     const result = this.db.incValue(valuePath, delta, auth, timestamp, transaction);
-    if (result !== true) {
+    if (result.code !== 0) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
@@ -367,7 +367,7 @@ class Functions {
 
   decValueOrLog(valuePath, delta, auth, timestamp, transaction) {
     const result = this.db.decValue(valuePath, delta, auth, timestamp, transaction);
-    if (result !== true) {
+    if (result.code !== 0) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
@@ -402,7 +402,7 @@ class Functions {
             .getServiceAccountAdminAddrPathFromAccountName(to, transaction.address);
         const adminSetupResult = this.setValueOrLog(
             serviceAccountAdminAddrPath, true, auth, timestamp, transaction);
-        if (adminSetupResult !== true) {
+        if (adminSetupResult.code !== 0) {
           return adminSetupResult;
         }
       }
@@ -444,9 +444,9 @@ class Functions {
     const resultPath = PathUtil.getTransferResultPath(from, to, key);
     const transferResult =
         this.transferInternal(fromBalancePath, toBalancePath, value, context);
-    if (transferResult === true) {
+    if (transferResult.code === 0) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult === false) {
+    } else if (transferResult.code === 1001) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -480,7 +480,7 @@ class Functions {
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
     const setConfigRes = this.setValueOrLog(
         manageAppConfigPath, sanitizedVal, auth, timestamp, transaction);
-    if (setConfigRes === true) {
+    if (setConfigRes.code === 0) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
@@ -514,13 +514,13 @@ class Functions {
           PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
         user, stakingServiceAccountName, value, auth, timestamp, transaction);
-    if (transferResult === true) {
+    if (transferResult.code === 0) {
       this.setValueOrLog(
           expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.incValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult === false) {
+    } else if (transferResult.code === 1001) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -547,11 +547,11 @@ class Functions {
         PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
         stakingServiceAccountName, user, value, auth, timestamp, transaction);
-    if (transferResult === true) {
+    if (transferResult.code === 0) {
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.decValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult === false) {
+    } else if (transferResult.code === 1001) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -578,7 +578,7 @@ class Functions {
         PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     const transferResult = this.setServiceAccountTransferOrLog(
         transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
-    if (transferResult === true) {
+    if (transferResult.code === 0) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -615,7 +615,7 @@ class Functions {
       result = this.setServiceAccountTransferOrLog(
           userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
     }
-    if (result === true) {
+    if (result.code === 0) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -646,7 +646,7 @@ class Functions {
     const serviceAccountPath = PathUtil.getServiceAccountPathFromAccountName(serviceAccountName);
     const serviceAccountSetupResult =
         this.setValueOrLog(serviceAccountPath, value, auth, timestamp, transaction);
-    if (serviceAccountSetupResult !== true) {
+    if (serviceAccountSetupResult.code !== 0) {
       logger.error(`  ==> Failed to open escrow`);
       this.setExecutionResult(context, FunctionResultCode.FAILURE);
     } else {
@@ -670,7 +670,7 @@ class Functions {
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
     const transferResult = this.setServiceAccountTransferOrLog(
         sourceAccount, escrowServiceAccountName, amount, auth, timestamp, transaction);
-    if (transferResult === true) {
+    if (transferResult.code === 0) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -700,7 +700,7 @@ class Functions {
     if (targetAmount > 0) {
       const result = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, targetAccount, targetAmount, auth, timestamp, transaction);
-      if (result !== true) {
+      if (result.code !== 0) {
         this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
         return;
       }
@@ -708,7 +708,7 @@ class Functions {
     if (sourceAmount > 0) {
       const result = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, sourceAccount, sourceAmount, auth, timestamp, transaction);
-      if (result !== true) {
+      if (result.code !== 0) {
         this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
         // TODO(lia): revert the release to target_account if there was any
         return;
@@ -908,17 +908,17 @@ class Functions {
 
     const fromBalance = this.db.getValue(fromPath);
     if (fromBalance < value) {
-      return false;
+      return ChainUtil.returnTxResult(1001, `Insufficient balance: ${fromBalance}`);
     }
     const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);
-    if (decResult !== true) {
+    if (decResult.code !== 0) {
       return decResult;
     }
     const incResult = this.incValueOrLog(toPath, value, auth, timestamp, transaction);
-    if (incResult !== true) {
+    if (incResult.code !== 0) {
       return incResult;
     }
-    return true;
+    return ChainUtil.returnTxResult(0);
   }
 }
 

@@ -583,7 +583,7 @@ class DB {
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return true;
+      return ChainUtil.returnTxResult(0);
     }
     if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
       return ChainUtil.returnTxResult(103, `No .write permission on: ${valuePath}`);
@@ -593,7 +593,7 @@ class DB {
     if (!isWritablePath.isValid) {
       if (isGlobal) {
         // There is nothing to do.
-        return true;
+        return ChainUtil.returnTxResult(0);
       } else {
         return ChainUtil.returnTxResult(
             104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`);
@@ -606,7 +606,7 @@ class DB {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
     }
 
-    return true;
+    return ChainUtil.returnTxResult(0);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -650,7 +650,7 @@ class DB {
         DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return true;
+      return ChainUtil.returnTxResult(0);
     }
     if (!this.getPermissionForFunction(localPath, auth)) {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
@@ -660,7 +660,7 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
 
-    return true;
+    return ChainUtil.returnTxResult(0);
   }
 
   // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
@@ -678,7 +678,7 @@ class DB {
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return true;
+      return ChainUtil.returnTxResult(0);
     }
     if (!this.getPermissionForRule(localPath, auth)) {
       return ChainUtil.returnTxResult(503, `No write_rule permission on: ${rulePath}`);
@@ -687,7 +687,7 @@ class DB {
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
 
-    return true;
+    return ChainUtil.returnTxResult(0);
   }
 
   // TODO(seo): Add owner config sanitization logic.
@@ -704,7 +704,7 @@ class DB {
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return true;
+      return ChainUtil.returnTxResult(0);
     }
     if (!this.getPermissionForOwner(localPath, auth)) {
       return ChainUtil.returnTxResult(
@@ -714,41 +714,41 @@ class DB {
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
 
-    return true;
+    return ChainUtil.returnTxResult(0);
   }
 
   set(opList, auth, timestamp, transaction) {
-    let ret = true;
+    let result;
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        ret = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (ret !== true) {
+        result = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        if (result.code !== 0) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        ret = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (ret !== true) {
+        result = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        if (result.code !== 0) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        ret = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (ret !== true) {
+        result = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        if (result.code !== 0) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        ret = this.setFunction(op.ref, op.value, auth, op.is_global);
-        if (ret !== true) {
+        result = this.setFunction(op.ref, op.value, auth, op.is_global);
+        if (result.code !== 0) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        ret = this.setRule(op.ref, op.value, auth, op.is_global);
-        if (ret !== true) {
+        result = this.setRule(op.ref, op.value, auth, op.is_global);
+        if (result.code !== 0) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        ret = this.setOwner(op.ref, op.value, auth, op.is_global);
-        if (ret !== true) {
+        result = this.setOwner(op.ref, op.value, auth, op.is_global);
+        if (result.code !== 0) {
           break;
         }
       } else {
@@ -756,7 +756,7 @@ class DB {
         return ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
       }
     }
-    return ret;
+    return result;
   }
 
   /**
@@ -800,15 +800,15 @@ class DB {
 
   executeOperation(op, auth, timestamp, tx) {
     if (!op) {
-      return ChainUtil.returnTxResult(1001, `Invalid operation: ${op}`);
+      return ChainUtil.returnTxResult(11, `Invalid operation: ${op}`);
     }
     if (tx && auth && auth.addr && !auth.fid) {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return ChainUtil.returnTxResult(1002, `Invalid nonce: ${tx.tx_body.nonce}`);
+        return ChainUtil.returnTxResult(12, `Invalid nonce: ${tx.tx_body.nonce}`);
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return ChainUtil.returnTxResult(1003, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+        return ChainUtil.returnTxResult(13, `Invalid timestamp: ${tx.tx_body.timestamp}`);
       }
     }
     let result;
@@ -835,8 +835,10 @@ class DB {
       case WriteDbOperations.SET:
         result = this.set(op.op_list, auth, timestamp, tx);
         break;
+      default:
+        return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
-    if (result === true && tx && auth && auth.addr && !auth.fid) {
+    if (result.code === 0 && tx && auth && auth.addr && !auth.fid) {
       this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
     }
     return result;
@@ -847,7 +849,7 @@ class DB {
     // NOTE(seo): A transaction needs to be converted to an executable form before being executed.
     if (!Transaction.isExecutable(tx)) {
       return ChainUtil.logAndReturnTxResult(
-          logger, 1101,
+          logger, 21,
           `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`, 0);
     }
     // Record when the tx was executed.
@@ -855,7 +857,7 @@ class DB {
     const txBody = tx.tx_body;
     if (!txBody) {
       return ChainUtil.logAndReturnTxResult(
-          logger, 1102, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`, 0);
+          logger, 22, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`, 0);
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
     const executionResult = this.executeOperation(
