@@ -856,14 +856,14 @@ class DB {
       return false;
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
-    const executedResult = this.executeOperation(
+    const executionResult = this.executeOperation(
         txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
     const executedStateInfo = this.getStateInfo();
-    if (executedResult && executedStateInfo[StateInfoProperties.TREE_HEIGHT] > TREE_HEIGHT_LIMIT) {
+    if (executionResult && executedStateInfo[StateInfoProperties.TREE_HEIGHT] > TREE_HEIGHT_LIMIT) {
       return ChainUtil.returnError(910, `Out of tree height limit ` +
           `(${executedStateInfo[StateInfoProperties.TREE_HEIGHT]} > ${TREE_HEIGHT_LIMIT})`);
     }
-    return executedResult;
+    return executionResult;
   }
 
   executeTransactionList(txList) {
