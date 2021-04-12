@@ -384,7 +384,7 @@ class DB {
     return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isGlobal, this.shardingPath);
   }
 
-  // TODO(seo): Support lookups on the final version.
+  // TODO(platfowner): Support lookups on the final version.
   getValue(valuePath, isGlobal) {
     return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isGlobal);
   }
@@ -405,7 +405,7 @@ class DB {
    * Returns a proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  // TODO(seo): Consider supporting global path for getStateProof().
+  // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = ChainUtil.parsePath(statePath);
     let node = this.stateRoot;
@@ -493,7 +493,7 @@ class DB {
     return this.checkPermission(matched.closestOwner.config, auth, permission);
   }
 
-  // TODO(seo): Add tests for op.fid.
+  // TODO(platfowner): Add tests for op.fid.
   get(opList) {
     const resultList = [];
     opList.forEach((op) => {
@@ -565,11 +565,11 @@ class DB {
     }
   }
 
-  // TODO(seo): Define error code explicitly.
-  // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
-  //            the former if the latter fails.
-  // TODO(seo): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
-  //            and setOwner() as well.
+  // TODO(platfowner): Define error code explicitly.
+  // TODO(platfowner): Consider making set operation and native function run tightly bound, i.e.,
+  //                   revert the former if the latter fails.
+  // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
+  //                   and setOwner() as well.
   setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
@@ -662,8 +662,8 @@ class DB {
     return ChainUtil.returnTxResult(0);
   }
 
-  // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
-  //            multiple path variables).
+  // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
+  //                   multiple path variables).
   setRule(rulePath, rule, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
@@ -689,7 +689,7 @@ class DB {
     return ChainUtil.returnTxResult(0);
   }
 
-  // TODO(seo): Add owner config sanitization logic.
+  // TODO(platfowner): Add owner config sanitization logic.
   setOwner(ownerPath, owner, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
@@ -894,7 +894,7 @@ class DB {
     return newValue;
   }
 
-  // TODO(seo): Eval subtree rules.
+  // TODO(platfowner): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
     const LOG_HEADER = 'getPermissionForValue';
     const matched = this.matchRuleForParsedPath(parsedValuePath);
@@ -1232,7 +1232,7 @@ class DB {
         ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
   }
 
-  // TODO(seo): Extend function for auth.fid.
+  // TODO(platfowner): Extend function for auth.fid.
   evalRuleString(ruleString, pathVars, data, newData, auth, timestamp) {
     if (typeof ruleString === 'boolean') {
       return ruleString;

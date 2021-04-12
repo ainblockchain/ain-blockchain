@@ -85,7 +85,7 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // NOTE(seo): Validity checks on individual addresses are done by .write rules.
-  // TODO(seo): Trigger subtree functions.
+  // TODO(platfowner): Trigger subtree functions.
   triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, isChainedCall) {
     // NOTE(seo): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
@@ -782,7 +782,7 @@ class Functions {
     this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
-  // TODO(seo): Support refund feature.
+  // TODO(platfowner): Support refund feature.
   _openCheckin(value, context) {
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
