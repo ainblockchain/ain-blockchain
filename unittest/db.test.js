@@ -3008,9 +3008,9 @@ describe("State version handling", () => {
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
       const newChild212 = newChild21.getChild('child_212');
-      expect(newChild2 === child2).to.equal(true);
-      expect(newChild21 === child21).to.equal(true);
-      expect(newChild212 === child212).to.equal(true);
+      expect(newChild2).to.equal(child2);  // Not cloned
+      expect(newChild21).to.equal(child21);  // Not cloned
+      expect(newChild212).to.equal(child212);  // Not cloned
     });
   });
 
@@ -3031,9 +3031,9 @@ describe("State version handling", () => {
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
       const newChild212 = newChild21.getChild('child_212');
-      expect(newChild2 === child2).to.equal(true);
-      expect(newChild21 === child21).to.equal(true);
-      expect(newChild212 === child212).to.equal(true);
+      expect(newChild2).to.equal(child2);  // Not cloned
+      expect(newChild21).to.equal(child21);  // Not cloned
+      expect(newChild212).to.equal(child212);  // Not cloned
     });
 
     it("the nodes of multiple access paths are cloned - multiple roots", () => {
@@ -3051,9 +3051,9 @@ describe("State version handling", () => {
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
       const newChild212 = newChild21.getChild('child_212');
-      expect(newChild2 === child2).to.equal(false);  // Cloned.
-      expect(newChild21 === child21).to.equal(false);  // Cloned.
-      expect(newChild212 === child212).to.equal(false);  // Cloned.
+      expect(newChild2).to.not.equal(child2);  // Cloned.
+      expect(newChild21).to.not.equal(child21);  // Cloned.
+      expect(newChild212).to.not.equal(child212);  // Cloned.
     });
 
     it("the nodes of multiple access paths are cloned - multiple parents case 1", () => {
@@ -3070,9 +3070,9 @@ describe("State version handling", () => {
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
       const newChild212 = newChild21.getChild('child_212');
-      expect(newChild2 === child2).to.equal(true);  // Not cloned.
-      expect(newChild21 === child21).to.equal(false);  // Cloned.
-      expect(newChild212 === child212).to.equal(false);  // Cloned.
+      expect(newChild2).to.equal(child2);  // Not cloned.
+      expect(newChild21).to.not.equal(child21);  // Cloned.
+      expect(newChild212).to.not.equal(child212);  // Cloned.
     });
 
     it("the nodes of multiple access paths are cloned - multiple parents case 2", () => {
@@ -3089,9 +3089,9 @@ describe("State version handling", () => {
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const newChild21 = newChild2.getChild('child_21');
       const newChild212 = newChild21.getChild('child_212');
-      expect(newChild2 === child2).to.equal(true);  // Not cloned.
-      expect(newChild21 === child21).to.equal(true);  // Not cloned
-      expect(newChild212 === child212).to.equal(false);  // Cloned.
+      expect(newChild2).to.equal(child2);  // Not cloned.
+      expect(newChild21).to.equal(child21);  // Not cloned.
+      expect(newChild212).to.not.equal(child212);  // Cloned.
     });
 
     it("the on other ref paths are not affected", () => {
@@ -3108,9 +3108,9 @@ describe("State version handling", () => {
       const afterOtherChild2 = otherRoot.getChild('values').getChild('test').getChild('child_2');
       const afterOtherChild21 = afterOtherChild2.getChild('child_21');
       const afterOtherChild212 = afterOtherChild21.getChild('child_212');
-      expect(afterOtherChild2 === beforeOtherChild2).to.equal(true);
-      expect(afterOtherChild21 === beforeOtherChild21).to.equal(true);
-      expect(afterOtherChild212 === beforeOtherChild212).to.equal(true);
+      expect(afterOtherChild2).to.equal(beforeOtherChild2);  // Not cloned
+      expect(afterOtherChild21).to.equal(beforeOtherChild21);  // Not cloned
+      expect(afterOtherChild212).to.equal(beforeOtherChild212);  // Not cloned
 
       // The state values of other roots are not affected.
       assert.deepEqual(otherRoot.getChild('values').getChild('test').toJsObject(), dbValues);
