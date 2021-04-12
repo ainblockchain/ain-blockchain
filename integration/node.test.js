@@ -15,7 +15,7 @@ const {
   CURRENT_PROTOCOL_VERSION,
   CHAINS_DIR,
   FunctionResultCode,
-  MAX_TX_BYTES,
+  TX_BYTES_LIMIT,
   GenesisAccounts,
   HASH_DELIMITER,
   ProofProperties,
@@ -1882,7 +1882,7 @@ describe('Blockchain Node', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         let longText = '';
-        for (let i = 0; i < MAX_TX_BYTES / 2; i++) {
+        for (let i = 0; i < TX_BYTES_LIMIT / 2; i++) {
           longText += 'a'
         }
         const txBody = {
@@ -1904,7 +1904,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
-              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+              message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
@@ -2087,7 +2087,7 @@ describe('Blockchain Node', () => {
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
           txList.push({
             tx_body: txBody,
-            signature 
+            signature
           });
         }
         return client.request('ain_sendSignedTransactionBatch', {
@@ -2114,7 +2114,7 @@ describe('Blockchain Node', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         let longText = '';
-        for (let i = 0; i < MAX_TX_BYTES / 2; i++) {
+        for (let i = 0; i < TX_BYTES_LIMIT / 2; i++) {
           longText += 'a'
         }
         const txBody = {
@@ -2142,7 +2142,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
-              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+              message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
@@ -3209,7 +3209,7 @@ describe('Blockchain Node', () => {
         it("escrow: individual -> individual: non-source account cannot write hold", () => {
           const key = Date.now();
           const holdRef = `/escrow/${serviceUser}/${serviceAdmin}/0/hold/${key}`;
-          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
             ref: holdRef,
@@ -3223,7 +3223,7 @@ describe('Blockchain Node', () => {
         it("escrow: individual -> individual: source account can write hold", () => {
           const key = Date.now();
           const holdRef = `/escrow/${serviceUser}/${serviceAdmin}/0/hold/${key}`;
-          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: holdRef,
@@ -3283,7 +3283,7 @@ describe('Blockchain Node', () => {
         it("escrow: individual -> individual: admin account can write release (ratio = 0)", () => {
           const key = Date.now();
           const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
-          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
           const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
               server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
@@ -3305,7 +3305,7 @@ describe('Blockchain Node', () => {
               server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
               .body.toString('utf-8')).result;
           expect(escrowServiceAccountBalanceAfter).to.equals(0);
-          const userBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+          const userBalanceAfter = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
           expect(userBalanceAfter).to.equals(userBalanceBefore + escrowServiceAccountBalanceBefore);
         });
@@ -3392,7 +3392,7 @@ describe('Blockchain Node', () => {
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
           const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
-          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -3409,7 +3409,7 @@ describe('Blockchain Node', () => {
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
           const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
-          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
@@ -3436,7 +3436,7 @@ describe('Blockchain Node', () => {
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
           const releaseRef = `/escrow/${source}/${target}/1/release/${key}`;
-          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
@@ -3459,7 +3459,7 @@ describe('Blockchain Node', () => {
               server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
               .body.toString('utf-8')).result;
           expect(escrowServiceAccountBalanceAfter).to.equals(0);
-          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           expect(paymentBalanceAfter).to.equals(paymentBalanceBefore + escrowServiceAccountBalanceBefore);
@@ -3471,7 +3471,7 @@ describe('Blockchain Node', () => {
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
           const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
-          const paymentBalance = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalance = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
@@ -3487,10 +3487,10 @@ describe('Blockchain Node', () => {
           // release
           key = Date.now();
           const releaseRef = `/escrow/${source}/${target}/1/release/${key}`;
-          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
-          const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 + 
+          const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
           const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
               server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
@@ -3512,11 +3512,11 @@ describe('Blockchain Node', () => {
               server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
               .body.toString('utf-8')).result;
           expect(escrowServiceAccountBalanceAfter).to.equals(0);
-          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
                   .body.toString('utf-8')).result;
           expect(paymentBalanceAfter).to.equals(paymentBalanceBefore + escrowServiceAccountBalanceBefore / 2);
-          const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 + 
+          const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
           expect(adminBalanceAfter).to.equals(adminBalanceBefore + escrowServiceAccountBalanceBefore / 2);
         });
