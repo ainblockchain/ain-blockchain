@@ -859,7 +859,7 @@ class DB {
     const executionResult = this.executeOperation(
         txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
     const stateInfo = this.getStateInfo('/');
-    if (executionResult && stateInfo[StateInfoProperties.TREE_HEIGHT] > TREE_HEIGHT_LIMIT) {
+    if (executionResult === true && stateInfo[StateInfoProperties.TREE_HEIGHT] > TREE_HEIGHT_LIMIT) {
       return ChainUtil.returnError(910, `Out of tree height limit ` +
           `(${stateInfo[StateInfoProperties.TREE_HEIGHT]} > ${TREE_HEIGHT_LIMIT})`);
     }
