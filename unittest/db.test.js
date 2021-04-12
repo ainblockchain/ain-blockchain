@@ -3176,7 +3176,7 @@ describe("Transaction execution", () => {
     });
 
     it("returns false for object transaction", () => {
-      assert.equal(node.db.executeTransaction(objectTx), false);
+      assert.equal(node.db.executeTransaction(objectTx).code, 1101);
       assert.equal(objectTx.extra, undefined);
     });
 
