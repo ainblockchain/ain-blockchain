@@ -3191,7 +3191,7 @@ describe("Transaction execution", () => {
         timestamp: 1568798344000,
       };
       const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
-      assert.equal(node.db.executeTransaction(maxHeightTx).code, 0);
+      assert.deepEqual(node.db.executeTransaction(maxHeightTx).code, 0);
 
       const overHeightTxBody = {
         operation: {
@@ -3203,7 +3203,7 @@ describe("Transaction execution", () => {
         timestamp: 1568798344000,
       };
       const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
-      assert.equal(node.db.executeTransaction(overHeightTx).code, 23);
+      assert.deepEqual(node.db.executeTransaction(overHeightTx).code, 23);
     })
   });
 });
