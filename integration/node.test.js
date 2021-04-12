@@ -1578,49 +1578,63 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           }
@@ -1781,56 +1795,70 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 103,
-              "error_message": "No .write permission on: some/wrong/path"
+              "error_message": "No .write permission on: some/wrong/path",
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "error_message": null
+              "receipt": {
+                "gas_amount": 1
+              }
             },
             "tx_hash": "erased"
           }
@@ -1875,7 +1903,9 @@ describe('Blockchain Node', () => {
             result: {
               result: {
                 code: 0,
-                error_message: null
+                receipt: {
+                  gas_amount: 1
+                }
               },
               tx_hash: ChainUtil.hashSignature(signature),
             }
@@ -1917,7 +1947,9 @@ describe('Blockchain Node', () => {
               result: {
                 result: {
                   code: 0,
-                  error_message: null
+                  receipt: {
+                    gas_amount: 1
+                  }
                 },
                 tx_hash: ChainUtil.hashSignature(signature),
               }
@@ -2149,7 +2181,9 @@ describe('Blockchain Node', () => {
             expected.push({
               result: {
                 code: 0,
-                error_message: null
+                receipt: {
+                  gas_amount: 1
+                }
               },
               tx_hash: ChainUtil.hashSignature(tx.signature),
             })
