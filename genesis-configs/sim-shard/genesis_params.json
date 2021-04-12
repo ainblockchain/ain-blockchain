@@ -1,6 +1,5 @@
 {
   "blockchain": {
-    "MAX_TX_BYTES": 10000,
     "TRANSACTION_POOL_TIMEOUT_MS": 3600000,
     "TRANSACTION_TRACKER_TIMEOUT_MS": 86400000,
     "NETWORK_ID": "Testnet",
@@ -24,5 +23,9 @@
     "MAX_INBOUND_LIMIT": 3,
     "DEFAULT_MAX_OUTBOUND": 2,
     "DEFAULT_MAX_INBOUND": 3
+  },
+  "resource": {
+    "TREE_HEIGHT_LIMIT": 20,
+    "TX_BYTES_LIMIT": 10000
   }
 }
