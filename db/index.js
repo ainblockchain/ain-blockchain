@@ -800,61 +800,62 @@ class DB {
 
   executeOperation(op, auth, timestamp, tx) {
     if (!op) {
-      return null;
+      return ChainUtil.returnTxResult(1001, `Invalid operation: ${op}`);
     }
     if (tx && auth && auth.addr && !auth.fid) {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return ChainUtil.returnTxResult(900, `Invalid nonce: ${tx.tx_body.nonce}`);
+        return ChainUtil.returnTxResult(1002, `Invalid nonce: ${tx.tx_body.nonce}`);
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return ChainUtil.returnTxResult(901, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+        return ChainUtil.returnTxResult(1003, `Invalid timestamp: ${tx.tx_body.timestamp}`);
       }
     }
-    let ret;
+    let result;
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        ret = this.setValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        result = this.setValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
         break;
       case WriteDbOperations.INC_VALUE:
-        ret = this.incValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        result = this.incValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
         break;
       case WriteDbOperations.DEC_VALUE:
-        ret = this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        result = this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
         break;
       case WriteDbOperations.SET_FUNCTION:
-        ret = this.setFunction(op.ref, op.value, auth, op.is_global);
+        result = this.setFunction(op.ref, op.value, auth, op.is_global);
         break;
       case WriteDbOperations.SET_RULE:
-        ret = this.setRule(op.ref, op.value, auth, op.is_global);
+        result = this.setRule(op.ref, op.value, auth, op.is_global);
         break;
       case WriteDbOperations.SET_OWNER:
-        ret = this.setOwner(op.ref, op.value, auth, op.is_global);
+        result = this.setOwner(op.ref, op.value, auth, op.is_global);
         break;
       case WriteDbOperations.SET:
-        ret = this.set(op.op_list, auth, timestamp, tx);
+        result = this.set(op.op_list, auth, timestamp, tx);
         break;
     }
-    if (ret === true && tx && auth && auth.addr && !auth.fid) {
+    if (result === true && tx && auth && auth.addr && !auth.fid) {
       this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
     }
-    return ret;
+    return result;
   }
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
     // NOTE(seo): A transaction needs to be converted to an executable form before being executed.
     if (!Transaction.isExecutable(tx)) {
-      logger.error(`[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`);
-      return false;
+      return ChainUtil.logAndReturnTxResult(
+          logger, 1101,
+          `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`, 0);
     }
     // Record when the tx was executed.
     tx.setExecutedAt(Date.now());
     const txBody = tx.tx_body;
     if (!txBody) {
-      logger.error(`[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`);
-      return false;
+      return ChainUtil.logAndReturnTxResult(
+          logger, 1102, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`, 0);
     }
     // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
     const executionResult = this.executeOperation(
