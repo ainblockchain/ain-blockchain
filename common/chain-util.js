@@ -249,20 +249,26 @@ class ChainUtil {
     return newObj;
   }
 
-  static transactionFailed(response) {
-    if (Array.isArray(response)) {
-      for (const result of response) {
-        if (ChainUtil.checkForTransactionErrorCode(result)) {
+  /**
+   * Returns true if the given result is from failed transaction or transaction list.
+   */
+  static isFailedTx(result) {
+    if (!result) {
+      return true;
+    }
+    if (Array.isArray(result)) {
+      for (const elem of result) {
+        if (ChainUtil.isFailedTxResultCode(elem.code)) {
           return true;
         }
       }
       return false;
     }
-    return ChainUtil.checkForTransactionErrorCode(response);
+    return ChainUtil.isFailedTxResultCode(result.code);
   }
 
-  static checkForTransactionErrorCode(result) {
-    return result === null || (result.code !== undefined && result.code !== 0);
+  static isFailedTxResultCode(code) {
+    return code !== 0;
   }
 
   static returnTxResult(code, message = null) {

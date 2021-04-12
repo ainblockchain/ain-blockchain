@@ -484,7 +484,7 @@ class P2pServer {
           tx_hash: subTx.hash,
           result
         });
-        if (!ChainUtil.transactionFailed(result)) {
+        if (!ChainUtil.isFailedTx(result)) {
           txListSucceeded.push(subTx);
         }
       }
@@ -497,7 +497,7 @@ class P2pServer {
     } else {
       const result = this.node.executeTransactionAndAddToPool(tx);
       logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
-      if (!ChainUtil.transactionFailed(result)) {
+      if (!ChainUtil.isFailedTx(result)) {
         this.client.broadcastTransaction(tx);
       }
 
