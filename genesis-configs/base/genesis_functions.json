@@ -39,14 +39,6 @@
               }
             }
           },
-          "open": {
-            ".function": {
-              "_openEscrow": {
-                "function_type": "NATIVE",
-                "function_id": "_openEscrow"
-              }
-            }
-          },
           "release": {
             "$record_id": {
               ".function": {
