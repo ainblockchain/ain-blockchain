@@ -573,12 +573,12 @@ class DB {
   setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
-      return ChainUtil.returnError(101, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return ChainUtil.returnTxResult(101, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(valuePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return ChainUtil.returnError(102, `Invalid path: ${isValidPath.invalidPath}`);
+      return ChainUtil.returnTxResult(102, `Invalid path: ${isValidPath.invalidPath}`);
     }
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -586,7 +586,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
-      return ChainUtil.returnError(103, `No .write permission on: ${valuePath}`);
+      return ChainUtil.returnTxResult(103, `No .write permission on: ${valuePath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
@@ -595,7 +595,7 @@ class DB {
         // There is nothing to do.
         return true;
       } else {
-        return ChainUtil.returnError(
+        return ChainUtil.returnTxResult(
             104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`);
       }
     }
@@ -613,7 +613,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return ChainUtil.returnError(201, `Not a number type: ${valueBefore} or ${delta}`);
+      return ChainUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
@@ -623,7 +623,7 @@ class DB {
     const valueBefore = this.getValue(valuePath, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return ChainUtil.returnError(301, `Not a number type: ${valueBefore} or ${delta}`);
+      return ChainUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
@@ -632,17 +632,18 @@ class DB {
   setFunction(functionPath, functionChange, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
-      return ChainUtil.returnError(401, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return ChainUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return ChainUtil.returnError(402, `Invalid path: ${isValidPath.invalidPath}`);
+      return ChainUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`);
     }
     if (!auth || auth.addr !== this.ownerAddress) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(functionChange);
       if (ownerOnlyFid !== null) {
-        return ChainUtil.returnError(403, `Trying to write owner-only function: ${ownerOnlyFid}`);
+        return ChainUtil.returnTxResult(
+            403, `Trying to write owner-only function: ${ownerOnlyFid}`);
       }
     }
     const localPath = isGlobal === true ?
@@ -652,7 +653,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForFunction(localPath, auth)) {
-      return ChainUtil.returnError(404, `No write_function permission on: ${functionPath}`);
+      return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
@@ -667,12 +668,12 @@ class DB {
   setRule(rulePath, rule, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
-      return ChainUtil.returnError(501, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return ChainUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return ChainUtil.returnError(502, `Invalid path: ${isValidPath.invalidPath}`);
+      return ChainUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`);
     }
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -680,7 +681,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForRule(localPath, auth)) {
-      return ChainUtil.returnError(503, `No write_rule permission on: ${rulePath}`);
+      return ChainUtil.returnTxResult(503, `No write_rule permission on: ${rulePath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
@@ -693,12 +694,12 @@ class DB {
   setOwner(ownerPath, owner, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
-      return ChainUtil.returnError(601, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return ChainUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return ChainUtil.returnError(602, `Invalid path: ${isValidPath.invalidPath}`);
+      return ChainUtil.returnTxResult(602, `Invalid path: ${isValidPath.invalidPath}`);
     }
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -706,7 +707,7 @@ class DB {
       return true;
     }
     if (!this.getPermissionForOwner(localPath, auth)) {
-      return ChainUtil.returnError(
+      return ChainUtil.returnTxResult(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -752,7 +753,7 @@ class DB {
         }
       } else {
         // Invalid Operation
-        return ChainUtil.returnError(701, `Invalid opeartion type: ${op.type}`);
+        return ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
       }
     }
     return ret;
@@ -804,10 +805,10 @@ class DB {
     if (tx && auth && auth.addr && !auth.fid) {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return ChainUtil.returnError(900, `Invalid nonce: ${tx.tx_body.nonce}`);
+        return ChainUtil.returnTxResult(900, `Invalid nonce: ${tx.tx_body.nonce}`);
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return ChainUtil.returnError(901, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+        return ChainUtil.returnTxResult(901, `Invalid timestamp: ${tx.tx_body.timestamp}`);
       }
     }
     let ret;
