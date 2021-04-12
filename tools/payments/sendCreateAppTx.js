@@ -1,4 +1,5 @@
 const path = require('path');
+const moment = require('moment');
 const { signAndSendTx, confirmTransaction } = require('../util');
 
 let config = {};
@@ -9,7 +10,10 @@ function buildCreateAppTxBody(address, timestamp) {
       type: 'SET_VALUE',
       ref: `/manage_app/test_service/create/${timestamp}`,
       value: {
-        admin: { [address]: true }
+        admin: { [address]: true },
+        service: {
+          staking: { lockup_duration: moment.duration(5, 'minute').as('milliseconds') }
+        }
       }
     },
     timestamp,
