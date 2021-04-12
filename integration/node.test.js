@@ -124,7 +124,7 @@ function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(_.get(res, 'result.code'), 0);
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
@@ -158,7 +158,7 @@ function cleanUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(_.get(res, 'result.code'), 0);
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
@@ -276,7 +276,7 @@ function setUpForNativeFunctions() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(_.get(res, 'result.code'), 0);
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of setUpForNativeFunctions() tx.`)
   }
@@ -330,7 +330,7 @@ function cleanUpForNativeFunctions() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(_.get(res, 'result.code'), 0);
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of cleanUpForNativeFunctions() tx.`)
   }
@@ -1312,7 +1312,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('/set', () => {
-      it('set', () => {
+      it('set with successful operations', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some100/path')
@@ -1362,7 +1362,44 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        assert.deepEqual(_.get(body, 'result.result'), [
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+        ]);
 
         // Confirm that the original value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1430,10 +1467,30 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
-        assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 103,
-          "error_message": "No .write permission on: some/wrong/path"
-        });
+        assert.deepEqual(_.get(body, 'result.result'), [
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 103,
+            "error_message": "No .write permission on: some/wrong/path"
+          }
+        ]);
 
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -1444,7 +1501,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('/batch', () => {
-      it('batch', () => {
+      it('batch with successful transactions', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
@@ -1578,7 +1635,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1587,7 +1644,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1596,7 +1653,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1605,7 +1662,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1614,7 +1671,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1623,19 +1680,51 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
             "tx_hash": "erased"
           },
           {
-            "result": {
-              "code": 0,
-              "receipt": {
-                "gas_amount": 1
+            "result": [
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
               }
-            },
+            ],
             "tx_hash": "erased"
           }
         ]);
@@ -1795,7 +1884,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1804,7 +1893,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1813,7 +1902,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1829,7 +1918,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1838,7 +1927,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
@@ -1847,19 +1936,51 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "receipt": {
+              "gas": {
                 "gas_amount": 1
               }
             },
             "tx_hash": "erased"
           },
           {
-            "result": {
-              "code": 0,
-              "receipt": {
-                "gas_amount": 1
+            "result": [
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
               }
-            },
+            ],
             "tx_hash": "erased"
           }
         ]);
@@ -1903,7 +2024,7 @@ describe('Blockchain Node', () => {
             result: {
               result: {
                 code: 0,
-                receipt: {
+                gas: {
                   gas_amount: 1
                 }
               },
@@ -1947,7 +2068,7 @@ describe('Blockchain Node', () => {
               result: {
                 result: {
                   code: 0,
-                  receipt: {
+                  gas: {
                     gas_amount: 1
                   }
                 },
@@ -2160,7 +2281,111 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1
           }
-        ]
+        ];
+        const resultList = [
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 103,
+              "error_message": "No .write permission on: some/wrong/path",
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": [
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "tx_hash": "erased"
+          }
+        ];
         const txList = [];
         for (const txBody of txBodyList) {
           const signature =
@@ -2177,19 +2402,11 @@ describe('Blockchain Node', () => {
           const resultList = _.get(res, 'result.result', null);
           expect(Array.isArray(resultList)).to.equal(true);
           const expected = [];
-          for (const tx of txList) {
-            expected.push({
-              result: {
-                code: 0,
-                receipt: {
-                  gas_amount: 1
-                }
-              },
-              tx_hash: ChainUtil.hashSignature(tx.signature),
-            })
+          for (let i = 0; i < txList.length; i++) {
+            resultList[i].tx_hash = ChainUtil.hashSignature(txList[i].signature);
           }
           assert.deepEqual(res.result, {
-            result: expected,
+            result: resultList,
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
         })

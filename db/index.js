@@ -606,12 +606,11 @@ class DB {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
       gasAmount += this.func.getTotalGasAmount();
     }
-    // TODO(platfowner): Add more info (e.g. gas price, gas cost) to receipt.
-    const receipt = {
+    const gas = {
       gas_amount: gasAmount,
     };
 
-    return ChainUtil.returnTxResult(0, null, receipt);
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -665,10 +664,10 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
 
-    const receipt = {
+    const gas = {
       gas_amount: 1,
     };
-    return ChainUtil.returnTxResult(0, null, receipt);
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -695,10 +694,10 @@ class DB {
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
 
-    const receipt = {
+    const gas = {
       gas_amount: 1,
     };
-    return ChainUtil.returnTxResult(0, null, receipt);
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
   // TODO(platfowner): Add owner config sanitization logic.
@@ -725,52 +724,59 @@ class DB {
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
 
-    const receipt = {
+    const gas = {
       gas_amount: 1,
     };
-    return ChainUtil.returnTxResult(0, null, receipt);
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
   set(opList, auth, timestamp, transaction) {
-    let result;
+    let resultList = [];
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        result = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        result = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (result.code !== 0) {
+        const result = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        result = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (result.code !== 0) {
+        const result = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        result = this.setFunction(op.ref, op.value, auth, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setFunction(op.ref, op.value, auth, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        result = this.setRule(op.ref, op.value, auth, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setRule(op.ref, op.value, auth, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        result = this.setOwner(op.ref, op.value, auth, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setOwner(op.ref, op.value, auth, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else {
-        // Invalid Operation
-        return ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
+        // Invalid Operation type
+        const result = ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
+        resultList.push(result);
       }
     }
-    return result;
+    return resultList;
   }
 
   /**
@@ -852,7 +858,7 @@ class DB {
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
-    if (result.code === 0 && tx && auth && auth.addr && !auth.fid) {
+    if (!ChainUtil.isFailedTx(result) && tx && auth && auth.addr && !auth.fid) {
       this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
     }
     return result;
@@ -878,7 +884,7 @@ class DB {
         txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
     const stateInfo = this.getStateInfo('/');
     const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
-    if (executionResult.code === 0 && treeHeight > TREE_HEIGHT_LIMIT) {
+    if (!ChainUtil.isFailedTx(executionResult) && treeHeight > TREE_HEIGHT_LIMIT) {
       return ChainUtil.returnTxResult(23, `Out of tree height limit ` +
           `(${treeHeight} > ${TREE_HEIGHT_LIMIT})`);
     }
