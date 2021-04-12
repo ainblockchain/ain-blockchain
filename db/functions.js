@@ -791,11 +791,6 @@ class Functions {
     }
   }
 
-  getCheckinPayloadPathFromValuePath(valuePath) {
-    const branchPath = ChainUtil.formatPath(valuePath.slice(0, -3));
-    return PathUtil.getCheckinPayloadPath(branchPath);
-  }
-
   _closeCheckin(value, context) {
     if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
