@@ -121,7 +121,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
-    // TODO(seo): Instantly reject requests with invalid signatures.
+    // TODO(platfowner): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
       if (sizeof(args) > TX_BYTES_LIMIT) {
         done(null, addProtocolVersion({

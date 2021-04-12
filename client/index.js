@@ -242,7 +242,7 @@ app.post('/set_owner', (req, res, next) => {
 });
 
 // A custom address can be used as a devel method for bypassing the trasaction verification.
-// TODO(seo): Replace custom address with real signature.
+// TODO(platfowner): Replace custom address with real signature.
 app.post('/set', (req, res, next) => {
   const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
   res.status(200)
@@ -357,7 +357,7 @@ app.get('/state_versions', (req, res) => {
     .end();
 });
 
-// TODO(seo): Support for subtree dumping (i.e. with ref path).
+// TODO(platfowner): Support for subtree dumping (i.e. with ref path).
 app.get('/dump_final_version', (req, res) => {
   const result = node.dumpFinalVersion(true);
   res.status(200)

@@ -322,7 +322,7 @@ describe('Blockchain Cluster', () => {
       }
     });
 
-    // TODO(seo): Uncomment this. It's flaky.
+    // TODO(platfowner): Uncomment this. It's flaky.
     /*
     it('syncs new peers on startup', () => {
       sendTransactions(sentOperations);
@@ -365,7 +365,7 @@ describe('Blockchain Cluster', () => {
     });
     */
 
-    // TODO(seo): Uncomment this. It's flaky.
+    // TODO(platfowner): Uncomment this. It's flaky.
     /*
     it('all having correct number of blocks', () => {
       expect(numNewBlocks + numBlocksOnStartup).to.equal(baseChain.pop().number);
@@ -454,7 +454,7 @@ describe('Blockchain Cluster', () => {
       }
     });
 
-    // TODO(seo): Uncomment or remove this once find a good solution to flaky test cases.
+    // TODO(platfowner): Uncomment or remove this once find a good solution to flaky test cases.
     /*
     it('not dropping any transations ', () => {
       let blocks;
@@ -466,7 +466,7 @@ describe('Blockchain Cluster', () => {
         const transactionsOnBlockChain = [];
         blocks.forEach((block) => {
           block.transactions.forEach((transaction) => {
-            // TODO(seo): Find a better way.
+            // TODO(platfowner): Find a better way.
             if (!(JSON.stringify(transaction).includes(PredefinedDbPaths.VOTING_ROUND) ||
                 JSON.stringify(transaction).includes(PredefinedDbPaths.RECENT_PROPOSERS) ||
                 JSON.stringify(transaction).includes(PredefinedDbPaths.STAKEHOLDER) ||
