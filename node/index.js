@@ -305,7 +305,7 @@ class BlockchainNode {
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
     if (!this.db.backupDb()) {
-      return ChainUtil.logAndReturnError(
+      return ChainUtil.logAndReturnTxResult(
           logger, 3,
           `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
     }
@@ -329,12 +329,12 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
-      return ChainUtil.logAndReturnError(
+      return ChainUtil.logAndReturnTxResult(
           logger, 1,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.state !== BlockchainNodeStates.SERVING) {
-      return ChainUtil.logAndReturnError(
+      return ChainUtil.logAndReturnTxResult(
           logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
