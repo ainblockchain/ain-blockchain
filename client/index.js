@@ -192,7 +192,7 @@ app.post('/set_value', (req, res, next) => {
       req.body, WriteDbOperations.SET_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result === true ? 0 : 1, result})
+    .send({code: result.result.code === 0 ? 0 : 1, result})
     .end();
 });
 
@@ -201,7 +201,7 @@ app.post('/inc_value', (req, res, next) => {
       req.body, WriteDbOperations.INC_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result === true ? 0 : 1, result})
+    .send({code: result.result.code === 0 ? 0 : 1, result})
     .end();
 });
 
@@ -210,7 +210,7 @@ app.post('/dec_value', (req, res, next) => {
       req.body, WriteDbOperations.DEC_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result === true ? 0 : 1, result})
+    .send({code: result.result.code === 0 ? 0 : 1, result})
     .end();
 });
 
@@ -219,7 +219,7 @@ app.post('/set_function', (req, res, next) => {
       req.body, WriteDbOperations.SET_FUNCTION));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result === true ? 0 : 1, result})
+    .send({code: result.result.code === 0 ? 0 : 1, result})
     .end();
 });
 
@@ -228,7 +228,7 @@ app.post('/set_rule', (req, res, next) => {
       req.body, WriteDbOperations.SET_RULE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result === true ? 0 : 1, result})
+    .send({code: result.result.code === 0 ? 0 : 1, result})
     .end();
 });
 
@@ -237,7 +237,7 @@ app.post('/set_owner', (req, res, next) => {
       req.body, WriteDbOperations.SET_OWNER));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result === true ? 0 : 1, result})
+    .send({code: result.result.code === 0 ? 0 : 1, result})
     .end();
 });
 
@@ -247,7 +247,7 @@ app.post('/set', (req, res, next) => {
   const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result === true ? 0 : 1, result})
+    .send({code: result.result.code === 0 ? 0 : 1, result})
     .end();
 });
 

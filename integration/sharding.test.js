@@ -156,7 +156,7 @@ function setUp() {
       ],
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
@@ -189,7 +189,7 @@ function cleanUp() {
       ],
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
@@ -250,7 +250,7 @@ function setUpForSharding(shardingConfig) {
       ],
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
     console.log(`Failed to check finalization of setUpForSharding() tx.`)
   }
@@ -518,7 +518,7 @@ describe('Sharding', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_value?ref=/test/test_value/some/path')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, 100);
         })
 
@@ -526,7 +526,7 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_value?ref=/test/test_value/some/path&is_global=false')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, 100);
         })
 
@@ -534,7 +534,7 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_value?ref=/apps/afan/test/test_value/some/path&is_global=true')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, 100);
         })
       })
@@ -544,7 +544,7 @@ describe('Sharding', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             '.function': {
               'fid': 'some function config'
@@ -556,7 +556,7 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_function?ref=/apps/afan/test/test_function/some/path&is_global=true')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             '.function': {
               'fid': 'some function config'
@@ -570,7 +570,7 @@ describe('Sharding', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
 
@@ -578,7 +578,7 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
         })
       })
@@ -588,7 +588,7 @@ describe('Sharding', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_owner?ref=/test/test_owner/some/path')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             ".owner": {
               "owners": {
@@ -607,7 +607,7 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest(
               'GET', server1 + '/get_owner?ref=/apps/afan/test/test_owner/some/path&is_global=true')
             .body.toString('utf-8'));
-          assert.equal(body.code, 0);
+          assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             ".owner": {
               "owners": {
@@ -1203,16 +1203,16 @@ describe('Sharding', () => {
           const request = {ref: 'test/test_value/some/path', value: "some value", nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/set_value with is_global = false (explicit)', () => {
           const request = {ref: 'test/test_value/some/path', value: "some value", is_global: false, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/set_value with is_global = true', () => {
@@ -1221,8 +1221,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
       })
 
@@ -1231,8 +1231,8 @@ describe('Sharding', () => {
           const request = {ref: 'test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/inc_value with is_global = true', () => {
@@ -1241,8 +1241,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
       })
 
@@ -1251,8 +1251,8 @@ describe('Sharding', () => {
           const request = {ref: 'test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/dec_value with is_global = true', () => {
@@ -1261,8 +1261,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
       })
 
@@ -1279,8 +1279,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/set_function with is_global = true', () => {
@@ -1296,8 +1296,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
       })
 
@@ -1312,8 +1312,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/set_rule with is_global = true', () => {
@@ -1327,8 +1327,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
       })
 
@@ -1343,8 +1343,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/set_owner with is_global = true', () => {
@@ -1358,8 +1358,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
       })
 
@@ -1408,8 +1408,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
 
         it('/set with is_global = true', () => {
@@ -1462,8 +1462,8 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
-          assert.equal(body.result.result, true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
         })
       })
 
@@ -1490,7 +1490,10 @@ describe('Sharding', () => {
               assert.deepEqual(res.result, {
                 protoVer: CURRENT_PROTOCOL_VERSION,
                 result: {
-                  result: true,
+                  result: {
+                    code: 0,
+                    error_message: null
+                  },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
               });
@@ -1520,7 +1523,10 @@ describe('Sharding', () => {
               assert.deepEqual(res.result, {
                 protoVer: CURRENT_PROTOCOL_VERSION,
                 result: {
-                  result: true,
+                  result: {
+                    code: 0,
+                    error_message: null
+                  },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
               });
@@ -1550,7 +1556,10 @@ describe('Sharding', () => {
               assert.deepEqual(res.result, {
                 protoVer: CURRENT_PROTOCOL_VERSION,
                 result: {
-                  result: true,
+                  result: {
+                    code: 0,
+                    error_message: null
+                  },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
               });
@@ -1589,7 +1598,10 @@ describe('Sharding', () => {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
                 {
-                  result: true,
+                  result: {
+                    code: 0,
+                    error_message: null
+                  },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
               ]
@@ -1631,7 +1643,10 @@ describe('Sharding', () => {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
                 {
-                  result: true,
+                  result: {
+                    code: 0,
+                    error_message: null
+                  },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
               ]
@@ -1673,7 +1688,10 @@ describe('Sharding', () => {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
                 {
-                  result: true,
+                  result: {
+                    code: 0,
+                    error_message: null
+                  },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
               ]

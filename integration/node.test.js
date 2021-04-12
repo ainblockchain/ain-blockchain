@@ -124,7 +124,7 @@ function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
@@ -158,7 +158,7 @@ function cleanUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
@@ -276,7 +276,7 @@ function setUpForNativeFunctions() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of setUpForNativeFunctions() tx.`)
   }
@@ -330,7 +330,7 @@ function cleanUpForNativeFunctions() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
+  assert.deepEqual(_.get(res, 'result.code'), 0);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
     console.log(`Failed to check finalization of cleanUpForNativeFunctions() tx.`)
   }
@@ -882,7 +882,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -904,7 +904,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -926,7 +926,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -950,7 +950,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -999,7 +999,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1048,7 +1048,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1109,7 +1109,7 @@ describe('Blockchain Node', () => {
             'POST', server1 + '/set_function', {json: request})
             .body.toString('utf-8'));
         expect(_.get(body, 'code')).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1177,7 +1177,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1258,7 +1258,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1362,7 +1362,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the original value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1576,31 +1576,52 @@ describe('Blockchain Node', () => {
         }
         assert.deepEqual(body.result, [
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           }
         ]);
@@ -1758,15 +1779,24 @@ describe('Blockchain Node', () => {
         }
         assert.deepEqual(body.result, [
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
@@ -1777,19 +1807,31 @@ describe('Blockchain Node', () => {
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "error_message": null
+            },
             "tx_hash": "erased"
           }
         ]);
@@ -1831,7 +1873,10 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             protoVer: CURRENT_PROTOCOL_VERSION,
             result: {
-              result: true,
+              result: {
+                code: 0,
+                error_message: null
+              },
               tx_hash: ChainUtil.hashSignature(signature),
             }
           });
@@ -1870,7 +1915,10 @@ describe('Blockchain Node', () => {
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: {
-                result: true,
+                result: {
+                  code: 0,
+                  error_message: null
+                },
                 tx_hash: ChainUtil.hashSignature(signature),
               }
             });
@@ -2099,7 +2147,10 @@ describe('Blockchain Node', () => {
           const expected = [];
           for (const tx of txList) {
             expected.push({
-              result: true,
+              result: {
+                code: 0,
+                error_message: null
+              },
               tx_hash: ChainUtil.hashSignature(tx.signature),
             })
           }
@@ -2307,7 +2358,7 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8')).result;
-          assert.equal(_.get(res, 'result'), true);
+          assert.deepEqual(_.get(res, 'result.code'), 0);
           if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
             console.log(`Failed to check finalization of owner only cleanup tx.`)
           }
@@ -2327,8 +2378,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2373,8 +2424,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2392,8 +2443,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2401,7 +2452,7 @@ describe('Blockchain Node', () => {
               server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
             .body.toString('utf-8')).result
           // Should be the tx hash value.
-          assert.equal(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+          assert.deepEqual(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
         });
       });
 
@@ -2413,8 +2464,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2432,8 +2483,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2441,7 +2492,7 @@ describe('Blockchain Node', () => {
               server2 + `/get_value?ref=${saveLastTxAllowedPathWithFids + '/.last_tx/value'}`)
             .body.toString('utf-8')).result
           // Should be the tx hash value.
-          assert.equal(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+          assert.deepEqual(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
         });
       });
     });
@@ -2456,8 +2507,8 @@ describe('Blockchain Node', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        assert.deepEqual(body.code, 0);
         if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
           console.log(`Failed to check finalization of tx.`)
         }
@@ -2589,8 +2640,8 @@ describe('Blockchain Node', () => {
             ref: stakePath + '/1/value',
             value: stakeAmount
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
@@ -2760,8 +2811,8 @@ describe('Blockchain Node', () => {
             ref: `${unstakePath}/2/value`,
             value: stakeAmount
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
@@ -2791,8 +2842,8 @@ describe('Blockchain Node', () => {
             ref: stakePath + '/3/value',
             value: newStakingAmount
           }}).body.toString('utf-8'));
-          assert.equal(_.get(body, 'result.result'), true);
-          assert.equal(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
