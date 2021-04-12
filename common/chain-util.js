@@ -271,8 +271,15 @@ class ChainUtil {
     return code !== 0;
   }
 
-  static returnTxResult(code, message = null) {
-    return { code, error_message: message };
+  static returnTxResult(code, message = null, receipt = null) {
+    const result = { code };
+    if (message) {
+      result.error_message = message;
+    }
+    if (receipt) {
+      result.receipt = receipt;
+    }
+    return result;
   }
 
   /**
@@ -283,7 +290,7 @@ class ChainUtil {
    * @param {*} message error message
    * @param {*} level level to log with
    */
-  static logAndReturnTxResult(logger, code, message = null, level = 1) {
+  static logAndReturnTxResult(logger, code, message = null, level = 1, receipt = null) {
     if (level === 0) {
       logger.error(message);
     } else if (level === 1) {
@@ -291,7 +298,7 @@ class ChainUtil {
     } else {
       logger.debug(message);
     }
-    return ChainUtil.returnTxResult(code, message);
+    return ChainUtil.returnTxResult(code, message, receipt);
   }
 
   static keyStackToMetricName(keyStack) {

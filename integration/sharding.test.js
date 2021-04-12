@@ -1492,7 +1492,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    error_message: null
+                    receipt: {
+                      gas_amount: 1
+                    }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1525,7 +1527,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    error_message: null
+                    receipt: {
+                      gas_amount: 1
+                    }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1558,7 +1562,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    error_message: null
+                    receipt: {
+                      gas_amount: 1
+                    }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1600,7 +1606,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    error_message: null
+                    receipt: {
+                      gas_amount: 1
+                    }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
@@ -1645,7 +1653,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    error_message: null
+                    receipt: {
+                      gas_amount: 1
+                    }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
@@ -1690,7 +1700,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    error_message: null
+                    receipt: {
+                      gas_amount: 1
+                    }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },

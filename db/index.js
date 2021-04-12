@@ -601,11 +601,17 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
+    let gasAmount = 1;
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+      gasAmount += this.func.getTotalGasAmount();
     }
+    // TODO(platfowner): Add more info (e.g. gas price, gas cost) to receipt.
+    const receipt = {
+      gas_amount: gasAmount,
+    };
 
-    return ChainUtil.returnTxResult(0);
+    return ChainUtil.returnTxResult(0, null, receipt);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -659,7 +665,10 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
 
-    return ChainUtil.returnTxResult(0);
+    const receipt = {
+      gas_amount: 1,
+    };
+    return ChainUtil.returnTxResult(0, null, receipt);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -686,7 +695,10 @@ class DB {
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
 
-    return ChainUtil.returnTxResult(0);
+    const receipt = {
+      gas_amount: 1,
+    };
+    return ChainUtil.returnTxResult(0, null, receipt);
   }
 
   // TODO(platfowner): Add owner config sanitization logic.
@@ -713,7 +725,10 @@ class DB {
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
 
-    return ChainUtil.returnTxResult(0);
+    const receipt = {
+      gas_amount: 1,
+    };
+    return ChainUtil.returnTxResult(0, null, receipt);
   }
 
   set(opList, auth, timestamp, transaction) {
