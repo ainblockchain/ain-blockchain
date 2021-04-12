@@ -3181,10 +3181,22 @@ describe("Transaction execution", () => {
     });
 
     it("blocks over-height transaction", () => {
+      const maxHeightTxBody = {
+        operation: {
+          type: 'SET_VALUE',
+          ref: '/test/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18',
+          value: 'some value',
+        },
+        nonce: -1,
+        timestamp: 1568798344000,
+      };
+      const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
+      assert.equal(node.db.executeTransaction(maxHeightTx), true);
+
       const overHeightTxBody = {
         operation: {
           type: 'SET_VALUE',
-          ref: '/test/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
+          ref: '/test/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19',
           value: 'some value',
         },
         nonce: -1,
