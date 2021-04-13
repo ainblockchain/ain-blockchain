@@ -65,7 +65,7 @@ const trackerServer = app.listen(PORT, () => {
 trackerServer.keepAliveTimeout = 620 * 1000; // 620 seconds
 trackerServer.headersTimeout = 630 * 1000; // 630 seconds
 
-// NOTE(seo): This is very useful when the server dies without any logs.
+// NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
 });

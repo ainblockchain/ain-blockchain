@@ -21,7 +21,7 @@ const { ConsensusStatus } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
-// NOTE(seo): This is very useful when the server dies without any logs.
+// NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
 });
@@ -192,7 +192,7 @@ app.post('/set_value', (req, res, next) => {
       req.body, WriteDbOperations.SET_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result.code === 0 ? 0 : 1, result})
+    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
     .end();
 });
 
@@ -201,7 +201,7 @@ app.post('/inc_value', (req, res, next) => {
       req.body, WriteDbOperations.INC_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result.code === 0 ? 0 : 1, result})
+    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
     .end();
 });
 
@@ -210,7 +210,7 @@ app.post('/dec_value', (req, res, next) => {
       req.body, WriteDbOperations.DEC_VALUE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result.code === 0 ? 0 : 1, result})
+    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
     .end();
 });
 
@@ -219,7 +219,7 @@ app.post('/set_function', (req, res, next) => {
       req.body, WriteDbOperations.SET_FUNCTION));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result.code === 0 ? 0 : 1, result})
+    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
     .end();
 });
 
@@ -228,7 +228,7 @@ app.post('/set_rule', (req, res, next) => {
       req.body, WriteDbOperations.SET_RULE));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result.code === 0 ? 0 : 1, result})
+    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
     .end();
 });
 
@@ -237,17 +237,17 @@ app.post('/set_owner', (req, res, next) => {
       req.body, WriteDbOperations.SET_OWNER));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result.code === 0 ? 0 : 1, result})
+    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
     .end();
 });
 
 // A custom address can be used as a devel method for bypassing the trasaction verification.
-// TODO(seo): Replace custom address with real signature.
+// TODO(platfowner): Replace custom address with real signature.
 app.post('/set', (req, res, next) => {
   const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result.result.code === 0 ? 0 : 1, result})
+    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
     .end();
 });
 
@@ -357,7 +357,7 @@ app.get('/state_versions', (req, res) => {
     .end();
 });
 
-// TODO(seo): Support for subtree dumping (i.e. with ref path).
+// TODO(platfowner): Support for subtree dumping (i.e. with ref path).
 app.get('/dump_final_version', (req, res) => {
   const result = node.dumpFinalVersion(true);
   res.status(200)

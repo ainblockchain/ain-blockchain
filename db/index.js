@@ -275,8 +275,8 @@ class DB {
   /**
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
-  // NOTE(seo): The nodes with multiple ref paths (i.e., multiple roots) should be cloned
-  //            in order not to affect other ref paths to the altered node.
+  // NOTE(platfowner): The nodes with multiple ref paths (i.e., multiple roots) should be cloned
+  //                   in order not to affect other ref paths to the altered node.
   //
   // Typical case:
   // - root_a has subtree child_1a -> child_2 -> child_3
@@ -384,7 +384,7 @@ class DB {
     return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isGlobal, this.shardingPath);
   }
 
-  // TODO(seo): Support lookups on the final version.
+  // TODO(platfowner): Support lookups on the final version.
   getValue(valuePath, isGlobal) {
     return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isGlobal);
   }
@@ -405,7 +405,7 @@ class DB {
    * Returns a proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  // TODO(seo): Consider supporting global path for getStateProof().
+  // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = ChainUtil.parsePath(statePath);
     let node = this.stateRoot;
@@ -493,7 +493,7 @@ class DB {
     return this.checkPermission(matched.closestOwner.config, auth, permission);
   }
 
-  // TODO(seo): Add tests for op.fid.
+  // TODO(platfowner): Add tests for op.fid.
   get(opList) {
     const resultList = [];
     opList.forEach((op) => {
@@ -565,11 +565,11 @@ class DB {
     }
   }
 
-  // TODO(seo): Define error code explicitly.
-  // TODO(seo): Consider making set operation and native function run tightly bound, i.e., revert
-  //            the former if the latter fails.
-  // TODO(seo): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
-  //            and setOwner() as well.
+  // TODO(platfowner): Define error code explicitly.
+  // TODO(platfowner): Consider making set operation and native function run tightly bound, i.e.,
+  //                   revert the former if the latter fails.
+  // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
+  //                   and setOwner() as well.
   setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
@@ -601,12 +601,16 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    // NOTE(lia): Allow chained function triggering but no circular calls.
+    let gasAmount = 1;
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+      gasAmount += this.func.getTotalGasAmount();
     }
+    const gas = {
+      gas_amount: gasAmount,
+    };
 
-    return ChainUtil.returnTxResult(0);
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -660,11 +664,14 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
 
-    return ChainUtil.returnTxResult(0);
+    const gas = {
+      gas_amount: 1,
+    };
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
-  // TODO(seo): Add rule config sanitization logic (e.g. dup path variables,
-  //            multiple path variables).
+  // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
+  //                   multiple path variables).
   setRule(rulePath, rule, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
@@ -687,10 +694,13 @@ class DB {
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
 
-    return ChainUtil.returnTxResult(0);
+    const gas = {
+      gas_amount: 1,
+    };
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
-  // TODO(seo): Add owner config sanitization logic.
+  // TODO(platfowner): Add owner config sanitization logic.
   setOwner(ownerPath, owner, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
@@ -714,49 +724,59 @@ class DB {
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
 
-    return ChainUtil.returnTxResult(0);
+    const gas = {
+      gas_amount: 1,
+    };
+    return ChainUtil.returnTxResult(0, null, gas);
   }
 
   set(opList, auth, timestamp, transaction) {
-    let result;
+    let resultList = [];
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        result = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.INC_VALUE) {
-        result = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (result.code !== 0) {
+        const result = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        result = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        if (result.code !== 0) {
+        const result = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        result = this.setFunction(op.ref, op.value, auth, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setFunction(op.ref, op.value, auth, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_RULE) {
-        result = this.setRule(op.ref, op.value, auth, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setRule(op.ref, op.value, auth, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else if (op.type === WriteDbOperations.SET_OWNER) {
-        result = this.setOwner(op.ref, op.value, auth, op.is_global);
-        if (result.code !== 0) {
+        const result = this.setOwner(op.ref, op.value, auth, op.is_global);
+        resultList.push(result);
+        if (ChainUtil.isFailedTx(result)) {
           break;
         }
       } else {
-        // Invalid Operation
-        return ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
+        // Invalid Operation type
+        const result = ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
+        resultList.push(result);
       }
     }
-    return result;
+    return resultList;
   }
 
   /**
@@ -838,7 +858,7 @@ class DB {
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
-    if (result.code === 0 && tx && auth && auth.addr && !auth.fid) {
+    if (!ChainUtil.isFailedTx(result) && tx && auth && auth.addr && !auth.fid) {
       this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
     }
     return result;
@@ -846,7 +866,8 @@ class DB {
 
   executeTransaction(tx) {
     const LOG_HEADER = 'executeTransaction';
-    // NOTE(seo): A transaction needs to be converted to an executable form before being executed.
+    // NOTE(platfowner): A transaction needs to be converted to an executable form
+    //                   before being executed.
     if (!Transaction.isExecutable(tx)) {
       return ChainUtil.logAndReturnTxResult(
           logger, 21,
@@ -859,12 +880,12 @@ class DB {
       return ChainUtil.logAndReturnTxResult(
           logger, 22, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`, 0);
     }
-    // NOTE(seo): It's not allowed for users to send transactions with auth.fid.
+    // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const executionResult = this.executeOperation(
         txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
     const stateInfo = this.getStateInfo('/');
     const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
-    if (executionResult.code === 0 && treeHeight > TREE_HEIGHT_LIMIT) {
+    if (!ChainUtil.isFailedTx(executionResult) && treeHeight > TREE_HEIGHT_LIMIT) {
       return ChainUtil.returnTxResult(23, `Out of tree height limit ` +
           `(${treeHeight} > ${TREE_HEIGHT_LIMIT})`);
     }
@@ -895,7 +916,7 @@ class DB {
     return newValue;
   }
 
-  // TODO(seo): Eval subtree rules.
+  // TODO(platfowner): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
     const LOG_HEADER = 'getPermissionForValue';
     const matched = this.matchRuleForParsedPath(parsedValuePath);
@@ -1233,7 +1254,7 @@ class DB {
         ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
   }
 
-  // TODO(seo): Extend function for auth.fid.
+  // TODO(platfowner): Extend function for auth.fid.
   evalRuleString(ruleString, pathVars, data, newData, auth, timestamp) {
     if (typeof ruleString === 'boolean') {
       return ruleString;

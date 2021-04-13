@@ -1288,7 +1288,7 @@ describe("DB operations", () => {
 
   describe("set operations", () => {
     it("when set applied successfully", () => {
-      expect(node.db.set([
+      assert.deepEqual(node.db.set([
         {
           // Default type: SET_VALUE
           ref: "test/nested/far/down",
@@ -1329,7 +1329,44 @@ describe("DB operations", () => {
             ".owner": "other owner config"
           }
         }
-      ], { addr: 'abcd' }, null, { extra: { executed_at: 123456789 }}).code).to.equal(0);
+      ], { addr: 'abcd' }, null, { extra: { executed_at: 123456789 }}), [
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        }
+      ]);
       assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       expect(node.db.getValue("test/increment/value")).to.equal(30)
       expect(node.db.getValue("test/decrement/value")).to.equal(10)
@@ -1352,7 +1389,7 @@ describe("DB operations", () => {
     })
 
     it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
-      expect(node.db.set([
+      assert.deepEqual(node.db.set([
         {
           type: "SET_VALUE",
           ref: "test/nested/far/down",
@@ -1370,12 +1407,23 @@ describe("DB operations", () => {
           ref: "test/decrement/value",
           value: 10
         },
-      ]).code).to.equal(201)
+      ]), [
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 201,
+          "error_message": "Not a number type: bar or 10"
+        }
+      ])
       expect(node.db.getValue("test/ai/foo")).to.equal("bar")
     })
 
     it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
-      expect(node.db.set([
+      assert.deepEqual(node.db.set([
         {
           type: "SET_VALUE",
           ref: "test/nested/far/down",
@@ -1393,7 +1441,18 @@ describe("DB operations", () => {
           ref: "test/increment/value",
           value: 10
         }
-      ]).code).to.equal(301)
+      ]), [
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 301,
+          "error_message": "Not a number type: bar or 10"
+        }
+      ])
       expect(node.db.getValue("test/ai/foo")).to.equal("bar")
     })
   })

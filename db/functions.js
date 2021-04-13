@@ -2,6 +2,7 @@ const logger = require('../logger')('FUNCTIONS');
 const axios = require('axios');
 const _ = require('lodash');
 const {
+  FeatureFlags,
   PredefinedDbPaths,
   FunctionTypes,
   FunctionResultCode,
@@ -14,7 +15,7 @@ const {
   AccountProperties,
   TokenExchangeSchemes,
   FunctionProperties,
-  FeatureFlags,
+  GasFeeConstants,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
@@ -35,37 +36,43 @@ const EventListenerWhitelist = {
 /**
  * Built-in functions with function paths.
  */
+// NOTE(platfowner): ownerOnly means that the function can be set only by the blockchain owner.
+// NOTE(platfowner): execGasAmount means the amount of gas required to execute the function, which
+//                   reflects the number of database write operations and external RPC calls.
 class Functions {
   constructor(db, tp) {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
       [NativeFunctionIds.CLAIM]: {
-        func: this._claim.bind(this), ownerOnly: true },
+        func: this._claim.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
-        func: this._closeCheckin.bind(this), ownerOnly: true },
+        func: this._closeCheckin.bind(this), ownerOnly: true, execGasAmount: 11 },
       [NativeFunctionIds.CREATE_APP]: {
-        func: this._createApp.bind(this), ownerOnly: true },
+        func: this._createApp.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.HOLD]: {
-        func: this._hold.bind(this), ownerOnly: true },
+        func: this._hold.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
-        func: this._openCheckin.bind(this), ownerOnly: true },
+        func: this._openCheckin.bind(this), ownerOnly: true, execGasAmount: 62 },
+      [NativeFunctionIds.OPEN_ESCROW]: {
+        func: this._openEscrow.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.PAY]: {
-        func: this._pay.bind(this), ownerOnly: true },
+        func: this._pay.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.RELEASE]: {
-        func: this._release.bind(this), ownerOnly: true },
+        func: this._release.bind(this), ownerOnly: true, execGasAmount: 3 },
       [NativeFunctionIds.SAVE_LAST_TX]: {
-        func: this._saveLastTx.bind(this), ownerOnly: false },
+        func: this._saveLastTx.bind(this), ownerOnly: false, execGasAmount: 1 },
       [NativeFunctionIds.STAKE]: {
-        func: this._stake.bind(this), ownerOnly: true },
+        func: this._stake.bind(this), ownerOnly: true, execGasAmount: 4 },
       [NativeFunctionIds.UNSTAKE]: {
-        func: this._unstake.bind(this), ownerOnly: true },
+        func: this._unstake.bind(this), ownerOnly: true, execGasAmount: 3 },
       [NativeFunctionIds.TRANSFER]: {
-        func: this._transfer.bind(this), ownerOnly: true },
+        func: this._transfer.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-        func: this._updateLatestShardReport.bind(this), ownerOnly: false },
+        func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 2 },
     };
-    this.callStack= [];
+    this.callStack = [];
+    this.totalGasAmount = 0;
   }
 
   /**
@@ -77,10 +84,11 @@ class Functions {
    * @param {Number} executedAt execution time
    * @param {Object} transaction transaction
    */
-  // NOTE(seo): Validity checks on individual addresses are done by .write rules.
-  // TODO(seo): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
-    // NOTE(seo): It is assumed that the given transaction is in an executable form.
+  // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
+  // TODO(platfowner): Trigger subtree functions.
+  // TODO(platfowner): Add account registration gas amount.
+  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, isChainedCall) {
+    // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
     const functionPath = matched.matchedFunction.path;
@@ -90,6 +98,9 @@ class Functions {
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
+    if (this.callStackSize() === 0) {
+      this.clearTotalGasAmount();
+    }
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
           parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
@@ -108,15 +119,18 @@ class Functions {
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
             // Execute the matched native function.
+            this.pushCall(
+                ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
+                functionEntry.function_id, nativeFunction);
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] ` +
                   `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                   formattedParams);
+              logger.info(
+                  `    totalGasAmount: ${this.getTotalGasAmount()} with pushed call: ` +
+                  `${JSON.stringify(this.getTopCall(), null, 2)}\n`);
             }
-            this.pushCall(
-                ChainUtil.formatPath(parsedValuePath), value, ChainUtil.formatPath(functionPath),
-                functionEntry.function_id);
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             try {
@@ -145,6 +159,9 @@ class Functions {
                   } else {
                     logger.error(formattedResult);
                   }
+                  logger.info(
+                      `    totalGasAmount: ${this.getTotalGasAmount()} with popped call: ` +
+                      `${JSON.stringify(call, null, 2)}\n`);
                 }
               }
               triggerCount++;
@@ -158,6 +175,9 @@ class Functions {
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
                   `event listener '${functionEntry.event_listener}' with:\n` +
                   formattedParams);
+              logger.info(
+                  `    totalGasAmount: ${this.getTotalGasAmount()} before adding REST function: ` +
+                  `${functionEntry.function_id}\n`);
             }
             promises.push(axios.post(functionEntry.event_listener, {
               function: functionEntry,
@@ -173,6 +193,12 @@ class Functions {
               failCount++;
               return true;
             }));
+            this.addToTotalGasAmount(GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT);
+            if (FeatureFlags.enableRichFunctionLogging) {
+              logger.info(
+                  `    totalGasAmount: ${this.getTotalGasAmount()} after adding REST function: ` +
+                  `${functionEntry.function_id}\n`);
+            }
             triggerCount++;
           }
         }
@@ -188,10 +214,12 @@ class Functions {
         });
   }
 
-  pushCall(valuePath, value, functionPath, fid) {
+  pushCall(valuePath, value, functionPath, fid, nativeFunction) {
     const topCall = this.getTopCall();
     const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
+    const callDepth = this.callStackSize();
+    const gasAmount = nativeFunction.execGasAmount;
     this.callStack.push({
       fid,
       fidList,
@@ -199,12 +227,16 @@ class Functions {
       triggered_by: {
         valuePath,
         value
-      }
-    })
+      },
+      callDepth,
+      gasAmount,
+    });
   }
 
   popCall() {
-    return this.callStack.pop();
+    const call = this.callStack.pop();
+    this.addToTotalGasAmount(call.gasAmount);
+    return call;
   }
 
   getTopCall() {
@@ -234,6 +266,18 @@ class Functions {
   isCircularCall(fid) {
     const call = this.getTopCall();
     return call && call.fidList && call.fidList.includes(fid);
+  }
+
+  getTotalGasAmount() {
+    return this.totalGasAmount;
+  }
+
+  clearTotalGasAmount() {
+    this.totalGasAmount = 0;
+  }
+
+  addToTotalGasAmount(amount) {
+    this.totalGasAmount += amount;
   }
 
   static formatFunctionParams(
@@ -335,7 +379,7 @@ class Functions {
   }
 
   static buildExecutionResult(context, code) {
-    // NOTE(seo): Allow only node-independent values to avoid state proof hash issues.
+    // NOTE(platfowner): Allow only node-independent values to avoid state proof hash issues.
     const timestamp = context.timestamp;
     const transaction = context.transaction;
     return {
@@ -347,7 +391,7 @@ class Functions {
 
   setValueOrLog(valuePath, value, auth, timestamp, transaction) {
     const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
-    if (result.code !== 0) {
+    if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
@@ -356,7 +400,7 @@ class Functions {
 
   incValueOrLog(valuePath, delta, auth, timestamp, transaction) {
     const result = this.db.incValue(valuePath, delta, auth, timestamp, transaction);
-    if (result.code !== 0) {
+    if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
@@ -365,7 +409,7 @@ class Functions {
 
   decValueOrLog(valuePath, delta, auth, timestamp, transaction) {
     const result = this.db.decValue(valuePath, delta, auth, timestamp, transaction);
-    if (result.code !== 0) {
+    if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
@@ -391,6 +435,20 @@ class Functions {
    * service-related native functions such as payments and staking
    */
   setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
+    if (ChainUtil.isServAcntName(to)) {
+      const serviceAccountAdminPath = PathUtil.getServiceAccountAdminPathFromAccountName(to);
+      const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
+      if (serviceAccountAdmin === null) {
+        // set admin as the from address of the original transaction
+        const serviceAccountAdminAddrPath = PathUtil
+            .getServiceAccountAdminAddrPathFromAccountName(to, transaction.address);
+        const result = this.setValueOrLog(
+            serviceAccountAdminAddrPath, true, auth, timestamp, transaction);
+        if (ChainUtil.isFailedTx(result)) {
+          return result;
+        }
+      }
+    }
     const transferPath = PathUtil.getTransferValuePath(from, to, timestamp);
     return this.setValueOrLog(transferPath, value, auth, timestamp, transaction);
   }
@@ -426,11 +484,10 @@ class Functions {
     const fromBalancePath = ChainUtil.getBalancePath(from);
     const toBalancePath = ChainUtil.getBalancePath(to);
     const resultPath = PathUtil.getTransferResultPath(from, to, key);
-    const transferResult =
-        this.transferInternal(fromBalancePath, toBalancePath, value, context);
-    if (transferResult.code === 0) {
+    const result = this.transferInternal(fromBalancePath, toBalancePath, value, context);
+    if (!ChainUtil.isFailedTx(result)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult.code === 1001) {
+    } else if (result.code === 1001) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -460,11 +517,11 @@ class Functions {
     }
     if (serviceConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
-    };
+    }
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
-    const setConfigRes = this.setValueOrLog(
+    const result = this.setValueOrLog(
         manageAppConfigPath, sanitizedVal, auth, timestamp, transaction);
-    if (setConfigRes.code === 0) {
+    if (!ChainUtil.isFailedTx(result)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
@@ -496,15 +553,15 @@ class Functions {
     }
     const stakingServiceAccountName = ChainUtil.toServiceAccountName(
           PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
-    const transferResult = this.setServiceAccountTransferOrLog(
+    const result = this.setServiceAccountTransferOrLog(
         user, stakingServiceAccountName, value, auth, timestamp, transaction);
-    if (transferResult.code === 0) {
+    if (!ChainUtil.isFailedTx(result)) {
       this.setValueOrLog(
           expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.incValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult.code === 1001) {
+    } else if (result.code === 1001) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -529,13 +586,13 @@ class Functions {
     }
     const stakingServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
-    const transferResult = this.setServiceAccountTransferOrLog(
+    const result = this.setServiceAccountTransferOrLog(
         stakingServiceAccountName, user, value, auth, timestamp, transaction);
-    if (transferResult.code === 0) {
+    if (!ChainUtil.isFailedTx(result)) {
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.decValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (transferResult.code === 1001) {
+    } else if (result.code === 1001) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -560,9 +617,9 @@ class Functions {
 
     const userServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
-    const transferResult = this.setServiceAccountTransferOrLog(
+    const result = this.setServiceAccountTransferOrLog(
         transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
-    if (transferResult.code === 0) {
+    if (!ChainUtil.isFailedTx(result)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -599,7 +656,7 @@ class Functions {
       result = this.setServiceAccountTransferOrLog(
           userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
     }
-    if (result.code === 0) {
+    if (!ChainUtil.isFailedTx(result)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -619,6 +676,24 @@ class Functions {
     return true;
   }
 
+  _openEscrow(value, context) {
+    const sourceAccount = context.params.source_account;
+    const targetAccount = context.params.target_account;
+    const escrowKey = context.params.escrow_key;
+    const { timestamp, auth, transaction } = context;
+    const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
+    const serviceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
+    const serviceAccountPath = PathUtil.getServiceAccountPathFromAccountName(serviceAccountName);
+    const result = this.setValueOrLog(serviceAccountPath, value, auth, timestamp, transaction);
+    if (ChainUtil.isFailedTx(result)) {
+      logger.error(`  ==> Failed to open escrow`);
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    }
+  }
+
   _hold(value, context) {
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
@@ -633,9 +708,9 @@ class Functions {
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
-    const transferResult = this.setServiceAccountTransferOrLog(
+    const result = this.setServiceAccountTransferOrLog(
         sourceAccount, escrowServiceAccountName, amount, auth, timestamp, transaction);
-    if (transferResult.code === 0) {
+    if (!ChainUtil.isFailedTx(result)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
@@ -665,7 +740,7 @@ class Functions {
     if (targetAmount > 0) {
       const result = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, targetAccount, targetAmount, auth, timestamp, transaction);
-      if (result.code !== 0) {
+      if (ChainUtil.isFailedTx(result)) {
         this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
         return;
       }
@@ -673,7 +748,7 @@ class Functions {
     if (sourceAmount > 0) {
       const result = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, sourceAccount, sourceAmount, auth, timestamp, transaction);
-      if (result.code !== 0) {
+      if (ChainUtil.isFailedTx(result)) {
         this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
         // TODO(lia): revert the release to target_account if there was any
         return;
@@ -706,7 +781,7 @@ class Functions {
     this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
-  // TODO(seo): Support refund feature.
+  // TODO(platfowner): Support refund feature.
   _openCheckin(value, context) {
     const valuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
@@ -871,11 +946,11 @@ class Functions {
       return ChainUtil.returnTxResult(1001, `Insufficient balance: ${fromBalance}`);
     }
     const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);
-    if (decResult.code !== 0) {
+    if (ChainUtil.isFailedTx(decResult)) {
       return decResult;
     }
     const incResult = this.incValueOrLog(toPath, value, auth, timestamp, transaction);
-    if (incResult.code !== 0) {
+    if (ChainUtil.isFailedTx(incResult)) {
       return incResult;
     }
     return ChainUtil.returnTxResult(0);
