@@ -23,6 +23,9 @@ echo "PROJECT_ID=$PROJECT_ID"
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
 
+NUM_SHARDS=$3
+echo "NUM_SHARDS=$NUM_SHARDS"
+
 # Get confirmation.
 echo
 read -p "Do you want to proceed? >> (y/N) " -n 1 -r
@@ -54,8 +57,8 @@ gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $
 gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
 
-if [ "$3" -gt 0 ]; then
-    for i in $(seq $3)
+if [ "$NUM_SHARDS" -gt 0 ]; then
+    for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"
 
@@ -115,8 +118,8 @@ printf "\n\n#########################\n# Running parent node 4 #\n##############
 gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 4" --project $PROJECT_ID
 
 printf "\nDeploying shard blockchains..."
-if [ "$3" -gt 0 ]; then
-    for i in $(seq $3)
+if [ "$NUM_SHARDS" -gt 0 ]; then
+    for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"
 
