@@ -1,16 +1,18 @@
 const path = require('path');
+const moment = require('moment');
 const { signAndSendTx, confirmTransaction } = require('../util');
 
 let config = {};
 
-function buildOpenEscrowTxBody(source, target, address, timestamp) {
+function buildCreateAppTxBody(address, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/escrow/${source}/${target}/0/config`,
+      ref: `/manage_app/test_service/create/${timestamp}`,
       value: {
-        admin: {
-          [address]: true
+        admin: { [address]: true },
+        service: {
+          staking: { lockup_duration: moment.duration(5, 'minute').as('milliseconds') }
         }
       }
     },
@@ -23,7 +25,7 @@ async function sendTransaction() {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
-  const txBody = buildOpenEscrowTxBody(config.sourceAddr, config.targetAddr, config.serviceOwnerAddr, timestamp);
+  const txBody = buildCreateAppTxBody(config.serviceOwnerAddr, timestamp);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
@@ -42,7 +44,7 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node sendOpenEscrowTx.js config_local.js\n')
+  console.log('\nExample commandlines:\n  node sendCreateAppTx.js config_local.js\n')
   process.exit(0)
 }
 

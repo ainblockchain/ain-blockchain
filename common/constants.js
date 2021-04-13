@@ -116,7 +116,6 @@ const PredefinedDbPaths = {
   ACCOUNTS_NONCE: 'nonce',
   ACCOUNTS_TIMESTAMP: 'timestamp',
   SERVICE_ACCOUNTS: 'service_accounts',
-  SERVICE_ACCOUNTS_ADMIN: 'admin',
   BALANCE: 'balance',
   TRANSFER: 'transfer',
   TRANSFER_VALUE: 'value',

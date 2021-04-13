@@ -109,11 +109,15 @@ class RuleUtil {
     }
   }
 
-  getServAcntAdminPath(accountName) {
-    const { PredefinedDbPaths } = require('../common/constants');
+  getServiceNameFromServAcntName(accountName) {
     const parsed = this.parseServAcntName(accountName);
-    return `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/` +
-        `${PredefinedDbPaths.SERVICE_ACCOUNTS_ADMIN}`;
+    return parsed[1];
+  }
+
+  getAppAdminPath(accountName) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const appName = this.getServiceNameFromServAcntName(accountName);
+    return `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}`;
   }
 
   getBalancePath(addrOrServAcnt) {
