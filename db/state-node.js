@@ -171,7 +171,8 @@ class StateNode {
         // Does nothing.
         return;
       }
-      // NOTE(seo): Use _deleteParent() instead of deleteChild() to keep the order of children.
+      // NOTE(platfowner): Use _deleteParent() instead of deleteChild()
+      //                   to keep the order of children.
       child._deleteParent(this);
     }
     this.childMap.set(label, node);

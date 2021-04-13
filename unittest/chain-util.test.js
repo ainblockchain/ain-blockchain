@@ -300,4 +300,52 @@ describe("ChainUtil", () => {
       })).to.equal(true);
     })
   })
+
+  describe("getTotalGasAmount", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.getTotalGasAmount(null), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(undefined), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount({}), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: 'gas' }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: {} }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(true), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount('result'), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(0), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(1), 0);
+    })
+
+    it("when single operation result input", () => {
+      const result = {
+        "code": 0,
+        "gas": {
+          "gas_amount": 100
+        }
+      };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 100);
+    })
+
+    it("when multiple operation result input", () => {
+      const result = [
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 10
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 100
+          }
+        },
+      ];
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 111);
+    })
+  })
 })
