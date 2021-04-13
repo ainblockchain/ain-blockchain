@@ -7,6 +7,7 @@ const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
 const { CHAINS_DIR } = require('../common/constants');
+const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
@@ -80,7 +81,7 @@ function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(_.get(res, 'result.code'), 0);
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
@@ -109,7 +110,7 @@ function cleanUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(_.get(res, 'result.code'), 0);
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
