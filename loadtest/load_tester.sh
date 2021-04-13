@@ -45,7 +45,7 @@ else
     exit 0
 fi
 
-# NOTE(seo): '\n' in sed command does not take effect on macOS.
+# NOTE(platfowner): '\n' in sed command does not take effect on macOS.
 NUM=$(sed 's/level/level\
 /g' $BASEDIR/blocks1.txt | grep -c "level")
 
