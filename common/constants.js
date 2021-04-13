@@ -86,7 +86,7 @@ const BlockchainNodeStates = {
  * Predefined database paths.
  * @enum {string}
  */
-// TODO(seo): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
+// TODO(platfowner): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -401,6 +401,15 @@ const StateVersions = {
 };
 
 /**
+ * Gas fee constants.
+ *
+ * @enum {number}
+ */
+const GasFeeConstants = {
+  EXTERNAL_RPC_CALL_GAS_AMOUNT: 10,
+};
+
+/**
  * Overwriting environment variables.
  * These parameters are defined in genesis_params.json, but if specified as environment variables,
  * the env vars take precedence.
@@ -639,6 +648,7 @@ module.exports = {
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
+  GasFeeConstants,
   buildOwnerPermissions,
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
