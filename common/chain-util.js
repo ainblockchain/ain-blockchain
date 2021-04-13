@@ -271,6 +271,23 @@ class ChainUtil {
     return code !== 0;
   }
 
+  /**
+   * Returns the total gas amount of the result (esp. multi-operation result).
+   */
+  static getTotalGasAmount(result) {
+    if (!result) {
+      return 0;
+    }
+    if (Array.isArray(result)) {
+      let gasAmount = 0;
+      for (const elem of result) {
+        gasAmount += _.get(elem, 'gas.gas_amount', 0);
+      }
+      return gasAmount;
+    }
+    return _.get(result, 'gas.gas_amount', 0);
+  }
+
   static returnTxResult(code, message = null, gas = null) {
     const result = { code };
     if (message) {
@@ -283,12 +300,13 @@ class ChainUtil {
   }
 
   /**
-   * Logs and returns error.
+   * Logs and returns transaction result.
    * 
-   * @param {*} logger logger to log with
-   * @param {*} code error code
-   * @param {*} message error message
-   * @param {*} level level to log with
+   * @param logger logger to log with
+   * @param code error code
+   * @param message error message
+   * @param level level to log with
+   * @param gas gas object
    */
   static logAndReturnTxResult(logger, code, message = null, level = 1, gas = null) {
     if (level === 0) {
