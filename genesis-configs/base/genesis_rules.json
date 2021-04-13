@@ -39,7 +39,7 @@
     },
     "whitelist": {
       "$user_addr": {
-        ".write": "auth.addr === util.getOwnerAddr() && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
+        ".write": "getValue('/manage_app/consensus/config/admin/' + auth.addr) === true && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
       }
     }
   },
@@ -47,20 +47,20 @@
     "$source_account": {
       "$target_account": {
         "$escrow_key": {
+          "config": {
+            ".write": "data === null || getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true"
+          },
           "hold": {
             "$record_id": {
-              ".write": "((util.isServAcntName($source_account) && getValue(util.getServAcntAdminPath($source_account) + '/' + auth.addr) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue(util.getServAcntAdminPath(util.toServiceAccountName('escrow', 'escrow', util.toEscrowAccountName($source_account, $target_account, $escrow_key)))) !== null && data === null && util.isDict(newData)",
+              ".write": "((util.isServAcntName($source_account) && getValue(util.getAppAdminPath($source_account) + '/' + auth.addr) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config') !== null && data === null && util.isDict(newData)",
               "result": {
                 ".write": "auth.fid === '_hold'"
               }
             }
           },
-          "open": {
-            ".write": "util.isCksumAddr(auth.addr) && data === null && util.isDict(newData) && util.isDict(newData.admin) && Object.entries(newData.admin).every(([k, v]) => util.isCksumAddr(k) && v === true) && (util.isCksumAddr($source_account) || util.isServAcntName($source_account)) && (util.isCksumAddr($target_account) || util.isServAcntName($target_account))"
-          },
           "release": {
             "$record_id": {
-              ".write": "getValue(util.getServAcntAdminPath(util.toServiceAccountName('escrow', 'escrow', util.toEscrowAccountName($source_account, $target_account, $escrow_key))) + '/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.ratio) && 0 <= newData.ratio && newData.ratio <= 1",
+              ".write": "getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.ratio) && 0 <= newData.ratio && newData.ratio <= 1",
               "result": {
                 ".write": "auth.fid === '_release'"
               }
@@ -87,18 +87,11 @@
   },
   "payments": {
     "$service_name": {
-      "config": {
-        "admin": {
-          "$admin_addr": {
-            ".write": "evalOwner('/payments/' + $service_name + '/config', 'write_owner', auth) && (newData === true || newData === null)"
-          }
-        }
-      },
       "$user_addr": {
         "$payment_key": {
           "claim": {
             "$record_id": {
-              ".write": "getValue('/payments/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
+              ".write": "getValue('/manage_app/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
               "result": {
                 ".write": "auth.fid === '_claim'"
               }
@@ -106,7 +99,7 @@
           },
           "pay": {
             "$record_id": {
-              ".write": "getValue('/payments/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && newData !== null && util.isNumber(newData.amount) && newData.amount > 0",
+              ".write": "getValue('/manage_app/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0",
               "result": {
                 ".write": "auth.fid === '_pay'"
               }
@@ -120,12 +113,6 @@
     "$service_type": {
       "$service_name": {
         "$key": {
-          ".write": "auth.fid === '_openEscrow'",
-          "admin": {
-            "$admin_addr": {
-              ".write": "auth.fid === '_transfer' || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim'"
-            }
-          },
           "balance": {
             ".write": "auth.fid === '_transfer'"
           }

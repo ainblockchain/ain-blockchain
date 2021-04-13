@@ -54,8 +54,6 @@ class Functions {
         func: this._hold.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
         func: this._openCheckin.bind(this), ownerOnly: true, execGasAmount: 62 },
-      [NativeFunctionIds.OPEN_ESCROW]: {
-        func: this._openEscrow.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.PAY]: {
         func: this._pay.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.RELEASE]: {
@@ -435,20 +433,6 @@ class Functions {
    * service-related native functions such as payments and staking
    */
   setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
-    if (ChainUtil.isServAcntName(to)) {
-      const serviceAccountAdminPath = PathUtil.getServiceAccountAdminPathFromAccountName(to);
-      const serviceAccountAdmin = this.db.getValue(serviceAccountAdminPath);
-      if (serviceAccountAdmin === null) {
-        // set admin as the from address of the original transaction
-        const serviceAccountAdminAddrPath = PathUtil
-            .getServiceAccountAdminAddrPathFromAccountName(to, transaction.address);
-        const result = this.setValueOrLog(
-            serviceAccountAdminAddrPath, true, auth, timestamp, transaction);
-        if (ChainUtil.isFailedTx(result)) {
-          return result;
-        }
-      }
-    }
     const transferPath = PathUtil.getTransferValuePath(from, to, timestamp);
     return this.setValueOrLog(transferPath, value, auth, timestamp, transaction);
   }
@@ -674,24 +658,6 @@ class Functions {
       return false;
     }
     return true;
-  }
-
-  _openEscrow(value, context) {
-    const sourceAccount = context.params.source_account;
-    const targetAccount = context.params.target_account;
-    const escrowKey = context.params.escrow_key;
-    const { timestamp, auth, transaction } = context;
-    const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
-    const serviceAccountName = ChainUtil.toServiceAccountName(
-        PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
-    const serviceAccountPath = PathUtil.getServiceAccountPathFromAccountName(serviceAccountName);
-    const result = this.setValueOrLog(serviceAccountPath, value, auth, timestamp, transaction);
-    if (ChainUtil.isFailedTx(result)) {
-      logger.error(`  ==> Failed to open escrow`);
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
-    } else {
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
-    }
   }
 
   _hold(value, context) {

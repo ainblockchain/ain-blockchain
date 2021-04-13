@@ -25,7 +25,7 @@ function buildOpenEscrowTxBody(source, target, address, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/escrow/${source}/${target}/0/open`,
+      ref: `/escrow/${source}/${target}/0/config`,
       value: {
         admin: {
           [address]: true

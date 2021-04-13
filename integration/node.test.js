@@ -2870,7 +2870,7 @@ describe('Blockchain Node', () => {
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: manageAppPath,
             value: {
-              admin: { serviceAdmin: true },
+              admin: { [serviceAdmin]: true },
               service: {
                 staking: { lockup_duration: 1000 }
               }
@@ -3116,87 +3116,7 @@ describe('Blockchain Node', () => {
     });
 
     describe('Payments (_pay, _claim)', () => {
-      it('payments: setup payments', () => {
-        const configPath = '/payments/test_service/config'
-        const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
-          op_list: [
-            {
-              type: 'SET_OWNER',
-              ref: configPath,
-              value: {
-                ".owner": {
-                  "owners": {
-                    "*": {
-                      "branch_owner": false,
-                      "write_owner": false,
-                      "write_rule": false,
-                      "write_function": false
-                    },
-                    [serviceAdmin]: {
-                      "branch_owner": true,
-                      "write_owner": true,
-                      "write_rule": true,
-                      "write_function": true
-                    }
-                  }
-                }
-              }
-            },
-            {
-              type: 'SET_VALUE',
-              ref: `${configPath}/admin/${serviceAdmin}`,
-              value: true
-            }
-          ]
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(0);
-        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-      });
-
-      it('payments: original admin can add another admin', () => {
-        const configPath = `/payments/test_service/config/admin/${serviceUser}`;
-        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: configPath,
-          value: true
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(0);
-        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const admins = parseOrLog(syncRequest('GET', server1 +
-            `/get_value?ref=/payments/test_service/config/admin`).body.toString('utf-8')).result;
-        assert.deepEqual(admins, {
-          [serviceAdmin]: true,
-          [serviceUser]: true
-        });
-      });
-
-      it('payments: original admin can remove other admin', () => {
-        const configPath = `/payments/test_service/config/admin/${serviceUser}`;
-        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: configPath,
-          value: null
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(0);
-        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const admins = parseOrLog(syncRequest('GET', server1 +
-            `/get_value?ref=/payments/test_service/config/admin`).body.toString('utf-8')).result;
-        assert.deepEqual(admins, { [serviceAdmin]: true });
-      });
-
-      it('payments: non-admin cannot overwrite payment config', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-              ref: `/payments/test_service/config`,
-              value: { admin: serviceUser }
-            }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
-      });
-
-      it('payments: non-admin cannot write pay records', () => {
+      it('payments: non-app admin cannot write pay records', () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
               ref: `/payments/test_service/${serviceUser}/0/pay/key1`,
               value: {
@@ -3246,7 +3166,7 @@ describe('Blockchain Node', () => {
         expect(paymentResult).to.equals(FunctionResultCode.INTERNAL_ERROR);
       });
 
-      it('payments: admin can write pay records', () => {
+      it('payments: app admin can write pay records', () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key2`;
@@ -3266,18 +3186,13 @@ describe('Blockchain Node', () => {
         const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         expect(adminBalanceAfter).to.equals(adminBalanceBefore - amount);
-        const serviceAccount = parseOrLog(syncRequest('GET',
-            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0`)
+        const serviceAccountBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
-        assert.deepEqual(serviceAccount, {
-          balance: amount,
-          admin: {
-            [serviceAdmin]: true
-          }
-        });
+        assert.deepEqual(serviceAccountBalance, amount);
       });
 
-      it('payments: non-admin cannot write claim records', () => {
+      it('payments: non-app admin cannot write claim records', () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
               ref: `/payments/test_service/${serviceUser}/0/claim/key1`,
               value: {
@@ -3323,7 +3238,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equals(1);
       });
 
-      it('payments: admin can claim payments (target = address)', () => {
+      it('payments: app admin can claim payments (target = address)', () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         const paymentClaimRef = `/payments/test_service/${serviceUser}/0/claim/key2`;
@@ -3352,7 +3267,7 @@ describe('Blockchain Node', () => {
         expect(serviceAccountBalance).to.equals(0);
       });
 
-      it('payments: admin can claim payments + hold in escrow', () => {
+      it('payments: app admin can claim payments + hold in escrow', () => {
         // pay
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
@@ -3371,9 +3286,9 @@ describe('Blockchain Node', () => {
             `/get_value?ref=${payRef}/result/code`).body.toString('utf-8')).result;
         expect(payResult).to.equals(FunctionResultCode.SUCCESS);
         // open escrow
-        const openEscrowRef = `/escrow/payments|test_service|${serviceUser}|0/${serviceAdmin}/0/open`;
+        const escrowConfigRef = `/escrow/payments|test_service|${serviceUser}|0/${serviceAdmin}/0/config`;
         body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: openEscrowRef,
+          ref: escrowConfigRef,
           value: {
             admin: {
               [serviceAdmin]: true
@@ -3427,7 +3342,7 @@ describe('Blockchain Node', () => {
         expect(adminBalanceAfter).to.equals(adminBalanceBefore);
       });
 
-      it('payments: admin can claim payments (target = service account)', () => {
+      it('payments: app admin can claim payments (target = service account)', () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         const payRef = `/payments/test_service/${serviceUser}/0/pay/key3`;
@@ -3473,12 +3388,12 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('Escrow (_openEscrow, _hold, _release)', () => {
+    describe('Escrow (_hold, _release)', () => {
       describe('Escrow: individual -> individual', () => {
         it('escrow: individual -> individual: open escrow', () => {
-          const openRef = `/escrow/${serviceUser}/${serviceAdmin}/0/open`;
+          const configRef = `/escrow/${serviceUser}/${serviceAdmin}/0/config`;
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-            ref: openRef,
+            ref: configRef,
             value: {
               admin: {
                 [serviceAdmin]: true
@@ -3489,16 +3404,15 @@ describe('Blockchain Node', () => {
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
-          const escrowServiceAccountAdmin = parseOrLog(syncRequest('GET',
-              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/admin/${serviceAdmin}`)
+          const escrowAccountConfig = parseOrLog(syncRequest('GET', server1 + `/get_value?ref=${configRef}`)
               .body.toString('utf-8')).result;
-          expect(escrowServiceAccountAdmin).to.equals(true);
+          assert.deepEqual(escrowAccountConfig, { admin: { [serviceAdmin]: true } });
         });
 
         it("escrow: individual -> individual: cannot open escrow if it's already open", () => {
-          const openRef = `/escrow/${serviceUser}/${serviceAdmin}/0/open`;
-          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-            ref: openRef,
+          const configRef = `/escrow/${serviceUser}/${serviceAdmin}/0/config`;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: configRef,
             value: {
               admin: {
                 [serviceAdmin]: true
@@ -3615,49 +3529,12 @@ describe('Blockchain Node', () => {
 
       describe('Escrow: service -> individual', () => {
         it('escrow: service -> individual: open escrow', () => {
-          // set up payments & service accounts for payments
-          const configPath = '/payments/test_service/config'
-          let body = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
-            op_list: [
-              {
-                type: 'SET_OWNER',
-                ref: configPath,
-                value: {
-                  ".owner": {
-                    "owners": {
-                      "*": {
-                        "branch_owner": false,
-                        "write_owner": false,
-                        "write_rule": false,
-                        "write_function": false
-                      },
-                      [serviceAdmin]: {
-                        "branch_owner": true,
-                        "write_owner": true,
-                        "write_rule": true,
-                        "write_function": true
-                      }
-                    }
-                  }
-                }
-              },
-              {
-                type: 'SET_VALUE',
-                ref: `${configPath}/admin/${serviceAdmin}`,
-                value: true
-              }
-            ]
-          }}).body.toString('utf-8'));
-          expect(body.code).to.equals(0);
-          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
-            console.log(`Failed to check finalization of tx.`)
-          }
           const key = Date.now();
           const payRef = `/payments/test_service/${serviceUser}/0/pay/${key}`;
           const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
           const amount = adminBalanceBefore;
-          body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
             ref: payRef,
             value: {
               amount
@@ -3669,9 +3546,9 @@ describe('Blockchain Node', () => {
           // open escrow
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
-          const openRef = `/escrow/${source}/${target}/1/open`;
+          const configRef = `/escrow/${source}/${target}/1/config`;
           body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-            ref: openRef,
+            ref: configRef,
             value: {
               admin: {
                 [serviceAdmin]: true
@@ -3683,13 +3560,12 @@ describe('Blockchain Node', () => {
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
-          const escrowServiceAccountAdmin = parseOrLog(syncRequest('GET',
-              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/admin/${serviceAdmin}`)
+          const escrowAccountConfig = parseOrLog(syncRequest('GET', server1 + `/get_value?ref=${configRef}`)
               .body.toString('utf-8')).result;
-          expect(escrowServiceAccountAdmin).to.equals(true);
+          assert.deepEqual(escrowAccountConfig, { admin: { [serviceAdmin]: true } });
         });
 
-        it("escrow: service -> individual: non-service account admin cannot write hold", () => {
+        it("escrow: service -> individual: non-service admin cannot write hold", () => {
           const key = Date.now();
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
@@ -3706,7 +3582,7 @@ describe('Blockchain Node', () => {
           expect(body.code).to.equals(1);
         });
 
-        it("escrow: service -> individual: service account admin can write hold", () => {
+        it("escrow: service -> individual: service admin can write hold", () => {
           const key = Date.now();
           const source = `payments|test_service|${serviceUser}|0`;
           const target = serviceAdmin;
@@ -3767,7 +3643,7 @@ describe('Blockchain Node', () => {
           expect(paymentBalanceAfter).to.equals(paymentBalanceBefore + escrowServiceAccountBalanceBefore);
         });
 
-        it("escrow: service -> individual: admin account can write release (ratio = 0.5)", () => {
+        it("escrow: service -> individual: escrow admin account can write release (ratio = 0.5)", () => {
           // hold
           let key = Date.now();
           const source = `payments|test_service|${serviceUser}|0`;
