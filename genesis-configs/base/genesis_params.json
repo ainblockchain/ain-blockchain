@@ -19,7 +19,11 @@
     "GENESIS_VALIDATORS": {}
   },
   "network": {
-    "DATA_PROTOCOL_VERSION": "1.0.0",
+    "DATA_PROTOCOL_VERSION": {
+      "1.0.0": {
+        "min": "1.0.0"
+      }
+    },
     "MAX_OUTBOUND_LIMIT": 2,
     "MAX_INBOUND_LIMIT": 3,
     "DEFAULT_MAX_OUTBOUND": 2,
