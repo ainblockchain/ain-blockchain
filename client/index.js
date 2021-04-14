@@ -11,6 +11,7 @@ const ChainUtil = require('../common/chain-util');
 const VersionUtil = require('../common/version-util');
 const {
   CURRENT_PROTOCOL_VERSION,
+  PROTOCOL_VERSION_MAP,
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
@@ -31,7 +32,7 @@ process.on('SIGINT', (_) => {
   process.exit(1);
 });
 
-const { min, max } = VersionUtil.matchVersions(CURRENT_PROTOCOL_VERSION);
+const { min, max } = VersionUtil.matchVersions(PROTOCOL_VERSION_MAP, CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 

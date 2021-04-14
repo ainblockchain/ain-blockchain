@@ -19,7 +19,8 @@
     "GENESIS_VALIDATORS": {}
   },
   "network": {
-    "DATA_PROTOCOL_VERSION": {
+    "DATA_PROTOCOL_VERSION": "1.0.0",
+    "DATA_PROTOCOL_VERSIONS": {
       "1.0.0": {
         "min": "1.0.0"
       }

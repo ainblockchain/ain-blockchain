@@ -1,7 +1,6 @@
 const semver = require('semver');
 const {
-  CURRENT_PROTOCOL_VERSION,
-  PROTOCOL_VERSION_MAP
+  CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
 
 class VersionUtil {
@@ -10,18 +9,18 @@ class VersionUtil {
       (!ver.max || semver.valid(semver.coerce(ver.max)));
   }
 
-  static matchVersions(ver) {
-    let match = PROTOCOL_VERSION_MAP[ver];
+  static matchVersions(versionMap, ver) {
+    let match = versionMap[ver];
     if (this.isValidVersionMatch(match)) {
       return match;
     }
     const majorVer = semver.major(ver);
     const majorMinorVer = `${majorVer}.${semver.minor(ver)}`;
-    match = PROTOCOL_VERSION_MAP[majorMinorVer];
+    match = versionMap[majorMinorVer];
     if (this.isValidVersionMatch(match)) {
       return match;
     }
-    match = PROTOCOL_VERSION_MAP[majorVer];
+    match = versionMap[majorVer];
     if (this.isValidVersionMatch(match)) {
       return match;
     }

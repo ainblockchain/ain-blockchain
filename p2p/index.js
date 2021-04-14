@@ -6,9 +6,12 @@ const Websocket = require('ws');
 const semver = require('semver');
 const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
+const VersionUtil = require('../common/version-util');
 const {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
+  CURRENT_DATA_PROTOCOL_VERSION,
+  DATA_PROTOCOL_VERSION_MAP,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -26,6 +29,12 @@ const {
   getAddressFromSignature,
   verifySignedMessage
 } = require('./util');
+
+const { min, max } =
+    VersionUtil.matchVersions(DATA_PROTOCOL_VERSION_MAP, CURRENT_DATA_PROTOCOL_VERSION);
+const minDataProtocolVersion = min === undefined ? CURRENT_DATA_PROTOCOL_VERSION : min;
+const maxDataProtocolVersion = max;
+console.log(minDataProtocolVersion, maxDataProtocolVersion)
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
