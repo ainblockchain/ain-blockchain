@@ -9,6 +9,7 @@ const {
   ReadDbOperations,
   TransactionStatus,
   TX_BYTES_LIMIT,
+  BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
@@ -127,7 +128,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         done(null, addProtocolVersion({
           result: {
             code: 1,
-            message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`
+            message: `Transaction size exceeds its limit: ${TX_BYTES_LIMIT} bytes.`
           }
         }));
       } else if (!args.tx_body || !args.signature) {
@@ -154,28 +155,35 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_sendSignedTransactionBatch: function(args, done) {
-      if (sizeof(args) > TX_BYTES_LIMIT) {
+      if (!args.tx_list || !Array.isArray(args.tx_list)) {
         done(null, addProtocolVersion({
           result: {
             code: 1,
-            message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`
+            message: `Invalid batch transaction format.`
           }
         }));
-      } else if (!args.tx_list || !Array.isArray(args.tx_list)) {
+      } else if (args.tx_list.length > BATCH_TX_LIST_SIZE_LIMIT) {
         done(null, addProtocolVersion({
           result: {
             code: 2,
-            message: `Invalid batch transaction format.`
+            message: `Batch transaction list size exceeds its limit: ${BATCH_TX_LIST_SIZE_LIMIT}.`
           }
         }));
       } else {
         const txList = [];
         for (let i = 0; i < args.tx_list.length; i++) {
           const tx = args.tx_list[i];
-          if (!tx.tx_body || !tx.signature) {
+          if (sizeof(tx) > TX_BYTES_LIMIT) {
             done(null, addProtocolVersion({
               result: {
                 code: 3,
+                message: `Transaction[${i}]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`
+              }
+            }));
+          } else if (!tx.tx_body || !tx.signature) {
+            done(null, addProtocolVersion({
+              result: {
+                code: 4,
                 message: `Missing properties of transaction[${i}].`
               }
             }));
@@ -185,7 +193,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
           if (!createdTx) {
             done(null, addProtocolVersion({
               result: {
-                code: 4,
+                code: 5,
                 message: `Invalid format of transaction[${i}].`
               }
             }));
