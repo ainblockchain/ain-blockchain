@@ -1,7 +1,6 @@
 
 const RequestManager = require('./request_manager');
 const ProfitManager = require('./profit_manager');
-const errors = require('request-promise/errors');
 
 const INVEST_FEE = 0.1;
 const APP_PATH = '/apps/afan';
@@ -30,11 +29,8 @@ class AfanClient {
       const investorsResponse = await requestManager.getInvestors(to);
       investors = investorsResponse.result;
     } catch (err) {
-      if (err instanceof errors.StatusCodeError) {
-        investors = null;
-      } else {
-        throw err
-      }
+      console.log(err);
+      throw err;
     }
 
     requestManager.increaseBalance(from, -value);
@@ -66,9 +62,8 @@ class AfanClient {
         return {code: -4, message: 'Already proposed'};
       }
     } catch (err) {
-      if (!(err instanceof errors.StatusCodeError)) {
-        throw err
-      }
+      console.log(err);
+      throw err;
     }
     requestManager.increaseBalance(from, -value);
     requestManager.increaseBalance(intermed, value);
