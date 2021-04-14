@@ -26,6 +26,7 @@
   },
   "resource": {
     "TREE_HEIGHT_LIMIT": 20,
+    "TREE_SIZE_LIMIT": 1000000,
     "TX_BYTES_LIMIT": 10000
   }
 }
