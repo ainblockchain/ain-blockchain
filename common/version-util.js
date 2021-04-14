@@ -70,6 +70,10 @@ class VersionUtil {
       next();
     }
   }
+
+  static toMajorVersion(ver) {
+    return semver.coerce(semver.major(ver)).version;
+  }
 }
 
 module.exports = VersionUtil;
