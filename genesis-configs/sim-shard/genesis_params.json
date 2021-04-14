@@ -25,6 +25,7 @@
     "DEFAULT_MAX_INBOUND": 3
   },
   "resource": {
+    "BATCH_TX_LIST_SIZE_LIMIT": 50,
     "TREE_HEIGHT_LIMIT": 20,
     "TX_BYTES_LIMIT": 10000
   }
