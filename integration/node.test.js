@@ -2080,13 +2080,10 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('rejects a transaction that exceeds the size limit.', () => {
+      it('rejects a transaction that exceeds its size limit.', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        let longText = '';
-        for (let i = 0; i < TX_BYTES_LIMIT / 2; i++) {
-          longText += 'a'
-        }
+        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -2516,13 +2513,10 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('rejects a batch transaction carrying an over-size transaction.', () => {
+      it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        let longText = '';
-        for (let i = 0; i < TX_BYTES_LIMIT / 2; i++) {
-          longText += 'a'
-        }
+        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
