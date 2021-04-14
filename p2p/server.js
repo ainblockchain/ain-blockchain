@@ -15,6 +15,7 @@ const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const {
   CURRENT_PROTOCOL_VERSION,
+  CURRENT_DATA_PROTOCOL_VERSION,
   P2P_PORT,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
@@ -42,7 +43,9 @@ const {
   removeSocketConnectionIfExists,
   signMessage,
   getAddressFromSignature,
-  verifySignedMessage
+  verifySignedMessage,
+  checkProtoVer,
+  safeCloseSocket
 } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -289,18 +292,8 @@ class P2pServer {
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
-        const version = data.protoVer;
-        if (!version || !semver.valid(version)) {
-          const address = getAddressFromSocket(this.inbound, socket);
-          removeSocketConnectionIfExists(this.inbound, address);
-          socket.close();
-          return;
-        }
-        if (semver.gt(this.minProtocolVersion, version) ||
-            (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
-          const address = this.getAddressFromSocket(this.inbound, socket);
-          removeSocketConnectionIfExists(this.inbound, address);
-          socket.close();
+        if (!checkProtoVer(this.inbound, socket,
+            this.minProtocolVersion, this.maxProtocolVersion, data.protoVer)) {
           return;
         }
 
@@ -309,18 +302,18 @@ class P2pServer {
             const address = _.get(data, 'body.address');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
-              socket.close();
+              safeCloseSocket(this.inbound, socket);
               return;
             } else if (!data.signature) {
               logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                   `communication. Cannot proceed the further communication.`);
-              socket.close();   // NOTE(minsu): strictly close socket necessary??
+              safeCloseSocket(this.inbound, socket);   // NOTE(minsu): strictly close socket necessary??
               return;
             } else {
               const addressFromSig = getAddressFromSignature(data);
               if (addressFromSig !== address) {
                 logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
-                socket.close();
+                safeCloseSocket(this.inbound, socket);
                 return;
               }
               if (!verifySignedMessage(data, addressFromSig)) {
@@ -338,7 +331,8 @@ class P2pServer {
                 type: MessageTypes.ADDRESS_RESPONSE,
                 body,
                 signature,
-                protoVer: CURRENT_PROTOCOL_VERSION
+                protoVer: CURRENT_PROTOCOL_VERSION,
+                dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
               };
               socket.send(JSON.stringify(payload));
             }
@@ -455,7 +449,8 @@ class P2pServer {
       chainSegment,
       number,
       catchUpInfo,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
   }
