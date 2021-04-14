@@ -30,7 +30,7 @@ class AfanClient {
       investors = investorsResponse.result;
     } catch (err) {
       console.log(err);
-      throw err
+      throw err;
     }
 
     requestManager.increaseBalance(from, -value);
@@ -63,7 +63,7 @@ class AfanClient {
       }
     } catch (err) {
       console.log(err);
-      throw err
+      throw err;
     }
     requestManager.increaseBalance(from, -value);
     requestManager.increaseBalance(intermed, value);
