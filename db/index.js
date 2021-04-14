@@ -15,6 +15,7 @@ const {
   StateVersions,
   LIGHTWEIGHT,
   TREE_HEIGHT_LIMIT,
+  TREE_SIZE_LIMIT,
   buildOwnerPermissions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -884,10 +885,17 @@ class DB {
     const executionResult = this.executeOperation(
         txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
     const stateInfo = this.getStateInfo('/');
-    const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
-    if (!ChainUtil.isFailedTx(executionResult) && treeHeight > TREE_HEIGHT_LIMIT) {
-      return ChainUtil.returnTxResult(23, `Out of tree height limit ` +
-          `(${treeHeight} > ${TREE_HEIGHT_LIMIT})`);
+    if (!ChainUtil.isFailedTx(executionResult)) {
+      const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
+      if (treeHeight > TREE_HEIGHT_LIMIT) {
+        return ChainUtil.returnTxResult(23, `Out of tree height limit ` +
+            `(${treeHeight} > ${TREE_HEIGHT_LIMIT})`);
+      }
+      const treeSize = stateInfo[StateInfoProperties.TREE_SIZE];
+      if (treeSize > TREE_SIZE_LIMIT) {
+        return ChainUtil.returnTxResult(24, `Out of tree size limit ` +
+            `(${treeSize} > ${TREE_SIZE_LIMIT})`);
+      }
     }
     return executionResult;
   }
