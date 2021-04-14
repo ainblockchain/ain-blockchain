@@ -3239,7 +3239,7 @@ describe("Transaction execution", () => {
       assert.deepEqual(objectTx.extra, undefined);
     });
 
-    it("blocks over-height transaction", () => {
+    it("rejects over-height transaction", () => {
       const maxHeightTxBody = {
         operation: {
           type: 'SET_VALUE',
@@ -3263,6 +3263,27 @@ describe("Transaction execution", () => {
       };
       const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
       assert.deepEqual(node.db.executeTransaction(overHeightTx).code, 23);
+    })
+
+    it("rejects over-size transaction", () => {
+      const overSizeTree = {};
+      for (let i = 0; i < 1000; i++) {
+        overSizeTree[i] = {};
+        for (let j = 0; j < 1000; j++) {
+          overSizeTree[i][j] = 'a';
+        }
+      }
+      const overSizeTxBody = {
+        operation: {
+          type: 'SET_VALUE',
+          ref: '/test/tree',
+          value: overSizeTree,
+        },
+        nonce: -1,
+        timestamp: 1568798344000,
+      };
+      const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
+      assert.deepEqual(node.db.executeTransaction(overSizeTx).code, 24);
     })
   });
 });
