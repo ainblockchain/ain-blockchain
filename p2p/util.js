@@ -6,6 +6,7 @@
 
 const axios = require('axios');
 const _ = require('lodash');
+const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
@@ -112,6 +113,27 @@ function verifySignedMessage(message, address) {
   return ainUtil.ecVerifySig(JSON.stringify(message.body), message.signature, address);
 }
 
+function safeCloseSocket(connections, socket) {
+  const address = getAddressFromSocket(connections, socket);
+  removeSocketConnectionIfExists(connections, address);
+  socket.close();
+}
+
+function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersion, version) {
+  if (!version || !semver.valid(version)) {
+    safeCloseSocket(connections, socket);
+    return false;
+  }
+  if (semver.gt(minProtocolVersion, version) ||
+      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
+    logger.error('My protocol version may be outdated. Please check the latest version at ' +
+        'https://github.com/ainblockchain/ain-blockchain/releases');
+    safeCloseSocket(connections, socket);
+    return false;
+  }
+  return true;
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
@@ -121,5 +143,7 @@ module.exports = {
   removeSocketConnectionIfExists,
   signMessage,
   getAddressFromSignature,
-  verifySignedMessage
+  verifySignedMessage,
+  safeCloseSocket,
+  checkProtoVer
 };

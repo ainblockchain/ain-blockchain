@@ -27,14 +27,15 @@ const {
   removeSocketConnectionIfExists,
   signMessage,
   getAddressFromSignature,
-  verifySignedMessage
+  verifySignedMessage,
+  checkProtoVer,
+  safeCloseSocket
 } = require('./util');
 
 const { min, max } =
     VersionUtil.matchVersions(DATA_PROTOCOL_VERSION_MAP, CURRENT_DATA_PROTOCOL_VERSION);
 const minDataProtocolVersion = min === undefined ? CURRENT_DATA_PROTOCOL_VERSION : min;
 const maxDataProtocolVersion = max;
-console.log(minDataProtocolVersion, maxDataProtocolVersion)
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -217,7 +218,8 @@ class P2pClient {
     const payload = {
       type: MessageTypes.CONSENSUS,
       message: msg,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
     };
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
@@ -230,7 +232,8 @@ class P2pClient {
     const payload = {
       type: MessageTypes.CHAIN_SEGMENT_REQUEST,
       lastBlock,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
   }
@@ -239,7 +242,8 @@ class P2pClient {
     const payload = {
       type: MessageTypes.TRANSACTION,
       transaction,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
     };
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
@@ -258,9 +262,26 @@ class P2pClient {
       type: MessageTypes.ADDRESS_REQUEST,
       body,
       signature,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
+  }
+
+  checkDataProtoVer(socket, version) {
+    if (!version || !semver.valid(version)) {
+      safeCloseSocket(this.outbound, socket);
+      return false;
+    }
+    if (semver.gt(minDataProtocolVersion, version)) {
+      // TODO(minsu)
+      // logger.error('TODO');
+    }
+    if (maxDataProtocolVersion && semver.lt(maxDataProtocolVersion, version)) {
+      logger.error('My data protocol version may be outdated. Please check the latest version at ' +
+          'https://github.com/ainblockchain/ain-blockchain/releases');
+    }
+    return true;
   }
 
   // TODO(minsu): Check timestamp all round.
@@ -268,18 +289,11 @@ class P2pClient {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const data = JSON.parse(message);
-      const version = data.protoVer;
-      if (!version || !semver.valid(version)) {
-        const address = getAddressFromSocket(this.outbound, socket);
-        removeSocketConnectionIfExists(this.outbound, address);
-        socket.close();
+      if (!checkProtoVer(this.outbound, socket,
+          this.server.minProtocolVersion, this.server.maxProtocolVersion, data.protoVer)) {
         return;
       }
-      if (semver.gt(this.server.minProtocolVersion, version) ||
-        (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
-        const address = getAddressFromSocket(this.outbound, socket);
-        removeSocketConnectionIfExists(this.outbound, address);
-        socket.close();
+      if (!this.checkDataProtoVer(socket, data.dataProtoVer)) {
         return;
       }
 
@@ -288,18 +302,18 @@ class P2pClient {
           const address = _.get(data, 'body.address');
           if (!address) {
             logger.error(`Providing an address is compulsary when initiating p2p communication.`);
-            socket.close();
+            safeCloseSocket(this.outbound, socket);
             return;
           } else if (!data.signature) {
             logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                 `communication. Cannot proceed the further communication.`);
-            socket.close();   // NOTE(minsu): strictly close socket necessary??
+            safeCloseSocket(this.outbound, socket);   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
             const addressFromSig = getAddressFromSignature(data);
             if (addressFromSig !== address) {
               logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
-              socket.close();
+              safeCloseSocket(this.outbound, socket);
               return;
             }
             if (!verifySignedMessage(data, addressFromSig)) {
