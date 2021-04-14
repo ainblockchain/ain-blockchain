@@ -11,7 +11,6 @@ const {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   CURRENT_DATA_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION_MAP,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -31,11 +30,6 @@ const {
   checkProtoVer,
   safeCloseSocket
 } = require('./util');
-
-const { min, max } =
-    VersionUtil.matchVersions(DATA_PROTOCOL_VERSION_MAP, CURRENT_DATA_PROTOCOL_VERSION);
-const minDataProtocolVersion = min === undefined ? CURRENT_DATA_PROTOCOL_VERSION : min;
-const maxDataProtocolVersion = max;
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -273,13 +267,43 @@ class P2pClient {
       safeCloseSocket(this.outbound, socket);
       return false;
     }
-    if (semver.gt(minDataProtocolVersion, version)) {
-      // TODO(minsu)
-      // logger.error('TODO');
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    if (semver.gt(VersionUtil.toMajorVersion(this.server.minDataProtocolVersion), majorVersion)) {
+      // TODO(minsu): may necessary auto disconnection based on timestamp??
+      logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible in ` +
+          `the data protocol manner. You may be necessary to disconnect the connection with the ` +
+          `node in order to keep harmonious communication in the network.`);
     }
-    if (maxDataProtocolVersion && semver.lt(maxDataProtocolVersion, version)) {
+    if (this.server.maxDataProtocolVersion &&
+        semver.lt(VersionUtil.toMajorVersion(this.server.maxDataProtocolVersion), majorVersion)) {
       logger.error('My data protocol version may be outdated. Please check the latest version at ' +
           'https://github.com/ainblockchain/ain-blockchain/releases');
+    }
+    return true;
+  }
+
+  // TODO(minsu): this check will be updated when data compatibility version up.
+  checkDataProtoVerForAddressResponse(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    if (semver.gt(VersionUtil.toMajorVersion(this.server.minDataProtocolVersion), majorVersion)) {
+      // TODO(minsu): compatible message
+    }
+    if (this.maxDataProtocolVersion &&
+        semver.lt(VersionUtil.toMajorVersion(this.server.maxDataProtocolVersion), majorVersion)) {
+      // TODO(minsu): compatible message
+    }
+  }
+
+  checkDataProtoVerForChainSegmentResponse(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    if (semver.gt(VersionUtil.toMajorVersion(this.server.minDataProtocolVersion), majorVersion)) {
+      // TODO(minsu): compatible message
+    }
+    if (this.maxDataProtocolVersion &&
+        semver.lt(VersionUtil.toMajorVersion(this.server.maxDataProtocolVersion), majorVersion)) {
+      logger.error('CANNOT deal with higher data protocol version. Discard the ' +
+          'CHAIN_SEGMENT_RESPONSE message.');
+      return false;
     }
     return true;
   }
@@ -289,16 +313,19 @@ class P2pClient {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const data = JSON.parse(message);
+      const dataProtoVer = data.dataProtoVer;
       if (!checkProtoVer(this.outbound, socket,
           this.server.minProtocolVersion, this.server.maxProtocolVersion, data.protoVer)) {
         return;
       }
-      if (!this.checkDataProtoVer(socket, data.dataProtoVer)) {
+      if (!this.checkDataProtoVer(socket, dataProtoVer)) {
         return;
       }
 
       switch (data.type) {
         case MessageTypes.ADDRESS_RESPONSE:
+          // TODO(minsu): Add compatibility check here after data version up.
+          // this.checkDataProtoVerForAddressResponse(dataProtoVer);
           const address = _.get(data, 'body.address');
           if (!address) {
             logger.error(`Providing an address is compulsary when initiating p2p communication.`);
@@ -325,6 +352,9 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
+          if (!this.checkDataProtoVerForChainSegmentResponse(dataProtoVer)) {
+            return;
+          }
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(data.chainSegment, null, 2)}`);
           // Check catchup info is behind or equal to me
