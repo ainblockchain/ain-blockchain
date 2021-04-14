@@ -3239,7 +3239,7 @@ describe("Transaction execution", () => {
       assert.deepEqual(objectTx.extra, undefined);
     });
 
-    it("blocks over-height transaction", () => {
+    it("rejects over-height transaction", () => {
       const maxHeightTxBody = {
         operation: {
           type: 'SET_VALUE',
@@ -3265,7 +3265,7 @@ describe("Transaction execution", () => {
       assert.deepEqual(node.db.executeTransaction(overHeightTx).code, 23);
     })
 
-    it("blocks over-size transaction", () => {
+    it("rejects over-size transaction", () => {
       const overSizeTree = {};
       for (let i = 0; i < 1000; i++) {
         overSizeTree[i] = {};
