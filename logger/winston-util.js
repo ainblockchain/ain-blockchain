@@ -60,7 +60,7 @@ const getWinstonConsoleTransport = () => {
         timestamp(),
         logFormat
     ),
-    silent: !(FeatureFlags.forceConsoleLogging || CONSOLE_LOG)
+    silent: !CONSOLE_LOG
   });
 };
 

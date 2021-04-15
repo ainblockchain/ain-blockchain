@@ -33,10 +33,10 @@ const FeatureFlags = {
 
 // Environment variables.
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
-const CONSOLE_LOG = process.env.CONSOLE_LOG ?
-    process.env.CONSOLE_LOG.toLowerCase().startsWith('t') : false;
-const ENABLE_DEV_CLIENT_API = process.env.ENABLE_DEV_CLIENT_API ?
-    process.env.ENABLE_DEV_CLIENT_API.toLowerCase().startsWith('t') : false;
+const CONSOLE_LOG = FeatureFlags.forceConsoleLogging || (process.env.CONSOLE_LOG ?
+    process.env.CONSOLE_LOG.toLowerCase().startsWith('t') : false);
+const ENABLE_DEV_CLIENT_API = FeatureFlags.forceDevClientApi || (process.env.ENABLE_DEV_CLIENT_API ?
+    process.env.ENABLE_DEV_CLIENT_API.toLowerCase().startsWith('t') : false);
 const COMCOM_HOST_EXTERNAL_IP =
     process.env.COMCOM_HOST_EXTERNAL_IP ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;

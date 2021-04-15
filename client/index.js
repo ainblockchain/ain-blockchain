@@ -77,7 +77,7 @@ app.get('/metrics', (req, res, next) => {
     .end();
 });
 
-if (FeatureFlags.forceDevClientApi || ENABLE_DEV_CLIENT_API) {
+if (ENABLE_DEV_CLIENT_API) {
   app.get('/get_value', (req, res, next) => {
     const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_global));
     res.status(200)
