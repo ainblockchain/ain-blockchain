@@ -2,7 +2,10 @@ const rimraf = require('rimraf');
 const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
-const { CHAINS_DIR } = require('../common/constants');
+const {
+  CHAINS_DIR,
+  FeatureFlags,
+} = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
 const { setNodeForTesting, getTransaction } = require('./test-util');
@@ -14,7 +17,8 @@ describe('Transaction', () => {
   let txBody;
   let tx;
   let txBodyCustomAddress;
-  let txCustomAddress;
+  let txCustomAddressWithWorkaround;
+  let txCustomAddressWithoutWorkaround;
   let txBodyParentHash;
   let txParentHash;
   let txBodyForNode;
@@ -47,7 +51,14 @@ describe('Transaction', () => {
       },
       address: 'abcd',
     };
-    txCustomAddress = Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
+
+    FeatureFlags.enableTxSigVerifWorkaround = true;  // With workaround.
+    txCustomAddressWithWorkaround =
+        Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
+
+    FeatureFlags.enableTxSigVerifWorkaround = false;  // Without workaround.
+    txCustomAddressWithoutWorkaround =
+        Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
 
     txBodyParentHash = {
       nonce: 10,
@@ -85,20 +96,33 @@ describe('Transaction', () => {
       expect(tx.extra.created_at).to.not.equal(undefined);
       expect(tx.extra.skip_verif).to.equal(undefined);
 
-      expect(txCustomAddress).to.not.equal(null);
-      expect(txCustomAddress.tx_body.address).to.equal(txBodyCustomAddress.address);
-      expect(txCustomAddress.hash).to.equal(ChainUtil.hashTxBody(txBodyCustomAddress));
-      expect(txCustomAddress.address).to.equal(txBodyCustomAddress.address);
-      expect(txCustomAddress.signature).to.equal('');
-      expect(txCustomAddress.extra.created_at).to.not.equal(undefined);
-      expect(txCustomAddress.extra.skip_verif).to.equal(true);
-
       expect(txParentHash).to.not.equal(null);
       expect(txParentHash.tx_body.parent_tx_hash).to.equal(txBodyParentHash.parent_tx_hash);
       expect(txParentHash.hash).to.equal(ChainUtil.hashTxBody(txBodyParentHash));
       expect(txParentHash.address).to.equal(node.account.address);
       expect(txParentHash.extra.created_at).to.not.equal(undefined);
       expect(txParentHash.extra.skip_verif).to.equal(undefined);
+    });
+
+    it('succeed with enableTxSigVerifWorkaround = true', () => {
+      expect(txCustomAddressWithWorkaround).to.not.equal(null);
+      expect(txCustomAddressWithWorkaround.tx_body.address).to.equal(txBodyCustomAddress.address);
+      expect(txCustomAddressWithWorkaround.hash).to.equal(ChainUtil.hashTxBody(txBodyCustomAddress));
+      expect(txCustomAddressWithWorkaround.address).to.equal(txBodyCustomAddress.address);
+      expect(txCustomAddressWithWorkaround.signature).to.equal('');
+      expect(txCustomAddressWithWorkaround.extra.created_at).to.not.equal(undefined);
+      expect(txCustomAddressWithWorkaround.extra.skip_verif).to.equal(true);
+    });
+
+    it('fail with enableTxSigVerifWorkaround = false', () => {
+      expect(txCustomAddressWithoutWorkaround).to.not.equal(null);
+      expect(txCustomAddressWithoutWorkaround.tx_body.address).to.equal(txBodyCustomAddress.address);
+      expect(txCustomAddressWithoutWorkaround.hash)
+          .to.equal(ChainUtil.hashTxBody(txBodyCustomAddress));
+      expect(txCustomAddressWithoutWorkaround.address).to.equal('');
+      expect(txCustomAddressWithoutWorkaround.signature).to.equal('');
+      expect(txCustomAddressWithoutWorkaround.extra.created_at).to.not.equal(undefined);
+      expect(txCustomAddressWithoutWorkaround.extra.skip_verif).to.equal(undefined);
     });
 
     it('fail with missing timestamp', () => {
@@ -178,9 +202,16 @@ describe('Transaction', () => {
   describe('verifyTransaction', () => {
     it('succeed to verify a valid transaction', () => {
       expect(Transaction.verifyTransaction(tx)).to.equal(true);
-      expect(Transaction.verifyTransaction(txCustomAddress)).to.equal(true);
       expect(Transaction.verifyTransaction(txParentHash)).to.equal(true);
       expect(Transaction.verifyTransaction(txForNode)).to.equal(true);
+    });
+
+    it('succeed to verify a transaction with workaround', () => {
+      expect(Transaction.verifyTransaction(txCustomAddressWithWorkaround)).to.equal(true);
+    });
+
+    it('succeed to verify a transaction without workaround', () => {
+      expect(Transaction.verifyTransaction(txCustomAddressWithoutWorkaround)).to.equal(false);
     });
 
     it('failed to verify an invalid transaction with altered operation.type', () => {
