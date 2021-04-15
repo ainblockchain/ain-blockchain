@@ -40,7 +40,7 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true, ENABLE_DEV_CLIENT_API: true,
   },
   {
     // For shard chain tracker
@@ -49,28 +49,28 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9091, P2P_PORT: 6001,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9092, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9093, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9094, P2P_PORT: 6004,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -504,7 +504,7 @@ describe('Sharding', () => {
   });
 
   describe('API Tests', () => {
-    describe('APIs (gets)', () => {
+    describe('Get API', () => {
       before(() => {
         setUp();
       })
@@ -1183,7 +1183,7 @@ describe('Sharding', () => {
       })
     })
 
-    describe('APIs (sets)', () => {
+    describe('Set API', () => {
       beforeEach(() => {
         setUp();
       })

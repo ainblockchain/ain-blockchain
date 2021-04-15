@@ -6,7 +6,14 @@ const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const {
-  LOGS_DIR, CONSOLE_LOG, DEBUG, PORT, ACCOUNT_INDEX, HOSTING_ENV, LIGHTWEIGHT
+  FeatureFlags,
+  LOGS_DIR,
+  DEBUG,
+  CONSOLE_LOG,
+  PORT,
+  ACCOUNT_INDEX,
+  HOSTING_ENV,
+  LIGHTWEIGHT
 } = require('../common/constants');
 
 const { combine, timestamp, label, printf, colorize } = winston.format;
@@ -53,7 +60,7 @@ const getWinstonConsoleTransport = () => {
         timestamp(),
         logFormat
     ),
-    silent: !CONSOLE_LOG
+    silent: !(FeatureFlags.forceConsoleLogging || CONSOLE_LOG)
   });
 };
 
