@@ -16,8 +16,7 @@ const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
   CURRENT_PROTOCOL_VERSION,
-  CURRENT_DATA_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION_MAP,
+  DATA_PROTOCOL_VERSION,
   P2P_PORT,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
@@ -66,16 +65,9 @@ class P2pServer {
     this.consensus = new Consensus(this, node);
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
-    this.initDataProtocolVersion();
+    this.dataProtocolVersion = DATA_PROTOCOL_VERSION;
     this.inbound = {};
     this.maxInbound = maxInbound;
-  }
-
-  initDataProtocolVersion() {
-    const { min, max } =
-        VersionUtil.matchVersions(DATA_PROTOCOL_VERSION_MAP, CURRENT_DATA_PROTOCOL_VERSION);
-    this.minDataProtocolVersion = min === undefined ? CURRENT_DATA_PROTOCOL_VERSION : min;
-    this.maxDataProtocolVersion = max;
   }
 
   listen() {
@@ -308,22 +300,20 @@ class P2pServer {
   // TODO(minsu): this check will be updated when data compatibility version up.
   checkDataProtoVerForAddressRequest(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.minDataProtocolVersion), majorVersion)) {
+    if (semver.gt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): compatible message
     }
-    if (this.maxDataProtocolVersion &&
-        semver.lt(VersionUtil.toMajorVersion(this.maxDataProtocolVersion), majorVersion)) {
+    if (semver.lt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): compatible message
     }
   }
 
   checkDataProtoVerForConsensus(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.minDataProtocolVersion), majorVersion)) {
+    if (semver.gt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): compatible message
     }
-    if (this.maxDataProtocolVersion &&
-        semver.lt(VersionUtil.toMajorVersion(this.maxDataProtocolVersion), majorVersion)) {
+    if (semver.lt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
       logger.error('CANNOT deal with higher data protocol version. Discard the CONSENSUS message.');
       return false;
     }
@@ -332,11 +322,10 @@ class P2pServer {
 
   checkDataProtoVerForTransaction(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.minDataProtocolVersion), majorVersion)) {
+    if (semver.gt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): compatible message
     }
-    if (this.maxDataProtocolVersion &&
-        semver.lt(VersionUtil.toMajorVersion(this.maxDataProtocolVersion), majorVersion)) {
+    if (semver.lt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
       logger.error('CANNOT deal with higher data protocol ver. Discard the TRANSACTION message.');
       return false;
     }
@@ -395,7 +384,7 @@ class P2pServer {
                 body,
                 signature,
                 protoVer: CURRENT_PROTOCOL_VERSION,
-                dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
+                dataProtoVer: DATA_PROTOCOL_VERSION
               };
               socket.send(JSON.stringify(payload));
             }
@@ -520,7 +509,7 @@ class P2pServer {
       number,
       catchUpInfo,
       protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
   }

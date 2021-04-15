@@ -47,13 +47,9 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const CURRENT_DATA_PROTOCOL_VERSION = GenesisParams.network.DATA_PROTOCOL_VERSION;
-if (!semver.valid(CURRENT_DATA_PROTOCOL_VERSION)) {
+const DATA_PROTOCOL_VERSION = GenesisParams.network.DATA_PROTOCOL_VERSION;
+if (!semver.valid(DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified in GenesisParams.network');
-}
-const DATA_PROTOCOL_VERSION_MAP = GenesisParams.network.DATA_PROTOCOL_VERSIONS;
-if (DATA_PROTOCOL_VERSION_MAP === undefined) {
-  throw Error('Missing data protocol versions: ' + GenesisParams.network);
 }
 const LOGS_DIR = path.resolve(__dirname, '../logs');
 const CHAINS_DIR = path.resolve(__dirname, '../chains');
@@ -613,8 +609,7 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 module.exports = {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
-  CURRENT_DATA_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION_MAP,
+  DATA_PROTOCOL_VERSION,
   LOGS_DIR,
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
