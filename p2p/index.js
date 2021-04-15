@@ -10,7 +10,7 @@ const VersionUtil = require('../common/version-util');
 const {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
-  CURRENT_DATA_PROTOCOL_VERSION,
+  DATA_PROTOCOL_VERSION,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -213,7 +213,7 @@ class P2pClient {
       type: MessageTypes.CONSENSUS,
       message: msg,
       protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
@@ -227,7 +227,7 @@ class P2pClient {
       type: MessageTypes.CHAIN_SEGMENT_REQUEST,
       lastBlock,
       protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
   }
@@ -237,7 +237,7 @@ class P2pClient {
       type: MessageTypes.TRANSACTION,
       transaction,
       protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
@@ -257,7 +257,7 @@ class P2pClient {
       body,
       signature,
       protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: CURRENT_DATA_PROTOCOL_VERSION
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
   }
@@ -268,14 +268,13 @@ class P2pClient {
       return false;
     }
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.server.minDataProtocolVersion), majorVersion)) {
+    if (semver.gt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): may necessary auto disconnection based on timestamp??
       logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible in ` +
           `the data protocol manner. You may be necessary to disconnect the connection with the ` +
           `node in order to keep harmonious communication in the network.`);
     }
-    if (this.server.maxDataProtocolVersion &&
-        semver.lt(VersionUtil.toMajorVersion(this.server.maxDataProtocolVersion), majorVersion)) {
+    if (semver.lt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
       logger.error('My data protocol version may be outdated. Please check the latest version at ' +
           'https://github.com/ainblockchain/ain-blockchain/releases');
     }
@@ -285,22 +284,20 @@ class P2pClient {
   // TODO(minsu): this check will be updated when data compatibility version up.
   checkDataProtoVerForAddressResponse(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.server.minDataProtocolVersion), majorVersion)) {
+    if (semver.gt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): compatible message
     }
-    if (this.maxDataProtocolVersion &&
-        semver.lt(VersionUtil.toMajorVersion(this.server.maxDataProtocolVersion), majorVersion)) {
+    if (semver.lt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): compatible message
     }
   }
 
   checkDataProtoVerForChainSegmentResponse(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.server.minDataProtocolVersion), majorVersion)) {
+    if (semver.gt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
       // TODO(minsu): compatible message
     }
-    if (this.maxDataProtocolVersion &&
-        semver.lt(VersionUtil.toMajorVersion(this.server.maxDataProtocolVersion), majorVersion)) {
+    if (semver.lt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
       logger.error('CANNOT deal with higher data protocol version. Discard the ' +
           'CHAIN_SEGMENT_RESPONSE message.');
       return false;
