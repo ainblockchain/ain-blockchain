@@ -81,6 +81,7 @@ export ACCOUNT_INDEX="$3"
 echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 
 export DEBUG=false
+export CONSOLE_LOG=false 
 export LIGHTWEIGHT=false
 export STAKE=100000
 

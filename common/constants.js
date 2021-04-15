@@ -12,6 +12,8 @@ const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
 // Feature flags.
+// NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
+//                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
   // Forces console logging.
   forceConsoleLogging: false,
@@ -25,12 +27,16 @@ const FeatureFlags = {
   enableRichTransactionLogging: false,
   // Enables transaction signature verification workaround.
   enableTxSigVerifWorkaround: false,
+  // Enables develop client API.
+  forceDevClientApi: false,
 };
 
 // Environment variables.
 const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
-const CONSOLE_LOG = FeatureFlags.forceConsoleLogging ||
-    process.env.CONSOLE_LOG ? process.env.CONSOLE_LOG.toLowerCase().startsWith('t') : false;
+const CONSOLE_LOG = process.env.CONSOLE_LOG ?
+    process.env.CONSOLE_LOG.toLowerCase().startsWith('t') : false;
+const ENABLE_DEV_CLIENT_API = process.env.ENABLE_DEV_CLIENT_API ?
+    process.env.ENABLE_DEV_CLIENT_API.toLowerCase().startsWith('t') : false;
 const COMCOM_HOST_EXTERNAL_IP =
     process.env.COMCOM_HOST_EXTERNAL_IP ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
@@ -613,6 +619,7 @@ module.exports = {
   CHAINS_H2N_DIR_NAME,
   DEBUG,
   CONSOLE_LOG,
+  ENABLE_DEV_CLIENT_API,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
   PORT,
