@@ -23,6 +23,8 @@ const FeatureFlags = {
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
   enableRichTransactionLogging: false,
+  // Enables transaction signature verification workaround.
+  enableTxSigVerifWorkaround: false,
 };
 
 // Environment variables.
