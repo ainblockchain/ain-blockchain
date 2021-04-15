@@ -87,13 +87,6 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  getProtocolInfo() {
-    return {
-      versionMap: PROTOCOL_VERSION_MAP,
-      currentVersion: CURRENT_PROTOCOL_VERSION,
-    };
-  }
-
   getNetworkStatus() {
     return {
       ip: this.server.getExternalIp(),
@@ -141,7 +134,7 @@ class P2pClient {
       memoryStatus: this.server.getMemoryUsage(),
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
-      protocolInfo: this.getProtocolInfo(),
+      protocolInfo: this.server.getProtocolInfo(),
     };
   }
 

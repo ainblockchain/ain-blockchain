@@ -115,6 +115,15 @@ class P2pServer {
     return this.node.ipAddrExternal;
   }
 
+  getProtocolInfo() {
+    return {
+      CURRENT_PROTOCOL_VERSION: CURRENT_PROTOCOL_VERSION,
+      COMPATIBLE_MIN_PROTOCOL_VERSION: this.minProtocolVersion,
+      COMPATIBLE_MAX_PROTOCOL_VERSION: this.maxProtocolVersion,
+      DATA_PROTOCOL_VERSION: this.dataProtocolVersion
+    };
+  }
+
   getStateVersionStatus() {
     return {
       numVersions: this.node.stateManager.numVersions(),
