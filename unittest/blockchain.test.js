@@ -31,9 +31,9 @@ describe('Blockchain', () => {
 
   it('adds new block', () => {
     const tx = getTransaction(node1, {
-        operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'},
-        gas_price: 1
-      });
+      operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo' },
+      gas_price: 1
+    });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
@@ -61,9 +61,9 @@ describe('Blockchain', () => {
 
   it('invalidates corrupt chain', () => {
     const tx = getTransaction(node1, {
-        operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'},
-        gas_price: 1
-      });
+      operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo' },
+      gas_price: 1
+    });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
