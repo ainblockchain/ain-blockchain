@@ -311,10 +311,7 @@ class Block {
       }
       resList.push(res);
     }
-    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
-    const gasCostTotal = resList.reduce((acc, cur, index) => {
-      return acc + ChainUtil.getTotalGasCost(genesisTxs[index].tx_body.gas_price, cur);
-    }, 0);
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(genesisTxs, resList);
     return {
       stateProofHash: tempGenesisDb.getStateProof('/')[ProofProperties.PROOF_HASH],
       gasAmountTotal,
