@@ -9,7 +9,6 @@ const { ConsensusStatus } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const {
   CURRENT_PROTOCOL_VERSION,
-  PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
   PORT,
   P2P_PORT,
@@ -261,13 +260,15 @@ class P2pClient {
       return false;
     }
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
+    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
       // TODO(minsu): may necessary auto disconnection based on timestamp??
       logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible in ` +
           `the data protocol manner. You may be necessary to disconnect the connection with the ` +
           `node in order to keep harmonious communication in the network.`);
     }
-    if (semver.lt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
+    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
       logger.error('My data protocol version may be outdated. Please check the latest version at ' +
           'https://github.com/ainblockchain/ain-blockchain/releases');
     }
@@ -277,20 +278,24 @@ class P2pClient {
   // TODO(minsu): this check will be updated when data compatibility version up.
   checkDataProtoVerForAddressResponse(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
+    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
       // TODO(minsu): compatible message
     }
-    if (semver.lt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
+    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
       // TODO(minsu): compatible message
     }
   }
 
   checkDataProtoVerForChainSegmentResponse(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
+    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
       // TODO(minsu): compatible message
     }
-    if (semver.lt(VersionUtil.toMajorVersion(this.server.dataProtocolVersion), majorVersion)) {
+    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
       logger.error('CANNOT deal with higher data protocol version. Discard the ' +
           'CHAIN_SEGMENT_RESPONSE message.');
       return false;
@@ -303,12 +308,11 @@ class P2pClient {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const data = JSON.parse(message);
-      const dataProtoVer = data.dataProtoVer;
       if (!checkProtoVer(this.outbound, socket,
           this.server.minProtocolVersion, this.server.maxProtocolVersion, data.protoVer)) {
         return;
       }
-      if (!this.checkDataProtoVer(socket, dataProtoVer)) {
+      if (!this.checkDataProtoVer(socket, data.dataProtoVer)) {
         return;
       }
 
@@ -342,7 +346,7 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          if (!this.checkDataProtoVerForChainSegmentResponse(dataProtoVer)) {
+          if (!this.checkDataProtoVerForChainSegmentResponse(data.dataProtoVer)) {
             return;
           }
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +

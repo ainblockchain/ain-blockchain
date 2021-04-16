@@ -66,6 +66,7 @@ class P2pServer {
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
     this.dataProtocolVersion = DATA_PROTOCOL_VERSION;
+    this.majorDataProtocolVersion = VersionUtil.toMajorVersion(DATA_PROTOCOL_VERSION);
     this.inbound = {};
     this.maxInbound = maxInbound;
   }
@@ -309,20 +310,24 @@ class P2pServer {
   // TODO(minsu): this check will be updated when data compatibility version up.
   checkDataProtoVerForAddressRequest(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
       // TODO(minsu): compatible message
     }
-    if (semver.lt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
+    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
       // TODO(minsu): compatible message
     }
   }
 
   checkDataProtoVerForConsensus(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
       // TODO(minsu): compatible message
     }
-    if (semver.lt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
+    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
       logger.error('CANNOT deal with higher data protocol version. Discard the CONSENSUS message.');
       return false;
     }
@@ -331,10 +336,12 @@ class P2pServer {
 
   checkDataProtoVerForTransaction(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
-    if (semver.gt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
       // TODO(minsu): compatible message
     }
-    if (semver.lt(VersionUtil.toMajorVersion(this.dataProtocolVersion), majorVersion)) {
+    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
       logger.error('CANNOT deal with higher data protocol ver. Discard the TRANSACTION message.');
       return false;
     }
@@ -353,6 +360,9 @@ class P2pServer {
           return;
         }
         if (!this.checkDataProtoVer(socket, dataProtoVer)) {
+          const address = getAddressFromSocket(socket);
+          logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
+              `INAPPROPRIATE. Disconnect the connection.`);
           return;
         }
 
