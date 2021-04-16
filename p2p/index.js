@@ -6,9 +6,10 @@ const Websocket = require('ws');
 const semver = require('semver');
 const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
+const VersionUtil = require('../common/version-util');
 const {
   CURRENT_PROTOCOL_VERSION,
-  PROTOCOL_VERSION_MAP,
+  DATA_PROTOCOL_VERSION,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -17,14 +18,17 @@ const {
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
   MAX_OUTBOUND_LIMIT,
-  MAX_INBOUND_LIMIT
+  MAX_INBOUND_LIMIT,
+  FeatureFlags
 } = require('../common/constants');
 const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
   signMessage,
   getAddressFromSignature,
-  verifySignedMessage
+  verifySignedMessage,
+  checkProtoVer,
+  closeSocketSafe
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -83,13 +87,6 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  getProtocolInfo() {
-    return {
-      versionMap: PROTOCOL_VERSION_MAP,
-      currentVersion: CURRENT_PROTOCOL_VERSION,
-    };
-  }
-
   getNetworkStatus() {
     return {
       ip: this.server.getExternalIp(),
@@ -137,7 +134,7 @@ class P2pClient {
       memoryStatus: this.server.getMemoryUsage(),
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
-      protocolInfo: this.getProtocolInfo(),
+      protocolInfo: this.server.getProtocolInfo(),
     };
   }
 
@@ -208,7 +205,8 @@ class P2pClient {
     const payload = {
       type: MessageTypes.CONSENSUS,
       message: msg,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
@@ -221,7 +219,8 @@ class P2pClient {
     const payload = {
       type: MessageTypes.CHAIN_SEGMENT_REQUEST,
       lastBlock,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
   }
@@ -230,7 +229,8 @@ class P2pClient {
     const payload = {
       type: MessageTypes.TRANSACTION,
       transaction,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
@@ -249,9 +249,65 @@ class P2pClient {
       type: MessageTypes.ADDRESS_REQUEST,
       body,
       signature,
-      protoVer: CURRENT_PROTOCOL_VERSION
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: DATA_PROTOCOL_VERSION
     };
     socket.send(JSON.stringify(payload));
+  }
+
+  checkDataProtoVer(socket, version) {
+    if (!version || !semver.valid(version)) {
+      closeSocketSafe(this.outbound, socket);
+      return false;
+    }
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      // TODO(minsu): may necessary auto disconnection based on timestamp??
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible ` +
+          `in the data protocol manner. You may be necessary to disconnect the connection with ` +
+          `the node in order to keep harmonious communication in the network.`);
+      }
+    }
+    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('My data protocol version may be outdated. Please check the latest version ' +
+            'at https://github.com/ainblockchain/ain-blockchain/releases');
+      }
+    }
+    return true;
+  }
+
+  // TODO(minsu): this check will be updated when data compatibility version up.
+  checkDataProtoVerForAddressResponse(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      // TODO(minsu): compatible message
+    }
+    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      // TODO(minsu): compatible message
+    }
+  }
+
+  checkDataProtoVerForChainSegmentResponse(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      // TODO(minsu): compatible message
+    }
+    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with higher data protocol version. Discard the ' +
+          'CHAIN_SEGMENT_RESPONSE message.');
+      }
+      return false;
+    }
+    return true;
   }
 
   // TODO(minsu): Check timestamp all round.
@@ -259,38 +315,33 @@ class P2pClient {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const data = JSON.parse(message);
-      const version = data.protoVer;
-      if (!version || !semver.valid(version)) {
-        const address = getAddressFromSocket(this.outbound, socket);
-        removeSocketConnectionIfExists(this.outbound, address);
-        socket.close();
+      if (!checkProtoVer(this.outbound, socket,
+          this.server.minProtocolVersion, this.server.maxProtocolVersion, data.protoVer)) {
         return;
       }
-      if (semver.gt(this.server.minProtocolVersion, version) ||
-        (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
-        const address = getAddressFromSocket(this.outbound, socket);
-        removeSocketConnectionIfExists(this.outbound, address);
-        socket.close();
+      if (!this.checkDataProtoVer(socket, data.dataProtoVer)) {
         return;
       }
 
       switch (data.type) {
         case MessageTypes.ADDRESS_RESPONSE:
+          // TODO(minsu): Add compatibility check here after data version up.
+          // this.checkDataProtoVerForAddressResponse(dataProtoVer);
           const address = _.get(data, 'body.address');
           if (!address) {
             logger.error(`Providing an address is compulsary when initiating p2p communication.`);
-            socket.close();
+            closeSocketSafe(this.outbound, socket);
             return;
           } else if (!data.signature) {
             logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                 `communication. Cannot proceed the further communication.`);
-            socket.close();   // NOTE(minsu): strictly close socket necessary??
+            closeSocketSafe(this.outbound, socket);   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
             const addressFromSig = getAddressFromSignature(data);
             if (addressFromSig !== address) {
               logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
-              socket.close();
+              closeSocketSafe(this.outbound, socket);
               return;
             }
             if (!verifySignedMessage(data, addressFromSig)) {
@@ -302,6 +353,9 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
+          if (!this.checkDataProtoVerForChainSegmentResponse(data.dataProtoVer)) {
+            return;
+          }
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(data.chainSegment, null, 2)}`);
           // Check catchup info is behind or equal to me
