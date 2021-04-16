@@ -94,15 +94,12 @@ class Block {
   }
 
   static parse(blockInfo) {
-    if (!Block.hasRequiredFields(blockInfo)) {
-      logger.error(`Block doesn't have required fields: ${JSON.stringify(blockInfo, null, 2)}`);
-      return null;
-    }
+    if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes,
         blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
         blockInfo.state_proof_hash, blockInfo.proposer, blockInfo.validators,
-        blockInfo.gasAmountTotal, blockInfo.gasCostTotal);
+        blockInfo.gas_amount_total, blockInfo.gas_cost_total);
   }
 
   static hasRequiredFields(block) {
@@ -110,8 +107,8 @@ class Block {
         block.transactions !== undefined && block.number !== undefined &&
         block.epoch !== undefined && block.timestamp !== undefined &&
         block.state_proof_hash !== undefined && block.proposer !== undefined &&
-        block.validators !== undefined && block.gasAmountTotal !== undefined &&
-        block.gasCostTotal !== undefined);
+        block.validators !== undefined && block.gas_amount_total !== undefined &&
+        block.gas_cost_total !== undefined);
   }
 
   static validateHashes(block) {
