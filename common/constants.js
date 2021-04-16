@@ -23,6 +23,8 @@ const FeatureFlags = {
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
   enableRichTransactionLogging: false,
+  // Enables rich logging for p2p communication.
+  enableRichP2pCommunicationLogging: false,
 };
 
 // Environment variables.

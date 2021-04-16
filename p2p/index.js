@@ -18,7 +18,8 @@ const {
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
   MAX_OUTBOUND_LIMIT,
-  MAX_INBOUND_LIMIT
+  MAX_INBOUND_LIMIT,
+  FeatureFlags
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -263,14 +264,18 @@ class P2pClient {
     const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
       // TODO(minsu): may necessary auto disconnection based on timestamp??
-      logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible in ` +
-          `the data protocol manner. You may be necessary to disconnect the connection with the ` +
-          `node in order to keep harmonious communication in the network.`);
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible ` +
+          `in the data protocol manner. You may be necessary to disconnect the connection with ` +
+          `the node in order to keep harmonious communication in the network.`);
+      }
     }
     const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
     if (isLower) {
-      logger.error('My data protocol version may be outdated. Please check the latest version at ' +
-          'https://github.com/ainblockchain/ain-blockchain/releases');
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('My data protocol version may be outdated. Please check the latest version ' +
+            'at https://github.com/ainblockchain/ain-blockchain/releases');
+      }
     }
     return true;
   }
@@ -296,8 +301,10 @@ class P2pClient {
     }
     const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
     if (isLower) {
-      logger.error('CANNOT deal with higher data protocol version. Discard the ' +
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with higher data protocol version. Discard the ' +
           'CHAIN_SEGMENT_RESPONSE message.');
+      }
       return false;
     }
     return true;
