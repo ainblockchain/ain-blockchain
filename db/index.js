@@ -17,6 +17,7 @@ const {
   TREE_HEIGHT_LIMIT,
   TREE_SIZE_LIMIT,
   buildOwnerPermissions,
+  FORCE_GAS_FEE_WORKAROUND,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -862,16 +863,14 @@ class DB {
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
     if (!ChainUtil.isFailedTx(result)) {
-      if (FeatureFlags.enableGasFee) { // A devel method for bypassing the gas fee
-        const gasPrice = tx.tx_body.gas_price;
-        if (gasPrice <= 0 && gasPrice !== -1) {
-          return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
-        } else if (gasPrice === -1) { // A devel method for bypassing the gas fee
-          // skip
-        } else {
-          // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
-          // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
-        }
+      const gasPrice = tx.tx_body.gas_price;
+      if (FORCE_GAS_FEE_WORKAROUND && gasPrice === -1) { // Devel methods for bypassing the gas fee
+          // Skip.
+      } else if (gasPrice <= 0) {
+        return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
+      } else {
+        // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
+        // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
       }
       if (tx && auth && auth.addr && !auth.fid) {
         this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
