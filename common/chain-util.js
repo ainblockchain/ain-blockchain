@@ -299,6 +299,14 @@ class ChainUtil {
     return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
   }
 
+  static getGasAmountCostTotalFromTxList(txList, resList) {
+    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
+    const gasCostTotal = resList.reduce((acc, cur, index) => {
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
+    }, 0);
+    return { gasAmountTotal, gasCostTotal };
+  }
+
   static returnTxResult(code, message = null, gas = null) {
     const result = { code };
     if (message) {
