@@ -44,7 +44,7 @@ const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
   signMessage,
-  getAddressFromSignature,
+  getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
   closeSocketSafe
@@ -387,7 +387,7 @@ class P2pServer {
               closeSocketSafe(this.inbound, socket);   // NOTE(minsu): strictly close socket necessary??
               return;
             } else {
-              const addressFromSig = getAddressFromSignature(data);
+              const addressFromSig = getAddressFromMessage(data);
               if (addressFromSig !== address) {
                 logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
                 closeSocketSafe(this.inbound, socket);

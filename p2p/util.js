@@ -102,9 +102,9 @@ function signMessage(messageBody, privateKey) {
   return ainUtil.ecSignMessage(JSON.stringify(messageBody), Buffer.from(privateKey, 'hex'));
 }
 
-function getAddressFromSignature(message) {
+function getAddressFromMessage(message) {
   const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.body));
-  return ChainUtil.getAddress(hashedMessage, message.signature);
+  return ChainUtil.getAddressFromSignature(hashedMessage, message.signature);
 }
 
 function verifySignedMessage(message, address) {
@@ -140,7 +140,7 @@ module.exports = {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
   signMessage,
-  getAddressFromSignature,
+  getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
   checkProtoVer
