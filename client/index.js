@@ -10,6 +10,8 @@ const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const ChainUtil = require('../common/chain-util');
 const {
+  FeatureFlags,
+  ENABLE_DEV_CLIENT_API,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   PORT,
@@ -66,368 +68,6 @@ app.get('/health_check', (req, res, next) => {
     .end();
 });
 
-app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-/**
- * Returns the state proof at the given full database path.
- */
-app.get('/get_state_proof', (req, res, next) => {
-  const result = node.db.getStateProof(req.query.ref);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-/**
- * Returns the state information at the given full database path.
- */
-app.get('/get_state_info', (req, res, next) => {
-  const result = node.db.getStateInfo(req.query.ref);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.post('/eval_rule', (req, res, next) => {
-  const body = req.body;
-  const auth = {};
-  if (body.address) {
-    auth.addr = body.address;
-  }
-  if (body.fid) {
-    auth.fid = body.fid;
-  }
-  const result = node.db.evalRule(
-      body.ref, body.value, auth, body.timestamp || Date.now(),
-      ChainUtil.toBool(body.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.post('/eval_owner', (req, res, next) => {
-  const body = req.body;
-  const auth = {};
-  if (body.address) {
-    auth.addr = body.address;
-  }
-  if (body.fid) {
-    auth.fid = body.fid;
-  }
-  const result = node.db.evalOwner(
-      body.ref, body.permission, auth, ChainUtil.toBool(body.is_global));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.post('/get', (req, res, next) => {
-  const result = node.db.get(req.body.op_list);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.post('/set_value', (req, res, next) => {
-  const result = createAndExecuteTransaction(createSingleSetTxBody(
-      req.body, WriteDbOperations.SET_VALUE));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
-    .end();
-});
-
-app.post('/inc_value', (req, res, next) => {
-  const result = createAndExecuteTransaction(createSingleSetTxBody(
-      req.body, WriteDbOperations.INC_VALUE));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
-    .end();
-});
-
-app.post('/dec_value', (req, res, next) => {
-  const result = createAndExecuteTransaction(createSingleSetTxBody(
-      req.body, WriteDbOperations.DEC_VALUE));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
-    .end();
-});
-
-app.post('/set_function', (req, res, next) => {
-  const result = createAndExecuteTransaction(createSingleSetTxBody(
-      req.body, WriteDbOperations.SET_FUNCTION));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
-    .end();
-});
-
-app.post('/set_rule', (req, res, next) => {
-  const result = createAndExecuteTransaction(createSingleSetTxBody(
-      req.body, WriteDbOperations.SET_RULE));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
-    .end();
-});
-
-app.post('/set_owner', (req, res, next) => {
-  const result = createAndExecuteTransaction(createSingleSetTxBody(
-      req.body, WriteDbOperations.SET_OWNER));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
-    .end();
-});
-
-// A custom address can be used as a devel method for bypassing the trasaction verification.
-// TODO(platfowner): Replace custom address with real signature.
-app.post('/set', (req, res, next) => {
-  const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
-    .end();
-});
-
-app.post('/batch', (req, res, next) => {
-  const result = createAndExecuteTransaction(createBatchTxBody(req.body));
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/status', (req, res, next) => {
-  const result = p2pClient.getStatus();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/node_status', (req, res, next) => {
-  const result = p2pServer.getNodeStatus();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/connection_status', (req, res) => {
-  const result = p2pClient.getConnectionStatus();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-})
-
-app.get('/blocks', (req, res, next) => {
-  const blockEnd = node.bc.lastBlockNumber() + 1;
-  const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
-  const result = node.bc.getChainSection(blockBegin, blockEnd);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/last_block', (req, res, next) => {
-  const result = node.bc.lastBlock();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/last_block_number', (req, res, next) => {
-  const result = node.bc.lastBlockNumber();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/tx_pool', (req, res, next) => {
-  const result = node.tp.transactions;
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/tx_tracker', (req, res, next) => {
-  const result = node.tp.transactionTracker;
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/committed_nonce_tracker', (req, res, next) => {
-  const result = node.tp.committedNonceTracker;
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/pending_nonce_tracker', (req, res, next) => {
-  const result = node.tp.pendingNonceTracker;
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/protocol_versions', (req, res) => {
-  const result = p2pClient.getProtocolInfo();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/state_versions', (req, res) => {
-  const result = p2pServer.getStateVersionStatus();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-// TODO(platfowner): Support for subtree dumping (i.e. with ref path).
-app.get('/dump_final_version', (req, res) => {
-  const result = node.dumpFinalVersion(true);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/get_transaction', (req, res, next) => {
-  const transactionInfo = node.tp.transactionTracker[req.query.hash];
-  if (transactionInfo) {
-    if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
-      const block = node.bc.getBlockByNumber(transactionInfo.number);
-      const index = transactionInfo.index;
-      if (index >= 0) {
-        transactionInfo.transaction = block.transactions[index];
-      } else {
-        transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
-      }
-    } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
-      const address = transactionInfo.address;
-      transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
-    }
-  }
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result: transactionInfo})
-    .end();
-});
-
-app.get('/get_address', (req, res, next) => {
-  const result = node.account.address;
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/get_nonce', (req, res, next) => {
-  const result = node.nonce;
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/get_sharding', (req, res, next) => {
-  const result = node.getSharding();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
-    .end();
-});
-
-app.get('/get_raw_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getRawState();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
-app.get('/get_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getState();
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({code: 0, result})
-    .end();
-});
-
 // Exports metrics for Prometheus.
 app.get('/metrics', (req, res, next) => {
   const result = ChainUtil.objToMetrics(p2pClient.getStatus());
@@ -436,6 +76,370 @@ app.get('/metrics', (req, res, next) => {
     .send(result)
     .end();
 });
+
+if (ENABLE_DEV_CLIENT_API) {
+  app.get('/get_value', (req, res, next) => {
+    const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.get('/get_function', (req, res, next) => {
+    const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.get('/get_rule', (req, res, next) => {
+    const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.get('/get_owner', (req, res, next) => {
+    const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  /**
+   * Returns the state proof at the given full database path.
+   */
+  app.get('/get_state_proof', (req, res, next) => {
+    const result = node.db.getStateProof(req.query.ref);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  /**
+   * Returns the state information at the given full database path.
+   */
+  app.get('/get_state_info', (req, res, next) => {
+    const result = node.db.getStateInfo(req.query.ref);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.get('/match_function', (req, res, next) => {
+    const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.get('/match_rule', (req, res, next) => {
+    const result = node.db.matchRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.get('/match_owner', (req, res, next) => {
+    const result = node.db.matchOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.post('/eval_rule', (req, res, next) => {
+    const body = req.body;
+    const auth = {};
+    if (body.address) {
+      auth.addr = body.address;
+    }
+    if (body.fid) {
+      auth.fid = body.fid;
+    }
+    const result = node.db.evalRule(
+        body.ref, body.value, auth, body.timestamp || Date.now(),
+        ChainUtil.toBool(body.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.post('/eval_owner', (req, res, next) => {
+    const body = req.body;
+    const auth = {};
+    if (body.address) {
+      auth.addr = body.address;
+    }
+    if (body.fid) {
+      auth.fid = body.fid;
+    }
+    const result = node.db.evalOwner(
+        body.ref, body.permission, auth, ChainUtil.toBool(body.is_global));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.post('/get', (req, res, next) => {
+    const result = node.db.get(req.body.op_list);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.post('/set_value', (req, res, next) => {
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_VALUE));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .end();
+  });
+
+  app.post('/inc_value', (req, res, next) => {
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.INC_VALUE));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .end();
+  });
+
+  app.post('/dec_value', (req, res, next) => {
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.DEC_VALUE));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .end();
+  });
+
+  app.post('/set_function', (req, res, next) => {
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_FUNCTION));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .end();
+  });
+
+  app.post('/set_rule', (req, res, next) => {
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_RULE));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .end();
+  });
+
+  app.post('/set_owner', (req, res, next) => {
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_OWNER));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .end();
+  });
+
+  // A custom address can be used as a devel method for bypassing the trasaction verification.
+  // TODO(platfowner): Replace custom address with real signature.
+  app.post('/set', (req, res, next) => {
+    const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .end();
+  });
+
+  app.post('/batch', (req, res, next) => {
+    const result = createAndExecuteTransaction(createBatchTxBody(req.body));
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/status', (req, res, next) => {
+    const result = p2pClient.getStatus();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/node_status', (req, res, next) => {
+    const result = p2pServer.getNodeStatus();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/connection_status', (req, res) => {
+    const result = p2pClient.getConnectionStatus();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  })
+
+  app.get('/blocks', (req, res, next) => {
+    const blockEnd = node.bc.lastBlockNumber() + 1;
+    const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
+    const result = node.bc.getChainSection(blockBegin, blockEnd);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/last_block', (req, res, next) => {
+    const result = node.bc.lastBlock();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/last_block_number', (req, res, next) => {
+    const result = node.bc.lastBlockNumber();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/tx_pool', (req, res, next) => {
+    const result = node.tp.transactions;
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/tx_tracker', (req, res, next) => {
+    const result = node.tp.transactionTracker;
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/committed_nonce_tracker', (req, res, next) => {
+    const result = node.tp.committedNonceTracker;
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/pending_nonce_tracker', (req, res, next) => {
+    const result = node.tp.pendingNonceTracker;
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/protocol_versions', (req, res) => {
+    const result = p2pClient.getProtocolInfo();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/state_versions', (req, res) => {
+    const result = p2pServer.getStateVersionStatus();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  // TODO(platfowner): Support for subtree dumping (i.e. with ref path).
+  app.get('/dump_final_version', (req, res) => {
+    const result = node.dumpFinalVersion(true);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/get_transaction', (req, res, next) => {
+    const transactionInfo = node.tp.transactionTracker[req.query.hash];
+    if (transactionInfo) {
+      if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+        const block = node.bc.getBlockByNumber(transactionInfo.number);
+        const index = transactionInfo.index;
+        if (index >= 0) {
+          transactionInfo.transaction = block.transactions[index];
+        } else {
+          transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
+        }
+      } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+        const address = transactionInfo.address;
+        transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
+      }
+    }
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result: transactionInfo})
+      .end();
+  });
+
+  app.get('/get_address', (req, res, next) => {
+    const result = node.account.address;
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/get_nonce', (req, res, next) => {
+    const result = node.nonce;
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/get_sharding', (req, res, next) => {
+    const result = node.getSharding();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: result !== null ? 0 : 1, result})
+      .end();
+  });
+
+  app.get('/get_raw_consensus_state', (req, res) => {
+    const result = p2pServer.consensus.getRawState();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+
+  app.get('/get_consensus_state', (req, res) => {
+    const result = p2pServer.consensus.getState();
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({code: 0, result})
+      .end();
+  });
+}
 
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
