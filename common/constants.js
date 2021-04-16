@@ -66,6 +66,8 @@ const CHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
+const MICRO_AIN = 10**-3; // 1,000 microain = 1 ain
+const MILLI_AIN = 10**-6; // 1,000,000 milliain = 1 ain
 
 // Enums
 /**
@@ -632,6 +634,8 @@ module.exports = {
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
   FORCE_GAS_FEE_WORKAROUND,
+  MICRO_AIN,
+  MILLI_AIN,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,

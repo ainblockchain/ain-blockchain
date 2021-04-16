@@ -4,6 +4,7 @@ const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const { MICRO_AIN } = require('./constants');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
@@ -288,8 +289,14 @@ class ChainUtil {
     return _.get(result, 'gas.gas_amount', 0);
   }
 
+  /**
+   * 
+   * @param {Number} gasPrice gas price in microain
+   * @param {Object} result transaction execution result
+   * @returns 
+   */
   static getTotalGasCost(gasPrice, result) {
-    return gasPrice * ChainUtil.getTotalGasAmount(result);
+    return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
   }
 
   static returnTxResult(code, message = null, gas = null) {
