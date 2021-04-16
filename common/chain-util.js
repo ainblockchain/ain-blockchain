@@ -376,6 +376,10 @@ class ChainUtil {
       setTimeout(resolve, ms);
     });
   };
+
+  static convertEnvVarInputToBool = (input) => {
+    return input.toLowerCase().startsWith('t');
+  }
 }
 
 module.exports = ChainUtil;
