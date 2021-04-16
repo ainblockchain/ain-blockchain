@@ -1,7 +1,10 @@
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
-const { WriteDbOperations } = require('../common/constants');
+const {
+  FeatureFlags,
+  WriteDbOperations,
+} = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 class Transaction {
@@ -28,9 +31,9 @@ class Transaction {
 
     const hash = signature ? ChainUtil.hashSignature(signature) : ChainUtil.hashTxBody(txBody);
     let address = null;
-    let skipVerif = null;
-    // A devel method for bypassing the transaction verification.
-    if (txBody.address !== undefined) {
+    let skipVerif = false;
+    // A devel method for bypassing the signature verification.
+    if ((FeatureFlags.enableTxSigVerifWorkaround) && txBody.address !== undefined) {
       address = txBody.address;
       skipVerif = true;
     } else {
@@ -85,13 +88,19 @@ class Transaction {
    * Gets address from hash and signature.
    */
   static getAddress(hash, signature) {
-    const sigBuffer = ainUtil.toBuffer(signature);
-    const len = sigBuffer.length;
-    const lenHash = len - 65;
-    const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
-    const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
-    return ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-        ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+    let address = '';
+    try {
+      const sigBuffer = ainUtil.toBuffer(signature);
+      const len = sigBuffer.length;
+      const lenHash = len - 65;
+      const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
+      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
+      address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+          ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+    } catch (err) {
+      logger.error(err);
+    }
+    return address;
   }
 
   /**
