@@ -3,7 +3,7 @@ const { signAndSendTx, confirmTransaction } = require('../util');
 
 let config = {};
 
-function buildOpenEscrowTxBody(source, target, address, timestamp) {
+function buildEscrowConfigTxBody(source, target, address, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
@@ -23,7 +23,7 @@ async function sendTransaction() {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
-  const txBody = buildOpenEscrowTxBody(config.sourceAddr, config.targetAddr, config.serviceOwnerAddr, timestamp);
+  const txBody = buildEscrowConfigTxBody(config.sourceAddr, config.targetAddr, config.serviceOwnerAddr, timestamp);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
@@ -42,7 +42,7 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node sendOpenEscrowTx.js config_local.js\n')
+  console.log('\nExample commandlines:\n  node sendEscrowConfigTx.js config_local.js\n')
   process.exit(0)
 }
 
