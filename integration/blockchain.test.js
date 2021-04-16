@@ -433,8 +433,8 @@ describe('Blockchain Cluster', () => {
           timestamp: block.timestamp,
           proposer: block.proposer,
           validators: block.validators,
-          gas_amount_total: block.gasAmountTotal,
-          gas_cost_total: block.gasCostTotal
+          gas_amount_total: block.gas_amount_total,
+          gas_cost_total: block.gas_cost_total
         }));
       }
       for (let i = 0; i < serverList.length; i++) {
