@@ -35,7 +35,8 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions,
-  LIGHTWEIGHT
+  LIGHTWEIGHT,
+  FeatureFlags
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {
@@ -328,7 +329,10 @@ class P2pServer {
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
-      logger.error('CANNOT deal with higher data protocol version. Discard the CONSENSUS message.');
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with higher data protocol version.' +
+            'Discard the CONSENSUS message.');
+      }
       return false;
     }
     return true;
@@ -342,7 +346,9 @@ class P2pServer {
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
-      logger.error('CANNOT deal with higher data protocol ver. Discard the TRANSACTION message.');
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with higher data protocol ver. Discard the TRANSACTION message.');
+      }
       return false;
     }
     return true;
