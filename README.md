@@ -92,9 +92,9 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-ACCOUNT_INDEX=0 DEBUG=false STAKE=250 node client/index.js
-ACCOUNT_INDEX=1 DEBUG=false STAKE=250 node client/index.js 
-ACCOUNT_INDEX=2 DEBUG=false STAKE=250 node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js 
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
@@ -105,7 +105,7 @@ The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDAT
 the genesis-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
 The genesis configs directory used is `genesis-configs/base` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-GENESIS_CONFIGS_DIR=genesis-configs/afan-shard ACCOUNT_INDEX=0 DEBUG=false STAKE=250 node client/index.js
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
 ```
 
 ### How to run tests
