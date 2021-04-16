@@ -28,7 +28,7 @@ const {
   getAddressFromSignature,
   verifySignedMessage,
   checkProtoVer,
-  safeCloseSocket
+  closeSocketSafe
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -257,7 +257,7 @@ class P2pClient {
 
   checkDataProtoVer(socket, version) {
     if (!version || !semver.valid(version)) {
-      safeCloseSocket(this.outbound, socket);
+      closeSocketSafe(this.outbound, socket);
       return false;
     }
     const majorVersion = VersionUtil.toMajorVersion(version);
@@ -319,18 +319,18 @@ class P2pClient {
           const address = _.get(data, 'body.address');
           if (!address) {
             logger.error(`Providing an address is compulsary when initiating p2p communication.`);
-            safeCloseSocket(this.outbound, socket);
+            closeSocketSafe(this.outbound, socket);
             return;
           } else if (!data.signature) {
             logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                 `communication. Cannot proceed the further communication.`);
-            safeCloseSocket(this.outbound, socket);   // NOTE(minsu): strictly close socket necessary??
+            closeSocketSafe(this.outbound, socket);   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
             const addressFromSig = getAddressFromSignature(data);
             if (addressFromSig !== address) {
               logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
-              safeCloseSocket(this.outbound, socket);
+              closeSocketSafe(this.outbound, socket);
               return;
             }
             if (!verifySignedMessage(data, addressFromSig)) {
