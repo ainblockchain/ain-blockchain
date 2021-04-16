@@ -432,7 +432,9 @@ describe('Blockchain Cluster', () => {
           state_proof_hash: block.state_proof_hash,
           timestamp: block.timestamp,
           proposer: block.proposer,
-          validators: block.validators
+          validators: block.validators,
+          gas_amount_total: block.gasAmountTotal,
+          gas_cost_total: block.gasCostTotal
         }));
       }
       for (let i = 0; i < serverList.length; i++) {

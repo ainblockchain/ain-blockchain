@@ -65,7 +65,7 @@ function addBlock(node, txs, votes, validators) {
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
       lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
-      node.account.address, validators));
+      node.account.address, validators, 0, 0));
 }
 
 function waitUntilTxFinalized(servers, txHash) {

@@ -625,6 +625,7 @@ class P2pServer {
           }
         ]
       },
+      gas_price: 1,
       timestamp: Date.now(),
       nonce: -1
     };
