@@ -4,7 +4,6 @@ const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { MICRO_AIN } = require('./constants');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
@@ -296,6 +295,7 @@ class ChainUtil {
    * @returns 
    */
   static getTotalGasCost(gasPrice, result) {
+    const { MICRO_AIN } = require('./constants');
     return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
   }
 
