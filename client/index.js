@@ -1,7 +1,6 @@
 'use strict';
 
 const process = require('process');
-const semver = require('semver');
 const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
@@ -9,6 +8,7 @@ const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const ChainUtil = require('../common/chain-util');
+const VersionUtil = require('../common/version-util');
 const {
   FeatureFlags,
   ENABLE_DEV_CLIENT_API,
@@ -34,7 +34,7 @@ process.on('SIGINT', (_) => {
   process.exit(1);
 });
 
-const { min, max } = matchVersions(CURRENT_PROTOCOL_VERSION);
+const { min, max } = VersionUtil.matchVersions(PROTOCOL_VERSION_MAP, CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
@@ -47,7 +47,7 @@ const p2pServer = p2pClient.server;
 
 const jsonRpcMethods = require('../json_rpc')(
     node, p2pServer, minProtocolVersion, maxProtocolVersion);
-app.post('/json-rpc', validateVersion, jayson.server(jsonRpcMethods).middleware());
+app.post('/json-rpc', VersionUtil.validateVersion, jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
   res.status(200)
@@ -354,7 +354,7 @@ if (ENABLE_DEV_CLIENT_API) {
   });
 
   app.get('/protocol_versions', (req, res) => {
-    const result = p2pClient.getProtocolInfo();
+    const result = p2pClient.server.getProtocolInfo();
     res.status(200)
       .set('Content-Type', 'application/json')
       .send({code: 0, result})
@@ -518,71 +518,4 @@ function createAndExecuteTransaction(txBody) {
     };
   }
   return p2pServer.executeAndBroadcastTransaction(tx);
-}
-
-function isValidVersionMatch(ver) {
-  return ver && semver.valid(semver.coerce(ver.min)) &&
-      (!ver.max || semver.valid(semver.coerce(ver.max)));
-}
-
-function matchVersions(ver) {
-  let match = PROTOCOL_VERSION_MAP[ver];
-  if (isValidVersionMatch(match)) {
-    return match;
-  }
-  const majorVer = semver.major(ver);
-  const majorMinorVer = `${majorVer}.${semver.minor(ver)}`;
-  match = PROTOCOL_VERSION_MAP[majorMinorVer];
-  if (isValidVersionMatch(match)) {
-    return match;
-  }
-  match = PROTOCOL_VERSION_MAP[majorVer];
-  if (isValidVersionMatch(match)) {
-    return match;
-  }
-  return {};
-}
-
-function validateVersion(req, res, next) {
-  let version = null;
-  if (req.query.protoVer) {
-    version = req.query.protoVer;
-  } else if (req.body.params) {
-    version = req.body.params.protoVer;
-  }
-  const coercedVer = semver.coerce(version);
-  if (req.body.method === 'ain_getProtocolVersion' ||
-      req.body.method === 'ain_checkProtocolVersion') {
-    next();
-  } else if (version === undefined) {
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: 1,
-        message: 'Protocol version not specified.',
-        protoVer: CURRENT_PROTOCOL_VERSION
-      })
-      .end();
-  } else if (!semver.valid(coercedVer)) {
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: 1,
-        message: 'Invalid protocol version.',
-        protoVer: CURRENT_PROTOCOL_VERSION
-      })
-      .end();
-  } else if (semver.lt(coercedVer, minProtocolVersion) ||
-    (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: 1,
-        message: 'Incompatible protocol version.',
-        protoVer: CURRENT_PROTOCOL_VERSION
-      })
-      .end();
-  } else {
-    next();
-  }
 }
