@@ -16,15 +16,19 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
   },
 ];
 
@@ -171,7 +175,7 @@ describe('DApp Test', () => {
     describe('tx_invest', () => {
       beforeEach(() => {
         return set_value('/apps/afan', null)
-        .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash));
+        .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
       });
 
       it('send_one', () => {
@@ -179,9 +183,9 @@ describe('DApp Test', () => {
 
         return set_value('/apps/afan/balance/uid0', 10)
           .then(() => set_value('/apps/afan/balance/uid1', 10))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => afanClient.tx_invest('uid0', 'uid1', 1))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => get_value('/apps/afan'))
           .then((res) => {
             const expected = require('./data/tx_invest_send_one_result.js');
@@ -193,18 +197,18 @@ describe('DApp Test', () => {
     describe('tx_crushOnPost', () => {
       beforeEach(() => {
         return set_value('/apps/afan', null)
-        .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash));
+        .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
       });
 
       it('no fan', () => {
         const afanClient = new AfanClient(server1);
 
         return set_value('/apps/afan/balance/uid0', 10)
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/balance/uid1', 10))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 1))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => get_value('/apps/afan'))
           .then((res) => {
             const expected = require('./data/tx_crushOnPost_no_fan_result.js');
@@ -216,15 +220,15 @@ describe('DApp Test', () => {
         const afanClient = new AfanClient(server2);
         sleep(200);
         return set_value('/apps/afan/balance/uid0', 30)
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/balance/uid1', 10))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/investors/uid1/uid2', 3))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/investors/uid1/uid3', 7))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => get_value('/apps/afan'))
           .then((res) => {
             const expected = require('./data/tx_crushOnPost_two_fans_result.js');
@@ -236,17 +240,17 @@ describe('DApp Test', () => {
     describe('tx_crushOnReply', () => {
       beforeEach(() => {
         return set_value('/apps/afan', null)
-        .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash));
+        .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
       });
 
       it('no fan', () => {
         const afanClient = new AfanClient(server3);
         return set_value('/apps/afan/balance/uid0', 10)
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/balance/uid1', 10))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => get_value('/apps/afan'))
           .then((res) => {
             const expected = require('./data/tx_crushOnReply_no_fan_result.js');
@@ -258,17 +262,17 @@ describe('DApp Test', () => {
         const afanClient = new AfanClient(server4);
 
         return set_value('/apps/afan/balance/uid0', 20)
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/balance/uid1', 10))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/investors/uid1/uid2', 3))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/investors/uid1/uid3', 2))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/investors/uid1/uid4', 1))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => get_value('/apps/afan'))
           .then((res) => {
             const expected = require('./data/tx_crushOnReply_three_fans_result.js');
@@ -280,7 +284,7 @@ describe('DApp Test', () => {
     describe('tx_adpropose', () => {
       beforeEach(() => {
         return set_value('/apps/afan', null)
-        .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash));
+        .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
       });
 
       it('ad propose', () => {
@@ -298,9 +302,9 @@ describe('DApp Test', () => {
           },
         ];
         return set(op_list)
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
-          .then((res) => waitUntilTxFinalized(serverList, res.result.tx_hash))
+          .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => get_value('/apps/afan'))
           .then((res) => {
             const expected = require('./data/tx_adpropose_result.js');

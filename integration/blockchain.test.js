@@ -34,21 +34,25 @@ const { waitForNewBlocks, waitUntilNodeSyncs, parseOrLog } = require('../unittes
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -523,7 +527,7 @@ describe('Blockchain Cluster', () => {
     */
   });
 
-  describe('Block APIs', () => {
+  describe('Block API', () => {
     it('ain_getBlockHeadersList', () => {
       sendTransactions(sentOperations);
       return new Promise((resolve) => {
