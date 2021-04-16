@@ -37,7 +37,7 @@ class Transaction {
       address = txBody.address;
       skipVerif = true;
     } else {
-      address = ChainUtil.getAddress(hash.slice(2), signature);
+      address = ChainUtil.getAddressFromSignature(hash.slice(2), signature);
     }
     const createdAt = Date.now();
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);

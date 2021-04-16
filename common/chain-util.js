@@ -50,7 +50,7 @@ class ChainUtil {
   /**
    * Gets address from hash and signature.
    */
-  static getAddress(hash, signature) {
+  static getAddressFromSignature(hash, signature) {
     let address = '';
     try {
       const sigBuffer = ainUtil.toBuffer(signature);
