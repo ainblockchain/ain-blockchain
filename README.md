@@ -66,7 +66,7 @@ docker run --network="host" -d ainblockchain/tracker-server:latest
 ```
 -->
 
-### Client APIs for development and debugging
+### Client API for development and debugging
 
 #### Tracker health check
 
@@ -178,7 +178,7 @@ npm run test_smoke
 npm run test_integration
 ```
 
-### Client APIs for development and debugging
+### Client API for development and debugging
 
 #### Node health check
 

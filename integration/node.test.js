@@ -14,11 +14,12 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   CURRENT_PROTOCOL_VERSION,
   CHAINS_DIR,
-  FunctionResultCode,
-  TX_BYTES_LIMIT,
-  GenesisAccounts,
   HASH_DELIMITER,
+  FunctionResultCode,
+  GenesisAccounts,
   ProofProperties,
+  TX_BYTES_LIMIT,
+  BATCH_TX_LIST_SIZE_LIMIT,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
@@ -26,21 +27,25 @@ const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -364,7 +369,7 @@ describe('Blockchain Node', () => {
     rimraf.sync(CHAINS_DIR)
   });
 
-  describe('APIs (gets)', () => {
+  describe('Get API', () => {
     before(() => {
       setUp();
     })
@@ -858,7 +863,7 @@ describe('Blockchain Node', () => {
     });
   })
 
-  describe('APIs (sets)', () => {
+  describe('Set API', () => {
     beforeEach(() => {
       setUp();
     })
@@ -2079,13 +2084,10 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('rejects a transaction that exceeds the size limit.', () => {
+      it('rejects a transaction that exceeds its size limit.', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        let longText = '';
-        for (let i = 0; i < TX_BYTES_LIMIT / 2; i++) {
-          longText += 'a'
-        }
+        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -2105,7 +2107,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
-              message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction size exceeds its limit: ${TX_BYTES_LIMIT} bytes.`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
@@ -2290,7 +2292,7 @@ describe('Blockchain Node', () => {
                 "gas_amount": 1
               }
             },
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           },
           {
             "result": {
@@ -2299,7 +2301,7 @@ describe('Blockchain Node', () => {
                 "gas_amount": 1
               }
             },
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           },
           {
             "result": {
@@ -2308,14 +2310,14 @@ describe('Blockchain Node', () => {
                 "gas_amount": 1
               }
             },
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           },
           {
             "result": {
               "code": 103,
               "error_message": "No .write permission on: some/wrong/path",
             },
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           },
           {
             "result": {
@@ -2324,7 +2326,7 @@ describe('Blockchain Node', () => {
                 "gas_amount": 1
               }
             },
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           },
           {
             "result": {
@@ -2333,7 +2335,7 @@ describe('Blockchain Node', () => {
                 "gas_amount": 1
               }
             },
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           },
           {
             "result": {
@@ -2342,7 +2344,7 @@ describe('Blockchain Node', () => {
                 "gas_amount": 1
               }
             },
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           },
           {
             "result": [
@@ -2383,7 +2385,7 @@ describe('Blockchain Node', () => {
                 }
               }
             ],
-            "tx_hash": "erased"
+            "tx_hash": "to_be_set"
           }
         ];
         const txList = [];
@@ -2401,51 +2403,11 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(Array.isArray(resultList)).to.equal(true);
-          const expected = [];
           for (let i = 0; i < txList.length; i++) {
             resultList[i].tx_hash = ChainUtil.hashSignature(txList[i].signature);
           }
           assert.deepEqual(res.result, {
             result: resultList,
-            protoVer: CURRENT_PROTOCOL_VERSION,
-          });
-        })
-      })
-
-      it('rejects a batch transaction that exceeds the size limit.', () => {
-        const account = ainUtil.createAccount();
-        const client = jayson.client.http(server1 + '/json-rpc');
-        let longText = '';
-        for (let i = 0; i < TX_BYTES_LIMIT / 2; i++) {
-          longText += 'a'
-        }
-        const txBody = {
-          operation: {
-            type: 'SET_VALUE',
-            value: longText,
-            ref: `test/test_long_text`
-          },
-          timestamp: Date.now(),
-          nonce: -1
-        };
-        const signature =
-            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransactionBatch', {
-          tx_list: [
-            {
-              tx_body: txBody,
-              signature,
-            }
-          ],
-          protoVer: CURRENT_PROTOCOL_VERSION
-        }).then((res) => {
-          const resultList = _.get(res, 'result.result');
-          expect(Array.isArray(resultList)).to.equal(false);
-          assert.deepEqual(res.result, {
-            result: {
-              code: 1,
-              message: `Transaction size exceeds ${TX_BYTES_LIMIT} bytes.`,
-            },
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
         })
@@ -2474,8 +2436,117 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 2,
+              code: 1,
               message: `Invalid batch transaction format.`
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('accepts a batch transaction of under transaction list size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBodyTemplate = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          nonce: -1
+        };
+        const txList = [];
+        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT; i++) {  // Just under the limit.
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList.push({
+            tx_body: txBody,
+            signature,
+          });
+        }
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const resultList = _.get(res, 'result.result', null);
+          expect(Array.isArray(resultList)).to.equal(true);
+          expect(resultList.length).to.equal(BATCH_TX_LIST_SIZE_LIMIT);
+          for (let i = 0; i < resultList.length; i++) {
+            expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
+          }
+        })
+      })
+
+      it('rejects a batch transaction of over transaction list size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBodyTemplate = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          nonce: -1
+        };
+        const txList = [];
+        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT + 1; i++) {  // Just over the limit.
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList.push({
+            tx_body: txBody,
+            signature,
+          });
+        }
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            result: {
+              code: 2,
+              message: `Batch transaction list size exceeds its limit: ${BATCH_TX_LIST_SIZE_LIMIT}.`
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: longText,
+            ref: `test/test_long_text`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: [
+            {
+              tx_body: txBody,
+              signature,
+            }
+          ],
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const resultList = _.get(res, 'result.result');
+          expect(Array.isArray(resultList)).to.equal(false);
+          assert.deepEqual(res.result, {
+            result: {
+              code: 3,
+              message: `Transaction[0]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
@@ -2505,7 +2576,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 3,
+              code: 4,
               message: `Missing properties of transaction[0].`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION,
@@ -2538,7 +2609,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 4,
+              code: 5,
               message: `Invalid format of transaction[0].`
             },
             protoVer: CURRENT_PROTOCOL_VERSION

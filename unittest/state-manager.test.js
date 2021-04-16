@@ -23,7 +23,7 @@ describe("state-manager", () => {
     });
   });
 
-  describe("Get APIs", () => {
+  describe("Get API", () => {
     const finalVersion = 'final version';
 
     beforeEach(() => {
@@ -73,7 +73,7 @@ describe("state-manager", () => {
     });
   });
 
-  describe("Set APIs", () => {
+  describe("Set API", () => {
     const finalVersion = 'final version';
 
     beforeEach(() => {
