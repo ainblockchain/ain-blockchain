@@ -113,7 +113,7 @@ function verifySignedMessage(message, address) {
   return ainUtil.ecVerifySig(JSON.stringify(message.body), message.signature, address);
 }
 
-function safeCloseSocket(connections, socket) {
+function closeSocketSafe(connections, socket) {
   const address = getAddressFromSocket(connections, socket);
   removeSocketConnectionIfExists(connections, address);
   socket.close();
@@ -121,14 +121,14 @@ function safeCloseSocket(connections, socket) {
 
 function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersion, version) {
   if (!version || !semver.valid(version)) {
-    safeCloseSocket(connections, socket);
+    closeSocketSafe(connections, socket);
     return false;
   }
   if (semver.gt(minProtocolVersion, version) ||
       (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
     logger.error('My protocol version may be outdated. Please check the latest version at ' +
         'https://github.com/ainblockchain/ain-blockchain/releases');
-    safeCloseSocket(connections, socket);
+    closeSocketSafe(connections, socket);
     return false;
   }
   return true;
@@ -144,6 +144,6 @@ module.exports = {
   signMessage,
   getAddressFromSignature,
   verifySignedMessage,
-  safeCloseSocket,
+  closeSocketSafe,
   checkProtoVer
 };
