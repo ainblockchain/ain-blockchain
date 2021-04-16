@@ -11,7 +11,6 @@ const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const Transaction = require('../tx-pool/transaction');
 
 async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
   const res = await signAndSendTx(endpoint, tx, privateKey);
@@ -105,8 +104,7 @@ function signMessage(messageBody, privateKey) {
 
 function getAddressFromSignature(message) {
   const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.body));
-  // TODO(minsu): getAddress should be in the chain-util??
-  return Transaction.getAddress(hashedMessage, message.signature);
+  return ChainUtil.getAddress(hashedMessage, message.signature);
 }
 
 function verifySignedMessage(message, address) {

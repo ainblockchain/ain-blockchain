@@ -47,6 +47,25 @@ class ChainUtil {
     return '0x' + hashedData.toString('hex');
   }
 
+  /**
+   * Gets address from hash and signature.
+   */
+  static getAddress(hash, signature) {
+    let address = '';
+    try {
+      const sigBuffer = ainUtil.toBuffer(signature);
+      const len = sigBuffer.length;
+      const lenHash = len - 65;
+      const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
+      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
+      address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+          ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+    } catch (err) {
+      logger.error(err);
+    }
+    return address;
+  }
+
   // TODO(lia): remove this function
   static genKeyPair() {
     let keyPair;
