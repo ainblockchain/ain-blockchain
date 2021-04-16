@@ -21,7 +21,8 @@ describe('TransactionPool', () => {
         ref: 'REF',
         value: 'VALUE'
       },
-      nonce: node.nonce++
+      nonce: node.nonce++,
+      gas_price: 1
     });
     node.tp.addTransaction(transaction);
     msleep(1);
@@ -44,7 +45,8 @@ describe('TransactionPool', () => {
             ref: 'REF',
             value: 'VALUE',
           },
-          nonce: node.nonce++
+          nonce: node.nonce++,
+          gas_price: 1
         });
         node.tp.addTransaction(t);
         msleep(1);
@@ -67,7 +69,8 @@ describe('TransactionPool', () => {
               ref: 'REF',
               value: 'VALUE',
             },
-            nonce: nodes[j].nonce++
+            nonce: nodes[j].nonce++,
+            gas_price: 1
           });
           node.tp.addTransaction(t);
           msleep(1);
@@ -129,7 +132,8 @@ describe('TransactionPool', () => {
             ref: 'REF',
             value: 'VALUE',
           },
-          nonce: node.nonce++
+          nonce: node.nonce++,
+          gas_price: 1
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }

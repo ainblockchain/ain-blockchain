@@ -3214,6 +3214,7 @@ describe("Transaction execution", () => {
         ref: '/test/some/path/for/tx',
         value: 'some value',
       },
+      gas_price: 1,
       nonce: -1,
       timestamp: 1568798344000,
     };
@@ -3246,6 +3247,7 @@ describe("Transaction execution", () => {
           ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
           value: 'some value',
         },
+        gas_price: 1,
         nonce: -1,
         timestamp: 1568798344000,
       };
@@ -3258,6 +3260,7 @@ describe("Transaction execution", () => {
           ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21',
           value: 'some value',
         },
+        gas_price: 1,
         nonce: -1,
         timestamp: 1568798344000,
       };
@@ -3279,6 +3282,7 @@ describe("Transaction execution", () => {
           ref: '/test/tree',
           value: overSizeTree,
         },
+        gas_price: 1,
         nonce: -1,
         timestamp: 1568798344000,
       };

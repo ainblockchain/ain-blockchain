@@ -174,6 +174,10 @@ class Transaction {
       nonce: ChainUtil.numberOrZero(txBody.nonce),
       timestamp: ChainUtil.numberOrZero(txBody.timestamp),
     };
+    // A devel method for bypassing the gas fee
+    if (FeatureFlags.enableGasFee) {
+      sanitized.gas_price = ChainUtil.numberOrZero(txBody.gas_price);
+    }
     if (txBody.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
     }
@@ -207,7 +211,7 @@ class Transaction {
 
   static hasRequiredFields(txBody) {
     return txBody && txBody.timestamp !== undefined && txBody.nonce !== undefined &&
-        txBody.operation !== undefined;
+        txBody.operation !== undefined && (!FeatureFlags.enableGasFee || txBody.gas_price !== undefined);
   }
 
   static isInStandardFormat(txBody) {

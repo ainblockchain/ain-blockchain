@@ -288,6 +288,10 @@ class ChainUtil {
     return _.get(result, 'gas.gas_amount', 0);
   }
 
+  static getTotalGasCost(gasPrice, result) {
+    return gasPrice * ChainUtil.getTotalGasAmount(result);
+  }
+
   static returnTxResult(code, message = null, gas = null) {
     const result = { code };
     if (message) {

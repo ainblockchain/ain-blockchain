@@ -538,9 +538,11 @@ class DB {
 
   getAccountNonceAndTimestamp(address) {
     let nonce = this.getValue(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`, false);
+        ChainUtil.formatPath(
+            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_NONCE]), false);
     let timestamp = this.getValue(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`, false);
+        ChainUtil.formatPath(
+            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_TIMESTAMP]), false);
     if (nonce === null) {
       nonce = 0;
     }
@@ -732,7 +734,7 @@ class DB {
   }
 
   set(opList, auth, timestamp, transaction) {
-    let resultList = [];
+    const resultList = [];
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
@@ -859,8 +861,21 @@ class DB {
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
-    if (!ChainUtil.isFailedTx(result) && tx && auth && auth.addr && !auth.fid) {
-      this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
+    if (!ChainUtil.isFailedTx(result)) {
+      if (FeatureFlags.enableGasFee) { // A devel method for bypassing the gas fee
+        const gasPrice = tx.tx_body.gas_price;
+        if (gasPrice <= 0 && gasPrice !== -1) {
+          return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
+        } else if (gasPrice === -1) { // A devel method for bypassing the gas fee
+          // skip
+        } else {
+          // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
+          // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
+        }
+      }
+      if (tx && auth && auth.addr && !auth.fid) {
+        this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
+      }
     }
     return result;
   }

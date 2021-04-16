@@ -2012,6 +2012,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -2055,6 +2056,7 @@ describe('Blockchain Node', () => {
               value: 'some other value 2',
               ref: `test/test_value/some/path`
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce,  // strictly ordered nonce
           };
@@ -2094,6 +2096,7 @@ describe('Blockchain Node', () => {
             value: longText,
             ref: `test/test_long_text`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -2123,6 +2126,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -2152,6 +2156,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           // missing nonce
         };
@@ -2184,6 +2189,7 @@ describe('Blockchain Node', () => {
               ref: "test/test_value/some300/path",
               value: "some other300 value",
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -2193,6 +2199,7 @@ describe('Blockchain Node', () => {
               ref: "test/test_value/some300/path2",
               value: 10
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -2202,6 +2209,7 @@ describe('Blockchain Node', () => {
               ref: "test/test_value/some300/path3",
               value: 10
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -2213,6 +2221,7 @@ describe('Blockchain Node', () => {
                 ".function": "some other300 function config"
               }
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -2224,6 +2233,7 @@ describe('Blockchain Node', () => {
                 ".write": "some other300 rule config"
               }
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -2235,6 +2245,7 @@ describe('Blockchain Node', () => {
                 ".owner": "some other300 owner config"
               }
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -2280,6 +2291,7 @@ describe('Blockchain Node', () => {
                 }
               ]
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -2422,6 +2434,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -2454,6 +2467,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           nonce: -1
         };
         const txList = [];
@@ -2490,6 +2504,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           nonce: -1
         };
         const txList = [];
@@ -2527,6 +2542,7 @@ describe('Blockchain Node', () => {
             value: longText,
             ref: `test/test_long_text`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -2562,6 +2578,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -2593,6 +2610,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           // missing nonce
         };
@@ -3036,6 +3054,7 @@ describe('Blockchain Node', () => {
               value: stakeAmount,
               ref: `/staking/test_service/${account.address}/0/stake/1/value`
             },
+            gas_price: 1,
             timestamp: Date.now() + 100000,
             nonce: 0
           }

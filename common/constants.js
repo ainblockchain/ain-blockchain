@@ -29,6 +29,8 @@ const FeatureFlags = {
   enableTxSigVerifWorkaround: false,
   // Enables develop client API.
   forceDevClientApi: false,
+  // Enables gas fee related features.
+  enableGasFee: true,
 };
 
 // Environment variables.
@@ -278,7 +280,6 @@ const NativeFunctionIds = {
   CREATE_APP: '_createApp',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
-  OPEN_ESCROW: '_openEscrow',
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',

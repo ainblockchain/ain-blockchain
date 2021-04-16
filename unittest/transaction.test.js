@@ -37,7 +37,8 @@ describe('Transaction', () => {
         type: 'SET_VALUE',
         ref: 'path',
         value: 'val',
-      }
+      },
+      gas_price: 1
     };
     tx = Transaction.fromTxBody(txBody, node.account.private_key);
 
@@ -50,6 +51,7 @@ describe('Transaction', () => {
         value: 'val',
       },
       address: 'abcd',
+      gas_price: 1
     };
 
     FeatureFlags.enableTxSigVerifWorkaround = true;  // With workaround.
@@ -69,6 +71,7 @@ describe('Transaction', () => {
         value: 'val',
       },
       parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
+      gas_price: 1
     };
     txParentHash = Transaction.fromTxBody(txBodyParentHash, node.account.private_key);
 
@@ -77,7 +80,8 @@ describe('Transaction', () => {
         type: 'SET_VALUE',
         ref: 'test/comcom',
         value: 'val'
-      }
+      },
+      gas_price: 1
     };
     txForNode = getTransaction(node, txBodyForNode);
   });
