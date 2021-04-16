@@ -10,7 +10,6 @@ const P2pClient = require('../p2p');
 const ChainUtil = require('../common/chain-util');
 const VersionUtil = require('../common/version-util');
 const {
-  FeatureFlags,
   ENABLE_DEV_CLIENT_API,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
