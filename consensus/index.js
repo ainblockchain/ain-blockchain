@@ -242,7 +242,7 @@ class Consensus {
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
-      return true;
+      return txRes;
     } else {
       logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
       return false;
@@ -268,7 +268,7 @@ class Consensus {
             `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
       }
     }
-    return true;
+    return txRes;
   }
 
   // proposing for block #N :
@@ -306,19 +306,20 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
 
+    const resList = []; // tx results of last_votes & transactions
     for (const voteTx of lastVotes) {
       const res = this.executeLastVoteOrAbort(tempDb, voteTx);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;
       }
+      resList.push(res);
     }
 
     // TODO(lia): restrict the size / number of txs
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
     const validTransactions = [];
     const invalidTransactions = [];
-    const resList = [];
     for (const tx of transactions) {
       const res = this.executeOrRollbackTransactionForBlock(
           tempDb, tx, validTransactions, invalidTransactions);
@@ -328,7 +329,8 @@ class Consensus {
       }
       resList.push(res);
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(validTransactions, resList);
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(
+        [...lastVotes, ...validTransactions], resList);
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
@@ -564,13 +566,27 @@ class Consensus {
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
-    if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
+    const lastVoteRes = newDb.executeTransactionList(proposalBlock.last_votes);
+    if (!lastVoteRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       this.node.destroyDb(newDb);
       return false;
     }
-    if (!newDb.executeTransactionList(proposalBlock.transactions)) {
+    const txsRes = newDb.executeTransactionList(proposalBlock.transactions);
+    if (!txsRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
+      this.node.destroyDb(newDb);
+      return false;
+    }
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(
+        [...proposalBlock.last_votes, ...proposalBlock.transactions], [...lastVoteRes, ...txsRes]);
+    if (gasAmountTotal !== proposalBlock.gas_amount_total) {
+      logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
+      this.node.destroyDb(newDb);
+      return false;
+    }
+    if (gasCostTotal !== proposalBlock.gas_cost_total) {
+      logger.error(`[${LOG_HEADER}] Invalid gas_cost_total`);
       this.node.destroyDb(newDb);
       return false;
     }
