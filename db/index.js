@@ -916,6 +916,7 @@ class DB {
 
   executeTransactionList(txList) {
     const LOG_HEADER = 'executeTransactionList';
+    const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
       const res = this.executeTransaction(executableTx);
@@ -925,8 +926,9 @@ class DB {
             `\nresult: ${JSON.stringify(res)}`);
         return false;
       }
+      resList.push(res);
     }
-    return true;
+    return resList;
   }
 
   addPathToValue(value, matchedValuePath, closestConfigDepth) {
