@@ -1,6 +1,7 @@
 const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
+const nock = require('nock');
 const _ = require("lodash");
 const spawn = require("child_process").spawn;
 const sleep = require('sleep').msleep;
@@ -8,6 +9,7 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
+const Functions = require('../db/functions');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
@@ -18,6 +20,8 @@ const {
   FunctionResultCode,
   GenesisAccounts,
   ProofProperties,
+  NativeFunctionIds,
+  GasFeeConstants,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
 } = require('../common/constants');
@@ -169,13 +173,13 @@ function cleanUp() {
   }
 }
 
-function setUpForNativeFunctions() {
+function setUpForFunctionTriggering() {
   const res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: {
             ".function": {
               "_saveLastTx": {
@@ -187,21 +191,21 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: {
             ".write": true,
           }
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path/.last_tx/value',
+          ref: '/test/test_function_triggering/allowed_path/.last_tx/value',
           value: {
             ".write": "auth.fid === '_saveLastTx'",
           }
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
           value: {
             ".function": {
               "_saveLastTx": {
@@ -213,21 +217,21 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
           value: {
             ".write": true,
           }
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path/.last_tx/value',
+          ref: '/test/test_function_triggering/not_allowed_path/.last_tx/value',
           value: {
             ".write": "auth.fid === 'some function id'",
           }
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
           value: {
             ".function": {
               "_saveLastTx": {
@@ -239,21 +243,21 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
           value: {
             ".write": true,
           }
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path_with_fids/.last_tx/value',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/.last_tx/value',
           value: {
             ".write": "util.includes(auth.fids, '_saveLastTx')",
           }
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/not_allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
           value: {
             ".function": {
               "_saveLastTx": {
@@ -265,16 +269,37 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
           value: {
             ".write": true,
           }
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path_with_fids/.last_tx/value',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value',
           value: {
             ".write": "util.includes(auth.fids, 'some function id')",
+          }
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function_triggering/rest_function_path',
+          value: {
+            ".function": {
+              "0x11111": {
+                "function_type": "REST",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+                "function_id": "0x11111"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/rest_function_path',
+          value: {
+            ".write": true,
           }
         },
       ],
@@ -283,52 +308,52 @@ function setUpForNativeFunctions() {
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
-    console.log(`Failed to check finalization of setUpForNativeFunctions() tx.`)
+    console.log(`Failed to check finalization of setUpForFunctionTriggering() tx.`)
   }
 }
 
-function cleanUpForNativeFunctions() {
+function cleanUpForFunctionTriggering() {
   const res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: null
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
           value: null
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
           value: null
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/not_allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path_with_fids/value',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
           value: null
         },
       ],
@@ -337,7 +362,7 @@ function cleanUpForNativeFunctions() {
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
   if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
-    console.log(`Failed to check finalization of cleanUpForNativeFunctions() tx.`)
+    console.log(`Failed to check finalization of cleanUpForFunctionTriggering() tx.`)
   }
 }
 
@@ -886,8 +911,8 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -2637,12 +2662,17 @@ describe('Blockchain Node', () => {
     })
   })
 
-  describe('Native functions', () => {
-    const saveLastTxAllowedPath = '/test/test_native_function/allowed_path';
-    const saveLastTxNotAllowedPath = '/test/test_native_function/not_allowed_path';
-    const saveLastTxAllowedPathWithFids = '/test/test_native_function/allowed_path_with_fids';
-    const saveLastTxNotAllowedPathWithFids = '/test/test_native_function/not_allowed_path_with_fids';
-    const setFunctionWithOwnerOnlyPath = '/test/test_native_function/owner_only';
+  describe('Function triggering', () => {
+    const saveLastTxAllowedPath = '/test/test_function_triggering/allowed_path';
+    const saveLastTxNotAllowedPath = '/test/test_function_triggering/not_allowed_path';
+    const saveLastTxAllowedPathWithFids = '/test/test_function_triggering/allowed_path_with_fids';
+    const saveLastTxNotAllowedPathWithFids = '/test/test_function_triggering/not_allowed_path_with_fids';
+    const setFunctionWithOwnerOnlyPath = '/test/test_function_triggering/owner_only';
+    const triggerNativeFunctionPath1 =
+          '/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/1/value';
+    const triggerNativeFunctionPath2 =
+          '/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/2/value';
+    const triggerRestFunctionPath = '/test/test_function_triggering/rest_function_path';
 
     let transferFrom; // = server1
     let transferTo; // = server2
@@ -2682,14 +2712,25 @@ describe('Blockchain Node', () => {
     })
 
     beforeEach(() => {
-      setUpForNativeFunctions();
+      setUpForFunctionTriggering();
+
+      // Setup mock for REST API calls.
+      const response = { 'success': true };
+      nock('https://events.ainetwork.ai')
+          .post('/trigger')
+          .reply((uri, request) => {
+            return [
+              201,
+              response,
+            ]
+          });
     })
 
     afterEach(() => {
-      cleanUpForNativeFunctions();
+      cleanUpForFunctionTriggering();
     })
 
-    describe('Function permission (_saveLastTx, _transfer)', () => {
+    describe('Function permission', () => {
       describe('Owner only', () => {
         beforeEach(() => {
           const res = parseOrLog(syncRequest('POST', server2 + '/set_function', {json: {
@@ -2718,8 +2759,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2764,8 +2805,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2783,8 +2824,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2804,8 +2845,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2823,8 +2864,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
             console.error(`Failed to check finalization of tx.`)
           }
@@ -2833,6 +2874,69 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result
           // Should be the tx hash value.
           assert.deepEqual(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        });
+      });
+    });
+
+    describe('Gas fee', () => {
+      const transferTimestamp = Date.now();
+
+      it("native function (_transfer) with account registration", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerNativeFunctionPath1,
+          value: 10,
+          timestamp: transferTimestamp,
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // With account registration gas amount.
+        const functions = new Functions(null, null);
+        const gasAmountExpected = 1 +
+            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount +
+            GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
+        });
+      });
+
+      it("native function (_transfer) without account registration", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerNativeFunctionPath2,
+          value: 10,
+          timestamp: transferTimestamp + 1,
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // Without account registration gas amount.
+        const functions = new Functions(null, null);
+        const gasAmountExpected = 1 +
+            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
+        });
+      });
+
+      it("REST function with external RPC call", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerRestFunctionPath,
+          value: 'some value',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // With external RPC call gas amount.
+        const gasAmountExpected = 1 + GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
         });
       });
     });
@@ -2847,8 +2951,8 @@ describe('Blockchain Node', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result.code'), 0);
         assert.deepEqual(body.code, 0);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
         if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
           console.log(`Failed to check finalization of tx.`)
         }
@@ -2980,8 +3084,8 @@ describe('Blockchain Node', () => {
             ref: stakePath + '/1/value',
             value: stakeAmount
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
@@ -3152,8 +3256,8 @@ describe('Blockchain Node', () => {
             ref: `${unstakePath}/2/value`,
             value: stakeAmount
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
@@ -3183,8 +3287,8 @@ describe('Blockchain Node', () => {
             ref: stakePath + '/3/value',
             value: newStakingAmount
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
           if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
             console.log(`Failed to check finalization of tx.`)
           }
