@@ -166,6 +166,7 @@ describe("Functions", () => {
                 },
                 "nonce": 123,
                 "timestamp": 1566736760322,
+                "gas_price": 1,
               },
               "extra": {
                 "created_at": 1566736760323,
@@ -186,6 +187,7 @@ describe("Functions", () => {
             },
             "nonce": 123,
             "timestamp": 1566736760322,
+            "gas_price": 1,
           },
           "extra": {
             "created_at": 1566736760323,
@@ -240,6 +242,7 @@ describe("Functions", () => {
                 },
                 "nonce": 123,
                 "timestamp": 1566736760322,
+                "gas_price": 1,
               },
               "extra": {
                 "created_at": 1566736760323,
