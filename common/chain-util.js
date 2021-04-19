@@ -61,7 +61,7 @@ class ChainUtil {
       address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
           ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
     } catch (err) {
-      logger.error(err);
+      console.error(err);
     }
     return address;
   }
