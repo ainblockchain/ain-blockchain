@@ -85,7 +85,7 @@ class Functions {
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
   // TODO(platfowner): Add account registration gas amount.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, isChainedCall) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -908,8 +908,12 @@ class Functions {
     const auth = context.auth;
 
     const fromBalance = this.db.getValue(fromPath);
-    if (fromBalance < value) {
+    if (fromBalance === null || fromBalance < value) {
       return ChainUtil.returnTxResult(1001, `Insufficient balance: ${fromBalance}`);
+    }
+    const toBalance = this.db.getValue(toPath);
+    if (toBalance === null) {
+      this.addToTotalGasAmount(GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT);
     }
     const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(decResult)) {

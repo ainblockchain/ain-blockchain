@@ -424,6 +424,7 @@ const StateVersions = {
  * @enum {number}
  */
 const GasFeeConstants = {
+  ACCOUNT_REGISTRATION_GAS_AMOUNT: 1000,
   EXTERNAL_RPC_CALL_GAS_AMOUNT: 10,
 };
 
