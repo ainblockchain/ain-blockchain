@@ -242,7 +242,7 @@ class Consensus {
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
-      return true;
+      return txRes;
     } else {
       logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
       return false;
@@ -268,7 +268,7 @@ class Consensus {
             `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
       }
     }
-    return true;
+    return txRes;
   }
 
   // proposing for block #N :
@@ -306,12 +306,14 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
 
+    const resList = []; // tx results of last_votes & transactions
     for (const voteTx of lastVotes) {
       const res = this.executeLastVoteOrAbort(tempDb, voteTx);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;
       }
+      resList.push(res);
     }
 
     // TODO(lia): restrict the size / number of txs
@@ -325,7 +327,10 @@ class Consensus {
         this.node.destroyDb(tempDb);
         return null;
       }
+      resList.push(res);
     }
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(
+        [...lastVotes, ...validTransactions], resList);
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
@@ -360,7 +365,7 @@ class Consensus {
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch,
-        stateProofHash, myAddr, validators);
+        stateProofHash, myAddr, validators, gasAmountTotal, gasCostTotal);
 
     let proposalTx;
     const proposeOp = {
@@ -380,7 +385,7 @@ class Consensus {
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
       proposalTx =
-          this.node.createTransaction({ operation: proposeOp, nonce: -1 });
+          this.node.createTransaction({ operation: proposeOp, nonce: -1, gas_price: 1 });
     } else {
       const setOp = {
         type: WriteDbOperations.SET,
@@ -397,7 +402,7 @@ class Consensus {
           }
         ]
       };
-      proposalTx = this.node.createTransaction({ operation: setOp, nonce: -1 });
+      proposalTx = this.node.createTransaction({ operation: setOp, nonce: -1, gas_price: 1 });
     }
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
@@ -561,13 +566,27 @@ class Consensus {
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
-    if (!newDb.executeTransactionList(proposalBlock.last_votes)) {
+    const lastVoteRes = newDb.executeTransactionList(proposalBlock.last_votes);
+    if (!lastVoteRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       this.node.destroyDb(newDb);
       return false;
     }
-    if (!newDb.executeTransactionList(proposalBlock.transactions)) {
+    const txsRes = newDb.executeTransactionList(proposalBlock.transactions);
+    if (!txsRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
+      this.node.destroyDb(newDb);
+      return false;
+    }
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(
+        [...proposalBlock.last_votes, ...proposalBlock.transactions], [...lastVoteRes, ...txsRes]);
+    if (gasAmountTotal !== proposalBlock.gas_amount_total) {
+      logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
+      this.node.destroyDb(newDb);
+      return false;
+    }
+    if (gasCostTotal !== proposalBlock.gas_cost_total) {
+      logger.error(`[${LOG_HEADER}] Invalid gas_cost_total`);
       this.node.destroyDb(newDb);
       return false;
     }
@@ -710,7 +729,7 @@ class Consensus {
         [PredefinedDbPaths.STAKE]: myStake
       }
     };
-    const voteTx = this.node.createTransaction({ operation, nonce: -1 });
+    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
 
     this.handleConsensusMessage(
         { value: Transaction.toJsObject(voteTx), type: ConsensusMessageTypes.VOTE });
@@ -940,7 +959,7 @@ class Consensus {
           PredefinedDbPaths.CONSENSUS, this.node.account.address, 0, PushId.generate()),
       value: amount
     };
-    const stakeTx = this.node.createTransaction({ operation, nonce: -1 });
+    const stakeTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
     return stakeTx;
   }
 
@@ -1004,6 +1023,7 @@ class Consensus {
             type: WriteDbOperations.SET,
             op_list: opList,
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };

@@ -30,11 +30,14 @@ describe('Blockchain', () => {
   });
 
   it('adds new block', () => {
-    const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
+    const tx = getTransaction(node1, {
+      operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo' },
+      gas_price: 1
+    });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
-        node1.account.address, {}));
+        node1.account.address, {}, 0, 0));
     assert.deepEqual(
         node1.bc.chain[node1.bc.chain.length -1].transactions[0],
         Transaction.toJsObject(tx));
@@ -46,7 +49,7 @@ describe('Blockchain', () => {
   it('validates a valid chain', () => {
     const data = 'foo';
     node1.bc.addNewBlock(Block.create(
-        data, node1, node1.bc.lastBlockNumber() + 1, node1.bc.lastBlock()));
+        data, node1, node1.bc.lastBlockNumber() + 1, node1.bc.lastBlock(), 0, 0));
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(true);
   });
   */
@@ -57,11 +60,14 @@ describe('Blockchain', () => {
   });
 
   it('invalidates corrupt chain', () => {
-    const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
+    const tx = getTransaction(node1, {
+      operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo' },
+      gas_price: 1
+    });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
-        node1.account.address, {}));
+        node1.account.address, {}, 0, 0));
     node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
   });
@@ -79,13 +85,14 @@ describe('Blockchain', () => {
             type: 'SET_VALUE',
             ref: 'test/something',
             value: 'val'
-          }
+          },
+          gas_price: 1
         });
         const lastBlock = node1.bc.lastBlock();
         const finalRoot = node1.stateManager.getFinalRoot();
         const block = Block.create(
             lastBlock.hash, [], node1.tp.getValidTransactions(), lastBlock.number + 1, i,
-            finalRoot.getProofHash(), node1.account.address, []);
+            finalRoot.getProofHash(), node1.account.address, [], 0, 0);
         if (block.number === 500) {
           blockHash = block.hash;
         }

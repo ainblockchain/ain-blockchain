@@ -29,23 +29,27 @@ const FeatureFlags = {
   enableTxSigVerifWorkaround: false,
   // Enables develop client API.
   forceDevClientApi: false,
+  // Enables gas fee related feature workaround.
+  forceGasFeeWorkaround: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
 };
 
 // Environment variables.
-const DEBUG = process.env.DEBUG ? process.env.DEBUG.toLowerCase().startsWith('t') : false;
+const DEBUG = process.env.DEBUG ? ChainUtil.convertEnvVarInputToBool(process.env.DEBUG) : false;
 const CONSOLE_LOG = FeatureFlags.forceConsoleLogging || (process.env.CONSOLE_LOG ?
-    process.env.CONSOLE_LOG.toLowerCase().startsWith('t') : false);
+    ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG) : false);
 const ENABLE_DEV_CLIENT_API = FeatureFlags.forceDevClientApi || (process.env.ENABLE_DEV_CLIENT_API ?
-    process.env.ENABLE_DEV_CLIENT_API.toLowerCase().startsWith('t') : false);
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API) : false);
+const ENABLE_GAS_FEE_WORKAROUND = FeatureFlags.forceGasFeeWorkaround ||
+    (process.env.ENABLE_GAS_FEE_WORKAROUND ? ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND) : false);
 const COMCOM_HOST_EXTERNAL_IP =
     process.env.COMCOM_HOST_EXTERNAL_IP ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
-    process.env.LIGHTWEIGHT.toLowerCase().startsWith('t') : false;
+    ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT) : false;
 
 // Constants
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -68,6 +72,8 @@ const CHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
+const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
+const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
 
 // Enums
 /**
@@ -284,7 +290,6 @@ const NativeFunctionIds = {
   CREATE_APP: '_createApp',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
-  OPEN_ESCROW: '_openEscrow',
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
@@ -635,6 +640,9 @@ module.exports = {
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
+  ENABLE_GAS_FEE_WORKAROUND,
+  MICRO_AIN,
+  MILLI_AIN,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,

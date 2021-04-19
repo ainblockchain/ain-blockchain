@@ -21,7 +21,7 @@ function buildClaimTxBody(ownerAddr, userAddr, timestamp, escrowKey) {
   };
 }
 
-function buildOpenEscrowTxBody(source, target, address, timestamp) {
+function buildEscrowConfigTxBody(source, target, address, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
@@ -42,15 +42,15 @@ async function sendTransaction(escrow) {
   let timestamp = Date.now();
 
   if (escrow) {
-    const openEscrowTxBody = buildOpenEscrowTxBody(`payments|test_service|${config.userAddr}|0`,
+    const escrowConfigTxBody = buildEscrowConfigTxBody(`payments|test_service|${config.userAddr}|0`,
         config.serviceOwnerAddr, config.serviceOwnerAddr, timestamp);
-    console.log(`openEscrow tx body: ${JSON.stringify(openEscrowTxBody, null, 2)}`);
-    const openEscrowTxInfo = await signAndSendTx(config.endpointUrl, openEscrowTxBody, config.serviceOwnerPrivateKey);
-    if (!openEscrowTxInfo.success) {
-      console.log(`Open escrow failed: ${JSON.stringify(openEscrowTxInfo, null, 2)}`);
+    console.log(`escrowConfig tx body: ${JSON.stringify(escrowConfigTxBody, null, 2)}`);
+    const escrowConfigTxInfo = await signAndSendTx(config.endpointUrl, escrowConfigTxBody, config.serviceOwnerPrivateKey);
+    if (!escrowConfigTxInfo.success) {
+      console.log(`Escrow config setting failed: ${JSON.stringify(escrowConfigTxInfo, null, 2)}`);
       process.exit(0);
     }
-    await confirmTransaction(config.endpointUrl, timestamp, openEscrowTxInfo.txHash);
+    await confirmTransaction(config.endpointUrl, timestamp, escrowConfigTxInfo.txHash);
     timestamp = Date.now();
   }
 

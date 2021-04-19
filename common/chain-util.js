@@ -288,6 +288,26 @@ class ChainUtil {
     return _.get(result, 'gas.gas_amount', 0);
   }
 
+  /**
+   * Calculate the gas cost (unit = ain).
+   * 
+   * @param {Number} gasPrice gas price in microain
+   * @param {Object} result transaction execution result
+   * @returns 
+   */
+  static getTotalGasCost(gasPrice, result) {
+    const { MICRO_AIN } = require('./constants');
+    return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
+  }
+
+  static getGasAmountCostTotalFromTxList(txList, resList) {
+    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
+    const gasCostTotal = resList.reduce((acc, cur, index) => {
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
+    }, 0);
+    return { gasAmountTotal, gasCostTotal };
+  }
+
   static returnTxResult(code, message = null, gas = null) {
     const result = { code };
     if (message) {
@@ -372,6 +392,10 @@ class ChainUtil {
       setTimeout(resolve, ms);
     });
   };
+
+  static convertEnvVarInputToBool = (input) => {
+    return input.toLowerCase().startsWith('t');
+  }
 }
 
 module.exports = ChainUtil;
