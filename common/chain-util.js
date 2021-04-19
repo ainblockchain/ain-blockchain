@@ -289,6 +289,7 @@ class ChainUtil {
   }
 
   /**
+   * Calculate the gas cost (unit = ain).
    * 
    * @param {Number} gasPrice gas price in microain
    * @param {Object} result transaction execution result
