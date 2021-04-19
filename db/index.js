@@ -17,7 +17,7 @@ const {
   TREE_HEIGHT_LIMIT,
   TREE_SIZE_LIMIT,
   buildOwnerPermissions,
-  FORCE_GAS_FEE_WORKAROUND,
+  ENABLE_GAS_FEE_WORKAROUND,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -864,7 +864,7 @@ class DB {
     }
     if (!ChainUtil.isFailedTx(result)) {
       const gasPrice = tx.tx_body.gas_price;
-      if (FORCE_GAS_FEE_WORKAROUND && gasPrice === -1) { // Devel methods for bypassing the gas fee
+      if (ENABLE_GAS_FEE_WORKAROUND && gasPrice === -1) { // Devel methods for bypassing the gas fee
           // Skip.
       } else if (gasPrice <= 0) {
         return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
