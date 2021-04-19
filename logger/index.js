@@ -1,6 +1,6 @@
 /* eslint new-cap: "off" */
 const winston = require('winston');
-const {getWinstonLevels, getWinstonColors, getWinstonTransports} = require('./winston-util');
+const { getWinstonLevels, getWinstonColors, getWinstonTransports } = require('./winston-util');
 
 const winstonLogger = new winston.createLogger({
   levels: getWinstonLevels(),
