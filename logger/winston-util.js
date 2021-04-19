@@ -6,7 +6,6 @@ const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const {
-  FeatureFlags,
   LOGS_DIR,
   DEBUG,
   CONSOLE_LOG,

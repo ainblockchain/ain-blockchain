@@ -51,6 +51,8 @@ class ChainUtil {
    * Gets address from hash and signature.
    */
   static getAddressFromSignature(hash, signature) {
+    const logger = require('../logger')('CHAIN_UTIL');
+    const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
       const sigBuffer = ainUtil.toBuffer(signature);
@@ -61,7 +63,8 @@ class ChainUtil {
       address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
           ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
     } catch (err) {
-      console.error(err);
+      logger.error(
+          `[${LOG_HEADER}] Failed to extract address with error: ${JSON.stringify(err)}.`);
     }
     return address;
   }
