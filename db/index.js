@@ -17,6 +17,7 @@ const {
   TREE_HEIGHT_LIMIT,
   TREE_SIZE_LIMIT,
   buildOwnerPermissions,
+  ENABLE_GAS_FEE_WORKAROUND,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -538,9 +539,11 @@ class DB {
 
   getAccountNonceAndTimestamp(address) {
     let nonce = this.getValue(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`, false);
+        ChainUtil.formatPath(
+            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_NONCE]), false);
     let timestamp = this.getValue(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`, false);
+        ChainUtil.formatPath(
+            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_TIMESTAMP]), false);
     if (nonce === null) {
       nonce = 0;
     }
@@ -732,7 +735,7 @@ class DB {
   }
 
   set(opList, auth, timestamp, transaction) {
-    let resultList = [];
+    const resultList = [];
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
@@ -859,8 +862,19 @@ class DB {
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
-    if (!ChainUtil.isFailedTx(result) && tx && auth && auth.addr && !auth.fid) {
-      this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
+    if (!ChainUtil.isFailedTx(result)) {
+      const gasPrice = tx.tx_body.gas_price;
+      if (ENABLE_GAS_FEE_WORKAROUND && gasPrice === -1) { // Devel methods for bypassing the gas fee
+          // Skip.
+      } else if (gasPrice <= 0) {
+        return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
+      } else {
+        // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
+        // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
+      }
+      if (tx && auth && auth.addr && !auth.fid) {
+        this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
+      }
     }
     return result;
   }
@@ -902,6 +916,7 @@ class DB {
 
   executeTransactionList(txList) {
     const LOG_HEADER = 'executeTransactionList';
+    const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
       const res = this.executeTransaction(executableTx);
@@ -911,8 +926,9 @@ class DB {
             `\nresult: ${JSON.stringify(res)}`);
         return false;
       }
+      resList.push(res);
     }
-    return true;
+    return resList;
   }
 
   addPathToValue(value, matchedValuePath, closestConfigDepth) {

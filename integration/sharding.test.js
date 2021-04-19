@@ -1533,6 +1533,7 @@ describe('Sharding', () => {
               value: 'some other value',
               ref: `test/test_value/some/path`
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1568,6 +1569,7 @@ describe('Sharding', () => {
               ref: `test/test_value/some/path`,
               is_global: false,
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1603,6 +1605,7 @@ describe('Sharding', () => {
               ref: `apps/afan/test/test_value/some/path`,
               is_global: true,
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1639,6 +1642,7 @@ describe('Sharding', () => {
               value: 'some other value',
               ref: `test/test_value/some/path`
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1683,6 +1687,7 @@ describe('Sharding', () => {
               ref: `test/test_value/some/path`,
               is_global: false,
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1730,6 +1735,7 @@ describe('Sharding', () => {
               ref: `apps/afan/test/test_value/some/path`,
               is_global: true,
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }

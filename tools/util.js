@@ -19,6 +19,7 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
       id: 0
     }
   ).then((resp) => {
+    console.log(`resp:`, _.get(resp, 'data'));
     const success = !ChainUtil.isFailedTx(_.get(resp, 'data.result.result.result', null));
     console.log(`result: ${JSON.stringify(success, null, 2)}`);
     return {txHash, signedTx, success};

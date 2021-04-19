@@ -124,6 +124,7 @@ describe("Functions", () => {
             "type": "SET_VALUE",
             "value": 1000
           },
+          "gas_price": 1,
           "nonce": 123,
           "timestamp": 1566736760322,
         },
@@ -154,6 +155,7 @@ describe("Functions", () => {
                 "type": "SET_VALUE",
                 "value": 1000,
               },
+              "gas_price": 1,
               "nonce": 123,
               "timestamp": 1566736760322,
             },
@@ -174,6 +176,7 @@ describe("Functions", () => {
             "type": "SET_VALUE",
             "value": 1000
           },
+          "gas_price": 1,
           "nonce": 123,
           "timestamp": 1566736760322,
         },
@@ -204,6 +207,7 @@ describe("Functions", () => {
                 "type": "SET_VALUE",
                 "value": 1000,
               },
+              "gas_price": 1,
               "nonce": 123,
               "timestamp": 1566736760322,
             },
@@ -227,6 +231,7 @@ describe("Functions", () => {
                 "type": "SET_VALUE",
                 "value": 1000,
               },
+              "gas_price": 1,
               "nonce": 123,
               "timestamp": 1566736760322,
             },
@@ -247,6 +252,7 @@ describe("Functions", () => {
             "type": "SET_VALUE",
             "value": 1000
           },
+          "gas_price": 1,
           "nonce": 123,
           "timestamp": 1566736760322,
         },
@@ -274,6 +280,7 @@ describe("Functions", () => {
             "type": "SET_VALUE",
             "value": 1000
           },
+          "gas_price": 1,
           "nonce": 123,
           "timestamp": 1566736760322,
         },
@@ -301,6 +308,7 @@ describe("Functions", () => {
             "type": "SET_VALUE",
             "value": 1000
           },
+          "gas_price": 1,
           "nonce": 123,
           "timestamp": 1566736760322,
         },
