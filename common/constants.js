@@ -41,8 +41,8 @@ const CONSOLE_LOG = FeatureFlags.forceConsoleLogging || (process.env.CONSOLE_LOG
     ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG) : false);
 const ENABLE_DEV_CLIENT_API = FeatureFlags.forceDevClientApi || (process.env.ENABLE_DEV_CLIENT_API ?
     ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API) : false);
-const FORCE_GAS_FEE_WORKAROUND = FeatureFlags.forceGasFeeWorkaround ||
-    (process.env.FORCE_GAS_FEE_WORKAROUND ? ChainUtil.convertEnvVarInputToBool(process.env.FORCE_GAS_FEE_WORKAROUND) : false);
+const ENABLE_GAS_FEE_WORKAROUND = FeatureFlags.forceGasFeeWorkaround ||
+    (process.env.ENABLE_GAS_FEE_WORKAROUND ? ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND) : false);
 const COMCOM_HOST_EXTERNAL_IP =
     process.env.COMCOM_HOST_EXTERNAL_IP ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
@@ -640,7 +640,7 @@ module.exports = {
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
-  FORCE_GAS_FEE_WORKAROUND,
+  ENABLE_GAS_FEE_WORKAROUND,
   MICRO_AIN,
   MILLI_AIN,
   MessageTypes,
