@@ -46,7 +46,8 @@ const p2pServer = p2pClient.server;
 
 const jsonRpcMethods = require('../json_rpc')(
     node, p2pServer, minProtocolVersion, maxProtocolVersion);
-app.post('/json-rpc', VersionUtil.validateVersion, jayson.server(jsonRpcMethods).middleware());
+app.post('/json-rpc', VersionUtil.validateVersion.bind(minProtocolVersion, maxProtocolVersion),
+    jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
   res.status(200)

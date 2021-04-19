@@ -27,7 +27,7 @@ class VersionUtil {
     return {};
   }
 
-  static validateVersion(req, res, next) {
+  static validateVersion(req, res, next, minProtocolVersion, maxProtocolVersion) {
     let version = null;
     if (req.query.protoVer) {
       version = req.query.protoVer;
