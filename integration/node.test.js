@@ -1,7 +1,6 @@
 const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
-const nock = require('nock');
 const _ = require("lodash");
 const spawn = require("child_process").spawn;
 const sleep = require('sleep').msleep;
@@ -2723,17 +2722,6 @@ describe('Blockchain Node', () => {
 
     beforeEach(() => {
       setUpForFunctionTriggering();
-
-      // Setup mock for REST API calls.
-      const response = { 'success': true };
-      nock('https://events.ainetwork.ai')
-          .post('/trigger')
-          .reply((uri, request) => {
-            return [
-              201,
-              response,
-            ]
-          });
     })
 
     afterEach(() => {
