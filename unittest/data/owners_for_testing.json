@@ -23,7 +23,7 @@
       }
     }
   },
-  "test_native_function": {
+  "test_function_triggering": {
     ".owner": {
       "owners": {
         "*": {
