@@ -27,7 +27,7 @@ class VersionUtil {
     return {};
   }
 
-  static validateVersion(req, res, next, minProtocolVersion, maxProtocolVersion) {
+  static validateVersion(req, res, next) {
     let version = null;
     if (req.query.protoVer) {
       version = req.query.protoVer;
@@ -56,8 +56,8 @@ class VersionUtil {
           protoVer: CURRENT_PROTOCOL_VERSION
         })
         .end();
-    } else if (semver.lt(coercedVer, minProtocolVersion) ||
-      (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
+    } else if (semver.lt(coercedVer, this.minProtocolVersion) ||
+      (this.maxProtocolVersion && semver.gt(coercedVer, this.maxProtocolVersion))) {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({

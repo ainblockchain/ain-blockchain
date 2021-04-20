@@ -10,19 +10,12 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const sleep = require('sleep').msleep;
 const expect = chai.expect;
 // eslint-disable-next-line no-unused-vars
-const path = require('path');
 const syncRequest = require('sync-request');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
-const Blockchain = require('../blockchain');
-const StateNode = require('../db/state-node');
-const DB = require('../db');
-const TransactionPool = require('../tx-pool');
 const {
   CURRENT_PROTOCOL_VERSION,
-  CHAINS_DIR,
-  PredefinedDbPaths,
-  TransactionStatus
+  CHAINS_DIR
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const { waitUntilTxFinalized } = require('../unittest/test-util');
@@ -686,26 +679,26 @@ describe('Blockchain Cluster', () => {
     it('accepts API calls with correct protoVer', () => {
       return new Promise((resolve, reject) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
-          if (err) throw err;
-          expect(response.result.result.number).to.equal(0);
-          expect(response.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
-          resolve();
-        });
+          { number: 0, protoVer: CURRENT_PROTOCOL_VERSION }, function (err, response) {
+            if (err) throw err;
+            expect(response.result.result.number).to.equal(0);
+            expect(response.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
+            resolve();
+          });
       });
     });
 
-    it('rejects API calls with incorrect protoVer', () => {
+    it('rejects API calls with incorrect protoVer', async () => {
       return new Promise((resolve, reject) => {
         let promises = [];
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: 'a.b.c'}));
+            { number: 0, protoVer: 'a.b.c' }));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: '0.01.0'}));
+            { number: 0, protoVer: '0.01.0' }));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: 'v0.1'}));
+            { number: 0, protoVer: 'v0.1' }));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0, protoVer: '0.1.0'}));
+            { number: 0, protoVer: '0.1.0' }));
         Promise.all(promises).then(res => {
           expect(res[0].code).to.equal(1);
           expect(res[0].message).to.equal("Invalid protocol version.");
@@ -723,14 +716,14 @@ describe('Blockchain Cluster', () => {
     it('rejects API calls with no protoVer', () => {
       return new Promise((resolve, reject) => {
         jsonRpcClient.request(
-            JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 0},
-            function(err, response) {
-              if (err) throw err;
-              expect(response.code).to.equal(1);
-              expect(response.message).to.equal("Protocol version not specified.");
-              resolve();
-            }
+          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          { number: 0 },
+          function (err, response) {
+            if (err) throw err;
+            expect(response.code).to.equal(1);
+            expect(response.message).to.equal("Protocol version not specified.");
+            resolve();
+          }
         );
       });
     });
