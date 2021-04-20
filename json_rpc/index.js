@@ -80,10 +80,10 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getBlockByNumber: function(args, done) {
       const block = node.bc.getBlockByNumber(args.number);
       if (!block || args.getFullTransactions) {
-        done(null, addProtocolVersion({result: block}));
+        done(null, addProtocolVersion({ result: block }));
       } else {
         block.transactions = extractTransactionHashes(block);
-        done(null, addProtocolVersion({result: block}));
+        done(null, addProtocolVersion({ result: block }));
       }
     },
 
