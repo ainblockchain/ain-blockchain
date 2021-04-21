@@ -863,9 +863,9 @@ class DB {
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
     if (!ChainUtil.isFailedTx(result)) {
-      const gasPrice = tx.tx_body.gas_price;
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
+      const gasPrice = tx.tx_body.gas_price;
       if (gasPrice > 0) {
         // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
         // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
