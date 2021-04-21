@@ -503,7 +503,6 @@ function createMultiSetTxBody(input) {
 function createBatchTxBody(input) {
   const txList = [];
   for (const tx of input.tx_list) {
-    tx.gas_price = tx.gas_price !== undefined ? tx.gas_price : 0;
     txList.push(tx);
   }
   return { tx_body_list: txList };
