@@ -32,7 +32,7 @@ const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
 const ENABLE_DEV_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
-    ChainUtil.convertEnvVarInputToBool(process.env.TX_SIG_VERIF_WORKAROUND);
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
     ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND);
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
