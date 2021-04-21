@@ -36,20 +36,19 @@ const FeatureFlags = {
 };
 
 // Environment variables.
-const DEBUG = process.env.DEBUG ? ChainUtil.convertEnvVarInputToBool(process.env.DEBUG) : false;
-const CONSOLE_LOG = FeatureFlags.forceConsoleLogging || (process.env.CONSOLE_LOG ?
-    ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG) : false);
-const ENABLE_DEV_CLIENT_API = FeatureFlags.forceDevClientApi || (process.env.ENABLE_DEV_CLIENT_API ?
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API) : false);
+const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
+const CONSOLE_LOG = FeatureFlags.forceConsoleLogging ||
+    ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
+const ENABLE_DEV_CLIENT_API = FeatureFlags.forceDevClientApi ||
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API);
 const ENABLE_GAS_FEE_WORKAROUND = FeatureFlags.forceGasFeeWorkaround ||
-    (process.env.ENABLE_GAS_FEE_WORKAROUND ? ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND) : false);
-const COMCOM_HOST_EXTERNAL_IP =
-    process.env.COMCOM_HOST_EXTERNAL_IP ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND);
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
-    ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT) : false;
+const LIGHTWEIGHT = ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 
 // Constants
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;

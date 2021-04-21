@@ -319,6 +319,7 @@ class ChainUtil {
    */
   static getTotalGasCost(gasPrice, result) {
     const { MICRO_AIN } = require('./constants');
+    if (gasPrice === undefined) gasPrice = 0; // Default gas price = 0 microain
     return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
   }
 
@@ -416,7 +417,7 @@ class ChainUtil {
   };
 
   static convertEnvVarInputToBool = (input) => {
-    return input.toLowerCase().startsWith('t');
+    return input ? input.toLowerCase().startsWith('t') : false;
   }
 }
 
