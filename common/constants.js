@@ -459,7 +459,7 @@ function initializeNetworkEnvronments() {
   } else {
     return {
       // Note(minsu): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT should not be
-      // related one another.
+      // related to one another.
       MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
       MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
       DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
