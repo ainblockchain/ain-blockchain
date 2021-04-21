@@ -187,10 +187,14 @@ class Transaction {
       logger.info(`Transaction body has some missing fields: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
-    const gasPrice = txBody.gas_price;
-    if (!ENABLE_GAS_FEE_WORKAROUND && gasPrice <= 0) {
+    if (!Transaction.isValidNonce(txBody.nonce)) {
       logger.info(
-          `Transaction body has non-positive gas price: ${JSON.stringify(txBody, null, 2)}`);
+          `Transaction body has invalid nonce: ${JSON.stringify(txBody, null, 2)}`);
+      return false;
+    }
+    if (!Transaction.isValidGasPrice(txBody.gas_price)) {
+      logger.info(
+          `Transaction body has invalid gas price: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
     return Transaction.isInStandardFormat(txBody);
@@ -198,7 +202,15 @@ class Transaction {
 
   static hasRequiredFields(txBody) {
     return txBody && txBody.operation !== undefined && txBody.timestamp !== undefined &&
-        txBody.nonce !== undefined && txBody.gas_price !== undefined;
+        txBody.nonce !== undefined;
+  }
+
+  static isValidNonce(nonce) {
+    return ChainUtil.isInteger(nonce) && (nonce >= 0 || nonce === -1 || nonce === -2);
+  }
+
+  static isValidGasPrice(gasPrice) {
+    return gasPrice > 0 || ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
   }
 
   static isInStandardFormat(txBody) {

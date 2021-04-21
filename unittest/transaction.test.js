@@ -124,20 +124,30 @@ describe('Transaction', () => {
       assert.deepEqual(tx2, null);
     });
 
+    it('fail with invalid nonce', () => {
+      txBody.nonce = -3;
+      let tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+
+      txBody.nonce = 0.1;
+      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+    });
+
     it('fail with missing gas_price', () => {
       delete txBody.gas_price;
       const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
     });
 
-    it('fail with non-positive gas_price', () => {
-      txBody.gas_price = 0;
-      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
-
+    it('fail with invalid gas_price', () => {
       txBody.gas_price = -1;
-      const tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
+      let tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx3, null);
+
+      txBody.gas_price = 0;
+      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
     });
   });
 
