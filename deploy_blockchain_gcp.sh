@@ -1,7 +1,8 @@
 #!/bin/sh
 
 if [ "$#" -lt 3 ]; then
-    echo "Usage: sh deploy_gcp.sh dev lia 0"
+    echo "Usage: sh deploy_blockchain_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards>"
+    echo "Example: sh deploy_blockchain_gcp.sh dev lia 0"
     exit
 fi
 
@@ -22,11 +23,24 @@ echo "PROJECT_ID=$PROJECT_ID"
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
 
-FILES_FOR_TRACKER="blockchain/ common/ consensus/ db/ genesis-configs/ logger/ package.json setup_tracker_gcp.sh setup_ubuntu.sh start_tracker_gcp.sh tracker-server/"
-FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db json_rpc genesis-configs/ logger/ node/ package.json server/ setup_node_gcp.sh setup_ubuntu.sh start_node_gcp.sh tx-pool/"
+NUM_SHARDS=$3
+echo "NUM_SHARDS=$NUM_SHARDS"
+
+# Get confirmation.
+echo
+read -p "Do you want to proceed? >> (y/N) " -n 1 -r
+echo
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+fi
+
+FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_tracker_gcp.sh setup_blockchain_ubuntu.sh start_tracker_gcp.sh"
+FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ json_rpc/ genesis-configs/ logger/ node/ tx-pool/ p2p/ package.json setup_node_gcp.sh setup_blockchain_ubuntu.sh start_node_gcp.sh"
 
 printf "\nRemoving redundant files..."
-rm -rf blockchain/blockchains logger/logs tracker-server/node_modules tracker-server/logs
+rm -rf chains logs
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
@@ -43,8 +57,8 @@ gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $
 gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
 
-if [ "$3" -gt 0 ]; then
-    for i in $(seq $3)
+if [ "$NUM_SHARDS" -gt 0 ]; then
+    for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"
 
@@ -77,17 +91,17 @@ gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project 
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 # printf "\n\n##########################\n# Setting up parent tracker #\n###########################\n\n"
-# gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
 # printf "\n\n##########################\n# Setting up parent node 0 #\n##########################\n\n"
-# gcloud compute ssh $NODE_0_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# gcloud compute ssh $NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
 # printf "\n\n##########################\n# Setting up parent node 1 #\n##########################\n\n"
-# gcloud compute ssh $NODE_1_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# gcloud compute ssh $NODE_1_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
 # printf "\n\n##########################\n# Setting up parent node 2 #\n##########################\n\n"
-# gcloud compute ssh $NODE_2_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# gcloud compute ssh $NODE_2_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
 # printf "\n\n##########################\n# Setting up parent node 3 #\n##########################\n\n"
-# gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
 # printf "\n\n##########################\n# Setting up parent node 4 #\n##########################\n\n"
-# gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+# gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
 
 # ssh into each instance, install packages and start up the server
 printf "\n\n############################\n# Running parent tracker #\n############################\n\n"
@@ -104,8 +118,8 @@ printf "\n\n#########################\n# Running parent node 4 #\n##############
 gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 4" --project $PROJECT_ID
 
 printf "\nDeploying shard blockchains..."
-if [ "$3" -gt 0 ]; then
-    for i in $(seq $3)
+if [ "$NUM_SHARDS" -gt 0 ]; then
+    for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"
 
@@ -129,13 +143,13 @@ if [ "$3" -gt 0 ]; then
 
              # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
             # printf "\n\n###########################\n# Setting up shard_$i tracker #\n###########################\n\n"
-            # gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
             # printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
-            # gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
             # printf "\n\n##########################\n# Setting up  shard_$i node 1 #\n##########################\n\n"
-            # gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
             # printf "\n\n##########################\n# Setting up  shard_$i node 2 #\n##########################\n\n"
-            # gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_ubuntu.sh" --project $PROJECT_ID
+            # gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID
 
             # ssh into each instance, install packages and start up the server
             printf "\n\n###########################\n# Running shard_$i tracker #\n###########################\n\n"

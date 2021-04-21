@@ -2,20 +2,18 @@
 
 const semver = require('semver');
 const sizeof = require('object-sizeof');
-const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
 const {
-  BlockchainNodeStatus,
+  CURRENT_PROTOCOL_VERSION,
+  BlockchainNodeStates,
   ReadDbOperations,
-  PredefinedDbPaths,
   TransactionStatus,
-  MAX_TX_BYTES,
+  TX_BYTES_LIMIT,
+  BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
 } = require('../common/constants');
-const {
-  ConsensusConsts,
-} = require('../consensus/constants');
 const Transaction = require('../tx-pool/transaction');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+const PathUtil = require('../common/path-util');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -82,10 +80,10 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getBlockByNumber: function(args, done) {
       const block = node.bc.getBlockByNumber(args.number);
       if (!block || args.getFullTransactions) {
-        done(null, addProtocolVersion({result: block}));
+        done(null, addProtocolVersion({ result: block }));
       } else {
         block.transactions = extractTransactionHashes(block);
-        done(null, addProtocolVersion({result: block}));
+        done(null, addProtocolVersion({ result: block }));
       }
     },
 
@@ -124,13 +122,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
-    // TODO(seo): Instantly reject requests with invalid signatures.
+    // TODO(platfowner): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
-      if (sizeof(args) > MAX_TX_BYTES) {
+      if (sizeof(args) > TX_BYTES_LIMIT) {
         done(null, addProtocolVersion({
           result: {
             code: 1,
-            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`
+            message: `Transaction size exceeds its limit: ${TX_BYTES_LIMIT} bytes.`
           }
         }));
       } else if (!args.tx_body || !args.signature) {
@@ -156,30 +154,36 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       }
     },
 
-    // TODO(lia): add test cases
     ain_sendSignedTransactionBatch: function(args, done) {
-      if (sizeof(args) > MAX_TX_BYTES) {
+      if (!args.tx_list || !Array.isArray(args.tx_list)) {
         done(null, addProtocolVersion({
           result: {
             code: 1,
-            message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`
+            message: `Invalid batch transaction format.`
           }
         }));
-      } else if (!args.tx_list || !Array.isArray(args.tx_list)) {
+      } else if (args.tx_list.length > BATCH_TX_LIST_SIZE_LIMIT) {
         done(null, addProtocolVersion({
           result: {
             code: 2,
-            message: `Invalid batch transaction format.`
+            message: `Batch transaction list size exceeds its limit: ${BATCH_TX_LIST_SIZE_LIMIT}.`
           }
         }));
       } else {
         const txList = [];
         for (let i = 0; i < args.tx_list.length; i++) {
           const tx = args.tx_list[i];
-          if (!tx.tx_body || !tx.signature) {
+          if (sizeof(tx) > TX_BYTES_LIMIT) {
             done(null, addProtocolVersion({
               result: {
                 code: 3,
+                message: `Transaction[${i}]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`
+              }
+            }));
+          } else if (!tx.tx_body || !tx.signature) {
+            done(null, addProtocolVersion({
+              result: {
+                code: 4,
                 message: `Missing properties of transaction[${i}].`
               }
             }));
@@ -189,7 +193,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
           if (!createdTx) {
             done(null, addProtocolVersion({
               result: {
-                code: 4,
+                code: 5,
                 message: `Invalid format of transaction[${i}].`
               }
             }));
@@ -209,11 +213,14 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          transactionInfo.transaction = block.transactions[index];
+          if (index >= 0) {
+            transactionInfo.transaction = block.transactions[index];
+          } else {
+            transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
+          }
         } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
           const address = transactionInfo.address;
-          const index = transactionInfo.index;
-          transactionInfo.transaction = node.tp.transactions[address][index];
+          transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === args.hash);
         }
       }
       done(null, addProtocolVersion({result: transactionInfo}));
@@ -272,11 +279,6 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
             result: p2pServer.node.db.getOwner(args.ref, args.is_global)
           }));
           return;
-        case ReadDbOperations.GET_PROOF:
-          done(null, addProtocolVersion({
-            result: p2pServer.node.db.getProof(args.ref)
-          }));
-          return;
         case ReadDbOperations.GET:
           done(null, addProtocolVersion({
             result: p2pServer.node.db.get(args.op_list, args.is_global)
@@ -328,8 +330,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result}));
     },
 
-    ain_getProof: function(args, done) {
-      const result = p2pServer.node.db.getProof(args.ref);
+    ain_getStateProof: function(args, done) {
+      const result = p2pServer.node.db.getStateProof(args.ref);
+      done(null, addProtocolVersion({result}));
+    },
+
+    ain_getStateInfo: function(args, done) {
+      const result = p2pServer.node.db.getStateInfo(args.ref);
       done(null, addProtocolVersion({result}));
     },
 
@@ -342,51 +349,38 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_getBalance: function(args, done) {
       const address = args.address;
-      const balance =
-          p2pServer.node.db.getValue(`/${PredefinedDbPaths.ACCOUNTS}/${address}/balance`) || 0;
+      const balance = p2pServer.node.db.getValue(PathUtil.getAccountBalancePath(address)) || 0;
       done(null, addProtocolVersion({result: balance}));
     },
 
     ain_getNonce: function(args, done) {
-      const address = args.address;
-      if (args.from === 'pending') {
-        if (ainUtil.areSameAddresses(p2pServer.node.account.address, address)) {
-          done(null, addProtocolVersion({result: p2pServer.node.nonce}));
-        } else {
-          const nonce = node.tp.pendingNonceTracker[address];
-          done(null, addProtocolVersion({result: nonce === undefined ? -1 : nonce}));
-        }
-      } else {
-        // get the "committed nonce" by default
-        const nonce = node.tp.committedNonceTracker[address];
-        done(null, addProtocolVersion({result: nonce === undefined ? -1 : nonce}));
-      }
+      done(null, addProtocolVersion({
+          result: p2pServer.node.getNonceForAddr(args.address, args.from === 'pending')
+        }));
     },
 
     ain_isValidator: function(args, done) {
-      const whitelisted = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${PredefinedDbPaths.WHITELIST}/${args.address}`);
-      const deposit = p2pServer.node.db.getValue(
-          `${PredefinedDbPaths.DEPOSIT_ACCOUNTS_CONSENSUS}/${args.address}`);
-      const stakeValid = deposit && deposit.value > 0 &&
-          deposit.expire_at > Date.now() + ConsensusConsts.DAY_MS;
-      done(null, addProtocolVersion({result: stakeValid && whitelisted ? stakeValid : 0}));
+      const addr = args.address;
+      const whitelisted = p2pServer.node.db.getValue(PathUtil.getConsensusWhitelistAddrPath(addr));
+      const stake = p2pServer.node.db.getValue(PathUtil.getServiceAccountBalancePath(addr));
+      done(null, addProtocolVersion({result: stake && whitelisted ? stake : 0}));
     },
 
     // Network API
     net_listening: function(args, done) {
-      const peerCount = p2pServer.sockets.length;
+      const peerCount = Object.keys(p2pServer.inbound).length;
       done(null, addProtocolVersion({result: !!peerCount}));
     },
 
     net_peerCount: function(args, done) {
-      const peerCount = p2pServer.sockets.length;
+      const peerCount = Object.keys(p2pServer.inbound).length;
       done(null, addProtocolVersion({result: peerCount}));
     },
 
     net_syncing: function(args, done) {
       // TODO(lia): return { starting, latest } with block numbers if the node is currently syncing.
-      done(null, addProtocolVersion({result: p2pServer.node.status === BlockchainNodeStatus.SYNCING}));
+      done(null, addProtocolVersion(
+          {result: p2pServer.node.state === BlockchainNodeStates.SYNCING}));
     },
 
     net_getNetworkId: function(args, done) {

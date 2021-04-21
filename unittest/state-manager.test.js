@@ -23,7 +23,7 @@ describe("state-manager", () => {
     });
   });
 
-  describe("Get APIs", () => {
+  describe("Get API", () => {
     const finalVersion = 'final version';
 
     beforeEach(() => {
@@ -73,7 +73,7 @@ describe("state-manager", () => {
     });
   });
 
-  describe("Set APIs", () => {
+  describe("Set API", () => {
     const finalVersion = 'final version';
 
     beforeEach(() => {
@@ -147,8 +147,8 @@ describe("state-manager", () => {
       });
     });
 
-    describe("renameVersion", () => {
-      it("renameVersion w/ existing version", () => {
+    describe("transferStateTree", () => {
+      it("transferStateTree w/ existing version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager._setRoot('new version', newRoot);
@@ -156,10 +156,10 @@ describe("state-manager", () => {
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
 
-        expect(manager.renameVersion(finalVersion, 'new version')).to.equal(true);
+        expect(manager.transferStateTree(finalVersion, 'new version')).to.equal(true);
       });
 
-      it("renameVersion w/ non-existing version", () => {
+      it("transferStateTree w/ non-existing version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager._setRoot('new version', newRoot);
@@ -167,16 +167,16 @@ describe("state-manager", () => {
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
 
-        expect(manager.renameVersion(finalVersion, 'non-existing version')).to.equal(false);
+        expect(manager.transferStateTree(finalVersion, 'non-existing version')).to.equal(false);
       });
 
-      it("renameVersion w/ a version of null root", () => {
+      it("transferStateTree w/ a version of null root", () => {
         manager._setRoot('new version', null);
         expect(manager.numVersions()).to.equal(3);
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
 
-        expect(manager.renameVersion(finalVersion, 'new version')).to.equal(false);
+        expect(manager.transferStateTree(finalVersion, 'new version')).to.equal(false);
       });
     });
 

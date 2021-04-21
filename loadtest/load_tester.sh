@@ -34,7 +34,7 @@ RESULT1=$(wget -qO-  http://localhost:8080/get?ref=/test/increase/first/level)
 
 diff $BASEDIR/blocks1.txt $BASEDIR/blocks2.txt
 kill  -9 $PID1 $PID2 $PID3
-rm -rf $BASEDIR/blockchain/blockchains
+rm -rf $BASEDIR/chains
 
 echo $RESULT1
 if [ "$RESULT1"=="{'code':0,'result':50000}" ] ;
@@ -45,7 +45,7 @@ else
     exit 0
 fi
 
-# NOTE(seo): '\n' in sed command does not take effect on macOS.
+# NOTE(platfowner): '\n' in sed command does not take effect on macOS.
 NUM=$(sed 's/level/level\
 /g' $BASEDIR/blocks1.txt | grep -c "level")
 

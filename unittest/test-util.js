@@ -4,8 +4,7 @@ const syncRequest = require('sync-request');
 const sleep = require('sleep').msleep;
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-const { StateVersions } = require('../common/constants');
+const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 function readConfigFile(filePath) {
@@ -55,20 +54,6 @@ function setNodeForTesting(
 
 function getTransaction(node, inputTxBody) {
   const txBody = JSON.parse(JSON.stringify(inputTxBody));
-  if (Transaction.isBatchTxBody(txBody)) {
-    const txList = [];
-    for (const tx of txBody.tx_list) {
-      if (tx.timestamp === undefined) {
-        tx.timestamp = Date.now();
-      }
-      txList.push(tx);
-    }
-    txBody.tx_list = txList;
-  } else {
-    if (txBody.timestamp === undefined) {
-      txBody.timestamp = Date.now();
-    }
-  }
   return node.createTransaction(txBody);
 }
 
@@ -77,14 +62,14 @@ function addBlock(node, txs, votes, validators) {
   const finalDb = node.createDb(node.stateManager.getFinalVersion(),
       `${StateVersions.FINAL}:${lastBlock.number + 1}`, node.bc, node.tp, true);
   finalDb.executeTransactionList(txs);
-  node.syncDb(`${StateVersions.NODE}:${lastBlock.number + 1}`);
+  node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
       lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
-      node.account.address, validators));
+      node.account.address, validators, 0, 0));
 }
 
 function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 100;
+  const MAX_ITERATION = 200;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {

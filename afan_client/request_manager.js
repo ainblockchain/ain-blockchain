@@ -1,6 +1,6 @@
-
+const _ = require('lodash');
 const Ref = require('./ref');
-const rp = require('request-promise');
+const axios = require('axios');
 
 class RequestManager {
   constructor(endpoint, root) {
@@ -10,28 +10,23 @@ class RequestManager {
   }
 
   send() {
-    const options = {
-      method: 'POST',
-      uri: this.endpoint + '/set',
-      body: {op_list: this.updates},
-      json: true, // Automatically stringifies the body to JSON
-    };
-
-    return rp(options).then(function(parsedBody) {
-      // POST succeeded
-      return parsedBody;
-    }).catch(function(err) {
-      // POST failed
+    return axios.post(this.endpoint + '/set', { op_list: this.updates })
+    .then((resp) => {
+      return _.get(resp, 'data', null);
+    }).catch((err) => {
       console.log(err);
+      return null;
     });
   }
 
   getRef(ref) {
-    const options = {
-      uri: this.endpoint + `/get_value?ref=${this.root}/${ref}`,
-      json: true,
-    };
-    return rp(options);
+    return axios.get(this.endpoint + `/get_value?ref=${this.root}/${ref}`)
+    .then((resp) => {
+      return _.get(resp, 'data', null);
+    }).catch((err) => {
+      console.log(err);
+      return null;
+    });
   }
 
   getInvestors(uid) {

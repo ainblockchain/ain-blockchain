@@ -13,21 +13,23 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.proofHash = null;
-    this.treeSize = 1;
+    this.treeHeight = null;
+    this.treeSize = null;
   }
 
-  static _create(version, isLeaf, value, proofHash, treeSize) {
+  static _create(version, isLeaf, value, proofHash, treeHeight, treeSize) {
     const node = new StateNode(version);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
     node.setProofHash(proofHash);
+    node.setTreeHeight(treeHeight);
     node.setTreeSize(treeSize);
     return node;
   }
 
   clone(version) {
     const cloned = StateNode._create(version ? version : this.version,
-        this.isLeaf, this.value, this.proofHash, this.treeSize);
+        this.isLeaf, this.value, this.proofHash, this.treeHeight, this.treeSize);
     for (const label of this.getChildLabels()) {
       const child = this.getChild(label);
       cloned.setChild(label, child);
@@ -49,6 +51,7 @@ class StateNode {
         that.value === this.value &&
         that.proofHash === this.proofHash &&
         that.version === this.version &&
+        that.treeHeight === this.treeHeight &&
         that.treeSize === this.treeSize);
   }
 
@@ -80,6 +83,7 @@ class StateNode {
           obj[`.version:${label}`] = childNode.getVersion();
           obj[`.numParents:${label}`] = childNode.numParents();
           obj[`.proofHash:${label}`] = childNode.getProofHash();
+          obj[`.treeHeight:${label}`] = childNode.getTreeHeight();
           obj[`.treeSize:${label}`] = childNode.getTreeSize();
         }
       }
@@ -88,6 +92,7 @@ class StateNode {
       obj['.version'] = this.getVersion();
       obj['.numParents'] = this.numParents();
       obj[`.proofHash`] = this.getProofHash();
+      obj[`.treeHeight`] = this.getTreeHeight();
       obj[`.treeSize`] = this.getTreeSize();
     }
 
@@ -166,7 +171,8 @@ class StateNode {
         // Does nothing.
         return;
       }
-      // NOTE(seo): Use _deleteParent() instead of deleteChild() to keep the order of children.
+      // NOTE(platfowner): Use _deleteParent() instead of deleteChild()
+      //                   to keep the order of children.
       child._deleteParent(this);
     }
     this.childMap.set(label, node);
@@ -227,6 +233,14 @@ class StateNode {
     this.version = version;
   }
 
+  getTreeHeight() {
+    return this.treeHeight;
+  }
+
+  setTreeHeight(treeHeight) {
+    this.treeHeight = treeHeight;
+  }
+
   getTreeSize() {
     return this.treeSize;
   }
@@ -246,17 +260,32 @@ class StateNode {
     }
     return ChainUtil.hashString(ChainUtil.toString(preimage));
   }
-  
+
+  verifyProofHash() {
+    return this.getProofHash() === this.buildProofHash();
+  }
+
+  computeTreeHeight() {
+    if (this.getIsLeaf()) {
+      return 0;
+    } else {
+      return this.getChildNodes().reduce(
+          (max, cur) => Math.max(max, ChainUtil.numberOrZero(cur.getTreeHeight()) + 1), 0);
+    }
+  }
+
   computeTreeSize() {
     if (this.getIsLeaf()) {
       return 1;
     } else {
-      return this.getChildNodes().reduce((acc, cur) => acc + cur.getTreeSize(), 1);
+      return this.getChildNodes().reduce(
+          (acc, cur) => acc + ChainUtil.numberOrZero(cur.getTreeSize()), 1);
     }
   }
 
-  updateProofHashAndTreeSize() {
+  updateProofHashAndStateInfo() {
     this.setProofHash(this.buildProofHash());
+    this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
   }
 }

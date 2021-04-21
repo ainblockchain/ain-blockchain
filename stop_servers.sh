@@ -1,7 +1,5 @@
 
 BASEDIR=$(dirname "$0")
-rm -rf $BASEDIR/blockchain/blockchains
-rm -rf $BASEDIR/logger/logs
-rm -rf $BASEDIR/tracker-server/logs
-killall node
-
+rm -rf $BASEDIR/chains/
+rm -rf $BASEDIR/logs/
+killall -9 node # SIGKILL

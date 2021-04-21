@@ -2,6 +2,8 @@ const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
+const _ = require('lodash');
+const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
@@ -17,11 +19,54 @@ class ChainUtil {
     return hash.substring(0, 6) + '...' + hash.substring(hash.length - 4, hash.length);
   }
 
+  static hashTxBody(txBody) {
+    return '0x' + ainUtil.hashTransaction(txBody).toString('hex');
+  }
+
+  static signTransaction(txBody, privateKey) {
+    const keyBuffer = Buffer.from(privateKey, 'hex');
+    const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
+    const sigBuffer = ainUtil.toBuffer(sig);
+    const lenHash = sigBuffer.length - 65;
+    const hashedData = sigBuffer.slice(0, lenHash);
+    const txHash = '0x' + hashedData.toString('hex');
+    return {
+      txHash,
+      signedTx: {
+        tx_body: txBody,
+        signature: sig,
+        protoVer: CURRENT_PROTOCOL_VERSION,
+      }
+    };
+  }
+
   static hashSignature(sig) {
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);
     return '0x' + hashedData.toString('hex');
+  }
+
+  /**
+   * Gets address from hash and signature.
+   */
+  static getAddressFromSignature(hash, signature) {
+    const logger = require('../logger')('CHAIN_UTIL');
+    const LOG_HEADER = 'getAddressFromSignature';
+    let address = '';
+    try {
+      const sigBuffer = ainUtil.toBuffer(signature);
+      const len = sigBuffer.length;
+      const lenHash = len - 65;
+      const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
+      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
+      address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+          ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+    } catch (err) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to extract address with error: ${JSON.stringify(err)}.`);
+    }
+    return address;
   }
 
   // TODO(lia): remove this function
@@ -64,8 +109,16 @@ class ChainUtil {
     return ruleUtil.isValAddr(value);
   }
 
+  static includes(arr, value) {
+    return ruleUtil.includes(arr, value);
+  }
+
   static isCksumAddr(addr) {
     return ruleUtil.isCksumAddr(addr);
+  }
+
+  static isServAcntName(name) {
+    return ruleUtil.isServAcntName(name);
   }
 
   static isValShardProto(value) {
@@ -90,6 +143,22 @@ class ChainUtil {
 
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
+  }
+
+  static areSameAddrs(addr1, addr2) {
+    return ruleUtil.areSameAddrs(addr1, addr2);
+  }
+
+  static parseServAcntName(accountName) {
+    return ruleUtil.parseServAcntName(accountName);
+  }
+
+  static toServiceAccountName(serviceType, serviceName, key) {
+    return ruleUtil.toServiceAccountName(serviceType, serviceName, key);
+  }
+
+  static toEscrowAccountName(source, target, escrowKey) {
+    return ruleUtil.toEscrowAccountName(source, target, escrowKey);
   }
 
   static toString(value) {
@@ -152,6 +221,10 @@ class ChainUtil {
     return ChainUtil.formatPath(labels);
   }
 
+  static getBalancePath(addrOrServAcnt) {
+    return ruleUtil.getBalancePath(addrOrServAcnt);
+  }
+
   static getJsObject(obj, path) {
     if (!ChainUtil.isArray(path)) {
       return null;
@@ -190,35 +263,94 @@ class ChainUtil {
     return true;
   }
 
-  static transactionFailed(response) {
-    if (Array.isArray(response)) {
-      for (const result of response) {
-        if (ChainUtil.checkForTransactionErrorCode(result)) {
+  static simplifyProperties(obj) {
+    const newObj = {};
+    for (const key of Object.keys(obj)) {
+      newObj[key] = true;
+    }
+    return newObj;
+  }
+
+  /**
+   * Returns true if the given result is from failed transaction or transaction list.
+   */
+  static isFailedTx(result) {
+    if (!result) {
+      return true;
+    }
+    if (Array.isArray(result)) {
+      for (const elem of result) {
+        if (ChainUtil.isFailedTxResultCode(elem.code)) {
           return true;
         }
       }
       return false;
     }
-    return ChainUtil.checkForTransactionErrorCode(response);
+    return ChainUtil.isFailedTxResultCode(result.code);
   }
 
-  static checkForTransactionErrorCode(result) {
-    return result === null || (result.code !== undefined && result.code !== 0);
-  }
-
-  static returnError(code, message) {
-    return { code, error_message: message };
+  static isFailedTxResultCode(code) {
+    return code !== 0;
   }
 
   /**
-   * Logs and returns error.
-   * 
-   * @param {*} logger logger to log with
-   * @param {*} code error code
-   * @param {*} message error message
-   * @param {*} level level to log with
+   * Returns the total gas amount of the result (esp. multi-operation result).
    */
-  static logAndReturnError(logger, code, message, level = 1) {
+  static getTotalGasAmount(result) {
+    if (!result) {
+      return 0;
+    }
+    if (Array.isArray(result)) {
+      let gasAmount = 0;
+      for (const elem of result) {
+        gasAmount += _.get(elem, 'gas.gas_amount', 0);
+      }
+      return gasAmount;
+    }
+    return _.get(result, 'gas.gas_amount', 0);
+  }
+
+  /**
+   * Calculate the gas cost (unit = ain).
+   * 
+   * @param {Number} gasPrice gas price in microain
+   * @param {Object} result transaction execution result
+   * @returns 
+   */
+  static getTotalGasCost(gasPrice, result) {
+    const { MICRO_AIN } = require('./constants');
+    return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
+  }
+
+  static getGasAmountCostTotalFromTxList(txList, resList) {
+    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
+    const gasCostTotal = resList.reduce((acc, cur, index) => {
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
+    }, 0);
+    return { gasAmountTotal, gasCostTotal };
+  }
+
+  static returnTxResult(code, message = null, gas = null) {
+    const result = { code };
+    if (message) {
+      result.error_message = message;
+    }
+    if (gas) {
+      result.gas = gas;
+    }
+    return result;
+  }
+
+  /**
+   * Logs and returns transaction result.
+   * 
+   * @param logger logger to log with
+   * @param code error code
+   * @param message error message
+   * @param level level to log with
+   * @param gas gas object
+   */
+  static logAndReturnTxResult(logger, code, message = null, level = 1, gas = null) {
     if (level === 0) {
       logger.error(message);
     } else if (level === 1) {
@@ -226,7 +358,65 @@ class ChainUtil {
     } else {
       logger.debug(message);
     }
-    return ChainUtil.returnError(code, message);
+    return ChainUtil.returnTxResult(code, message, gas);
+  }
+
+  static keyStackToMetricName(keyStack) {
+    return _.join(keyStack, ':');
+  }
+
+  static metricsToText(metrics) {
+    const lines = [];
+    for (const key in metrics) {
+      const value = metrics[key];
+      lines.push(`${key} ${value}`);
+    }
+    return _.join(lines, '\n');
+  }
+
+  static objToMetricsRecursive(obj, keyStack) {
+    if (!ChainUtil.isDict(obj)) {
+      if (ChainUtil.isNumber(obj)) {
+        return {
+          [ChainUtil.keyStackToMetricName(keyStack)]: obj
+        };
+      } else if (ChainUtil.isBool(obj)) {
+        return {
+          [ChainUtil.keyStackToMetricName(keyStack)]: obj ? 1 : 0  // Convert to a numeric value
+        };
+      }
+      return {};  // Skip non-numeric / non-boolean values.
+    }
+    const metrics = {};
+    for (const key in obj) {
+      const subObj = obj[key];
+      const subMetrics = ChainUtil.objToMetricsRecursive(subObj, [...keyStack, _.snakeCase(key)]);
+      Object.assign(metrics, subMetrics);
+    }
+    return metrics;
+  }
+
+  /**
+   * Converts given object to Prometheus metrics. * e.g. { aa: { bb: 10 }, cc: "x" } to
+   * 'aa:bb 10\ncc x'. Note that array structures or non-numeric values are skipped.
+   */
+  static objToMetrics(obj) {
+    if (!ChainUtil.isDict(obj)) {
+      return '';
+    }
+    const keyStack = [];
+    const metrics = ChainUtil.objToMetricsRecursive(obj, keyStack);
+    return ChainUtil.metricsToText(metrics);
+  }
+
+  static sleep = (ms) => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  };
+
+  static convertEnvVarInputToBool = (input) => {
+    return input.toLowerCase().startsWith('t');
   }
 }
 

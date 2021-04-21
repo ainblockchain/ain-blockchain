@@ -2,17 +2,18 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const { BLOCKCHAINS_DIR } = require('../common/constants');
+const { CHAINS_DIR } = require('../common/constants');
 const Blockchain = require('../blockchain/');
+const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const { setNodeForTesting, getTransaction } = require('./test-util')
+const { setNodeForTesting, getTransaction } = require('./test-util');
 
 describe('Blockchain', () => {
   let node1, node2;
 
   beforeEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -21,32 +22,34 @@ describe('Blockchain', () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BLOCKCHAINS_DIR);
+    rimraf.sync(CHAINS_DIR);
   });
 
-  // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
-  /*
   it('starts with genesis block', () => {
     assert.deepEqual(node1.bc.chain[0], Block.genesis());
   });
-  */
 
   it('adds new block', () => {
-    const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
+    const tx = getTransaction(node1, {
+      operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo' },
+      gas_price: 1
+    });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
-        node1.account.address, {}));
-    delete tx.created_at;
-    assert.deepEqual(node1.bc.chain[node1.bc.chain.length -1].transactions[0], tx);
+        node1.account.address, {}, 0, 0));
+    assert.deepEqual(
+        node1.bc.chain[node1.bc.chain.length -1].transactions[0],
+        Transaction.toJsObject(tx));
   });
 
-  // TODO(seo): Uncomment this test case. (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
+  // TODO(platfowner): Uncomment this test case.
+  //                   (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
   /*
   it('validates a valid chain', () => {
     const data = 'foo';
     node1.bc.addNewBlock(Block.create(
-        data, node1, node1.bc.lastBlockNumber() + 1, node1.bc.lastBlock()));
+        data, node1, node1.bc.lastBlockNumber() + 1, node1.bc.lastBlock(), 0, 0));
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(true);
   });
   */
@@ -57,11 +60,14 @@ describe('Blockchain', () => {
   });
 
   it('invalidates corrupt chain', () => {
-    const tx = getTransaction(node1, { operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo'} });
+    const tx = getTransaction(node1, {
+      operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo' },
+      gas_price: 1
+    });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
-        node1.account.address, {}));
+        node1.account.address, {}, 0, 0));
     node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
     expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
   });
@@ -79,12 +85,14 @@ describe('Blockchain', () => {
             type: 'SET_VALUE',
             ref: 'test/something',
             value: 'val'
-          }
+          },
+          gas_price: 1
         });
         const lastBlock = node1.bc.lastBlock();
+        const finalRoot = node1.stateManager.getFinalRoot();
         const block = Block.create(
-            lastBlock.hash, [], node1.tp.getValidTransactions(), lastBlock.number + 1, i, '',
-            node1.account.address, []);
+            lastBlock.hash, [], node1.tp.getValidTransactions(), lastBlock.number + 1, i,
+            finalRoot.getProofHash(), node1.account.address, [], 0, 0);
         if (block.number === 500) {
           blockHash = block.hash;
         }
@@ -106,8 +114,8 @@ describe('Blockchain', () => {
     it('can be queried by index', () => {
       assert.deepEqual(JSON.stringify(node1.bc.getChainSection(10, 30)),
           JSON.stringify(blocks.slice(9, 29)));
-      assert.deepEqual(JSON.stringify(node1.bc.getChainSection(980, 1010)),
-          JSON.stringify(blocks.slice(979, 1010)));
+      assert.deepEqual(JSON.stringify(node1.bc.getChainSection(980, 1000)),
+          JSON.stringify(blocks.slice(979, 999)));
     });
 
     it('can be queried by block number', () => {

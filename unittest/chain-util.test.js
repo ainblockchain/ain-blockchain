@@ -269,4 +269,83 @@ describe("ChainUtil", () => {
       assert.deepEqual(obj.b.ba, value);
     })
   })
+
+  describe("isFailedTx", () => {
+    it("when normal input", () => {
+      expect(ChainUtil.isFailedTx({
+        code: 0,
+        error_message: null
+      })).to.equal(false);
+
+      expect(ChainUtil.isFailedTx({
+        code: 1,
+        error_message: null
+      })).to.equal(true);
+
+      expect(ChainUtil.isFailedTx({
+        code: 100,
+        error_message: 'some message'
+      })).to.equal(true);
+    })
+
+    it("when abnormal input", () => {
+      expect(ChainUtil.isFailedTx(null)).to.equal(true);
+      expect(ChainUtil.isFailedTx(undefined)).to.equal(true);
+      expect(ChainUtil.isFailedTx(true)).to.equal(true);
+      expect(ChainUtil.isFailedTx(false)).to.equal(true);
+      expect(ChainUtil.isFailedTx('true')).to.equal(true);
+      expect(ChainUtil.isFailedTx({})).to.equal(true);
+      expect(ChainUtil.isFailedTx({
+        error_message: 'some message'
+      })).to.equal(true);
+    })
+  })
+
+  describe("getTotalGasAmount", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.getTotalGasAmount(null), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(undefined), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount({}), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: 'gas' }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: {} }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(true), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount('result'), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(0), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(1), 0);
+    })
+
+    it("when single operation result input", () => {
+      const result = {
+        "code": 0,
+        "gas": {
+          "gas_amount": 100
+        }
+      };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 100);
+    })
+
+    it("when multiple operation result input", () => {
+      const result = [
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 1
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 10
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": 100
+          }
+        },
+      ];
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 111);
+    })
+  })
 })

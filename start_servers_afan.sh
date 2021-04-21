@@ -1,21 +1,21 @@
-rm -rf blockchain/blockchains logger/log
+rm -rf ./chains/ ./logs/
 
 # PARENT CHAIN
-node ./tracker-server/index.js &
+CONSOLE_LOG=true node ./tracker-server/index.js &
 sleep 5
-ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/base node ./client/index.js &
-sleep 
-ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/base node ./client/index.js &
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node ./client/index.js &
 sleep 5
-ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/base node ./client/index.js &
-sleep 10
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node ./client/index.js &
+sleep 5
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node ./client/index.js &
+sleep 15
 
 # AFAN CHILD CHAIN
-PORT=9010 P2P_PORT=6000 node ./tracker-server/index.js &
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard PORT=9010 P2P_PORT=6000 CONSOLE_LOG=true node ./tracker-server/index.js &
 sleep 5
-PORT=9011 P2P_PORT=6001 ACCOUNT_INDEX=0 GENESIS_CONFIGS_DIR=genesis-configs/afan-shard node ./client/index.js &
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard PORT=9011 P2P_PORT=6001 ACCOUNT_INDEX=0 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node ./client/index.js &
 sleep 5
-PORT=9012 P2P_PORT=6002 ACCOUNT_INDEX=1 GENESIS_CONFIGS_DIR=genesis-configs/afan-shard node ./client/index.js &
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard PORT=9012 P2P_PORT=6002 ACCOUNT_INDEX=1 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node ./client/index.js &
 sleep 5
-PORT=9013 P2P_PORT=6003 ACCOUNT_INDEX=2 GENESIS_CONFIGS_DIR=genesis-configs/afan-shard node ./client/index.js &
-sleep 10
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard PORT=9013 P2P_PORT=6003 ACCOUNT_INDEX=2 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node ./client/index.js &
+sleep 15

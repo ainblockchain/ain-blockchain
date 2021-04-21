@@ -1,7 +1,6 @@
 const stringify = require('fast-json-stable-stringify');
-const zipper = require('zip-local');
 const sizeof = require('object-sizeof');
-const ainUtil = require('@ainblockchain/ain-util');
+const moment = require('moment');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -19,11 +18,11 @@ const {
   ProofProperties,
   StateVersions,
 } = require('../common/constants');
-const BlockFilePatterns = require('./block-file-patterns');
+const PathUtil = require('../common/path-util');
 
 class Block {
   constructor(lastHash, lastVotes, transactions, number, epoch, timestamp,
-      stateProofHash, proposer, validators) {
+      stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal) {
     this.last_votes = lastVotes;
     this.transactions = Block.sanitizeTransactions(transactions);
     // Block's header
@@ -36,6 +35,8 @@ class Block {
     this.state_proof_hash = stateProofHash;
     this.proposer = proposer;
     this.validators = validators;
+    this.gas_amount_total = gasAmountTotal;
+    this.gas_cost_total = gasCostTotal;
     // Hash of block's header
     this.hash = Block.hash(this);
     this.size = Block.getSize(this);
@@ -52,6 +53,8 @@ class Block {
       state_proof_hash: this.state_proof_hash,
       proposer: this.proposer,
       validators: this.validators,
+      gas_amount_total: this.gas_amount_total,
+      gas_cost_total: this.gas_cost_total,
     };
   }
 
@@ -63,33 +66,13 @@ class Block {
   }
 
   toString() {
-    return `Block -
-            hash:              ${ChainUtil.shortenHash(this.hash)}
-            last_hash:         ${ChainUtil.shortenHash(this.last_hash)}
-            last_votes_hash:   ${ChainUtil.shortenHash(this.last_votes_hash)}
-            transactions_hash: ${ChainUtil.shortenHash(this.transactions_hash)}
-            number:            ${this.number}
-            epoch:             ${this.epoch}
-            timestamp:         ${this.timestamp}
-            state_proof_hash:  ${this.state_proof_hash}
-            proposer:          ${this.proposer}
-            validators:        ${this.validators}
-            size:              ${this.size}
-            last_votes len:    ${this.last_votes.length}
-            transactions len:  ${this.transactions.length}
-            last_votes:        ${stringify(this.last_votes)}
-            transactions:      ${stringify(this.transactions)}`;
+    return JSON.stringify(this, null, 2);
   }
 
   static sanitizeTransactions(transactions) {
     const sanitized = [];
     transactions.forEach((tx) => {
-      sanitized.push({
-        tx_body: Transaction.sanitizeTxBody(tx.tx_body),
-        signature: tx.signature,
-        hash: tx.hash,
-        address: tx.address
-      });
+      sanitized.push(Transaction.toJsObject(tx));
     });
     return sanitized;
   }
@@ -105,19 +88,9 @@ class Block {
   }
 
   static create(lastHash, lastVotes, transactions, number, epoch,
-      stateProofHash, proposer, validators) {
+      stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal) {
     return new Block(lastHash, lastVotes, transactions, number, epoch, Date.now(),
-        stateProofHash, proposer, validators);
-  }
-
-  static getFileName(block) {
-    return BlockFilePatterns.getBlockFileName(block);
-  }
-
-  static loadBlock(blockZipFile) {
-    const unzippedfs = zipper.sync.unzip(blockZipFile).memory();
-    const blockInfo = JSON.parse(unzippedfs.read(unzippedfs.contents()[0], 'buffer').toString());
-    return Block.parse(blockInfo);
+        stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal);
   }
 
   static parse(blockInfo) {
@@ -125,7 +98,8 @@ class Block {
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes,
         blockInfo.transactions, blockInfo.number, blockInfo.epoch, blockInfo.timestamp,
-        blockInfo.state_proof_hash, blockInfo.proposer, blockInfo.validators);
+        blockInfo.state_proof_hash, blockInfo.proposer, blockInfo.validators,
+        blockInfo.gas_amount_total, blockInfo.gas_cost_total);
   }
 
   static hasRequiredFields(block) {
@@ -133,7 +107,8 @@ class Block {
         block.transactions !== undefined && block.number !== undefined &&
         block.epoch !== undefined && block.timestamp !== undefined &&
         block.state_proof_hash !== undefined && block.proposer !== undefined &&
-        block.validators !== undefined);
+        block.validators !== undefined && block.gas_amount_total !== undefined &&
+        block.gas_cost_total !== undefined);
   }
 
   static validateHashes(block) {
@@ -221,15 +196,16 @@ class Block {
     const firstTxBody = {
       nonce: -1,
       timestamp,
+      gas_price: 1,
       operation: {
         type: 'SET',
         op_list: opList,
       }
     };
-    return Transaction.signTxBody(firstTxBody, privateKey);
+    return Transaction.fromTxBody(firstTxBody, privateKey);
   }
 
-  static buildAccountsSetupTx(ownerAddress, timestamp, privateKey) {
+  static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
@@ -239,8 +215,7 @@ class Block {
         // Transfer operation
         const op = {
           type: 'SET_VALUE',
-          ref: `/${PredefinedDbPaths.TRANSFER}/${ownerAddress}/` +
-              `${accountAddress}/${i}/${PredefinedDbPaths.TRANSFER_VALUE}`,
+          ref: PathUtil.getTransferValuePath(ownerAddress, accountAddress, i),
           value: GenesisAccounts[AccountProperties.SHARES],
         };
         transferOps.push(op);
@@ -251,12 +226,36 @@ class Block {
     const secondTxBody = {
       nonce: -1,
       timestamp,
+      gas_price: 1,
       operation: {
         type: 'SET',
         op_list: transferOps
       }
     };
-    return Transaction.signTxBody(secondTxBody, privateKey);
+    return Transaction.fromTxBody(secondTxBody, privateKey);
+  }
+
+  static buildConsensusAppTx(timestamp, privateKey, ownerAddress) {
+    const thirdTxBody = {
+      nonce: -1,
+      timestamp,
+      gas_price: 1,
+      operation: {
+        type: 'SET_VALUE',
+        ref: PathUtil.getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
+        value: {
+          [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
+            [ownerAddress]: true
+          },
+          [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
+            [PredefinedDbPaths.STAKING]: {
+              [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: moment.duration(180, 'days').as('milliseconds')
+            }
+          }
+        }
+      }
+    }
+    return Transaction.fromTxBody(thirdTxBody, privateKey);
   }
 
   static buildGenesisStakingTxs(timestamp) {
@@ -271,51 +270,53 @@ class Block {
       const txBody = {
         nonce: -1,
         timestamp,
+        gas_price: 1,
         operation: {
           type: 'SET_VALUE',
-          ref: ChainUtil.formatPath([
-            PredefinedDbPaths.DEPOSIT_CONSENSUS,
-            address,
-            1,
-            PredefinedDbPaths.DEPOSIT_VALUE
-          ]),
+          ref: PathUtil.getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
           value: amount
         }
       };
-      txs.push(Transaction.signTxBody(txBody, privateKey));
+      txs.push(Transaction.fromTxBody(txBody, privateKey));
     });
     return txs;
   }
 
-  static getGenesisBlockData(genesisTime) {
+  static getGenesisBlockTxs(genesisTime) {
     const ownerAddress = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
-    const secondTx = this.buildAccountsSetupTx(ownerAddress, genesisTime, ownerPrivateKey);
+    const secondTx = this.buildAccountsSetupTx(genesisTime, ownerPrivateKey, ownerAddress);
+    const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey, ownerAddress);
     // TODO(lia): Change the logic to staking & signing by the current node
     const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
-    return [firstTx, secondTx, ...stakingTxs];
+    return [firstTx, secondTx, thirdTx, ...stakingTxs];
   }
 
-  static getGenesisStateProofHash() {
-    const tempGenesisDb =
-        new DB(new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, null, false, -1);
+  static executeGenesisTxsAndGetData(genesisTxs) {
+    const tempGenesisDb = new DB(
+        new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, null, false, -1, null);
     tempGenesisDb.initDbStates();
-    const genesisTransactions = Block.getGenesisBlockData(
-        GenesisAccounts[AccountProperties.TIMESTAMP]);
-    for (const tx of genesisTransactions) {
-      const res = tempGenesisDb.executeTransaction(tx);
-      if (ChainUtil.transactionFailed(res)) {
+    const resList = [];
+    for (const tx of genesisTxs) {
+      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx));
+      if (ChainUtil.isFailedTx(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)
         return null;
       }
+      resList.push(res);
     }
-    return tempGenesisDb.getProof('/')[ProofProperties.PROOF_HASH];
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(genesisTxs, resList);
+    return {
+      stateProofHash: tempGenesisDb.getStateProof('/')[ProofProperties.PROOF_HASH],
+      gasAmountTotal,
+      gasCostTotal
+    };
   }
 
   static genesis() {
@@ -326,14 +327,14 @@ class Block {
     const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
     const lastHash = '';
     const lastVotes = [];
-    const transactions = Block.getGenesisBlockData(genesisTime);
+    const transactions = Block.getGenesisBlockTxs(genesisTime);
     const number = 0;
     const epoch = 0;
     const proposer = ownerAddress;
     const validators = GENESIS_VALIDATORS;
-    const stateProofHash = Block.getGenesisStateProofHash();
+    const { stateProofHash, gasAmountTotal, gasCostTotal } = Block.executeGenesisTxsAndGetData(transactions);
     return new Block(lastHash, lastVotes, transactions, number, epoch, genesisTime,
-        stateProofHash, proposer, validators);
+        stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal);
   }
 }
 
