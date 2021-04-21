@@ -31,25 +31,25 @@ describe('Transaction', () => {
     setNodeForTesting(node);
 
     txBody = {
-      nonce: 10,
-      timestamp: 1568798344000,
       operation: {
         type: 'SET_VALUE',
         ref: 'path',
         value: 'val',
       },
+      timestamp: 1568798344000,
+      nonce: 10,
       gas_price: 1
     };
     tx = Transaction.fromTxBody(txBody, node.account.private_key);
 
     txBodyCustomAddress = {
-      nonce: 10,
-      timestamp: 1568798344000,
       operation: {
         type: 'SET_VALUE',
         ref: 'path',
         value: 'val',
       },
+      timestamp: 1568798344000,
+      nonce: 10,
       address: 'abcd',
       gas_price: 1
     };
@@ -63,15 +63,15 @@ describe('Transaction', () => {
         Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
 
     txBodyParentHash = {
-      nonce: 10,
-      timestamp: 1568798344000,
       operation: {
         type: 'SET_VALUE',
         ref: 'path',
         value: 'val',
       },
+      timestamp: 1568798344000,
+      nonce: 10,
+      gas_price: 1,
       parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
-      gas_price: 1
     };
     txParentHash = Transaction.fromTxBody(txBodyParentHash, node.account.private_key);
 
@@ -129,9 +129,15 @@ describe('Transaction', () => {
       expect(txCustomAddressWithoutWorkaround.extra.skip_verif).to.equal(undefined);
     });
 
+    it('fail with missing operation', () => {
+      delete txBody.operation;
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+    });
+
     it('fail with missing timestamp', () => {
       delete txBody.timestamp;
-      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
     });
 
@@ -141,10 +147,29 @@ describe('Transaction', () => {
       assert.deepEqual(tx2, null);
     });
 
-    it('fail with missing operation', () => {
-      delete txBody.operation;
+    it('fail with missing gas_price', () => {
+      delete txBody.gas_price;
       const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
+    });
+
+    it('fail with zero gas_price', () => {
+      txBody.gas_price = 0;
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+    });
+
+    it('fail with negative gas_price', () => {
+      txBody.gas_price = -1;
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+    });
+
+    it('succeed with non-positive gas_price & enableGasFeeWorkaround = true', () => {
+      FeatureFlags.enableGasFeeWorkaround = true;  // With workaround.
+      txBody.gas_price = -1;
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      expect(tx2).to.not.equal(null);
     });
   });
 
