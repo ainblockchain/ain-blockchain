@@ -30,7 +30,7 @@ const FeatureFlags = {
   // Enables develop client API.
   forceDevClientApi: false,
   // Enables gas fee related feature workaround.
-  forceGasFeeWorkaround: false,
+  enableGasFeeWorkaround: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
 };
@@ -640,7 +640,6 @@ module.exports = {
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
-  ENABLE_GAS_FEE_WORKAROUND,
   MICRO_AIN,
   MILLI_AIN,
   MessageTypes,

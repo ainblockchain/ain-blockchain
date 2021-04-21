@@ -186,6 +186,12 @@ class Transaction {
       logger.info(`Transaction body has some missing fields: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
+    const gasPrice = txBody.gas_price;
+    if (!FeatureFlags.enableGasFeeWorkaround && gasPrice <= 0) {
+      logger.info(
+          `Transaction body has non-positive gas price: ${JSON.stringify(txBody, null, 2)}`);
+      return false;
+    }
     return Transaction.isInStandardFormat(txBody);
   }
 
