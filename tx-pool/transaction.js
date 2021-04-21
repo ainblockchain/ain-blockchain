@@ -206,7 +206,7 @@ class Transaction {
   }
 
   static isValidNonce(nonce) {
-    return ChainUtil.isInteger(nonce) && (nonce >= 0 || nonce === -1 || nonce === -2);
+    return ChainUtil.isInteger(nonce) && nonce >= -2;
   }
 
   static isValidGasPrice(gasPrice) {

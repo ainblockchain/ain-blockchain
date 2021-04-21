@@ -87,6 +87,7 @@ describe('Transaction', () => {
       expect(tx).to.not.equal(null);
       expect(tx.tx_body.nonce).to.equal(txBody.nonce);
       expect(tx.tx_body.timestamp).to.equal(txBody.timestamp);
+      expect(tx.tx_body.gas_price).to.equal(txBody.gas_price);
       expect(tx.hash).to.equal(ChainUtil.hashTxBody(txBody));
       expect(tx.address).to.equal(node.account.address);
       expect(tx.extra.created_at).to.not.equal(undefined);
