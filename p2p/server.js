@@ -1,5 +1,4 @@
 /* eslint no-mixed-operators: "off" */
-const url = require('url');
 const Websocket = require('ws');
 const ip = require('ip');
 const publicIp = require('public-ip');
@@ -11,17 +10,19 @@ const v8 = require('v8');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
-const P2pClient = require('./client');
 const Consensus = require('../consensus');
 const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
+const VersionUtil = require('../common/version-util');
 const {
+  CURRENT_PROTOCOL_VERSION,
+  DATA_PROTOCOL_VERSION,
   P2P_PORT,
   HOSTING_ENV,
   COMCOM_HOST_EXTERNAL_IP,
   COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
-  BlockchainNodeStatus,
+  BlockchainNodeStates,
   PredefinedDbPaths,
   WriteDbOperations,
   GenesisSharding,
@@ -34,36 +35,41 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   buildOwnerPermissions,
-  INITIAL_MAX_CONNECTION,
-  INITIAL_MAX_OUTBOUND,
-  INITIAL_MAX_INBOUND,
-  MAX_CONNECTION_LIMIT,
-  MAX_OUTBOUND_LIMIT,
   LIGHTWEIGHT,
+  FeatureFlags
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const { sendTxAndWaitForFinalization } = require('./util');
+const {
+  sendTxAndWaitForFinalization,
+  getAddressFromSocket,
+  removeSocketConnectionIfExists,
+  signMessage,
+  getAddressFromMessage,
+  verifySignedMessage,
+  checkProtoVer,
+  closeSocketSafe
+} = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
 const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/ip';
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsu): Sign messages to tracker or peer.
 class P2pServer {
-  constructor (node, minProtocolVersion, maxProtocolVersion) {
+  constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion, maxInbound) {
     this.wsServer = null;
-    this.client = null;
+    this.client = p2pClient;
     this.node = node;
-    // TODO(minsu): Remove this from Consensus.
     this.consensus = new Consensus(this, node);
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
+    this.dataProtocolVersion = DATA_PROTOCOL_VERSION;
+    this.majorDataProtocolVersion = VersionUtil.toMajorVersion(DATA_PROTOCOL_VERSION);
     this.inbound = {};
-    this.initConnections();
+    this.maxInbound = maxInbound;
   }
 
   listen() {
@@ -96,52 +102,36 @@ class P2pServer {
       this.setPeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setUpIpAddresses().then(() => {
-      this.client = new P2pClient(this);
-      this.client.setIntervalForTrackerConnection();
-    });
+    this.setUpIpAddresses().then(() => { });
   }
 
-  getAccount() {
+  getNodeAddress() {
     return this.node.account.address;
   }
 
-  // NOTE(minsu): the total number of connection is up to more than 5 without limit.
-  // maxOutbound is for now limited equal or less than 2.
-  // maxInbound is a rest of connection after maxOutbound is set.
-  initConnections() {
-    const numConnection = process.env.MAX_CONNECTION ?
-        Number(process.env.MAX_CONNECTION) : INITIAL_MAX_CONNECTION;
-    const numOutbound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : INITIAL_MAX_OUTBOUND;
-    const numInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : INITIAL_MAX_INBOUND;
-    this.maxConnection = Math.max(numConnection, MAX_CONNECTION_LIMIT);
-    this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
-    this.maxInbound = Math.min(numInbound, numConnection - numOutbound);
-  }
-
-  // TODO(minsu): make it REST API
-  getConnectionInfo() {
-    return {
-      maxConnection: this.maxConnection,
-      maxOutbound: this.maxOutbound,
-      maxInbound: this.maxInbound,
-      incomingPeers: Object.keys(this.inbound),
-      outgoingPeers: Object.keys(this.client.outbound)
-    };
-  }
-
-  getStateVersions() {
-    return {
-      num_versions: this.node.stateManager.numVersions(),
-      version_list: this.node.stateManager.getVersionList(),
-      final_version: this.node.stateManager.getFinalVersion(),
-    };
+  getNodePrivateKey() {
+    return this.node.account.private_key;
   }
 
   getExternalIp() {
     return this.node.ipAddrExternal;
+  }
+
+  getProtocolInfo() {
+    return {
+      CURRENT_PROTOCOL_VERSION: CURRENT_PROTOCOL_VERSION,
+      COMPATIBLE_MIN_PROTOCOL_VERSION: this.minProtocolVersion,
+      COMPATIBLE_MAX_PROTOCOL_VERSION: this.maxProtocolVersion,
+      DATA_PROTOCOL_VERSION: this.dataProtocolVersion
+    };
+  }
+
+  getStateVersionStatus() {
+    return {
+      numVersions: this.node.stateManager.numVersions(),
+      versionList: this.node.stateManager.getVersionList(),
+      finalVersion: this.node.stateManager.getFinalVersion(),
+    };
   }
 
   getConsensusStatus() {
@@ -150,36 +140,42 @@ class P2pServer {
       this.consensus.getState(),
       {
         longestNotarizedChainTipsSize: this.consensus.blockPool ?
-          this.consensus.blockPool.longestNotarizedChainTips.length : 0
+            this.consensus.blockPool.longestNotarizedChainTips.length : 0
       }
     );
   }
 
-  getLastBlockSummary() {
+  getBlockStatus() {
+    const timestamp = this.node.bc.lastBlockTimestamp();
+    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
+    const elapsedTimeMs = (timestamp === genesisTime) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
       epoch: this.node.bc.lastBlockEpoch(),
-      timestamp: this.node.bc.lastBlockTimestamp(),
+      timestamp,
+      elapsedTimeMs,
     };
   }
 
   getNodeStatus() {
     return {
-      address: this.getAccount(),
-      status: this.node.status,
+      address: this.getNodeAddress(),
+      state: this.node.state,
+      stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.nonce,
-      last_block_number: this.node.bc.lastBlockNumber(),
-      db: {
-        tree_size: this.node.db.getTreeSize('/'),
-        proof: this.node.db.getProof('/'),
+      dbStatus: {
+        stateInfo: this.node.db.getStateInfo('/'),
+        stateProof: this.node.db.getStateProof('/'),
       },
-      state_versions: this.getStateVersions(),
+      stateVersionStatus: this.getStateVersionStatus(),
     };
   }
 
   getDiskUsage() {
     try {
-      return disk.checkSync(DISK_USAGE_PATH);
+      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
+      const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
+      return Object.assign({}, diskUsage, { used });
     } catch (err) {
       logger.error(err);
       return {};
@@ -214,12 +210,18 @@ class P2pServer {
         hostname: os.hostname(),
         type: os.type(),
         release: os.release(),
+        // See: https://github.com/ainblockchain/ain-blockchain/issues/181
         // version: os.version(),
         uptime: os.uptime(),
       },
       env: {
+        NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
         GENESIS_CONFIGS_DIR: process.env.GENESIS_CONFIGS_DIR,
+        MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
         ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+        P2P_PORT: process.env.P2P_PORT,
+        PORT: process.env.PORT,
+        HOSTING_ENV: process.env.HOSTING_ENV,
         DEBUG: process.env.DEBUG,
       },
     };
@@ -229,8 +231,6 @@ class P2pServer {
     return {
       txPoolSize: this.node.tp.getPoolSize(),
       txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
-      committedNonceTrackerSize: Object.keys(this.node.tp.committedNonceTracker).length,
-      pendingNonceTrackerSize: Object.keys(this.node.tp.pendingNonceTracker).length,
     };
   }
 
@@ -243,7 +243,6 @@ class P2pServer {
     this.consensus.stop();
     logger.info(`Disconnect from connected peers.`);
     this.disconnectFromPeers();
-    this.client.stop();
     logger.info(`Close server.`);
     this.wsServer.close();
   }
@@ -300,42 +299,128 @@ class P2pServer {
     });
   }
 
+  checkDataProtoVer(socket, version) {
+    if (!version || !semver.valid(version)) {
+      closeSocketSafe(this.outbound, socket);
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  // TODO(minsu): this check will be updated when data compatibility version up.
+  checkDataProtoVerForAddressRequest(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      // TODO(minsu): compatible message
+    }
+    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      // TODO(minsu): compatible message
+    }
+  }
+
+  checkDataProtoVerForConsensus(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      // TODO(minsu): compatible message
+    }
+    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with higher data protocol version.' +
+            'Discard the CONSENSUS message.');
+      }
+      return false;
+    }
+    return true;
+  }
+
+  checkDataProtoVerForTransaction(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      // TODO(minsu): compatible message
+    }
+    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with higher data protocol ver. Discard the TRANSACTION message.');
+      }
+      return false;
+    }
+    return true;
+  }
+
+  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       try {
         const data = JSON.parse(message);
-        const version = data.protoVer;
-        if (!version || !semver.valid(version)) {
-          socket.close();
+        const dataProtoVer = data.dataProtoVer;
+        if (!checkProtoVer(this.inbound, socket,
+            this.minProtocolVersion, this.maxProtocolVersion, data.protoVer)) {
           return;
         }
-        if (semver.gt(this.minProtocolVersion, version) ||
-            (this.maxProtocolVersion && semver.lt(this.maxProtocolVersion, version))) {
-          socket.close();
+        if (!this.checkDataProtoVer(socket, dataProtoVer)) {
+          const address = getAddressFromSocket(socket);
+          logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
+              `INAPPROPRIATE. Disconnect the connection.`);
           return;
         }
 
         switch (data.type) {
-          case MessageTypes.ACCOUNT_REQUEST:
-            if (!data.account) {
-              logger.error(`Broken websocket(account unknown) is established.`);
-              socket.close();
+          case MessageTypes.ADDRESS_REQUEST:
+            // TODO(minsu): Add compatibility check here after data version up.
+            // this.checkDataProtoVerForAddressRequest(dataProtoVer);
+            const address = _.get(data, 'body.address');
+            if (!address) {
+              logger.error(`Providing an address is compulsary when initiating p2p communication.`);
+              closeSocketSafe(this.inbound, socket);
+              return;
+            } else if (!data.signature) {
+              logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
+                  `communication. Cannot proceed the further communication.`);
+              closeSocketSafe(this.inbound, socket);   // NOTE(minsu): strictly close socket necessary??
               return;
             } else {
-              logger.info(`A new websocket(${data.account}) is established.`);
-              this.inbound[data.account] = socket;
-              socket.send(JSON.stringify({
-                type: MessageTypes.ACCOUNT_RESPONSE,
-                account: this.getAccount(),
-                protoVer: CURRENT_PROTOCOL_VERSION
-              }));
+              const addressFromSig = getAddressFromMessage(data);
+              if (addressFromSig !== address) {
+                logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
+                closeSocketSafe(this.inbound, socket);
+                return;
+              }
+              if (!verifySignedMessage(data, addressFromSig)) {
+                logger.error('The message is not correctly signed. Discard the message!!');
+                return;
+              }
+              logger.info(`A new websocket(${address}) is established.`);
+              this.inbound[address] = socket;
+              const body = {
+                address: this.getNodeAddress(),
+                timestamp: Date.now(),
+              };
+              const signature = signMessage(body, this.getNodePrivateKey());
+              const payload = {
+                type: MessageTypes.ADDRESS_RESPONSE,
+                body,
+                signature,
+                protoVer: CURRENT_PROTOCOL_VERSION,
+                dataProtoVer: DATA_PROTOCOL_VERSION
+              };
+              socket.send(JSON.stringify(payload));
             }
             break;
           case MessageTypes.CONSENSUS:
             logger.debug(
                 `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
-            if (this.node.status === BlockchainNodeStatus.SERVING) {
+            if (!this.checkDataProtoVerForConsensus(dataProtoVer)) {
+              return;
+            }
+            if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(data.message);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
@@ -346,39 +431,51 @@ class P2pServer {
                 `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
             if (this.node.tp.transactionTracker[data.transaction.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
-              break;
-            } else if (this.node.status === BlockchainNodeStatus.SERVING) {
-              const tx = data.transaction;
-              if (Transaction.isBatchTransaction(tx)) {
-                const newTxList = [];
-                for (const subTx of tx.tx_list) {
-                  const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
-                  if (!createdTx) {
-                    logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
-                        `${JSON.stringify(subTx, null, 2)}`);
-                    continue;
-                  }
-                  newTxList.push(createdTx);
-                }
-                if (newTxList.length > 0) {
-                  this.executeAndBroadcastTransaction(
-                      { tx_list: newTxList }, MessageTypes.TRANSACTION);
-                }
-              } else {
-                const createdTx = Transaction.create(tx.tx_body, tx.signature);
+              return;
+            }
+            if (this.node.state !== BlockchainNodeStates.SERVING) {
+              logger.debug(`[${LOG_HEADER}] Not ready to process transactions.\n` +
+                  `My node status is now ${this.node.state}.`);
+              return;
+            }
+            const tx = data.transaction;
+            if (Transaction.isBatchTransaction(tx)) {
+              if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
+                return;
+              }
+              const newTxList = [];
+              for (const subTx of tx.tx_list) {
+                const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
                 if (!createdTx) {
-                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
-                      `${JSON.stringify(tx, null, 2)}`);
-                } else {
-                  this.executeAndBroadcastTransaction(createdTx, MessageTypes.TRANSACTION);
+                  logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
+                    `${JSON.stringify(subTx, null, 2)}`);
+                  continue;
                 }
+                newTxList.push(createdTx);
+              }
+              if (newTxList.length > 0) {
+                this.executeAndBroadcastTransaction({ tx_list: newTxList });
+              }
+            } else {
+              const createdTx = Transaction.create(tx.tx_body, tx.signature);
+              if (!createdTx) {
+                logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
+                  `${JSON.stringify(tx, null, 2)}`);
+              } else {
+                this.executeAndBroadcastTransaction(createdTx);
               }
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
+            // NOTE(minsu): communicate with each other even if the data protocol is incompatible.
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(data.lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
+              return;
+            }
+            if (this.node.state !== BlockchainNodeStates.SERVING) {
+              logger.debug(`[${LOG_HEADER}] Not ready to accept chain segment request.\n` +
+                  `My node status is now ${this.node.state}.`);
               return;
             }
             // Send a chunk of 20 blocks from your blockchain to the requester.
@@ -419,15 +516,10 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      const account = this.getAccountFromSocket(socket);
-      this.removeFromInboundIfExists(account);
-      logger.info(`Disconnected from a peer: ${account || 'unknown'}`);
+      const address = getAddressFromSocket(this.inbound, socket);
+      removeSocketConnectionIfExists(this.inbound, address);
+      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
-
-    // TODO(minsu): heartbeat stuff
-    // socket.on('pong', (_) => {
-    //   logger.info(`peer(${address}) is alive.`);
-    // });
 
     socket.on('error', (error) => {
       logger.error(`Error in communication with peer ${address}: ` +
@@ -435,30 +527,18 @@ class P2pServer {
     });
   }
 
-  getAccountFromSocket(socket) {
-    return Object.keys(this.inbound).filter(account => this.inbound[account] === socket);
-  }
-
-  removeFromInboundIfExists(address) {
-    if (address in this.inbound) {
-      delete this.inbound[address];
-      logger.info(` => Updated managed peers info: ${Object.keys(this.inbound)}`);
-    }
-  }
-
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    socket.send(JSON.stringify({
+    const payload = {
       type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
       chainSegment,
       number,
       catchUpInfo,
-      protoVer: CURRENT_PROTOCOL_VERSION
-    }));
+      protoVer: CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: DATA_PROTOCOL_VERSION
+    };
+    socket.send(JSON.stringify(payload));
   }
 
-  // TODO(minsu): Seperate execute and broadcast
-  // XXX(minsu): disscussed this part off-line and it will be updated the next PR since this is
-  // also called at consensus and json-rpc.
   executeAndBroadcastTransaction(tx) {
     if (!tx) {
       return {
@@ -483,7 +563,7 @@ class P2pServer {
           tx_hash: subTx.hash,
           result
         });
-        if (!ChainUtil.transactionFailed(result)) {
+        if (!ChainUtil.isFailedTx(result)) {
           txListSucceeded.push(subTx);
         }
       }
@@ -496,7 +576,7 @@ class P2pServer {
     } else {
       const result = this.node.executeTransactionAndAddToPool(tx);
       logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
-      if (!ChainUtil.transactionFailed(result)) {
+      if (!ChainUtil.isFailedTx(result)) {
         this.client.broadcastTransaction(tx);
       }
 
@@ -514,7 +594,7 @@ class P2pServer {
     }
   }
 
-  // TODO(seo): Set .shard config for functions, rules, and owners as well.
+  // TODO(platfowner): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const ownerPrivateKey = ChainUtil.getJsObject(
@@ -624,6 +704,7 @@ class P2pServer {
           }
         ]
       },
+      gas_price: 1,
       timestamp: Date.now(),
       nonce: -1
     };

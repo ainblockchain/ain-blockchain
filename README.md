@@ -32,11 +32,11 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
-sh setup_ubuntu.sh
+sh setup_blockchain_ubuntu.sh
 ```
 - Copy files to a sharable folder & install npm packages
 ```
@@ -66,7 +66,7 @@ docker run --network="host" -d ainblockchain/tracker-server:latest
 ```
 -->
 
-### Client APIs for development and debugging
+### Client API for development and debugging
 
 #### Tracker health check
 
@@ -92,20 +92,20 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-ACCOUNT_INDEX=0 DEBUG=false STAKE=250 node client/index.js
-ACCOUNT_INDEX=1 DEBUG=false STAKE=250 node client/index.js 
-ACCOUNT_INDEX=2 DEBUG=false STAKE=250 node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js 
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
 ```
-rm -rf blockchain/blockchains logger/logs
+rm -rf chains logs
 ```
 The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDATORS parameter in 
 the genesis-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
 The genesis configs directory used is `genesis-configs/base` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-GENESIS_CONFIGS_DIR=genesis-configs/afan-shard ACCOUNT_INDEX=0 DEBUG=false STAKE=250 node client/index.js
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
 ```
 
 ### How to run tests
@@ -124,11 +124,11 @@ npm run test_integration
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
-sh setup_ubuntu.sh
+sh setup_blockchain_ubuntu.sh
 ```
 - Copy files to a sharable folder & install npm packages
 ```
@@ -178,7 +178,7 @@ npm run test_smoke
 npm run test_integration
 ```
 
-### Client APIs for development and debugging
+### Client API for development and debugging
 
 #### Node health check
 

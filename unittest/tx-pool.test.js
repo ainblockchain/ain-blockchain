@@ -2,10 +2,12 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
-const ainUtil = require('@ainblockchain/ain-util');
+const ChainUtil = require('../common/chain-util');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const {setNodeForTesting, getTransaction} = require('./test-util')
+const {setNodeForTesting, getTransaction} = require('./test-util');
+const { msleep } = require('sleep');
+const TransactionPool = require('../tx-pool');
 
 describe('TransactionPool', () => {
   let node, transaction;
@@ -13,16 +15,17 @@ describe('TransactionPool', () => {
   beforeEach(() => {
     node = new BlockchainNode();
     setNodeForTesting(node);
-
     transaction = getTransaction(node, {
       operation: {
         type: 'SET_VALUE',
         ref: 'REF',
-        value:
-        'VALUE'
-      }
+        value: 'VALUE'
+      },
+      nonce: node.nonce++,
+      gas_price: 1
     });
     node.tp.addTransaction(transaction);
+    msleep(1);
   });
 
   it('adds a transaction to the pool', () => {
@@ -41,9 +44,12 @@ describe('TransactionPool', () => {
             type: 'SET_VALUE',
             ref: 'REF',
             value: 'VALUE',
-          }
+          },
+          nonce: node.nonce++,
+          gas_price: 1
         });
         node.tp.addTransaction(t);
+        msleep(1);
       }
       node.tp.transactions[node.account.address] =
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
@@ -62,9 +68,12 @@ describe('TransactionPool', () => {
               type: 'SET_VALUE',
               ref: 'REF',
               value: 'VALUE',
-            }
-          }, true);
+            },
+            nonce: nodes[j].nonce++,
+            gas_price: 1
+          });
           node.tp.addTransaction(t);
+          msleep(1);
         }
         node.tp.transactions[nodes[j].account.address] =
             shuffleSeed.shuffle(node.tp.transactions[nodes[j].account.address]);
@@ -75,28 +84,28 @@ describe('TransactionPool', () => {
 
     it('transactions are correctly numbered', () => {
       const sortedNonces1 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.tx_body.nonce;
       });
       const sortedNonces2 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node2.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node2.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.tx_body.nonce;
       });
       const sortedNonces3 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node3.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node3.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
         return transaction.tx_body.nonce;
       });
       const sortedNonces4 = node.tp.getValidTransactions().filter((transaction) => {
-        if (ainUtil.areSameAddresses(transaction.address, node4.account.address)) {
+        if (ChainUtil.areSameAddrs(transaction.address, node4.account.address)) {
           return transaction;
         }
       }).map((transaction) => {
@@ -122,12 +131,134 @@ describe('TransactionPool', () => {
             type: 'SET_VALUE',
             ref: 'REF',
             value: 'VALUE',
-          }
+          },
+          nonce: node.nonce++,
+          gas_price: 1
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
       node.tp.cleanUpForNewBlock(block);
       assert.deepEqual(newTransactions, node.tp.transactions);
+    });
+
+    it('mergeTwoSortedArrays', () => {
+      assert.deepEqual(TransactionPool.mergeTwoSortedArrays([], []), []);
+      assert.deepEqual(
+          TransactionPool.mergeTwoSortedArrays([], [{tx_body: {timestamp: 1}}]),
+          [{tx_body: {timestamp: 1}}]);
+      assert.deepEqual(
+          TransactionPool.mergeTwoSortedArrays(
+              [{tx_body: {timestamp: 1}}],
+              [{tx_body: {timestamp: 1}}]),
+          [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 1}}]);
+      assert.deepEqual(
+          TransactionPool.mergeTwoSortedArrays(
+              [{tx_body: {timestamp: 1}}],
+              [{tx_body: {timestamp: 2}}]),
+          [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}]);
+      assert.deepEqual(
+          TransactionPool.mergeTwoSortedArrays(
+              [{tx_body: {timestamp: 2}}],
+              [{tx_body: {timestamp: 1}}]),
+          [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}]);
+      assert.deepEqual(
+          TransactionPool.mergeTwoSortedArrays(
+              [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}],
+              [{tx_body: {timestamp: 3}}]),
+          [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}, {tx_body: {timestamp: 3}}]);
+      assert.deepEqual(
+          TransactionPool.mergeTwoSortedArrays(
+              [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 3}}],
+              [{tx_body: {timestamp: 2}}]),
+          [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}, {tx_body: {timestamp: 3}}]);
+    });
+
+    it('mergeMultipleSortedArrays', () => {
+      assert.deepEqual(TransactionPool.mergeMultipleSortedArrays([]), []);
+      assert.deepEqual(TransactionPool.mergeMultipleSortedArrays([[], []]), []);
+      assert.deepEqual(
+          TransactionPool.mergeMultipleSortedArrays([[{tx_body: {timestamp: 1}}], []]),
+          [{tx_body: {timestamp: 1}}]);
+      assert.deepEqual(
+          TransactionPool.mergeMultipleSortedArrays(
+              [
+                  [{tx_body: {timestamp: 1}}],
+                  [{tx_body: {timestamp: 2}}],
+                  [{tx_body: {timestamp: 3}}]
+              ]),
+          [
+              {tx_body: {timestamp: 1}},
+              {tx_body: {timestamp: 2}},
+              {tx_body: {timestamp: 3}}
+          ]);
+      assert.deepEqual(
+          TransactionPool.mergeMultipleSortedArrays(
+              [
+                  [{tx_body: {timestamp: 3}}],
+                  [{tx_body: {timestamp: 2}}],
+                  [{tx_body: {timestamp: 1}}]
+              ]),
+          [
+              {tx_body: {timestamp: 1}},
+              {tx_body: {timestamp: 2}},
+              {tx_body: {timestamp: 3}}
+          ]);
+      assert.deepEqual(
+          TransactionPool.mergeMultipleSortedArrays(
+              [
+                  [{tx_body: {timestamp: 3}}],
+                  [{tx_body: {timestamp: 2}}, {tx_body: {timestamp: 4}}],
+                  [{tx_body: {timestamp: 1}}]
+              ]),
+          [
+              {tx_body: {timestamp: 1}},
+              {tx_body: {timestamp: 2}},
+              {tx_body: {timestamp: 3}},
+              {tx_body: {timestamp: 4}}
+          ]);
+      assert.deepEqual(
+          TransactionPool.mergeMultipleSortedArrays(
+              [
+                  [{tx_body: {timestamp: 4}}],
+                  [{tx_body: {timestamp: 5}}],
+                  [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}, {tx_body: {timestamp: 3}}]
+              ]),
+          [
+              {tx_body: {timestamp: 1}},
+              {tx_body: {timestamp: 2}},
+              {tx_body: {timestamp: 3}},
+              {tx_body: {timestamp: 4}},
+              {tx_body: {timestamp: 5}}
+          ]);
+      assert.deepEqual(
+          TransactionPool.mergeMultipleSortedArrays(
+              [
+                  [{tx_body: {timestamp: 3}}],
+                  [{tx_body: {timestamp: 3}}],
+                  [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}, {tx_body: {timestamp: 4}}]
+              ]),
+          [
+              {tx_body: {timestamp: 1}},
+              {tx_body: {timestamp: 2}},
+              {tx_body: {timestamp: 3}},
+              {tx_body: {timestamp: 3}},
+              {tx_body: {timestamp: 4}}
+          ]);
+      assert.deepEqual(
+          TransactionPool.mergeMultipleSortedArrays(
+              [
+                  [{tx_body: {timestamp: 3}}],
+                  [{tx_body: {timestamp: 3}}, {tx_body: {timestamp: 5}}],
+                  [{tx_body: {timestamp: 1}}, {tx_body: {timestamp: 2}}, {tx_body: {timestamp: 4}}]
+              ]),
+          [
+              {tx_body: {timestamp: 1}},
+              {tx_body: {timestamp: 2}},
+              {tx_body: {timestamp: 3}},
+              {tx_body: {timestamp: 3}},
+              {tx_body: {timestamp: 4}},
+              {tx_body: {timestamp: 5}}
+          ]);
     });
   });
 });

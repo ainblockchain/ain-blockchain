@@ -1,7 +1,8 @@
 #!/bin/sh
 
 if [ "$#" -lt 2 ]; then
-    echo "Usage: sh start_node.sh spring 0 0"
+    echo "Usage: sh start_node_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
+    echo "Example: sh start_node_gcp.sh spring 0 0"
     exit
 fi
 
@@ -80,7 +81,10 @@ export ACCOUNT_INDEX="$3"
 echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 
 export DEBUG=false
+export CONSOLE_LOG=false 
+export ENABLE_DEV_CLIENT_API=false 
 export LIGHTWEIGHT=false
 export STAKE=100000
 
+echo 'Starting up Node server..'
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &

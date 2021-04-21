@@ -1,10 +1,9 @@
 
 const RequestManager = require('./request_manager');
 const ProfitManager = require('./profit_manager');
-const errors = require('request-promise/errors');
 
 const INVEST_FEE = 0.1;
-const APP_NAME = 'afan';
+const APP_PATH = '/apps/afan';
 
 class AfanClient {
   constructor(endpoint) {
@@ -12,7 +11,7 @@ class AfanClient {
   }
 
   tx_invest(from, to, value) {
-    const requestManager = new RequestManager(this.endpoint, APP_NAME);
+    const requestManager = new RequestManager(this.endpoint, APP_PATH);
     requestManager.increaseBalance(from, -value);
     requestManager.increaseInvestorBalance(to, from, value);
     requestManager.increaseInvestTotal(to, value);
@@ -30,11 +29,8 @@ class AfanClient {
       const investorsResponse = await requestManager.getInvestors(to);
       investors = investorsResponse.result;
     } catch (err) {
-      if (err instanceof errors.StatusCodeError) {
-        investors = null;
-      } else {
-        throw err
-      }
+      console.log(err);
+      throw err;
     }
 
     requestManager.increaseBalance(from, -value);
@@ -43,7 +39,7 @@ class AfanClient {
   }
 
   async tx_crushOnPost(from, to, pid, value) {
-    const requestManager = new RequestManager(this.endpoint, APP_NAME);
+    const requestManager = new RequestManager(this.endpoint, APP_PATH);
     await this.shareProfit(requestManager, from, to, value);
     requestManager.increasePostCrushOn(to, pid, from, value);
 
@@ -51,7 +47,7 @@ class AfanClient {
   }
 
   async tx_crushOnReply(from, to, pid, rid, value) {
-    const requestManager = new RequestManager(this.endpoint, APP_NAME);
+    const requestManager = new RequestManager(this.endpoint, APP_PATH);
     await this.shareProfit(requestManager, from, to, value);
     requestManager.increaseReplyCrushOn(pid, rid, from, value);
 
@@ -59,16 +55,15 @@ class AfanClient {
   }
 
   async tx_adpropose(from, to, value, intermed) {
-    const requestManager = new RequestManager(this.endpoint, APP_NAME);
+    const requestManager = new RequestManager(this.endpoint, APP_PATH);
     try {
       const state = await requestManager.getAdState(from, to);
       if (state.result && state.result !== 3) {
         return {code: -4, message: 'Already proposed'};
       }
     } catch (err) {
-      if (!(err instanceof errors.StatusCodeError)) {
-        throw err
-      }
+      console.log(err);
+      throw err;
     }
     requestManager.increaseBalance(from, -value);
     requestManager.increaseBalance(intermed, value);

@@ -270,7 +270,7 @@ function setProofHashForStateTree(stateTree) {
       numAffectedNodes += setProofHashForStateTree(node);
     }
   }
-  stateTree.updateProofHashAndTreeSize();
+  stateTree.updateProofHashAndStateInfo();
   numAffectedNodes++;
 
   return numAffectedNodes;
@@ -278,7 +278,7 @@ function setProofHashForStateTree(stateTree) {
 
 function updateProofHashForAllRootPathsRecursive(node) {
   let numAffectedNodes = 0;
-  node.updateProofHashAndTreeSize();
+  node.updateProofHashAndStateInfo();
   numAffectedNodes++;
   for (const parent of node.getParentNodes()) {
     numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);
@@ -297,14 +297,28 @@ function updateProofHashForAllRootPaths(fullPath, root) {
     const label = fullPath[i];
     const child = node.getChild(label);
     if (child === null) {
-      logger.error(
-          `[${LOG_HEADER}] Trying to update proof hash for ` +
-          `non-existing path: ${ChainUtil.formatPath(fullPath.slice(0, i + 1))}.`);
-      return 0;
+      logger.info(
+          `[${LOG_HEADER}] Trying to update proof hash for non-existing path: ` +
+          `${ChainUtil.formatPath(fullPath.slice(0, i + 1))}.`);
+      break;
     }
     node = child;
   }
   return updateProofHashForAllRootPathsRecursive(node);
+}
+
+function verifyProofHashForStateTree(stateTree) {
+  if (!stateTree.verifyProofHash()) {
+    return false;
+  }
+  if (!stateTree.getIsLeaf()) {
+    for (const childNode of stateTree.getChildNodes()) {
+      if (!verifyProofHashForStateTree(childNode)) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 module.exports = {
@@ -332,4 +346,5 @@ module.exports = {
   equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
+  verifyProofHashForStateTree
 };

@@ -8,39 +8,47 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
+const Functions = require('../db/functions');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
-  BLOCKCHAINS_DIR,
-  FunctionResultCode,
-  MAX_TX_BYTES,
-  GenesisAccounts,
+  CURRENT_PROTOCOL_VERSION,
+  CHAINS_DIR,
   HASH_DELIMITER,
+  FunctionResultCode,
+  GenesisAccounts,
   ProofProperties,
+  NativeFunctionIds,
+  GasFeeConstants,
+  TX_BYTES_LIMIT,
+  BATCH_TX_LIST_SIZE_LIMIT,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
+    ENABLE_DEV_CLIENT_API: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -50,7 +58,7 @@ const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCO
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const SERVERS = [ server1, server2, server3, server4 ];
+const serverList = [ server1, server2, server3, server4 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -69,13 +77,24 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 function setUp() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+  const res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
           type: 'SET_VALUE',
           ref: 'test/test_value/some/path',
           value: 100
+        },
+        {
+          type: 'SET_VALUE',
+          ref: 'test/test_state_info/some/path',
+          value: {
+            label1: {
+              label11: 'value11',
+              label12: 'value12',
+            },
+            label2: 'value2'
+          }
         },
         {
           type: 'SET_RULE',
@@ -110,23 +129,22 @@ function setUp() {
           }
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUp() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+    console.error(`Failed to check finalization of setUp() tx.`)
   }
 }
 
 function cleanUp() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+  const res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
-          type: 'SET_OWNER',
-          ref: '/test/test_owner/some/path',
+          type: 'SET_VALUE',
+          ref: 'test/test_value/some/path',
           value: null
         },
         {
@@ -140,28 +158,27 @@ function cleanUp() {
           value: null
         },
         {
-          type: 'SET_VALUE',
-          ref: 'test/test_value/some/path',
+          type: 'SET_OWNER',
+          ref: '/test/test_owner/some/path',
           value: null
-        }
+        },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
-    console.log(`Failed to check finalization of cleanUp() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+    console.error(`Failed to check finalization of cleanUp() tx.`)
   }
 }
 
-function setUpForNativeFunctions() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+function setUpForFunctionTriggering() {
+  const res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: {
             ".function": {
               "_saveLastTx": {
@@ -173,21 +190,21 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: {
             ".write": true,
           }
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path/.last_tx/value',
+          ref: '/test/test_function_triggering/allowed_path/.last_tx/value',
           value: {
             ".write": "auth.fid === '_saveLastTx'",
           }
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
           value: {
             ".function": {
               "_saveLastTx": {
@@ -199,61 +216,152 @@ function setUpForNativeFunctions() {
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
           value: {
             ".write": true,
           }
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path/.last_tx/value',
+          ref: '/test/test_function_triggering/not_allowed_path/.last_tx/value',
           value: {
             ".write": "auth.fid === 'some function id'",
           }
         },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
+          value: {
+            ".function": {
+              "_saveLastTx": {
+                "function_type": "NATIVE",
+                "function_id": "_saveLastTx"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
+          value: {
+            ".write": true,
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/.last_tx/value',
+          value: {
+            ".write": "util.includes(auth.fids, '_saveLastTx')",
+          }
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
+          value: {
+            ".function": {
+              "_saveLastTx": {
+                "function_type": "NATIVE",
+                "function_id": "_saveLastTx"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
+          value: {
+            ".write": true,
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value',
+          value: {
+            ".write": "util.includes(auth.fids, 'some function id')",
+          }
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function_triggering/rest_function_path',
+          value: {
+            ".function": {
+              "0x11111": {
+                "function_type": "REST",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+                "function_id": "0x11111"
+              }
+            }
+          }
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/rest_function_path',
+          value: {
+            ".write": true,
+          }
+        },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUpForNativeFunctions() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+    console.error(`Failed to check finalization of setUpForFunctionTriggering() tx.`)
   }
 }
 
-function cleanUpForNativeFunctions() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+function cleanUpForFunctionTriggering() {
+  const res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/allowed_path/value',
+          ref: '/test/test_function_triggering/allowed_path/value',
           value: null
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_native_function/not_allowed_path/value',
+          ref: '/test/test_function_triggering/not_allowed_path/value',
+          value: null
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
+          value: null
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/allowed_path_with_fids/value',
+          value: null
+        },
+        {
+          type: 'SET_FUNCTION',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
+          value: null
+        },
+        {
+          type: 'SET_RULE',
+          ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
           value: null
         },
       ],
-      timestamp: Date.now(),
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.equal(_.get(res, 'result'), true);
-  if (!waitUntilTxFinalized(SERVERS, res.tx_hash)) {
-    console.log(`Failed to check finalization of cleanUpForNativeFunctions() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+    console.error(`Failed to check finalization of cleanUpForFunctionTriggering() tx.`)
   }
 }
 
@@ -261,7 +369,7 @@ describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(() => {
-    rimraf.sync(BLOCKCHAINS_DIR)
+    rimraf.sync(CHAINS_DIR)
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
@@ -282,10 +390,10 @@ describe('Blockchain Node', () => {
     server3_proc.kill()
     server4_proc.kill()
 
-    rimraf.sync(BLOCKCHAINS_DIR)
+    rimraf.sync(CHAINS_DIR)
   });
 
-  describe('APIs (gets)', () => {
+  describe('Get API', () => {
     before(() => {
       setUp();
     })
@@ -355,34 +463,6 @@ describe('Blockchain Node', () => {
         });
       })
     })
-
-    describe('/get_proof', () => {
-      it('get_proof', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof?ref=/')
-            .body.toString('utf-8'));
-        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/owners`)
-            .body.toString('utf-8'));
-        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/rules`)
-            .body.toString('utf-8'));
-        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_proof?ref=/values`)
-            .body.toString('utf-8'));
-        const functionsBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_proof?ref=/functions`)
-            .body.toString('utf-8'));
-        const dump = parseOrLog(syncRequest('GET', server1 + '/dump_final_version')
-            .body.toString('utf-8'));
-        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
-        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
-        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
-        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
-            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
-            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
-            `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
-        assert.deepEqual(body, { code: 0, result: { [ProofProperties.PROOF_HASH]: proofHash } });
-      });
-    });
 
     describe('/match_function', () => {
       it('match_function', () => {
@@ -556,6 +636,41 @@ describe('Blockchain Node', () => {
       })
     })
 
+    describe('/get_state_proof', () => {
+      it('get_state_proof', () => {
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
+            .body.toString('utf-8'));
+        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
+            .body.toString('utf-8'));
+        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
+            .body.toString('utf-8'));
+        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
+            .body.toString('utf-8'));
+        const functionsBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_proof?ref=/functions`)
+            .body.toString('utf-8'));
+        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
+        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
+        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
+        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
+        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
+            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
+            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
+            `functions${HASH_DELIMITER}${functionProof}`;
+        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+        assert.deepEqual(body, { code: 0, result: { '.proof_hash': proofHash } });
+      });
+    });
+
+    describe('/get_state_info', () => {
+      it('get_state_info', () => {
+        const infoBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_info?ref=/values/test/test_state_info/some/path`)
+                .body.toString('utf-8'));
+        assert.deepEqual(infoBody, { code: 0, result: { tree_height: 2, tree_size: 5 }});
+      });
+    });
+
     describe('ain_get', () => {
       it('returns the correct value', () => {
         const expected = 100;
@@ -682,6 +797,47 @@ describe('Blockchain Node', () => {
       })
     })
 
+    describe('ain_getStateProof', () => {
+      it('returns correct value', () => {
+        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
+            .body.toString('utf-8'));
+        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
+            .body.toString('utf-8'));
+        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
+            .body.toString('utf-8'));
+        const functionsBody = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_proof?ref=/functions`)
+            .body.toString('utf-8'));
+        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
+        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
+        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
+        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
+        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
+            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
+            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
+            `functions${HASH_DELIMITER}${functionProof}`;
+        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+
+        const ref = '/';
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, { '.proof_hash': proofHash });
+        })
+      })
+    })
+
+    describe('ain_getStateInfo', () => {
+      it('returns correct value', () => {
+        const ref = '/values/test/test_state_info/some/path';
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateInfo', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, { tree_height: 2, tree_size: 5 });
+        })
+      })
+    })
+
     describe('ain_getProtocolVersion', () => {
       it('returns the correct version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
@@ -731,7 +887,7 @@ describe('Blockchain Node', () => {
     });
   })
 
-  describe('APIs (sets)', () => {
+  describe('Set API', () => {
     beforeEach(() => {
       setUp();
     })
@@ -744,25 +900,99 @@ describe('Blockchain Node', () => {
       it('set_value', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=some/wrong/path').body.toString('utf-8')).result;
-        assert.deepEqual(resultBefore, null);
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, 100);
 
-        const request = {ref: 'test/test_value/some/path', value: "some value"};
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value"
+        };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
-        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, "some value");
       })
 
-      it('set_value with a failing operation', () => {
+      it('set_value with timestamp', () => {
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with timestamp",
+          timestamp: Date.now(),
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+
+        // Confirm that the value is set properly.
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with timestamp");
+      })
+
+      it('set_value with nonce unordered (-1)', () => {
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with nonce unordered",
+          nonce: -1,
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+
+        // Confirm that the value is set properly.
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with nonce unordered");
+      })
+
+      it('set_value with nonce strictly ordered', () => {
+        const nonce = parseOrLog(
+            syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
+        const request = {
+          ref: 'test/test_value/some/path',
+          value: "some value with nonce strictly ordered",
+          nonce,
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+
+        // Confirm that the value is set properly.
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with nonce strictly ordered");
+      })
+
+      it('set_value with failing operation', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=some/wrong/path')
@@ -798,11 +1028,13 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path2')
             .body.toString('utf-8')).result;
@@ -845,11 +1077,13 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path3')
             .body.toString('utf-8')).result;
@@ -904,11 +1138,13 @@ describe('Blockchain Node', () => {
             'POST', server1 + '/set_function', {json: request})
             .body.toString('utf-8'));
         expect(_.get(body, 'code')).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=test/test_function/some/path')
             .body.toString('utf-8')).result;
@@ -939,7 +1175,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 403,
+          "code": 404,
           "error_message": "No write_function permission on: /some/wrong/path"
         });
 
@@ -970,11 +1206,13 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=test/test_rule/some/path')
             .body.toString('utf-8')).result;
@@ -1049,11 +1287,13 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=test/test_owner/some/path')
             .body.toString('utf-8')).result;
@@ -1101,7 +1341,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('/set', () => {
-      it('set', () => {
+      it('set with successful operations', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some100/path')
@@ -1151,11 +1391,50 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.equal(_.get(body, 'result.result'), true);
+        assert.deepEqual(_.get(body, 'result.result'), [
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+        ]);
 
         // Confirm that the original value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-        waitUntilTxFinalized(SERVERS, _.get(body, 'result.tx_hash'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some100/path')
             .body.toString('utf-8')).result;
@@ -1217,10 +1496,30 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
-        assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 103,
-          "error_message": "No .write permission on: some/wrong/path"
-        });
+        assert.deepEqual(_.get(body, 'result.result'), [
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 0,
+            "gas": {
+              "gas_amount": 1
+            }
+          },
+          {
+            "code": 103,
+            "error_message": "No .write permission on: some/wrong/path"
+          }
+        ]);
 
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -1231,7 +1530,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('/batch', () => {
-      it('batch', () => {
+      it('batch with successful transactions', () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
@@ -1242,6 +1541,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
 
+        const nonce = parseOrLog(syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
         const request = {
           tx_list: [
             {
@@ -1250,7 +1550,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some200/path",
                 value: "some other200 value",
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce
             },
             {
               operation: {
@@ -1258,7 +1559,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some200/path2",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 1
             },
             {
               operation: {
@@ -1266,7 +1568,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some200/path3",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 2
             },
             {
               operation: {
@@ -1276,7 +1579,8 @@ describe('Blockchain Node', () => {
                   ".function": "some other200 function config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1286,7 +1590,8 @@ describe('Blockchain Node', () => {
                   ".write": "some other200 rule config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 4
             },
             {
               operation: {
@@ -1296,7 +1601,8 @@ describe('Blockchain Node', () => {
                   ".owner": "some other200 owner config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 5
             },
             {
               operation: {
@@ -1340,7 +1646,8 @@ describe('Blockchain Node', () => {
                   }
                 ]
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 6
             }
           ]
         };
@@ -1355,31 +1662,98 @@ describe('Blockchain Node', () => {
         }
         assert.deepEqual(body.result, [
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": [
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              }
+            ],
             "tx_hash": "erased"
           }
         ]);
@@ -1406,6 +1780,7 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_value?ref=test/test_value/some203/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
+        const nonce = parseOrLog(syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
 
         const request = {
           tx_list: [
@@ -1415,7 +1790,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some202/path",
                 value: "some other202 value",
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce
             },
             {
               operation: {
@@ -1423,7 +1799,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some202/path2",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 1
             },
             {
               operation: {
@@ -1431,7 +1808,8 @@ describe('Blockchain Node', () => {
                 ref: "test/test_value/some202/path3",
                 value: 10
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 2
             },
             {
               operation: {
@@ -1439,7 +1817,8 @@ describe('Blockchain Node', () => {
                 ref: "some/wrong/path",
                 value: "some other202 value",
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1449,7 +1828,8 @@ describe('Blockchain Node', () => {
                   ".function": "some other202 function config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1459,7 +1839,8 @@ describe('Blockchain Node', () => {
                   ".write": "some other202 rule config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 4
             },
             {
               operation: {
@@ -1469,7 +1850,8 @@ describe('Blockchain Node', () => {
                   ".owner": "some other202 owner config"
                 }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 5
             },
             {
               operation: {
@@ -1513,7 +1895,8 @@ describe('Blockchain Node', () => {
                   }
                 ]
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              nonce: nonce + 6
             }
           ]
         };
@@ -1528,38 +1911,105 @@ describe('Blockchain Node', () => {
         }
         assert.deepEqual(body.result, [
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 103,
-              "error_message": "No .write permission on: some/wrong/path"
+              "error_message": "No .write permission on: some/wrong/path",
             },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
             "tx_hash": "erased"
           },
           {
-            "result": true,
+            "result": [
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              }
+            ],
             "tx_hash": "erased"
           }
         ]);
@@ -1577,7 +2027,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_sendSignedTransaction', () => {
-      it('accepts a transaction', () => {
+      it('accepts a transaction with nonce unordered (-1)', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
@@ -1586,6 +2036,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -1598,30 +2049,78 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           const result = _.get(res, 'result.result', null);
           expect(result).to.not.equal(null);
-          result.tx_hash = 'erased';
           assert.deepEqual(res.result, {
             protoVer: CURRENT_PROTOCOL_VERSION,
             result: {
-              result: true,
-              tx_hash: "erased"
+              result: {
+                code: 0,
+                gas: {
+                  gas_amount: 1
+                }
+              },
+              tx_hash: ChainUtil.hashSignature(signature),
             }
           });
         })
       })
 
-      it('rejects a transaction that exceeds the size limit.', () => {
+      it('accepts a transaction with nonce strictly ordered', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        let longText = '';
-        for (let i = 0; i < MAX_TX_BYTES / 2; i++) {
-          longText += 'a'
-        }
+        return client.request('ain_getNonce', {
+          address: account.address,
+          from: 'pending',
+          protoVer: CURRENT_PROTOCOL_VERSION
+        })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              value: 'some other value 2',
+              ref: `test/test_value/some/path`
+            },
+            gas_price: 1,
+            timestamp: Date.now(),
+            nonce,  // strictly ordered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: {
+                  code: 0,
+                  gas: {
+                    gas_amount: 1
+                  }
+                },
+                tx_hash: ChainUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
+      })
+
+      it('rejects a transaction that exceeds its size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
             value: longText,
             ref: `test/test_long_text`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -1635,7 +2134,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
-              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
+              message: `Transaction size exceeds its limit: ${TX_BYTES_LIMIT} bytes.`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
@@ -1651,6 +2150,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -1680,6 +2180,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           // missing nonce
         };
@@ -1712,6 +2213,7 @@ describe('Blockchain Node', () => {
               ref: "test/test_value/some300/path",
               value: "some other300 value",
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -1721,6 +2223,7 @@ describe('Blockchain Node', () => {
               ref: "test/test_value/some300/path2",
               value: 10
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -1730,6 +2233,7 @@ describe('Blockchain Node', () => {
               ref: "test/test_value/some300/path3",
               value: 10
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -1741,6 +2245,7 @@ describe('Blockchain Node', () => {
                 ".function": "some other300 function config"
               }
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -1752,6 +2257,7 @@ describe('Blockchain Node', () => {
                 ".write": "some other300 rule config"
               }
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -1763,6 +2269,7 @@ describe('Blockchain Node', () => {
                 ".owner": "some other300 owner config"
               }
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           },
@@ -1808,17 +2315,122 @@ describe('Blockchain Node', () => {
                 }
               ]
             },
+            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
-        ]
+        ];
+        const resultList = [
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "to_be_set"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "to_be_set"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "to_be_set"
+          },
+          {
+            "result": {
+              "code": 103,
+              "error_message": "No .write permission on: some/wrong/path",
+            },
+            "tx_hash": "to_be_set"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "to_be_set"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "to_be_set"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas": {
+                "gas_amount": 1
+              }
+            },
+            "tx_hash": "to_be_set"
+          },
+          {
+            "result": [
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              },
+              {
+                "code": 0,
+                "gas": {
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "tx_hash": "to_be_set"
+          }
+        ];
         const txList = [];
         for (const txBody of txBodyList) {
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
           txList.push({
             tx_body: txBody,
-            signature 
+            signature
           });
         }
         return client.request('ain_sendSignedTransactionBatch', {
@@ -1827,59 +2439,134 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(Array.isArray(resultList)).to.equal(true);
-          for (let i = 0; i < resultList.length; i++) {
-            const result = resultList[i];
-            result.tx_hash = 'erased';
+          for (let i = 0; i < txList.length; i++) {
+            resultList[i].tx_hash = ChainUtil.hashSignature(txList[i].signature);
           }
           assert.deepEqual(res.result, {
-            result: [
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              },
-              {
-                result: true,
-                tx_hash: "erased"
-              }
-            ],
+            result: resultList,
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
         })
       })
 
-      it('rejects a batch transaction that exceeds the size limit.', () => {
+      it('rejects a batch transaction of invalid batch transaction format.', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
-        let longText = '';
-        for (let i = 0; i < MAX_TX_BYTES / 2; i++) {
-          longText += 'a'
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          gas_price: 1,
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: {  // should be an array
+            tx_body: txBody,
+            signature,
+          },
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            result: {
+              code: 1,
+              message: `Invalid batch transaction format.`
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('accepts a batch transaction of under transaction list size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBodyTemplate = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          gas_price: 1,
+          nonce: -1
+        };
+        const txList = [];
+        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT; i++) {  // Just under the limit.
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList.push({
+            tx_body: txBody,
+            signature,
+          });
         }
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const resultList = _.get(res, 'result.result', null);
+          expect(Array.isArray(resultList)).to.equal(true);
+          expect(resultList.length).to.equal(BATCH_TX_LIST_SIZE_LIMIT);
+          for (let i = 0; i < resultList.length; i++) {
+            expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
+          }
+        })
+      })
+
+      it('rejects a batch transaction of over transaction list size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBodyTemplate = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          gas_price: 1,
+          nonce: -1
+        };
+        const txList = [];
+        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT + 1; i++) {  // Just over the limit.
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList.push({
+            tx_body: txBody,
+            signature,
+          });
+        }
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result, {
+            result: {
+              code: 2,
+              message: `Batch transaction list size exceeds its limit: ${BATCH_TX_LIST_SIZE_LIMIT}.`
+            },
+            protoVer: CURRENT_PROTOCOL_VERSION,
+          });
+        })
+      })
+
+      it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
+        const account = ainUtil.createAccount();
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
             value: longText,
             ref: `test/test_long_text`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -1898,39 +2585,8 @@ describe('Blockchain Node', () => {
           expect(Array.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
             result: {
-              code: 1,
-              message: `Transaction size exceeds ${MAX_TX_BYTES} bytes.`,
-            },
-            protoVer: CURRENT_PROTOCOL_VERSION,
-          });
-        })
-      })
-
-      it('rejects a batch transaction of invalid batch transaction format.', () => {
-        const account = ainUtil.createAccount();
-        const client = jayson.client.http(server1 + '/json-rpc');
-        const txBody = {
-          operation: {
-            type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `test/test_value/some/path`
-          },
-          timestamp: Date.now(),
-          nonce: -1
-        };
-        const signature =
-            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransactionBatch', {
-          tx_list: {  // should be an array
-            tx_body: txBody,
-            signature,
-          },
-          protoVer: CURRENT_PROTOCOL_VERSION
-        }).then((res) => {
-          assert.deepEqual(res.result, {
-            result: {
-              code: 2,
-              message: `Invalid batch transaction format.`
+              code: 3,
+              message: `Transaction[0]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
@@ -1946,6 +2602,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           nonce: -1
         };
@@ -1960,7 +2617,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 3,
+              code: 4,
               message: `Missing properties of transaction[0].`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION,
@@ -1977,6 +2634,7 @@ describe('Blockchain Node', () => {
             value: 'some other value',
             ref: `test/test_value/some/path`
           },
+          gas_price: 1,
           timestamp: Date.now(),
           // missing nonce
         };
@@ -1993,7 +2651,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 4,
+              code: 5,
               message: `Invalid format of transaction[0].`
             },
             protoVer: CURRENT_PROTOCOL_VERSION
@@ -2003,100 +2661,334 @@ describe('Blockchain Node', () => {
     })
   })
 
-  describe('Native functions', () => {
-    const saveLastTxAllowedPath = '/test/test_native_function/allowed_path';
-    const saveLastTxNotAllowedPath = '/test/test_native_function/not_allowed_path';
+  describe('Function triggering', () => {
+    const saveLastTxAllowedPath = '/test/test_function_triggering/allowed_path';
+    const saveLastTxNotAllowedPath = '/test/test_function_triggering/not_allowed_path';
+    const saveLastTxAllowedPathWithFids = '/test/test_function_triggering/allowed_path_with_fids';
+    const saveLastTxNotAllowedPathWithFids = '/test/test_function_triggering/not_allowed_path_with_fids';
+    const setFunctionWithOwnerOnlyPath = '/test/test_function_triggering/owner_only';
+    const triggerRestFunctionPath = '/test/test_function_triggering/rest_function_path';
 
     let transferFrom; // = server1
     let transferTo; // = server2
-    let transferFromBad;     // = server3
     const transferAmount = 33;
     let transferPath;
     let transferFromBalancePath;
     let transferToBalancePath;
 
-    let depositServiceAdmin; // = server1
-    let depositActor; // = server2
-    let depositActorBad;     // = server3
-    const depositAmount = 50;
-    let depositAccountPath;
-    let depositPath;
-    let withdrawPath;
-    let depositActorBalancePath;
+    let serviceAdmin; // = server1
+    let serviceUser; // = server2
+    let serviceUserBad;     // = server3
+    const stakeAmount = 50;
+    let stakingServiceAccountBalancePath;
+    let stakePath;
+    let unstakePath;
+    let serviceUserBalancePath;
+
+    let triggerTransferToIndividualAccountPath1;
+    let triggerTransferToIndividualAccountPath2;
+    let triggerTransferToServiceAccountPath1;
+    let triggerTransferToServiceAccountPath2;
 
     before(() => {
       transferFrom = parseOrLog(
           syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
       transferTo =
           parseOrLog(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
-      transferFromBad =
-          parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
       transferPath = `/transfer/${transferFrom}/${transferTo}`;
       transferFromBalancePath = `/accounts/${transferFrom}/balance`;
       transferToBalancePath = `/accounts/${transferTo}/balance`;
 
-      depositServiceAdmin =
+      serviceAdmin =
           parseOrLog(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
-      depositActor =
+      serviceUser =
           parseOrLog(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
-      depositActorBad =
+      serviceUserBad =
           parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
-      depositAccountPath = `/deposit_accounts/test_service/${depositActor}`;
-      depositPath = `/deposit/test_service/${depositActor}`;
-      withdrawPath = `/withdraw/test_service/${depositActor}`;
-      depositActorBalancePath = `/accounts/${depositActor}/balance`;
+      stakingServiceAccountBalancePath = `/service_accounts/staking/test_service/${serviceUser}|0/balance`;
+      stakePath = `/staking/test_service/${serviceUser}/0/stake`;
+      unstakePath = `/staking/test_service/${serviceUser}/0/unstake`;
+      serviceUserBalancePath = `/accounts/${serviceUser}/balance`;
+
+      triggerTransferToIndividualAccountPath1 =
+          `/transfer/${serviceUser}/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/value`;
+      triggerTransferToIndividualAccountPath2 =
+          `/transfer/${serviceUser}/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/1/value`;
+      triggerTransferToServiceAccountPath1 =
+          `/staking/test_service_gas_fee/${serviceUser}/0/stake/100/value`;
+      triggerTransferToServiceAccountPath2 =
+          `/staking/test_service_gas_fee/${serviceUser}/0/stake/101/value`;
     })
 
     beforeEach(() => {
-      setUpForNativeFunctions();
+      setUpForFunctionTriggering();
     })
 
     afterEach(() => {
-      cleanUpForNativeFunctions();
+      cleanUpForFunctionTriggering();
     })
 
-    describe('function permission (_saveLastTx)', () => {
-      it('without function permission', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: saveLastTxNotAllowedPath + '/value',
-          value: 'some value',
-          timestamp: Date.now(),
-          nonce: -1,
-        }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/.last_tx/value'}`)
-          .body.toString('utf-8')).result
-        // Should be null.
-        expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+    describe('Function permission', () => {
+      describe('Owner only', () => {
+        beforeEach(() => {
+          const res = parseOrLog(syncRequest('POST', server2 + '/set_function', {json: {
+            ref: setFunctionWithOwnerOnlyPath,
+            value: null,
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8')).result;
+          assert.deepEqual(_.get(res, 'result.code'), 0);
+          if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+            console.error(`Failed to check finalization of owner only cleanup tx.`)
+          }
+        })
+
+        it('owner only: set_function with ownerOnly = false (_saveLastTx)', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_function', {json: {
+            ref: setFunctionWithOwnerOnlyPath,
+            value: {
+              ".function": {
+                "_saveLastTx": {
+                  "function_type": "NATIVE",
+                  "function_id": "_saveLastTx"
+                }
+              }
+            },
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const resp = parseOrLog(syncRequest('GET',
+              server2 + `/get_function?ref=${setFunctionWithOwnerOnlyPath}`)
+            .body.toString('utf-8')).result
+          // Should not be null.
+          expect(resp).to.not.equal(null);
+        });
+
+        it('owner only: set_function with ownerOnly = true (_transfer)', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_function', {json: {
+            ref: setFunctionWithOwnerOnlyPath,
+            value: {
+              ".function": {
+                "_transfer": {
+                  "function_type": "NATIVE",
+                  "function_id": "_transfer"
+                }
+              }
+            },
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(_.get(body, 'result.result'), {
+            "code": 403,
+            "error_message": "Trying to write owner-only function: _transfer"
+          })
+          const resp = parseOrLog(syncRequest('GET',
+              server2 + `/get_function?ref=${setFunctionWithOwnerOnlyPath}`)
+            .body.toString('utf-8')).result
+          // Should be null.
+          expect(resp).to.equal(null);
+        });
       });
 
-      it('with function permission', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: saveLastTxAllowedPath + '/value',
-          value: 'some value',
-          timestamp: Date.now(),
-          nonce: -1,
-        }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        if (!waitUntilTxFinalized([server2], body.result.tx_hash)) {
-          console.log(`Failed to check finalization of tx.`)
-        }
-        const lastTx = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
-          .body.toString('utf-8')).result
-        // Should be the tx hash value.
-        expect(_.get(lastTx, 'tx_hash', null)).to.equal(body.result.tx_hash);
+      describe('Write rule: auth.fid', () => {
+        it('write rule: auth.fid: without function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxNotAllowedPath + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be null.
+          expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+        });
+
+        it('write rule: auth.fid: with function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxAllowedPath + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxAllowedPath + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be the tx hash value.
+          assert.deepEqual(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        });
+      });
+
+      describe('Write rule: auth.fids', () => {
+        it('write rule: auth.fids: without function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxNotAllowedPathWithFids + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxNotAllowedPathWithFids + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be null.
+          expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
+        });
+
+        it('write rule: auth.fids: with function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: saveLastTxAllowedPathWithFids + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const lastTx = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${saveLastTxAllowedPathWithFids + '/.last_tx/value'}`)
+            .body.toString('utf-8')).result
+          // Should be the tx hash value.
+          assert.deepEqual(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        });
       });
     });
 
-    describe('_transfer', () => {
-      it('transfer', () => {
+    describe('Gas fee', () => {
+      before(() => {
+        const manageAppPath = '/manage_app/test_service_gas_fee/create/1'
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            service: {
+              staking: { lockup_duration: 1000 }
+            }
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(0);
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+      });
+
+      it("native function (_transfer) with individual account registration", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerTransferToIndividualAccountPath1,
+          value: 10,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // With account registration gas amount.
+        const functions = new Functions(null, null);
+        const gasAmountExpected = 1 +
+            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount +
+            GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
+        });
+      });
+
+      it("native function (_transfer) without individual account registration", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerTransferToIndividualAccountPath2,
+          value: 10,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // Without account registration gas amount.
+        const functions = new Functions(null, null);
+        const gasAmountExpected = 1 +
+            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
+        });
+      });
+
+      it("native function (_transfer) with service account registration", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerTransferToServiceAccountPath1,
+          value: 10,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // With account registration gas amount.
+        const functions = new Functions(null, null);
+        const gasAmountExpected = 1 +
+            functions.nativeFunctionMap[NativeFunctionIds.STAKE].execGasAmount +
+            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount +
+            GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
+        });
+      });
+
+      it("native function (_transfer) without service account registration", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerTransferToServiceAccountPath2,
+          value: 10,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // Without account registration gas amount.
+        const functions = new Functions(null, null);
+        const gasAmountExpected = 1 +
+            functions.nativeFunctionMap[NativeFunctionIds.STAKE].execGasAmount +
+            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
+        });
+      });
+
+      it("REST function with external RPC call", () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: triggerRestFunctionPath,
+          value: 'some value',
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.code, 0);
+        // With external RPC call gas amount.
+        const gasAmountExpected = 1 + GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT;
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "code": 0,
+          "gas": {
+            "gas_amount": gasAmountExpected
+          }
+        });
+      });
+    });
+
+    describe('Transfer (_transfer)', () => {
+      it('transfer: transfer', () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         let toBeforeBalance = parseOrLog(syncRequest('GET',
@@ -2105,9 +2997,11 @@ describe('Blockchain Node', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
+        assert.deepEqual(body.code, 0);
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
         const fromAfterBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const toAfterBalance = parseOrLog(syncRequest('GET',
@@ -2120,7 +3014,7 @@ describe('Blockchain Node', () => {
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
       });
 
-      it('transfer more than account balance', () => {
+      it('transfer: transfer more than account balance', () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         let toBeforeBalance = parseOrLog(syncRequest('GET',
@@ -2138,7 +3032,7 @@ describe('Blockchain Node', () => {
         expect(toAfterBalance).to.equal(toBeforeBalance);
       });
 
-      it('transfer by another address', () => {
+      it('transfer: transfer by another address', () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         let toBeforeBalance = parseOrLog(syncRequest('GET',
@@ -2156,7 +3050,7 @@ describe('Blockchain Node', () => {
         expect(toAfterBalance).to.equal(toBeforeBalance);
       });
 
-      it('transfer with a duplicated key', () => {
+      it('transfer: transfer with a duplicated key', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPath + '/1/value',
           value: transferAmount
@@ -2164,7 +3058,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equals(1);
       });
 
-      it('transfer with same addresses', () => {
+      it('transfer: transfer with same addresses', () => {
         const transferPathSameAddrs = `/transfer/${transferFrom}/${transferFrom}`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPathSameAddrs + '/4/value',
@@ -2173,7 +3067,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equals(1);
       });
 
-      it('transfer with non-checksum addreess', () => {
+      it('transfer: transfer with non-checksum addreess', () => {
         const fromLowerCase = _.toLower(transferFrom);
         const transferPathFromLowerCase = `/transfer/${fromLowerCase}/${transferTo}`;
         const bodyFromLowerCase = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
@@ -2208,256 +3102,843 @@ describe('Blockchain Node', () => {
       });
     })
 
-    describe('_deposit', () => {
-      it('setup deposit', () => {
-        const configPath = '/deposit_accounts/test_service/config'
-        const body = parseOrLog(syncRequest('POST', server2 + '/set', {json: {
-          op_list: [
-            {
-              type: 'SET_OWNER',
-              ref: configPath,
-              value: {
-                ".owner": {
-                  "owners": {
-                    "*": {
-                      "branch_owner": false,
-                      "write_owner": false,
-                      "write_rule": false
-                    },
-                    [depositServiceAdmin]: {
-                      "branch_owner": true,
-                      "write_owner": true,
-                      "write_rule": true
-                    }
-                  }
-                }
+    describe('Staking (_stake, _unstake)', () => {
+      describe('Stake', () => {
+        it('stake: setup app', () => {
+          const manageAppPath = '/manage_app/test_service/create/1'
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: manageAppPath,
+            value: {
+              admin: { [serviceAdmin]: true },
+              service: {
+                staking: { lockup_duration: 1000 }
               }
-            },
-            {
-              type: 'SET_VALUE',
-              ref: configPath,
-              value: { lockup_duration: 1000 }
             }
-          ]
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-      })
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+        })
 
-      it('deposit', () => {
-        let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: depositPath + '/1/value',
-          value: depositAmount
-        }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const depositValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositPath}/1/value`).body.toString('utf-8')).result;
-        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        const resultCode = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositPath}/1/result/code`)
-          .body.toString('utf-8')).result;
-        expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
-        expect(depositValue).to.equal(depositAmount);
-        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue + depositAmount);
-        expect(afterBalance).to.equal(beforeBalance - depositAmount);
-      });
+        it('stake: stake', () => {
+          let beforeBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: stakePath + '/1/value',
+            value: stakeAmount
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const stakeValue = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakePath}/1/value`).body.toString('utf-8')).result;
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const afterBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          const resultCode = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakePath}/1/result/code`)
+            .body.toString('utf-8')).result;
+          const stakingAppBalanceTotal = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/staking/test_service/balance_total`)
+            .body.toString('utf-8')).result;
+          expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
+          expect(stakeValue).to.equal(stakeAmount);
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance + stakeAmount);
+          expect(afterBalance).to.equal(beforeBalance - stakeAmount);
+          expect(stakingAppBalanceTotal).to.equal(stakeAmount);
+        });
 
-      it('deposit more than account balance', () => {
-        const beforeBalance = parseOrLog(syncRequest('GET', server2 +
-            `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8')).result;
-        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: depositPath + '/2/value',
-          value: beforeBalance + 1
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
-        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
-        expect(afterBalance).to.equal(beforeBalance);
-      });
+        it('stake: stake more than account balance', () => {
+          const beforeBalance = parseOrLog(syncRequest('GET', server2 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: stakePath + '/2/value',
+            value: beforeBalance + 1
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const afterBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance);
+          expect(afterBalance).to.equal(beforeBalance);
+        });
 
-      it('deposit by another address', () => {
-        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
-          ref: `${depositPath}/3/value`,
-          value: depositAmount
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
-        const depositRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositPath}/3`).body.toString('utf-8')).result;
-        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        expect(depositRequest).to.equal(null);
-        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
-      });
+        it('stake: stake by another address', () => {
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
+            ref: `${stakePath}/3/value`,
+            value: stakeAmount
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+          const stakeRequest = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakePath}/3`).body.toString('utf-8')).result;
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          expect(stakeRequest).to.equal(null);
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance);
+        });
 
-      it('deposit with invalid timestamp', () => {
-        const account = ainUtil.createAccount();
-        depositTransferPath = `/transfer/${transferFrom}/${account.address}`;
-        const res = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: depositTransferPath + '/100/value',
-          value: 1000
-        }}).body.toString('utf-8')).result;
-        waitUntilTxFinalized(SERVERS, res.tx_hash);
-        const txBody = {
-          operation: {
-            type: 'SET_VALUE',
-            value: depositAmount,
-            ref: `deposit/test_service/${account.address}/1/value`
-          },
-          timestamp: Date.now() + 100000,
-          nonce: 0
-        }
-        const signature =
-            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        it('stake: stake with invalid timestamp', () => {
+          const account = ainUtil.createAccount();
+          const transferPath = `/transfer/${transferFrom}/${account.address}`;
+          const res = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: transferPath + '/100/value',
+            value: 1000
+          }}).body.toString('utf-8')).result;
+          if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              value: stakeAmount,
+              ref: `/staking/test_service/${account.address}/0/stake/1/value`
+            },
+            gas_price: 1,
+            timestamp: Date.now() + 100000,
+            nonce: 0
+          }
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
 
-        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_sendSignedTransaction', {
-          tx_body: txBody,
-          signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
-        }).then(res => {
-          const depositResult = parseOrLog(syncRequest('GET',
-              server2 + `/get_value?ref=/deposit/test_service/${account.address}/1/result/code`)
-              .body.toString('utf-8')).result;
-          expect(depositResult).to.equal(FunctionResultCode.FAILURE);
+          const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+          return jsonRpcClient.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: CURRENT_PROTOCOL_VERSION
+          }).then(res => {
+            const stakeResult = parseOrLog(syncRequest('GET',
+                server2 + `/get_value?ref=/staking/test_service/${account.address}/0/stake/1/result/code`)
+                .body.toString('utf-8')).result;
+            expect(stakeResult).to.equal(FunctionResultCode.FAILURE);
+          });
+        });
+
+        it('stake: stake with the same record_id', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: stakePath + '/1/value',
+            value: stakeAmount
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it('stake: stake with non-checksum addreess', () => {
+          const addrLowerCase = _.toLower(serviceUser);
+          const stakePathLowerCase = `/staking/checksum_addr_test_service/${addrLowerCase}/0/stake`;
+          const bodyLowerCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: stakePathLowerCase + '/101/value',
+            value: stakeAmount
+          }}).body.toString('utf-8'));
+          expect(bodyLowerCase.code).to.equals(1);
+
+          const addrUpperCase = _.toUpper(serviceUser);
+          const stakePathUpperCase = `/staking/checksum_addr_test_service/${addrUpperCase}/0/stake`;
+          const bodyUpperCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: stakePathUpperCase + '/102/value',
+            value: stakeAmount
+          }}).body.toString('utf-8'));
+          expect(bodyUpperCase.code).to.equals(1);
         });
       });
 
-      it('deposit with the same deposit_id', () => {
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: depositPath + '/1/value',
-          value: depositAmount
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
-      });
+      describe('Unstake', () => {
+        it('unstake: unstake by another address', () => {
+          let beforeBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/accounts/${serviceUserBad}/balance`)
+              .body.toString('utf-8')).result;
+          let beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
+            ref: `${unstakePath}/1/value`,
+            value: stakeAmount
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+          const unstakeRequest = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${unstakePath}/1`).body.toString('utf-8')).result;
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const balance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/accounts/${serviceUserBad}/balance`)
+              .body.toString('utf-8')).result;
+          expect(unstakeRequest).to.equal(null);
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance);
+          expect(balance).to.equal(beforeBalance);
+        });
 
-      it('deposit with non-checksum addreess', () => {
-        const addrLowerCase = _.toLower(depositActor);
-        const depositPathLowerCase = `/deposit/checksum_addr_test_service/${addrLowerCase}`;
-        const bodyLowerCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: depositPathLowerCase + '/101/value',
-          value: depositAmount
-        }}).body.toString('utf-8'));
-        expect(bodyLowerCase.code).to.equals(1);
+        it('unstake: unstake more than staked amount', () => {
+          let beforeBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          let beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: `${unstakePath}/1/value`,
+            value: beforeStakingAccountBalance + 1
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const balance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance);
+          expect(balance).to.equal(beforeBalance);
+        });
 
-        const addrUpperCase = _.toUpper(depositActor);
-        const depositPathUpperCase = `/deposit/checksum_addr_test_service/${addrUpperCase}`;
-        const bodyUpperCase = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: depositPathUpperCase + '/102/value',
-          value: depositAmount
-        }}).body.toString('utf-8'));
-        expect(bodyUpperCase.code).to.equals(1);
+        it('unstake: unstake', () => {
+          const beforeBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: `${unstakePath}/2/value`,
+            value: stakeAmount
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const afterBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          const resultCode = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${unstakePath}/2/result/code`)
+              .body.toString('utf-8')).result;
+          const stakingAppBalanceTotal = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/staking/test_service/balance_total`)
+            .body.toString('utf-8')).result;
+          expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance - stakeAmount);
+          expect(afterBalance).to.equal(beforeBalance + stakeAmount);
+          expect(stakingAppBalanceTotal).to.equal(0);
+        });
+
+        it('unstake: stake after unstake', () => {
+          const newStakingAmount = 100;
+          const beforeBalance = parseOrLog(syncRequest('GET', server2 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET', server2 +
+              `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: stakePath + '/3/value',
+            value: newStakingAmount
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const stakeValue = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakePath}/3/value`).body.toString('utf-8')).result;
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const afterBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          const resultCode = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakePath}/3/result/code`)
+              .body.toString('utf-8')).result;
+          expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
+          expect(stakeValue).to.equal(newStakingAmount);
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance + newStakingAmount);
+          expect(afterBalance).to.equal(beforeBalance - newStakingAmount);
+        });
       });
     });
 
-    describe('_withdraw', () => {
-      it('withdraw by another address', () => {
-        let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/accounts/${depositActorBad}/balance`)
-            .body.toString('utf-8')).result;
-        let beforeDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
-          ref: `${withdrawPath}/1/value`,
-          value: depositAmount
+    describe('Payments (_pay, _claim)', () => {
+      it('payments: non-app admin cannot write pay records', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+              ref: `/payments/test_service/${serviceUser}/0/pay/key1`,
+              value: {
+                amount: 100
+              }
+            }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('payments: amount = 0', () => {
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: 0
+          }
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const withdrawRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${withdrawPath}/1`).body.toString('utf-8')).result;
-        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/accounts/${depositActorBad}/balance`)
-            .body.toString('utf-8')).result;
-        expect(withdrawRequest).to.equal(null);
-        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
-        expect(balance).to.equal(beforeBalance);
       });
 
-      it('withdraw more than deposited amount', () => {
-        let beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        let beforeDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${withdrawPath}/1/value`,
-          value: beforeDepositAccountValue + 1
+      it('payments: amount is not a number', () => {
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: 'test'
+          }
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(1);
-        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const balance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue);
-        expect(balance).to.equal(beforeBalance);
       });
 
-      it('withdraw', () => {
-        const beforeBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        const beforeDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${withdrawPath}/2/value`,
-          value: depositAmount
+      it('payments: payment amount > admin balance', () => {
+        const adminBalance = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: adminBalance + 1
+          }
         }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        const resultCode = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${withdrawPath}/2/result/code`)
-            .body.toString('utf-8')).result;
-        expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
-        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue - depositAmount);
-        expect(afterBalance).to.equal(beforeBalance + depositAmount);
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const paymentResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${paymentRef}/result/code`).body.toString('utf-8')).result;
+        expect(paymentResult).to.equals(FunctionResultCode.INTERNAL_ERROR);
       });
 
-      it('deposit after withdraw', () => {
-        const newDepositAmount = 100;
-        const beforeBalance = parseOrLog(syncRequest('GET', server2 +
-            `/get_value?ref=/accounts/${depositActor}/balance`).body.toString('utf-8')).result;
-        const beforeDepositAccountValue = parseOrLog(syncRequest('GET', server2 +
-            `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: depositPath + '/3/value',
-          value: newDepositAmount
+      it('payments: app admin can write pay records', () => {
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/pay/key2`;
+        const amount = adminBalanceBefore - 1;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount
+          }
         }}).body.toString('utf-8'));
-        assert.equal(_.get(body, 'result.result'), true);
-        assert.equal(body.code, 0);
-        waitUntilTxFinalized(SERVERS, body.result.tx_hash);
-        const depositValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositPath}/3/value`).body.toString('utf-8')).result;
-        const afterDepositAccountValue = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositAccountPath}/value`).body.toString('utf-8')).result;
-        const afterBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositActorBalancePath}`).body.toString('utf-8')).result;
-        const resultCode = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${depositPath}/3/result/code`)
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const paymentResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${paymentRef}/result/code`).body.toString('utf-8')).result;
+        expect(paymentResult).to.equals(FunctionResultCode.SUCCESS);
+        const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        expect(adminBalanceAfter).to.equals(adminBalanceBefore - amount);
+        const serviceAccountBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
-        expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
-        expect(depositValue).to.equal(newDepositAmount);
-        expect(afterDepositAccountValue).to.equal(beforeDepositAccountValue + newDepositAmount);
-        expect(afterBalance).to.equal(beforeBalance - newDepositAmount);
+        assert.deepEqual(serviceAccountBalance, amount);
+      });
+
+      it('payments: non-app admin cannot write claim records', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+              ref: `/payments/test_service/${serviceUser}/0/claim/key1`,
+              value: {
+                amount: 100,
+                target: serviceAdmin
+              }
+            }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('payments: claim amount > payment balance', () => {
+        const paymentBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/claim/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: paymentBalance + 1,
+            target: serviceAdmin
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const paymentResult = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=${paymentRef}/result/code`).body.toString('utf-8')).result;
+        expect(paymentResult).to.equals(FunctionResultCode.INTERNAL_ERROR);
+      });
+
+      it('payments: invalid claim target', () => {
+        const paymentBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        const paymentRef = `/payments/test_service/${serviceUser}/0/claim/key1`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentRef,
+          value: {
+            amount: paymentBalance,
+            target: 'INVALID_TARGET'
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equals(1);
+      });
+
+      it('payments: app admin can claim payments (target = address)', () => {
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const paymentClaimRef = `/payments/test_service/${serviceUser}/0/claim/key2`;
+        const paymentBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentClaimRef,
+          value: {
+            amount: paymentBalance,
+            target: serviceAdmin
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const paymentResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${paymentClaimRef}/result/code`).body.toString('utf-8')).result;
+        expect(paymentResult).to.equals(FunctionResultCode.SUCCESS);
+        const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        expect(adminBalanceAfter).to.equals(adminBalanceBefore + paymentBalance);
+        const serviceAccountBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                .body.toString('utf-8')).result;
+        expect(serviceAccountBalance).to.equals(0);
+      });
+
+      it('payments: app admin can claim payments + hold in escrow', () => {
+        // pay
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const payRef = `/payments/test_service/${serviceUser}/0/pay/key4`;
+        const amount = adminBalanceBefore - 1;
+        let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: payRef,
+          value: {
+            amount
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const payResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${payRef}/result/code`).body.toString('utf-8')).result;
+        expect(payResult).to.equals(FunctionResultCode.SUCCESS);
+        // open escrow
+        const escrowConfigRef = `/escrow/payments|test_service|${serviceUser}|0/${serviceAdmin}/0/config`;
+        body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: escrowConfigRef,
+          value: {
+            admin: {
+              [serviceAdmin]: true
+            }
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        // claim + hold in escrow
+        const claimRef = `/payments/test_service/${serviceUser}/0/claim/key4`;
+        const paymentBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: claimRef,
+          value: {
+            amount: paymentBalance,
+            target: serviceAdmin,
+            escrow_key: 0
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const claimResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${claimRef}/result/code`).body.toString('utf-8')).result;
+        expect(claimResult).to.equals(FunctionResultCode.SUCCESS);
+        const serviceAccountName = `payments|test_service|${serviceUser}|0:${serviceAdmin}:0`;
+        const escrowServiceAccountBalance = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/service_accounts/escrow/escrow/${serviceAccountName}/balance`)
+            .body.toString('utf-8')).result;
+        expect(escrowServiceAccountBalance).to.equals(paymentBalance);
+        const userServiceAccountBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                .body.toString('utf-8')).result;
+        expect(userServiceAccountBalance).to.equals(0);
+        // release escrow
+        const releaseEscrowRef = `/escrow/payments|test_service|${serviceUser}|0/${serviceAdmin}/0/release/key0`;
+        body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: releaseEscrowRef,
+          value: {
+            ratio: 1
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        expect(adminBalanceAfter).to.equals(adminBalanceBefore);
+      });
+
+      it('payments: app admin can claim payments (target = service account)', () => {
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const payRef = `/payments/test_service/${serviceUser}/0/pay/key3`;
+        const amount = adminBalanceBefore - 1;
+        let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: payRef,
+          value: {
+            amount
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const payResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${payRef}/result/code`).body.toString('utf-8')).result;
+        expect(payResult).to.equals(FunctionResultCode.SUCCESS);
+
+        const claimRef = `/payments/test_service/${serviceUser}/0/claim/key3`;
+        const paymentBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: claimRef,
+          value: {
+            amount: paymentBalance,
+            target: `payments|test_service|${serviceAdmin}|0`
+          }
+        }}).body.toString('utf-8'));
+        if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+          console.error(`Failed to check finalization of tx.`)
+        }
+        const claimResult = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=${claimRef}/result/code`).body.toString('utf-8')).result;
+        expect(claimResult).to.equals(FunctionResultCode.SUCCESS);
+        const adminServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceAdmin}|0/balance`)
+                .body.toString('utf-8')).result;
+        expect(adminServiceAccountBalanceAfter).to.equals(paymentBalance);
+        const userServiceAccountBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                .body.toString('utf-8')).result;
+        expect(userServiceAccountBalance).to.equals(0);
+      });
+    });
+
+    describe('Escrow (_hold, _release)', () => {
+      describe('Escrow: individual -> individual', () => {
+        it('escrow: individual -> individual: open escrow', () => {
+          const configRef = `/escrow/${serviceUser}/${serviceAdmin}/0/config`;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: configRef,
+            value: {
+              admin: {
+                [serviceAdmin]: true
+              }
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const escrowAccountConfig = parseOrLog(syncRequest('GET', server1 + `/get_value?ref=${configRef}`)
+              .body.toString('utf-8')).result;
+          assert.deepEqual(escrowAccountConfig, { admin: { [serviceAdmin]: true } });
+        });
+
+        it("escrow: individual -> individual: cannot open escrow if it's already open", () => {
+          const configRef = `/escrow/${serviceUser}/${serviceAdmin}/0/config`;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: configRef,
+            value: {
+              admin: {
+                [serviceAdmin]: true
+              }
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("escrow: individual -> individual: non-source account cannot write hold", () => {
+          const key = Date.now();
+          const holdRef = `/escrow/${serviceUser}/${serviceAdmin}/0/hold/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: userBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("escrow: individual -> individual: source account can write hold", () => {
+          const key = Date.now();
+          const holdRef = `/escrow/${serviceUser}/${serviceAdmin}/0/hold/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: userBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${holdRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalance = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalance).to.equals(userBalanceBefore);
+        });
+
+        it("escrow: individual -> individual: non-admin account cannot write release", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 1
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("escrow: individual -> individual: invalid ratio (ratio = -1)", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: -1
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("escrow: individual -> individual: invalid ratio (ratio = 1.1)", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 1.1
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("escrow: individual -> individual: admin account can write release (ratio = 0)", () => {
+          const key = Date.now();
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 0
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(0);
+          const userBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          expect(userBalanceAfter).to.equals(userBalanceBefore + escrowServiceAccountBalanceBefore);
+        });
+      });
+
+      describe('Escrow: service -> individual', () => {
+        it('escrow: service -> individual: open escrow', () => {
+          const key = Date.now();
+          const payRef = `/payments/test_service/${serviceUser}/0/pay/${key}`;
+          const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+          const amount = adminBalanceBefore;
+          let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: payRef,
+            value: {
+              amount
+            }
+          }}).body.toString('utf-8'));
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          // open escrow
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const configRef = `/escrow/${source}/${target}/1/config`;
+          body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: configRef,
+            value: {
+              admin: {
+                [serviceAdmin]: true
+              }
+            },
+            nonce: -1
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const escrowAccountConfig = parseOrLog(syncRequest('GET', server1 + `/get_value?ref=${configRef}`)
+              .body.toString('utf-8')).result;
+          assert.deepEqual(escrowAccountConfig, { admin: { [serviceAdmin]: true } });
+        });
+
+        it("escrow: service -> individual: non-service admin cannot write hold", () => {
+          const key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: paymentBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(1);
+        });
+
+        it("escrow: service -> individual: service admin can write hold", () => {
+          const key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: paymentBalanceBefore
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const holdResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${holdRef}/result/code`).body.toString('utf-8')).result;
+          expect(holdResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalance = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalance).to.equals(paymentBalanceBefore);
+        });
+
+        it("escrow: service -> individual: admin account can write release (ratio = 0, refund to payments via _transfer)", () => {
+          const key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const releaseRef = `/escrow/${source}/${target}/1/release/${key}`;
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 0
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const releaseResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
+          expect(releaseResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(0);
+          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          expect(paymentBalanceAfter).to.equals(paymentBalanceBefore + escrowServiceAccountBalanceBefore);
+        });
+
+        it("escrow: service -> individual: escrow admin account can write release (ratio = 0.5)", () => {
+          // hold
+          let key = Date.now();
+          const source = `payments|test_service|${serviceUser}|0`;
+          const target = serviceAdmin;
+          const holdRef = `/escrow/${source}/${target}/1/hold/${key}`;
+          const paymentBalance = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          let body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: holdRef,
+            value: {
+              amount: paymentBalance
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          // release
+          key = Date.now();
+          const releaseRef = `/escrow/${source}/${target}/1/release/${key}`;
+          const paymentBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: {
+              ratio: 0.5
+            }
+          }}).body.toString('utf-8'));
+          expect(body.code).to.equals(0);
+          if (!waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          const releaseResult = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=${releaseRef}/result/code`).body.toString('utf-8')).result;
+          expect(releaseResult).to.equals(FunctionResultCode.SUCCESS);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${source}:${target}:1/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(0);
+          const paymentBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/service_accounts/payments/test_service/${serviceUser}|0/balance`)
+                  .body.toString('utf-8')).result;
+          expect(paymentBalanceAfter).to.equals(paymentBalanceBefore + escrowServiceAccountBalanceBefore / 2);
+          const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+          expect(adminBalanceAfter).to.equals(adminBalanceBefore + escrowServiceAccountBalanceBefore / 2);
+        });
       });
     });
   });
-})
+});

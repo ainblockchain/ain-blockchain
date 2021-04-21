@@ -25,15 +25,101 @@
       }
     }
   },
-  "deposit": {
-    "$service": {
+  "escrow": {
+    "$source_account": {
+      "$target_account": {
+        "$escrow_key": {
+          "hold": {
+            "$record_id": {
+              ".function": {
+                "_hold": {
+                  "function_type": "NATIVE",
+                  "function_id": "_hold"
+                }
+              }
+            }
+          },
+          "release": {
+            "$record_id": {
+              ".function": {
+                "_release": {
+                  "function_type": "NATIVE",
+                  "function_id": "_release"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "manage_app": {
+    "$app_name": {
+      "create": {
+        "$record_id": {
+          ".function": {
+            "_createApp": {
+              "function_type": "NATIVE",
+              "function_id": "_createApp"
+            }
+          }
+        }
+      }
+    }
+  },
+  "payments": {
+    "$service_name": {
       "$user_addr": {
-        "$deposit_id": {
-          "value": {
-            ".function": {
-              "_deposit": {
-                "function_type": "NATIVE",
-                "function_id": "_deposit"
+        "$payment_key": {
+          "pay": {
+            "$record_id": {
+              ".function": {
+                "_pay": {
+                  "function_type": "NATIVE",
+                  "function_id": "_pay"
+                }
+              }
+            }
+          },
+          "claim": {
+            "$record_id": {
+              ".function": {
+                "_claim": {
+                  "function_type": "NATIVE",
+                  "function_id": "_claim"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "staking": {
+    "$service_name": {
+      "$user_addr": {
+        "$staking_key": {
+          "stake": {
+            "$record_id": {
+              "value": {
+                ".function": {
+                  "_stake": {
+                    "function_type": "NATIVE",
+                    "function_id": "_stake"
+                  }
+                }
+              }
+            }
+          },
+          "unstake": {
+            "$record_id": {
+              "value": {
+                ".function": {
+                  "_unstake": {
+                    "function_type": "NATIVE",
+                    "function_id": "_unstake"
+                  }
+                }
               }
             }
           }
@@ -50,22 +136,6 @@
               "_transfer": {
                 "function_type": "NATIVE",
                 "function_id": "_transfer"
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "withdraw":{
-    "$service": {
-      "$user_addr": {
-        "$withdraw_id": {
-          "value": {
-            ".function": {
-              "_withdraw": {
-                "function_type": "NATIVE",
-                "function_id": "_withdraw"
               }
             }
           }
