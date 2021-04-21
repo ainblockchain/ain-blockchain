@@ -863,11 +863,14 @@ class DB {
     }
     if (!ChainUtil.isFailedTx(result)) {
       const gasPrice = tx.tx_body.gas_price;
-      // Devel methods for bypassing the gas fee
-      if (FeatureFlags.enableGasFeeWorkaround && gasPrice === -1) {
+      if (gasPrice <= 0) {
+        if (FeatureFlags.enableGasFeeWorkaround) { // Devel methods for bypassing the gas fee
           // Skip.
-      } else if (gasPrice <= 0) {
-        return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
+        } else {
+          // NOTE(platfowner): Just in case since non-positive gas prices are already checked
+          //                   in isValidTxBody().
+          return ChainUtil.returnTxResult(15, `Non-positive gas price: ${gasPrice}`);
+        }
       } else {
         // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
         // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
