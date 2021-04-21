@@ -154,10 +154,12 @@ class Transaction {
       operation: Transaction.sanitizeOperation(txBody.operation),
       nonce: ChainUtil.numberOrZero(txBody.nonce),
       timestamp: ChainUtil.numberOrZero(txBody.timestamp),
-      gas_price: ChainUtil.numberOrZero(txBody.gas_price)
     };
     if (txBody.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
+    }
+    if (txBody.gas_price !== undefined) {
+      sanitized.gas_price = ChainUtil.numberOrZero(txBody.gas_price);
     }
     // A devel method for bypassing the transaction verification.
     if (txBody.address !== undefined) {
@@ -189,7 +191,7 @@ class Transaction {
 
   static hasRequiredFields(txBody) {
     return txBody && txBody.timestamp !== undefined && txBody.nonce !== undefined &&
-        txBody.operation !== undefined && txBody.gas_price !== undefined;
+        txBody.operation !== undefined;
   }
 
   static isInStandardFormat(txBody) {
