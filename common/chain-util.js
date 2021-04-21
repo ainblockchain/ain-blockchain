@@ -318,9 +318,8 @@ class ChainUtil {
    * @returns 
    */
   static getTotalGasCost(gasPrice, result) {
-    const { MICRO_AIN, ENABLE_GAS_FEE_WORKAROUND } = require('./constants');
-    if (ENABLE_GAS_FEE_WORKAROUND && gasPrice === -1) return 0;
-    if (gasPrice === undefined) gasPrice = 1; // Default gas price = 1 microain
+    const { MICRO_AIN } = require('./constants');
+    if (gasPrice === undefined) gasPrice = 0; // Default gas price = 0 microain
     return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
   }
 
