@@ -210,6 +210,7 @@ class Transaction {
   }
 
   static isValidGasPrice(gasPrice) {
+    // NOTE(platfowner): Allow 'undefined' value for backward compatibility.
     return gasPrice > 0 || ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
   }
 
