@@ -2,7 +2,8 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
 const {
-  FeatureFlags,
+  ENABLE_TX_SIG_VERIF_WORKAROUND,
+  ENABLE_GAS_FEE_WORKAROUND,
   WriteDbOperations,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -33,7 +34,7 @@ class Transaction {
     let address = null;
     let skipVerif = false;
     // A devel method for bypassing the signature verification.
-    if ((FeatureFlags.enableTxSigVerifWorkaround) && txBody.address !== undefined) {
+    if (ENABLE_TX_SIG_VERIF_WORKAROUND && txBody.address !== undefined) {
       address = txBody.address;
       skipVerif = true;
     } else {
@@ -187,7 +188,7 @@ class Transaction {
       return false;
     }
     const gasPrice = txBody.gas_price;
-    if (!FeatureFlags.enableGasFeeWorkaround && gasPrice <= 0) {
+    if (!ENABLE_GAS_FEE_WORKAROUND && gasPrice <= 0) {
       logger.info(
           `Transaction body has non-positive gas price: ${JSON.stringify(txBody, null, 2)}`);
       return false;

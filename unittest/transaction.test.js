@@ -17,8 +17,7 @@ describe('Transaction', () => {
   let txBody;
   let tx;
   let txBodyCustomAddress;
-  let txCustomAddressWithWorkaround;
-  let txCustomAddressWithoutWorkaround;
+  let txCustomAddress;
   let txBodyParentHash;
   let txParentHash;
   let txBodyForNode;
@@ -53,14 +52,7 @@ describe('Transaction', () => {
       address: 'abcd',
       gas_price: 1
     };
-
-    FeatureFlags.enableTxSigVerifWorkaround = true;  // With workaround.
-    txCustomAddressWithWorkaround =
-        Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
-
-    FeatureFlags.enableTxSigVerifWorkaround = false;  // Without workaround.
-    txCustomAddressWithoutWorkaround =
-        Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
+    txCustomAddress = Transaction.fromTxBody(txBodyCustomAddress, node.account.private_key);
 
     txBodyParentHash = {
       operation: {
@@ -114,13 +106,6 @@ describe('Transaction', () => {
       assert.deepEqual(tx2, null);
     });
 
-    it('succeed with custom address & enableTxSigVerifWorkaround = true', () => {
-      FeatureFlags.enableTxSigVerifWorkaround = true;  // With workaround.
-      txBody.address = 'abcd';
-      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
-      expect(tx2).to.not.equal(null);
-    });
-
     it('fail with missing operation', () => {
       delete txBody.operation;
       const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
@@ -153,13 +138,6 @@ describe('Transaction', () => {
       txBody.gas_price = -1;
       const tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx3, null);
-    });
-
-    it('succeed with non-positive gas_price & enableGasFeeWorkaround = true', () => {
-      FeatureFlags.enableGasFeeWorkaround = true;  // With workaround.
-      txBody.gas_price = -1;
-      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
-      expect(tx2).to.not.equal(null);
     });
   });
 
@@ -225,12 +203,8 @@ describe('Transaction', () => {
       expect(Transaction.verifyTransaction(txForNode)).to.equal(true);
     });
 
-    it('succeed to verify a transaction with custom address with workaround flag', () => {
-      expect(Transaction.verifyTransaction(txCustomAddressWithWorkaround)).to.equal(true);
-    });
-
-    it('fail to verify a transaction with custom address without workaround flag', () => {
-      expect(Transaction.verifyTransaction(txCustomAddressWithoutWorkaround)).to.equal(false);
+    it('fail to verify a transaction with custom address', () => {
+      expect(Transaction.verifyTransaction(txCustomAddress)).to.equal(false);
     });
 
     it('fail to verify an invalid transaction with altered operation.type', () => {

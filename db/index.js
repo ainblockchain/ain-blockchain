@@ -1,6 +1,7 @@
 const logger = require('../logger')('DATABASE');
 const {
   FeatureFlags,
+  ENABLE_GAS_FEE_WORKAROUND,
   AccountProperties,
   ReadDbOperations,
   WriteDbOperations,
@@ -864,7 +865,7 @@ class DB {
     if (!ChainUtil.isFailedTx(result)) {
       const gasPrice = tx.tx_body.gas_price;
       if (gasPrice <= 0) {
-        if (FeatureFlags.enableGasFeeWorkaround) { // Devel methods for bypassing the gas fee
+        if (ENABLE_GAS_FEE_WORKAROUND) { // Devel methods for bypassing the gas fee
           // Skip.
         } else {
           // NOTE(platfowner): Just in case since non-positive gas prices are already checked
