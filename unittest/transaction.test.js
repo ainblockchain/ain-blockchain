@@ -108,25 +108,17 @@ describe('Transaction', () => {
       expect(txParentHash.extra.skip_verif).to.equal(undefined);
     });
 
-    it('succeed with enableTxSigVerifWorkaround = true', () => {
-      expect(txCustomAddressWithWorkaround).to.not.equal(null);
-      expect(txCustomAddressWithWorkaround.tx_body.address).to.equal(txBodyCustomAddress.address);
-      expect(txCustomAddressWithWorkaround.hash).to.equal(ChainUtil.hashTxBody(txBodyCustomAddress));
-      expect(txCustomAddressWithWorkaround.address).to.equal(txBodyCustomAddress.address);
-      expect(txCustomAddressWithWorkaround.signature).to.equal('');
-      expect(txCustomAddressWithWorkaround.extra.created_at).to.not.equal(undefined);
-      expect(txCustomAddressWithWorkaround.extra.skip_verif).to.equal(true);
+    it('fail with custom address', () => {
+      delete txBody.operation;
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
     });
 
-    it('fail with enableTxSigVerifWorkaround = false', () => {
-      expect(txCustomAddressWithoutWorkaround).to.not.equal(null);
-      expect(txCustomAddressWithoutWorkaround.tx_body.address).to.equal(txBodyCustomAddress.address);
-      expect(txCustomAddressWithoutWorkaround.hash)
-          .to.equal(ChainUtil.hashTxBody(txBodyCustomAddress));
-      expect(txCustomAddressWithoutWorkaround.address).to.equal('');
-      expect(txCustomAddressWithoutWorkaround.signature).to.equal('');
-      expect(txCustomAddressWithoutWorkaround.extra.created_at).to.not.equal(undefined);
-      expect(txCustomAddressWithoutWorkaround.extra.skip_verif).to.equal(undefined);
+    it('succeed with custom address & enableTxSigVerifWorkaround = true', () => {
+      FeatureFlags.enableTxSigVerifWorkaround = true;  // With workaround.
+      txBody.address = 'abcd';
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      expect(tx2).to.not.equal(null);
     });
 
     it('fail with missing operation', () => {
@@ -153,16 +145,14 @@ describe('Transaction', () => {
       assert.deepEqual(tx2, null);
     });
 
-    it('fail with zero gas_price', () => {
+    it('fail with non-positive gas_price', () => {
       txBody.gas_price = 0;
       const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
-    });
 
-    it('fail with negative gas_price', () => {
       txBody.gas_price = -1;
-      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
+      const tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx3, null);
     });
 
     it('succeed with non-positive gas_price & enableGasFeeWorkaround = true', () => {
@@ -235,40 +225,45 @@ describe('Transaction', () => {
       expect(Transaction.verifyTransaction(txForNode)).to.equal(true);
     });
 
-    it('succeed to verify a transaction with workaround', () => {
+    it('succeed to verify a transaction with custom address with workaround flag', () => {
       expect(Transaction.verifyTransaction(txCustomAddressWithWorkaround)).to.equal(true);
     });
 
-    it('succeed to verify a transaction without workaround', () => {
+    it('fail to verify a transaction with custom address without workaround flag', () => {
       expect(Transaction.verifyTransaction(txCustomAddressWithoutWorkaround)).to.equal(false);
     });
 
-    it('failed to verify an invalid transaction with altered operation.type', () => {
+    it('fail to verify an invalid transaction with altered operation.type', () => {
       tx.tx_body.operation.type = 'SET_RULE';
       expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
 
-    it('failed to verify an invalid transaction with altered operation.ref', () => {
+    it('fail to verify an invalid transaction with altered operation.ref', () => {
       tx.tx_body.operation.ref = 'path2';
       expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
 
-    it('failed to verify an invalid transaction with altered operation.value', () => {
+    it('fail to verify an invalid transaction with altered operation.value', () => {
       tx.tx_body.operation.value = 'val2';
       expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
 
-    it('failed to verify an invalid transaction with altered nonce', () => {
+    it('fail to verify an invalid transaction with altered nonce', () => {
       tx.tx_body.nonce++;
       expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
 
-    it('failed to verify an invalid transaction with altered timestamp', () => {
+    it('fail to verify an invalid transaction with altered timestamp', () => {
       tx.tx_body.timestamp++;
       expect(Transaction.verifyTransaction(tx)).to.equal(false);
     });
 
-    it('failed to verify an invalid transaction with altered parent_tx_hash', () => {
+    it('fail to verify an invalid transaction with altered gas_price', () => {
+      tx.tx_body.gas_price = 0;
+      expect(Transaction.verifyTransaction(tx)).to.equal(false);
+    });
+
+    it('fail to verify an invalid transaction with altered parent_tx_hash', () => {
       txParentHash.tx_body.parent_tx_hash = '';
       expect(Transaction.verifyTransaction(txParentHash)).to.equal(false);
     });
