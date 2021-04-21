@@ -190,8 +190,8 @@ class Transaction {
   }
 
   static hasRequiredFields(txBody) {
-    return txBody && txBody.timestamp !== undefined && txBody.nonce !== undefined &&
-        txBody.operation !== undefined;
+    return txBody && txBody.operation !== undefined && txBody.timestamp !== undefined &&
+        txBody.nonce !== undefined && txBody.gas_price !== undefined;
   }
 
   static isInStandardFormat(txBody) {

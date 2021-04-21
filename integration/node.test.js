@@ -1551,8 +1551,7 @@ describe('Blockchain Node', () => {
                 value: "some other200 value",
               },
               timestamp: Date.now(),
-              nonce: nonce,
-              gas_price: 1,
+              nonce: nonce
             },
             {
               operation: {
@@ -1561,8 +1560,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 1,
-              gas_price: 1,
+              nonce: nonce + 1
             },
             {
               operation: {
@@ -1571,8 +1569,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 2,
-              gas_price: 1,
+              nonce: nonce + 2
             },
             {
               operation: {
@@ -1583,8 +1580,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 3,
-              gas_price: 1,
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1595,8 +1591,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 4,
-              gas_price: 1,
+              nonce: nonce + 4
             },
             {
               operation: {
@@ -1607,8 +1602,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 5,
-              gas_price: 1,
+              nonce: nonce + 5
             },
             {
               operation: {
@@ -1653,8 +1647,7 @@ describe('Blockchain Node', () => {
                 ]
               },
               timestamp: Date.now(),
-              nonce: nonce + 6,
-              gas_price: 1,
+              nonce: nonce + 6
             }
           ]
         };
@@ -1798,8 +1791,7 @@ describe('Blockchain Node', () => {
                 value: "some other202 value",
               },
               timestamp: Date.now(),
-              nonce: nonce,
-              gas_price: 1,
+              nonce: nonce
             },
             {
               operation: {
@@ -1808,8 +1800,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 1,
-              gas_price: 1,
+              nonce: nonce + 1
             },
             {
               operation: {
@@ -1818,8 +1809,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 2,
-              gas_price: 1,
+              nonce: nonce + 2
             },
             {
               operation: {
@@ -1828,8 +1818,7 @@ describe('Blockchain Node', () => {
                 value: "some other202 value",
               },
               timestamp: Date.now(),
-              nonce: nonce + 3,
-              gas_price: 1,
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1840,8 +1829,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 3,
-              gas_price: 1,
+              nonce: nonce + 3
             },
             {
               operation: {
@@ -1852,8 +1840,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 4,
-              gas_price: 1,
+              nonce: nonce + 4
             },
             {
               operation: {
@@ -1864,8 +1851,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 5,
-              gas_price: 1,
+              nonce: nonce + 5
             },
             {
               operation: {
@@ -1910,8 +1896,7 @@ describe('Blockchain Node', () => {
                 ]
               },
               timestamp: Date.now(),
-              nonce: nonce + 6,
-              gas_price: 1,
+              nonce: nonce + 6
             }
           ]
         };

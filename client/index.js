@@ -476,7 +476,9 @@ function createSingleSetTxBody(input, opType) {
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
   }
-  txBody.gas_price = input.gas_price !== undefined ? input.gas_price : 0;
+  if (input.gas_price !== undefined) {
+    txBody.gas_price = input.gas_price;
+  }
   return txBody;
 }
 
@@ -496,7 +498,9 @@ function createMultiSetTxBody(input) {
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
   }
-  txBody.gas_price = input.gas_price !== undefined ? input.gas_price : 0;
+  if (input.gas_price !== undefined) {
+    txBody.gas_price = input.gas_price;
+  }
   return txBody;
 }
 
