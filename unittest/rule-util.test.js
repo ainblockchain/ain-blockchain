@@ -54,6 +54,31 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isInteger", () => {
+    it("when invalid input", () => {
+      expect(util.isInteger(true)).to.equal(false);
+      expect(util.isInteger(false)).to.equal(false);
+      expect(util.isInteger(null)).to.equal(false);
+      expect(util.isInteger(undefined)).to.equal(false);
+      expect(util.isInteger(Infinity)).to.equal(false);
+      expect(util.isInteger(NaN)).to.equal(false);
+      expect(util.isInteger('')).to.equal(false);
+      expect(util.isInteger('abc')).to.equal(false);
+      expect(util.isInteger({})).to.equal(false);
+      expect(util.isInteger({a: 'A'})).to.equal(false);
+      expect(util.isInteger([])).to.equal(false);
+      expect(util.isInteger([10])).to.equal(false);
+      expect(util.isInteger(15.5)).to.equal(false);
+      expect(util.isInteger(-15.5)).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isInteger(0)).to.equal(true);
+      expect(util.isInteger(10)).to.equal(true);
+      expect(util.isInteger(-1)).to.equal(true);
+    })
+  })
+
   describe("isString", () => {
     it("when invalid input", () => {
       expect(util.isString(true)).to.equal(false);

@@ -85,8 +85,12 @@ class ChainUtil {
     return ruleUtil.isBool(value);
   }
 
-  static isNumber(num) {
-    return ruleUtil.isNumber(num);
+  static isNumber(value) {
+    return ruleUtil.isNumber(value);
+  }
+
+  static isInteger(value) {
+    return ruleUtil.isInteger(value);
   }
 
   static isString(value) {

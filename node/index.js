@@ -294,6 +294,9 @@ class BlockchainNode {
     if (txBody.timestamp === undefined) {
       txBody.timestamp = Date.now();
     }
+    if (txBody.gas_price === undefined) {
+      txBody.gas_price = 0;
+    }
     return Transaction.fromTxBody(txBody, this.account.private_key);
   }
 
