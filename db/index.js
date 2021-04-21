@@ -1,6 +1,7 @@
 const logger = require('../logger')('DATABASE');
 const {
   FeatureFlags,
+  ENABLE_GAS_FEE_WORKAROUND,
   AccountProperties,
   ReadDbOperations,
   WriteDbOperations,
@@ -17,7 +18,6 @@ const {
   TREE_HEIGHT_LIMIT,
   TREE_SIZE_LIMIT,
   buildOwnerPermissions,
-  ENABLE_GAS_FEE_WORKAROUND,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -864,11 +864,9 @@ class DB {
     }
     if (!ChainUtil.isFailedTx(result)) {
       const gasPrice = tx.tx_body.gas_price;
-      if (ENABLE_GAS_FEE_WORKAROUND && gasPrice === 0) { // Devel methods for bypassing the gas fee
-          // Skip.
-      } else if (gasPrice <= 0) {
-        return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
-      } else {
+      // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
+      //                   done in isValidTxBody() when transactions are created.
+      if (gasPrice > 0) {
         // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
         // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
       }

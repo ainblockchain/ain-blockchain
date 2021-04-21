@@ -476,7 +476,9 @@ function createSingleSetTxBody(input, opType) {
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
   }
-  txBody.gas_price = input.gas_price !== undefined ? input.gas_price : 0;
+  if (input.gas_price !== undefined) {
+    txBody.gas_price = input.gas_price;
+  }
   return txBody;
 }
 
@@ -496,14 +498,15 @@ function createMultiSetTxBody(input) {
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
   }
-  txBody.gas_price = input.gas_price !== undefined ? input.gas_price : 0;
+  if (input.gas_price !== undefined) {
+    txBody.gas_price = input.gas_price;
+  }
   return txBody;
 }
 
 function createBatchTxBody(input) {
   const txList = [];
   for (const tx of input.tx_list) {
-    tx.gas_price = tx.gas_price !== undefined ? tx.gas_price : 0;
     txList.push(tx);
   }
   return { tx_body_list: txList };

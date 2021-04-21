@@ -15,8 +15,6 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
-  // Forces console logging.
-  forceConsoleLogging: false,
   // Enables state version optimization.
   enableStateVersionOpt: true,
   // Enables state tree transfer.
@@ -25,23 +23,17 @@ const FeatureFlags = {
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
   enableRichTransactionLogging: false,
-  // Enables transaction signature verification workaround.
-  enableTxSigVerifWorkaround: false,
-  // Enables develop client API.
-  forceDevClientApi: false,
-  // Enables gas fee related feature workaround.
-  forceGasFeeWorkaround: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
 };
 
 // Environment variables.
 const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
-const CONSOLE_LOG = FeatureFlags.forceConsoleLogging ||
-    ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-const ENABLE_DEV_CLIENT_API = FeatureFlags.forceDevClientApi ||
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API);
-const ENABLE_GAS_FEE_WORKAROUND = FeatureFlags.forceGasFeeWorkaround ||
+const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
+const ENABLE_DEV_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API);
+const ENABLE_TX_SIG_VERIF_WORKAROUND =
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
+const ENABLE_GAS_FEE_WORKAROUND =
     ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND);
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
@@ -634,6 +626,8 @@ module.exports = {
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_CLIENT_API,
+  ENABLE_TX_SIG_VERIF_WORKAROUND,
+  ENABLE_GAS_FEE_WORKAROUND,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
   PORT,
@@ -642,7 +636,6 @@ module.exports = {
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
-  ENABLE_GAS_FEE_WORKAROUND,
   MICRO_AIN,
   MILLI_AIN,
   MessageTypes,
