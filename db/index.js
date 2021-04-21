@@ -864,7 +864,7 @@ class DB {
     }
     if (!ChainUtil.isFailedTx(result)) {
       const gasPrice = tx.tx_body.gas_price;
-      if (ENABLE_GAS_FEE_WORKAROUND && gasPrice === -1) { // Devel methods for bypassing the gas fee
+      if (ENABLE_GAS_FEE_WORKAROUND && gasPrice === 0) { // Devel methods for bypassing the gas fee
           // Skip.
       } else if (gasPrice <= 0) {
         return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);

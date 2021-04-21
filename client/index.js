@@ -11,7 +11,6 @@ const ChainUtil = require('../common/chain-util');
 const VersionUtil = require('../common/version-util');
 const {
   ENABLE_DEV_CLIENT_API,
-  ENABLE_GAS_FEE_WORKAROUND,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   PORT,
@@ -477,8 +476,7 @@ function createSingleSetTxBody(input, opType) {
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
   }
-  txBody.gas_price = input.gas_price !== undefined ?
-      input.gas_price : ENABLE_GAS_FEE_WORKAROUND ? -1 : 1;
+  txBody.gas_price = input.gas_price !== undefined ? input.gas_price : 0;
   return txBody;
 }
 
@@ -498,16 +496,14 @@ function createMultiSetTxBody(input) {
   if (input.timestamp !== undefined) {
     txBody.timestamp = input.timestamp;
   }
-  txBody.gas_price = input.gas_price !== undefined ?
-      input.gas_price : ENABLE_GAS_FEE_WORKAROUND ? -1 : 1;
+  txBody.gas_price = input.gas_price !== undefined ? input.gas_price : 0;
   return txBody;
 }
 
 function createBatchTxBody(input) {
   const txList = [];
   for (const tx of input.tx_list) {
-    tx.gas_price = tx.gas_price !== undefined ?
-        tx.gas_price : ENABLE_GAS_FEE_WORKAROUND ? -1 : 1;
+    tx.gas_price = tx.gas_price !== undefined ? tx.gas_price : 0;
     txList.push(tx);
   }
   return { tx_body_list: txList };
