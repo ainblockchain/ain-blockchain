@@ -239,7 +239,7 @@ class Consensus {
 
   executeLastVoteOrAbort(db, tx) {
     const LOG_HEADER = 'executeLastVoteOrAbort';
-    const txRes = db.executeTransaction(Transaction.toExecutable(tx), -1);
+    const txRes = db.executeTransaction(Transaction.toExecutable(tx));
     if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       return txRes;
@@ -513,7 +513,7 @@ class Consensus {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             ChainUtil.isFailedTx(
-                tempDb.executeTransaction(Transaction.toExecutable(voteTx), -1))) {
+                tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           hasInvalidLastVote = true;
         } else {
@@ -604,7 +604,7 @@ class Consensus {
     const tempVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, -1);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx);
     if (ChainUtil.isFailedTx(proposalTxExecRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx: ${JSON.stringify(proposalTxExecRes)}`);
       this.node.destroyDb(tempDb);
@@ -665,7 +665,7 @@ class Consensus {
           `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx, -1);
+    const voteTxRes = tempDb.executeTransaction(executableTx);
     this.node.destroyDb(tempDb);
     if (ChainUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
@@ -873,7 +873,7 @@ class Consensus {
       const blockNumber = block.number;
       logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
       snapDb.executeTransactionList(block.last_votes);
-      snapDb.executeTransactionList(block.transactions), blockNumber;
+      snapDb.executeTransactionList(block.transactions, blockNumber);
       snapDb.blockNumberSnapshot = blockNumber;
     }
     return snapDb;
