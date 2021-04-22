@@ -183,6 +183,11 @@ class PathUtil {
     return ChainUtil.formatPath([
         PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber, PredefinedDbPaths.VOTE, address]);
   }
+
+  static getGasFeeCollectPath(userAddr, blockNumber, txHash) {
+    return ChainUtil.formatPath([
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, userAddr, blockNumber, txHash]);
+  }
 }
 
 module.exports = PathUtil;

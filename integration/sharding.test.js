@@ -260,8 +260,13 @@ function setUpForSharding(shardingConfig) {
 describe('Sharding', () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
+  const parentAccounts =
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/base', 'genesis_accounts.json'));
+  const parentServerAddr = parentAccounts.others[0].address;
   const accounts =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_accounts.json'));
+  const shardOwnerAddr = accounts.owner.address;
+  const shardReporterAddr = accounts.others[0].address;
   const sharding =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_sharding.json'));
 
@@ -275,6 +280,26 @@ describe('Sharding', () => {
     sleep(2000);
     parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], false);
     sleep(15000);
+    // Give AIN to sharding owner and reporter
+    const shardReportRes = parseOrLog(syncRequest(
+      'POST', parentServer + '/set', { json: {
+        op_list: [
+          {
+            type: 'SET_VALUE',
+            ref: `/transfer/${parentServerAddr}/${shardOwnerAddr}/${Date.now()}/value`,
+            value: 100
+          },
+          {
+            type: 'SET_VALUE',
+            ref: `/transfer/${parentServerAddr}/${shardReporterAddr}/${Date.now()}/value`,
+            value: 100
+          }
+        ],
+        nonce: -1
+      } }).body.toString('utf-8')
+    ).result;
+    waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+    
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
     sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], false);
@@ -313,8 +338,8 @@ describe('Sharding', () => {
             {},
             sharding,
             {
-              shard_owner: accounts.owner.address,
-              shard_reporter: accounts.others[0].address
+              shard_owner: shardOwnerAddr,
+              shard_reporter: shardReporterAddr
             }
           )
         });
@@ -367,7 +392,7 @@ describe('Sharding', () => {
             `.shard/proof_hash_map/$block_number/proof_hash`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.write']).to.have.string(accounts.others[0].address);
+        expect(body.result['.write']).to.have.string(shardReporterAddr);
       });
     });
 
@@ -377,7 +402,7 @@ describe('Sharding', () => {
             'GET', parentServer + `/get_owner?ref=${sharding.sharding_path}`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
+        expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
       });
     });
   });
@@ -392,13 +417,13 @@ describe('Sharding', () => {
 
       it('accounts', () => {
         const body1 = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=/accounts/' + accounts.owner.address + '/balance')
+            'GET', server1 + '/get_value?ref=/accounts/' + shardOwnerAddr + '/balance')
           .body.toString('utf-8'));
         expect(body1.code).to.equal(0);
         expect(body1.result).to.be.above(0);
 
         const body2 = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=/accounts/' + accounts.others[0].address + '/balance')
+            'GET', server1 + '/get_value?ref=/accounts/' + shardReporterAddr + '/balance')
           .body.toString('utf-8'));
         expect(body2.code).to.equal(0);
         expect(body2.result).to.be.above(0);
@@ -427,7 +452,7 @@ describe('Sharding', () => {
         const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.write']).to.have.string(accounts.owner.address);
+        expect(body.result['.write']).to.have.string(shardOwnerAddr);
       })
     })
 
@@ -436,7 +461,7 @@ describe('Sharding', () => {
         const body = parseOrLog(syncRequest('GET', server4 + '/get_owner?ref=/sharding/config')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
+        expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
       })
     })
   });
@@ -1534,7 +1559,6 @@ describe('Sharding', () => {
               value: 'some other value',
               ref: `test/test_value/some/path`
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1570,7 +1594,6 @@ describe('Sharding', () => {
               ref: `test/test_value/some/path`,
               is_global: false,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1606,7 +1629,6 @@ describe('Sharding', () => {
               ref: `apps/afan/test/test_value/some/path`,
               is_global: true,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1643,7 +1665,6 @@ describe('Sharding', () => {
               value: 'some other value',
               ref: `test/test_value/some/path`
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1688,7 +1709,6 @@ describe('Sharding', () => {
               ref: `test/test_value/some/path`,
               is_global: false,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1736,7 +1756,6 @@ describe('Sharding', () => {
               ref: `apps/afan/test/test_value/some/path`,
               is_global: true,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
