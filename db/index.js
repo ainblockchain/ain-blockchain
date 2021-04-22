@@ -885,7 +885,7 @@ class DB {
     return result;
   }
 
-  executeTransaction(tx, blockNumber) {
+  executeTransaction(tx, blockNumber = 0) {
     const LOG_HEADER = 'executeTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.

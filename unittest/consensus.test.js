@@ -42,7 +42,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteTx, -1).code).to.equal(103);
+    expect(node1.db.executeTransaction(voteTx).code).to.equal(103);
   });
 
   it("Staked nodes can vote", () => {
@@ -67,6 +67,6 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteTx, -1).code).to.equal(0);
+    expect(node1.db.executeTransaction(voteTx).code).to.equal(0);
   });
 });
