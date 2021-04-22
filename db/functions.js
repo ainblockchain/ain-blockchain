@@ -48,8 +48,12 @@ class Functions {
         func: this._claim.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
         func: this._closeCheckin.bind(this), ownerOnly: true, execGasAmount: 11 },
+      [NativeFunctionIds.COLLECT_FEE]: {
+        func: this._collectFee.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.CREATE_APP]: {
         func: this._createApp.bind(this), ownerOnly: true, execGasAmount: 2 },
+      [NativeFunctionIds.DISTRIBUTE_FEE]: {
+        func: this._distributeFee.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
@@ -512,6 +516,42 @@ class Functions {
     }
   }
 
+  _collectFee(value, context) {
+    logger.error(`  =>> gasFee collect called: ${JSON.stringify(value)}`);
+    const from = context.params.from;
+    const blockNumber = context.params.block_number;
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+    const gasFeeServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
+    const result = this.setServiceAccountTransferOrLog(
+        from, gasFeeServiceAccountName, value.amount, auth, timestamp, transaction);
+    if (ChainUtil.isFailedTx(result)) {
+      logger.error(`  =>> gasFee collect failed: ${JSON.stringify(result)}`);
+      // TODO(lia): return error, check in setValue(), revert changes
+    }
+  }
+
+  _distributeFee(value, context) {
+    const blockNumber = context.params.number;
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+    const gasCostTotal = value.gas_cost_total;
+    const proposer = value.proposer;
+    if (gasCostTotal <= 0) {
+      return;
+    }
+    const gasFeeServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
+    const result = this.setServiceAccountTransferOrLog(
+        gasFeeServiceAccountName, proposer, gasCostTotal, auth, timestamp, transaction);
+    if (ChainUtil.isFailedTx(result)) {
+      logger.error(`  =>> gasFee distribute failed: ${JSON.stringify(result)}`);
+    }
+  }
+
   _stake(value, context) {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
@@ -919,6 +959,7 @@ class Functions {
     if (ChainUtil.isFailedTx(decResult)) {
       return decResult;
     }
+    // TODO(lia): remove the from entry, if it's a service account && if the new balance === 0
     const incResult = this.incValueOrLog(toPath, value, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(incResult)) {
       return incResult;

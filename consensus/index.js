@@ -249,14 +249,14 @@ class Consensus {
     }
   }
 
-  executeOrRollbackTransactionForBlock(db, tx, validTransactions, invalidTransactions) {
+  executeOrRollbackTransactionForBlock(db, tx, blockNumber, validTransactions, invalidTransactions) {
     const LOG_HEADER = 'executeOrRollbackTransactionForBlock';
     if (!db.backupDb()) {
       logger.error(
           `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
     }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
-    const txRes = db.executeTransaction(Transaction.toExecutable(tx));
+    const txRes = db.executeTransaction(Transaction.toExecutable(tx), blockNumber);
     if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
@@ -306,31 +306,29 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
 
-    const resList = []; // tx results of last_votes & transactions
     for (const voteTx of lastVotes) {
       const res = this.executeLastVoteOrAbort(tempDb, voteTx);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;
       }
-      resList.push(res);
     }
 
     // TODO(lia): restrict the size / number of txs
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
     const validTransactions = [];
     const invalidTransactions = [];
+    const resList = [];
     for (const tx of transactions) {
       const res = this.executeOrRollbackTransactionForBlock(
-          tempDb, tx, validTransactions, invalidTransactions);
+          tempDb, tx, blockNumber, validTransactions, invalidTransactions);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;
       }
       resList.push(res);
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(
-        [...lastVotes, ...validTransactions], resList);
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(validTransactions, resList);
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
@@ -379,7 +377,8 @@ class Consensus {
         proposer: myAddr,
         block_hash: proposalBlock.hash,
         last_hash: proposalBlock.last_hash,
-        timestamp: proposalBlock.timestamp
+        timestamp: proposalBlock.timestamp,
+        gas_cost_total: gasCostTotal
       }
     }
 
@@ -413,21 +412,27 @@ class Consensus {
 
   checkProposal(proposalBlock, proposalTx) {
     const LOG_HEADER = 'checkProposal';
+    const block = Block.parse(proposalBlock);
+    if (!block) {
+      logger.error(`[${LOG_HEADER}] Invalid block: ${JSON.stringify(proposalBlock)}`);
+      return false;
+    }
+    const { proposer, number, epoch, hash, last_hash, validators, last_votes, transactions,
+        gas_amount_total, gas_cost_total, state_proof_hash } = block;
 
-    logger.info(`[${LOG_HEADER}] Checking block proposal: ` +
-        `${proposalBlock.number} / ${proposalBlock.epoch}`);
+    logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch}`);
     if (this.blockPool.hasSeenBlock(proposalBlock)) {
       logger.info(`[${LOG_HEADER}] Proposal already seen`);
       return false;
     }
-    if (proposalTx.address !== proposalBlock.proposer) {
+    if (proposalTx.address !== proposer) {
       logger.error(`[${LOG_HEADER}] Transaction signer and proposer are different`);
       return false;
     }
-    const block_hash = BlockPool.getBlockHashFromTx(proposalTx);
-    if (block_hash !== proposalBlock.hash) {
-      logger.error(`[${LOG_HEADER}] The block_hash value in proposalTx (${block_hash}) and ` +
-          `the actual proposalBlock's hash (${proposalBlock.hash}) don't match`);
+    const blockHash = BlockPool.getBlockHashFromTx(proposalTx);
+    if (blockHash !== hash) {
+      logger.error(`[${LOG_HEADER}] The block_hash value in proposalTx (${blockHash}) and ` +
+          `the actual proposalBlock's hash (${hash}) don't match`);
       return false;
     }
     if (!LIGHTWEIGHT) {
@@ -436,11 +441,10 @@ class Consensus {
         return false;
       }
     }
-    const { proposer, number, epoch, last_hash, validators } = proposalBlock;
     if (number <= this.node.bc.lastBlockNumber()) {
       logger.info(`[${LOG_HEADER}] There already is a finalized block of the number`);
       logger.debug(`[${LOG_HEADER}] corresponding block info: ` +
-          `${JSON.stringify(this.blockPool.hashToBlockInfo[proposalBlock.hash], null, 2)}`);
+          `${JSON.stringify(this.blockPool.hashToBlockInfo[hash], null, 2)}`);
       if (!this.blockPool.hasSeenBlock(proposalBlock)) {
         logger.debug(`[${LOG_HEADER}] Adding the proposal to the blockPool for later use`);
         this.blockPool.addSeenBlock(proposalBlock, proposalTx);
@@ -467,7 +471,7 @@ class Consensus {
 
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
-      const prevBlockProposal = BlockPool.filterProposal(proposalBlock.last_votes);
+      const prevBlockProposal = BlockPool.filterProposal(last_votes);
       if (!prevBlockProposal) {
         logger.error(`[${LOG_HEADER}] Proposal block is missing its prev block's proposal ` +
             'in last_votes');
@@ -505,7 +509,7 @@ class Consensus {
         this.node.destroyDb(prevDb);
       }
       let hasInvalidLastVote = false;
-      for (const voteTx of proposalBlock.last_votes) {
+      for (const voteTx of last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             ChainUtil.isFailedTx(
@@ -535,8 +539,7 @@ class Consensus {
           `is greater than or equal to incoming block's (${epoch})`);
       return false;
     }
-    // const seed = '' + this.genesisHash + epoch;
-    const seed = '' + prevBlock.last_votes_hash + proposalBlock.epoch;
+    const seed = '' + prevBlock.last_votes_hash + epoch;
     const expectedProposer = Consensus.selectProposer(seed, validators);
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_HEADER}] Proposer is not the expected node (expected: ` +
@@ -566,26 +569,25 @@ class Consensus {
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
-    const lastVoteRes = newDb.executeTransactionList(proposalBlock.last_votes);
+    const lastVoteRes = newDb.executeTransactionList(last_votes);
     if (!lastVoteRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       this.node.destroyDb(newDb);
       return false;
     }
-    const txsRes = newDb.executeTransactionList(proposalBlock.transactions);
+    const txsRes = newDb.executeTransactionList(transactions, number);
     if (!txsRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
       this.node.destroyDb(newDb);
       return false;
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(
-        [...proposalBlock.last_votes, ...proposalBlock.transactions], [...lastVoteRes, ...txsRes]);
-    if (gasAmountTotal !== proposalBlock.gas_amount_total) {
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getGasAmountCostTotalFromTxList(transactions, txsRes);
+    if (gasAmountTotal !== gas_amount_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
       this.node.destroyDb(newDb);
       return false;
     }
-    if (gasCostTotal !== proposalBlock.gas_cost_total) {
+    if (gasCostTotal !== gas_cost_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_cost_total`);
       this.node.destroyDb(newDb);
       return false;
@@ -600,10 +602,11 @@ class Consensus {
       return false;
     }
     const tempVersion = this.node.stateManager.createUniqueVersionName(
-      `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
+        `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
     const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
-    if (ChainUtil.isFailedTx(tempDb.executeTransaction(executableTx))) {
-      logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx`);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx);
+    if (ChainUtil.isFailedTx(proposalTxExecRes)) {
+      logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx: ${JSON.stringify(proposalTxExecRes)}`);
       this.node.destroyDb(tempDb);
       this.node.destroyDb(newDb);
       return false;
@@ -612,10 +615,10 @@ class Consensus {
     this.node.tp.addTransaction(executableTx);
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
-      if (newDb.getStateProof('/')[ProofProperties.PROOF_HASH] !== proposalBlock.state_proof_hash) {
+      if (newDb.getStateProof('/')[ProofProperties.PROOF_HASH] !== state_proof_hash) {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getStateProof('/')[ProofProperties.PROOF_HASH]} / ` +
-            `${proposalBlock.state_proof_hash}`);
+            `${state_proof_hash}`);
         this.node.destroyDb(newDb);
         return false;
       }
@@ -624,14 +627,13 @@ class Consensus {
       this.node.destroyDb(newDb);
       return false;
     }
-    this.blockPool.hashToDb.set(proposalBlock.hash, newDb);
-    if (!this.blockPool.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
+    this.blockPool.hashToDb.set(hash, newDb);
+    if (!this.blockPool.longestNotarizedChainTips.includes(last_hash)) {
       logger.info(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
           `(${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
       return false;
     }
-    logger.info(`[${LOG_HEADER}] Verifed block proposal: ` +
-        `${proposalBlock.number} / ${proposalBlock.epoch}`);
+    logger.info(`[${LOG_HEADER}] Verifed block proposal: ${number} / ${epoch}`);
     return true;
   }
 
@@ -835,11 +837,11 @@ class Consensus {
     return res;
   }
 
-  getSnapDb(block) {
+  getSnapDb(latestBlock) {
     const LOG_HEADER = 'getSnapDb';
     const lastFinalizedHash = this.node.bc.lastBlock().hash;
     const chain = [];
-    let currBlock = block;
+    let currBlock = latestBlock;
     let blockHash = currBlock.hash;
     while (currBlock && blockHash !== '' && blockHash !== lastFinalizedHash &&
         !this.blockPool.hashToDb.has(blockHash)) {
@@ -862,16 +864,17 @@ class Consensus {
     }
     const snapVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.SNAP}:${currBlock.number}`);
-    const blockNumberSnapshot = chain.length ? chain[0].number : block.number;
+    const blockNumberSnapshot = chain.length ? chain[0].number : latestBlock.number;
     const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
 
     while (chain.length) {
       // apply last_votes and transactions
       const block = chain.shift();
-      logger.debug(`[[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
+      const blockNumber = block.number;
+      logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
       snapDb.executeTransactionList(block.last_votes);
-      snapDb.executeTransactionList(block.transactions);
-      snapDb.blockNumberSnapshot = block.number;
+      snapDb.executeTransactionList(block.transactions, blockNumber);
+      snapDb.blockNumberSnapshot = blockNumber;
     }
     return snapDb;
   }

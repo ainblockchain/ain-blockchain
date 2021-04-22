@@ -115,6 +115,9 @@ const PredefinedDbPaths = {
   VOTE: 'vote',
   BLOCK_HASH: 'block_hash',
   STAKE: 'stake',
+  // Gas fee
+  GAS_FEE: 'gas_fee',
+  COLLECT: 'collect',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -278,7 +281,9 @@ const StateInfoProperties = {
 const NativeFunctionIds = {
   CLAIM: '_claim',
   CLOSE_CHECKIN: '_closeCheckin',
+  COLLECT_FEE: '_collectFee',
   CREATE_APP: '_createApp',
+  DISTRIBUTE_FEE: '_distributeFee',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
   PAY: '_pay',

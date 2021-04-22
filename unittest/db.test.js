@@ -3230,13 +3230,13 @@ describe("Transaction execution", () => {
     it("returns true for executable transaction", () => {
       expect(executableTx.extra).to.not.equal(undefined);
       expect(executableTx.extra.executed_at).to.equal(null);
-      assert.deepEqual(node.db.executeTransaction(executableTx).code, 0);
+      assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1).code, 0);
       // extra.executed_at is updated with a non-null value.
       expect(executableTx.extra.executed_at).to.not.equal(null);
     });
 
     it("returns false for object transaction", () => {
-      assert.deepEqual(node.db.executeTransaction(objectTx).code, 21);
+      assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1).code, 21);
       assert.deepEqual(objectTx.extra, undefined);
     });
 
@@ -3252,7 +3252,7 @@ describe("Transaction execution", () => {
         timestamp: 1568798344000,
       };
       const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
-      assert.deepEqual(node.db.executeTransaction(maxHeightTx).code, 0);
+      assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1).code, 0);
 
       const overHeightTxBody = {
         operation: {
@@ -3265,7 +3265,7 @@ describe("Transaction execution", () => {
         timestamp: 1568798344000,
       };
       const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
-      assert.deepEqual(node.db.executeTransaction(overHeightTx).code, 23);
+      assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1).code, 23);
     })
 
     it("rejects over-size transaction", () => {
@@ -3287,7 +3287,7 @@ describe("Transaction execution", () => {
         timestamp: 1568798344000,
       };
       const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-      assert.deepEqual(node.db.executeTransaction(overSizeTx).code, 24);
+      assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1).code, 24);
     })
   });
 });

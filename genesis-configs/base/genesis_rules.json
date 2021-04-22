@@ -28,7 +28,7 @@
       "$number": {
         ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
         "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount())"
+          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount()) && util.isNumber(newData.gas_cost_total) && (newData.gas_cost_total === 0 || newData.gas_cost_total === getValue('/service_accounts/gas_fee/gas_fee/' + $number + '/balance'))"
         },
         "vote": {
           "$user_addr": {
@@ -65,6 +65,17 @@
                 ".write": "auth.fid === '_release'"
               }
             }
+          }
+        }
+      }
+    }
+  },
+  "gas_fee": {
+    "collect": {
+      "$from": {
+        "$block_number": {
+          "$tx_hash": {
+            ".write": "auth.addr === $from && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount <= getValue(util.getBalancePath($from))"
           }
         }
       }
@@ -167,7 +178,7 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+            ".write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
           },
           "result": {
             ".write": "auth.fid === '_transfer'"
