@@ -632,6 +632,32 @@ describe('Blockchain Cluster', () => {
     });
   });
 
+  describe('Gas fee', () => {
+    it('collected gas cost matches the gas_cost_total in the block', () => {
+      return new Promise((resolve) => {
+        jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request
+            (JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+              if (err) throw err;
+              const chain = response.result.result;
+              for (const block of chain) {
+                if (block.number > 0) {
+                  // Amount specified in block
+                  const gasCostTotal = block.gas_cost_total;
+                  // Amount actually collected & distributed. Write rule prevents writing a gas_cost_total
+                  // that is different from the value at /service_accounts/gas_fee/gas_fee/${block.number}/balance.
+                  const collectedGas = parseOrLog(syncRequest(
+                      'GET', server1 + GET_VALUE_ENDPOINT + `?ref=/consensus/number/${block.number}/propose/gas_cost_total`)
+                      .body.toString('utf-8')).result;
+                  assert.deepEqual(gasCostTotal, collectedGas);
+                }
+              }
+              resolve();
+            }
+        );
+      });
+    });
+  });
+
   describe('Restart', () => {
     it('blockchain nodes can be stopped and restarted', () => {
       SERVER_PROCS[0].kill();
