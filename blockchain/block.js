@@ -303,7 +303,7 @@ class Block {
     tempGenesisDb.initDbStates();
     const resList = [];
     for (const tx of genesisTxs) {
-      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx), 0);
+      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx));
       if (ChainUtil.isFailedTx(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)
