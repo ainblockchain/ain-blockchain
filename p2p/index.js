@@ -28,7 +28,8 @@ const {
   getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
-  closeSocketSafe
+  closeSocketSafe,
+  encapsulateMessage
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -201,18 +202,13 @@ class P2pClient {
     });
   }
 
-  broadcastConsensusMessage(msg) {
-    const payload = {
-      type: MessageTypes.CONSENSUS,
-      message: msg,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: DATA_PROTOCOL_VERSION
-    };
+  broadcastConsensusMessage(consensusMessage) {
+    const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage });
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
       socket.send(stringPayload);
     });
-    logger.debug(`SENDING: ${JSON.stringify(msg)}`);
+    logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
   requestChainSegment(socket, lastBlock) {

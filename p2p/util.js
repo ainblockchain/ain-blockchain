@@ -9,7 +9,10 @@ const _ = require('lodash');
 const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
-const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
+const {
+  CURRENT_PROTOCOL_VERSION,
+  DATA_PROTOCOL_VERSION
+} = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
@@ -32,19 +35,19 @@ async function sendSignedTx(endpoint, params) {
         jsonrpc: '2.0',
         id: 0
       }
-  ).then((resp) => {
+  ).then(resp => {
     const success = !ChainUtil.isFailedTx(_.get(resp, 'data.result.result.result'), null);
-    return {success};
+    return { success };
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
-    return {errMsg: err.message, success: false};
+    return { errMsg: err.message, success: false };
   });
 }
 
 async function signAndSendTx(endpoint, tx, privateKey) {
-  const {txHash, signedTx} = ChainUtil.signTransaction(tx, privateKey);
+  const { txHash, signedTx } = ChainUtil.signTransaction(tx, privateKey);
   const result = await sendSignedTx(endpoint, signedTx);
-  return Object.assign(result, {txHash});
+  return Object.assign(result, { txHash });
 }
 
 async function waitUntilTxFinalize(endpoint, txHash) {
@@ -75,7 +78,7 @@ function sendGetRequest(endpoint, method, params) {
       endpoint,
       {
         method,
-        params: Object.assign(params, {protoVer: CURRENT_PROTOCOL_VERSION}),
+        params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
         jsonrpc: '2.0',
         id: 0
       }
@@ -132,6 +135,24 @@ function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersi
   return true;
 }
 
+function encapsulateMessage(type, dataObj) {
+  if (!type) {
+    logger.error('Type must be specified.');
+    throw new Error('Type must be specified.');
+  };
+  if (!dataObj) {
+    logger.error('dataObj cannot be null or undefined.');
+    throw new Error('dataObj cannot be null or undefined.');
+  }
+  const message = {
+    type: type,
+    data: dataObj,
+    protoVer: CURRENT_PROTOCOL_VERSION,
+    dataProtoVer: DATA_PROTOCOL_VERSION
+  };
+  return message;
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
@@ -143,5 +164,6 @@ module.exports = {
   getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
-  checkProtoVer
+  checkProtoVer,
+  encapsulateMessage
 };
