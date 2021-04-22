@@ -106,12 +106,12 @@ function signMessage(messageBody, privateKey) {
 }
 
 function getAddressFromMessage(message) {
-  const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.body));
-  return ChainUtil.getAddressFromSignature(hashedMessage, message.signature);
+  const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
+  return ChainUtil.getAddressFromSignature(hashedMessage, message.data.signature);
 }
 
 function verifySignedMessage(message, address) {
-  return ainUtil.ecVerifySig(JSON.stringify(message.body), message.signature, address);
+  return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
 }
 
 function closeSocketSafe(connections, socket) {
