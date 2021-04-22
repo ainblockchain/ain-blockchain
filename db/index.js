@@ -38,6 +38,7 @@ const {
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
+const PathUtil = require('../common/path-util');
 const _ = require('lodash');
 
 class DB {
@@ -822,7 +823,7 @@ class DB {
     return globalPath;
   }
 
-  executeOperation(op, auth, timestamp, tx) {
+  executeOperation(op, auth, timestamp, tx, blockNumber = 0) {
     if (!op) {
       return ChainUtil.returnTxResult(11, `Invalid operation: ${op}`);
     }
@@ -866,9 +867,16 @@ class DB {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       const gasPrice = tx.tx_body.gas_price;
-      if (gasPrice > 0) {
-        // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
-        // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
+      if (gasPrice > 0 && blockNumber > 0) {
+        const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
+        // TODO(lia): update this to billing accounts for app transactions
+        const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
+        const gasFeeCollectRes = this.setValue(
+            gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
+        if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
+          return ChainUtil.returnTxResult(
+              16, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`);
+        }
       }
       if (tx && auth && auth.addr && !auth.fid) {
         this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
@@ -877,7 +885,7 @@ class DB {
     return result;
   }
 
-  executeTransaction(tx) {
+  executeTransaction(tx, blockNumber = 0) {
     const LOG_HEADER = 'executeTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.
@@ -895,7 +903,7 @@ class DB {
     }
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const executionResult = this.executeOperation(
-        txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
+        txBody.operation, { addr: tx.address }, txBody.timestamp, tx, blockNumber);
     const stateInfo = this.getStateInfo('/');
     if (!ChainUtil.isFailedTx(executionResult)) {
       const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
@@ -912,12 +920,12 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList) {
+  executeTransactionList(txList, blockNumber = 0) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx);
+      const res = this.executeTransaction(executableTx, blockNumber);
       if (ChainUtil.isFailedTx(res)) {
         // FIXME: remove the failed transaction from tx pool?
         logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +

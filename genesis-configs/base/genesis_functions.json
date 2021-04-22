@@ -25,6 +25,20 @@
       }
     }
   },
+  "consensus": {
+    "number": {
+      "$number": {
+        "propose": {
+          ".function": {
+            "_distributeFee": {
+              "function_type": "NATIVE",
+              "function_id": "_distributeFee"
+            }
+          }
+        }
+      }
+    }
+  },
   "escrow": {
     "$source_account": {
       "$target_account": {
@@ -46,6 +60,22 @@
                   "function_type": "NATIVE",
                   "function_id": "_release"
                 }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gas_fee": {
+    "collect": {
+      "$from": {
+        "$block_number": {
+          "$tx_hash": {
+            ".function": {
+              "_collectFee": {
+                "function_type": "NATIVE",
+                "function_id": "_collectFee"
               }
             }
           }
