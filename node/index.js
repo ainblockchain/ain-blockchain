@@ -374,7 +374,7 @@ class BlockchainNode {
     const LOG_HEADER = 'applyBlocksToDb';
 
     for (const block of blockList) {
-      if (!db.executeTransactionList(block.last_votes, -1)) {
+      if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -462,7 +462,7 @@ class BlockchainNode {
     const LOG_HEADER = 'executeChainOnDb';
 
     this.bc.chain.forEach((block) => {
-      if (!db.executeTransactionList(block.last_votes, -1)) {
+      if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes`)
       }
       if (!db.executeTransactionList(block.transactions, block.number)) {

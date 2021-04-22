@@ -823,7 +823,7 @@ class DB {
     return globalPath;
   }
 
-  executeOperation(op, auth, timestamp, tx, blockNumber) {
+  executeOperation(op, auth, timestamp, tx, blockNumber = 0) {
     if (!op) {
       return ChainUtil.returnTxResult(11, `Invalid operation: ${op}`);
     }
@@ -920,7 +920,7 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList, blockNumber) {
+  executeTransactionList(txList, blockNumber = 0) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {

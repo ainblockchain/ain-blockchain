@@ -569,7 +569,7 @@ class Consensus {
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
-    const lastVoteRes = newDb.executeTransactionList(last_votes, -1);
+    const lastVoteRes = newDb.executeTransactionList(last_votes);
     if (!lastVoteRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       this.node.destroyDb(newDb);
@@ -872,7 +872,7 @@ class Consensus {
       const block = chain.shift();
       const blockNumber = block.number;
       logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
-      snapDb.executeTransactionList(block.last_votes, -1);
+      snapDb.executeTransactionList(block.last_votes);
       snapDb.executeTransactionList(block.transactions), blockNumber;
       snapDb.blockNumberSnapshot = blockNumber;
     }
