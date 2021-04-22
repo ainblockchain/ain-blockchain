@@ -47,7 +47,8 @@ const {
   getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
-  closeSocketSafe
+  closeSocketSafe,
+  encapsulateMessage
 } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -376,12 +377,12 @@ class P2pServer {
           case MessageTypes.ADDRESS_REQUEST:
             // TODO(minsu): Add compatibility check here after data version up.
             // this.checkDataProtoVerForAddressRequest(dataProtoVer);
-            const address = _.get(parsedMessage, 'body.address');
+            const address = _.get(parsedMessage, 'data.body.address');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
               closeSocketSafe(this.inbound, socket);
               return;
-            } else if (!parsedMessage.signature) {
+            } else if (!_.get(parsedMessage, 'data.signature')) {
               logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                   `communication. Cannot proceed the further communication.`);
               closeSocketSafe(this.inbound, socket);   // NOTE(minsu): strictly close socket necessary??
@@ -404,13 +405,8 @@ class P2pServer {
                 timestamp: Date.now(),
               };
               const signature = signMessage(body, this.getNodePrivateKey());
-              const payload = {
-                type: MessageTypes.ADDRESS_RESPONSE,
-                body,
-                signature,
-                protoVer: CURRENT_PROTOCOL_VERSION,
-                dataProtoVer: DATA_PROTOCOL_VERSION
-              };
+              const payload = encapsulateMessage(MessageTypes.ADDRESS_RESPONSE,
+                  { body: body, signature: signature });
               socket.send(JSON.stringify(payload));
             }
             break;
@@ -428,9 +424,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.TRANSACTION:
-            logger.debug(`[${LOG_HEADER}] Receiving a transaction: ` +
-                `${JSON.stringify(parsedMessage.transaction)}`);
-            if (this.node.tp.transactionTracker[parsedMessage.transaction.hash]) {
+            const tx = _.get(parsedMessage, 'data.transaction');
+            logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
+            if (this.node.tp.transactionTracker[tx.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               return;
             }
@@ -439,7 +435,6 @@ class P2pServer {
                   `My node status is now ${this.node.state}.`);
               return;
             }
-            const tx = parsedMessage.transaction;
             if (Transaction.isBatchTransaction(tx)) {
               if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
                 return;
@@ -468,9 +463,10 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
+            const lastBlock = _.get(parsedMessage, 'data.lastBlock');
             // NOTE(minsu): communicate with each other even if the data protocol is incompatible.
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
-                `${JSON.stringify(parsedMessage.lastBlock, null, 2)}`);
+                `${JSON.stringify(lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -483,7 +479,7 @@ class P2pServer {
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSegment = this.node.bc.requestBlockchainSection(
-                parsedMessage.lastBlock ? Block.parse(parsedMessage.lastBlock) : null);
+                lastBlock ? Block.parse(lastBlock) : null);
             if (chainSegment) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(
@@ -529,14 +525,8 @@ class P2pServer {
   }
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    const payload = {
-      type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
-      chainSegment,
-      number,
-      catchUpInfo,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: DATA_PROTOCOL_VERSION
-    };
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_RESPONSE,
+        { chainSegment: chainSegment, number: number, catchUpInfo: catchUpInfo });
     socket.send(JSON.stringify(payload));
   }
 
