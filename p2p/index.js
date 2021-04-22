@@ -212,9 +212,8 @@ class P2pClient {
   }
 
   requestChainSegment(socket, lastBlock) {
-    console.log(lastBlock)
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST,
-        { lastblock: lastBlock });
+        { lastBlock: lastBlock });
     socket.send(JSON.stringify(payload));
   }
 
@@ -336,12 +335,12 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          const chainSegment = _.get(parsedMessage, 'data.chainSegment');
-          const number = _.get(parsedMessage, 'data.number');
-          const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
           if (!this.checkDataProtoVerForChainSegmentResponse(parsedMessage.dataProtoVer)) {
             return;
           }
+          const chainSegment = _.get(parsedMessage, 'data.chainSegment');
+          const number = _.get(parsedMessage, 'data.number');
+          const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(chainSegment, null, 2)}`);
           // Check catchup info is behind or equal to me
