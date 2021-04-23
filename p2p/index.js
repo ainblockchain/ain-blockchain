@@ -8,8 +8,6 @@ const logger = require('../logger')('P2P_SERVER');
 const { ConsensusStatus } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const {
-  CURRENT_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
