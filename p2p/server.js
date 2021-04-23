@@ -47,7 +47,8 @@ const {
   getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
-  closeSocketSafe
+  closeSocketSafe,
+  encapsulateMessage
 } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -359,10 +360,10 @@ class P2pServer {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       try {
-        const data = JSON.parse(message);
-        const dataProtoVer = data.dataProtoVer;
+        const parsedMessage = JSON.parse(message);
+        const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
         if (!checkProtoVer(this.inbound, socket,
-            this.minProtocolVersion, this.maxProtocolVersion, data.protoVer)) {
+            this.minProtocolVersion, this.maxProtocolVersion, parsedMessage.protoVer)) {
           return;
         }
         if (!this.checkDataProtoVer(socket, dataProtoVer)) {
@@ -372,28 +373,28 @@ class P2pServer {
           return;
         }
 
-        switch (data.type) {
+        switch (_.get(parsedMessage, 'type')) {
           case MessageTypes.ADDRESS_REQUEST:
             // TODO(minsu): Add compatibility check here after data version up.
             // this.checkDataProtoVerForAddressRequest(dataProtoVer);
-            const address = _.get(data, 'body.address');
+            const address = _.get(parsedMessage, 'data.body.address');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
               closeSocketSafe(this.inbound, socket);
               return;
-            } else if (!data.signature) {
+            } else if (!_.get(parsedMessage, 'data.signature')) {
               logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                   `communication. Cannot proceed the further communication.`);
               closeSocketSafe(this.inbound, socket);   // NOTE(minsu): strictly close socket necessary??
               return;
             } else {
-              const addressFromSig = getAddressFromMessage(data);
+              const addressFromSig = getAddressFromMessage(parsedMessage);
               if (addressFromSig !== address) {
                 logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
                 closeSocketSafe(this.inbound, socket);
                 return;
               }
-              if (!verifySignedMessage(data, addressFromSig)) {
+              if (!verifySignedMessage(parsedMessage, addressFromSig)) {
                 logger.error('The message is not correctly signed. Discard the message!!');
                 return;
               }
@@ -404,32 +405,32 @@ class P2pServer {
                 timestamp: Date.now(),
               };
               const signature = signMessage(body, this.getNodePrivateKey());
-              const payload = {
-                type: MessageTypes.ADDRESS_RESPONSE,
-                body,
-                signature,
-                protoVer: CURRENT_PROTOCOL_VERSION,
-                dataProtoVer: DATA_PROTOCOL_VERSION
-              };
+              const payload = encapsulateMessage(MessageTypes.ADDRESS_RESPONSE,
+                  { body: body, signature: signature });
+              if (!payload) {
+                logger.error('The address cannot be sent because of msg encapsulation failure.');
+                return;
+              }
               socket.send(JSON.stringify(payload));
             }
             break;
           case MessageTypes.CONSENSUS:
-            logger.debug(
-                `[${LOG_HEADER}] Receiving a consensus message: ${JSON.stringify(data.message)}`);
+            const consensusMessage = _.get(parsedMessage, 'data.message');
+            logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
+                `${JSON.stringify(consensusMessage)}`);
             if (!this.checkDataProtoVerForConsensus(dataProtoVer)) {
               return;
             }
             if (this.node.state === BlockchainNodeStates.SERVING) {
-              this.consensus.handleConsensusMessage(data.message);
+              this.consensus.handleConsensusMessage(consensusMessage);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
             }
             break;
           case MessageTypes.TRANSACTION:
-            logger.debug(
-                `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(data.transaction)}`);
-            if (this.node.tp.transactionTracker[data.transaction.hash]) {
+            const tx = _.get(parsedMessage, 'data.transaction');
+            logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
+            if (this.node.tp.transactionTracker[tx.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               return;
             }
@@ -438,7 +439,6 @@ class P2pServer {
                   `My node status is now ${this.node.state}.`);
               return;
             }
-            const tx = data.transaction;
             if (Transaction.isBatchTransaction(tx)) {
               if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
                 return;
@@ -467,9 +467,10 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
+            const lastBlock = _.get(parsedMessage, 'data.lastBlock');
             // NOTE(minsu): communicate with each other even if the data protocol is incompatible.
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
-                `${JSON.stringify(data.lastBlock, null, 2)}`);
+                `${JSON.stringify(lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -482,7 +483,7 @@ class P2pServer {
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
             const chainSegment = this.node.bc.requestBlockchainSection(
-                data.lastBlock ? Block.parse(data.lastBlock) : null);
+                lastBlock ? Block.parse(lastBlock) : null);
             if (chainSegment) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(
@@ -506,7 +507,7 @@ class P2pServer {
             }
             break;
           default:
-            logger.error(`Wrong message type(${data.type}) has been specified.`);
+            logger.error(`Wrong message type(${parsedMessage.type}) has been specified.`);
             logger.error('Ignore the message.');
             break;
         }
@@ -528,14 +529,12 @@ class P2pServer {
   }
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    const payload = {
-      type: MessageTypes.CHAIN_SEGMENT_RESPONSE,
-      chainSegment,
-      number,
-      catchUpInfo,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: DATA_PROTOCOL_VERSION
-    };
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_RESPONSE,
+        { chainSegment: chainSegment, number: number, catchUpInfo: catchUpInfo });
+    if (!payload) {
+      logger.error('The cahin segment cannot be sent because of msg encapsulation failure.');
+      return;
+    }
     socket.send(JSON.stringify(payload));
   }
 
