@@ -204,6 +204,10 @@ class P2pClient {
 
   broadcastConsensusMessage(consensusMessage) {
     const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage });
+    if (!payload) {
+      logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
+      return;
+    }
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
       socket.send(stringPayload);
@@ -214,11 +218,19 @@ class P2pClient {
   requestChainSegment(socket, lastBlock) {
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST,
         { lastBlock: lastBlock });
+    if (!payload) {
+      logger.error('The request chainSegment cannot be sent because of msg encapsulation failure.');
+      return;
+    }
     socket.send(JSON.stringify(payload));
   }
 
   broadcastTransaction(transaction) {
     const payload = encapsulateMessage(MessageTypes.TRANSACTION, { transaction: transaction });
+    if (!payload) {
+      logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');
+      return;
+    }
     const stringPayload = JSON.stringify(payload);
     Object.values(this.outbound).forEach(socket => {
       socket.send(stringPayload);
@@ -234,6 +246,10 @@ class P2pClient {
     const signature = signMessage(body, this.server.getNodePrivateKey());
     const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
+    if (!payload) {
+      logger.error('The address cannot be sent because of msg encapsulation failure.');
+      return;
+    }
     socket.send(JSON.stringify(payload));
   }
 
