@@ -138,11 +138,11 @@ function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersi
 function encapsulateMessage(type, dataObj) {
   if (!type) {
     logger.error('Type must be specified.');
-    throw new Error('Type must be specified.');
+    return null;
   };
   if (!dataObj) {
     logger.error('dataObj cannot be null or undefined.');
-    throw new Error('dataObj cannot be null or undefined.');
+    return null;
   }
   const message = {
     type: type,

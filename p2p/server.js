@@ -407,6 +407,10 @@ class P2pServer {
               const signature = signMessage(body, this.getNodePrivateKey());
               const payload = encapsulateMessage(MessageTypes.ADDRESS_RESPONSE,
                   { body: body, signature: signature });
+              if (!payload) {
+                logger.error('The address cannot be sent because of msg encapsulation failure.');
+                return;
+              }
               socket.send(JSON.stringify(payload));
             }
             break;
@@ -527,6 +531,10 @@ class P2pServer {
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_RESPONSE,
         { chainSegment: chainSegment, number: number, catchUpInfo: catchUpInfo });
+    if (!payload) {
+      logger.error('The cahin segment cannot be sent because of msg encapsulation failure.');
+      return;
+    }
     socket.send(JSON.stringify(payload));
   }
 
