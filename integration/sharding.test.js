@@ -1438,37 +1438,79 @@ describe('Sharding', () => {
             {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 2
+                    }
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 0
+                    }
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 1
+                    }
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_function": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_rule": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_owner": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
           ]);
@@ -1575,7 +1617,14 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: 1
+                      gas_amount: {
+                        app: {
+                          test_value: {
+                            bandwidth: 1,
+                            state: 0
+                          }
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1610,7 +1659,14 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: 1
+                      gas_amount: {
+                        app: {
+                          test_value: {
+                            bandwidth: 1,
+                            state: 0
+                          }
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1645,7 +1701,14 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: 1
+                      gas_amount: {
+                        app: {
+                          afan: {
+                            bandwidth: 1,
+                            state: 0
+                          }
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1689,7 +1752,14 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: 1
+                      gas_amount: {
+                        app: {
+                          test_value: {
+                            bandwidth: 1,
+                            state: 0
+                          }
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1736,7 +1806,14 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: 1
+                      gas_amount: {
+                        app: {
+                          test_value: {
+                            bandwidth: 1,
+                            state: 0
+                          }
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1783,7 +1860,14 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: 1
+                      gas_amount: {
+                        app: {
+                          afan: {
+                            bandwidth: 1,
+                            state: 0
+                          }
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),

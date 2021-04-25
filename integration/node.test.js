@@ -1395,37 +1395,79 @@ describe('Blockchain Node', () => {
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_value": {
+                    "bandwidth": 1,
+                    "state": 2
+                  }
+                }
+              }
             }
           },
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_value": {
+                    "bandwidth": 1,
+                    "state": 1
+                  }
+                }
+              }
             }
           },
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_value": {
+                    "bandwidth": 1,
+                    "state": 1
+                  }
+                }
+              }
             }
           },
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_function": {
+                    "bandwidth": 1,
+                    "state": 3
+                  }
+                }
+              }
             }
           },
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_rule": {
+                    "bandwidth": 1,
+                    "state": 3
+                  }
+                }
+              }
             }
           },
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_owner": {
+                    "bandwidth": 1,
+                    "state": 3
+                  }
+                }
+              }
             }
           },
         ]);
@@ -1500,19 +1542,40 @@ describe('Blockchain Node', () => {
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_value": {
+                    "bandwidth": 1,
+                    "state": 2
+                  }
+                }
+              }
             }
           },
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_value": {
+                    "bandwidth": 1,
+                    "state": 1
+                  }
+                }
+              }
             }
           },
           {
             "code": 0,
             "gas": {
-              "gas_amount": 1
+              "gas_amount": {
+                "app": {
+                  "test_value": {
+                    "bandwidth": 1,
+                    "state": 1
+                  }
+                }
+              }
             }
           },
           {
@@ -1665,7 +1728,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 2
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1674,7 +1744,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 1
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1683,7 +1760,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 1
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1692,7 +1776,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_function": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1701,7 +1792,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_rule": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1710,7 +1808,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+                "gas_amount": {
+                  "app": {
+                    "test_owner": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1720,37 +1825,79 @@ describe('Blockchain Node', () => {
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_value": {
+                        "bandwidth": 1,
+                        "state": 2
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_value": {
+                        "bandwidth": 1,
+                        "state": 1
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_value": {
+                        "bandwidth": 1,
+                        "state": 1
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_function": {
+                        "bandwidth": 1,
+                        "state": 3
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_rule": {
+                        "bandwidth": 1,
+                        "state": 3
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_owner": {
+                        "bandwidth": 1,
+                        "state": 3
+                      }
+                    }
+                  }
                 }
               }
             ],
@@ -1914,7 +2061,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+              "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 2
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1923,7 +2077,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+              "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 1
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1932,7 +2093,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+              "gas_amount": {
+                  "app": {
+                    "test_value": {
+                      "bandwidth": 1,
+                      "state": 1
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1948,7 +2116,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+              "gas_amount": {
+                  "app": {
+                    "test_function": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1957,7 +2132,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+              "gas_amount": {
+                  "app": {
+                    "test_rule": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1966,7 +2148,14 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas": {
-                "gas_amount": 1
+              "gas_amount": {
+                  "app": {
+                    "test_owner": {
+                      "bandwidth": 1,
+                      "state": 3
+                    }
+                  }
+                }
               }
             },
             "tx_hash": "erased"
@@ -1976,37 +2165,79 @@ describe('Blockchain Node', () => {
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_value": {
+                        "bandwidth": 1,
+                        "state": 2
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_value": {
+                        "bandwidth": 1,
+                        "state": 1
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_value": {
+                        "bandwidth": 1,
+                        "state": 1
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_function": {
+                        "bandwidth": 1,
+                        "state": 3
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_rule": {
+                        "bandwidth": 1,
+                        "state": 3
+                      }
+                    }
+                  }
                 }
               },
               {
                 "code": 0,
                 "gas": {
-                  "gas_amount": 1
+                  "gas_amount": {
+                    "app": {
+                      "test_owner": {
+                        "bandwidth": 1,
+                        "state": 3
+                      }
+                    }
+                  }
                 }
               }
             ],
@@ -2054,7 +2285,14 @@ describe('Blockchain Node', () => {
               result: {
                 code: 0,
                 gas: {
-                  gas_amount: 1
+                  gas_amount: {
+                    app: {
+                      test_value: {
+                        bandwidth: 1,
+                        state: 0
+                      }
+                    }
+                  }
                 }
               },
               tx_hash: ChainUtil.hashSignature(signature),
@@ -2098,7 +2336,14 @@ describe('Blockchain Node', () => {
                 result: {
                   code: 0,
                   gas: {
-                    gas_amount: 1
+                    gas_amount: {
+                      app: {
+                        test_value: {
+                          bandwidth: 1,
+                          state: 0
+                        }
+                      }
+                    }
                   }
                 },
                 tx_hash: ChainUtil.hashSignature(signature),
@@ -2306,110 +2551,6 @@ describe('Blockchain Node', () => {
             },
             timestamp: Date.now(),
             nonce: -1
-          }
-        ];
-        const resultList = [
-          {
-            "result": {
-              "code": 0,
-              "gas": {
-                "gas_amount": 1
-              }
-            },
-            "tx_hash": "to_be_set"
-          },
-          {
-            "result": {
-              "code": 0,
-              "gas": {
-                "gas_amount": 1
-              }
-            },
-            "tx_hash": "to_be_set"
-          },
-          {
-            "result": {
-              "code": 0,
-              "gas": {
-                "gas_amount": 1
-              }
-            },
-            "tx_hash": "to_be_set"
-          },
-          {
-            "result": {
-              "code": 103,
-              "error_message": "No .write permission on: some/wrong/path",
-            },
-            "tx_hash": "to_be_set"
-          },
-          {
-            "result": {
-              "code": 0,
-              "gas": {
-                "gas_amount": 1
-              }
-            },
-            "tx_hash": "to_be_set"
-          },
-          {
-            "result": {
-              "code": 0,
-              "gas": {
-                "gas_amount": 1
-              }
-            },
-            "tx_hash": "to_be_set"
-          },
-          {
-            "result": {
-              "code": 0,
-              "gas": {
-                "gas_amount": 1
-              }
-            },
-            "tx_hash": "to_be_set"
-          },
-          {
-            "result": [
-              {
-                "code": 0,
-                "gas": {
-                  "gas_amount": 1
-                }
-              },
-              {
-                "code": 0,
-                "gas": {
-                  "gas_amount": 1
-                }
-              },
-              {
-                "code": 0,
-                "gas": {
-                  "gas_amount": 1
-                }
-              },
-              {
-                "code": 0,
-                "gas": {
-                  "gas_amount": 1
-                }
-              },
-              {
-                "code": 0,
-                "gas": {
-                  "gas_amount": 1
-                }
-              },
-              {
-                "code": 0,
-                "gas": {
-                  "gas_amount": 1
-                }
-              }
-            ],
-            "tx_hash": "to_be_set"
           }
         ];
         const txList = [];
@@ -2882,15 +3023,15 @@ describe('Blockchain Node', () => {
           value: 10,
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
-        // With account registration gas amount.
-        const functions = new Functions(null, null);
-        const gasAmountExpected = 1 +
-            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount +
-            GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 0,
           "gas": {
-            "gas_amount": gasAmountExpected
+            "gas_amount": {
+              "service": {
+                "bandwidth": 3,
+                "state": 1002
+              }
+            }
           }
         });
       });
@@ -2901,14 +3042,15 @@ describe('Blockchain Node', () => {
           value: 10,
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
-        // Without account registration gas amount.
-        const functions = new Functions(null, null);
-        const gasAmountExpected = 1 +
-            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount;
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 0,
           "gas": {
-            "gas_amount": gasAmountExpected
+            "gas_amount": {
+              "service": {
+                "bandwidth": 3,
+                "state": 2
+              }
+            }
           }
         });
       });
@@ -2919,16 +3061,15 @@ describe('Blockchain Node', () => {
           value: 10,
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
-        // With account registration gas amount.
-        const functions = new Functions(null, null);
-        const gasAmountExpected = 1 +
-            functions.nativeFunctionMap[NativeFunctionIds.STAKE].execGasAmount +
-            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount +
-            GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 0,
           "gas": {
-            "gas_amount": gasAmountExpected
+            "gas_amount": {
+              "service": {
+                "bandwidth": 7,
+                "state": 1002
+              }
+            }
           }
         });
       });
@@ -2939,15 +3080,15 @@ describe('Blockchain Node', () => {
           value: 10,
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
-        // Without account registration gas amount.
-        const functions = new Functions(null, null);
-        const gasAmountExpected = 1 +
-            functions.nativeFunctionMap[NativeFunctionIds.STAKE].execGasAmount +
-            functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount;
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 0,
           "gas": {
-            "gas_amount": gasAmountExpected
+            "gas_amount": {
+              "service": {
+                "bandwidth": 7,
+                "state": 2
+              }
+            }
           }
         });
       });
@@ -2958,12 +3099,20 @@ describe('Blockchain Node', () => {
           value: 'some value',
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
-        // With external RPC call gas amount.
-        const gasAmountExpected = 1 + GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT;
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 0,
           "gas": {
-            "gas_amount": gasAmountExpected
+            "gas_amount": {
+              "service": {
+                "bandwidth": 10
+              },
+              "app": {
+                "test_function_triggering": {
+                  "bandwidth": 1,
+                  "state": 1
+                }
+              }
+            }
           }
         });
       });

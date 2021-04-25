@@ -303,25 +303,31 @@ describe("ChainUtil", () => {
 
   describe("getTotalGasAmount", () => {
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.getTotalGasAmount(null), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(undefined), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount({}), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: 'gas' }), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: {} }), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(true), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount('result'), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(0), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(1), 0);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(null), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount(undefined), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount({}), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: 'gas' }), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: {} }), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount(true), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount('result'), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount(0), { service: 0, app: {} });
+      assert.deepEqual(ChainUtil.getTotalGasAmount(1), { service: 0, app: {} });
     })
 
     it("when single operation result input", () => {
       const result = {
         "code": 0,
         "gas": {
-          "gas_amount": 100
+          "gas_amount": {
+            "service": {
+              "bandwidth": 50,
+              "state": 50
+            },
+            "app": {}
+          }
         }
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 100);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), { service: 100, app: {} });
     })
 
     it("when multiple operation result input", () => {
@@ -329,23 +335,38 @@ describe("ChainUtil", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {
+              service: {
+                "bandwidth": 1,
+              },
+              app: {}
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 10
+            "gas_amount": {
+              service: {
+                "bandwidth": 10
+              },
+              app: {}
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 100
+            "gas_amount": {
+              service: {
+                "bandwidth": 100
+              },
+              app: {}
+            }
           }
         },
       ];
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 111);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), { service: 111, app: {} });
     })
   })
 })

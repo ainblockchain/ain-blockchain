@@ -397,11 +397,12 @@ describe("Functions", () => {
             failCount: 0,
           });
           const gasAmountActual = functions.getTotalGasAmount();
-          // With account registration gas amount.
-          const gasAmountExpected =
-              functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount +
-                  GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
-          expect(gasAmountActual).to.equal(gasAmountExpected);
+          assert.deepEqual(gasAmountActual, {
+            "service": {
+              "bandwidth": 2,
+              "state": 1000
+            }
+          });
         });
       });
 
@@ -432,10 +433,11 @@ describe("Functions", () => {
             failCount: 0,
           });
           const gasAmountActual = functions.getTotalGasAmount();
-          // Without account registration gas amount.
-          const gasAmountExpected =
-              functions.nativeFunctionMap[NativeFunctionIds.TRANSFER].execGasAmount;
-          expect(gasAmountActual).to.equal(gasAmountExpected);
+          assert.deepEqual(gasAmountActual, {
+            "service": {
+              "bandwidth": 2
+            }
+          });
         });
       });
 
@@ -465,9 +467,11 @@ describe("Functions", () => {
             failCount: 0,
           });
           const gasAmountActual = functions.getTotalGasAmount();
-          // With external RPC call gas amount.
-          const gasAmountExpected = GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT;
-          expect(gasAmountActual).to.equal(gasAmountExpected);
+          assert.deepEqual(gasAmountActual, {
+            "service": {
+              "bandwidth": 10
+            }
+          });
         });
       })
     });
