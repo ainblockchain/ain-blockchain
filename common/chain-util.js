@@ -297,21 +297,74 @@ class ChainUtil {
     return code !== 0;
   }
 
+  static isAppTx(parsedPath) {
+    return _.get(parsedPath, 0) === 'apps' || !ChainUtil.isServiceTx(parsedPath);
+  }
+
+  static isServiceTx(parsedPath) {
+    const { NATIVE_SERVICE_TYPES } = require('../common/constants');
+    return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
+  }
+
+  static getGasAmountObj(parsedPath, bandwidth, state) {
+    const gasAmount = {};
+    if (ChainUtil.isServiceTx(parsedPath)) {
+      ChainUtil.setJsObject(gasAmount, ['service', 'bandwidth'], bandwidth);
+      ChainUtil.setJsObject(gasAmount, ['service', 'state'], state);
+    } else {
+      const appName = _.get(parsedPath, 1);
+      if (!appName) return;
+      ChainUtil.setJsObject(gasAmount, ['app', appName, 'bandwidth'], bandwidth);
+      ChainUtil.setJsObject(gasAmount, ['app', appName, 'state'], state);
+    }
+    return gasAmount;
+  }
+
+  static mergeGasAmounts(gasAmountObj1, gasAmountObj2) {
+    _.mergeWith(gasAmountObj1, gasAmountObj2, (a, b) => {
+      if (ChainUtil.isNumber(a) && ChainUtil.isNumber(b)) {
+        return a + b;
+      }
+    });
+  }
+
+  static getSingleOpTotalGasAmount(result) {
+    const gasAmount = {
+      service: 0,
+      app: {}
+    };
+    if (!result) {
+      return gasAmount;
+    }
+    const serviceBandwidth = _.get(result, 'gas.gas_amount.service.bandwidth', 0);
+    const serviceState = _.get(result, 'gas.gas_amount.service.state', 0);
+    ChainUtil.setJsObject(gasAmount, ['service'], serviceBandwidth + serviceState);
+    const apps = _.get(result, 'gas.gas_amount.app');
+    if (apps) {
+      for (const [appName, val] of Object.entries(apps)) {
+        const appBandwidth = _.get(val, 'bandwidth', 0);
+        const appState = _.get(val, 'state', 0);
+        ChainUtil.setJsObject(gasAmount, ['app', appName], appBandwidth + appState);
+      }
+    }
+    return gasAmount;
+  }
+
   /**
    * Returns the total gas amount of the result (esp. multi-operation result).
    */
   static getTotalGasAmount(result) {
-    if (!result) {
-      return 0;
-    }
     if (Array.isArray(result)) {
-      let gasAmount = 0;
+      const gasAmount = {
+        service: 0,
+        app: {}
+      };
       for (const elem of result) {
-        gasAmount += _.get(elem, 'gas.gas_amount', 0);
+        ChainUtil.mergeGasAmounts(gasAmount, ChainUtil.getSingleOpTotalGasAmount(elem));
       }
       return gasAmount;
     }
-    return _.get(result, 'gas.gas_amount', 0);
+    return ChainUtil.getSingleOpTotalGasAmount(result);
   }
 
   /**
@@ -324,13 +377,22 @@ class ChainUtil {
   static getTotalGasCost(gasPrice, result) {
     const { MICRO_AIN } = require('./constants');
     if (gasPrice === undefined) gasPrice = 0; // Default gas price = 0 microain
-    return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
+    const gasAmount = ChainUtil.getTotalGasAmount(result);
+    const gasPriceAIN = gasPrice * MICRO_AIN;
+    const gasCost = {
+      service: gasAmount.service * gasPriceAIN,
+      app: {}
+    };
+    for (const [appName, appGasAmount] of Object.entries(gasAmount.app)) {
+      ChainUtil.setJsObject(gasCost, ['app', appName], appGasAmount * gasPriceAIN);
+    }
+    return gasCost;
   }
 
-  static getGasAmountCostTotalFromTxList(txList, resList) {
-    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
+  static getServiceGasAmountCostTotalFromTxList(txList, resList) {
+    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur).service, 0);
     const gasCostTotal = resList.reduce((acc, cur, index) => {
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur).service;
     }, 0);
     return { gasAmountTotal, gasCostTotal };
   }
