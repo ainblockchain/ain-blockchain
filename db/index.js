@@ -332,11 +332,13 @@ class DB {
   writeDatabase(fullPath, stateObj) {
     const stateTree = StateNode.fromJsObject(stateObj, this.stateVersion);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
+    let treeSizeBefore = 0;
     if (fullPath.length === 0) {
       this.stateRoot = stateTree;
     } else {
       const label = fullPath[fullPath.length - 1];
       const parent = this.getRefForWriting(pathToParent);
+      treeSizeBefore = parent.getTreeSize();
       parent.setChild(label, stateTree);
     }
     if (isEmptyNode(stateTree)) {
@@ -347,6 +349,9 @@ class DB {
     if (!LIGHTWEIGHT) {
       updateProofHashForAllRootPaths(pathToParent, this.stateRoot);
     }
+    const parent = DB.getRefForReading(this.stateRoot, pathToParent);
+    const treeSizeAfter = parent ? parent.getTreeSize() : 0;
+    return treeSizeAfter - treeSizeBefore;
   }
 
   removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
@@ -605,11 +610,11 @@ class DB {
       }
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    this.writeDatabase(fullPath, valueCopy);
-    let gasAmount = 1;
+    const treeSizeDiff = this.writeDatabase(fullPath, valueCopy);
+    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
-      gasAmount += this.func.getTotalGasAmount();
+      ChainUtil.mergeGasAmounts(gasAmount, this.func.getTotalGasAmount());
     }
     const gas = {
       gas_amount: gasAmount,
@@ -667,10 +672,10 @@ class DB {
     const curFunction = this.getFunction(functionPath, isGlobal);
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    this.writeDatabase(fullPath, newFunction);
-
+    const treeSizeDiff = this.writeDatabase(fullPath, newFunction);
+    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
     const gas = {
-      gas_amount: 1,
+      gas_amount: gasAmount,
     };
     return ChainUtil.returnTxResult(0, null, gas);
   }
@@ -697,10 +702,10 @@ class DB {
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
-    this.writeDatabase(fullPath, ruleCopy);
-
+    const treeSizeDiff = this.writeDatabase(fullPath, ruleCopy);
+    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
     const gas = {
-      gas_amount: 1,
+      gas_amount: gasAmount,
     };
     return ChainUtil.returnTxResult(0, null, gas);
   }
@@ -727,10 +732,10 @@ class DB {
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
-    this.writeDatabase(fullPath, ownerCopy);
-
+    const treeSizeDiff = this.writeDatabase(fullPath, ownerCopy);
+    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
     const gas = {
-      gas_amount: 1,
+      gas_amount: gasAmount,
     };
     return ChainUtil.returnTxResult(0, null, gas);
   }
@@ -869,13 +874,14 @@ class DB {
       const gasPrice = tx.tx_body.gas_price;
       if (gasPrice > 0 && blockNumber > 0) {
         const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
-        // TODO(lia): update this to billing accounts for app transactions
-        const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
-        const gasFeeCollectRes = this.setValue(
-            gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
-        if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
-          return ChainUtil.returnTxResult(
-              16, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`);
+        if (gasCost.service > 0) {
+          const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
+          const gasFeeCollectRes = this.setValue(
+              gasFeeCollectPath, { amount: gasCost.service }, auth, timestamp, tx, false);
+          if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
+            return ChainUtil.returnTxResult(
+                16, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`);
+          }
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
