@@ -270,6 +270,49 @@ describe("ChainUtil", () => {
     })
   })
 
+  describe("mergeNumericJsObjects", () => {
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.mergeNumericJsObjects({
+        "node1": {
+          "node11": {
+            "node111": 1,
+            "node112": 2
+          },
+          "node12": {
+            "node121": 3,
+            "node122": 4
+          },
+        }
+      }, {
+        "node1": {
+          "node11": {
+            "node111": 10,
+            "node112": 20
+          },
+          "node13": {
+            "node131": 5,
+            "node132": 6
+          },
+        }
+      }), {
+        "node1": {
+          "node11": {
+            "node111": 11,
+            "node112": 22
+          },
+          "node12": {
+            "node121": 3,
+            "node122": 4
+          },
+          "node13": {
+            "node131": 5,
+            "node132": 6
+          },
+        }
+      });
+    });
+  })
+
   describe("isFailedTx", () => {
     it("when normal input", () => {
       expect(ChainUtil.isFailedTx({

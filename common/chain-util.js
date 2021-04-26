@@ -267,6 +267,16 @@ class ChainUtil {
     return true;
   }
 
+  static mergeNumericJsObjects(obj1, obj2) {
+    return _.mergeWith(obj1, obj2, (a, b) => {
+      if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
+        if (ChainUtil.isNumber(a) && ChainUtil.isNumber(b)) {
+          return a + b;
+        }
+      }
+    });
+  }
+
   static simplifyProperties(obj) {
     const newObj = {};
     for (const key of Object.keys(obj)) {
@@ -297,37 +307,30 @@ class ChainUtil {
     return code !== 0;
   }
 
-  static isAppTx(parsedPath) {
+  static isAppPath(parsedPath) {
     const { PredefinedDbPaths } = require('../common/constants');
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  // TODO(lia): fix testing paths (writing at the root) and update isServiceTx().
-  static isServiceTx(parsedPath) {
+  // TODO(lia): fix testing paths (writing at the root) and update isServicePath().
+  static isServicePath(parsedPath) {
     const { NATIVE_SERVICE_TYPES } = require('../common/constants');
     return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
   }
 
-  static getGasAmountObj(parsedPath, bandwidth, state) {
+  static getGasAmountObj(path, bandwidth, state) {
+    const parsedPath = ChainUtil.parsePath(path);
     const gasAmount = {};
-    if (ChainUtil.isServiceTx(parsedPath)) {
+    if (ChainUtil.isServicePath(parsedPath)) {
       ChainUtil.setJsObject(gasAmount, ['service', 'bandwidth'], bandwidth);
       ChainUtil.setJsObject(gasAmount, ['service', 'state'], state);
-    } else if (ChainUtil.isAppTx(parsedPath)) {
+    } else if (ChainUtil.isAppPath(parsedPath)) {
       const appName = _.get(parsedPath, 1);
       if (!appName) return;
       ChainUtil.setJsObject(gasAmount, ['app', appName, 'bandwidth'], bandwidth);
       ChainUtil.setJsObject(gasAmount, ['app', appName, 'state'], state);
     }
     return gasAmount;
-  }
-
-  static mergeGasAmounts(gasAmountObj1, gasAmountObj2) {
-    _.mergeWith(gasAmountObj1, gasAmountObj2, (a, b) => {
-      if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
-        return ChainUtil.numberOrZero(a) + ChainUtil.numberOrZero(b);
-      }
-    });
   }
 
   static getSingleOpTotalGasAmount(result) {

@@ -287,7 +287,7 @@ class Functions {
   }
 
   addToTotalGasAmount(amount) {
-    ChainUtil.mergeGasAmounts(this.totalGasAmount, amount);
+    ChainUtil.mergeNumericJsObjects(this.totalGasAmount, amount);
   }
 
   static formatFunctionParams(

@@ -1438,37 +1438,67 @@ describe('Sharding', () => {
             {
               "code": 0,
               "gas": {
-                "gas_amount": {}
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 2
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": {}
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 0
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": {}
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 1
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": {}
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 3
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": {}
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 3
+                  }
+                }
               }
             },
             {
               "code": 0,
               "gas": {
-                "gas_amount": {}
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 3
+                  }
+                }
               }
             },
           ]);
@@ -1528,21 +1558,57 @@ describe('Sharding', () => {
           assert.deepEqual(_.get(body, 'result.result'), [
             {
               "code": 0,
+              "gas_amount": {
+                "service": {
+                  "bandwidth": 1,
+                  "state": 0
+                }
+              }
             },
             {
               "code": 0,
+              "gas_amount": {
+                "service": {
+                  "bandwidth": 1,
+                  "state": 0
+                }
+              }
             },
             {
               "code": 0,
+              "gas_amount": {
+                "service": {
+                  "bandwidth": 1,
+                  "state": 0
+                }
+              }
             },
             {
               "code": 0,
+              "gas_amount": {
+                "service": {
+                  "bandwidth": 1,
+                  "state": 0
+                }
+              }
             },
             {
               "code": 0,
+              "gas_amount": {
+                "service": {
+                  "bandwidth": 1,
+                  "state": 0
+                }
+              }
             },
             {
               "code": 0,
+              "gas_amount": {
+                "service": {
+                  "bandwidth": 1,
+                  "state": 0
+                }
+              }
             },
           ]);
           assert.deepEqual(body.code, 0);
@@ -1575,7 +1641,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: {}
+                      gas_amount: {
+                        service: {
+                          bandwidth: 1,
+                          state: 0
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1610,7 +1681,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: {}
+                      gas_amount: {
+                        service: {
+                          bandwidth: 1,
+                          state: 0
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1696,7 +1772,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: {}
+                      gas_amount: {
+                        service: {
+                          bandwidth: 1,
+                          state: 0
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1743,7 +1824,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas: {
-                      gas_amount: {}
+                      gas_amount: {
+                        service: {
+                          bandwidth: 1,
+                          state: 0
+                        }
+                      }
                     }
                   },
                   tx_hash: ChainUtil.hashSignature(signature),

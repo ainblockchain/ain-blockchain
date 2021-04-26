@@ -1287,7 +1287,7 @@ describe("DB operations", () => {
   })
 
   describe("executeMultiSetOperation", () => {
-    it("when set applied successfully", () => {
+    it("when SET operation applied successfully", () => {
       assert.deepEqual(node.db.executeMultiSetOperation([
         {
           // Default type: SET_VALUE
@@ -1333,37 +1333,67 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": 1
+              }
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": 0
+              }
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": 0
+              }
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": 0
+              }
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": -3
+              }
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": -25
+              }
+            }
           }
         }
       ]);
@@ -1411,7 +1441,12 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": 1
+              }
+            }
           }
         },
         {
@@ -1445,7 +1480,12 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": {}
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+                "state": 1
+              }
+            }
           }
         },
         {
