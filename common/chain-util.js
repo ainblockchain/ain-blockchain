@@ -324,8 +324,8 @@ class ChainUtil {
 
   static mergeGasAmounts(gasAmountObj1, gasAmountObj2) {
     _.mergeWith(gasAmountObj1, gasAmountObj2, (a, b) => {
-      if (ChainUtil.isNumber(a) && ChainUtil.isNumber(b)) {
-        return a + b;
+      if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
+        return ChainUtil.numberOrZero(a) + ChainUtil.numberOrZero(b);
       }
     });
   }
