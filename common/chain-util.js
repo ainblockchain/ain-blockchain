@@ -331,25 +331,10 @@ class ChainUtil {
   }
 
   static getSingleOpTotalGasAmount(result) {
-    const gasAmount = {
-      service: 0,
-      app: {}
-    };
     if (!result) {
-      return gasAmount;
+      return 0;
     }
-    const serviceBandwidth = _.get(result, 'gas.gas_amount.service.bandwidth', 0);
-    const serviceState = _.get(result, 'gas.gas_amount.service.state', 0);
-    ChainUtil.setJsObject(gasAmount, ['service'], serviceBandwidth + serviceState);
-    const apps = _.get(result, 'gas.gas_amount.app');
-    if (apps) {
-      for (const [appName, val] of Object.entries(apps)) {
-        const appBandwidth = _.get(val, 'bandwidth', 0);
-        const appState = _.get(val, 'state', 0);
-        ChainUtil.setJsObject(gasAmount, ['app', appName], appBandwidth + appState);
-      }
-    }
-    return gasAmount;
+    return _.get(result, 'gas.gas_amount.service.bandwidth', 0);
   }
 
   /**
@@ -357,20 +342,17 @@ class ChainUtil {
    */
   static getTotalGasAmount(result) {
     if (Array.isArray(result)) {
-      const gasAmount = {
-        service: 0,
-        app: {}
-      };
+      let gasAmount = 0;
       for (const elem of result) {
-        ChainUtil.mergeGasAmounts(gasAmount, ChainUtil.getSingleOpTotalGasAmount(elem));
+        gasAmount += ChainUtil.getSingleOpTotalGasAmount(elem);
       }
       return gasAmount;
     }
     return ChainUtil.getSingleOpTotalGasAmount(result);
   }
-
   /**
    * Calculate the gas cost (unit = ain).
+   * Only the service bandwidth gas amount is counted toward gas cost.
    * 
    * @param {Number} gasPrice gas price in microain
    * @param {Object} result transaction execution result
@@ -379,22 +361,25 @@ class ChainUtil {
   static getTotalGasCost(gasPrice, result) {
     const { MICRO_AIN } = require('./constants');
     if (gasPrice === undefined) gasPrice = 0; // Default gas price = 0 microain
-    const gasAmount = ChainUtil.getTotalGasAmount(result);
     const gasPriceAIN = gasPrice * MICRO_AIN;
-    const gasCost = {
-      service: gasAmount.service * gasPriceAIN,
-      app: {}
-    };
-    for (const [appName, appGasAmount] of Object.entries(gasAmount.app)) {
-      ChainUtil.setJsObject(gasCost, ['app', appName], appGasAmount * gasPriceAIN);
+    if (Array.isArray(result)) {
+      let gasCostTotal = 0;
+      for (const elem of result) {
+        const gasCost = ChainUtil.getSingleOpTotalGasAmount(elem) * gasPriceAIN;
+        ChainUtil.setJsObject(elem, ['gas', 'gas_cost'], gasCost);
+        gasCostTotal += gasCost;
+      }
+      return gasCostTotal;
     }
+    const gasCost = ChainUtil.getTotalGasAmount(result) * gasPriceAIN;
+    ChainUtil.setJsObject(result, ['gas', 'gas_cost'], gasCost);
     return gasCost;
   }
 
-  static getServiceGasAmountCostTotalFromTxList(txList, resList) {
-    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur).service, 0);
+  static getServiceGasCostTotalFromTxList(txList, resList) {
+    const gasAmountTotal = resList.reduce((acc, cur) => acc + _.get(cur, 'service.bandwidth', 0), 0);
     const gasCostTotal = resList.reduce((acc, cur, index) => {
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur).service;
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
     }, 0);
     return { gasAmountTotal, gasCostTotal };
   }
