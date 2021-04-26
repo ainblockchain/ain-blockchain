@@ -377,7 +377,7 @@ class ChainUtil {
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
-    const gasAmountTotal = resList.reduce((acc, cur) => acc + _.get(cur, 'service.bandwidth', 0), 0);
+    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
     const gasCostTotal = resList.reduce((acc, cur, index) => {
       return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
     }, 0);
