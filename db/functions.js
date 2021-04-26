@@ -74,7 +74,7 @@ class Functions {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 2 },
     };
     this.callStack = [];
-    this.totalGasAmount = 0;
+    this.totalGasAmount = {};
   }
 
   /**
@@ -130,7 +130,7 @@ class Functions {
                   `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                   formattedParams);
               logger.info(
-                  `    totalGasAmount: ${this.getTotalGasAmount()} with pushed call: ` +
+                  `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} with pushed call: ` +
                   `${JSON.stringify(this.getTopCall(), null, 2)}\n`);
             }
             const newAuth = Object.assign(
@@ -162,7 +162,7 @@ class Functions {
                     logger.error(formattedResult);
                   }
                   logger.info(
-                      `    totalGasAmount: ${this.getTotalGasAmount()} with popped call: ` +
+                      `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} with popped call: ` +
                       `${JSON.stringify(call, null, 2)}\n`);
                 }
               }
@@ -178,7 +178,7 @@ class Functions {
                   `event listener '${functionEntry.event_listener}' with:\n` +
                   formattedParams);
               logger.info(
-                  `    totalGasAmount: ${this.getTotalGasAmount()} before adding REST function: ` +
+                  `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} before adding REST function: ` +
                   `${functionEntry.function_id}\n`);
             }
             promises.push(axios.post(functionEntry.event_listener, {
@@ -195,10 +195,14 @@ class Functions {
               failCount++;
               return true;
             }));
-            this.addToTotalGasAmount(GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT);
+            this.addToTotalGasAmount({
+              service: {
+                bandwidth: GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT
+              }
+            });
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
-                  `    totalGasAmount: ${this.getTotalGasAmount()} after adding REST function: ` +
+                  `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} after adding REST function: ` +
                   `${functionEntry.function_id}\n`);
             }
             triggerCount++;
@@ -221,7 +225,11 @@ class Functions {
     const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
     const callDepth = this.callStackSize();
-    const gasAmount = nativeFunction.execGasAmount;
+    const gasAmount = {
+      service: {
+        bandwidth: nativeFunction.execGasAmount
+      }
+    };
     this.callStack.push({
       fid,
       fidList,
@@ -275,11 +283,11 @@ class Functions {
   }
 
   clearTotalGasAmount() {
-    this.totalGasAmount = 0;
+    this.totalGasAmount = {};
   }
 
   addToTotalGasAmount(amount) {
-    this.totalGasAmount += amount;
+    ChainUtil.mergeGasAmounts(this.totalGasAmount, amount);
   }
 
   static formatFunctionParams(
@@ -953,7 +961,11 @@ class Functions {
     }
     const toBalance = this.db.getValue(toPath);
     if (toBalance === null) {
-      this.addToTotalGasAmount(GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT);
+      this.addToTotalGasAmount({
+        service: {
+          state: GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT
+        }
+      });
     }
     const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(decResult)) {

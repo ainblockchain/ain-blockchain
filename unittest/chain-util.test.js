@@ -318,10 +318,16 @@ describe("ChainUtil", () => {
       const result = {
         "code": 0,
         "gas": {
-          "gas_amount": 100
+          "gas_amount": {
+            "service": {
+              "bandwidth": 50,
+              "state": 50
+            },
+            "app": {}
+          }
         }
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 100);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 50);
     })
 
     it("when multiple operation result input", () => {
@@ -329,19 +335,34 @@ describe("ChainUtil", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+              },
+              "app": {}
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 10
+            "gas_amount": {
+              "service": {
+                "bandwidth": 10
+              },
+              "app": {}
+            }
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 100
+            "gas_amount": {
+              "service": {
+                "bandwidth": 100
+              },
+              "app": {}
+            }
           }
         },
       ];
