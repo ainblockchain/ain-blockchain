@@ -52,7 +52,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const DATA_PROTOCOL_VERSION = "1.1.0";
+const DATA_PROTOCOL_VERSION = "1.2.0";
 if (!semver.valid(DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified in GenesisParams.network');
 }
