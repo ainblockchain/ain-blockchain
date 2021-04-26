@@ -1333,37 +1333,37 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         }
       ]);
@@ -1411,7 +1411,7 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         },
         {
@@ -1445,7 +1445,7 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": 1
+            "gas_amount": {}
           }
         },
         {

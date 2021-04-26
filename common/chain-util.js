@@ -297,25 +297,62 @@ class ChainUtil {
     return code !== 0;
   }
 
+  static isAppTx(parsedPath) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
+  }
+
+  // TODO(lia): fix testing paths (writing at the root) and update isServiceTx().
+  static isServiceTx(parsedPath) {
+    const { NATIVE_SERVICE_TYPES } = require('../common/constants');
+    return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
+  }
+
+  static getGasAmountObj(parsedPath, bandwidth, state) {
+    const gasAmount = {};
+    if (ChainUtil.isServiceTx(parsedPath)) {
+      ChainUtil.setJsObject(gasAmount, ['service', 'bandwidth'], bandwidth);
+      ChainUtil.setJsObject(gasAmount, ['service', 'state'], state);
+    } else if (ChainUtil.isAppTx(parsedPath)) {
+      const appName = _.get(parsedPath, 1);
+      if (!appName) return;
+      ChainUtil.setJsObject(gasAmount, ['app', appName, 'bandwidth'], bandwidth);
+      ChainUtil.setJsObject(gasAmount, ['app', appName, 'state'], state);
+    }
+    return gasAmount;
+  }
+
+  static mergeGasAmounts(gasAmountObj1, gasAmountObj2) {
+    _.mergeWith(gasAmountObj1, gasAmountObj2, (a, b) => {
+      if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
+        return ChainUtil.numberOrZero(a) + ChainUtil.numberOrZero(b);
+      }
+    });
+  }
+
+  static getSingleOpTotalGasAmount(result) {
+    if (!result) {
+      return 0;
+    }
+    return _.get(result, 'gas.gas_amount.service.bandwidth', 0);
+  }
+
   /**
    * Returns the total gas amount of the result (esp. multi-operation result).
    */
   static getTotalGasAmount(result) {
-    if (!result) {
-      return 0;
-    }
     if (Array.isArray(result)) {
       let gasAmount = 0;
       for (const elem of result) {
-        gasAmount += _.get(elem, 'gas.gas_amount', 0);
+        gasAmount += ChainUtil.getSingleOpTotalGasAmount(elem);
       }
       return gasAmount;
     }
-    return _.get(result, 'gas.gas_amount', 0);
+    return ChainUtil.getSingleOpTotalGasAmount(result);
   }
-
   /**
    * Calculate the gas cost (unit = ain).
+   * Only the service bandwidth gas amount is counted toward gas cost.
    * 
    * @param {Number} gasPrice gas price in microain
    * @param {Object} result transaction execution result
@@ -324,10 +361,22 @@ class ChainUtil {
   static getTotalGasCost(gasPrice, result) {
     const { MICRO_AIN } = require('./constants');
     if (gasPrice === undefined) gasPrice = 0; // Default gas price = 0 microain
-    return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
+    const gasPriceAIN = gasPrice * MICRO_AIN;
+    if (Array.isArray(result)) {
+      let gasCostTotal = 0;
+      for (const elem of result) {
+        const gasCost = ChainUtil.getSingleOpTotalGasAmount(elem) * gasPriceAIN;
+        ChainUtil.setJsObject(elem, ['gas', 'gas_cost'], gasCost);
+        gasCostTotal += gasCost;
+      }
+      return gasCostTotal;
+    }
+    const gasCost = ChainUtil.getTotalGasAmount(result) * gasPriceAIN;
+    ChainUtil.setJsObject(result, ['gas', 'gas_cost'], gasCost);
+    return gasCost;
   }
 
-  static getGasAmountCostTotalFromTxList(txList, resList) {
+  static getServiceGasCostTotalFromTxList(txList, resList) {
     const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
     const gasCostTotal = resList.reduce((acc, cur, index) => {
       return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
