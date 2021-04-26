@@ -311,7 +311,7 @@ class Block {
       }
       resList.push(res);
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasAmountCostTotalFromTxList(genesisTxs, resList);
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
     return {
       stateProofHash: tempGenesisDb.getStateProof('/')[ProofProperties.PROOF_HASH],
       gasAmountTotal,

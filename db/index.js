@@ -874,10 +874,10 @@ class DB {
       const gasPrice = tx.tx_body.gas_price;
       if (gasPrice > 0 && blockNumber > 0) {
         const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
-        if (gasCost.service > 0) {
+        if (gasCost > 0) {
           const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
           const gasFeeCollectRes = this.setValue(
-              gasFeeCollectPath, { amount: gasCost.service }, auth, timestamp, tx, false);
+              gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
           if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
             return ChainUtil.returnTxResult(
                 16, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`);

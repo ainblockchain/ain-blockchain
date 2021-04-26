@@ -328,7 +328,7 @@ class Consensus {
       }
       resList.push(res);
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasAmountCostTotalFromTxList(validTransactions, resList);
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
@@ -581,7 +581,7 @@ class Consensus {
       this.node.destroyDb(newDb);
       return false;
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasAmountCostTotalFromTxList(transactions, txsRes);
+    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
     if (gasAmountTotal !== gas_amount_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
       this.node.destroyDb(newDb);
