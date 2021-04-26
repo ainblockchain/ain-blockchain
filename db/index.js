@@ -740,55 +740,6 @@ class DB {
     return ChainUtil.returnTxResult(0, null, gas);
   }
 
-  set(opList, auth, timestamp, transaction) {
-    const resultList = [];
-    for (let i = 0; i < opList.length; i++) {
-      const op = opList[i];
-      if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        const result = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.INC_VALUE) {
-        const result = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        const result = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        const result = this.setFunction(op.ref, op.value, auth, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.SET_RULE) {
-        const result = this.setRule(op.ref, op.value, auth, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.SET_OWNER) {
-        const result = this.setOwner(op.ref, op.value, auth, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else {
-        // Invalid Operation type
-        const result = ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
-        resultList.push(result);
-      }
-    }
-    return resultList;
-  }
-
   /**
    * Returns full path with given root node.
    */
@@ -828,19 +779,7 @@ class DB {
     return globalPath;
   }
 
-  executeOperation(op, auth, timestamp, tx, blockNumber = 0) {
-    if (!op) {
-      return ChainUtil.returnTxResult(11, `Invalid operation: ${op}`);
-    }
-    if (tx && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
-      if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return ChainUtil.returnTxResult(12, `Invalid nonce: ${tx.tx_body.nonce}`);
-      }
-      if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return ChainUtil.returnTxResult(13, `Invalid timestamp: ${tx.tx_body.timestamp}`);
-      }
-    }
+  executeSingleSetOperation(op, auth, timestamp, tx) {
     let result;
     switch (op.type) {
       case undefined:
@@ -862,11 +801,43 @@ class DB {
       case WriteDbOperations.SET_OWNER:
         result = this.setOwner(op.ref, op.value, auth, op.is_global);
         break;
-      case WriteDbOperations.SET:
-        result = this.set(op.op_list, auth, timestamp, tx);
-        break;
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
+    }
+    return result;
+  }
+
+  executeMultiSetOperation(opList, auth, timestamp, transaction) {
+    const resultList = [];
+    for (let i = 0; i < opList.length; i++) {
+      const op = opList[i];
+      const result = this.executeSingleSetOperation(op, auth, timestamp, transaction);
+      resultList.push(result);
+      if (ChainUtil.isFailedTx(result)) {
+        break;
+      }
+    }
+    return resultList;
+  }
+
+  executeOperation(op, auth, timestamp, tx, blockNumber = 0) {
+    if (!op) {
+      return ChainUtil.returnTxResult(11, `Invalid operation: ${op}`);
+    }
+    if (tx && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
+      if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
+        return ChainUtil.returnTxResult(12, `Invalid nonce: ${tx.tx_body.nonce}`);
+      }
+      if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnTxResult(13, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+      }
+    }
+    let result;
+    if (op.type === WriteDbOperations.SET) {
+      result = this.executeMultiSetOperation(op.op_list, auth, timestamp, tx);
+    } else {
+      result = this.executeSingleSetOperation(op, auth, timestamp, tx);
     }
     if (!ChainUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is

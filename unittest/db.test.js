@@ -1286,9 +1286,9 @@ describe("DB operations", () => {
     })
   })
 
-  describe("set operations", () => {
+  describe("executeMultiSetOperation", () => {
     it("when set applied successfully", () => {
-      assert.deepEqual(node.db.set([
+      assert.deepEqual(node.db.executeMultiSetOperation([
         {
           // Default type: SET_VALUE
           ref: "test/nested/far/down",
@@ -1389,7 +1389,7 @@ describe("DB operations", () => {
     })
 
     it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
-      assert.deepEqual(node.db.set([
+      assert.deepEqual(node.db.executeMultiSetOperation([
         {
           type: "SET_VALUE",
           ref: "test/nested/far/down",
@@ -1423,7 +1423,7 @@ describe("DB operations", () => {
     })
 
     it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
-      assert.deepEqual(node.db.set([
+      assert.deepEqual(node.db.executeMultiSetOperation([
         {
           type: "SET_VALUE",
           ref: "test/nested/far/down",
