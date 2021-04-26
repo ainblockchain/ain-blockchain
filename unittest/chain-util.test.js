@@ -412,4 +412,73 @@ describe("ChainUtil", () => {
       assert.deepEqual(ChainUtil.getTotalGasAmount(result), 111);
     })
   })
+
+  describe("getTotalGasCost", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, null), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, undefined), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, {}), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, { gas: 'gas' }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, { gas: {} }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, true), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, 'result'), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, 0), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, 1), 0);
+    })
+
+    it("when single operation result input", () => {
+      const result = {
+        "code": 0,
+        "gas": {
+          "gas_amount": {
+            "service": {
+              "bandwidth": 50,
+              "state": 50
+            },
+            "app": {}
+          }
+        }
+      };
+      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, result), 50);
+    })
+
+    it("when multiple operation result input", () => {
+      const result = [
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": {
+              "service": {
+                "bandwidth": 1,
+              },
+              "app": {}
+            }
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": {
+              "service": {
+                "bandwidth": 10
+              },
+              "app": {}
+            }
+          }
+        },
+        {
+          "code": 0,
+          "gas": {
+            "gas_amount": {
+              "service": {
+                "bandwidth": 100
+              },
+              "app": {}
+            }
+          }
+        },
+      ];
+      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, result), 111);
+    })
+  })
 })

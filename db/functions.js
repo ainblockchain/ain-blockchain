@@ -74,7 +74,7 @@ class Functions {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 2 },
     };
     this.callStack = [];
-    this.totalGasAmount = {};
+    this.functionGasAmount = {};
   }
 
   /**
@@ -101,7 +101,7 @@ class Functions {
     let failCount = 0;
     const promises = [];
     if (this.callStackSize() === 0) {
-      this.clearTotalGasAmount();
+      this.clearFunctionGasAmount();
     }
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
@@ -130,8 +130,8 @@ class Functions {
                   `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                   formattedParams);
               logger.info(
-                  `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} with pushed call: ` +
-                  `${JSON.stringify(this.getTopCall(), null, 2)}\n`);
+                  `    functionGasAmount: ${JSON.stringify(this.getFunctionGasAmount())} ` +
+                  `with pushed call: ${JSON.stringify(this.getTopCall(), null, 2)}\n`);
             }
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
@@ -162,8 +162,8 @@ class Functions {
                     logger.error(formattedResult);
                   }
                   logger.info(
-                      `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} with popped call: ` +
-                      `${JSON.stringify(call, null, 2)}\n`);
+                      `    functionGasAmount: ${JSON.stringify(this.getFunctionGasAmount())} ` +
+                      `with popped call: ${JSON.stringify(call, null, 2)}\n`);
                 }
               }
               triggerCount++;
@@ -178,8 +178,8 @@ class Functions {
                   `event listener '${functionEntry.event_listener}' with:\n` +
                   formattedParams);
               logger.info(
-                  `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} before adding REST function: ` +
-                  `${functionEntry.function_id}\n`);
+                  `    functionGasAmount: ${JSON.stringify(this.getFunctionGasAmount())} ` +
+                  `before adding REST function: ${functionEntry.function_id}\n`);
             }
             promises.push(axios.post(functionEntry.event_listener, {
               function: functionEntry,
@@ -195,15 +195,15 @@ class Functions {
               failCount++;
               return true;
             }));
-            this.addToTotalGasAmount({
+            this.addToFunctionGasAmount({
               service: {
                 bandwidth: GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT
               }
             });
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
-                  `    totalGasAmount: ${JSON.stringify(this.getTotalGasAmount())} after adding REST function: ` +
-                  `${functionEntry.function_id}\n`);
+                  `    functionGasAmount: ${JSON.stringify(this.getFunctionGasAmount())} ` +
+                  `after adding REST function: ${functionEntry.function_id}\n`);
             }
             triggerCount++;
           }
@@ -245,7 +245,7 @@ class Functions {
 
   popCall() {
     const call = this.callStack.pop();
-    this.addToTotalGasAmount(call.gasAmount);
+    this.addToFunctionGasAmount(call.gasAmount);
     return call;
   }
 
@@ -278,16 +278,16 @@ class Functions {
     return call && call.fidList && call.fidList.includes(fid);
   }
 
-  getTotalGasAmount() {
-    return this.totalGasAmount;
+  getFunctionGasAmount() {
+    return this.functionGasAmount;
   }
 
-  clearTotalGasAmount() {
-    this.totalGasAmount = {};
+  clearFunctionGasAmount() {
+    this.functionGasAmount = {};
   }
 
-  addToTotalGasAmount(amount) {
-    ChainUtil.mergeNumericJsObjects(this.totalGasAmount, amount);
+  addToFunctionGasAmount(amount) {
+    ChainUtil.mergeNumericJsObjects(this.functionGasAmount, amount);
   }
 
   static formatFunctionParams(
@@ -961,7 +961,7 @@ class Functions {
     }
     const toBalance = this.db.getValue(toPath);
     if (toBalance === null) {
-      this.addToTotalGasAmount({
+      this.addToFunctionGasAmount({
         service: {
           state: GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT
         }
