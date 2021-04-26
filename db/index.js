@@ -332,13 +332,11 @@ class DB {
   writeDatabase(fullPath, stateObj) {
     const stateTree = StateNode.fromJsObject(stateObj, this.stateVersion);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
-    let treeSizeBefore = 0;
     if (fullPath.length === 0) {
       this.stateRoot = stateTree;
     } else {
       const label = fullPath[fullPath.length - 1];
       const parent = this.getRefForWriting(pathToParent);
-      treeSizeBefore = parent.getTreeSize();
       parent.setChild(label, stateTree);
     }
     if (isEmptyNode(stateTree)) {
@@ -349,9 +347,6 @@ class DB {
     if (!LIGHTWEIGHT) {
       updateProofHashForAllRootPaths(pathToParent, this.stateRoot);
     }
-    const parent = DB.getRefForReading(this.stateRoot, pathToParent);
-    const treeSizeAfter = parent ? parent.getTreeSize() : 0;
-    return treeSizeAfter - treeSizeBefore;
   }
 
   removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
@@ -610,15 +605,14 @@ class DB {
       }
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
-    const treeSizeDiff = this.writeDatabase(fullPath, valueCopy);
-    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
+    this.writeDatabase(fullPath, valueCopy);
+    let gas = null;
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
-      ChainUtil.mergeGasAmounts(gasAmount, this.func.getTotalGasAmount());
+      gas = {
+        gas_amount: this.func.getTotalGasAmount()
+      };
     }
-    const gas = {
-      gas_amount: gasAmount,
-    };
 
     return ChainUtil.returnTxResult(0, null, gas);
   }
@@ -672,12 +666,8 @@ class DB {
     const curFunction = this.getFunction(functionPath, isGlobal);
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    const treeSizeDiff = this.writeDatabase(fullPath, newFunction);
-    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
-    const gas = {
-      gas_amount: gasAmount,
-    };
-    return ChainUtil.returnTxResult(0, null, gas);
+    this.writeDatabase(fullPath, newFunction);
+    return ChainUtil.returnTxResult(0, null);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -702,12 +692,8 @@ class DB {
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
-    const treeSizeDiff = this.writeDatabase(fullPath, ruleCopy);
-    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
-    const gas = {
-      gas_amount: gasAmount,
-    };
-    return ChainUtil.returnTxResult(0, null, gas);
+    this.writeDatabase(fullPath, ruleCopy);
+    return ChainUtil.returnTxResult(0, null);
   }
 
   // TODO(platfowner): Add owner config sanitization logic.
@@ -732,12 +718,8 @@ class DB {
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
-    const treeSizeDiff = this.writeDatabase(fullPath, ownerCopy);
-    const gasAmount = ChainUtil.getGasAmountObj(parsedPath, 1, treeSizeDiff);
-    const gas = {
-      gas_amount: gasAmount,
-    };
-    return ChainUtil.returnTxResult(0, null, gas);
+    this.writeDatabase(fullPath, ownerCopy);
+    return ChainUtil.returnTxResult(0, null);
   }
 
   /**
@@ -780,6 +762,7 @@ class DB {
   }
 
   executeSingleSetOperation(op, auth, timestamp, tx) {
+    const stateInfoBefore = this.getStateInfo('/');
     let result;
     switch (op.type) {
       case undefined:
@@ -803,6 +786,17 @@ class DB {
         break;
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
+    }
+    if (!ChainUtil.isFailedTx(result)) {
+      const stateInfoAfter = this.getStateInfo('/');
+      const treeSizeDelta = stateInfoAfter[StateInfoProperties.TREE_SIZE] -
+          stateInfoBefore[StateInfoProperties.TREE_SIZE];
+      const gas = {
+        gas_amount: ChainUtil.getGasAmountObj(op.ref, 1, treeSizeDelta)
+      };
+      result.gas = ChainUtil.mergeNumericJsObjects(gas, result.gas);
+    } else {
+      delete result.gas;
     }
     return result;
   }
