@@ -26,6 +26,7 @@ const {
   getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
+  checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
 } = require('./util');
@@ -316,6 +317,11 @@ class P2pClient {
         return;
       }
       if (!this.checkDataProtoVer(socket, parsedMessage.dataProtoVer)) {
+        return;
+      }
+      if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
+        logger.error(`The message from the node(${address}) is stale. Discard the message.`);
+        logger.debug(`The detail is as follows: ${parsedMessage}`);
         return;
       }
 
