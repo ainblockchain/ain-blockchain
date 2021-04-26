@@ -1333,79 +1333,37 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "nested": {
-                  "bandwidth": 1,
-                  "state": 1
-                }
-              }
-            }
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "increment": {
-                  "bandwidth": 1,
-                  "state": 0
-                }
-              }
-            }
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "decrement": {
-                  "bandwidth": 1,
-                  "state": 0
-                }
-              }
-            }
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "test_function": {
-                  "bandwidth": 1,
-                  "state": 0
-                }
-              }
-            }
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "test_rule": {
-                  "bandwidth": 1,
-                  "state": -3
-                }
-              }
-            }
+            "gas_amount": {}
           }
         },
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "test_owner": {
-                  "bandwidth": 1,
-                  "state": -25
-                }
-              }
-            }
+            "gas_amount": {}
           }
         }
       ]);
@@ -1453,14 +1411,7 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "nested": {
-                  "bandwidth": 1,
-                  "state": 1
-                }
-              }
-            }
+            "gas_amount": {}
           }
         },
         {
@@ -1494,14 +1445,7 @@ describe("DB operations", () => {
         {
           "code": 0,
           "gas": {
-            "gas_amount": {
-              "app": {
-                "nested": {
-                  "bandwidth": 1,
-                  "state": 1
-                }
-              }
-            }
+            "gas_amount": {}
           }
         },
         {
