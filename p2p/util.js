@@ -148,7 +148,8 @@ function encapsulateMessage(type, dataObj) {
     type: type,
     data: dataObj,
     protoVer: CURRENT_PROTOCOL_VERSION,
-    dataProtoVer: DATA_PROTOCOL_VERSION
+    dataProtoVer: DATA_PROTOCOL_VERSION,
+    timestamp: Date.now()
   };
   return message;
 }
