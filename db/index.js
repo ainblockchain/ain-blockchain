@@ -610,7 +610,7 @@ class DB {
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
       gas = {
-        gas_amount: this.func.getTotalGasAmount()
+        gas_amount: this.func.getFunctionGasAmount()
       };
     }
 

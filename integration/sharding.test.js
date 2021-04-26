@@ -1558,55 +1558,67 @@ describe('Sharding', () => {
           assert.deepEqual(_.get(body, 'result.result'), [
             {
               "code": 0,
-              "gas_amount": {
-                "service": {
-                  "bandwidth": 1,
-                  "state": 0
+              "gas": {
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 0
+                  }
                 }
               }
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": {
-                  "bandwidth": 1,
-                  "state": 0
+              "gas": {
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 0
+                  }
                 }
               }
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": {
-                  "bandwidth": 1,
-                  "state": 0
+              "gas": {
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 0
+                  }
                 }
               }
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": {
-                  "bandwidth": 1,
-                  "state": 0
+              "gas": {
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 0
+                  }
                 }
               }
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": {
-                  "bandwidth": 1,
-                  "state": 0
+              "gas": {
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 0
+                  }
                 }
               }
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": {
-                  "bandwidth": 1,
-                  "state": 0
+              "gas": {
+                "gas_amount": {
+                  "service": {
+                    "bandwidth": 1,
+                    "state": 0
+                  }
                 }
               }
             },

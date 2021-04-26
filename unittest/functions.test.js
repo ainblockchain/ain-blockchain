@@ -396,7 +396,7 @@ describe("Functions", () => {
             triggerCount: 1,
             failCount: 0,
           });
-          const gasAmountActual = functions.getTotalGasAmount();
+          const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
             "service": {
               "bandwidth": 2,
@@ -432,7 +432,7 @@ describe("Functions", () => {
             triggerCount: 1,
             failCount: 0,
           });
-          const gasAmountActual = functions.getTotalGasAmount();
+          const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
             "service": {
               "bandwidth": 2
@@ -466,7 +466,7 @@ describe("Functions", () => {
             triggerCount: 1,
             failCount: 0,
           });
-          const gasAmountActual = functions.getTotalGasAmount();
+          const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
             "service": {
               "bandwidth": 10
