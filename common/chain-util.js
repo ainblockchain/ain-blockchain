@@ -297,10 +297,12 @@ class ChainUtil {
     return code !== 0;
   }
 
+  // TODO(lia): fix testing paths (writing at the root) and update isAppTx().
   static isAppTx(parsedPath) {
     return _.get(parsedPath, 0) === 'apps' || !ChainUtil.isServiceTx(parsedPath);
   }
 
+  // TODO(lia): fix testing paths (writing at the root) and update isServiceTx().
   static isServiceTx(parsedPath) {
     const { NATIVE_SERVICE_TYPES } = require('../common/constants');
     return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
