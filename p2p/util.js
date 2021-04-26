@@ -7,6 +7,7 @@
 const axios = require('axios');
 const _ = require('lodash');
 const semver = require('semver');
+const moment = require('moment');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
 const {
@@ -154,6 +155,20 @@ function encapsulateMessage(type, dataObj) {
   return message;
 }
 
+function checkTimestamp(timestamp) {
+  if (!timestamp) {
+    return false;
+  } else {
+    const now = Date.now();
+    const tenMinutesAsMilliseconds = moment.duration(10, 'minutes').as('milliseconds');
+    if (now - timestamp > tenMinutesAsMilliseconds) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
@@ -166,5 +181,6 @@ module.exports = {
   verifySignedMessage,
   closeSocketSafe,
   checkProtoVer,
+  checkTimestamp,
   encapsulateMessage
 };

@@ -47,6 +47,7 @@ const {
   getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
+  checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
 } = require('./util');
@@ -370,6 +371,11 @@ class P2pServer {
           const address = getAddressFromSocket(socket);
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
+          return;
+        }
+        if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
+          logger.error(`The message from the node(${address}) is stale. Discard the message.`);
+          logger.debug(`The detail is as follows: ${parsedMessage}`);
           return;
         }
 
