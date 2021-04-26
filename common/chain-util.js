@@ -297,9 +297,9 @@ class ChainUtil {
     return code !== 0;
   }
 
-  // TODO(lia): fix testing paths (writing at the root) and update isAppTx().
   static isAppTx(parsedPath) {
-    return _.get(parsedPath, 0) === 'apps' || !ChainUtil.isServiceTx(parsedPath);
+    const { PredefinedDbPaths } = require('../common/constants');
+    return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
   // TODO(lia): fix testing paths (writing at the root) and update isServiceTx().
@@ -313,7 +313,7 @@ class ChainUtil {
     if (ChainUtil.isServiceTx(parsedPath)) {
       ChainUtil.setJsObject(gasAmount, ['service', 'bandwidth'], bandwidth);
       ChainUtil.setJsObject(gasAmount, ['service', 'state'], state);
-    } else {
+    } else if (ChainUtil.isAppTx(parsedPath)) {
       const appName = _.get(parsedPath, 1);
       if (!appName) return;
       ChainUtil.setJsObject(gasAmount, ['app', appName, 'bandwidth'], bandwidth);
