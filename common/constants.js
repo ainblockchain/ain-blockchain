@@ -54,7 +54,11 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const DATA_PROTOCOL_VERSION = "1.2.0";
 if (!semver.valid(DATA_PROTOCOL_VERSION)) {
-  throw Error('Wrong data version format is specified in GenesisParams.network');
+  throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
+}
+const CONSENSUS_PROTOCOL_VERSION = "1.0.0";
+if (!semver.valid(CONSENSUS_PROTOCOL_VERSION)) {
+  throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 const LOGS_DIR = path.resolve(__dirname, '../logs');
 const CHAINS_DIR = path.resolve(__dirname, '../chains');
@@ -637,6 +641,7 @@ module.exports = {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
+  CONSENSUS_PROTOCOL_VERSION,
   LOGS_DIR,
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
