@@ -695,11 +695,9 @@ class Consensus {
       try {
         const proposal = this.createProposal();
         if (proposal !== null) {
-          this.handleConsensusMessage({
-            value: proposal,
-            type: ConsensusMessageTypes.PROPOSE,
-            consensusProtoVer: this.consensusProtocolVersion
-          });
+          const consensusMsg = this.encapsulateConsensusMessage(
+              proposal, ConsensusMessageTypes.PROPOSE);
+          this.handleConsensusMessage(consensusMsg);
         }
       } catch (e) {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${e}`);
@@ -740,12 +738,9 @@ class Consensus {
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
-
-    this.handleConsensusMessage({
-      value: Transaction.toJsObject(voteTx),
-      type: ConsensusMessageTypes.VOTE,
-      consensusProtoVer: this.consensusProtocolVersion
-    });
+    const consensusMsg = this.encapsulateConsensusMessage(
+        Transaction.toJsObject(voteTx), ConsensusMessageTypes.VOTE);
+    this.handleConsensusMessage(consensusMsg);
   }
 
   // If there's a notarized chain that ends with 3 blocks, which have 3 consecutive epoch numbers,
@@ -1134,6 +1129,23 @@ class Consensus {
       state: this.status,
       stateNumeric: Object.keys(ConsensusStatus).indexOf(this.status),
       epoch: this.state.epoch
+    };
+  }
+
+  encapsulateConsensusMessage(value, type) {
+    const LOG_HEADER = 'encapsulateConsensusMessage';
+    if (!value) {
+      logger.error(`[${LOG_HEADER}] The value cannot be empty for consensus message.`);
+      return null;
+    }
+    if (!type) {
+      logger.error(`[${LOG_HEADER}] The consensus type should be specified.`);
+      return null;
+    }
+    return {
+      value: value,
+      type: type,
+      consensusProtoVer: this.consensusProtocolVersion
     };
   }
 
