@@ -1439,10 +1439,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 2
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1450,10 +1447,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 0
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1461,10 +1455,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 1
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1472,10 +1463,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 3
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1483,10 +1471,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 3
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1494,10 +1479,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 3
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1560,10 +1542,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 0
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1571,10 +1550,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 0
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1582,10 +1558,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 0
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1593,10 +1566,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 0
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1604,10 +1574,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 0
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1615,10 +1582,7 @@ describe('Sharding', () => {
               "code": 0,
               "gas": {
                 "gas_amount": {
-                  "service": {
-                    "bandwidth": 1,
-                    "state": 0
-                  }
+                  "service": 1,
                 }
               }
             },
@@ -1654,10 +1618,7 @@ describe('Sharding', () => {
                     code: 0,
                     gas: {
                       gas_amount: {
-                        service: {
-                          bandwidth: 1,
-                          state: 0
-                        }
+                        service: 1,
                       }
                     }
                   },
@@ -1694,10 +1655,7 @@ describe('Sharding', () => {
                     code: 0,
                     gas: {
                       gas_amount: {
-                        service: {
-                          bandwidth: 1,
-                          state: 0
-                        }
+                        service: 1,
                       }
                     }
                   },
@@ -1735,10 +1693,7 @@ describe('Sharding', () => {
                     gas: {
                       gas_amount: {
                         app: {
-                          afan: {
-                            bandwidth: 1,
-                            state: 0
-                          }
+                          afan: 1,
                         }
                       }
                     }
@@ -1785,10 +1740,7 @@ describe('Sharding', () => {
                     code: 0,
                     gas: {
                       gas_amount: {
-                        service: {
-                          bandwidth: 1,
-                          state: 0
-                        }
+                        service: 1,
                       }
                     }
                   },
@@ -1837,10 +1789,7 @@ describe('Sharding', () => {
                     code: 0,
                     gas: {
                       gas_amount: {
-                        service: {
-                          bandwidth: 1,
-                          state: 0
-                        }
+                        service: 1,
                       }
                     }
                   },
@@ -1890,10 +1839,7 @@ describe('Sharding', () => {
                     gas: {
                       gas_amount: {
                         app: {
-                          afan: {
-                            bandwidth: 1,
-                            state: 0
-                          }
+                          afan: 1,
                         }
                       }
                     }

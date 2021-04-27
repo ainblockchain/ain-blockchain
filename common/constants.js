@@ -66,7 +66,6 @@ const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
 const NATIVE_SERVICE_TYPES = [
-  'consensus',
   'checkin',
   'consensus',
   'escrow',
