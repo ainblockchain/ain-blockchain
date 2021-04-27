@@ -270,9 +270,7 @@ class ChainUtil {
   static mergeNumericJsObjects(obj1, obj2) {
     return _.mergeWith(obj1, obj2, (a, b) => {
       if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
-        if (ChainUtil.isNumber(a) && ChainUtil.isNumber(b)) {
-          return a + b;
-        }
+        return ChainUtil.numberOrZero(a) + ChainUtil.numberOrZero(b);
       }
     });
   }
