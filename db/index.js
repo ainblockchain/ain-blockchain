@@ -794,7 +794,7 @@ class DB {
       const gas = {
         gas_amount: ChainUtil.getGasAmountObj(op.ref, 1, treeSizeDelta)
       };
-      result.gas = ChainUtil.mergeNumericJsObjects(gas, result.gas);
+      ChainUtil.mergeNumericJsObjects(result, { gas });
     } else {
       delete result.gas;
     }
