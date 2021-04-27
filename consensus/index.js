@@ -23,6 +23,7 @@ const {
   MIN_NUM_VALIDATORS,
   MIN_STAKE_PER_VALIDATOR,
   EPOCH_MS,
+  CONSENSUS_PROTOCOL_VERSION
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -34,6 +35,7 @@ const {
   sendGetRequest
 } = require('../p2p/util');
 const PathUtil = require('../common/path-util');
+const VersionUtil = require('../common/version-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -48,6 +50,8 @@ class Consensus {
     this.statusChangedBlockNumber = null;
     this.setter = '';
     this.setStatus(ConsensusStatus.STARTING);
+    this.consensusProtocolVersion = CONSENSUS_PROTOCOL_VERSION;
+    this.majorConsensusProtocolVersion = VersionUtil.toMajorVersion(CONSENSUS_PROTOCOL_VERSION);
     this.epochInterval = null;
     this.startingTime = 0;
     this.timeAdjustment = 0;
@@ -691,7 +695,11 @@ class Consensus {
       try {
         const proposal = this.createProposal();
         if (proposal !== null) {
-          this.handleConsensusMessage({ value: proposal, type: ConsensusMessageTypes.PROPOSE });
+          this.handleConsensusMessage({
+            value: proposal,
+            type: ConsensusMessageTypes.PROPOSE,
+            consensusProtoVer: this.consensusProtocolVersion
+          });
         }
       } catch (e) {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${e}`);
@@ -733,8 +741,11 @@ class Consensus {
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
 
-    this.handleConsensusMessage(
-        { value: Transaction.toJsObject(voteTx), type: ConsensusMessageTypes.VOTE });
+    this.handleConsensusMessage({
+      value: Transaction.toJsObject(voteTx),
+      type: ConsensusMessageTypes.VOTE,
+      consensusProtoVer: this.consensusProtocolVersion
+    });
   }
 
   // If there's a notarized chain that ends with 3 blocks, which have 3 consecutive epoch numbers,
