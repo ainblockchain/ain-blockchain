@@ -399,8 +399,7 @@ describe("Functions", () => {
           const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
             "service": {
-              "bandwidth": 2,
-              "state": 1000
+              "bandwidth": 1002,
             }
           });
         });

@@ -2958,8 +2958,8 @@ describe('Blockchain Node', () => {
           "gas": {
             "gas_amount": {
               "service": {
-                "bandwidth": 3,
-                "state": 1009
+                "bandwidth": 1003,
+                "state": 9
               }
             }
           }
@@ -2996,8 +2996,8 @@ describe('Blockchain Node', () => {
           "gas": {
             "gas_amount": {
               "service": {
-                "bandwidth": 7,
-                "state": 1022
+                "bandwidth": 1007,
+                "state": 22
               }
             }
           }
@@ -3035,7 +3035,7 @@ describe('Blockchain Node', () => {
             "gas_amount": {
               "service": {
                 "bandwidth": 11,
-                "state": 3
+                "state": 1
               }
             }
           }
