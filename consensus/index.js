@@ -2,6 +2,7 @@ const seedrandom = require('seedrandom');
 const _ = require('lodash');
 const ntpsync = require('ntpsync');
 const sizeof = require('object-sizeof');
+const semver = require('semver');
 const logger = require('../logger')('CONSENSUS');
 const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
@@ -179,12 +180,40 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
+  checkConsensusProtocolVersion(msg) {
+    const LOG_HEADER = 'checkConsensusProtocolVersion';
+    const consensusProtoVer = _.get(msg, 'consensusProtoVer');
+    if (!consensusProtoVer || !semver.valid(consensusProtoVer)) {
+      logger.error(`[${LOG_HEADER}] CONSENSUS_PROTOCOL_VERSION cannot be empty.`);
+      return false;
+    }
+    const majorVersion = VersionUtil.toMajorVersion(consensusProtoVer);
+    const isGreater = semver.gt(this.consensusProtocolVersion, majorVersion);
+    if (isGreater) {
+      logger.error(`[${LOG_HEADER}] The given consensus message version is old. ` +
+          `See: (${this.consensusProtocolVersion}, ${majorVersion})`);
+      return false;
+    }
+    const isLower = semver.lt(this.consensusProtocolVersion, majorVersion);
+    if (isLower) {
+      logger.error(`[${LOG_HEADER}] My consensus protocol version is old. ` +
+          `See: (${this.consensusProtocolVersion}, ${majorVersion})`);
+      return false;
+    }
+    return true;
+  }
+
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
   handleConsensusMessage(msg) {
     const LOG_HEADER = 'handleConsensusMessage';
 
+    if (!this.checkConsensusProtocolVersion(msg)) {
+      logger.error(`[${LOG_HEADER}] CONSENSUS_PROTOCOL_VERSION is not compatible. ` +
+          `Discard the consensus message.`);
+      return;
+    }
     if (this.status !== ConsensusStatus.RUNNING) {
       logger.debug(`[${LOG_HEADER}] Consensus status (${this.status}) is not RUNNING ` +
           `(${ConsensusStatus.RUNNING})`);
