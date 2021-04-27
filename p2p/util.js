@@ -11,7 +11,8 @@ const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
 const {
   CURRENT_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION
+  DATA_PROTOCOL_VERSION,
+  P2P_MESSAGE_TIMEOUT_MS
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
@@ -148,9 +149,23 @@ function encapsulateMessage(type, dataObj) {
     type: type,
     data: dataObj,
     protoVer: CURRENT_PROTOCOL_VERSION,
-    dataProtoVer: DATA_PROTOCOL_VERSION
+    dataProtoVer: DATA_PROTOCOL_VERSION,
+    timestamp: Date.now()
   };
   return message;
+}
+
+function checkTimestamp(timestamp) {
+  if (!timestamp) {
+    return false;
+  } else {
+    const now = Date.now();
+    if (now - timestamp > P2P_MESSAGE_TIMEOUT_MS) {
+      return false;
+    } else {
+      return true;
+    }
+  }
 }
 
 module.exports = {
@@ -165,5 +180,6 @@ module.exports = {
   verifySignedMessage,
   closeSocketSafe,
   checkProtoVer,
+  checkTimestamp,
   encapsulateMessage
 };
