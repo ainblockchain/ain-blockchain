@@ -75,6 +75,7 @@ const NATIVE_SERVICE_TYPES = [
   'payments',
   'sharding',
   'staking',
+  'test',  // NOTE(seo): A temporary solution for tests.
   'transfer',
 ];
 
