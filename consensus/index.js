@@ -188,16 +188,16 @@ class Consensus {
       return false;
     }
     const majorVersion = VersionUtil.toMajorVersion(consensusProtoVer);
-    const isGreater = semver.gt(this.consensusProtocolVersion, majorVersion);
+    const isGreater = semver.gt(this.majorConsensusProtocolVersion, majorVersion);
     if (isGreater) {
       logger.error(`[${LOG_HEADER}] The given consensus message version is old. ` +
-          `See: (${this.consensusProtocolVersion}, ${majorVersion})`);
+          `See: (${this.majorConsensusProtocolVersion}, ${majorVersion})`);
       return false;
     }
-    const isLower = semver.lt(this.consensusProtocolVersion, majorVersion);
+    const isLower = semver.lt(this.majorConsensusProtocolVersion, majorVersion);
     if (isLower) {
       logger.error(`[${LOG_HEADER}] My consensus protocol version is old. ` +
-          `See: (${this.consensusProtocolVersion}, ${majorVersion})`);
+          `See: (${this.majorConsensusProtocolVersion}, ${majorVersion})`);
       return false;
     }
     return true;
