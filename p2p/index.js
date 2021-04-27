@@ -4,7 +4,7 @@ const P2pServer = require('./server');
 const url = require('url');
 const Websocket = require('ws');
 const semver = require('semver');
-const logger = require('../logger')('P2P_SERVER');
+const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStatus } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const {
@@ -320,8 +320,9 @@ class P2pClient {
         return;
       }
       if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
-        logger.error(`The message from the node(${address}) is stale. Discard the message.`);
-        logger.debug(`The detail is as follows: ${parsedMessage}`);
+        logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
+            `Discard the message.`);
+        logger.debug(`[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
         return;
       }
 
@@ -331,26 +332,29 @@ class P2pClient {
           // this.checkDataProtoVerForAddressResponse(dataProtoVer);
           const address = _.get(parsedMessage, 'data.body.address');
           if (!address) {
-            logger.error(`Providing an address is compulsary when initiating p2p communication.`);
+            logger.error(`[${LOG_HEADER}] Providing an address is compulsary when initiating ` +
+                `p2p communication.`);
             closeSocketSafe(this.outbound, socket);
             return;
           } else if (!_.get(parsedMessage, 'data.signature')) {
-            logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
-                `communication. Cannot proceed the further communication.`);
+            logger.error(`[${LOG_HEADER}] A sinature of the peer(${address}) is missing during ` +
+                `p2p communication. Cannot proceed the further communication.`);
             closeSocketSafe(this.outbound, socket);   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
             const addressFromSig = getAddressFromMessage(parsedMessage);
             if (addressFromSig !== address) {
-              logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
+              logger.error(`[${LOG_HEADER}] The addresses(${addressFromSig} and ${address}) are ` +
+                  `not the same!!`);
               closeSocketSafe(this.outbound, socket);
               return;
             }
             if (!verifySignedMessage(parsedMessage, addressFromSig)) {
-              logger.error('The message is not correctly signed. Discard the message!!');
+              logger.error(`[${LOG_HEADER}] The message is not correctly signed. ` +
+                  `Discard the message!!`);
               return;
             }
-            logger.info(`A new websocket(${address}) is established.`);
+            logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
             this.outbound[address] = socket;
           }
           break;
@@ -432,8 +436,8 @@ class P2pClient {
           }
           break;
         default:
-          logger.error(`Wrong message type(${parsedMessage.type}) has been specified.`);
-          logger.error('Ignore the message.');
+          logger.error(`[${LOG_HEADER}] Wrong message type(${parsedMessage.type}) has been ` +
+              `specified. Igonore the message.`);
           break;
       }
     });
