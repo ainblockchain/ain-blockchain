@@ -404,11 +404,7 @@ describe("ChainUtil", () => {
         "code": 0,
         "gas": {
           "gas_amount": {
-            "service": {
-              "bandwidth": 50,
-              "state": 50
-            },
-            "app": {}
+            "service": 50,
           }
         }
       };
@@ -421,10 +417,7 @@ describe("ChainUtil", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-              },
-              "app": {}
+              "service": 1,
             }
           }
         },
@@ -432,10 +425,7 @@ describe("ChainUtil", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 10
-              },
-              "app": {}
+              "service": 10,
             }
           }
         },
@@ -443,10 +433,7 @@ describe("ChainUtil", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 100
-              },
-              "app": {}
+              "service": 100,
             }
           }
         },
@@ -473,11 +460,7 @@ describe("ChainUtil", () => {
         "code": 0,
         "gas": {
           "gas_amount": {
-            "service": {
-              "bandwidth": 50,
-              "state": 50
-            },
-            "app": {}
+            "service": 50,
           }
         }
       };
@@ -490,10 +473,7 @@ describe("ChainUtil", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-              },
-              "app": {}
+              "service": 1,
             }
           }
         },
@@ -501,10 +481,7 @@ describe("ChainUtil", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 10
-              },
-              "app": {}
+              "service": 10,
             }
           }
         },
@@ -512,10 +489,7 @@ describe("ChainUtil", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 100
-              },
-              "app": {}
+              "service": 100,
             }
           }
         },

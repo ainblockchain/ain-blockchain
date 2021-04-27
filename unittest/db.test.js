@@ -1334,10 +1334,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": 1
-              }
+              "service": 1,
             }
           }
         },
@@ -1345,10 +1342,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": 0
-              }
+              "service": 1,
             }
           }
         },
@@ -1356,10 +1350,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": 0
-              }
+              "service": 1,
             }
           }
         },
@@ -1367,10 +1358,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": 0
-              }
+              "service": 1,
             }
           }
         },
@@ -1378,10 +1366,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": -3
-              }
+              "service": 1,
             }
           }
         },
@@ -1389,10 +1374,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": -25
-              }
+              "service": 1,
             }
           }
         }
@@ -1442,10 +1424,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": 1
-              }
+              "service": 1,
             }
           }
         },
@@ -1481,10 +1460,7 @@ describe("DB operations", () => {
           "code": 0,
           "gas": {
             "gas_amount": {
-              "service": {
-                "bandwidth": 1,
-                "state": 1
-              }
+              "service": 1,
             }
           }
         },

@@ -196,9 +196,7 @@ class Functions {
               return true;
             }));
             this.addToFunctionGasAmount({
-              service: {
-                bandwidth: GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT
-              }
+              service: GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT
             });
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
@@ -226,9 +224,7 @@ class Functions {
     fidList.push(fid);
     const callDepth = this.callStackSize();
     const gasAmount = {
-      service: {
-        bandwidth: nativeFunction.execGasAmount
-      }
+      service: nativeFunction.execGasAmount
     };
     this.callStack.push({
       fid,
@@ -962,9 +958,7 @@ class Functions {
     const toBalance = this.db.getValue(toPath);
     if (toBalance === null) {
       this.addToFunctionGasAmount({
-        service: {
-          bandwidth: GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT
-        }
+        service: GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT
       });
     }
     const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);

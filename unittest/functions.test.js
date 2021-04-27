@@ -6,8 +6,6 @@ const nock = require('nock');
 const _ = require('lodash');
 const {
   CHAINS_DIR,
-  NativeFunctionIds,
-  GasFeeConstants,
 } = require('../common/constants')
 const BlockchainNode = require('../node')
 const {
@@ -398,9 +396,7 @@ describe("Functions", () => {
           });
           const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
-            "service": {
-              "bandwidth": 1002,
-            }
+            "service": 1002,
           });
         });
       });
@@ -433,9 +429,7 @@ describe("Functions", () => {
           });
           const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
-            "service": {
-              "bandwidth": 2
-            }
+            "service": 2
           });
         });
       });
@@ -467,9 +461,7 @@ describe("Functions", () => {
           });
           const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
-            "service": {
-              "bandwidth": 10
-            }
+            "service": 10
           });
         });
       })

@@ -762,7 +762,6 @@ class DB {
   }
 
   executeSingleSetOperation(op, auth, timestamp, tx) {
-    const stateInfoBefore = this.getStateInfo('/');
     let result;
     switch (op.type) {
       case undefined:
@@ -788,11 +787,8 @@ class DB {
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
     if (!ChainUtil.isFailedTx(result)) {
-      const stateInfoAfter = this.getStateInfo('/');
-      const treeSizeDelta = stateInfoAfter[StateInfoProperties.TREE_SIZE] -
-          stateInfoBefore[StateInfoProperties.TREE_SIZE];
       const gas = {
-        gas_amount: ChainUtil.getGasAmountObj(op.ref, 1, treeSizeDelta)
+        gas_amount: ChainUtil.getGasAmountObj(op.ref, 1)
       };
       ChainUtil.mergeNumericJsObjects(result, { gas });
     } else {
