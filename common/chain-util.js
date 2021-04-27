@@ -267,6 +267,14 @@ class ChainUtil {
     return true;
   }
 
+  static mergeNumericJsObjects(obj1, obj2) {
+    return _.mergeWith(obj1, obj2, (a, b) => {
+      if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
+        return ChainUtil.numberOrZero(a) + ChainUtil.numberOrZero(b);
+      }
+    });
+  }
+
   static simplifyProperties(obj) {
     const newObj = {};
     for (const key of Object.keys(obj)) {
@@ -297,23 +305,24 @@ class ChainUtil {
     return code !== 0;
   }
 
-  static isAppTx(parsedPath) {
+  static isAppPath(parsedPath) {
     const { PredefinedDbPaths } = require('../common/constants');
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  // TODO(lia): fix testing paths (writing at the root) and update isServiceTx().
-  static isServiceTx(parsedPath) {
+  // TODO(lia): fix testing paths (writing at the root) and update isServicePath().
+  static isServicePath(parsedPath) {
     const { NATIVE_SERVICE_TYPES } = require('../common/constants');
     return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
   }
 
-  static getGasAmountObj(parsedPath, bandwidth, state) {
+  static getGasAmountObj(path, bandwidth, state) {
+    const parsedPath = ChainUtil.parsePath(path);
     const gasAmount = {};
-    if (ChainUtil.isServiceTx(parsedPath)) {
+    if (ChainUtil.isServicePath(parsedPath)) {
       ChainUtil.setJsObject(gasAmount, ['service', 'bandwidth'], bandwidth);
       ChainUtil.setJsObject(gasAmount, ['service', 'state'], state);
-    } else if (ChainUtil.isAppTx(parsedPath)) {
+    } else if (ChainUtil.isAppPath(parsedPath)) {
       const appName = _.get(parsedPath, 1);
       if (!appName) return;
       ChainUtil.setJsObject(gasAmount, ['app', appName, 'bandwidth'], bandwidth);
@@ -322,15 +331,7 @@ class ChainUtil {
     return gasAmount;
   }
 
-  static mergeGasAmounts(gasAmountObj1, gasAmountObj2) {
-    _.mergeWith(gasAmountObj1, gasAmountObj2, (a, b) => {
-      if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
-        return ChainUtil.numberOrZero(a) + ChainUtil.numberOrZero(b);
-      }
-    });
-  }
-
-  static getSingleOpTotalGasAmount(result) {
+  static getSingleOpServiceGasAmount(result) {
     if (!result) {
       return 0;
     }
@@ -344,11 +345,11 @@ class ChainUtil {
     if (Array.isArray(result)) {
       let gasAmount = 0;
       for (const elem of result) {
-        gasAmount += ChainUtil.getSingleOpTotalGasAmount(elem);
+        gasAmount += ChainUtil.getSingleOpServiceGasAmount(elem);
       }
       return gasAmount;
     }
-    return ChainUtil.getSingleOpTotalGasAmount(result);
+    return ChainUtil.getSingleOpServiceGasAmount(result);
   }
   /**
    * Calculate the gas cost (unit = ain).
@@ -365,13 +366,13 @@ class ChainUtil {
     if (Array.isArray(result)) {
       let gasCostTotal = 0;
       for (const elem of result) {
-        const gasCost = ChainUtil.getSingleOpTotalGasAmount(elem) * gasPriceAIN;
+        const gasCost = ChainUtil.getSingleOpServiceGasAmount(elem) * gasPriceAIN;
         ChainUtil.setJsObject(elem, ['gas', 'gas_cost'], gasCost);
         gasCostTotal += gasCost;
       }
       return gasCostTotal;
     }
-    const gasCost = ChainUtil.getTotalGasAmount(result) * gasPriceAIN;
+    const gasCost = ChainUtil.getSingleOpServiceGasAmount(result) * gasPriceAIN;
     ChainUtil.setJsObject(result, ['gas', 'gas_cost'], gasCost);
     return gasCost;
   }
