@@ -316,17 +316,15 @@ class ChainUtil {
     return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
   }
 
-  static getGasAmountObj(path, bandwidth, state) {
+  static getGasAmountObj(path, value) {
     const parsedPath = ChainUtil.parsePath(path);
     const gasAmount = {};
     if (ChainUtil.isServicePath(parsedPath)) {
-      ChainUtil.setJsObject(gasAmount, ['service', 'bandwidth'], bandwidth);
-      ChainUtil.setJsObject(gasAmount, ['service', 'state'], state);
+      ChainUtil.setJsObject(gasAmount, ['service'], value);
     } else if (ChainUtil.isAppPath(parsedPath)) {
       const appName = _.get(parsedPath, 1);
       if (!appName) return;
-      ChainUtil.setJsObject(gasAmount, ['app', appName, 'bandwidth'], bandwidth);
-      ChainUtil.setJsObject(gasAmount, ['app', appName, 'state'], state);
+      ChainUtil.setJsObject(gasAmount, ['app', appName], value);
     }
     return gasAmount;
   }
@@ -335,7 +333,7 @@ class ChainUtil {
     if (!result) {
       return 0;
     }
-    return _.get(result, 'gas.gas_amount.service.bandwidth', 0);
+    return _.get(result, 'gas.gas_amount.service', 0);
   }
 
   /**
