@@ -7,12 +7,12 @@
 const axios = require('axios');
 const _ = require('lodash');
 const semver = require('semver');
-const moment = require('moment');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
 const {
   CURRENT_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION
+  DATA_PROTOCOL_VERSION,
+  P2P_MESSAGE_TIMEOUT_MS
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
@@ -160,8 +160,7 @@ function checkTimestamp(timestamp) {
     return false;
   } else {
     const now = Date.now();
-    const tenMinutesAsMilliseconds = moment.duration(10, 'minutes').as('milliseconds');
-    if (now - timestamp > tenMinutesAsMilliseconds) {
+    if (now - timestamp > P2P_MESSAGE_TIMEOUT_MS) {
       return false;
     } else {
       return true;

@@ -465,6 +465,7 @@ function initializeNetworkEnvronments() {
     return {
       // Note(minsu): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT should not be
       // related to one another.
+      P2P_MESSAGE_TIMEOUT_MS: 600000,
       MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
       MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
       DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
