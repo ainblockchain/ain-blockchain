@@ -963,7 +963,7 @@ class Functions {
     if (toBalance === null) {
       this.addToFunctionGasAmount({
         service: {
-          state: GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT
+          bandwidth: GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT
         }
       });
     }
