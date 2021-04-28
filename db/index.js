@@ -1,7 +1,6 @@
 const logger = require('../logger')('DATABASE');
 const {
   FeatureFlags,
-  ENABLE_GAS_FEE_WORKAROUND,
   AccountProperties,
   ReadDbOperations,
   WriteDbOperations,
@@ -841,7 +840,7 @@ class DB {
               gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
           if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
             return ChainUtil.returnTxResult(
-                16, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`);
+                15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`);
           }
         }
       }

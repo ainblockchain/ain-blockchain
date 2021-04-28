@@ -36,12 +36,13 @@ async function sendSignedTx(endpoint, params) {
         jsonrpc: '2.0',
         id: 0
       }
-  ).then(resp => {
-    const success = !ChainUtil.isFailedTx(_.get(resp, 'data.result.result.result'), null);
-    return { success };
+  ).then((resp) => {
+    const result = _.get(resp, 'data.result.result.result', {});
+    const success = !ChainUtil.isFailedTx(result);
+    return { success, errMsg: result.error_message };
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
-    return { errMsg: err.message, success: false };
+    return { success: false, errMsg: err.message };
   });
 }
 
