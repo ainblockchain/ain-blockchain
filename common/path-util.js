@@ -5,7 +5,7 @@ const ruleUtil = new RuleUtil();
 
 class PathUtil {
   static getAccountBalancePath(address) {
-    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, balance]);
+    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.BALANCE]);
   }
 
   static getServiceAccountPath(serviceType, serviceName, accountKey) {
