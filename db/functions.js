@@ -500,7 +500,7 @@ class Functions {
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
-    if (!ChainUtil.isDict(adminConfig) || !ChainUtil.isDict(serviceConfig)) {
+    if (!ChainUtil.isDict(adminConfig)) {
       this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
       return;
     }
