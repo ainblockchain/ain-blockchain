@@ -30,9 +30,11 @@ async function sendTransaction() {
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
-  if (txInfo.success) {
-    await confirmTransaction(config.endpointUrl, timestamp, txInfo.txHash);
+  if (!txInfo.success) {
+    console.log(`Create app transaction failed.`);
+    process.exit(0);
   }
+  await confirmTransaction(config.endpointUrl, timestamp, txInfo.txHash);
 }
 
 async function processArguments() {
