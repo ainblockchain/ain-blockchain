@@ -1061,9 +1061,9 @@ class Consensus {
             type: WriteDbOperations.SET,
             op_list: opList,
           },
-          gas_price: 1,
           timestamp: Date.now(),
-          nonce: -1
+          nonce: -1,
+          gas_price: 0,  // NOTE(platfowner): A temporary solution.
         };
         // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
         await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
