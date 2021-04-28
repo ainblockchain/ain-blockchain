@@ -184,7 +184,7 @@ class Consensus {
     const LOG_HEADER = 'checkConsensusProtocolVersion';
     const consensusProtoVer = _.get(msg, 'consensusProtoVer');
     if (!consensusProtoVer || !semver.valid(consensusProtoVer)) {
-      logger.error(`[${LOG_HEADER}] CONSENSUS_PROTOCOL_VERSION cannot be empty.`);
+      logger.error(`[${LOG_HEADER}] CONSENSUS_PROTOCOL_VERSION cannot be empty or invalid.`);
       return false;
     }
     const majorVersion = VersionUtil.toMajorVersion(consensusProtoVer);
