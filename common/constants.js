@@ -437,7 +437,7 @@ const StateVersions = {
  */
 const GasFeeConstants = {
   ACCOUNT_REGISTRATION_GAS_AMOUNT: 1000,
-  EXTERNAL_RPC_CALL_GAS_AMOUNT: 10,
+  REST_FUNCTION_CALL_GAS_AMOUNT: 10,
 };
 
 /**

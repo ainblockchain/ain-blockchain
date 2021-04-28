@@ -16,6 +16,7 @@ const {
   TokenExchangeSchemes,
   FunctionProperties,
   GasFeeConstants,
+  REST_FUNCTION_CALL_TIMEOUT_MS,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
@@ -184,6 +185,8 @@ class Functions {
             promises.push(axios.post(functionEntry.event_listener, {
               function: functionEntry,
               transaction,
+            }, {
+              timeout: REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
               if (FeatureFlags.enableRichFunctionLogging) {
                 logger.error(
@@ -196,7 +199,7 @@ class Functions {
               return true;
             }));
             this.addToFunctionGasAmount({
-              service: GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT
+              service: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
             });
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
