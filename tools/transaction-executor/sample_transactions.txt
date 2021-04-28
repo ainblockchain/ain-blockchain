@@ -1,7 +1,0 @@
-{"operation": {"type": "SET_VALUE", "ref": "/accounts/{address}/balance", "value": 10}, "nonce": 0}
-{"operation": {"type": "SET_VALUE", "ref": "/accounts/{address}/balance", "value": 101}, "nonce": 1}
-{"operation": {"type": "SET_VALUE", "ref": "/accounts/{address}/balance", "value": 1000}, "nonce": 1}
-{"operation": {"type": "SET_VALUE", "ref": "/accounts/abcde/balance", "value": 99}, "nonce": 2}
-{"operation": {"type": "INC_VALUE", "ref": "test/increase", "value": 1}, "nonce": 3}
-{"operation": {"type": "SET", "op_list": [{"type": "INC_VALUE", "ref": "test/increase", "value": 10000}, {"type": "DEC_VALUE", "ref": "test/decrease", "value": 10000}]}, "nonce": -1}
-{"tx_list": [{"operation": {"type": "SET_VALUE", "ref": "test/new/final/path", "value": {"nested": [1, 2, 3, 4, 5]}}, "nonce": 4}, {"operation": {"type": "INC_VALUE", "ref": "test/increase", "value": 1}, "nonce": 5}]}

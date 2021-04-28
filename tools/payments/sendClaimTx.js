@@ -44,24 +44,27 @@ async function sendTransaction(escrow) {
   if (escrow) {
     const escrowConfigTxBody = buildEscrowConfigTxBody(`payments|test_service|${config.userAddr}|0`,
         config.serviceOwnerAddr, config.serviceOwnerAddr, timestamp);
-    console.log(`escrowConfig tx body: ${JSON.stringify(escrowConfigTxBody, null, 2)}`);
+    console.log(`escrowConfigTxBody: ${JSON.stringify(escrowConfigTxBody, null, 2)}`);
     const escrowConfigTxInfo = await signAndSendTx(config.endpointUrl, escrowConfigTxBody, config.serviceOwnerPrivateKey);
+  console.log(`escrowConfigTxInfo: ${JSON.stringify(escrowConfigTxInfo, null, 2)}`);
     if (!escrowConfigTxInfo.success) {
-      console.log(`Escrow config setting failed: ${JSON.stringify(escrowConfigTxInfo, null, 2)}`);
+      console.log(`Escrow config transaction failed.`);
       process.exit(0);
     }
     await confirmTransaction(config.endpointUrl, timestamp, escrowConfigTxInfo.txHash);
     timestamp = Date.now();
   }
 
-  const txBody = buildClaimTxBody(config.serviceOwnerAddr, config.userAddr, timestamp, escrow ? '0' : undefined);
-  console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
+  const claimTxBody = buildClaimTxBody(config.serviceOwnerAddr, config.userAddr, timestamp, escrow ? '0' : undefined);
+  console.log(`claimTxBody: ${JSON.stringify(claimTxBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
-  console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
-  if (txInfo.success) {
-    await confirmTransaction(config.endpointUrl, timestamp, txInfo.txHash);
+  const claimTxInfo = await signAndSendTx(config.endpointUrl, claimTxBody, config.serviceOwnerPrivateKey);
+  console.log(`claimTxInfo: ${JSON.stringify(claimTxInfo, null, 2)}`);
+  if (!claimTxInfo.success) {
+    console.log(`Claim transaction failed.`);
+    process.exit(0);
   }
+  await confirmTransaction(config.endpointUrl, timestamp, claimTxInfo.txHash);
 }
 
 async function processArguments() {

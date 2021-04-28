@@ -9,7 +9,8 @@
       "aincom2": "192.168.1.14"
     },
     "TRACKER_WS_ADDR": "ws://localhost:5000",
-    "MAX_SHARD_REPORT": 100
+    "MAX_SHARD_REPORT": 100,
+    "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
   "consensus": {
     "MIN_STAKE_PER_VALIDATOR": 100000,
