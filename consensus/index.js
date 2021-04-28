@@ -2,6 +2,7 @@ const seedrandom = require('seedrandom');
 const _ = require('lodash');
 const ntpsync = require('ntpsync');
 const sizeof = require('object-sizeof');
+const semver = require('semver');
 const logger = require('../logger')('CONSENSUS');
 const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
@@ -23,6 +24,7 @@ const {
   MIN_NUM_VALIDATORS,
   MIN_STAKE_PER_VALIDATOR,
   EPOCH_MS,
+  CONSENSUS_PROTOCOL_VERSION
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -34,6 +36,7 @@ const {
   sendGetRequest
 } = require('../p2p/util');
 const PathUtil = require('../common/path-util');
+const VersionUtil = require('../common/version-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -48,6 +51,8 @@ class Consensus {
     this.statusChangedBlockNumber = null;
     this.setter = '';
     this.setStatus(ConsensusStatus.STARTING);
+    this.consensusProtocolVersion = CONSENSUS_PROTOCOL_VERSION;
+    this.majorConsensusProtocolVersion = VersionUtil.toMajorVersion(CONSENSUS_PROTOCOL_VERSION);
     this.epochInterval = null;
     this.startingTime = 0;
     this.timeAdjustment = 0;
@@ -175,12 +180,40 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
   }
 
+  checkConsensusProtocolVersion(msg) {
+    const LOG_HEADER = 'checkConsensusProtocolVersion';
+    const consensusProtoVer = _.get(msg, 'consensusProtoVer');
+    if (!consensusProtoVer || !semver.valid(consensusProtoVer)) {
+      logger.error(`[${LOG_HEADER}] CONSENSUS_PROTOCOL_VERSION cannot be empty or invalid.`);
+      return false;
+    }
+    const majorVersion = VersionUtil.toMajorVersion(consensusProtoVer);
+    const isGreater = semver.gt(this.majorConsensusProtocolVersion, majorVersion);
+    if (isGreater) {
+      logger.error(`[${LOG_HEADER}] The given consensus message version is old. ` +
+          `See: (${this.majorConsensusProtocolVersion}, ${majorVersion})`);
+      return false;
+    }
+    const isLower = semver.lt(this.majorConsensusProtocolVersion, majorVersion);
+    if (isLower) {
+      logger.error(`[${LOG_HEADER}] My consensus protocol version is old. ` +
+          `See: (${this.majorConsensusProtocolVersion}, ${majorVersion})`);
+      return false;
+    }
+    return true;
+  }
+
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
   handleConsensusMessage(msg) {
     const LOG_HEADER = 'handleConsensusMessage';
 
+    if (!this.checkConsensusProtocolVersion(msg)) {
+      logger.error(`[${LOG_HEADER}] CONSENSUS_PROTOCOL_VERSION is not compatible. ` +
+          `Discard the consensus message.`);
+      return;
+    }
     if (this.status !== ConsensusStatus.RUNNING) {
       logger.debug(`[${LOG_HEADER}] Consensus status (${this.status}) is not RUNNING ` +
           `(${ConsensusStatus.RUNNING})`);
@@ -691,7 +724,9 @@ class Consensus {
       try {
         const proposal = this.createProposal();
         if (proposal !== null) {
-          this.handleConsensusMessage({ value: proposal, type: ConsensusMessageTypes.PROPOSE });
+          const consensusMsg = this.encapsulateConsensusMessage(
+              proposal, ConsensusMessageTypes.PROPOSE);
+          this.handleConsensusMessage(consensusMsg);
         }
       } catch (e) {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${e}`);
@@ -732,9 +767,9 @@ class Consensus {
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
-
-    this.handleConsensusMessage(
-        { value: Transaction.toJsObject(voteTx), type: ConsensusMessageTypes.VOTE });
+    const consensusMsg = this.encapsulateConsensusMessage(
+        Transaction.toJsObject(voteTx), ConsensusMessageTypes.VOTE);
+    this.handleConsensusMessage(consensusMsg);
   }
 
   // If there's a notarized chain that ends with 3 blocks, which have 3 consecutive epoch numbers,
@@ -1123,6 +1158,23 @@ class Consensus {
       state: this.status,
       stateNumeric: Object.keys(ConsensusStatus).indexOf(this.status),
       epoch: this.state.epoch
+    };
+  }
+
+  encapsulateConsensusMessage(value, type) {
+    const LOG_HEADER = 'encapsulateConsensusMessage';
+    if (!value) {
+      logger.error(`[${LOG_HEADER}] The value cannot be empty for consensus message.`);
+      return null;
+    }
+    if (!type) {
+      logger.error(`[${LOG_HEADER}] The consensus type should be specified.`);
+      return null;
+    }
+    return {
+      value: value,
+      type: type,
+      consensusProtoVer: this.consensusProtocolVersion
     };
   }
 
