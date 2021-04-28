@@ -20,9 +20,9 @@ const FeatureFlags = {
   // Enables state tree transfer.
   enableStateTreeTransfer: true,
   // Enables rich logging for functions.
-  enableRichFunctionLogging: true,
+  enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
-  enableRichTransactionLogging: true,
+  enableRichTransactionLogging: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
 };
