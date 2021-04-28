@@ -20,12 +20,13 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
     }
   ).then((resp) => {
     console.log(`resp:`, _.get(resp, 'data'));
-    const success = !ChainUtil.isFailedTx(_.get(resp, 'data.result.result.result', null));
-    console.log(`result: ${JSON.stringify(success, null, 2)}`);
-    return {txHash, signedTx, success};
+    const result = _.get(resp, 'data.result.result.result', {});
+    console.log(`result: ${JSON.stringify(result, null, 2)}`);
+    const success = !ChainUtil.isFailedTx(result);
+    return { txHash, signedTx, success, errMsg: result.error_message };
   }).catch((err) => {
     console.log(`Failed to send transaction: ${err}`);
-    return {errMsg: err.message};
+    return { txHash, signedTx, success: false, errMsg: err.message };
   });
 }
 
