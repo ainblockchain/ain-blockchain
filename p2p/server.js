@@ -47,6 +47,7 @@ const {
   getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
+  checkDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
@@ -301,15 +302,6 @@ class P2pServer {
     });
   }
 
-  checkDataProtoVer(socket, version) {
-    if (!version || !semver.valid(version)) {
-      closeSocketSafe(this.outbound, socket);
-      return false;
-    } else {
-      return true;
-    }
-  }
-
   // TODO(minsu): this check will be updated when data compatibility version up.
   checkDataProtoVerForAddressRequest(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
@@ -356,7 +348,6 @@ class P2pServer {
     return true;
   }
 
-  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -367,10 +358,11 @@ class P2pServer {
             this.minProtocolVersion, this.maxProtocolVersion, parsedMessage.protoVer)) {
           return;
         }
-        if (!this.checkDataProtoVer(socket, dataProtoVer)) {
+        if (!checkDataProtoVer(dataProtoVer)) {
           const address = getAddressFromSocket(socket);
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
+          closeSocketSafe(this.outbound, socket);
           return;
         }
         if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {

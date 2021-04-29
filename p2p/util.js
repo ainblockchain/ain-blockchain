@@ -137,6 +137,14 @@ function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersi
   return true;
 }
 
+function checkDataProtoVer(version) {
+  if (!version || !semver.valid(version)) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 function encapsulateMessage(type, dataObj) {
   if (!type) {
     logger.error('Type must be specified.');
@@ -181,6 +189,7 @@ module.exports = {
   verifySignedMessage,
   closeSocketSafe,
   checkProtoVer,
+  checkDataProtoVer,
   checkTimestamp,
   encapsulateMessage
 };
