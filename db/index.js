@@ -786,6 +786,7 @@ class DB {
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
     if (!ChainUtil.isFailedTx(result)) {
+      result.call_history = this.func.getCallHistory();
       const gas = {
         gas_amount: ChainUtil.getGasAmountObj(op.ref, 1)
       };
