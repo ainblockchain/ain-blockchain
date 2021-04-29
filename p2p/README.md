@@ -1,4 +1,4 @@
-# AI Network Blockchain Data Protocol version Release note
+# AI Network Blockchain Data Protocol Version Release note
 The data protocol version has been updated based on changes of files at the ./p2p directory.
 ## Versions
 ### 1.2.0
