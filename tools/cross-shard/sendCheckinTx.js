@@ -45,18 +45,13 @@ async function sendTransaction() {
   console.log(`triggerTxBody: ${JSON.stringify(triggerTxBody, null, 2)}`);
 
   console.log('Sending job transaction...')
-  const txInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, config.userPrivateKey);
-  console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
-  return {timestamp, txInfo};
-}
-
-async function sendCheckinTransaction() {
-  console.log('\n*** sendTransaction():');
-  console.log(`config: ${JSON.stringify(config, null, 2)}`);
-  const {timestamp, txInfo} = await sendTransaction();
-  if (txInfo.success) {
-    await confirmTransaction(config.endpointUrl, timestamp, txInfo.txHash);
+  const triggerTxInfo = await signAndSendTx(config.endpointUrl, triggerTxBody, config.userPrivateKey);
+  console.log(`triggerTxInfo: ${JSON.stringify(triggerTxInfo, null, 2)}`);
+  if (!triggerTxInfo.success) {
+    console.log(`Trigger transaction failed.`);
+    process.exit(0);
   }
+  await confirmTransaction(config.endpointUrl, timestamp, triggerTxInfo.txHash);
 }
 
 async function processArguments() {
@@ -64,7 +59,7 @@ async function processArguments() {
     usage();
   }
   config = require(path.resolve(__dirname, process.argv[2]));
-  await sendCheckinTransaction();
+  await sendTransaction();
 }
 
 function usage() {
