@@ -26,6 +26,7 @@ const {
   getAddressFromMessage,
   verifySignedMessage,
   checkProtoVer,
+  checkDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
@@ -252,31 +253,6 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
-  checkDataProtoVer(socket, version) {
-    if (!version || !semver.valid(version)) {
-      closeSocketSafe(this.outbound, socket);
-      return false;
-    }
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsu): may necessary auto disconnection based on timestamp??
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible ` +
-          `in the data protocol manner. You may be necessary to disconnect the connection with ` +
-          `the node in order to keep harmonious communication in the network.`);
-      }
-    }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('My data protocol version may be outdated. Please check the latest version ' +
-            'at https://github.com/ainblockchain/ain-blockchain/releases');
-      }
-    }
-    return true;
-  }
-
   // TODO(minsu): this check will be updated when data compatibility version up.
   checkDataProtoVerForAddressResponse(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
@@ -307,7 +283,6 @@ class P2pClient {
     return true;
   }
 
-  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -316,7 +291,12 @@ class P2pClient {
           this.server.minProtocolVersion, this.server.maxProtocolVersion, parsedMessage.protoVer)) {
         return;
       }
-      if (!this.checkDataProtoVer(socket, parsedMessage.dataProtoVer)) {
+      const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
+      if (!checkDataProtoVer(dataProtoVer)) {
+        const address = getAddressFromSocket(socket);
+        logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
+              `INAPPROPRIATE. Disconnect the connection.`);
+        closeSocketSafe(this.outbound, socket);
         return;
       }
       if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
