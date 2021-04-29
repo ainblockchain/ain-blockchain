@@ -75,6 +75,8 @@ class Functions {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 2 },
     };
     this.callStack = [];
+    this.callHistoryPath = [];
+    this.callHistoryRoot = {};
     this.functionGasAmount = {};
   }
 
@@ -101,9 +103,13 @@ class Functions {
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
+
     if (this.callStackSize() === 0) {
       this.clearFunctionGasAmount();
+      this.clearCallHistory();
     }
+    this.pushCallHistoryLabel(ChainUtil.formatPath(parsedValuePath));
+
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
           parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
@@ -211,6 +217,7 @@ class Functions {
         }
       }
     }
+    this.popCallHistoryLabel();
     return Promise.all(promises)
         .then(() => {
           return {
@@ -240,9 +247,12 @@ class Functions {
       callDepth,
       gasAmount,
     });
+    this.pushCallHistoryLabel(fid);
   }
 
   popCall() {
+    this.saveCallResultToCallHistory();
+    this.popCallHistoryLabel();
     const call = this.callStack.pop();
     this.addToFunctionGasAmount(call.gasAmount);
     return call;
@@ -263,6 +273,14 @@ class Functions {
     }
   }
 
+  getCallResult() {
+    const call = this.getTopCall();
+    if (call) {
+      return call.result;
+    }
+    return null;
+  }
+
   callStackSize() {
     return this.callStack.length;
   }
@@ -275,6 +293,28 @@ class Functions {
   isCircularCall(fid) {
     const call = this.getTopCall();
     return call && call.fidList && call.fidList.includes(fid);
+  }
+
+  pushCallHistoryLabel(label) {
+    this.callHistoryPath.push(label);
+  }
+
+  popCallHistoryLabel() {
+    return this.callHistoryPath.pop();
+  }
+
+  getCallHistory() {
+    return this.callHistoryRoot;
+  }
+
+  saveCallResultToCallHistory() {
+    const callResult = this.getCallResult();
+    ChainUtil.setJsObject(this.callHistoryRoot, [...this.callHistoryPath, ':result'], callResult);
+  }
+
+  clearCallHistory() {
+    this.callHistoryPath = [];
+    this.callHistoryRoot = {};
   }
 
   getFunctionGasAmount() {
@@ -538,6 +578,7 @@ class Functions {
       logger.error(`  =>> gasFee collect failed: ${JSON.stringify(result)}`);
       // TODO(lia): return error, check in setValue(), revert changes
     }
+    this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
   _distributeFee(value, context) {
@@ -557,6 +598,7 @@ class Functions {
     if (ChainUtil.isFailedTx(result)) {
       logger.error(`  =>> gasFee distribute failed: ${JSON.stringify(result)}`);
     }
+    this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
   _stake(value, context) {
