@@ -606,14 +606,16 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let gas = null;
+    let callHistory = null;
     if (auth && (auth.addr || auth.fid)) {
       this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
       gas = {
         gas_amount: this.func.getFunctionGasAmount()
       };
+      callHistory = this.func.getCallHistory();
     }
 
-    return ChainUtil.returnTxResult(0, null, gas);
+    return ChainUtil.returnTxResult(0, null, gas, callHistory);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -786,7 +788,6 @@ class DB {
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
     if (!ChainUtil.isFailedTx(result)) {
-      result.call_history = this.func.getCallHistory();
       const gas = {
         gas_amount: ChainUtil.getGasAmountObj(op.ref, 1)
       };
@@ -797,11 +798,11 @@ class DB {
     return result;
   }
 
-  executeMultiSetOperation(opList, auth, timestamp, transaction) {
+  executeMultiSetOperation(opList, auth, timestamp, tx) {
     const resultList = [];
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
-      const result = this.executeSingleSetOperation(op, auth, timestamp, transaction);
+      const result = this.executeSingleSetOperation(op, auth, timestamp, tx);
       resultList.push(result);
       if (ChainUtil.isFailedTx(result)) {
         break;

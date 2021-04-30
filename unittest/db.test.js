@@ -19,6 +19,7 @@ const {
 } = require('./test-util');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
+const ChainUtil = require('../common/chain-util');
 
 describe("DB initialization", () => {
   let node;
@@ -1289,8 +1290,141 @@ describe("DB operations", () => {
       })
     })
 
+    describe("executeSingleSetOperation()", () => {
+      it("when successful", () => {
+        assert.deepEqual(node.db.executeSingleSetOperation({
+          // Default type: SET_VALUE
+          ref: "test/nested/far/down",
+          value: {
+            "new": 12345
+          }
+        }, { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
+          "code": 0,
+          "gas": {
+            "gas_amount": {
+              "service": 1,
+            }
+          }
+        });
+        assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
+      })
+
+      it("returning error code and leaving value unchanged when it fails", () => {
+        assert.deepEqual(node.db.executeSingleSetOperation({
+          type: "INC_VALUE",
+          ref: "test/ai/foo",
+          value: 10
+        }), {
+          "code": 201,
+          "error_message": "Not a number type: bar or 10"
+        })
+        expect(node.db.getValue("test/ai/foo")).to.equal("bar")
+      })
+
+      it("when successfully with function triggering", () => {
+        const valuePath = '/test/test_function_triggering/allowed_path/value';
+        const functionResultPath = '/test/test_function_triggering/allowed_path/.last_tx/value';
+        const value = 'some value';
+        const timestamp = 1234567890000;
+
+        const result = node.db.executeMultiSetOperation([
+          {
+            type: 'SET_FUNCTION',
+            ref: valuePath,
+            value: {
+              ".function": {
+                "_saveLastTx": {
+                  "function_type": "NATIVE",
+                  "function_id": "_saveLastTx"
+                }
+              }
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: valuePath,
+            value: {
+              ".write": true,
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: functionResultPath,
+            value: {
+              ".write": true,
+            }
+          },
+          {
+            type: 'SET_FUNCTION',
+            ref: functionResultPath,
+            value: {
+              ".function": {
+                "_eraseValue": {
+                  "function_type": "NATIVE",
+                  "function_id": "_eraseValue"
+                }
+              }
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: functionResultPath,
+            value: {
+              ".write": true,
+            }
+          },
+        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
+        expect(ChainUtil.isFailedTx(result)).to.equal(false);
+
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: valuePath,
+            value,
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp,
+          address: 'abcd',
+        };
+        const tx = Transaction.fromTxBody(txBody, null);
+        expect(tx).to.not.equal(null);
+
+        assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
+            timestamp, tx), {
+          "code": 0,
+          "gas": {
+            "gas_amount": {
+              "service": 3,
+            }
+          },
+          "call_history": {
+            "/test/test_function_triggering/allowed_path/value": {
+              "_saveLastTx": {
+                ".result": {
+                  "code": "SUCCESS",
+                  "timestamp": 1234567890000,
+                  "tx_hash": "0x265a4ba9ee536c01c3be0ed7a9d9cdc061c012d31e3638f4fbc07e3e4dcfdd8e",
+                },
+                "/test/test_function_triggering/allowed_path/.last_tx/value": {
+                  "_eraseValue": {
+                    ".result": {
+                      "code": "SUCCESS",
+                      "timestamp": 1234567890000,
+                      "tx_hash": "0x265a4ba9ee536c01c3be0ed7a9d9cdc061c012d31e3638f4fbc07e3e4dcfdd8e",
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+        assert.deepEqual(node.db.getValue(valuePath), value)
+      })
+    })
+
     describe("executeMultiSetOperation()", () => {
-      it("when SET operation applied successfully", () => {
+      it("when all operations applied successfully", () => {
         assert.deepEqual(node.db.executeMultiSetOperation([
           {
             // Default type: SET_VALUE
@@ -1332,7 +1466,7 @@ describe("DB operations", () => {
               ".owner": "other owner config"
             }
           }
-        ], { addr: 'abcd' }, null, { extra: { executed_at: 123456789 }}), [
+        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), [
           {
             "code": 0,
             "gas": {
@@ -1403,7 +1537,7 @@ describe("DB operations", () => {
             node.db.getOwner("/test/test_owner/some/path"), { ".owner": "other owner config" });
       })
 
-      it("returning error code and leaving value unchanged if incValue path is not numerical", () => {
+      it("returning error code and leaving value unchanged when an operation fails", () => {
         assert.deepEqual(node.db.executeMultiSetOperation([
           {
             type: "SET_VALUE",
@@ -1438,44 +1572,104 @@ describe("DB operations", () => {
         ])
         expect(node.db.getValue("test/ai/foo")).to.equal("bar")
       })
-
-      it("returning error code and leaving value unchanged if decValue path is not numerical", () => {
-        assert.deepEqual(node.db.executeMultiSetOperation([
-          {
-            type: "SET_VALUE",
-            ref: "test/nested/far/down",
-            value: {
-              "new": 12345
-            }
-          },
-          {
-            type: "DEC_VALUE",
-            ref: "test/ai/foo",
-            value: 10
-          },
-          {
-            type: "INC_VALUE",
-            ref: "test/increment/value",
-            value: 10
-          }
-        ]), [
-          {
-            "code": 0,
-            "gas": {
-              "gas_amount": {
-                "service": 1,
-              }
-            }
-          },
-          {
-            "code": 301,
-            "error_message": "Not a number type: bar or 10"
-          }
-        ])
-        expect(node.db.getValue("test/ai/foo")).to.equal("bar")
-      })
     })
   })
+
+  describe("Transaction execution", () => {
+    let node;
+    let txBody;
+    let executableTx;
+    let objectTx;
+
+    beforeEach(() => {
+      rimraf.sync(CHAINS_DIR);
+
+      node = new BlockchainNode();
+      setNodeForTesting(node);
+
+      txBody = {
+        operation: {
+          type: 'SET_VALUE',
+          ref: '/test/some/path/for/tx',
+          value: 'some value',
+        },
+        gas_price: 1,
+        nonce: -1,
+        timestamp: 1568798344000,
+      };
+      executableTx = Transaction.fromTxBody(txBody, node.account.private_key);
+      objectTx = Transaction.toJsObject(executableTx);
+    });
+
+    afterEach(() => {
+      rimraf.sync(CHAINS_DIR);
+    });
+
+    describe("executeTransaction()", () => {
+      it("returns true for executable transaction", () => {
+        expect(executableTx.extra).to.not.equal(undefined);
+        expect(executableTx.extra.executed_at).to.equal(null);
+        assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1).code, 0);
+        // extra.executed_at is updated with a non-null value.
+        expect(executableTx.extra.executed_at).to.not.equal(null);
+      });
+
+      it("returns false for object transaction", () => {
+        assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1).code, 21);
+        assert.deepEqual(objectTx.extra, undefined);
+      });
+
+      it("rejects over-height transaction", () => {
+        const maxHeightTxBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
+            value: 'some value',
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp: 1568798344000,
+        };
+        const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
+        assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1).code, 0);
+
+        const overHeightTxBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21',
+            value: 'some value',
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp: 1568798344000,
+        };
+        const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
+        assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1).code, 23);
+      })
+
+      it("rejects over-size transaction", () => {
+        const overSizeTree = {};
+        for (let i = 0; i < 1000; i++) {
+          overSizeTree[i] = {};
+          for (let j = 0; j < 1000; j++) {
+            overSizeTree[i][j] = 'a';
+          }
+        }
+        const overSizeTxBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: '/test/tree',
+            value: overSizeTree,
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp: 1568798344000,
+        };
+        const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
+        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1).code, 24);
+      })
+    });
+  });
 
   describe("Remove null terminals nodes (garbage collection)", () => {
     beforeEach(() => {
@@ -2242,7 +2436,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = false", () => {
       expect(node.db.setValue(
           "test/test_sharding/some/path/to/value", newValue, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}).code)
+          null, { extra: { executed_at: 1234567890000 }}).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
     })
@@ -2250,7 +2444,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true", () => {
       expect(node.db.setValue(
           "apps/afan/test/test_sharding/some/path/to/value", newValue, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}, true).code)
+          null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
     })
@@ -2258,7 +2452,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and non-existing path", () => {
       expect(node.db.setValue(
           "some/non-existing/path", newValue, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}, true).code)
+          null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
     })
 
@@ -2288,7 +2482,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.setValue(
           "apps/afan/test/test_sharding/shards/disabled_shard/path", 20, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}, true).code)
+          null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
           .to.equal(20);  // value changed
@@ -2297,7 +2491,7 @@ describe("DB sharding config", () => {
     it("incValue with isGlobal = false", () => {
       expect(node.db.incValue(
           "test/test_sharding/some/path/to/number", incDelta, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}).code)
+          null, { extra: { executed_at: 1234567890000 }}).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
     })
@@ -2305,7 +2499,7 @@ describe("DB sharding config", () => {
     it("incValue with isGlobal = true", () => {
       expect(node.db.incValue(
           "apps/afan/test/test_sharding/some/path/to/number", incDelta, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}, true).code)
+          null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
     })
@@ -2342,7 +2536,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.incValue(
           "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}, true).code)
+          null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
           .to.equal(15);  // value changed
@@ -2351,7 +2545,7 @@ describe("DB sharding config", () => {
     it("decValue with isGlobal = false", () => {
       expect(node.db.decValue(
           "test/test_sharding/some/path/to/number", decDelta, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}).code)
+          null, { extra: { executed_at: 1234567890000 }}).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
     })
@@ -2359,7 +2553,7 @@ describe("DB sharding config", () => {
     it("decValue with isGlobal = true", () => {
       expect(node.db.decValue(
           "apps/afan/test/test_sharding/some/path/to/number", decDelta, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}, true).code)
+          null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
     })
@@ -2398,7 +2592,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.decValue(
           "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: 'known_user' },
-          null, { extra: { executed_at: 123456789 }}, true).code)
+          null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
         .to.equal(5);  // value changed
@@ -3213,101 +3407,5 @@ describe("State version handling", () => {
       expect(node.db.backupStateRoot).to.equal(null);
       assert.deepEqual(node.db.getValue('test'), dbValues);
     });
-  });
-});
-
-describe("Transaction execution", () => {
-  let node;
-  let txBody;
-  let executableTx;
-  let objectTx;
-
-  beforeEach(() => {
-    rimraf.sync(CHAINS_DIR);
-
-    node = new BlockchainNode();
-    setNodeForTesting(node);
-
-    txBody = {
-      operation: {
-        type: 'SET_VALUE',
-        ref: '/test/some/path/for/tx',
-        value: 'some value',
-      },
-      gas_price: 1,
-      nonce: -1,
-      timestamp: 1568798344000,
-    };
-    executableTx = Transaction.fromTxBody(txBody, node.account.private_key);
-    objectTx = Transaction.toJsObject(executableTx);
-  });
-
-  afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
-  });
-
-  describe("executeTransaction()", () => {
-    it("returns true for executable transaction", () => {
-      expect(executableTx.extra).to.not.equal(undefined);
-      expect(executableTx.extra.executed_at).to.equal(null);
-      assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1).code, 0);
-      // extra.executed_at is updated with a non-null value.
-      expect(executableTx.extra.executed_at).to.not.equal(null);
-    });
-
-    it("returns false for object transaction", () => {
-      assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1).code, 21);
-      assert.deepEqual(objectTx.extra, undefined);
-    });
-
-    it("rejects over-height transaction", () => {
-      const maxHeightTxBody = {
-        operation: {
-          type: 'SET_VALUE',
-          ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
-          value: 'some value',
-        },
-        gas_price: 1,
-        nonce: -1,
-        timestamp: 1568798344000,
-      };
-      const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
-      assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1).code, 0);
-
-      const overHeightTxBody = {
-        operation: {
-          type: 'SET_VALUE',
-          ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21',
-          value: 'some value',
-        },
-        gas_price: 1,
-        nonce: -1,
-        timestamp: 1568798344000,
-      };
-      const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
-      assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1).code, 23);
-    })
-
-    it("rejects over-size transaction", () => {
-      const overSizeTree = {};
-      for (let i = 0; i < 1000; i++) {
-        overSizeTree[i] = {};
-        for (let j = 0; j < 1000; j++) {
-          overSizeTree[i][j] = 'a';
-        }
-      }
-      const overSizeTxBody = {
-        operation: {
-          type: 'SET_VALUE',
-          ref: '/test/tree',
-          value: overSizeTree,
-        },
-        gas_price: 1,
-        nonce: -1,
-        timestamp: 1568798344000,
-      };
-      const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-      assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1).code, 24);
-    })
   });
 });
