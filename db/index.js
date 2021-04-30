@@ -605,16 +605,12 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    let gas = null;
     let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
       funcResults = this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
-      gas = {
-        gas_amount: this.func.getFunctionGasAmount()
-      };
     }
 
-    return ChainUtil.returnTxResult(0, null, gas, funcResults);
+    return ChainUtil.returnTxResult(0, null, 1, funcResults);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -667,7 +663,7 @@ class DB {
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
-    return ChainUtil.returnTxResult(0, null);
+    return ChainUtil.returnTxResult(0, null, 1);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -693,7 +689,7 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
-    return ChainUtil.returnTxResult(0, null);
+    return ChainUtil.returnTxResult(0, null, 1);
   }
 
   // TODO(platfowner): Add owner config sanitization logic.
@@ -719,7 +715,7 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
-    return ChainUtil.returnTxResult(0, null);
+    return ChainUtil.returnTxResult(0, null, 1);
   }
 
   /**
@@ -786,14 +782,6 @@ class DB {
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
-    if (!ChainUtil.isFailedTx(result)) {
-      const gas = {
-        gas_amount: ChainUtil.getGasAmountObj(op.ref, 1)
-      };
-      ChainUtil.mergeNumericJsObjects(result, { gas });
-    } else {
-      delete result.gas;
-    }
     return result;
   }
 
@@ -841,7 +829,7 @@ class DB {
               gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
           if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
             return ChainUtil.returnTxResult(
-                15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`);
+                15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
           }
         }
       }
