@@ -104,13 +104,11 @@ class Functions {
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
+    const funcResults = {};
 
     if (this.callStackSize() === 0) {
       this.clearFunctionGasAmount();
-      this.clearCallHistory();
     }
-    this.pushCallHistoryLabel(ChainUtil.formatPath(parsedValuePath));
-
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
           parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
@@ -143,8 +141,9 @@ class Functions {
             }
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
+            let funcResult = null;
             try {
-              nativeFunction.func(
+              funcResult = nativeFunction.func(
                   value,
                   {
                     valuePath: parsedValuePath,
@@ -154,8 +153,10 @@ class Functions {
                     executedAt,
                     transaction,
                     auth: newAuth,
+                    opResultList: [],
                   });
             } finally {
+              funcResults[functionEntry.function_id] = funcResult;
               // Always pops from the call stack.
               const call = this.popCall();
               if (FeatureFlags.enableRichFunctionLogging) {
@@ -218,8 +219,7 @@ class Functions {
         }
       }
     }
-    this.popCallHistoryLabel();
-    return Promise.all(promises)
+    Promise.all(promises)
         .then(() => {
           return {
             functionCount: functionList ? functionList.length : 0,
@@ -227,6 +227,7 @@ class Functions {
             failCount,
           };
         });
+    return funcResults;
   }
 
   pushCall(valuePath, value, functionPath, fid, nativeFunction) {
@@ -248,13 +249,10 @@ class Functions {
       callDepth,
       gasAmount,
     });
-    this.pushCallHistoryLabel(fid);
   }
 
   popCall() {
     const call = this.callStack.pop();
-    this.saveCallResultToCallHistory(call.result);
-    this.popCallHistoryLabel();
     this.addToFunctionGasAmount(call.gasAmount);
     return call;
   }
@@ -272,14 +270,6 @@ class Functions {
     if (call) {
       call.result = result;
     }
-  }
-
-  getCallResult() {
-    const call = this.getTopCall();
-    if (call) {
-      return call.result;
-    }
-    return null;
   }
 
   callStackSize() {
@@ -308,27 +298,17 @@ class Functions {
     ChainUtil.mergeNumericJsObjects(this.functionGasAmount, amount);
   }
 
-  pushCallHistoryLabel(label) {
-    this.callHistoryPath.push(label);
+  static getOpResultList(context) {
+    return JSON.parse(JSON.stringify(context.opResultList));
   }
 
-  popCallHistoryLabel() {
-    return this.callHistoryPath.pop();
+  static addToOpResultList(path, result, context) {
+    context.opResultList.push({
+      [ExecResultProperties.PATH]: path,
+      [ExecResultProperties.RESULT]: result,
+    });
   }
 
-  getCallHistory() {
-    return this.callHistoryRoot;
-  }
-
-  saveCallResultToCallHistory(callResult) {
-    ChainUtil.setJsObject(
-        this.callHistoryRoot, [...this.callHistoryPath, ExecResultProperties.RESULT], callResult);
-  }
-
-  clearCallHistory() {
-    this.callHistoryPath = [];
-    this.callHistoryRoot = {};
-  }
   static formatFunctionParams(
       parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction) {
     return `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
@@ -427,65 +407,85 @@ class Functions {
     return params;
   }
 
-  static buildExecutionResult(context, code) {
-    // NOTE(platfowner): Allow only node-independent values to avoid state proof hash issues.
+  setValueOrLog(valuePath, value, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
-    return {
-      timestamp,
-      tx_hash: transaction.hash,
-      code,
-    };
-  }
+    const auth = context.auth;
 
-  setValueOrLog(valuePath, value, auth, timestamp, transaction) {
     const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
+    Functions.addToOpResultList(valuePath, result, context);
     return result;
   }
 
-  incValueOrLog(valuePath, delta, auth, timestamp, transaction) {
+  incValueOrLog(valuePath, delta, context) {
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+
     const result = this.db.incValue(valuePath, delta, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
+    Functions.addToOpResultList(valuePath, result, context);
     return result;
   }
 
-  decValueOrLog(valuePath, delta, auth, timestamp, transaction) {
+  decValueOrLog(valuePath, delta, context) {
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+
     const result = this.db.decValue(valuePath, delta, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
+    Functions.addToOpResultList(valuePath, result, context);
+    return result;
+  }
+
+  buildExecutionResult(context, code) {
+    // NOTE(platfowner): Allow only node-independent values to avoid state proof hash issues.
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const result = {
+      timestamp,
+      tx_hash: transaction.hash,
+      code,
+    };
     return result;
   }
 
   setExecutionResult(context, code) {
-    const execResult = Functions.buildExecutionResult(context, code);
-    this.setCallResult(execResult);
+    const opResultList = Functions.getOpResultList(context);
+    const execResultToReturn = { code };
+    if (!ChainUtil.isEmpty(opResultList)) {
+      execResultToReturn[ExecResultProperties.OP_RESULTS] = opResultList;
+    }
+    this.setCallResult(execResultToReturn);
+    return execResultToReturn;
   }
 
   saveAndSetExecutionResult(context, resultPath, code) {
-    const execResult = Functions.buildExecutionResult(context, code);
-    this.setCallResult(execResult);
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-    return this.setValueOrLog(resultPath, execResult, auth, timestamp, transaction);
+    const execResultToSave = this.buildExecutionResult(context, code);
+    this.setValueOrLog(resultPath, execResultToSave, context);
+    return this.setExecutionResult(context, code);
   }
 
   /**
    * Adds a transfer entry from a service account to a regular account or vice versa. Used by
    * service-related native functions such as payments and staking
    */
-  setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
+  setServiceAccountTransferOrLog(from, to, value, context) {
+    const timestamp = context.timestamp;
+
     const transferPath = PathUtil.getTransferValuePath(from, to, timestamp);
-    return this.setValueOrLog(transferPath, value, auth, timestamp, transaction);
+    return this.setValueOrLog(transferPath, value, context);
   }
 
   /**
@@ -493,27 +493,23 @@ class Functions {
    * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
    */
   _saveLastTx(value, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
-    const auth = context.auth;
 
-    const valuePath = context.valuePath;
-    if (valuePath.length === 0) {
-      return false;
+    const parsedValuePath = context.valuePath;
+    if (parsedValuePath.length === 0) {
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     }
-    const lastTxPath = valuePath.slice();
+    const lastTxPath = parsedValuePath.slice();
     // Insert '.last_tx' label just before the last label in the path.
     const lastLabel = lastTxPath.pop();
     lastTxPath.push(PredefinedDbPaths.SAVE_LAST_TX_LAST_TX);
     lastTxPath.push(lastLabel);
-
     const result = this.setValueOrLog(
-        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp,
-        transaction);
+        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     } else {
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -521,17 +517,12 @@ class Functions {
    * Erases the value.
    */
   _eraseValue(value, context) {
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-
-    const valuePath = context.valuePath;
-    const result = this.setValueOrLog(
-        ChainUtil.formatPath(valuePath), 'erased', auth, timestamp, transaction);
+    const parsedValuePath = context.valuePath;
+    const result = this.setValueOrLog(ChainUtil.formatPath(parsedValuePath), 'erased', context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     } else {
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -545,28 +536,24 @@ class Functions {
     const resultPath = PathUtil.getTransferResultPath(from, to, key);
     const result = this.transferInternal(fromBalancePath, toBalancePath, value, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (result.code === 1001) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
   _createApp(value, context) {
     const appName = context.params.app_name;
     const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
     const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
     const sanitizedVal = {};
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
     if (!ChainUtil.isDict(adminConfig)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     if (adminConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
@@ -578,54 +565,46 @@ class Functions {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
     }
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
-    const result = this.setValueOrLog(
-        manageAppConfigPath, sanitizedVal, auth, timestamp, transaction);
+    const result = this.setValueOrLog(manageAppConfigPath, sanitizedVal, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
   }
 
   _collectFee(value, context) {
-    logger.error(`  =>> gasFee collect called: ${JSON.stringify(value)}`);
     const from = context.params.from;
     const blockNumber = context.params.block_number;
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
     const gasFeeServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
-    const result = this.setServiceAccountTransferOrLog(
-        from, gasFeeServiceAccountName, value.amount, auth, timestamp, transaction);
+    const result =
+        this.setServiceAccountTransferOrLog(from, gasFeeServiceAccountName, value.amount, context);
     if (!ChainUtil.isFailedTx(result)) {
-      logger.error(`  => _collectFee failed: ${JSON.stringify(result)}`);
+      logger.error(`  ===> _collectFee failed: ${JSON.stringify(result)}`);
       // TODO(lia): return error, check in setValue(), revert changes
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     } else {
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
   _distributeFee(value, context) {
     const blockNumber = context.params.number;
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
     const gasCostTotal = value.gas_cost_total;
     const proposer = value.proposer;
     if (gasCostTotal <= 0) {
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     }
     const gasFeeServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
     const result = this.setServiceAccountTransferOrLog(
-        gasFeeServiceAccountName, proposer, gasCostTotal, auth, timestamp, transaction);
+        gasFeeServiceAccountName, proposer, gasCostTotal, context);
     if (!ChainUtil.isFailedTx(result)) {
-      logger.error(`  => _distributeFee failed: ${JSON.stringify(result)}`);
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      logger.error(`  ===> _distributeFee failed: ${JSON.stringify(result)}`);
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     } else {
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -642,30 +621,26 @@ class Functions {
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName));
     if (timestamp > executedAt) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     if (value === 0) {
       // Just update the expiration time
-      this.setValueOrLog(
-        expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-      return;
+      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     }
     const stakingServiceAccountName = ChainUtil.toServiceAccountName(
           PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
-    const result = this.setServiceAccountTransferOrLog(
-        user, stakingServiceAccountName, value, auth, timestamp, transaction);
+    const result =
+        this.setServiceAccountTransferOrLog(user, stakingServiceAccountName, value, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.setValueOrLog(
-          expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
+      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
-      this.incValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.incValueOrLog(balanceTotalPath, value, context);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (result.code === 1001) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -682,21 +657,20 @@ class Functions {
     const expireAt = this.db.getValue(PathUtil.getStakingExpirationPath(serviceName, user, stakingKey));
     if (expireAt > executedAt) {
       // Still in lock-up period.
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
-      return;
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
     }
     const stakingServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const result = this.setServiceAccountTransferOrLog(
-        stakingServiceAccountName, user, value, auth, timestamp, transaction);
+        stakingServiceAccountName, user, value, context);
     if (!ChainUtil.isFailedTx(result)) {
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
-      this.decValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.decValueOrLog(balanceTotalPath, value, context);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (result.code === 1001) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -712,18 +686,17 @@ class Functions {
     const resultPath = PathUtil.getPaymentPayRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
 
     const userServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     const result = this.setServiceAccountTransferOrLog(
-        transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
+        transaction.address, userServiceAccountName, value.amount, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -735,12 +708,10 @@ class Functions {
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
     const transaction = context.transaction;
-    const auth = context.auth;
     const resultPath = PathUtil.getPaymentClaimRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
 
     let result;
@@ -751,16 +722,15 @@ class Functions {
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = PathUtil.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
-      result = this.setValueOrLog(
-          escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
+      result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, context);
     } else {
       result = this.setServiceAccountTransferOrLog(
-          userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
+          userServiceAccountName, value.target, value.amount, context);
     }
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -786,17 +756,17 @@ class Functions {
     const amount = _.get(value, 'amount');
     const resultPath = PathUtil.getEscrowHoldRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
     if (!ChainUtil.isNumber(amount)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
     const result = this.setServiceAccountTransferOrLog(
-        sourceAccount, escrowServiceAccountName, amount, auth, timestamp, transaction);
+        sourceAccount, escrowServiceAccountName, amount, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -809,7 +779,7 @@ class Functions {
     const ratio = _.get(value, 'ratio');
     const resultPath = PathUtil.getEscrowReleaseRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
     if (!ChainUtil.isNumber(ratio) || ratio < 0 || ratio > 1) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = ChainUtil.toServiceAccountName(
@@ -822,78 +792,72 @@ class Functions {
         `targetAmount: ${targetAmount}, sourceAmount: ${sourceAmount}`);
     if (targetAmount > 0) {
       const result = this.setServiceAccountTransferOrLog(
-          escrowServiceAccountName, targetAccount, targetAmount, auth, timestamp, transaction);
+          escrowServiceAccountName, targetAccount, targetAmount, context);
       if (ChainUtil.isFailedTx(result)) {
-        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
-        return;
+        return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
       }
     }
     if (sourceAmount > 0) {
       const result = this.setServiceAccountTransferOrLog(
-          escrowServiceAccountName, sourceAccount, sourceAmount, auth, timestamp, transaction);
+          escrowServiceAccountName, sourceAccount, sourceAmount, context);
       if (ChainUtil.isFailedTx(result)) {
-        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
         // TODO(lia): revert the release to target_account if there was any
-        return;
+        return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
       }
     }
-    this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    return this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
   }
 
   _updateLatestShardReport(value, context) {
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-
     const blockNumber = Number(context.params.block_number);
-    const valuePath = context.valuePath;
+    const parsedValuePath = context.valuePath;
     if (!ChainUtil.isArray(context.functionPath)) {
       return false;
     }
     if (!ChainUtil.isString(value)) {
       // Removing old report or invalid reporting
-      return false;
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     }
-    const latestReportPath = PathUtil.getLatestShardReportPathFromValuePath(valuePath);
+    const latestReportPath = PathUtil.getLatestShardReportPathFromValuePath(parsedValuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
       return false;
     }
-    const result = this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp, transaction);
+    const result = this.setValueOrLog(latestReportPath, blockNumber, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     } else {
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
   // TODO(platfowner): Support refund feature.
   _openCheckin(value, context) {
-    const valuePath = context.valuePath;
+    const parsedValuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
     if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     }
     if (!this.validateCheckinParams(context.params)) {
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     if (!this.validateShardConfig()) {
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     if (!payloadTx || !payloadTx.tx_body || !payloadTx.signature) {
       logger.info('  =>> payloadTx is missing required fields');
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     const createdTx = Transaction.create(payloadTx.tx_body, payloadTx.signature);
     if (!createdTx ||
         !Transaction.verifyTransaction(createdTx) ||
         !this.isTransferTx(createdTx.tx_body.operation)) {
       logger.info('  =>> Invalid payloadTx');
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     // Forward payload tx to parent chain
     try {
@@ -906,17 +870,17 @@ class Functions {
         logger.info(`  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
         const shardingPath = this.db.getShardingPath();
         const action = {
-          ref: PathUtil.getCheckinParentFinalizeResultPathFromValuePath(shardingPath, valuePath, txHash),
+          ref: PathUtil.getCheckinParentFinalizeResultPathFromValuePath(shardingPath, parsedValuePath, txHash),
           valueFunction: (success) => !!success,
           is_global: true,
           tx_body: payloadTx.tx_body,
         };
         this.tp.addRemoteTransaction(txHash, action);
       });
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     } catch (err) {
       logger.error(`  => _openCheckin failed with error: ${JSON.stringify(err)}`);
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -924,27 +888,27 @@ class Functions {
     if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info('  =>> Skip sending transfer transaction to the shard blockchain');
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     }
     if (!this.validateCheckinParams(context.params)) {
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     if (!this.validateShardConfig()) {
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     if (value !== true) {
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     // Transfer shard chain token from shard_owner to user_addr
     const user = context.params.user_addr;
     const checkinId = context.params.checkin_id;
-    const valuePath = context.valuePath;
-    const checkinPayload = this.db.getValue(PathUtil.getCheckinPayloadPathFromValuePath(valuePath));
+    const parsedValuePath = context.valuePath;
+    const checkinPayload = this.db.getValue(PathUtil.getCheckinPayloadPathFromValuePath(parsedValuePath));
     const checkinAmount = _.get(checkinPayload, 'tx_body.operation.value', 0);
     const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
     const tokenToReceive = checkinAmount * tokenExchRate;
     if (!this.validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
-      return;
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
@@ -971,10 +935,10 @@ class Functions {
     const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
     try {
       signAndSendTx(endpoint, transferTx, ownerPrivateKey);
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.setExecutionResult(context, FunctionResultCode.SUCCESS);
     } catch (err) {
       logger.error(`  => _closeCheckin failed with error: ${JSON.stringify(err)}`);
-      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+      return this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -1042,12 +1006,12 @@ class Functions {
         service: GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT
       });
     }
-    const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);
+    const decResult = this.decValueOrLog(fromPath, value, context);
     if (ChainUtil.isFailedTx(decResult)) {
       return decResult;
     }
     // TODO(lia): remove the from entry, if it's a service account && if the new balance === 0
-    const incResult = this.incValueOrLog(toPath, value, auth, timestamp, transaction);
+    const incResult = this.incValueOrLog(toPath, value, context);
     if (ChainUtil.isFailedTx(incResult)) {
       return incResult;
     }

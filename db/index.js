@@ -606,16 +606,15 @@ class DB {
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let gas = null;
-    let callHistory = null;
+    let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
-      this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+      funcResults = this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
       gas = {
         gas_amount: this.func.getFunctionGasAmount()
       };
-      callHistory = this.func.getCallHistory();
     }
 
-    return ChainUtil.returnTxResult(0, null, gas, callHistory);
+    return ChainUtil.returnTxResult(0, null, gas, funcResults);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
