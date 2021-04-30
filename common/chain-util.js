@@ -383,17 +383,15 @@ class ChainUtil {
     return { gasAmountTotal, gasCostTotal };
   }
 
-  static returnTxResult(code, message = null, gas = null, funcResults = null) {
+  static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
     const { ExecResultProperties } = require('../common/constants');
     const result = { code };
     if (message) {
       result.error_message = message;
     }
+    result.gas_amount = gasAmount;
     if (!ChainUtil.isEmpty(funcResults)) {
       result[ExecResultProperties.FUNC_RESULTS] = funcResults;
-    }
-    if (gas) {
-      result.gas = gas;
     }
     return result;
   }
@@ -405,9 +403,8 @@ class ChainUtil {
    * @param code error code
    * @param message error message
    * @param level level to log with
-   * @param gas gas object
    */
-  static logAndReturnTxResult(logger, code, message = null, level = 1, gas = null) {
+  static logAndReturnTxResult(logger, code, message = null, level = 1) {
     if (level === 0) {
       logger.error(message);
     } else if (level === 1) {
@@ -415,7 +412,7 @@ class ChainUtil {
     } else {
       logger.debug(message);
     }
-    return ChainUtil.returnTxResult(code, message, gas);
+    return ChainUtil.returnTxResult(code, message);
   }
 
   static keyStackToMetricName(keyStack) {

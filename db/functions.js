@@ -146,6 +146,7 @@ class Functions {
               funcResult = nativeFunction.func(
                   value,
                   {
+                    fid: functionEntry.function_id,
                     valuePath: parsedValuePath,
                     functionPath,
                     params,
@@ -463,7 +464,10 @@ class Functions {
 
   setExecutionResult(context, code) {
     const opResultList = Functions.getOpResultList(context);
-    const execResultToReturn = { code };
+    const execResultToReturn = {
+      code,
+      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount,
+    };
     if (!ChainUtil.isEmpty(opResultList)) {
       execResultToReturn[ExecResultProperties.OP_RESULTS] = opResultList;
     }
@@ -992,10 +996,6 @@ class Functions {
   }
 
   transferInternal(fromPath, toPath, value, context) {
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-
     const fromBalance = this.db.getValue(fromPath);
     if (fromBalance === null || fromBalance < value) {
       return ChainUtil.returnTxResult(1001, `Insufficient balance: ${fromBalance}`);
@@ -1015,7 +1015,7 @@ class Functions {
     if (ChainUtil.isFailedTx(incResult)) {
       return incResult;
     }
-    return ChainUtil.returnTxResult(0);
+    return ChainUtil.returnTxResult(0, null, 2);
   }
 }
 
