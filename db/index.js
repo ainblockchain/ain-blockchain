@@ -607,7 +607,9 @@ class DB {
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
-      funcResults = this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+      const { func_results } =
+          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+      funcResults = func_results;
     }
 
     return ChainUtil.returnTxResult(0, null, 1, funcResults);

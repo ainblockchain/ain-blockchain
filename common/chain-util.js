@@ -24,6 +24,9 @@ class ChainUtil {
   }
 
   static signTransaction(txBody, privateKey) {
+    if (!privateKey) {
+      return null;
+    }
     const keyBuffer = Buffer.from(privateKey, 'hex');
     const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
     const sigBuffer = ainUtil.toBuffer(sig);

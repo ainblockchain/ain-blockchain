@@ -1,4 +1,5 @@
 const Functions = require('../db/functions');
+const Transaction = require('../tx-pool/transaction');
 const rimraf = require('rimraf');
 const chai = require('chai');
 const assert = chai.assert;
@@ -140,13 +141,17 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        return functions.triggerFunctions(
+        const { func_results, promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathRest),
-            null, null, null, transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 1,
-            triggerCount: 1,
-            failCount: 0,
+            null, null, null, transaction);
+        assert.deepEqual(func_results, {
+          "gas_amount": 10
+        });
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
           });
           assert.deepEqual(requestBody1, {
             "function": {
@@ -192,13 +197,14 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        return functions.triggerFunctions(
+        const { promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathRestMulti),
-            null, null, null, transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 2,
-            triggerCount: 2,
-            failCount: 0,
+            null, null, null, transaction);
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 2,
+            trigger_count: 2,
+            fail_count: 0,
           });
           assert.deepEqual(requestBody1, {
             "function": {
@@ -268,19 +274,20 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        return functions.triggerFunctions(
+        const { promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathRestWithoutListener),
-            null, null, null, transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 1,
-            triggerCount: 1,
-            failCount: 1,
+            null, null, null, transaction);
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 1,
           });
         });
       })
 
       it("REST function NOT whitelisted", () => {
-        transaction = {
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathRestNotWhitelisted,
@@ -296,19 +303,20 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        return functions.triggerFunctions(
+        const { promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathRestNotWhitelisted),
-            null, null, null, transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 1,
-            triggerCount: 0,
-            failCount: 0,
+            null, null, null, transaction);
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            function_count: 1,
+            trigger_count: 0,
+            fail_count: 0,
           });
         });
       })
 
       it("null function", () => {
-        transaction = {
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathNull,
@@ -324,13 +332,14 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        return functions.triggerFunctions(
+        const { promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathNull),
-            null, null, null, transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 1,
-            triggerCount: 0,
-            failCount: 0,
+            null, null, null, transaction);
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            function_count: 1,
+            trigger_count: 0,
+            fail_count: 0,
           });
         });
       })
@@ -368,68 +377,112 @@ describe("Functions", () => {
             });
       })
 
-      it("native function (_transfer) with account registration", () => {
-        transaction = {
-          "tx_body": {
-            "operation": {
-              "ref": refPathTransfer,
-              "type": "SET_VALUE",
-              "value": 10
-            },
-            "nonce": -1,
-            "timestamp": 1566736760322,
-            "gas_price": 1,
+      it("Native function (_transfer) with account registration", () => {
+        const txBody = {
+          "operation": {
+            "ref": refPathTransfer,
+            "type": "SET_VALUE",
+            "value": 10
           },
-          "extra": {
-            "created_at": 1566736760323,
-            "executed_at": 1566736760324,
-          }
+          "nonce": -1,
+          "timestamp": 1566736760322,
+          "gas_price": 1,
+          "address": "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
         }
-        return functions.triggerFunctions(
+        const tx = Transaction.fromTxBody(txBody, null);
+        const { func_results, promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathTransfer), 10,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 1,
-            triggerCount: 1,
-            failCount: 0,
-          });
-          const gasAmountActual = functions.getFunctionGasAmount();
-          assert.deepEqual(gasAmountActual, {
-            "service": 1002,
+            tx);
+        assert.deepEqual(func_results, {
+          "_transfer": {
+            ".op_results": [
+             {
+                "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                "result": {
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              },
+              {
+                "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
+                "result": {
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              },
+              {
+                "path": "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/result",
+                "result": {
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 1000,
+          }
+        });
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
           });
         });
       });
 
-      it("native function (_transfer) without account registration", () => {
-        transaction = {
-          "tx_body": {
-            "operation": {
-              "ref": refPathTransfer,
-              "type": "SET_VALUE",
-              "value": 10
-            },
-            "nonce": -1,
-            "timestamp": 1566736760322,
-            "gas_price": 1,
+      it("Native function (_transfer) without account registration", () => {
+        const txBody = {
+          "operation": {
+            "ref": refPathTransfer,
+            "type": "SET_VALUE",
+            "value": 10
           },
-          "extra": {
-            "created_at": 1566736760323,
-            "executed_at": 1566736760324,
-          }
+          "nonce": -1,
+          "timestamp": 1566736760322,
+          "gas_price": 1,
+          "address": "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
         }
-        return functions.triggerFunctions(
+        const tx = Transaction.fromTxBody(txBody, null);
+        const { func_results, promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathTransfer), 10,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 1,
-            triggerCount: 1,
-            failCount: 0,
-          });
-          const gasAmountActual = functions.getFunctionGasAmount();
-          assert.deepEqual(gasAmountActual, {
-            "service": 2
+            tx);
+        assert.deepEqual(func_results, {
+          "_transfer": {
+            ".op_results": [
+              {
+                "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                "result": {
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              },
+              {
+                "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
+                "result": {
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              },
+              {
+                "path": "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/result",
+                "result": {
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 0
+          }
+        });
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
           });
         });
       });
@@ -451,24 +504,30 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        return functions.triggerFunctions(
+        const { func_results, promise_results } = functions.triggerFunctions(
             ChainUtil.parsePath(refPathRest),
-            null, null, null, transaction).then((response) => {
-          assert.deepEqual(response, {
-            functionCount: 1,
-            triggerCount: 1,
-            failCount: 0,
+            null, null, null, transaction);
+        assert.deepEqual(func_results, {
+          "gas_amount": 10
+        });
+        promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
           });
+          /*
           const gasAmountActual = functions.getFunctionGasAmount();
           assert.deepEqual(gasAmountActual, {
             "service": 10
           });
+          */
         });
       })
     });
   });
 
-  describe("convertPathVars2Params", () => {
+  describe("convertPathVars2Params()", () => {
     it("convert correctly", () => {
       pathVars = {
         "$from": "from_addr",
@@ -484,7 +543,7 @@ describe("Functions", () => {
     })
   });
 
-  describe("applyFunctionChange", () => {
+  describe("applyFunctionChange()", () => {
     const curFunction = {
       ".function": {
         "0x111": {
