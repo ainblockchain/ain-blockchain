@@ -383,10 +383,13 @@ class ChainUtil {
     return { gasAmountTotal, gasCostTotal };
   }
 
-  static returnTxResult(code, message = null, gas = null) {
+  static returnTxResult(code, message = null, gas = null, callHistory = null) {
     const result = { code };
     if (message) {
       result.error_message = message;
+    }
+    if (!ChainUtil.isEmpty(callHistory)) {
+      result.call_history = callHistory;
     }
     if (gas) {
       result.gas = gas;

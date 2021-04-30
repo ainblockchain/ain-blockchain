@@ -16,6 +16,7 @@ const {
   TokenExchangeSchemes,
   FunctionProperties,
   GasFeeConstants,
+  ExecResultProperties,
   REST_FUNCTION_CALL_TIMEOUT_MS,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -55,6 +56,8 @@ class Functions {
         func: this._createApp.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.DISTRIBUTE_FEE]: {
         func: this._distributeFee.bind(this), ownerOnly: true, execGasAmount: 0 },
+      [NativeFunctionIds.ERASE_VALUE]: {
+        func: this._eraseValue.bind(this), ownerOnly: false, execGasAmount: 1 },
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true, execGasAmount: 2 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
@@ -75,8 +78,6 @@ class Functions {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 2 },
     };
     this.callStack = [];
-    this.callHistoryPath = [];
-    this.callHistoryRoot = {};
     this.functionGasAmount = {};
   }
 
@@ -123,7 +124,7 @@ class Functions {
                 `Circular function call [[ ${functionEntry.function_id} ]] ` +
                 `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                 formattedParams);
-            continue;  // Skips function.
+            continue;  // Skips the function.
           }
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
@@ -251,9 +252,9 @@ class Functions {
   }
 
   popCall() {
-    this.saveCallResultToCallHistory();
-    this.popCallHistoryLabel();
     const call = this.callStack.pop();
+    this.saveCallResultToCallHistory(call.result);
+    this.popCallHistoryLabel();
     this.addToFunctionGasAmount(call.gasAmount);
     return call;
   }
@@ -295,28 +296,6 @@ class Functions {
     return call && call.fidList && call.fidList.includes(fid);
   }
 
-  pushCallHistoryLabel(label) {
-    this.callHistoryPath.push(label);
-  }
-
-  popCallHistoryLabel() {
-    return this.callHistoryPath.pop();
-  }
-
-  getCallHistory() {
-    return this.callHistoryRoot;
-  }
-
-  saveCallResultToCallHistory() {
-    const callResult = this.getCallResult();
-    ChainUtil.setJsObject(this.callHistoryRoot, [...this.callHistoryPath, ':result'], callResult);
-  }
-
-  clearCallHistory() {
-    this.callHistoryPath = [];
-    this.callHistoryRoot = {};
-  }
-
   getFunctionGasAmount() {
     return this.functionGasAmount;
   }
@@ -329,6 +308,27 @@ class Functions {
     ChainUtil.mergeNumericJsObjects(this.functionGasAmount, amount);
   }
 
+  pushCallHistoryLabel(label) {
+    this.callHistoryPath.push(label);
+  }
+
+  popCallHistoryLabel() {
+    return this.callHistoryPath.pop();
+  }
+
+  getCallHistory() {
+    return this.callHistoryRoot;
+  }
+
+  saveCallResultToCallHistory(callResult) {
+    ChainUtil.setJsObject(
+        this.callHistoryRoot, [...this.callHistoryPath, ExecResultProperties.RESULT], callResult);
+  }
+
+  clearCallHistory() {
+    this.callHistoryPath = [];
+    this.callHistoryRoot = {};
+  }
   static formatFunctionParams(
       parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction) {
     return `valuePath: '${ChainUtil.formatPath(parsedValuePath)}', ` +
@@ -507,10 +507,34 @@ class Functions {
     lastTxPath.push(PredefinedDbPaths.SAVE_LAST_TX_LAST_TX);
     lastTxPath.push(lastLabel);
 
-    return this.setValueOrLog(
+    const result = this.setValueOrLog(
         ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp,
         transaction);
+    if (!ChainUtil.isFailedTx(result)) {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+    }
   }
+
+  /**
+   * Erases the value.
+   */
+  _eraseValue(value, context) {
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+
+    const valuePath = context.valuePath;
+    const result = this.setValueOrLog(
+        ChainUtil.formatPath(valuePath), 'erased', auth, timestamp, transaction);
+    if (!ChainUtil.isFailedTx(result)) {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+    }
+  }
+
 
   _transfer(value, context) {
     const from = context.params.from;
@@ -574,11 +598,13 @@ class Functions {
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
     const result = this.setServiceAccountTransferOrLog(
         from, gasFeeServiceAccountName, value.amount, auth, timestamp, transaction);
-    if (ChainUtil.isFailedTx(result)) {
-      logger.error(`  =>> gasFee collect failed: ${JSON.stringify(result)}`);
+    if (!ChainUtil.isFailedTx(result)) {
+      logger.error(`  => _collectFee failed: ${JSON.stringify(result)}`);
       // TODO(lia): return error, check in setValue(), revert changes
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
-    this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
   _distributeFee(value, context) {
@@ -595,10 +621,12 @@ class Functions {
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
     const result = this.setServiceAccountTransferOrLog(
         gasFeeServiceAccountName, proposer, gasCostTotal, auth, timestamp, transaction);
-    if (ChainUtil.isFailedTx(result)) {
-      logger.error(`  =>> gasFee distribute failed: ${JSON.stringify(result)}`);
+    if (!ChainUtil.isFailedTx(result)) {
+      logger.error(`  => _distributeFee failed: ${JSON.stringify(result)}`);
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
-    this.setExecutionResult(context, FunctionResultCode.SUCCESS);
   }
 
   _stake(value, context) {
@@ -832,8 +860,12 @@ class Functions {
       // Nothing to update
       return false;
     }
-    this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp, transaction);
-    this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    const result = this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp, transaction);
+    if (!ChainUtil.isFailedTx(result)) {
+      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
+    }
   }
 
   // TODO(platfowner): Support refund feature.
@@ -881,8 +913,10 @@ class Functions {
         };
         this.tp.addRemoteTransaction(txHash, action);
       });
-    } finally {
       this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    } catch (err) {
+      logger.error(`  => _openCheckin failed with error: ${JSON.stringify(err)}`);
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -937,8 +971,10 @@ class Functions {
     const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
     try {
       signAndSendTx(endpoint, transferTx, ownerPrivateKey);
-    } finally {
       this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    } catch (err) {
+      logger.error(`  => _closeCheckin failed with error: ${JSON.stringify(err)}`);
+      this.setExecutionResult(context, FunctionResultCode.FAILURE);
     }
   }
 
