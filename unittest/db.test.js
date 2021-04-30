@@ -1366,13 +1366,6 @@ describe("DB operations", () => {
               }
             }
           },
-          {
-            type: 'SET_RULE',
-            ref: functionResultPath,
-            value: {
-              ".write": true,
-            }
-          },
         ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
         expect(ChainUtil.isFailedTx(result)).to.equal(false);
 
@@ -1398,24 +1391,38 @@ describe("DB operations", () => {
               "service": 3,
             }
           },
-          "call_history": {
-            "/test/test_function_triggering/allowed_path/value": {
-              "_saveLastTx": {
-                ".result": {
-                  "code": "SUCCESS",
-                  "timestamp": 1234567890000,
-                  "tx_hash": "0x265a4ba9ee536c01c3be0ed7a9d9cdc061c012d31e3638f4fbc07e3e4dcfdd8e",
-                },
-                "/test/test_function_triggering/allowed_path/.last_tx/value": {
-                  "_eraseValue": {
-                    ".result": {
-                      "code": "SUCCESS",
-                      "timestamp": 1234567890000,
-                      "tx_hash": "0x265a4ba9ee536c01c3be0ed7a9d9cdc061c012d31e3638f4fbc07e3e4dcfdd8e",
+          ".func_results": {
+            "_saveLastTx": {
+              ".op_results": [
+                {
+                  "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                  "result": {
+                    ".func_results": {
+                      "_eraseValue": {
+                        ".op_results": [
+                          {
+                            "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                            "result": {
+                              "code": 0,
+                              "gas": {
+                                "gas_amount": {}
+                              }
+                            }
+                          }
+                        ],
+                        "code": "SUCCESS",
+                      }
+                    },
+                    "code": 0,
+                    "gas": {
+                      "gas_amount": {
+                        "service": 1
+                      }
                     }
                   }
                 }
-              }
+              ],
+              "code": "SUCCESS",
             }
           }
         });

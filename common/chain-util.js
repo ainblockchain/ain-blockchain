@@ -383,13 +383,14 @@ class ChainUtil {
     return { gasAmountTotal, gasCostTotal };
   }
 
-  static returnTxResult(code, message = null, gas = null, callHistory = null) {
+  static returnTxResult(code, message = null, gas = null, funcResults = null) {
+    const { ExecResultProperties } = require('../common/constants');
     const result = { code };
     if (message) {
       result.error_message = message;
     }
-    if (!ChainUtil.isEmpty(callHistory)) {
-      result.call_history = callHistory;
+    if (!ChainUtil.isEmpty(funcResults)) {
+      result[ExecResultProperties.FUNC_RESULTS] = funcResults;
     }
     if (gas) {
       result.gas = gas;

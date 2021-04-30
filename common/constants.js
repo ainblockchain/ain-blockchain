@@ -408,7 +408,10 @@ const FunctionResultCode = {
  * @enum {string}
  */
 const ExecResultProperties = {
-  RESULT: '.result',
+  FUNC_RESULTS: '.func_results',
+  OP_RESULTS: '.op_results',
+  PATH: 'path',
+  RESULT: 'result',
 };
 
 /**
