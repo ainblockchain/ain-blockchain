@@ -52,7 +52,11 @@ class Transaction {
     let signature = '';
     if (!txBody.address) {
       const signed = ChainUtil.signTransaction(txBody, privateKey);
-      signature = signed.signedTx.signature;
+      const sig = _.get(signed, 'signedTx.signature', null);
+      if (!sig) {
+        return null;
+      }
+      signature = sig;
     }
     return Transaction.create(txBody, signature);
   }
