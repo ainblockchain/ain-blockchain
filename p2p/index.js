@@ -29,7 +29,8 @@ const {
   checkDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage
+  encapsulateMessage,
+  fromMsgToCompatibleMsg
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -286,7 +287,7 @@ class P2pClient {
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
-      const parsedMessage = JSON.parse(message);
+      let parsedMessage = JSON.parse(message);
       if (!checkProtoVer(this.outbound, socket,
           this.server.minProtocolVersion, this.server.maxProtocolVersion, parsedMessage.protoVer)) {
         return;
@@ -299,6 +300,7 @@ class P2pClient {
         closeSocketSafe(this.outbound, socket);
         return;
       }
+      parsedMessage = fromMsgToCompatibleMsg(parsedMessage);
       if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
         logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
             `Discard the message.`);
