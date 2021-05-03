@@ -567,10 +567,10 @@ class Functions {
     const result =
         this.setServiceAccountTransferOrLog(from, gasFeeServiceAccountName, value.amount, context);
     if (!ChainUtil.isFailedTx(result)) {
-      logger.error(`  ===> _collectFee failed: ${JSON.stringify(result)}`);
-      // TODO(lia): return error, check in setValue(), revert changes
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
+      logger.error(`  ===> _collectFee failed: ${JSON.stringify(result)}`);
+      // TODO(lia): return error, check in setValue(), revert changes
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
@@ -587,9 +587,9 @@ class Functions {
     const result = this.setServiceAccountTransferOrLog(
         gasFeeServiceAccountName, proposer, gasCostTotal, context);
     if (!ChainUtil.isFailedTx(result)) {
-      logger.error(`  ===> _distributeFee failed: ${JSON.stringify(result)}`);
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
+      logger.error(`  ===> _distributeFee failed: ${JSON.stringify(result)}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
