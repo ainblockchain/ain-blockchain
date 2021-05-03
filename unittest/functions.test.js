@@ -516,12 +516,6 @@ describe("Functions", () => {
             trigger_count: 1,
             fail_count: 0,
           });
-          /*
-          const gasAmountActual = functions.getFunctionGasAmount();
-          assert.deepEqual(gasAmountActual, {
-            "service": 10
-          });
-          */
         });
       })
     });
