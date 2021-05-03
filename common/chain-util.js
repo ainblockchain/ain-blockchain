@@ -293,8 +293,8 @@ class ChainUtil {
     if (!result) {
       return true;
     }
-    if (ChainUtil.isArray(result)) {
-      for (const elem of result) {
+    if (result.result_list && ChainUtil.isArray(result.result_list)) {
+      for (const elem of result.result_list) {
         if (ChainUtil.isFailedTxResultCode(elem.code)) {
           return true;
         }
@@ -370,30 +370,26 @@ class ChainUtil {
    * Only the service bandwidth gas amount is counted toward gas cost.
    * 
    * @param {Number} gasPrice gas price in microain
-   * @param {Object} result transaction execution result
+   * @param {Object} gasAmount gas amount
    * @returns 
    */
-  static getTotalGasCost(gasPrice, result) {
+  static getTotalGasCost(gasPrice, gasAmount) {
     const { MICRO_AIN } = require('./constants');
-    if (gasPrice === undefined) {
+    if (!ChainUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
-    const gasPriceAIN = gasPrice * MICRO_AIN;
-    let gasAmountTotal = 0;
-    if (ChainUtil.isArray(result)) {
-      for (const elem of result) {
-        gasAmountTotal += ChainUtil.getSingleOpServiceGasAmount(elem);
-      }
-    } else {
-      gasAmountTotal = ChainUtil.getSingleOpServiceGasAmount(result);
+    if (!ChainUtil.isNumber(gasAmount)) {
+      gasAmount = 0; // Default gas amount = 0
     }
-    return gasAmountTotal * gasPriceAIN;
+    return gasPrice * MICRO_AIN * gasAmount;
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
-    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
+    let gasAmountTotal = 0;
     const gasCostTotal = resList.reduce((acc, cur, index) => {
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
+      const gasAmount = ChainUtil.getTotalGasAmount(cur);
+      gasAmountTotal += gasAmount;
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, gasAmount);
     }, 0);
     return { gasAmountTotal, gasCostTotal };
   }
