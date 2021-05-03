@@ -421,7 +421,7 @@ class Functions {
     return this.setValueOrLog(transferPath, value, context);
   }
 
-  buildExecResultToReturn(context, code, extraGasAmount = 0) {
+  buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
       gas_amount: this.nativeFunctionMap[context.fid].execGasAmount,
@@ -432,7 +432,7 @@ class Functions {
     return result;
   }
 
-  buildExecResultToSave(context, code) {
+  buildFuncResultToSave(context, code) {
     // NOTE(platfowner): Allow only node-independent values to avoid state proof hash issues.
     const timestamp = context.timestamp;
     const transaction = context.transaction;
@@ -446,16 +446,17 @@ class Functions {
 
   returnFuncResult(context, code, extraGasAmount = 0) {
     const opResultList = Functions.getOpResultList(context);
-    const execResultToReturn = this.buildExecResultToReturn(context, code, extraGasAmount);
+    const funcResultToReturn = {};
     if (!ChainUtil.isEmpty(opResultList)) {
-      execResultToReturn[ExecResultProperties.OP_RESULTS] = opResultList;
+      funcResultToReturn[ExecResultProperties.OP_RESULTS] = opResultList;
     }
-    return execResultToReturn;
+    Object.assign(funcResultToReturn, this.buildFuncResultToReturn(context, code, extraGasAmount));
+    return funcResultToReturn;
   }
 
   saveAndReturnFuncResult(context, resultPath, code, extraGasAmount = 0) {
-    const execResultToSave = this.buildExecResultToSave(context, code);
-    this.setValueOrLog(resultPath, execResultToSave, context);
+    const funcResultToSave = this.buildFuncResultToSave(context, code);
+    this.setValueOrLog(resultPath, funcResultToSave, context);
     return this.returnFuncResult(context, code, extraGasAmount);
   }
 
