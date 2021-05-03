@@ -1492,32 +1492,34 @@ describe("DB operations", () => {
               ".owner": "other owner config"
             }
           }
-        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), [
-          {
-            "code": 0,
-            "gas_amount": 1,
-          },
-          {
-            "code": 0,
-            "gas_amount": 1,
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          }
-        ]);
+        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
+          "result_list": [
+            {
+              "code": 0,
+              "gas_amount": 1,
+            },
+            {
+              "code": 0,
+              "gas_amount": 1,
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            }
+          ],
+        });
         assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
         expect(node.db.getValue("test/increment/value")).to.equal(30)
         expect(node.db.getValue("test/decrement/value")).to.equal(10)
@@ -1558,17 +1560,19 @@ describe("DB operations", () => {
             ref: "test/decrement/value",
             value: 10
           },
-        ]), [
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 201,
-            "error_message": "Not a number type: bar or 10",
-            "gas_amount": 0
-          }
-        ])
+        ]), {
+          result_list: [
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 201,
+              "error_message": "Not a number type: bar or 10",
+              "gas_amount": 0
+            }
+          ]
+        })
         expect(node.db.getValue("test/ai/foo")).to.equal("bar")
       })
 
@@ -1647,46 +1651,48 @@ describe("DB operations", () => {
         expect(tx).to.not.equal(null);
 
         assert.deepEqual(node.db.executeMultiSetOperation(txBody.operation.op_list,
-            { addr: 'abcd' }, timestamp, tx), [
-          {
-            ".func_results": {
-              "_saveLastTx": {
-                ".op_results": [
-                  {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
-                    "result": {
-                      ".func_results": {
-                        "_eraseValue": {
-                          ".op_results": [
-                            {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
-                              "result": {
-                                "code": 0,
-                                "gas_amount": 1
+            { addr: 'abcd' }, timestamp, tx), {
+          "result_list": [
+            {
+              ".func_results": {
+                "_saveLastTx": {
+                  ".op_results": [
+                    {
+                      "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "result": {
+                        ".func_results": {
+                          "_eraseValue": {
+                            ".op_results": [
+                              {
+                                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                                "result": {
+                                  "code": 0,
+                                  "gas_amount": 1
+                                }
                               }
-                            }
-                          ],
-                          "code": "SUCCESS",
-                          "gas_amount": 0,
-                        }
-                      },
-                      "code": 0,
-                      "gas_amount": 1
+                            ],
+                            "code": "SUCCESS",
+                            "gas_amount": 0,
+                          }
+                        },
+                        "code": 0,
+                        "gas_amount": 1
+                      }
                     }
-                  }
-                ],
-                "code": "SUCCESS",
-                "gas_amount": 0,
-              }
+                  ],
+                  "code": "SUCCESS",
+                  "gas_amount": 0,
+                }
+              },
+              "code": 0,
+              "gas_amount": 1
             },
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1,
-          },
-        ]);
+            {
+              "code": 0,
+              "gas_amount": 1,
+            },
+          ],
+        });
       })
     })
   })
@@ -1722,19 +1728,20 @@ describe("DB operations", () => {
     });
 
     describe("executeTransaction()", () => {
-      it("returns true for executable transaction", () => {
+      it("returns code 0 for executable transaction", () => {
         expect(executableTx.extra).to.not.equal(undefined);
         expect(executableTx.extra.executed_at).to.equal(null);
         assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1), {
           code: 0,
           gas_amount: 1,
-          gas_cost: 1
+          gas_amount_total: 1,
+          gas_cost_total: 1,
         });
         // extra.executed_at is updated with a non-null value.
         expect(executableTx.extra.executed_at).to.not.equal(null);
       });
 
-      it("returns false for object transaction", () => {
+      it("returns error code for object transaction", () => {
         assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1), {
           code: 21,
           error_message: "[executeTransaction] Not executable transaction: {\"tx_body\":{\"operation\":{\"type\":\"SET_VALUE\",\"ref\":\"/test/some/path/for/tx\",\"value\":\"some value\"},\"gas_price\":1000000,\"nonce\":-1,\"timestamp\":1568798344000},\"signature\":\"0xd0c7aee750ef0437ac8efe6c8c8b304d760f3271c36c4ea96d11f3446c9d772124a165aedc7bd6483dd4b318da7729867863f81714c250bf460ec39d0467624a26c47189b3e20eb5d2d698cf00bb11f729833b73282925b759df9e652f0a33dd1c\",\"hash\":\"0xd0c7aee750ef0437ac8efe6c8c8b304d760f3271c36c4ea96d11f3446c9d7721\",\"address\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}",

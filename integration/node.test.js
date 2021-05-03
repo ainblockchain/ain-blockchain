@@ -373,7 +373,7 @@ describe('Blockchain Node', () => {
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], false);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
     sleep(2000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], false);
     sleep(2000);
@@ -1006,7 +1006,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path",
-          "gas_amount": 0
+          "gas_amount": 0,
+          "gas_amount_total": 0,
+          "gas_cost_total": 0
         });
 
         // Confirm that the original value is not altered.
@@ -1056,7 +1058,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path2",
-          "gas_amount": 0
+          "gas_amount": 0,
+          "gas_amount_total": 0,
+          "gas_cost_total": 0
         });
 
         // Confirm that the original value is not altered.
@@ -1106,7 +1110,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path3",
-          "gas_amount": 0
+          "gas_amount": 0,
+          "gas_amount_total": 0,
+          "gas_cost_total": 0
         });
 
         // Confirm that the original value is not altered.
@@ -1180,7 +1186,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 404,
           "error_message": "No write_function permission on: /some/wrong/path",
-          "gas_amount": 0
+          "gas_amount": 0,
+          "gas_amount_total": 0,
+          "gas_cost_total": 0
         });
 
         // Confirm that the original function is not altered.
@@ -1244,7 +1252,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 503,
           "error_message": "No write_rule permission on: /some/wrong/path",
-          "gas_amount": 0
+          "gas_amount": 0,
+          "gas_amount_total": 0,
+          "gas_cost_total": 0
         });
 
         // Confirm that the original rule is not altered.
@@ -1335,7 +1345,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 603,
           "error_message": "No write_owner or branch_owner permission on: /some/wrong/path",
-          "gas_amount": 0
+          "gas_amount": 0,
+          "gas_amount_total": 0,
+          "gas_cost_total": 0
         });
 
         // Confirm that the original owner is not altered.
@@ -1397,32 +1409,36 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        assert.deepEqual(_.get(body, 'result.result'), [
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-        ]);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "result_list": [
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+          ],
+          "gas_amount_total": 6,
+          "gas_cost_total": 0
+        });
 
         // Confirm that the original value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1490,25 +1506,29 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         expect(body.code).to.equal(1);
-        assert.deepEqual(_.get(body, 'result.result'), [
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 0,
-            "gas_amount": 1
-          },
-          {
-            "code": 103,
-            "error_message": "No .write permission on: some/wrong/path",
-            "gas_amount": 0
-          }
-        ]);
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "result_list": [
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 0,
+              "gas_amount": 1
+            },
+            {
+              "code": 103,
+              "error_message": "No .write permission on: some/wrong/path",
+              "gas_amount": 0
+            }
+          ],
+          "gas_amount_total": 3,
+          "gas_cost_total": 0
+        });
 
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -1653,72 +1673,88 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
           {
-            "result": [
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              }
-            ],
+            "result": {
+              "result_list": [
+                {
+                  "code": 0,
+                  "gas_amount": 1,
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1,
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1,
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1,
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1,
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1,
+                }
+              ],
+              "gas_amount_total": 6,
+              "gas_cost_total": 0
+            },
             "tx_hash": "erased"
           }
         ]);
@@ -1878,21 +1914,27 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0,
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0,
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0,
             },
             "tx_hash": "erased"
           },
@@ -1900,58 +1942,70 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 103,
               "error_message": "No .write permission on: some/wrong/path",
-              "gas_amount": 0
+              "gas_amount": 0,
+              "gas_amount_total": 0,
+              "gas_cost_total": 0,
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0,
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0,
             },
             "tx_hash": "erased"
           },
           {
             "result": {
               "code": 0,
-              "gas_amount": 1
+              "gas_amount": 1,
+              "gas_amount_total": 1,
+              "gas_cost_total": 0,
             },
             "tx_hash": "erased"
           },
           {
-            "result": [
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              },
-              {
-                "code": 0,
-                "gas_amount": 1
-              }
-            ],
+            "result": {
+              "result_list": [
+                {
+                  "code": 0,
+                  "gas_amount": 1
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1
+                },
+                {
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              ],
+              "gas_amount_total": 6,
+              "gas_cost_total": 0,
+            },
             "tx_hash": "erased"
           }
         ]);
@@ -1995,7 +2049,9 @@ describe('Blockchain Node', () => {
             result: {
               result: {
                 code: 0,
-                gas_amount: 1
+                gas_amount: 1,
+                gas_amount_total: 1,
+                gas_cost_total: 0,
               },
               tx_hash: ChainUtil.hashSignature(signature),
             }
@@ -2037,7 +2093,9 @@ describe('Blockchain Node', () => {
               result: {
                 result: {
                   code: 0,
-                  gas_amount: 1
+                  gas_amount: 1,
+                  gas_amount_total: 1,
+                  gas_cost_total: 0,
                 },
                 tx_hash: ChainUtil.hashSignature(signature),
               }
@@ -2136,8 +2194,39 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_sendSignedTransactionBatch', () => {
+      const account = ainUtil.createAccount();
+      let txBodyBefore;
+      let txBodyAfter;
+      let signatureBefore;
+      let signatureAfter;
+
+      before(() => {
+        txBodyBefore = {
+          operation: {
+            // Default type: SET_VALUE
+            ref: "test/test_value/some400/path",
+            value: "some other300 value",
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        signatureBefore =
+            ainUtil.ecSignTransaction(txBodyBefore, Buffer.from(account.private_key, 'hex'));
+
+        txBodyAfter = {
+          operation: {
+            type: 'INC_VALUE',
+            ref: "test/test_value/some400/path2",
+            value: 10
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        signatureAfter =
+            ainUtil.ecSignTransaction(txBodyAfter, Buffer.from(account.private_key, 'hex'));
+      });
+
       it('accepts a batch transaction', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBodyList = [
           {
@@ -2272,7 +2361,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a batch transaction of invalid batch transaction format.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -2303,7 +2391,6 @@ describe('Blockchain Node', () => {
       })
 
       it('accepts a batch transaction of under transaction list size limit.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const timestamp = Date.now();
         const txBodyTemplate = {
@@ -2339,7 +2426,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a batch transaction of over transaction list size limit.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const timestamp = Date.now();
         const txBodyTemplate = {
@@ -2376,14 +2462,13 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: longText,
-            ref: `test/test_long_text`
+            ref: `test/test_long_text`,
+            value: longText
           },
           timestamp: Date.now(),
           nonce: -1
@@ -2393,8 +2478,16 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: [
             {
+              tx_body: txBodyBefore,
+              signature: signatureBefore,
+            },
+            {
               tx_body: txBody,
-              signature,
+              signature: signature,
+            },
+            {
+              tx_body: txBodyAfter,
+              signature: signatureAfter,
             }
           ],
           protoVer: CURRENT_PROTOCOL_VERSION
@@ -2404,7 +2497,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 3,
-              message: `Transaction[0]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction[1]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
@@ -2412,7 +2505,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a batch transaction of missing transaction properties.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -2426,8 +2518,16 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: [
             {
+              tx_body: txBodyBefore,
+              signature: signatureBefore,
+            },
+            {
               tx_body: txBody,
               // missing signature
+            },
+            {
+              tx_body: txBodyAfter,
+              signature: signatureAfter,
             }
           ],
           protoVer: CURRENT_PROTOCOL_VERSION
@@ -2435,7 +2535,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 4,
-              message: `Missing properties of transaction[0].`,
+              message: `Missing properties of transaction[1].`,
             },
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
@@ -2443,7 +2543,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a batch transaction of invalid transaction format.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -2459,8 +2558,16 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: [
             {
+              tx_body: txBodyBefore,
+              signature: signatureBefore,
+            },
+            {
               tx_body: txBody,
               signature,
+            },
+            {
+              tx_body: txBodyAfter,
+              signature: signatureAfter,
             }
           ],
           protoVer: CURRENT_PROTOCOL_VERSION
@@ -2468,7 +2575,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 5,
-              message: `Invalid format of transaction[0].`
+              message: `Invalid format of transaction[1].`
             },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
@@ -2602,7 +2709,9 @@ describe('Blockchain Node', () => {
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 403,
             "error_message": "Trying to write owner-only function: _transfer",
-            "gas_amount": 0
+            "gas_amount": 0,
+            "gas_amount_total": 0,
+            "gas_cost_total": 0,
           })
           const resp = parseOrLog(syncRequest('GET',
               server2 + `/get_function?ref=${setFunctionWithOwnerOnlyPath}`)
@@ -2750,7 +2859,9 @@ describe('Blockchain Node', () => {
             }
           },
           "code": 0,
-          "gas_amount": 1
+          "gas_amount": 1,
+          "gas_amount_total": 1004,
+          "gas_cost_total": 0,
         });
       });
 
@@ -2793,7 +2904,9 @@ describe('Blockchain Node', () => {
             }
           },
           "code": 0,
-          "gas_amount": 1
+          "gas_amount": 1,
+          "gas_amount_total": 4,
+          "gas_cost_total": 0,
         });
       });
 
@@ -2873,6 +2986,8 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "gas_amount": 1,
+          "gas_amount_total": 1008,
+          "gas_cost_total": 0,
         });
       });
 
@@ -2951,7 +3066,9 @@ describe('Blockchain Node', () => {
             }
           },
           "code": 0,
-          "gas_amount": 1
+          "gas_amount": 1,
+          "gas_amount_total": 8,
+          "gas_cost_total": 0,
         });
       });
 
@@ -2967,6 +3084,8 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "gas_amount": 1,
+          "gas_amount_total": 11,
+          "gas_cost_total": 0,
         });
       });
     });

@@ -1434,32 +1434,36 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), [
-            {
-              "code": 0,
-              "gas_amount": 1
-            },
-            {
-              "code": 0,
-              "gas_amount": 1
-            },
-            {
-              "code": 0,
-              "gas_amount": 1
-            },
-            {
-              "code": 0,
-              "gas_amount": 1
-            },
-            {
-              "code": 0,
-              "gas_amount": 1
-            },
-            {
-              "code": 0,
-              "gas_amount": 1
-            },
-          ]);
+          assert.deepEqual(_.get(body, 'result.result'), {
+            "result_list": [
+              {
+                "code": 0,
+                "gas_amount": 1
+              },
+              {
+                "code": 0,
+                "gas_amount": 1
+              },
+              {
+                "code": 0,
+                "gas_amount": 1
+              },
+              {
+                "code": 0,
+                "gas_amount": 1
+              },
+              {
+                "code": 0,
+                "gas_amount": 1
+              },
+              {
+                "code": 0,
+                "gas_amount": 1
+              },
+            ],
+            "gas_amount_total": 6,
+            "gas_cost_total": 0
+          });
           assert.deepEqual(body.code, 0);
         })
 
@@ -1513,32 +1517,36 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), [
-            {
-              "code": 0,
-              "gas_amount": 0
-            },
-            {
-              "code": 0,
-              "gas_amount": 0
-            },
-            {
-              "code": 0,
-              "gas_amount": 0
-            },
-            {
-              "code": 0,
-              "gas_amount": 0
-            },
-            {
-              "code": 0,
-              "gas_amount": 0
-            },
-            {
-              "code": 0,
-              "gas_amount": 0
-            },
-          ]);
+          assert.deepEqual(_.get(body, 'result.result'), {
+            "result_list": [
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+            ],
+            "gas_amount_total": 0,
+            "gas_cost_total": 0
+          });
           assert.deepEqual(body.code, 0);
         })
       })
@@ -1568,7 +1576,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    gas_amount: 1
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1601,7 +1611,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    gas_amount: 1
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1634,7 +1646,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    gas_amount: 1
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1676,7 +1690,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    gas_amount: 1
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
@@ -1721,7 +1737,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    gas_amount: 1
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
@@ -1766,7 +1784,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    gas_amount: 1
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
