@@ -1412,8 +1412,6 @@ describe("DB operations", () => {
 
         assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
             timestamp, tx), {
-          "code": 0,
-          "gas_amount": 1,
           ".func_results": {
             "_saveLastTx": {
               ".op_results": [
@@ -1432,7 +1430,7 @@ describe("DB operations", () => {
                           }
                         ],
                         "code": "SUCCESS",
-                        "gas_amount": 1,
+                        "gas_amount": 0,
                       }
                     },
                     "code": 0,
@@ -1441,9 +1439,11 @@ describe("DB operations", () => {
                 }
               ],
               "code": "SUCCESS",
-              "gas_amount": 1,
+              "gas_amount": 0,
             }
-          }
+          },
+          "code": 0,
+          "gas_amount": 1,
         });
         assert.deepEqual(node.db.getValue(valuePath), value)
       })
@@ -1649,8 +1649,6 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.executeMultiSetOperation(txBody.operation.op_list,
             { addr: 'abcd' }, timestamp, tx), [
           {
-            "code": 0,
-            "gas_amount": 1,
             ".func_results": {
               "_saveLastTx": {
                 ".op_results": [
@@ -1669,7 +1667,7 @@ describe("DB operations", () => {
                             }
                           ],
                           "code": "SUCCESS",
-                          "gas_amount": 1,
+                          "gas_amount": 0,
                         }
                       },
                       "code": 0,
@@ -1678,9 +1676,11 @@ describe("DB operations", () => {
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 1,
+                "gas_amount": 0,
               }
-            }
+            },
+            "code": 0,
+            "gas_amount": 1
           },
           {
             "code": 0,
