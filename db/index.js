@@ -834,6 +834,9 @@ class DB {
                 15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
           }
         }
+        result.gas_cost = gasCost;
+      } else {
+        result.gas_cost = 0;
       }
       if (tx && auth && auth.addr && !auth.fid) {
         this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
@@ -849,7 +852,7 @@ class DB {
     if (!Transaction.isExecutable(tx)) {
       return ChainUtil.logAndReturnTxResult(
           logger, 21,
-          `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`, 0);
+          `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx)}`, 0);
     }
     // Record when the tx was executed.
     tx.setExecutedAt(Date.now());

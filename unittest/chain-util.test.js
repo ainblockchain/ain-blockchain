@@ -401,44 +401,84 @@ describe("ChainUtil", () => {
 
     it("when single operation result input", () => {
       const result = {
-        "code": 0,
-        "gas": {
-          "gas_amount": {
-            "service": 50,
+        ".func_results": {
+          "_saveLastTx": {
+            ".op_results": [
+              {
+                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  ".func_results": {
+                    "_eraseValue": {
+                      ".op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 10,
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 20,
           }
-        }
+        },
+        "code": 0,
+        "gas_amount": 30,
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 50);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 62);
     })
 
     it("when multiple operation result input", () => {
       const result = [
         {
-          "code": 0,
-          "gas": {
-            "gas_amount": {
-              "service": 1,
+          ".func_results": {
+            "_saveLastTx": {
+              ".op_results": [
+                {
+                  "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                  "result": {
+                    ".func_results": {
+                      "_eraseValue": {
+                        ".op_results": [
+                          {
+                            "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                            "result": {
+                              "code": 0,
+                              "gas_amount": 1
+                            }
+                          }
+                        ],
+                        "code": "SUCCESS",
+                        "gas_amount": 10,
+                      }
+                    },
+                    "code": 0,
+                    "gas_amount": 1
+                  }
+                }
+              ],
+              "code": "SUCCESS",
+              "gas_amount": 20,
             }
-          }
+          },
+          "code": 0,
+          "gas_amount": 30
         },
         {
           "code": 0,
-          "gas": {
-            "gas_amount": {
-              "service": 10,
-            }
-          }
-        },
-        {
-          "code": 0,
-          "gas": {
-            "gas_amount": {
-              "service": 100,
-            }
-          }
+          "gas_amount": 1,
         },
       ];
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 111);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 63);
     })
   })
 
@@ -457,44 +497,84 @@ describe("ChainUtil", () => {
 
     it("when single operation result input", () => {
       const result = {
-        "code": 0,
-        "gas": {
-          "gas_amount": {
-            "service": 50,
+        ".func_results": {
+          "_saveLastTx": {
+            ".op_results": [
+              {
+                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  ".func_results": {
+                    "_eraseValue": {
+                      ".op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 10,
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 20,
           }
-        }
+        },
+        "code": 0,
+        "gas_amount": 30,
       };
-      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, result), 50);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, result), 62);
     })
 
     it("when multiple operation result input", () => {
       const result = [
         {
-          "code": 0,
-          "gas": {
-            "gas_amount": {
-              "service": 1,
+          ".func_results": {
+            "_saveLastTx": {
+              ".op_results": [
+                {
+                  "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                  "result": {
+                    ".func_results": {
+                      "_eraseValue": {
+                        ".op_results": [
+                          {
+                            "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                            "result": {
+                              "code": 0,
+                              "gas_amount": 1
+                            }
+                          }
+                        ],
+                        "code": "SUCCESS",
+                        "gas_amount": 10,
+                      }
+                    },
+                    "code": 0,
+                    "gas_amount": 1
+                  }
+                }
+              ],
+              "code": "SUCCESS",
+              "gas_amount": 20,
             }
-          }
+          },
+          "code": 0,
+          "gas_amount": 30
         },
         {
           "code": 0,
-          "gas": {
-            "gas_amount": {
-              "service": 10,
-            }
-          }
-        },
-        {
-          "code": 0,
-          "gas": {
-            "gas_amount": {
-              "service": 100,
-            }
-          }
+          "gas_amount": 1,
         },
       ];
-      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, result), 111);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, result), 63);
     })
   })
 })
