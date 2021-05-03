@@ -373,7 +373,7 @@ describe('Blockchain Node', () => {
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], false);
     sleep(2000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], false);
     sleep(2000);
