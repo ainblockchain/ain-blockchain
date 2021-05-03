@@ -332,20 +332,20 @@ class ChainUtil {
     return gasAmount;
   }
 
-  static getSingleOpServiceGasAmount(result) {
+  static getSingleOpGasAmount(result) {
     let sum = 0;
     if (!result) {
       return sum;
     }
     if (ChainUtil.isArray(result)) {
       for (const elem of result) {
-        sum += ChainUtil.getSingleOpServiceGasAmount(elem);
+        sum += ChainUtil.getSingleOpGasAmount(elem);
       }
       return sum;
     }
     if (ChainUtil.isDict(result)) {
       for (const key in result) {
-        sum += ChainUtil.getSingleOpServiceGasAmount(result[key]);
+        sum += ChainUtil.getSingleOpGasAmount(result[key]);
       }
     }
     sum += _.get(result, 'gas_amount', 0);
@@ -359,11 +359,11 @@ class ChainUtil {
     if (ChainUtil.isArray(result)) {
       let gasAmount = 0;
       for (const elem of result) {
-        gasAmount += ChainUtil.getSingleOpServiceGasAmount(elem);
+        gasAmount += ChainUtil.getSingleOpGasAmount(elem);
       }
       return gasAmount;
     }
-    return ChainUtil.getSingleOpServiceGasAmount(result);
+    return ChainUtil.getSingleOpGasAmount(result);
   }
   /**
    * Calculate the gas cost (unit = ain).
