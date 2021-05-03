@@ -396,14 +396,15 @@ class ChainUtil {
 
   static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
     const { ExecResultProperties } = require('../common/constants');
-    const result = { code };
+    const result = {};
     if (message) {
       result.error_message = message;
     }
-    result.gas_amount = gasAmount;
     if (!ChainUtil.isEmpty(funcResults)) {
       result[ExecResultProperties.FUNC_RESULTS] = funcResults;
     }
+    result.code = code;
+    result.gas_amount = gasAmount;
     return result;
   }
 
