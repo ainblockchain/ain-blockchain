@@ -206,7 +206,7 @@ class ChainUtil {
   }
 
   static formatPath(parsedPath) {
-    if (!Array.isArray(parsedPath) || parsedPath.length === 0) {
+    if (!ChainUtil.isArray(parsedPath) || parsedPath.length === 0) {
       return '/';
     }
     let formatted = '';
@@ -293,7 +293,7 @@ class ChainUtil {
     if (!result) {
       return true;
     }
-    if (Array.isArray(result)) {
+    if (ChainUtil.isArray(result)) {
       for (const elem of result) {
         if (ChainUtil.isFailedTxResultCode(elem.code)) {
           return true;
@@ -333,17 +333,30 @@ class ChainUtil {
   }
 
   static getSingleOpServiceGasAmount(result) {
+    let sum = 0;
     if (!result) {
-      return 0;
+      return sum;
     }
-    return _.get(result, 'gas.gas_amount.service', 0);
+    if (ChainUtil.isArray(result)) {
+      for (const elem of result) {
+        sum += ChainUtil.getSingleOpServiceGasAmount(elem);
+      }
+      return sum;
+    }
+    if (ChainUtil.isDict(result)) {
+      for (const key in result) {
+        sum += ChainUtil.getSingleOpServiceGasAmount(result[key]);
+      }
+    }
+    sum += _.get(result, 'gas_amount', 0);
+    return sum;
   }
 
   /**
    * Returns the total gas amount of the result (esp. multi-operation result).
    */
   static getTotalGasAmount(result) {
-    if (Array.isArray(result)) {
+    if (ChainUtil.isArray(result)) {
       let gasAmount = 0;
       for (const elem of result) {
         gasAmount += ChainUtil.getSingleOpServiceGasAmount(elem);
@@ -362,20 +375,19 @@ class ChainUtil {
    */
   static getTotalGasCost(gasPrice, result) {
     const { MICRO_AIN } = require('./constants');
-    if (gasPrice === undefined) gasPrice = 0; // Default gas price = 0 microain
-    const gasPriceAIN = gasPrice * MICRO_AIN;
-    if (Array.isArray(result)) {
-      let gasCostTotal = 0;
-      for (const elem of result) {
-        const gasCost = ChainUtil.getSingleOpServiceGasAmount(elem) * gasPriceAIN;
-        ChainUtil.setJsObject(elem, ['gas', 'gas_cost'], gasCost);
-        gasCostTotal += gasCost;
-      }
-      return gasCostTotal;
+    if (gasPrice === undefined) {
+      gasPrice = 0; // Default gas price = 0 microain
     }
-    const gasCost = ChainUtil.getSingleOpServiceGasAmount(result) * gasPriceAIN;
-    ChainUtil.setJsObject(result, ['gas', 'gas_cost'], gasCost);
-    return gasCost;
+    const gasPriceAIN = gasPrice * MICRO_AIN;
+    let gasAmountTotal = 0;
+    if (ChainUtil.isArray(result)) {
+      for (const elem of result) {
+        gasAmountTotal += ChainUtil.getSingleOpServiceGasAmount(elem);
+      }
+    } else {
+      gasAmountTotal = ChainUtil.getSingleOpServiceGasAmount(result);
+    }
+    return gasAmountTotal * gasPriceAIN;
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {

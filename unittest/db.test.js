@@ -1709,7 +1709,7 @@ describe("DB operations", () => {
           ref: '/test/some/path/for/tx',
           value: 'some value',
         },
-        gas_price: 1,
+        gas_price: 1000000,
         nonce: -1,
         timestamp: 1568798344000,
       };
@@ -1725,13 +1725,21 @@ describe("DB operations", () => {
       it("returns true for executable transaction", () => {
         expect(executableTx.extra).to.not.equal(undefined);
         expect(executableTx.extra.executed_at).to.equal(null);
-        assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1).code, 0);
+        assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1), {
+          code: 0,
+          gas_amount: 1,
+          gas_cost: 1
+        });
         // extra.executed_at is updated with a non-null value.
         expect(executableTx.extra.executed_at).to.not.equal(null);
       });
 
       it("returns false for object transaction", () => {
-        assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1).code, 21);
+        assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1), {
+          code: 21,
+          error_message: "[executeTransaction] Not executable transaction: {\"tx_body\":{\"operation\":{\"type\":\"SET_VALUE\",\"ref\":\"/test/some/path/for/tx\",\"value\":\"some value\"},\"gas_price\":1000000,\"nonce\":-1,\"timestamp\":1568798344000},\"signature\":\"0xd0c7aee750ef0437ac8efe6c8c8b304d760f3271c36c4ea96d11f3446c9d772124a165aedc7bd6483dd4b318da7729867863f81714c250bf460ec39d0467624a26c47189b3e20eb5d2d698cf00bb11f729833b73282925b759df9e652f0a33dd1c\",\"hash\":\"0xd0c7aee750ef0437ac8efe6c8c8b304d760f3271c36c4ea96d11f3446c9d7721\",\"address\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}",
+          gas_amount: 0
+        });
         assert.deepEqual(objectTx.extra, undefined);
       });
 
