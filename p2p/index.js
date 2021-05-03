@@ -36,6 +36,7 @@ const {
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
+const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -436,6 +437,21 @@ class P2pClient {
     });
   }
 
+  waitForAddress = (socket) => {
+    return new Promise(resolve => {
+      setTimeout(resolve, WAIT_FOR_ADDRESS_TIMEOUT_MS);
+    }).then(() => {
+      const address = getAddressFromSocket(this.outbound, socket);
+      if (address) {
+        logger.info(`with (${address}).`);
+      }
+      else {
+        logger.debug(`Waiting for adress of the socket(${JSON.stringify(socket, null, 2)})`);
+        this.waitForAddress(socket);
+      }
+    })
+  }
+
   connectToPeers(newPeerInfoList) {
     let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
@@ -445,10 +461,11 @@ class P2pClient {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
         updated = true;
         const socket = new Websocket(peerInfo.url);
-        socket.on('open', () => {
-          logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
+        socket.on('open', async () => {
+          logger.info(`Connected to peer(${peerInfo.url}),`);
           this.setPeerEventHandlers(socket);
           this.sendAddress(socket);
+          await this.waitForAddress(socket);
           this.requestChainSegment(socket, this.server.node.bc.lastBlock());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
