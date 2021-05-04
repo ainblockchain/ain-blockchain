@@ -180,6 +180,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
                 message: `Transaction[${i}]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`
               }
             }));
+            return;
           } else if (!tx.tx_body || !tx.signature) {
             done(null, addProtocolVersion({
               result: {
