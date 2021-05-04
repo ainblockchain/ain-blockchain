@@ -289,6 +289,7 @@ class ChainUtil {
   /**
    * Returns true if the given result is from failed transaction or transaction list.
    */
+  // TODO(seo): Check the function results as well.
   static isFailedTx(result) {
     if (!result) {
       return true;

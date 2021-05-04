@@ -822,23 +822,24 @@ class DB {
     const gasPrice = tx.tx_body.gas_price;
     result.gas_amount_total = ChainUtil.getTotalGasAmount(result);
     result.gas_cost_total = 0;
+    // TODO(seo): Consider charging gas fee for the failure cases.
     if (!ChainUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       if (blockNumber > 0) {
         result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, result.gas_amount_total);
+        if (result.gas_cost_total > 0) {
+          const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
+          const gasFeeCollectRes = this.setValue(
+              gasFeeCollectPath, { amount: result.gas_cost_total }, auth, timestamp, tx, false);
+          if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
+            return ChainUtil.returnTxResult(
+                15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
+          }
+        }
       }
       if (tx && auth && auth.addr && !auth.fid) {
         this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
-      }
-    }
-    if (result.gas_cost_total > 0) {
-      const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
-      const gasFeeCollectRes = this.setValue(
-          gasFeeCollectPath, { amount: result.gas_cost_total }, auth, timestamp, tx, false);
-      if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
-        return ChainUtil.returnTxResult(
-            15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
       }
     }
     return result;
