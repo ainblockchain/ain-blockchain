@@ -396,13 +396,12 @@ class ChainUtil {
   }
 
   static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
-    const { ExecResultProperties } = require('../common/constants');
     const result = {};
     if (message) {
       result.error_message = message;
     }
     if (!ChainUtil.isEmpty(funcResults)) {
-      result[ExecResultProperties.FUNC_RESULTS] = funcResults;
+      result.func_results = funcResults;
     }
     result.code = code;
     result.gas_amount = gasAmount;
@@ -482,8 +481,8 @@ class ChainUtil {
     });
   };
 
-  static convertEnvVarInputToBool = (input) => {
-    return input ? input.toLowerCase().startsWith('t') : false;
+  static convertEnvVarInputToBool = (input, defaultValue = false) => {
+    return input ? input.toLowerCase().startsWith('t') : defaultValue;
   }
 }
 

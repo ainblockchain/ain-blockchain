@@ -1412,15 +1412,15 @@ describe("DB operations", () => {
 
         assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
             timestamp, tx), {
-          ".func_results": {
+          "func_results": {
             "_saveLastTx": {
-              ".op_results": [
+              "op_results": [
                 {
                   "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                   "result": {
-                    ".func_results": {
+                    "func_results": {
                       "_eraseValue": {
-                        ".op_results": [
+                        "op_results": [
                           {
                             "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {
@@ -1654,15 +1654,15 @@ describe("DB operations", () => {
             { addr: 'abcd' }, timestamp, tx), {
           "result_list": [
             {
-              ".func_results": {
+              "func_results": {
                 "_saveLastTx": {
-                  ".op_results": [
+                  "op_results": [
                     {
                       "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                       "result": {
-                        ".func_results": {
+                        "func_results": {
                           "_eraseValue": {
-                            ".op_results": [
+                            "op_results": [
                               {
                                 "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
@@ -1757,12 +1757,17 @@ describe("DB operations", () => {
             ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
             value: 'some value',
           },
-          gas_price: 1,
+          gas_price: 0,
           nonce: -1,
           timestamp: 1568798344000,
         };
         const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1).code, 0);
+        assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1), {
+          code: 0,
+          gas_amount: 1,
+          gas_amount_total: 1,
+          gas_cost_total: 0,
+        });
 
         const overHeightTxBody = {
           operation: {
@@ -1770,12 +1775,16 @@ describe("DB operations", () => {
             ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21',
             value: 'some value',
           },
-          gas_price: 1,
+          gas_price: 0,
           nonce: -1,
           timestamp: 1568798344000,
         };
         const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1).code, 23);
+        assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1), {
+          code: 23,
+          error_message: "Out of tree height limit (21 > 20)",
+          gas_amount: 0,
+        });
       })
 
       it("rejects over-size transaction", () => {
@@ -1797,7 +1806,11 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1).code, 24);
+        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
+          code: 24,
+          error_message: "Out of tree size limit (1001521 > 1000000)",
+          gas_amount: 0,
+        });
       })
     });
   });

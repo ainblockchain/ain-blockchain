@@ -387,15 +387,15 @@ describe("ChainUtil", () => {
 
     it("when single set operation with function triggering", () => {
       expect(ChainUtil.isFailedTx({
-        ".func_results": {
+        "func_results": {
           "_saveLastTx": {
-            ".op_results": [
+            "op_results": [
               {
                 "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
-                  ".func_results": {
+                  "func_results": {
                     "_eraseValue": {
-                      ".op_results": [
+                      "op_results": [
                         {
                           "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
@@ -422,15 +422,15 @@ describe("ChainUtil", () => {
       })).to.equal(false);
 
       expect(ChainUtil.isFailedTx({
-        ".func_results": {
+        "func_results": {
           "_saveLastTx": {
-            ".op_results": [
+            "op_results": [
               {
                 "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
-                  ".func_results": {
+                  "func_results": {
                     "_eraseValue": {
-                      ".op_results": [
+                      "op_results": [
                         {
                           "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
@@ -503,15 +503,15 @@ describe("ChainUtil", () => {
             "gas_amount": 1
           },
           {
-            ".func_results": {
+            "func_results": {
               "_saveLastTx": {
-                ".op_results": [
+                "op_results": [
                   {
                     "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
-                      ".func_results": {
+                      "func_results": {
                         "_eraseValue": {
-                          ".op_results": [
+                          "op_results": [
                             {
                               "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
@@ -550,15 +550,15 @@ describe("ChainUtil", () => {
             "gas_amount": 1
           },
           {
-            ".func_results": {
+            "func_results": {
               "_saveLastTx": {
-                ".op_results": [
+                "op_results": [
                   {
                     "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
-                      ".func_results": {
+                      "func_results": {
                         "_eraseValue": {
-                          ".op_results": [
+                          "op_results": [
                             {
                               "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
@@ -609,15 +609,15 @@ describe("ChainUtil", () => {
 
     it("when single operation result input", () => {
       const result = {
-        ".func_results": {
+        "func_results": {
           "_saveLastTx": {
-            ".op_results": [
+            "op_results": [
               {
                 "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
-                  ".func_results": {
+                  "func_results": {
                     "_eraseValue": {
-                      ".op_results": [
+                      "op_results": [
                         {
                           "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
@@ -648,15 +648,15 @@ describe("ChainUtil", () => {
     it("when multiple operation result input", () => {
       const result = [
         {
-          ".func_results": {
+          "func_results": {
             "_saveLastTx": {
-              ".op_results": [
+              "op_results": [
                 {
                   "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                   "result": {
-                    ".func_results": {
+                    "func_results": {
                       "_eraseValue": {
-                        ".op_results": [
+                        "op_results": [
                           {
                             "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {

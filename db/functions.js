@@ -16,7 +16,6 @@ const {
   TokenExchangeSchemes,
   FunctionProperties,
   GasFeeConstants,
-  ExecResultProperties,
   REST_FUNCTION_CALL_TIMEOUT_MS,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -266,10 +265,7 @@ class Functions {
   }
 
   static addToOpResultList(path, result, context) {
-    context.opResultList.push({
-      [ExecResultProperties.PATH]: path,
-      [ExecResultProperties.RESULT]: result,
-    });
+    context.opResultList.push({ path, result, });
   }
 
   static formatFunctionParams(
@@ -448,7 +444,7 @@ class Functions {
     const opResultList = Functions.getOpResultList(context);
     const funcResultToReturn = {};
     if (!ChainUtil.isEmpty(opResultList)) {
-      funcResultToReturn[ExecResultProperties.OP_RESULTS] = opResultList;
+      funcResultToReturn.op_results = opResultList;
     }
     Object.assign(funcResultToReturn, this.buildFuncResultToReturn(context, code, extraGasAmount));
     return funcResultToReturn;
