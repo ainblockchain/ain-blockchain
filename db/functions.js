@@ -462,7 +462,8 @@ class Functions {
 
   /**
    * Saves the transaction's hash to a sibling path.
-   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
+   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'.
+   * This is often used for testing purposes.
    */
   _saveLastTx(value, context) {
     const transaction = context.transaction;
@@ -485,7 +486,8 @@ class Functions {
   }
 
   /**
-   * Erases the value.
+   * Overwrite the value with 'erased'.
+   * This is often used for testing purposes.
    */
   _eraseValue(value, context) {
     const parsedValuePath = context.valuePath;
