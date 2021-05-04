@@ -8,7 +8,6 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const Functions = require('../db/functions');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
@@ -19,8 +18,6 @@ const {
   FunctionResultCode,
   GenesisAccounts,
   ProofProperties,
-  NativeFunctionIds,
-  GasFeeConstants,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
 } = require('../common/constants');
@@ -2829,9 +2826,9 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
-          ".func_results": {
+          "func_results": {
             "_transfer": {
-              ".op_results": [
+              "op_results": [
                 {
                   "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                   "result": {
@@ -2874,9 +2871,9 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
-          ".func_results": {
+          "func_results": {
             "_transfer": {
-              ".op_results": [
+              "op_results": [
                 {
                   "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                   "result": {
@@ -2919,15 +2916,15 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
-          ".func_results": {
+          "func_results": {
             "_stake": {
-              ".op_results": [
+              "op_results": [
                 {
                   "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_gas_fee|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/value",
                   "result": {
-                    ".func_results": {
+                    "func_results": {
                       "_transfer": {
-                        ".op_results": [
+                        "op_results": [
                           {
                             "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                             "result": {
@@ -3000,15 +2997,15 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
-          ".func_results": {
+          "func_results": {
             "_stake": {
-              ".op_results": [
+              "op_results": [
                 {
                   "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_gas_fee|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890001/value",
                   "result": {
-                    ".func_results": {
+                    "func_results": {
                       "_transfer": {
-                        ".op_results": [
+                        "op_results": [
                           {
                             "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                             "result": {
@@ -3079,7 +3076,7 @@ describe('Blockchain Node', () => {
         }}).body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
-          ".func_results": {
+          "func_results": {
             "gas_amount": 10
           },
           "code": 0,

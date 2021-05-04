@@ -396,7 +396,7 @@ describe("Functions", () => {
             tx);
         assert.deepEqual(func_results, {
           "_transfer": {
-            ".op_results": [
+            "op_results": [
              {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
@@ -451,7 +451,7 @@ describe("Functions", () => {
             tx);
         assert.deepEqual(func_results, {
           "_transfer": {
-            ".op_results": [
+            "op_results": [
               {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
