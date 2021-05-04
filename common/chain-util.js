@@ -24,6 +24,9 @@ class ChainUtil {
   }
 
   static signTransaction(txBody, privateKey) {
+    if (!privateKey) {
+      return null;
+    }
     const keyBuffer = Buffer.from(privateKey, 'hex');
     const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
     const sigBuffer = ainUtil.toBuffer(sig);
@@ -203,7 +206,7 @@ class ChainUtil {
   }
 
   static formatPath(parsedPath) {
-    if (!Array.isArray(parsedPath) || parsedPath.length === 0) {
+    if (!ChainUtil.isArray(parsedPath) || parsedPath.length === 0) {
       return '/';
     }
     let formatted = '';
@@ -286,12 +289,13 @@ class ChainUtil {
   /**
    * Returns true if the given result is from failed transaction or transaction list.
    */
+  // TODO(seo): Check the function results as well.
   static isFailedTx(result) {
     if (!result) {
       return true;
     }
-    if (Array.isArray(result)) {
-      for (const elem of result) {
+    if (result.result_list && ChainUtil.isArray(result.result_list)) {
+      for (const elem of result.result_list) {
         if (ChainUtil.isFailedTxResultCode(elem.code)) {
           return true;
         }
@@ -329,68 +333,79 @@ class ChainUtil {
     return gasAmount;
   }
 
-  static getSingleOpServiceGasAmount(result) {
+  static getSingleOpGasAmount(result) {
+    let sum = 0;
     if (!result) {
-      return 0;
+      return sum;
     }
-    return _.get(result, 'gas.gas_amount.service', 0);
+    if (ChainUtil.isArray(result)) {
+      for (const elem of result) {
+        sum += ChainUtil.getSingleOpGasAmount(elem);
+      }
+      return sum;
+    }
+    if (ChainUtil.isDict(result)) {
+      for (const key in result) {
+        sum += ChainUtil.getSingleOpGasAmount(result[key]);
+      }
+    }
+    sum += _.get(result, 'gas_amount', 0);
+    return sum;
   }
 
   /**
    * Returns the total gas amount of the result (esp. multi-operation result).
    */
   static getTotalGasAmount(result) {
-    if (Array.isArray(result)) {
+    if (ChainUtil.isArray(result)) {
       let gasAmount = 0;
       for (const elem of result) {
-        gasAmount += ChainUtil.getSingleOpServiceGasAmount(elem);
+        gasAmount += ChainUtil.getSingleOpGasAmount(elem);
       }
       return gasAmount;
     }
-    return ChainUtil.getSingleOpServiceGasAmount(result);
+    return ChainUtil.getSingleOpGasAmount(result);
   }
   /**
    * Calculate the gas cost (unit = ain).
    * Only the service bandwidth gas amount is counted toward gas cost.
    * 
    * @param {Number} gasPrice gas price in microain
-   * @param {Object} result transaction execution result
+   * @param {Object} gasAmount gas amount
    * @returns 
    */
-  static getTotalGasCost(gasPrice, result) {
+  static getTotalGasCost(gasPrice, gasAmount) {
     const { MICRO_AIN } = require('./constants');
-    if (gasPrice === undefined) gasPrice = 0; // Default gas price = 0 microain
-    const gasPriceAIN = gasPrice * MICRO_AIN;
-    if (Array.isArray(result)) {
-      let gasCostTotal = 0;
-      for (const elem of result) {
-        const gasCost = ChainUtil.getSingleOpServiceGasAmount(elem) * gasPriceAIN;
-        ChainUtil.setJsObject(elem, ['gas', 'gas_cost'], gasCost);
-        gasCostTotal += gasCost;
-      }
-      return gasCostTotal;
+    if (!ChainUtil.isNumber(gasPrice)) {
+      gasPrice = 0; // Default gas price = 0 microain
     }
-    const gasCost = ChainUtil.getSingleOpServiceGasAmount(result) * gasPriceAIN;
-    ChainUtil.setJsObject(result, ['gas', 'gas_cost'], gasCost);
-    return gasCost;
+    if (!ChainUtil.isNumber(gasAmount)) {
+      gasAmount = 0; // Default gas amount = 0
+    }
+    return gasPrice * MICRO_AIN * gasAmount;
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
-    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
+    let gasAmountTotal = 0;
     const gasCostTotal = resList.reduce((acc, cur, index) => {
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
+      const gasAmount = ChainUtil.getTotalGasAmount(cur);
+      gasAmountTotal += gasAmount;
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, gasAmount);
     }, 0);
     return { gasAmountTotal, gasCostTotal };
   }
 
-  static returnTxResult(code, message = null, gas = null) {
-    const result = { code };
+  static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
+    const { ExecResultProperties } = require('../common/constants');
+    const result = {};
     if (message) {
       result.error_message = message;
     }
-    if (gas) {
-      result.gas = gas;
+    if (!ChainUtil.isEmpty(funcResults)) {
+      result[ExecResultProperties.FUNC_RESULTS] = funcResults;
     }
+    result.code = code;
+    result.gas_amount = gasAmount;
     return result;
   }
 
@@ -401,9 +416,8 @@ class ChainUtil {
    * @param code error code
    * @param message error message
    * @param level level to log with
-   * @param gas gas object
    */
-  static logAndReturnTxResult(logger, code, message = null, level = 1, gas = null) {
+  static logAndReturnTxResult(logger, code, message = null, level = 1) {
     if (level === 0) {
       logger.error(message);
     } else if (level === 1) {
@@ -411,7 +425,7 @@ class ChainUtil {
     } else {
       logger.debug(message);
     }
-    return ChainUtil.returnTxResult(code, message, gas);
+    return ChainUtil.returnTxResult(code, message);
   }
 
   static keyStackToMetricName(keyStack) {

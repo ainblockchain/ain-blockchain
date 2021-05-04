@@ -141,6 +141,8 @@ const PredefinedDbPaths = {
   TOKEN_TOTAL_SUPPLY: 'total_supply',
   // Save last tx
   SAVE_LAST_TX_LAST_TX: '.last_tx',
+  // Erase value
+  ERASE_VALUE_ERASED: 'erased',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
   ACCOUNTS_NONCE: 'nonce',
@@ -300,6 +302,7 @@ const NativeFunctionIds = {
   COLLECT_FEE: '_collectFee',
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
+  ERASE_VALUE: '_eraseValue',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
   PAY: '_pay',
@@ -397,6 +400,18 @@ const FunctionResultCode = {
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
   SUCCESS: 'SUCCESS',
+};
+
+/**
+ * Properties of execution results.
+ *
+ * @enum {string}
+ */
+const ExecResultProperties = {
+  FUNC_RESULTS: '.func_results',
+  OP_RESULTS: '.op_results',
+  PATH: 'path',
+  RESULT: 'result',
 };
 
 /**
@@ -638,6 +653,7 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 }
 
 module.exports = {
+  FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
@@ -681,8 +697,8 @@ module.exports = {
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
+  ExecResultProperties,
   StateVersions,
-  FeatureFlags,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
