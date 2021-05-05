@@ -320,8 +320,7 @@ class ChainUtil {
     return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
   }
 
-  static getGasAmountObj(path, value) {
-    const parsedPath = ChainUtil.parsePath(path);
+  static getGasAmountObj(parsedPath, value) {
     const gasAmount = {};
     if (ChainUtil.isServicePath(parsedPath)) {
       ChainUtil.setJsObject(gasAmount, ['service'], value);
@@ -334,22 +333,25 @@ class ChainUtil {
   }
 
   static getSingleOpGasAmount(result) {
-    let sum = 0;
+    let sum = {
+      service: 0,
+      app: {}
+    };
     if (!result) {
       return sum;
     }
     if (ChainUtil.isArray(result)) {
       for (const elem of result) {
-        sum += ChainUtil.getSingleOpGasAmount(elem);
+        ChainUtil.mergeNumericJsObjects(sum, ChainUtil.getSingleOpGasAmount(elem));
       }
       return sum;
     }
     if (ChainUtil.isDict(result)) {
       for (const key in result) {
-        sum += ChainUtil.getSingleOpGasAmount(result[key]);
+        ChainUtil.mergeNumericJsObjects(sum, ChainUtil.getSingleOpGasAmount(result[key]));
       }
     }
-    sum += _.get(result, 'gas_amount', 0);
+    ChainUtil.mergeNumericJsObjects(sum, _.get(result, 'gas_amount', {}));
     return sum;
   }
 
@@ -357,14 +359,24 @@ class ChainUtil {
    * Returns the total gas amount of the result (esp. multi-operation result).
    */
   static getTotalGasAmount(result) {
+    let gasAmount;
     if (ChainUtil.isArray(result)) {
-      let gasAmount = 0;
+      gasAmount = {
+        service: 0,
+        app: {}
+      };
       for (const elem of result) {
-        gasAmount += ChainUtil.getSingleOpGasAmount(elem);
+        ChainUtil.mergeNumericJsObjects(gasAmount, ChainUtil.getSingleOpGasAmount(elem));
       }
-      return gasAmount;
+    } else {
+      gasAmount = ChainUtil.getSingleOpGasAmount(result);
     }
-    return ChainUtil.getSingleOpGasAmount(result);
+    const serviceGasAmountTotal = gasAmount.service;
+    return {
+      appGasAmountTotal: gasAmount.app,
+      serviceGasAmountTotal,
+      gasAmountTotal: serviceGasAmountTotal + Object.values(gasAmount.app).reduce((acc, cur) => acc + cur, 0)
+    };
   }
   /**
    * Calculate the gas cost (unit = ain).
@@ -388,14 +400,15 @@ class ChainUtil {
   static getServiceGasCostTotalFromTxList(txList, resList) {
     let gasAmountTotal = 0;
     const gasCostTotal = resList.reduce((acc, cur, index) => {
-      const gasAmount = ChainUtil.getTotalGasAmount(cur);
-      gasAmountTotal += gasAmount;
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, gasAmount);
+      const totalGasAmount = ChainUtil.getTotalGasAmount(cur);
+      gasAmountTotal += totalGasAmount.serviceGasAmountTotal;
+      return acc + ChainUtil.getTotalGasCost(
+          txList[index].tx_body.gas_price, totalGasAmount.serviceGasAmountTotal);
     }, 0);
     return { gasAmountTotal, gasCostTotal };
   }
 
-  static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
+  static returnTxResult(code, message = null, gasAmount = {}, funcResults = null) {
     const { ExecResultProperties } = require('../common/constants');
     const result = {};
     if (message) {

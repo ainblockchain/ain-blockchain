@@ -227,7 +227,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Invalid message value: ${msg.value}`);
       return;
     }
-    logger.info(`[${LOG_HEADER}] Consensus state - Finalized block: ` +
+    logger.debug(`[${LOG_HEADER}] Consensus state - Finalized block: ` +
         `${this.node.bc.lastBlockNumber()} / ${this.state.epoch}`);
     logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
     if (msg.type === ConsensusMessageTypes.PROPOSE) {

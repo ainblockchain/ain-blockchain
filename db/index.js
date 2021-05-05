@@ -612,7 +612,7 @@ class DB {
       funcResults = func_results;
     }
 
-    return ChainUtil.returnTxResult(0, null, 1, funcResults);
+    return ChainUtil.returnTxResult(0, null, ChainUtil.getGasAmountObj(parsedPath, 1), funcResults);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -665,7 +665,7 @@ class DB {
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
-    return ChainUtil.returnTxResult(0, null, 1);
+    return ChainUtil.returnTxResult(0, null, ChainUtil.getGasAmountObj(parsedPath, 1));
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -691,7 +691,7 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
-    return ChainUtil.returnTxResult(0, null, 1);
+    return ChainUtil.returnTxResult(0, null, ChainUtil.getGasAmountObj(parsedPath, 1));
   }
 
   // TODO(platfowner): Add owner config sanitization logic.
@@ -717,7 +717,7 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
-    return ChainUtil.returnTxResult(0, null, 1);
+    return ChainUtil.returnTxResult(0, null, ChainUtil.getGasAmountObj(parsedPath, 1));
   }
 
   /**
@@ -820,14 +820,18 @@ class DB {
       result = this.executeSingleSetOperation(op, auth, timestamp, tx);
     }
     const gasPrice = tx.tx_body.gas_price;
-    result.gas_amount_total = ChainUtil.getTotalGasAmount(result);
+    const { gasAmountTotal, serviceGasAmountTotal, appGasAmountTotal } = ChainUtil.getTotalGasAmount(result);
+    result.gas_amount_total = gasAmountTotal;
+    result.service_gas_amount_total = serviceGasAmountTotal;
+    result.app_gas_amount_total = appGasAmountTotal;
     result.gas_cost_total = 0;
     // TODO(seo): Consider charging gas fee for the failure cases.
     if (!ChainUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       if (blockNumber > 0) {
-        result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, result.gas_amount_total);
+        // Use only the service gas amount total
+        result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, serviceGasAmountTotal);
         if (result.gas_cost_total > 0) {
           const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
           const gasFeeCollectRes = this.setValue(
@@ -836,6 +840,10 @@ class DB {
             return ChainUtil.returnTxResult(
                 15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
           }
+          tx.setGas({
+            serviceGasAmountTotal,
+            appGasAmountTotal
+          });
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
