@@ -85,6 +85,10 @@ class Transaction {
     ChainUtil.setJsObject(this, ['extra', 'executed_at'], executedAt);
   }
 
+  setGas(gas) {
+    ChainUtil.setJsObject(this, ['extra', 'gas'], gas);
+  }
+
   toString() {
     return JSON.stringify(this, null, 2);
   }

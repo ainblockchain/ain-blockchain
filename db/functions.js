@@ -194,7 +194,9 @@ class Functions {
               return true;
             }));
             ChainUtil.mergeNumericJsObjects(funcResults, {
-              gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT
+              gas_amount: {
+                service: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT
+              }
             });
             triggerCount++;
           }
@@ -424,10 +426,12 @@ class Functions {
   buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
-      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount,
+      gas_amount: {
+        service: this.nativeFunctionMap[context.fid].execGasAmount
+      },
     };
     if (ChainUtil.isNumber(extraGasAmount) && extraGasAmount > 0) {
-      result.gas_amount += extraGasAmount;
+      result.gas_amount.service += extraGasAmount;
     }
     return result;
   }
