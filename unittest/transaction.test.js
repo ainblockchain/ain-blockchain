@@ -183,6 +183,22 @@ describe('Transaction', () => {
     });
   });
 
+  describe('extra', () => {
+    it('setGas', () => {
+      const gas = {
+        gas_amount: {
+          service: 100,
+          app: {
+            app1: 50,
+            app2: 20
+          }
+        }
+      };
+      tx.setGas(gas);
+      assert.deepEqual(tx.extra.gas, gas);
+    })
+  })
+
   describe('getTransaction', () => {
     it('construction', () => {
       expect(txForNode).to.not.equal(null);
