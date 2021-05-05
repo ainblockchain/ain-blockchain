@@ -289,24 +289,64 @@ class ChainUtil {
   /**
    * Returns true if the given result is from failed transaction or transaction list.
    */
-  // TODO(seo): Check the function results as well.
   static isFailedTx(result) {
     if (!result) {
       return true;
     }
-    if (result.result_list && ChainUtil.isArray(result.result_list)) {
-      for (const elem of result.result_list) {
-        if (ChainUtil.isFailedTxResultCode(elem.code)) {
+    if (ChainUtil.isArray(result.result_list)) {
+      for (const subResult of result.result_list) {
+        if (ChainUtil.isFailedTxResultCode(subResult.code)) {
           return true;
+        }
+        if (subResult.func_results) {
+          if (ChainUtil.isFailedFuncTrigger(subResult.func_results)) {
+            return true;
+          }
         }
       }
       return false;
     }
-    return ChainUtil.isFailedTxResultCode(result.code);
+    if (ChainUtil.isFailedTxResultCode(result.code)) {
+      return true;
+    }
+    if (result.func_results) {
+      if (ChainUtil.isFailedFuncTrigger(result.func_results)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static isFailedTxResultCode(code) {
     return code !== 0;
+  }
+
+  /**
+   * Returns true if the given result is from a failed function trigger.
+   */
+  static isFailedFuncTrigger(result) {
+    if (ChainUtil.isDict(result)) {
+      for (const fid in result) {
+        const funcResult = result[fid];
+        if (ChainUtil.isFailedFuncResultCode(funcResult.code)) {
+          return true;
+        }
+        if (ChainUtil.isArray(funcResult.op_results)) {
+          for (const opResult of funcResult.op_results) {
+            if (ChainUtil.isFailedTx(opResult.result)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  static isFailedFuncResultCode(code) {
+    const { FunctionResultCode } = require('../common/constants');
+
+    return code !== FunctionResultCode.SUCCESS;
   }
 
   static isAppPath(parsedPath) {
