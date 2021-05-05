@@ -196,67 +196,6 @@ function cleanUp() {
   }
 }
 
-function setUpForSharding(shardingConfig) {
-  const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-  const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
-    json: {
-      op_list: [
-        {
-          type: WriteDbOperations.SET_OWNER,
-          ref: sharding_path,
-          value: {
-            [OwnerProperties.OWNER]: {
-              [OwnerProperties.OWNERS]: {
-                [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-              }
-            }
-          }
-        },
-        {
-          type: WriteDbOperations.SET_RULE,
-          ref: sharding_path,
-          value: {
-            [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
-          }
-        },
-        {
-          type: WriteDbOperations.SET_RULE,
-          ref: `${sharding_path}/${ShardingProperties.LATEST}`,
-          value: {
-            [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
-          }
-        },
-        {
-          type: WriteDbOperations.SET_FUNCTION,
-          ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
-          value: {
-            [FunctionProperties.FUNCTION]: {
-              [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
-              }
-            }
-          }
-        },
-        {
-          type: WriteDbOperations.SET_VALUE,
-          ref: ChainUtil.formatPath([
-            PredefinedDbPaths.SHARDING,
-            PredefinedDbPaths.SHARDING_SHARD,
-            ainUtil.encode(sharding_path)
-          ]),
-          value: shardingConfig
-        }
-      ],
-    }
-  }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUpForSharding() tx.`)
-  }
-}
-
 describe('Sharding', () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
@@ -1822,7 +1761,64 @@ describe('Sharding', () => {
 
     describe('_updateLatestShardReport', () => {
       before(() => {
-        setUpForSharding(shardingConfig);
+        const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+        const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
+          json: {
+            op_list: [
+              {
+                type: WriteDbOperations.SET_OWNER,
+                ref: sharding_path,
+                value: {
+                  [OwnerProperties.OWNER]: {
+                    [OwnerProperties.OWNERS]: {
+                      [shard_owner]: buildOwnerPermissions(true ,true, true, true),
+                      [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
+                    }
+                  }
+                }
+              },
+              {
+                type: WriteDbOperations.SET_RULE,
+                ref: sharding_path,
+                value: {
+                  [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
+                }
+              },
+              {
+                type: WriteDbOperations.SET_RULE,
+                ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+                value: {
+                  [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
+                }
+              },
+              {
+                type: WriteDbOperations.SET_FUNCTION,
+                ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
+                value: {
+                  [FunctionProperties.FUNCTION]: {
+                    [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                      [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                      [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                    }
+                  }
+                }
+              },
+              {
+                type: WriteDbOperations.SET_VALUE,
+                ref: ChainUtil.formatPath([
+                  PredefinedDbPaths.SHARDING,
+                  PredefinedDbPaths.SHARDING_SHARD,
+                  ainUtil.encode(sharding_path)
+                ]),
+                value: shardingConfig
+              }
+            ],
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+        if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
+          console.log(`Failed to check finalization of sharding setup tx.`)
+        }
       });
 
       it('update latest shard report', () => {
@@ -1831,10 +1827,32 @@ describe('Sharding', () => {
           value: "0xPROOF_HASH_5",
           nonce: -1,
         }
-        const shardReportRes = parseOrLog(syncRequest(
+        const shardReportBody = parseOrLog(syncRequest(
             'POST', parentServer + '/set_value', { json: reportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+        );
+        assert.deepEqual(_.get(shardReportBody, 'result.result'), {
+          "code": 0,
+          "func_results": {
+            "_updateLatestShardReport": {
+              "code": "SUCCESS",
+              "gas_amount": 0,
+              "op_results": [
+                {
+                  "path": "//apps/a_dapp/latest",
+                  "result": {
+                    "code": 0,
+                    "gas_amount": 1,
+                  }
+                }
+              ]
+            }
+          },
+          "gas_amount": 1,
+          "gas_amount_total": 2,
+          "gas_cost_total": 0,
+        });
+        expect(shardReportBody.code).to.equal(0);
+        waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
@@ -1860,10 +1878,47 @@ describe('Sharding', () => {
           ],
           nonce: -1,
         }
-        const shardReportRes = parseOrLog(syncRequest(
+        const shardReportBody = parseOrLog(syncRequest(
             'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+        );
+        assert.deepEqual(_.get(shardReportBody, 'result.result'), {
+          "result_list": [
+            {
+              "code": 0,
+              "func_results": {
+                "_updateLatestShardReport": {
+                  "code": "SUCCESS",
+                  "gas_amount": 0,
+                  "op_results": [
+                    {
+                      "path": "//apps/a_dapp/latest",
+                      "result": {
+                        "code": 0,
+                        "gas_amount": 1,
+                      }
+                    }
+                  ]
+                }
+              },
+              "gas_amount": 1,
+            },
+            {
+              "code": 0,
+              "func_results": {
+                "_updateLatestShardReport": {
+                  "code": "SUCCESS",
+                  "gas_amount": 0,
+                  "op_results": [],
+                }
+              },
+              "gas_amount": 1,
+            }
+          ],
+          "gas_amount_total": 3,
+          "gas_cost_total": 0,
+        });
+        expect(shardReportBody.code).to.equal(0);
+        waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;

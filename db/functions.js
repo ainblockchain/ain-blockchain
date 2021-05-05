@@ -192,9 +192,10 @@ class Functions {
               failCount++;
               return true;
             }));
-            ChainUtil.mergeNumericJsObjects(funcResults, {
-              gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT
-            });
+            funcResults[functionEntry.function_id] = {
+              code: FunctionResultCode.SUCCESS,
+              gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
+            };
             triggerCount++;
           }
         }
@@ -799,7 +800,7 @@ class Functions {
     const blockNumber = Number(context.params.block_number);
     const parsedValuePath = context.valuePath;
     if (!ChainUtil.isArray(context.functionPath)) {
-      return false;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     if (!ChainUtil.isString(value)) {
       // Removing old report or invalid reporting
@@ -809,7 +810,7 @@ class Functions {
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
-      return false;
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     const result = this.setValueOrLog(latestReportPath, blockNumber, context);
     if (!ChainUtil.isFailedTx(result)) {

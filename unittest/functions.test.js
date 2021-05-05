@@ -145,7 +145,10 @@ describe("Functions", () => {
             ChainUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
-          "gas_amount": 10
+          "0x11111": {
+            "code": "SUCCESS",
+            "gas_amount": 10,
+          }
         });
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -508,7 +511,10 @@ describe("Functions", () => {
             ChainUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
-          "gas_amount": 10
+          "0x11111": {
+            "code": "SUCCESS",
+            "gas_amount": 10,
+          }
         });
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
