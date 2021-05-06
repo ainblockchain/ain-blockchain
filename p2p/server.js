@@ -50,9 +50,7 @@ const {
   checkDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage,
-  fromMsgToCompatibleMsg,
-  fromCompatibleMsgToMsg
+  encapsulateMessage
 } = require('./util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -354,7 +352,7 @@ class P2pServer {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       try {
-        let parsedMessage = JSON.parse(message);
+        const parsedMessage = JSON.parse(message);
         const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
         if (!checkProtoVer(this.inbound, socket,
             this.minProtocolVersion, this.maxProtocolVersion, parsedMessage.protoVer)) {
@@ -367,7 +365,6 @@ class P2pServer {
           closeSocketSafe(this.outbound, socket);
           return;
         }
-        parsedMessage = fromMsgToCompatibleMsg(parsedMessage);
         if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
           logger.error(`The message from the node(${address}) is stale. Discard the message.`);
           logger.debug(`The detail is as follows: ${parsedMessage}`);
@@ -412,8 +409,7 @@ class P2pServer {
                 logger.error('The address cannot be sent because of msg encapsulation failure.');
                 return;
               }
-              const compatiblePayload = fromCompatibleMsgToMsg(semver.minor(dataProtoVer), payload);
-              socket.send(JSON.stringify(compatiblePayload));
+              socket.send(JSON.stringify(payload));
             }
             break;
           case MessageTypes.CONSENSUS:

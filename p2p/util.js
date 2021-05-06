@@ -137,54 +137,6 @@ function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersi
   return true;
 }
 
-function fromMsgToCompatibleMsg(message) {
-  // NOTE(minsu): Do we need to providee a compatible message support every single minor version?
-  // It would be good enough to be compatible with master branch releases.
-  const minorVersion = semver.minor(_.get(message, 'dataProtoVer'));
-  switch (minorVersion) {
-    case 2:
-      return message;
-    case 1:
-      message.timestamp = Date.now();
-      return message;
-    case 0:
-      const compatibleMesage = {
-        type: message.type,
-        protoVer: message.protoVer,
-        dataProtoVer: message.dataProtoVer
-      };
-      delete message.type;
-      delete message.protoVer;
-      delete message.dataProtoVer;
-      compatibleMesage.data = message;
-      return compatibleMesage;
-    default:
-      logger.error(`The minor version (${minorVersion}) is not supproted.`);
-      return null;
-  }
-}
-
-function fromCompatibleMsgToMsg(minorVersion, message) {
-  // NOTE(minsu): Do we need to providee a compatible message support every single minor version?
-  // It would be good enough to be compatible with master branch releases.
-  switch (minorVersion) {
-    case 2:
-    case 1:
-      return message;
-    case 0:
-      const compatibleMesage = {
-        type: message.type,
-        protoVer: message.protoVer,
-        dataProtoVer: message.dataProtoVer
-      };
-      Object.assign(compatibleMesage, message.data);
-      return compatibleMesage;
-    default:
-      logger.error(`The minor version (${minorVersion}) is not supproted.`);
-      return null;
-  }
-}
-
 function checkDataProtoVer(version) {
   if (!version || !semver.valid(version)) {
     return false;
@@ -239,7 +191,5 @@ module.exports = {
   checkProtoVer,
   checkDataProtoVer,
   checkTimestamp,
-  encapsulateMessage,
-  fromMsgToCompatibleMsg,
-  fromCompatibleMsgToMsg
+  encapsulateMessage
 };
