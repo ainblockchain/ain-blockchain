@@ -297,8 +297,8 @@ class P2pServer {
   }
 
   disconnectFromPeers() {
-    Object.values(this.inbound).forEach(socket => {
-      socket.close();
+    Object.values(this.inbound).forEach(node => {
+      node.socket.close();
     });
   }
 
@@ -397,7 +397,13 @@ class P2pServer {
                 return;
               }
               logger.info(`A new websocket(${address}) is established.`);
-              this.inbound[address] = socket;
+              this.inbound[address] = {
+                socket: socket,
+                versions: {
+                  API_VERSION: _.get(parsedMessage, 'protoVer'),
+                  DATA_PROTOCOL_VERSION: _.get(parsedMessage, 'dataProtoVer')
+                }
+              };
               const body = {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),
