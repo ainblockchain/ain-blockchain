@@ -210,8 +210,8 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(socket => {
-      socket.send(stringPayload);
+    Object.values(this.outbound).forEach(node => {
+      node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
@@ -233,8 +233,8 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(socket => {
-      socket.send(stringPayload);
+    Object.values(this.outbound).forEach(node => {
+      node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
@@ -336,7 +336,13 @@ class P2pClient {
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
-            this.outbound[address] = socket;
+            this.outbound[address] = {
+              socket: socket,
+              versions: {
+                API_VERSION: _.get(parsedMessage, 'protoVer'),
+                DATA_PROTOCOL_VERSION: _.get(parsedMessage, 'dataProtoVer')
+              }
+            };
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
@@ -481,8 +487,8 @@ class P2pClient {
   }
 
   disconnectFromPeers() {
-    Object.values(this.outbound).forEach(socket => {
-      socket.close();
+    Object.values(this.outbound).forEach(node => {
+      node.socket.close();
     });
   }
 
@@ -499,10 +505,10 @@ class P2pClient {
 
   startHeartbeat() {
     this.intervalHeartbeat = setInterval(() => {
-      Object.values(this.outbound).forEach(socket => {
+      Object.values(this.outbound).forEach(node => {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
-        if (socket.readyState !== 1) {
+        if (node.socket.readyState !== 1) {
           const address = getAddressFromSocket(this.outbound, socket);
           removeSocketConnectionIfExists(this.outbound, address);
           logger.info(`A peer(${address}) is not ready to communicate with. ` +
