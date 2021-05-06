@@ -14,6 +14,7 @@ NOTE: Tracker Server must be started first before starting any blockchain node i
 #### Local
 
 - Clone this repository and install yarn packages
+- Highly recommend to use node version >= 12
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/tracker-server/
@@ -85,6 +86,7 @@ Operates a single peer node instance of the AIN blockchain. A single blockchain 
 #### Local
 
 - Clone this repository and install yarn packages
+- Highly recommend to use node version >= 12
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/
