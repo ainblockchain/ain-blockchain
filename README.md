@@ -13,7 +13,7 @@ NOTE: Tracker Server must be started first before starting any blockchain node i
 
 #### Local
 
-- Clone this repository and install npm packages
+- Clone this repository and install yarn packages
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/tracker-server/
@@ -38,7 +38,7 @@ sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_
 ```
 sh setup_blockchain_ubuntu.sh
 ```
-- Copy files to a sharable folder & install npm packages
+- Copy files to a sharable folder & install yarn packages
 ```
 source setup_tracker_gcp.sh
 ```
@@ -84,7 +84,7 @@ Operates a single peer node instance of the AIN blockchain. A single blockchain 
 
 #### Local
 
-- Clone this repository and install npm packages
+- Clone this repository and install yarn packages
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/
@@ -113,9 +113,9 @@ GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDE
 Please check your node version before running the below tests. Tests has passed node version 10.15.*
 
 ```
-npm run test_unit
-npm run test_smoke
-npm run test_integration
+yarn run test_unit
+yarn run test_smoke
+yarn run test_integration
 ```
 
 #### On Google Coud Platform (GCP)
@@ -130,7 +130,7 @@ sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_
 ```
 sh setup_blockchain_ubuntu.sh
 ```
-- Copy files to a sharable folder & install npm packages
+- Copy files to a sharable folder & install yarn packages
 ```
 source setup_node_gcp.sh
 ```
@@ -173,9 +173,9 @@ cat logger/logs/8080/<log_file>
 ### How to run tests
 
 ```
-npm run test_unit
-npm run test_smoke
-npm run test_integration
+yarn run test_unit
+yarn run test_smoke
+yarn run test_integration
 ```
 
 ### Client API for development and debugging
