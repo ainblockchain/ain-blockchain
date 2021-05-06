@@ -40,38 +40,43 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true, ENABLE_DEV_CLIENT_API: true,
-    ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
-    PORT: 9090, P2P_PORT: 6000
+    PORT: 9090, P2P_PORT: 6000,
+    CONSOLE_LOG: false
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9091, P2P_PORT: 6001, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9091, P2P_PORT: 6001,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9092, P2P_PORT: 6002, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9092, P2P_PORT: 6002,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9093, P2P_PORT: 6003, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9093, P2P_PORT: 6003,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9094, P2P_PORT: 6004, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9094, P2P_PORT: 6004,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -215,9 +220,10 @@ describe('Sharding', () => {
   before(() => {
     rimraf.sync(CHAINS_DIR)
 
-    parent_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
+    parent_tracker_proc =
+        startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
     sleep(2000);
-    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], false);
+    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], true);
     sleep(15000);
     // Give AIN to sharding owner and reporter
     const shardReportRes = parseOrLog(syncRequest(
@@ -239,16 +245,16 @@ describe('Sharding', () => {
     ).result;
     waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     
-    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], false);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], true);
     sleep(2000);
     waitUntilShardReporterStarts();
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], false);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], true);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], false);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], false);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
     sleep(2000);
   });
 
