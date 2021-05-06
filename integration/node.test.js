@@ -27,25 +27,25 @@ const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -175,15 +175,15 @@ describe('Blockchain Node', () => {
   before(() => {
     rimraf.sync(CHAINS_DIR)
 
-    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], false);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
     sleep(2000);
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], false);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], false);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], false);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
     sleep(2000);
   });
 
@@ -2863,6 +2863,323 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result
           // Should be the tx hash value.
           assert.deepEqual(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        });
+      });
+    });
+
+    describe('Function execution', () => {
+      describe('/set_value', () => {
+        it("when successful with function triggering", () => {
+          const valuePath = '/test/test_function_triggering/allowed_path1/value';
+          const functionResultPath = '/test/test_function_triggering/allowed_path1/.last_tx/value';
+          const value = 'some value';
+          const timestamp = 1234567890000;
+
+          // Config
+          const res = parseOrLog(syncRequest('POST', server2 + '/set', { json: {
+            op_list: [
+              {
+                type: 'SET_FUNCTION',
+                ref: valuePath,
+                value: {
+                  ".function": {
+                    "_saveLastTx": {
+                      "function_type": "NATIVE",
+                      "function_id": "_saveLastTx"
+                    }
+                  }
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: valuePath,
+                value: {
+                  ".write": true,
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: functionResultPath,
+                value: {
+                  ".write": true,  // Allow all.
+                }
+              },
+              {
+                type: 'SET_FUNCTION',
+                ref: functionResultPath,
+                value: {
+                  ".function": {
+                    "_eraseValue": {
+                      "function_type": "NATIVE",
+                      "function_id": "_eraseValue"
+                    }
+                  }
+                }
+              },
+            ],
+            nonce: -1,
+          }}).body.toString('utf-8')).result;
+          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+            console.error(`Failed to check finalization of function triggering setup tx.`)
+          }
+
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: valuePath,
+            value,
+            gas_price: 1,
+            nonce: -1,
+            timestamp,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);  // Should succeed.
+          if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          // Confirm that the value change is committed.
+          assert.deepEqual(parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${valuePath}`).body.toString('utf-8')).result, value);
+        });
+
+        it("when failed with function triggering", () => {
+          const valuePath = '/test/test_function_triggering/allowed_path2/value';
+          const functionResultPath = '/test/test_function_triggering/allowed_path2/.last_tx/value';
+          const value = 'some value';
+          const timestamp = 1234567890000 + 1;
+          let valueBefore = null;
+          let valueAfter = null;
+
+          // Config
+          const res = parseOrLog(syncRequest('POST', server2 + '/set', { json: {
+            op_list: [
+              {
+                type: 'SET_FUNCTION',
+                ref: valuePath,
+                value: {
+                  ".function": {
+                    "_saveLastTx": {
+                      "function_type": "NATIVE",
+                      "function_id": "_saveLastTx"
+                    }
+                  }
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: valuePath,
+                value: {
+                  ".write": true,
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: functionResultPath,
+                value: {
+                  ".write": "auth.fid !== '_eraseValue'",  // Do NOT allow writes by the last function.
+                }
+              },
+              {
+                type: 'SET_FUNCTION',
+                ref: functionResultPath,
+                value: {
+                  ".function": {
+                    "_eraseValue": {
+                      "function_type": "NATIVE",
+                      "function_id": "_eraseValue"
+                    }
+                  }
+                }
+              },
+            ],
+            nonce: -1,
+          }}).body.toString('utf-8')).result;
+          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+            console.error(`Failed to check finalization of function triggering setup tx.`)
+          }
+
+          valueBefore = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${valuePath}`).body.toString('utf-8')).result;
+
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: valuePath,
+            value,
+            gas_price: 1,
+            nonce: -1,
+            timestamp,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 1);  // Should fail.
+          // Confirm that the value change is undone.
+          valueAfter = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${valuePath}`).body.toString('utf-8')).result;
+          assert.deepEqual(valueAfter, valueBefore);
+        });
+      });
+
+      describe('/set', () => {
+        it("when successful with function triggering", () => {
+          const valuePath = '/test/test_function_triggering/allowed_path101/value';
+          const functionResultPath = '/test/test_function_triggering/allowed_path101/.last_tx/value';
+          const value = 'some value';
+          const timestamp = 1234567890000;
+
+          // Config
+          const res = parseOrLog(syncRequest('POST', server2 + '/set', { json: {
+            op_list: [
+              {
+                type: 'SET_FUNCTION',
+                ref: valuePath,
+                value: {
+                  ".function": {
+                    "_saveLastTx": {
+                      "function_type": "NATIVE",
+                      "function_id": "_saveLastTx"
+                    }
+                  }
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: valuePath,
+                value: {
+                  ".write": true,
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: functionResultPath,
+                value: {
+                  ".write": true,  // Allow all.
+                }
+              },
+              {
+                type: 'SET_FUNCTION',
+                ref: functionResultPath,
+                value: {
+                  ".function": {
+                    "_eraseValue": {
+                      "function_type": "NATIVE",
+                      "function_id": "_eraseValue"
+                    }
+                  }
+                }
+              },
+            ],
+            nonce: -1,
+          }}).body.toString('utf-8')).result;
+          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+            console.error(`Failed to check finalization of function triggering setup tx.`)
+          }
+
+          const body = parseOrLog(syncRequest('POST', server2 + '/set', {json: {
+            op_list: [
+              {
+                ref: valuePath,
+                value,
+              },
+              {
+                // Default type: SET_VALUE
+                ref: "test/nested/far/down101",
+                value: {
+                  "new": 12345
+                },
+              },
+            ],
+            gas_price: 1,
+            nonce: -1,
+            timestamp,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 0);  // Should succeed.
+          if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
+            console.error(`Failed to check finalization of tx.`)
+          }
+          // Confirm that the value change is committed.
+          assert.deepEqual(parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${valuePath}`).body.toString('utf-8')).result, value);
+        });
+
+        it("when failed with function triggering", () => {
+          const valuePath = '/test/test_function_triggering/allowed_path102/value';
+          const functionResultPath = '/test/test_function_triggering/allowed_path102/.last_tx/value';
+          const value = 'some value';
+          const timestamp = 1234567890000 + 1;
+          let valueBefore = null;
+          let valueAfter = null;
+
+          const res = parseOrLog(syncRequest('POST', server2 + '/set', { json: {
+            op_list: [
+              {
+                type: 'SET_FUNCTION',
+                ref: valuePath,
+                value: {
+                  ".function": {
+                    "_saveLastTx": {
+                      "function_type": "NATIVE",
+                      "function_id": "_saveLastTx"
+                    }
+                  }
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: valuePath,
+                value: {
+                  ".write": true,
+                }
+              },
+              {
+                type: 'SET_RULE',
+                ref: functionResultPath,
+                value: {
+                  ".write": "auth.fid !== '_eraseValue'",  // Do NOT allow writes by the last function.
+                }
+              },
+              {
+                type: 'SET_FUNCTION',
+                ref: functionResultPath,
+                value: {
+                  ".function": {
+                    "_eraseValue": {
+                      "function_type": "NATIVE",
+                      "function_id": "_eraseValue"
+                    }
+                  }
+                }
+              },
+            ],
+            nonce: -1,
+          }}).body.toString('utf-8')).result;
+          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          if (!waitUntilTxFinalized(serverList, _.get(res, 'tx_hash'))) {
+            console.error(`Failed to check finalization of function triggering setup tx.`)
+          }
+
+          valueBefore = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${valuePath}`).body.toString('utf-8')).result;
+
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            op_list: [
+              {
+                ref: valuePath,
+                value,
+              },
+              {
+                // Default type: SET_VALUE
+                ref: "test/nested/far/down102",
+                value: {
+                  "new": 12345
+                },
+              },
+            ],
+            gas_price: 1,
+            nonce: -1,
+            timestamp,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(body.code, 1);  // Should fail.
+          // Confirm that the value change is undone.
+          valueAfter = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${valuePath}`).body.toString('utf-8')).result;
+          assert.deepEqual(valueAfter, valueBefore);
         });
       });
     });
