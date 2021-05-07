@@ -334,10 +334,7 @@ class P2pClient {
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
             this.outbound[address] = {
               socket: socket,
-              versions: {
-                API_VERSION: _.get(parsedMessage, 'protoVer'),
-                DATA_PROTOCOL_VERSION: _.get(parsedMessage, 'dataProtoVer')
-              }
+              version: dataProtoVer
             };
           }
           break;
