@@ -16,7 +16,6 @@ const {
   TokenExchangeSchemes,
   FunctionProperties,
   GasFeeConstants,
-  ExecResultProperties,
   REST_FUNCTION_CALL_TIMEOUT_MS,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -193,9 +192,10 @@ class Functions {
               failCount++;
               return true;
             }));
-            ChainUtil.mergeNumericJsObjects(funcResults, {
-              gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT
-            });
+            funcResults[functionEntry.function_id] = {
+              code: FunctionResultCode.SUCCESS,
+              gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
+            };
             triggerCount++;
           }
         }
@@ -266,10 +266,7 @@ class Functions {
   }
 
   static addToOpResultList(path, result, context) {
-    context.opResultList.push({
-      [ExecResultProperties.PATH]: path,
-      [ExecResultProperties.RESULT]: result,
-    });
+    context.opResultList.push({ path, result, });
   }
 
   static formatFunctionParams(
@@ -448,7 +445,7 @@ class Functions {
     const opResultList = Functions.getOpResultList(context);
     const funcResultToReturn = {};
     if (!ChainUtil.isEmpty(opResultList)) {
-      funcResultToReturn[ExecResultProperties.OP_RESULTS] = opResultList;
+      funcResultToReturn.op_results = opResultList;
     }
     Object.assign(funcResultToReturn, this.buildFuncResultToReturn(context, code, extraGasAmount));
     return funcResultToReturn;
@@ -803,7 +800,7 @@ class Functions {
     const blockNumber = Number(context.params.block_number);
     const parsedValuePath = context.valuePath;
     if (!ChainUtil.isArray(context.functionPath)) {
-      return false;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     if (!ChainUtil.isString(value)) {
       // Removing old report or invalid reporting
@@ -813,7 +810,7 @@ class Functions {
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
-      return false;
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     const result = this.setValueOrLog(latestReportPath, blockNumber, context);
     if (!ChainUtil.isFailedTx(result)) {
