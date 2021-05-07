@@ -26,7 +26,6 @@ const {
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  checkProtoVer,
   isValidDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
@@ -289,10 +288,6 @@ class P2pClient {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
-      if (!checkProtoVer(this.outbound, socket,
-          this.server.minProtocolVersion, this.server.maxProtocolVersion, parsedMessage.protoVer)) {
-        return;
-      }
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
       if (!isValidDataProtoVer(dataProtoVer)) {
         const address = getAddressFromSocket(socket);

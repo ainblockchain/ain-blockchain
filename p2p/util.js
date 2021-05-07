@@ -122,21 +122,6 @@ function closeSocketSafe(connections, socket) {
   socket.close();
 }
 
-function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersion, version) {
-  if (!version || !semver.valid(version)) {
-    closeSocketSafe(connections, socket);
-    return false;
-  }
-  if (semver.gt(minProtocolVersion, version) ||
-      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
-    logger.error('My protocol version may be outdated. Please check the latest version at ' +
-        'https://github.com/ainblockchain/ain-blockchain/releases');
-    closeSocketSafe(connections, socket);
-    return false;
-  }
-  return true;
-}
-
 function isValidDataProtoVer(version) {
   if (!version || !semver.valid(version)) {
     return false;
@@ -188,7 +173,6 @@ module.exports = {
   getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
-  checkProtoVer,
   isValidDataProtoVer,
   checkTimestamp,
   encapsulateMessage
