@@ -302,6 +302,13 @@ and can be stopped all at once using `stop_servers.sh` like:
 sh stop_servers.sh
 ```
 
+## Versions
+
+Please check the latest versions below:
+- API_VERSION: [Release](https://github.com/ainblockchain/ain-blockchain/releases)
+- DATA_PROTOCOL_VERSION: [README.md](./p2p/README.md)
+- CONSENSUS_PROTOCOL_VERSION: [README.md](./consensus/README.md)
+
 ## Contribution
 
 Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
