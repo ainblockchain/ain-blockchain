@@ -394,10 +394,7 @@ class P2pServer {
               logger.info(`A new websocket(${address}) is established.`);
               this.inbound[address] = {
                 socket: socket,
-                versions: {
-                  API_VERSION: _.get(parsedMessage, 'protoVer'),
-                  DATA_PROTOCOL_VERSION: _.get(parsedMessage, 'dataProtoVer')
-                }
+                version: dataProtoVer
               };
               const body = {
                 address: this.getNodeAddress(),
