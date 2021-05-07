@@ -93,7 +93,7 @@ function sendGetRequest(endpoint, method, params) {
 }
 
 function getAddressFromSocket(connectionObj, socket) {
-  return Object.keys(connectionObj).find(address => connectionObj[address] === socket);
+  return Object.keys(connectionObj).find(address => connectionObj[address].socket === socket);
 }
 
 function removeSocketConnectionIfExists(connectionObj, address) {
@@ -122,19 +122,12 @@ function closeSocketSafe(connections, socket) {
   socket.close();
 }
 
-function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersion, version) {
+function isValidDataProtoVer(version) {
   if (!version || !semver.valid(version)) {
-    closeSocketSafe(connections, socket);
     return false;
+  } else {
+    return true;
   }
-  if (semver.gt(minProtocolVersion, version) ||
-      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
-    logger.error('My protocol version may be outdated. Please check the latest version at ' +
-        'https://github.com/ainblockchain/ain-blockchain/releases');
-    closeSocketSafe(connections, socket);
-    return false;
-  }
-  return true;
 }
 
 function encapsulateMessage(type, dataObj) {
@@ -180,7 +173,7 @@ module.exports = {
   getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
-  checkProtoVer,
+  isValidDataProtoVer,
   checkTimestamp,
   encapsulateMessage
 };
