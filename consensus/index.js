@@ -249,7 +249,7 @@ class Consensus {
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
         // this.node.state = BlockchainNodeStates.SYNCING;
-        Object.values(this.server.client.outbound).forEach(node=> {
+        Object.values(this.server.client.outbound).forEach(node => {
           this.server.client.requestChainSegment(node.socket, this.node.bc.lastBlock());
         });
         return;

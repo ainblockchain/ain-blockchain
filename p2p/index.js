@@ -448,8 +448,7 @@ class P2pClient {
       const address = getAddressFromSocket(this.outbound, socket);
       if (address) {
         logger.info(`with (${address}).`);
-      }
-      else {
+      } else {
         logger.debug(`Waiting for adress of the socket(${JSON.stringify(socket, null, 2)})`);
         this.waitForAddress(socket);
       }
