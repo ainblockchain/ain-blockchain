@@ -19,6 +19,7 @@ const {
   MAX_INBOUND_LIMIT,
   FeatureFlags
 } = require('../common/constants');
+const { sleep } = require('../common/chain-util');
 const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -442,17 +443,16 @@ class P2pClient {
   }
 
   waitForAddress = (socket) => {
-    return new Promise(resolve => {
-      setTimeout(resolve, WAIT_FOR_ADDRESS_TIMEOUT_MS);
-    }).then(() => {
-      const address = getAddressFromSocket(this.outbound, socket);
-      if (address) {
-        logger.info(`with (${address}).`);
-      } else {
-        logger.debug(`Waiting for adress of the socket(${JSON.stringify(socket, null, 2)})`);
-        this.waitForAddress(socket);
-      }
-    })
+    sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
+      .then(() => {
+        const address = getAddressFromSocket(this.outbound, socket);
+        if (address) {
+          logger.info(`with (${address}).`);
+        } else {
+          logger.debug(`Waiting for adress of the socket(${JSON.stringify(socket, null, 2)})`);
+          this.waitForAddress(socket);
+        }
+      });
   }
 
   connectToPeers(newPeerInfoList) {
