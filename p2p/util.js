@@ -137,7 +137,7 @@ function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersi
   return true;
 }
 
-function checkDataProtoVer(version) {
+function isValidDataProtoVer(version) {
   if (!version || !semver.valid(version)) {
     return false;
   } else {
@@ -189,7 +189,7 @@ module.exports = {
   verifySignedMessage,
   closeSocketSafe,
   checkProtoVer,
-  checkDataProtoVer,
+  isValidDataProtoVer,
   checkTimestamp,
   encapsulateMessage
 };
