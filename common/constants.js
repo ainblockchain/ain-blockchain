@@ -34,7 +34,7 @@ const ENABLE_DEV_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENA
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
     ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND);
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
@@ -403,18 +403,6 @@ const FunctionResultCode = {
 };
 
 /**
- * Properties of execution results.
- *
- * @enum {string}
- */
-const ExecResultProperties = {
-  FUNC_RESULTS: '.func_results',
-  OP_RESULTS: '.op_results',
-  PATH: 'path',
-  RESULT: 'result',
-};
-
-/**
  * Constant values for transactionTracker.
  *
  * @enum {string}
@@ -697,7 +685,6 @@ module.exports = {
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
-  ExecResultProperties,
   StateVersions,
   GenesisToken,
   GenesisAccounts,

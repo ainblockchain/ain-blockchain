@@ -1378,7 +1378,7 @@ describe("DB operations", () => {
             type: 'SET_RULE',
             ref: functionResultPath,
             value: {
-              ".write": true,
+              ".write": true,  // Allow all.
             }
           },
           {
@@ -1412,20 +1412,20 @@ describe("DB operations", () => {
 
         assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
             timestamp, tx), {
-          ".func_results": {
+          "func_results": {
             "_saveLastTx": {
-              ".op_results": [
+              "op_results": [
                 {
                   "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                   "result": {
-                    ".func_results": {
+                    "func_results": {
                       "_eraseValue": {
-                        ".op_results": [
+                        "op_results": [
                           {
                             "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {
                               "code": 0,
-                              "gas_amount": 1
+                              "gas_amount": 1,
                             }
                           }
                         ],
@@ -1439,6 +1439,107 @@ describe("DB operations", () => {
                 }
               ],
               "code": "SUCCESS",
+              "gas_amount": 0,
+            }
+          },
+          "code": 0,
+          "gas_amount": 1,
+        });
+        assert.deepEqual(node.db.getValue(valuePath), value)
+      })
+
+      it("when failed with function triggering", () => {
+        const valuePath = '/test/test_function_triggering/allowed_path/value';
+        const functionResultPath = '/test/test_function_triggering/allowed_path/.last_tx/value';
+        const value = 'some value';
+        const timestamp = 1234567890000;
+
+        const result = node.db.executeMultiSetOperation([
+          {
+            type: 'SET_FUNCTION',
+            ref: valuePath,
+            value: {
+              ".function": {
+                "_saveLastTx": {
+                  "function_type": "NATIVE",
+                  "function_id": "_saveLastTx"
+                }
+              }
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: valuePath,
+            value: {
+              ".write": true,
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: functionResultPath,
+            value: {
+              ".write": "auth.fid !== '_eraseValue'",  // Do NOT allow writes by the last function.
+            }
+          },
+          {
+            type: 'SET_FUNCTION',
+            ref: functionResultPath,
+            value: {
+              ".function": {
+                "_eraseValue": {
+                  "function_type": "NATIVE",
+                  "function_id": "_eraseValue"
+                }
+              }
+            }
+          },
+        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
+        expect(ChainUtil.isFailedTx(result)).to.equal(false);
+
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: valuePath,
+            value,
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp,
+          address: 'abcd',
+        };
+        const tx = Transaction.fromTxBody(txBody, null);
+        expect(tx).to.not.equal(null);
+
+        assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
+            timestamp, tx), {
+          "func_results": {
+            "_saveLastTx": {
+              "op_results": [
+                {
+                  "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                  "result": {
+                    "func_results": {
+                      "_eraseValue": {
+                        "op_results": [
+                          {
+                            "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                            "result": {
+                              "code": 103,
+                              "error_message": "No .write permission on: /test/test_function_triggering/allowed_path/.last_tx/value",
+                              "gas_amount": 0
+                            }
+                          }
+                        ],
+                        "code": "FAILURE",
+                        "gas_amount": 0,
+                      }
+                    },
+                    "code": 0,
+                    "gas_amount": 1
+                  }
+                }
+              ],
+              "code": "FAILURE",
               "gas_amount": 0,
             }
           },
@@ -1606,7 +1707,7 @@ describe("DB operations", () => {
             type: 'SET_RULE',
             ref: functionResultPath,
             value: {
-              ".write": true,
+              ".write": true,  // Allow all.
             }
           },
           {
@@ -1654,15 +1755,15 @@ describe("DB operations", () => {
             { addr: 'abcd' }, timestamp, tx), {
           "result_list": [
             {
-              ".func_results": {
+              "func_results": {
                 "_saveLastTx": {
-                  ".op_results": [
+                  "op_results": [
                     {
                       "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                       "result": {
-                        ".func_results": {
+                        "func_results": {
                           "_eraseValue": {
-                            ".op_results": [
+                            "op_results": [
                               {
                                 "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
@@ -1690,6 +1791,122 @@ describe("DB operations", () => {
             {
               "code": 0,
               "gas_amount": 1,
+            },
+          ],
+        });
+      })
+
+      it("when failed with function triggering", () => {
+        const valuePath = '/test/test_function_triggering/allowed_path/value';
+        const functionResultPath = '/test/test_function_triggering/allowed_path/.last_tx/value';
+        const value = 'some value';
+        const timestamp = 1234567890000;
+
+        const result = node.db.executeMultiSetOperation([
+          {
+            type: 'SET_FUNCTION',
+            ref: valuePath,
+            value: {
+              ".function": {
+                "_saveLastTx": {
+                  "function_type": "NATIVE",
+                  "function_id": "_saveLastTx"
+                }
+              }
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: valuePath,
+            value: {
+              ".write": true,
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: functionResultPath,
+            value: {
+              ".write": "auth.fid !== '_eraseValue'",  // Do NOT allow writes by the last function.
+            }
+          },
+          {
+            type: 'SET_FUNCTION',
+            ref: functionResultPath,
+            value: {
+              ".function": {
+                "_eraseValue": {
+                  "function_type": "NATIVE",
+                  "function_id": "_eraseValue"
+                }
+              }
+            }
+          },
+        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
+        expect(ChainUtil.isFailedTx(result)).to.equal(false);
+
+        const txBody = {
+          operation: {
+            type: "SET",
+            op_list: [
+              {
+                type: 'SET_VALUE',
+                ref: valuePath,
+                value,
+              },
+              {
+                // Default type: SET_VALUE
+                ref: "test/nested/far/down",
+                value: {
+                  "new": 12345
+                }
+              },
+            ],
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp,
+          address: 'abcd',
+        };
+        const tx = Transaction.fromTxBody(txBody, null);
+        expect(tx).to.not.equal(null);
+
+        assert.deepEqual(node.db.executeMultiSetOperation(txBody.operation.op_list,
+            { addr: 'abcd' }, timestamp, tx), {
+          "result_list": [
+            {
+              "func_results": {
+                "_saveLastTx": {
+                  "op_results": [
+                    {
+                      "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "result": {
+                        "func_results": {
+                          "_eraseValue": {
+                            "op_results": [
+                              {
+                                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                                "result": {
+                                  "code": 103,
+                                  "error_message": "No .write permission on: /test/test_function_triggering/allowed_path/.last_tx/value",
+                                  "gas_amount": 0,
+                                }
+                              }
+                            ],
+                            "code": "FAILURE",
+                            "gas_amount": 0,
+                          }
+                        },
+                        "code": 0,
+                        "gas_amount": 1
+                      }
+                    }
+                  ],
+                  "code": "FAILURE",
+                  "gas_amount": 0,
+                }
+              },
+              "code": 0,
+              "gas_amount": 1
             },
           ],
         });
@@ -1757,12 +1974,17 @@ describe("DB operations", () => {
             ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
             value: 'some value',
           },
-          gas_price: 1,
+          gas_price: 0,
           nonce: -1,
           timestamp: 1568798344000,
         };
         const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1).code, 0);
+        assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1), {
+          code: 0,
+          gas_amount: 1,
+          gas_amount_total: 1,
+          gas_cost_total: 0,
+        });
 
         const overHeightTxBody = {
           operation: {
@@ -1770,12 +1992,16 @@ describe("DB operations", () => {
             ref: '/test/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21',
             value: 'some value',
           },
-          gas_price: 1,
+          gas_price: 0,
           nonce: -1,
           timestamp: 1568798344000,
         };
         const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1).code, 23);
+        assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1), {
+          code: 23,
+          error_message: "Out of tree height limit (21 > 20)",
+          gas_amount: 0,
+        });
       })
 
       it("rejects over-size transaction", () => {
@@ -1797,7 +2023,11 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1).code, 24);
+        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
+          code: 24,
+          error_message: "Out of tree size limit (1001521 > 1000000)",
+          gas_amount: 0,
+        });
       })
     });
   });
