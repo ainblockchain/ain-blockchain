@@ -145,8 +145,9 @@ describe("Functions", () => {
             ChainUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
-          "gas_amount": {
-            "service": 10
+          "0x11111": {
+            "code": "SUCCESS",
+            "gas_amount": 10,
           }
         });
         promise_results.then((resp) => {
@@ -398,7 +399,7 @@ describe("Functions", () => {
             tx);
         assert.deepEqual(func_results, {
           "_transfer": {
-            ".op_results": [
+            "op_results": [
              {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
@@ -461,7 +462,7 @@ describe("Functions", () => {
             tx);
         assert.deepEqual(func_results, {
           "_transfer": {
-            ".op_results": [
+            "op_results": [
               {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
@@ -526,8 +527,9 @@ describe("Functions", () => {
             ChainUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
-          "gas_amount": {
-            "service": 10
+          "0x11111": {
+            "code": "SUCCESS",
+            "gas_amount": 10,
           }
         });
         promise_results.then((resp) => {

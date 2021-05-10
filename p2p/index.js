@@ -19,13 +19,14 @@ const {
   MAX_INBOUND_LIMIT,
   FeatureFlags
 } = require('../common/constants');
+const { sleep } = require('../common/chain-util');
 const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  checkProtoVer,
+  isValidDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
@@ -34,6 +35,7 @@ const {
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
+const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -208,8 +210,8 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(socket => {
-      socket.send(stringPayload);
+    Object.values(this.outbound).forEach(node => {
+      node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
@@ -231,8 +233,8 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(socket => {
-      socket.send(stringPayload);
+    Object.values(this.outbound).forEach(node => {
+      node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
@@ -250,31 +252,6 @@ class P2pClient {
       return;
     }
     socket.send(JSON.stringify(payload));
-  }
-
-  checkDataProtoVer(socket, version) {
-    if (!version || !semver.valid(version)) {
-      closeSocketSafe(this.outbound, socket);
-      return false;
-    }
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsu): may necessary auto disconnection based on timestamp??
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible ` +
-          `in the data protocol manner. You may be necessary to disconnect the connection with ` +
-          `the node in order to keep harmonious communication in the network.`);
-      }
-    }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('My data protocol version may be outdated. Please check the latest version ' +
-            'at https://github.com/ainblockchain/ain-blockchain/releases');
-      }
-    }
-    return true;
   }
 
   // TODO(minsu): this check will be updated when data compatibility version up.
@@ -307,16 +284,16 @@ class P2pClient {
     return true;
   }
 
-  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
-      if (!checkProtoVer(this.outbound, socket,
-          this.server.minProtocolVersion, this.server.maxProtocolVersion, parsedMessage.protoVer)) {
-        return;
-      }
-      if (!this.checkDataProtoVer(socket, parsedMessage.dataProtoVer)) {
+      const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
+      if (!isValidDataProtoVer(dataProtoVer)) {
+        const address = getAddressFromSocket(socket);
+        logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
+              `INAPPROPRIATE. Disconnect the connection.`);
+        closeSocketSafe(this.outbound, socket);
         return;
       }
       if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
@@ -355,7 +332,10 @@ class P2pClient {
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
-            this.outbound[address] = socket;
+            this.outbound[address] = {
+              socket: socket,
+              version: dataProtoVer
+            };
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
@@ -454,6 +434,19 @@ class P2pClient {
     });
   }
 
+  waitForAddress = (socket) => {
+    sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
+      .then(() => {
+        const address = getAddressFromSocket(this.outbound, socket);
+        if (address) {
+          logger.info(`with (${address}).`);
+        } else {
+          logger.debug(`Waiting for adress of the socket(${JSON.stringify(socket, null, 2)})`);
+          this.waitForAddress(socket);
+        }
+      });
+  }
+
   connectToPeers(newPeerInfoList) {
     let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
@@ -463,10 +456,11 @@ class P2pClient {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
         updated = true;
         const socket = new Websocket(peerInfo.url);
-        socket.on('open', () => {
-          logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
+        socket.on('open', async () => {
+          logger.info(`Connected to peer(${peerInfo.url}),`);
           this.setPeerEventHandlers(socket);
           this.sendAddress(socket);
+          await this.waitForAddress(socket);
           this.requestChainSegment(socket, this.server.node.bc.lastBlock());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
@@ -484,8 +478,8 @@ class P2pClient {
   }
 
   disconnectFromPeers() {
-    Object.values(this.outbound).forEach(socket => {
-      socket.close();
+    Object.values(this.outbound).forEach(node => {
+      node.socket.close();
     });
   }
 
@@ -502,10 +496,10 @@ class P2pClient {
 
   startHeartbeat() {
     this.intervalHeartbeat = setInterval(() => {
-      Object.values(this.outbound).forEach(socket => {
+      Object.values(this.outbound).forEach(node => {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
-        if (socket.readyState !== 1) {
+        if (node.socket.readyState !== 1) {
           const address = getAddressFromSocket(this.outbound, socket);
           removeSocketConnectionIfExists(this.outbound, address);
           logger.info(`A peer(${address}) is not ready to communicate with. ` +

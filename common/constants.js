@@ -34,7 +34,7 @@ const ENABLE_DEV_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENA
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
     ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND);
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
@@ -52,7 +52,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const DATA_PROTOCOL_VERSION = "1.2.0";
+const DATA_PROTOCOL_VERSION = "1.0.0";
 if (!semver.valid(DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
 }
@@ -405,18 +405,6 @@ const FunctionResultCode = {
 };
 
 /**
- * Properties of execution results.
- *
- * @enum {string}
- */
-const ExecResultProperties = {
-  FUNC_RESULTS: '.func_results',
-  OP_RESULTS: '.op_results',
-  PATH: 'path',
-  RESULT: 'result',
-};
-
-/**
  * Constant values for transactionTracker.
  *
  * @enum {string}
@@ -699,7 +687,6 @@ module.exports = {
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
-  ExecResultProperties,
   StateVersions,
   GenesisToken,
   GenesisAccounts,
