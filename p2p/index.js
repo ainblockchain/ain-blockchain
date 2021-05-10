@@ -290,7 +290,7 @@ class P2pClient {
       const parsedMessage = JSON.parse(message);
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
       if (!isValidDataProtoVer(dataProtoVer)) {
-        const address = getAddressFromSocket(socket);
+        const address = getAddressFromSocket(this.outbound, socket);
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
@@ -499,7 +499,8 @@ class P2pClient {
       Object.values(this.outbound).forEach(node => {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
-        if (node.socket.readyState !== 1) {
+        const socket = _.get(node, 'socket');
+        if (socket.readyState !== 1) {
           const address = getAddressFromSocket(this.outbound, socket);
           removeSocketConnectionIfExists(this.outbound, address);
           logger.info(`A peer(${address}) is not ready to communicate with. ` +
