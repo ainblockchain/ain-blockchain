@@ -46,7 +46,7 @@ const {
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  checkProtoVer,
+  isValidDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
@@ -296,18 +296,9 @@ class P2pServer {
   }
 
   disconnectFromPeers() {
-    Object.values(this.inbound).forEach(socket => {
-      socket.close();
+    Object.values(this.inbound).forEach(node => {
+      node.socket.close();
     });
-  }
-
-  checkDataProtoVer(socket, version) {
-    if (!version || !semver.valid(version)) {
-      closeSocketSafe(this.outbound, socket);
-      return false;
-    } else {
-      return true;
-    }
   }
 
   // TODO(minsu): this check will be updated when data compatibility version up.
@@ -356,21 +347,17 @@ class P2pServer {
     return true;
   }
 
-  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
       try {
         const parsedMessage = JSON.parse(message);
         const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
-        if (!checkProtoVer(this.inbound, socket,
-            this.minProtocolVersion, this.maxProtocolVersion, parsedMessage.protoVer)) {
-          return;
-        }
-        if (!this.checkDataProtoVer(socket, dataProtoVer)) {
+        if (!isValidDataProtoVer(dataProtoVer)) {
           const address = getAddressFromSocket(socket);
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
+          closeSocketSafe(this.outbound, socket);
           return;
         }
         if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
@@ -405,7 +392,10 @@ class P2pServer {
                 return;
               }
               logger.info(`A new websocket(${address}) is established.`);
-              this.inbound[address] = socket;
+              this.inbound[address] = {
+                socket: socket,
+                version: dataProtoVer
+              };
               const body = {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),

@@ -135,20 +135,22 @@ describe('Transaction', () => {
       assert.deepEqual(tx2, null);
     });
 
-    it('fail with missing gas_price', () => {
+    it('succeed with absent gas_price', () => {
       delete txBody.gas_price;
       const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
+      expect(tx2).to.not.equal(null);
+    });
+
+    it('succeed with zero gas_price', () => {
+      txBody.gas_price = 0;
+      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      expect(tx2).to.not.equal(null);
     });
 
     it('fail with invalid gas_price', () => {
       txBody.gas_price = -1;
       let tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx3, null);
-
-      txBody.gas_price = 0;
-      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
     });
   });
 
