@@ -487,7 +487,7 @@ describe('Blockchain Cluster', () => {
       expect(body.code).to.equals(1);
     });
 
-    // FIXME(lia): this test case is flaky.
+    // FIXME(liayoo): This test case is flaky.
     /*
     it('maintaining correct order', () => {
       for (let i = 1; i < serverList.length; i++) {

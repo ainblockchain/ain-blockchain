@@ -80,7 +80,7 @@ process.on('SIGINT', () => {
 });
 
 // A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
-// TODO(minsu): Sign messages to nodes.
+// TODO(minsulee2): Sign messages to nodes.
 const server = new WebSocketServer({
   port: P2P_PORT,
   // Enables server-side compression. For option details, see
@@ -104,7 +104,7 @@ const server = new WebSocketServer({
     threshold: 1024 // Size (in bytes) below which messages
     // should not be compressed.
   },
-  // TODO(minsu): verify clients
+  // TODO(minsulee2): Verify clients.
   // verifyClient: function() {}
 });
 
@@ -115,7 +115,7 @@ server.on('connection', (ws) => {
     const nodeInfo = Object.assign({ isAlive: true }, JSON.parse(message));
     wsList[ws.uuid] = nodeInfo.address;
     nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
-    // TODO(minsu): It will be managed via peers when heartbeat updates.
+    // TODO(minsulee2): It will be managed via peers when heartbeat updates.
     peerNodes[nodeInfo.address] = nodeInfo;
     logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
     logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
@@ -135,7 +135,7 @@ server.on('connection', (ws) => {
     printNodesInfo();
   });
 
-  // TODO(minsu): code should be setup ex) code === 1006: SIGINT
+  // TODO(minsulee2): Code should be setup ex) code === 1006: SIGINT .
   ws.on('close', (code) => {
     const address = wsList[ws.uuid];
     logger.info(`\nDisconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +

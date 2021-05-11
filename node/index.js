@@ -28,7 +28,7 @@ const { isValAddr, toCksumAddr } = require('../common/chain-util');
 class BlockchainNode {
   constructor() {
     const LOG_HEADER = 'constructor';
-    // TODO(lia): Add account importing functionality.
+    // TODO(liayoo): Add account importing functionality.
     this.account = ACCOUNT_INDEX !== null ?
         GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
     logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
@@ -199,8 +199,8 @@ class BlockchainNode {
   getNonceFromChain() {
     const LOG_HEADER = 'getNonceFromChain';
 
-    // TODO (Chris): Search through all blocks for any previous nonced transaction with current
-    //               publicKey
+    // TODO(cshcomcom): Search through all blocks for any previous nonced transaction with current
+    // account.
     let nonce = 0;
     for (let i = this.bc.chain.length - 1; i > -1; i--) {
       for (let j = this.bc.chain[i].transactions.length - 1; j > -1; j--) {
@@ -402,7 +402,7 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Empty chain segment`);
       if (this.state !== BlockchainNodeStates.SERVING) {
         // Regard this situation as if you're synced.
-        // TODO(lia): ask the tracker server for another peer.
+        // TODO(liayoo): Ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.state = BlockchainNodeStates.SERVING;
       }
@@ -417,7 +417,7 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Received chain is at the same block number`);
       if (this.state !== BlockchainNodeStates.SERVING) {
         // Regard this situation as if you're synced.
-        // TODO(lia): ask the tracker server for another peer.
+        // TODO(liayoo): Ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.state = BlockchainNodeStates.SERVING;
       }

@@ -62,8 +62,8 @@ if (!semver.valid(CONSENSUS_PROTOCOL_VERSION)) {
 }
 const LOGS_DIR = path.resolve(__dirname, '../logs');
 const CHAINS_DIR = path.resolve(__dirname, '../chains');
-const CHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
-const CHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
+const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
+const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
@@ -475,15 +475,15 @@ function overwriteGenesisParams(overwritingParams, type) {
 overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
-// Note(minsu): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
+// NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
 // The minimum network connections are set based on the MIN_NUM_VALIDATORS otherwise.
 function initializeNetworkEnvronments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
     return {
-      // Note(minsu): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT should not be
-      // related to one another.
+      // NOTE(minsulee2): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT
+      // should not be related to one another.
       P2P_MESSAGE_TIMEOUT_MS: 600000,
       MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
       MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,

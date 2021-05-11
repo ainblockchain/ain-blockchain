@@ -25,7 +25,7 @@ class BlockFileUtil {
     return this.getBlockFilenameByNumber(block.number);
   }
 
-  // TODO(csh): Don't use glob?
+  // TODO(cshcomcom): Don't use glob?
   static getAllBlockPaths(chainPath) {
     const allBlockFilesPattern = `${chainPath}/${CHAINS_N2B_DIR_NAME}/*.${FILE_NAME_SUFFIX}`;
     return glob.sync(allBlockFilesPattern).sort(compare());
@@ -65,7 +65,7 @@ class BlockFileUtil {
     return isBlockEmpty;
   }
 
-  // TODO(csh): Change to asynchronous
+  // TODO(cshcomcom): Change to asynchronous.
   static readBlock(blockPath) {
     const zippedFs = fs.readFileSync(blockPath);
     return JSON.parse(zlib.gunzipSync(zippedFs).toString());
@@ -76,7 +76,7 @@ class BlockFileUtil {
     return this.readBlock(blockPath);
   }
 
-  // TODO(csh): Change to asynchronous
+  // TODO(cshcomcom): Change to asynchronous.
   static writeBlock(chainPath, block) {
     const blockPath = this.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
