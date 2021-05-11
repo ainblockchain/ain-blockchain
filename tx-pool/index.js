@@ -207,6 +207,7 @@ class TransactionPool {
 
   // NOTE(lia): txList is already sorted by their gas prices and/or timestamps, depending on the
   // types of the transactions (service vs app).
+  // TODO(): Try allocating the excess bandwidth to app txs.
   performBandwidthChecks(txList, baseStateVersion) {
     TransactionPool.setTxIndices(txList);
     const candidateTxList = [];
@@ -274,8 +275,6 @@ class TransactionPool {
         candidateTxList.push(tx);
       }
     }
-
-    // TODO(): Try allocating the excess bandwidth to app txs.
 
     TransactionPool.unsetTxIndices(txList);
     return candidateTxList;
