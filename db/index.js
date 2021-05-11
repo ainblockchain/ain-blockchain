@@ -820,7 +820,7 @@ class DB {
       result = this.executeSingleSetOperation(op, auth, timestamp, tx);
     }
     const gasPrice = tx.tx_body.gas_price;
-    const gasAmountTotal = ChainUtil.getTotalGasAmount(tx, result);
+    const gasAmountTotal = ChainUtil.getTotalGasAmount(tx.tx_body.operation, result);
     result.gas_amount_total = gasAmountTotal;
     result.gas_cost_total = 0;
     // TODO(seo): Consider charging gas fee for the failure cases.

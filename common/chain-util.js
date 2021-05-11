@@ -415,25 +415,25 @@ class ChainUtil {
    * Returns the total gas amount of the result, separated by the types of operations (service / app)
    * (esp. multi-operation result).
    */
-  static getTotalGasAmount(tx, result) {
+  static getTotalGasAmount(op, result) {
     const gasAmount = {
       service: 0,
       app: {}
     };
-    if (!tx || !result) return gasAmount;
+    if (!op || !result) return gasAmount;
     if (result.result_list) {
       for (let i = 0, len = result.result_list.length; i < len; i++) {
         const elem = result.result_list[i];
         ChainUtil.mergeNumericJsObjects(
           gasAmount,
           ChainUtil.getTotalGasAmountInternal(
-            ChainUtil.parsePath(tx.tx_body.operation.op_list[i].ref),
+            ChainUtil.parsePath(op.op_list[i].ref),
             elem
           )
         );
       }
     } else {
-      const triggeringPath = ChainUtil.parsePath(tx.tx_body.operation.ref);
+      const triggeringPath = ChainUtil.parsePath(op.ref);
       ChainUtil.mergeNumericJsObjects(
         gasAmount,
         ChainUtil.getTotalGasAmountInternal(triggeringPath, result)
@@ -465,7 +465,7 @@ class ChainUtil {
   static getServiceGasCostTotalFromTxList(txList, resList) {
     return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
-      const totalGasAmount = ChainUtil.getTotalGasAmount(tx, cur);
+      const totalGasAmount = ChainUtil.getTotalGasAmount(tx.tx_body.operation, cur);
       return ChainUtil.mergeNumericJsObjects(acc, {
         gasAmountTotal: totalGasAmount.service,
         gasCostTotal: ChainUtil.getTotalGasCost(tx.tx_body.gas_price, totalGasAmount.service)
