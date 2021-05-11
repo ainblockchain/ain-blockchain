@@ -1348,6 +1348,7 @@ describe('Blockchain Node', () => {
             {
               "code": 103,
               "error_message": "No .write permission on: some/wrong/path",
+              "gas_amount": 0
             }
           ],
           "gas_amount_total": {
