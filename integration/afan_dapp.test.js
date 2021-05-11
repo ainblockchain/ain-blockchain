@@ -16,19 +16,19 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
 ];
 
@@ -125,16 +125,15 @@ describe('DApp Test', () => {
 
   before(() => {
     rimraf.sync(CHAINS_DIR);
-
-    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', {}, false);
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], false);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
     sleep(2000);
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], false);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], false);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], false);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
     sleep(2000);
   });
 

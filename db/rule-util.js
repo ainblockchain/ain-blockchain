@@ -12,6 +12,10 @@ class RuleUtil {
     return typeof value === 'number' && isFinite(value);
   }
 
+  isInteger(value) {
+    return Number.isInteger(value);
+  }
+
   isString(value) {
     return typeof value === 'string';
   }

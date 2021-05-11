@@ -82,7 +82,9 @@ class BlockchainNode {
     this.executeChainOnDb(startingDb);
     this.nonce = this.getNonceFromChain();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
-    this.db.executeTransactionList(this.tp.getValidTransactions(null, this.stateManager.finalVersion));
+    this.db.executeTransactionList(
+        this.tp.getValidTransactions(null, this.stateManager.finalVersion),
+        this.bc.lastBlockNumber() + 1);
     this.state = BlockchainNodeStates.SYNCING;
     return lastBlockWithoutProposal;
   }
@@ -294,6 +296,9 @@ class BlockchainNode {
     if (txBody.timestamp === undefined) {
       txBody.timestamp = Date.now();
     }
+    if (txBody.gas_price === undefined) {
+      txBody.gas_price = 0;
+    }
     return Transaction.fromTxBody(txBody, this.account.private_key);
   }
 
@@ -309,7 +314,7 @@ class BlockchainNode {
           logger, 3,
           `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
     }
-    const result = this.db.executeTransaction(tx);
+    const result = this.db.executeTransaction(tx, this.bc.lastBlockNumber() + 1);
     if (ChainUtil.isFailedTx(result)) {
       if (!this.db.restoreDb()) {
         logger.error(
@@ -374,7 +379,7 @@ class BlockchainNode {
             `${JSON.stringify(block, null, 2)}`);
         return false;
       }
-      if (!db.executeTransactionList(block.transactions)) {
+      if (!db.executeTransactionList(block.transactions, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -382,7 +387,7 @@ class BlockchainNode {
       if (!LIGHTWEIGHT) {
         if (db.stateRoot.getProofHash() !== block.state_proof_hash) {
           logger.error(`[${LOG_HEADER}] Failed to validate state proof of block: ` +
-              `${JSON.stringify(block, null, 2)}`);
+              `${JSON.stringify(block, null, 2)}\n${db.stateRoot.getProofHash()}`);
           return false;
         }
       }
@@ -457,11 +462,10 @@ class BlockchainNode {
     const LOG_HEADER = 'executeChainOnDb';
 
     this.bc.chain.forEach((block) => {
-      const transactions = block.transactions;
       if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes`)
       }
-      if (!db.executeTransactionList(transactions)) {
+      if (!db.executeTransactionList(block.transactions, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions`)
       }
       this.tp.cleanUpForNewBlock(block);

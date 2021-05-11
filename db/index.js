@@ -17,7 +17,6 @@ const {
   TREE_HEIGHT_LIMIT,
   TREE_SIZE_LIMIT,
   buildOwnerPermissions,
-  ENABLE_GAS_FEE_WORKAROUND,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -38,6 +37,7 @@ const {
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
+const PathUtil = require('../common/path-util');
 const _ = require('lodash');
 
 class DB {
@@ -605,16 +605,14 @@ class DB {
     }
     const valueCopy = ChainUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    let gasAmount = 1;
+    let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
-      this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
-      gasAmount += this.func.getTotalGasAmount();
+      const { func_results } =
+          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+      funcResults = func_results;
     }
-    const gas = {
-      gas_amount: gasAmount,
-    };
 
-    return ChainUtil.returnTxResult(0, null, gas);
+    return ChainUtil.returnTxResult(0, null, 1, funcResults);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
@@ -667,11 +665,7 @@ class DB {
     const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
-
-    const gas = {
-      gas_amount: 1,
-    };
-    return ChainUtil.returnTxResult(0, null, gas);
+    return ChainUtil.returnTxResult(0, null, 1);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -697,11 +691,7 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = ChainUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
     this.writeDatabase(fullPath, ruleCopy);
-
-    const gas = {
-      gas_amount: 1,
-    };
-    return ChainUtil.returnTxResult(0, null, gas);
+    return ChainUtil.returnTxResult(0, null, 1);
   }
 
   // TODO(platfowner): Add owner config sanitization logic.
@@ -727,60 +717,7 @@ class DB {
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
     this.writeDatabase(fullPath, ownerCopy);
-
-    const gas = {
-      gas_amount: 1,
-    };
-    return ChainUtil.returnTxResult(0, null, gas);
-  }
-
-  set(opList, auth, timestamp, transaction) {
-    const resultList = [];
-    for (let i = 0; i < opList.length; i++) {
-      const op = opList[i];
-      if (op.type === undefined || op.type === WriteDbOperations.SET_VALUE) {
-        const result = this.setValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.INC_VALUE) {
-        const result = this.incValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.DEC_VALUE) {
-        const result = this.decValue(op.ref, op.value, auth, timestamp, transaction, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.SET_FUNCTION) {
-        const result = this.setFunction(op.ref, op.value, auth, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.SET_RULE) {
-        const result = this.setRule(op.ref, op.value, auth, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else if (op.type === WriteDbOperations.SET_OWNER) {
-        const result = this.setOwner(op.ref, op.value, auth, op.is_global);
-        resultList.push(result);
-        if (ChainUtil.isFailedTx(result)) {
-          break;
-        }
-      } else {
-        // Invalid Operation type
-        const result = ChainUtil.returnTxResult(701, `Invalid opeartion type: ${op.type}`);
-        resultList.push(result);
-      }
-    }
-    return resultList;
+    return ChainUtil.returnTxResult(0, null, 1);
   }
 
   /**
@@ -822,19 +759,7 @@ class DB {
     return globalPath;
   }
 
-  executeOperation(op, auth, timestamp, tx) {
-    if (!op) {
-      return ChainUtil.returnTxResult(11, `Invalid operation: ${op}`);
-    }
-    if (tx && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
-      if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return ChainUtil.returnTxResult(12, `Invalid nonce: ${tx.tx_body.nonce}`);
-      }
-      if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return ChainUtil.returnTxResult(13, `Invalid timestamp: ${tx.tx_body.timestamp}`);
-      }
-    }
+  executeSingleSetOperation(op, auth, timestamp, tx) {
     let result;
     switch (op.type) {
       case undefined:
@@ -856,21 +781,62 @@ class DB {
       case WriteDbOperations.SET_OWNER:
         result = this.setOwner(op.ref, op.value, auth, op.is_global);
         break;
-      case WriteDbOperations.SET:
-        result = this.set(op.op_list, auth, timestamp, tx);
-        break;
       default:
         return ChainUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
     }
+    return result;
+  }
+
+  executeMultiSetOperation(opList, auth, timestamp, tx) {
+    const resultList = [];
+    for (let i = 0; i < opList.length; i++) {
+      const op = opList[i];
+      const result = this.executeSingleSetOperation(op, auth, timestamp, tx);
+      resultList.push(result);
+      if (ChainUtil.isFailedTx(result)) {
+        break;
+      }
+    }
+    return { result_list: resultList };
+  }
+
+  executeOperation(op, auth, timestamp, tx, blockNumber = 0) {
+    if (!op) {
+      return ChainUtil.returnTxResult(11, `Invalid operation: ${op}`);
+    }
+    if (tx && auth && auth.addr && !auth.fid) {
+      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
+      if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
+        return ChainUtil.returnTxResult(12, `Invalid nonce: ${tx.tx_body.nonce}`);
+      }
+      if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
+        return ChainUtil.returnTxResult(13, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+      }
+    }
+    let result;
+    if (op.type === WriteDbOperations.SET) {
+      result = this.executeMultiSetOperation(op.op_list, auth, timestamp, tx);
+    } else {
+      result = this.executeSingleSetOperation(op, auth, timestamp, tx);
+    }
+    const gasPrice = tx.tx_body.gas_price;
+    result.gas_amount_total = ChainUtil.getTotalGasAmount(result);
+    result.gas_cost_total = 0;
+    // TODO(seo): Consider charging gas fee for the failure cases.
     if (!ChainUtil.isFailedTx(result)) {
-      const gasPrice = tx.tx_body.gas_price;
-      if (ENABLE_GAS_FEE_WORKAROUND && gasPrice === -1) { // Devel methods for bypassing the gas fee
-          // Skip.
-      } else if (gasPrice <= 0) {
-        return ChainUtil.returnTxResult(15, `Invalid gas price: ${gasPrice}`);
-      } else {
-        // TODO(): trigger _collectFee with the gasCost & check the result of the setValue
-        // const gasCost = ChainUtil.getTotalGasCost(gasPrice, result);
+      // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
+      //                   done in isValidTxBody() when transactions are created.
+      if (blockNumber > 0) {
+        result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, result.gas_amount_total);
+        if (result.gas_cost_total > 0) {
+          const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
+          const gasFeeCollectRes = this.setValue(
+              gasFeeCollectPath, { amount: result.gas_cost_total }, auth, timestamp, tx, false);
+          if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
+            return ChainUtil.returnTxResult(
+                15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
+          }
+        }
       }
       if (tx && auth && auth.addr && !auth.fid) {
         this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
@@ -879,14 +845,14 @@ class DB {
     return result;
   }
 
-  executeTransaction(tx) {
+  executeTransaction(tx, blockNumber = 0) {
     const LOG_HEADER = 'executeTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.
     if (!Transaction.isExecutable(tx)) {
       return ChainUtil.logAndReturnTxResult(
           logger, 21,
-          `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx, null, 2)}`, 0);
+          `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx)}`, 0);
     }
     // Record when the tx was executed.
     tx.setExecutedAt(Date.now());
@@ -897,7 +863,7 @@ class DB {
     }
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const executionResult = this.executeOperation(
-        txBody.operation, { addr: tx.address }, txBody.timestamp, tx);
+        txBody.operation, { addr: tx.address }, txBody.timestamp, tx, blockNumber);
     const stateInfo = this.getStateInfo('/');
     if (!ChainUtil.isFailedTx(executionResult)) {
       const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
@@ -914,12 +880,12 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList) {
+  executeTransactionList(txList, blockNumber = 0) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx);
+      const res = this.executeTransaction(executableTx, blockNumber);
       if (ChainUtil.isFailedTx(res)) {
         // FIXME: remove the failed transaction from tx pool?
         logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +

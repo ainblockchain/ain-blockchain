@@ -2,7 +2,8 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('TRANSACTION');
 const {
-  FeatureFlags,
+  ENABLE_TX_SIG_VERIF_WORKAROUND,
+  ENABLE_GAS_FEE_WORKAROUND,
   WriteDbOperations,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -33,7 +34,7 @@ class Transaction {
     let address = null;
     let skipVerif = false;
     // A devel method for bypassing the signature verification.
-    if ((FeatureFlags.enableTxSigVerifWorkaround) && txBody.address !== undefined) {
+    if (ENABLE_TX_SIG_VERIF_WORKAROUND && txBody.address !== undefined) {
       address = txBody.address;
       skipVerif = true;
     } else {
@@ -51,7 +52,11 @@ class Transaction {
     let signature = '';
     if (!txBody.address) {
       const signed = ChainUtil.signTransaction(txBody, privateKey);
-      signature = signed.signedTx.signature;
+      const sig = _.get(signed, 'signedTx.signature', null);
+      if (!sig) {
+        return null;
+      }
+      signature = sig;
     }
     return Transaction.create(txBody, signature);
   }
@@ -154,10 +159,12 @@ class Transaction {
       operation: Transaction.sanitizeOperation(txBody.operation),
       nonce: ChainUtil.numberOrZero(txBody.nonce),
       timestamp: ChainUtil.numberOrZero(txBody.timestamp),
-      gas_price: ChainUtil.numberOrZero(txBody.gas_price)
     };
     if (txBody.parent_tx_hash !== undefined) {
       sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
+    }
+    if (txBody.gas_price !== undefined) {
+      sanitized.gas_price = ChainUtil.numberOrZero(txBody.gas_price);
     }
     // A devel method for bypassing the transaction verification.
     if (txBody.address !== undefined) {
@@ -184,12 +191,31 @@ class Transaction {
       logger.info(`Transaction body has some missing fields: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
+    if (!Transaction.isValidNonce(txBody.nonce)) {
+      logger.info(
+          `Transaction body has invalid nonce: ${JSON.stringify(txBody, null, 2)}`);
+      return false;
+    }
+    if (!Transaction.isValidGasPrice(txBody.gas_price)) {
+      logger.info(
+          `Transaction body has invalid gas price: ${JSON.stringify(txBody, null, 2)}`);
+      return false;
+    }
     return Transaction.isInStandardFormat(txBody);
   }
 
   static hasRequiredFields(txBody) {
-    return txBody && txBody.timestamp !== undefined && txBody.nonce !== undefined &&
-        txBody.operation !== undefined && txBody.gas_price !== undefined;
+    return txBody && txBody.operation !== undefined && txBody.timestamp !== undefined &&
+        txBody.nonce !== undefined;
+  }
+
+  static isValidNonce(nonce) {
+    return ChainUtil.isInteger(nonce) && nonce >= -2;
+  }
+
+  static isValidGasPrice(gasPrice) {
+    // NOTE(platfowner): Allow 'undefined' value for backward compatibility.
+    return gasPrice > 0 || ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
   }
 
   static isInStandardFormat(txBody) {

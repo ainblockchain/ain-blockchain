@@ -270,8 +270,105 @@ describe("ChainUtil", () => {
     })
   })
 
-  describe("isFailedTx", () => {
+  describe("mergeNumericJsObjects", () => {
     it("when normal input", () => {
+      assert.deepEqual(ChainUtil.mergeNumericJsObjects({
+        "node1": {
+          "node11": {
+            "node111": 1,
+            "node112": 2
+          },
+          "node12": {
+            "node121": 3,
+            "node122": 4
+          },
+        }
+      }, {
+        "node1": {
+          "node11": {
+            "node111": 10,
+            "node112": 20
+          },
+          "node13": {
+            "node131": 5,
+            "node132": 6
+          },
+        }
+      }), {
+        "node1": {
+          "node11": {
+            "node111": 11,
+            "node112": 22
+          },
+          "node12": {
+            "node121": 3,
+            "node122": 4
+          },
+          "node13": {
+            "node131": 5,
+            "node132": 6
+          },
+        }
+      });
+    });
+
+    it("when normal input with null values", () => {
+      assert.deepEqual(ChainUtil.mergeNumericJsObjects({
+        "node1": {
+          "node11": {
+            "node111": 1,
+            "node112": 2
+          },
+          "node12": {
+            "node121": 3,
+            "node122": 4
+          },
+          "node13": null
+        }
+      }, {
+        "node1": {
+          "node11": {
+            "node111": 10,
+            "node112": 20
+          },
+          "node13": {
+            "node131": 5,
+            "node132": 6
+          },
+        }
+      }), {
+        "node1": {
+          "node11": {
+            "node111": 11,
+            "node112": 22
+          },
+          "node12": {
+            "node121": 3,
+            "node122": 4
+          },
+          "node13": {
+            "node131": 5,
+            "node132": 6
+          },
+        }
+      });
+    });
+  })
+
+  describe("isFailedTx", () => {
+    it("when abnormal input", () => {
+      expect(ChainUtil.isFailedTx(null)).to.equal(true);
+      expect(ChainUtil.isFailedTx(undefined)).to.equal(true);
+      expect(ChainUtil.isFailedTx(true)).to.equal(true);
+      expect(ChainUtil.isFailedTx(false)).to.equal(true);
+      expect(ChainUtil.isFailedTx('true')).to.equal(true);
+      expect(ChainUtil.isFailedTx({})).to.equal(true);
+      expect(ChainUtil.isFailedTx({
+        error_message: 'some message'
+      })).to.equal(true);
+    })
+
+    it("when single set operation without function triggering", () => {
       expect(ChainUtil.isFailedTx({
         code: 0,
         error_message: null
@@ -286,19 +383,422 @@ describe("ChainUtil", () => {
         code: 100,
         error_message: 'some message'
       })).to.equal(true);
-    })
+    });
 
-    it("when abnormal input", () => {
-      expect(ChainUtil.isFailedTx(null)).to.equal(true);
-      expect(ChainUtil.isFailedTx(undefined)).to.equal(true);
-      expect(ChainUtil.isFailedTx(true)).to.equal(true);
-      expect(ChainUtil.isFailedTx(false)).to.equal(true);
-      expect(ChainUtil.isFailedTx('true')).to.equal(true);
-      expect(ChainUtil.isFailedTx({})).to.equal(true);
+    it("when single set operation with native function triggering", () => {
       expect(ChainUtil.isFailedTx({
-        error_message: 'some message'
+        "func_results": {
+          "_saveLastTx": {
+            "op_results": [
+              {
+                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  "func_results": {
+                    "_eraseValue": {
+                      "op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 0,
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 0,
+          }
+        },
+        "code": 0,
+        "gas_amount": 1
+      })).to.equal(false);
+
+      expect(ChainUtil.isFailedTx({
+        "func_results": {
+          "_saveLastTx": {
+            "op_results": [
+              {
+                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  "func_results": {
+                    "_eraseValue": {
+                      "op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 0,
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 0,
+          }
+        },
+        "code": 201,  // The root operation failed
+        "error_message": "Not a number type: bar or 10",
+        "gas_amount": 1
+      })).to.equal(true);
+
+      expect(ChainUtil.isFailedTx({
+        "func_results": {
+          "_saveLastTx": {
+            "op_results": [
+              {
+                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  "func_results": {
+                    "_eraseValue": {
+                      "op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 201,  // A sub-operation failed
+                            "error_message": "Not a number type: bar or 10",
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 0,
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 0,
+          }
+        },
+        "code": 0,
+        "gas_amount": 1
+      })).to.equal(true);
+
+      expect(ChainUtil.isFailedTx({
+        "func_results": {
+          "_saveLastTx": {
+            "op_results": [
+              {
+                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  "func_results": {
+                    "_eraseValue": {
+                      "op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "FAILURE",  // A function failed.
+                      "gas_amount": 0,
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 0,
+          }
+        },
+        "code": 0,
+        "gas_amount": 1
+      })).to.equal(true);
+    });
+
+    it("when single set operation with REST function triggering", () => {
+      expect(ChainUtil.isFailedTx({
+        "code": 0,
+        "func_results": {
+          "0x11111": {
+            "code": "SUCCESS",
+            "gas_amount": 10,
+          }
+        },
+        "gas_amount": 1,
+        "gas_amount_total": 11,
+        "gas_cost_total": 0,
+      })).to.equal(false);
+    });
+
+    it("when multi-set operation without function triggering", () => {
+      expect(ChainUtil.isFailedTx({
+        "result_list": [
+          {
+            "code": 0,
+            "gas_amount": 1,
+          },
+          {
+            "code": 0,
+            "gas_amount": 1,
+          },
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+        ],
+      })).to.equal(false);
+
+      expect(ChainUtil.isFailedTx({
+        result_list: [
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+          {
+            "code": 201,
+            "error_message": "Not a number type: bar or 10",
+            "gas_amount": 0
+          },
+          {
+            "code": 0,
+            "gas_amount": 1,
+          },
+        ]
       })).to.equal(true);
     })
+
+    it("when multi-set operation with native function triggering", () => {
+      expect(ChainUtil.isFailedTx({
+        "result_list": [
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+          {
+            "func_results": {
+              "_saveLastTx": {
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "result": {
+                      "func_results": {
+                        "_eraseValue": {
+                          "op_results": [
+                            {
+                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "result": {
+                                "code": 0,
+                                "gas_amount": 1
+                              }
+                            }
+                          ],
+                          "code": "SUCCESS",
+                          "gas_amount": 0,
+                        }
+                      },
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ],
+                "code": "SUCCESS",
+                "gas_amount": 0,
+              }
+            },
+            "code": 0,
+            "gas_amount": 1,
+          },
+          {
+            "code": 0,
+            "gas_amount": 1,
+          }
+        ]
+      })).to.equal(false);
+
+      expect(ChainUtil.isFailedTx({
+        "result_list": [
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+          {
+            "func_results": {
+              "_saveLastTx": {
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "result": {
+                      "func_results": {
+                        "_eraseValue": {
+                          "op_results": [
+                            {
+                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "result": {
+                                "code": 0,
+                                "gas_amount": 1
+                              }
+                            }
+                          ],
+                          "code": "SUCCESS",
+                          "gas_amount": 0,
+                        }
+                      },
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ],
+                "code": "SUCCESS",
+                "gas_amount": 0,
+              }
+            },
+            "code": 0,
+            "gas_amount": 0
+          },
+          {
+            "code": 201,  // One of the root operations failed.
+            "error_message": "Not a number type: bar or 10",
+            "gas_amount": 1,
+          },
+        ]
+      })).to.equal(true);
+
+      expect(ChainUtil.isFailedTx({
+        "result_list": [
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+          {
+            "func_results": {
+              "_saveLastTx": {
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "result": {
+                      "func_results": {
+                        "_eraseValue": {
+                          "op_results": [
+                            {
+                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "result": {
+                                "code": 201,  // A sub-operation failed.
+                                "error_message": "Not a number type: bar or 10",
+                                "gas_amount": 1
+                              }
+                            }
+                          ],
+                          "code": "SUCCESS",
+                          "gas_amount": 0,
+                        }
+                      },
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ],
+                "code": "SUCCESS",
+                "gas_amount": 0,
+              }
+            },
+            "code": 0,
+            "gas_amount": 0
+          },
+          {
+            "code": 0,
+            "gas_amount": 1,
+          },
+        ]
+      })).to.equal(true);
+
+      expect(ChainUtil.isFailedTx({
+        "result_list": [
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+          {
+            "func_results": {
+              "_saveLastTx": {
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "result": {
+                      "func_results": {
+                        "_eraseValue": {
+                          "op_results": [
+                            {
+                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "result": {
+                                "code": 0,
+                                "gas_amount": 1
+                              }
+                            }
+                          ],
+                          "code": "FAILURE",  // A function failed.
+                          "gas_amount": 0,
+                        }
+                      },
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ],
+                "code": "SUCCESS",
+                "gas_amount": 0,
+              }
+            },
+            "code": 0,
+            "gas_amount": 0
+          },
+          {
+            "code": 0,
+            "gas_amount": 1,
+          },
+        ]
+      })).to.equal(true);
+    })
+
+    it("when multi-set operation with REST function triggering", () => {
+      expect(ChainUtil.isFailedTx({
+        "result_list": [
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+          {
+            "code": 0,
+            "func_results": {
+              "0x11111": {
+                "code": "SUCCESS",
+                "gas_amount": 10,
+              }
+            },
+            "gas_amount": 1,
+            "gas_amount_total": 11,
+            "gas_cost_total": 0,
+          },
+          {
+            "code": 0,
+            "gas_amount": 1,
+          },
+        ]
+      })).to.equal(false);
+    });
   })
 
   describe("getTotalGasAmount", () => {
@@ -316,36 +816,104 @@ describe("ChainUtil", () => {
 
     it("when single operation result input", () => {
       const result = {
+        "func_results": {
+          "_saveLastTx": {
+            "op_results": [
+              {
+                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  "func_results": {
+                    "_eraseValue": {
+                      "op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 10,
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 20,
+          }
+        },
         "code": 0,
-        "gas": {
-          "gas_amount": 100
-        }
+        "gas_amount": 30,
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 100);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 62);
     })
 
     it("when multiple operation result input", () => {
       const result = [
         {
+          "func_results": {
+            "_saveLastTx": {
+              "op_results": [
+                {
+                  "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                  "result": {
+                    "func_results": {
+                      "_eraseValue": {
+                        "op_results": [
+                          {
+                            "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                            "result": {
+                              "code": 0,
+                              "gas_amount": 1
+                            }
+                          }
+                        ],
+                        "code": "SUCCESS",
+                        "gas_amount": 10,
+                      }
+                    },
+                    "code": 0,
+                    "gas_amount": 1
+                  }
+                }
+              ],
+              "code": "SUCCESS",
+              "gas_amount": 20,
+            }
+          },
           "code": 0,
-          "gas": {
-            "gas_amount": 1
-          }
+          "gas_amount": 30
         },
         {
           "code": 0,
-          "gas": {
-            "gas_amount": 10
-          }
-        },
-        {
-          "code": 0,
-          "gas": {
-            "gas_amount": 100
-          }
+          "gas_amount": 1,
         },
       ];
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 111);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 63);
+    })
+  })
+
+  describe("getTotalGasCost", () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, null), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, undefined), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, {}), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, { gas: 'gas' }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, { gas: {} }), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, true), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, 'result'), 0);
+    })
+
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, 0), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1, 1), 0.000001);
+      assert.deepEqual(ChainUtil.getTotalGasCost(0, 1), 0);
+      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, 1), 1);
+      assert.deepEqual(ChainUtil.getTotalGasCost(undefined, 1), 0);
     })
   })
 })
