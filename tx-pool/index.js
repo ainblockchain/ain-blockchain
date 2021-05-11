@@ -193,14 +193,6 @@ class TransactionPool {
     });
   }
 
-  static updateNonceAndTimestamp(tx, noncesAndTimestamps) {
-    if (tx.tx_body.nonce >= 0) {
-      ChainUtil.setJsObject(noncesAndTimestamps, [tx.address, 'nonce'], tx.tx_body.nonce + 1);
-    } else if (tx.tx_body.nonce === -2) {
-      ChainUtil.setJsObject(noncesAndTimestamps, [tx.address, 'timestamp'], tx.tx_body.timestamp);
-    }
-  }
-
   static getAppStakesTotal(appStakesVal) {
     return Object.keys(appStakesVal).reduce((acc, cur) => {
       if (cur === PredefinedDbPaths.CONSENSUS) return acc;
