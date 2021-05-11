@@ -443,50 +443,6 @@ class ChainUtil {
     return gasAmount;
   }
 
-  // static getTotalGasAmount(result) {
-  //   const logger = require('../logger')('CHAIN_UTIL');
-  //   // logger.error(`getTotalGasAmount():\nresultObj:${JSON.stringify(result, null ,2)}`);
-  //   const gasAmount = {
-  //     service: 0,
-  //     app: {}
-  //   };
-  //   if (!result) return gasAmount;
-
-  //   if (result.result_list) {
-  //     for (const elem of result.result_list) {
-  //       ChainUtil.mergeNumericJsObjects(
-  //         gasAmount,
-  //         ChainUtil.getTotalGasAmount(elem)
-  //       );
-  //     }
-  //   } else if (result.result) {
-  //     ChainUtil.mergeNumericJsObjects(gasAmount, ChainUtil.getTotalGasAmount(result.result));
-  //     let triggeringPath = [];
-  //     if (result.result.gas_amount) {
-  //       triggeringPath = ChainUtil.parsePath(result.path);
-  //       // logger.error(`getTotalGasAmount():\ntriggeringPath:${JSON.stringify(triggeringPath)}`);
-  //       ChainUtil.mergeNumericJsObjects(
-  //         gasAmount,
-  //         ChainUtil.getSingleOpGasAmount(triggeringPath, result.result.gas_amount)
-  //       );
-  //       // logger.error(`getTotalGasAmount():\ngasAmount 1:${JSON.stringify(gasAmount, null, 2)}`);
-  //     }
-  //     if (result.result.func_results) {
-  //       for (const funcRes of Object.values(result.result.func_results)) {
-  //         if (ChainUtil.isArray(funcRes.op_results)) {
-  //           for (const opRes of funcRes.op_results) {
-  //             ChainUtil.mergeNumericJsObjects(gasAmount, ChainUtil.getTotalGasAmount(opRes));
-  //           }
-  //         }
-  //         // Follow the tx type of the triggering tx.
-  //         ChainUtil.mergeNumericJsObjects(gasAmount, ChainUtil.getSingleOpGasAmount(triggeringPath, funcRes.gas_amount));
-  //       }
-  //     }
-  //   }
-  //   // logger.error(`getTotalGasAmount():\ngasAmount 2:${JSON.stringify(gasAmount, null ,2)}`);
-  //   return gasAmount;
-  // }
-
   /**
    * Calculate the gas cost (unit = ain).
    * Only the service bandwidth gas amount is counted toward gas cost.
