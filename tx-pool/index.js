@@ -208,6 +208,11 @@ class TransactionPool {
     }, 0);
   }
 
+  static getAppBandwidthAllocated(appStakesVal, appStakesTotal, appName) {
+    const appStake = _.get(appStakesVal, `${appName}.balance_total`, 0);
+    return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
+  }
+
   // NOTE(lia): txList is already sorted by their gas prices and/or timestamps, depending on the
   // types of the transactions (service vs app).
   performBandwidthChecks(txList, baseStateVersion) {
@@ -253,8 +258,7 @@ class TransactionPool {
       if (appBandwidth) {
         const tempAppBandwidthSum = {};
         for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
-          const appStake = _.get(appStakesVal, `${appName}.balance_total`, 0);
-          const appBandwidthAllocated = appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
+          const appBandwidthAllocated = TransactionPool.getAppBandwidthAllocated(appStakesVal, appStakesTotal, appName);
           const currAppBandwidthSum = _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
           if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
             // Exceeds app bandwidth budget. Discard tx.
@@ -268,10 +272,10 @@ class TransactionPool {
             discardedTxList.push(tx);
             break;
           }
-          ChainUtil.setJsObject(tempAppBandwidthSum, [appName], currAppBandwidthSum + bandwidth);
+          ChainUtil.setJsObject(tempAppBandwidthSum, [appName], bandwidth);
         }
         if (!isSkipped) {
-          ChainUtil.mergeNumericJsObjects(appBandwidthSum, tempAppBandwidthSum);
+          ChainUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
         }
       }
       if (!isSkipped) {
@@ -283,7 +287,7 @@ class TransactionPool {
     if (serviceBandwidthSum < SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
       let i = 0;
       let j = 0;
-      const newArr = [];
+      const newCandidateTxList = [];
       const noncesAndTimestamps = baseStateVersion ?
         this.node.getValueWithStateVersion(PredefinedDbPaths.ACCOUNTS, false, baseStateVersion) : {};
       while (i < candidateTxList.length || j < discardedTxList.length) {
@@ -317,34 +321,34 @@ class TransactionPool {
             const tempAppBandwidthSum = {};
             const currAllAppBandwidthSum = Object.values(appBandwidthSum)
                 .reduce((acc, cur) => acc + cur, 0);
-            for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
-              const tempAllAppBandwidthSum = Object.values(tempAppBandwidthSum)
-                  .reduce((acc, cur) => acc + cur, 0);
+            let tempAllAppBandwidthSum = Object.values(tempAppBandwidthSum)
+                .reduce((acc, cur) => acc + cur, 0);
+            for (const bandwidth of Object.values(appBandwidth)) {
               // Make sure the sum doesn't exceed the per-block budget
               if (serviceBandwidthSum + currAllAppBandwidthSum + tempAllAppBandwidthSum + bandwidth > BANDWIDTH_BUDGET_PER_BLOCK) {
                 isSkipped = true;
                 break;
               }
-              ChainUtil.mergeNumericJsObjects(tempAppBandwidthSum, { [appName]: bandwidth });
+              tempAllAppBandwidthSum += bandwidth;
             }
             if (!isSkipped) {
-              ChainUtil.mergeNumericJsObjects(appBandwidthSum, tempAppBandwidthSum);
+              ChainUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
             }
           }
           if (!isSkipped) {
             serviceBandwidthSum += serviceBandwidth;
             TransactionPool.updateNonceAndTimestamp(candidateTx, noncesAndTimestamps);
-            newArr.push(candidateTx);
+            newCandidateTxList.push(candidateTx);
           }
           j++;
         }
         if (i < candidateTxList.length) {
           TransactionPool.updateNonceAndTimestamp(candidateTxList[i], noncesAndTimestamps);
-          newArr.push(candidateTxList[i]);
+          newCandidateTxList.push(candidateTxList[i]);
         }
         i++;
       }
-      candidateTxList = newArr;
+      candidateTxList = newCandidateTxList;
     }
 
     TransactionPool.unsetTxIndices(txList);
