@@ -131,7 +131,7 @@ class PathUtil {
   }
 
   static getLatestShardReportPath(branchPath) {
-    return ChainUtil.formatPath([branchPath, ShardingProperties.LATEST]);
+    return ChainUtil.appendPath(branchPath, ShardingProperties.LATEST);
   }
 
   static getLatestShardReportPathFromValuePath(valuePath) {
