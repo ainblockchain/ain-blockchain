@@ -72,7 +72,7 @@ class ChainUtil {
     return address;
   }
 
-  // TODO(lia): remove this function
+  // TODO(liayoo): Remove this function.
   static genKeyPair() {
     let keyPair;
     if (PRIVATE_KEY) {
@@ -343,6 +343,8 @@ class ChainUtil {
     return false;
   }
 
+  // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure 
+  // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
     const { FunctionResultCode } = require('../common/constants');
 
@@ -354,7 +356,7 @@ class ChainUtil {
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  // TODO(lia): fix testing paths (writing at the root) and update isServicePath().
+  // TODO(liayoo): Fix testing paths (writing at the root) and update isServicePath().
   static isServicePath(parsedPath) {
     const { NATIVE_SERVICE_TYPES } = require('../common/constants');
     return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
