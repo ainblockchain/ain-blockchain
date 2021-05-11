@@ -1000,35 +1000,35 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {array: []}), {
           "code": 101,
           "error_message": "Invalid object for states: /array",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'.': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'$': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /$",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'*a': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /*a",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("test/unchartered/nested/path2", {'a*': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /a*",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getValue("test/unchartered/nested/path2")).to.equal(null)
       })
@@ -1037,62 +1037,62 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/.", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/$", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/$",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/a*", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/a*",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/*a", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/*a",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/#", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/#",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/{", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/{",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/}", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/}",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/[", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/[",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/]", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/]",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x00", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/\x00",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x1F", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/\x1F",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/new/unchartered/nested/\x7F", 12345), {
           "code": 102,
           "error_message": "Invalid path: /test/new/unchartered/nested/\x7F",
-          "gas_amount": {}
+          "gas_amount": 0
         });
       })
 
@@ -1100,12 +1100,12 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("test/shards/enabled_shard", 20), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         assert.deepEqual(node.db.setValue("test/shards/enabled_shard/path", 20), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard",
-          "gas_amount": {}
+          "gas_amount": 0
         });
       })
 
@@ -1142,7 +1142,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.incValue("test/shards/enabled_shard/path", 5), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard",
-          "gas_amount": {}
+          "gas_amount": 0
         });
       })
 
@@ -1177,7 +1177,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.decValue("test/shards/enabled_shard/path", 5), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/test/shards/enabled_shard",
-          "gas_amount": {}
+          "gas_amount": 0
         });
       })
 
@@ -1226,14 +1226,14 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setFunction("/test/test_function/some/path2", {array: []}), {
           "code": 401,
           "error_message": "Invalid object for states: /array",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setFunction("/test/test_function/some/path2", {'.': 'x'}), {
           "code": 401,
           "error_message": "Invalid object for states: /.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
       })
@@ -1243,7 +1243,7 @@ describe("DB operations", () => {
             "/test/test_function/some/path/.", "some function config"), {
           "code": 402,
           "error_message": "Invalid path: /test/test_function/some/path/.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
       })
     })
@@ -1266,14 +1266,14 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setRule("/test/test_rule/some/path2", {array: []}), {
           "code": 501,
           "error_message": "Invalid object for states: /array",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setRule("/test/test_rule/some/path2", {'.': 'x'}), {
           "code": 501,
           "error_message": "Invalid object for states: /.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
       })
@@ -1282,7 +1282,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setRule("/test/test_rule/some/path/.", "some rule config"), {
           "code": 502,
           "error_message": "Invalid path: /test/test_rule/some/path/.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
       })
     })
@@ -1299,14 +1299,14 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setOwner("/test/test_owner/some/path2", {array: []}), {
           "code": 601,
           "error_message": "Invalid object for states: /array",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setOwner("/test/test_owner/some/path2", {'.': 'x'}), {
           "code": 601,
           "error_message": "Invalid object for states: /.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
         expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
       })
@@ -1315,7 +1315,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setOwner("/test/test_owner/some/path/.", "some owner config"), {
           "code": 602,
           "error_message": "Invalid path: /test/test_owner/some/path/.",
-          "gas_amount": {}
+          "gas_amount": 0
         });
       })
     })
@@ -1330,9 +1330,7 @@ describe("DB operations", () => {
           }
         }, { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
           "code": 0,
-          "gas_amount": {
-            "service": 1
-          },
+          "gas_amount": 1
         });
         assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       })
@@ -1345,7 +1343,7 @@ describe("DB operations", () => {
         }), {
           "code": 201,
           "error_message": "Not a number type: bar or 10",
-          "gas_amount": {},
+          "gas_amount": 0
         })
         expect(node.db.getValue("test/ai/foo")).to.equal("bar")
       })
@@ -1432,28 +1430,20 @@ describe("DB operations", () => {
                           }
                         ],
                         "code": "SUCCESS",
-                        "gas_amount": {
-                          "service": 0
-                        },
+                        "gas_amount": 0,
                       }
                     },
                     "code": 0,
-                    "gas_amount": {
-                      "service": 1
-                    }
+                    "gas_amount": 1
                   }
                 }
               ],
               "code": "SUCCESS",
-              "gas_amount": {
-                "service": 0
-              }
+              "gas_amount": 0
             }
           },
           "code": 0,
-          "gas_amount": {
-            "service": 1
-          }
+          "gas_amount": 1
         });
         assert.deepEqual(node.db.getValue(valuePath), value)
       })
@@ -1607,41 +1597,29 @@ describe("DB operations", () => {
           "result_list": [
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              },
+              "gas_amount": 1,
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              },
+              "gas_amount": 1
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              }
+              "gas_amount": 1
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              }
+              "gas_amount": 1
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              }
+              "gas_amount": 1
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              }
+              "gas_amount": 1
             }
-          ],
+          ]
         });
         assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
         expect(node.db.getValue("test/increment/value")).to.equal(30)
@@ -1687,14 +1665,12 @@ describe("DB operations", () => {
           result_list: [
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              }
+              "gas_amount": 1
             },
             {
               "code": 201,
               "error_message": "Not a number type: bar or 10",
-              "gas_amount": {}
+              "gas_amount": 0
             }
           ]
         })
@@ -1792,41 +1768,29 @@ describe("DB operations", () => {
                                 "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
                                   "code": 0,
-                                  "gas_amount": {
-                                    "service": 1
-                                  }
+                                  "gas_amount": 1
                                 }
                               }
                             ],
                             "code": "SUCCESS",
-                            "gas_amount": {
-                              "service": 0
-                            },
+                            "gas_amount": 0
                           }
                         },
                         "code": 0,
-                        "gas_amount": {
-                          "service": 1
-                        }
+                        "gas_amount": 1
                       }
                     }
                   ],
                   "code": "SUCCESS",
-                  "gas_amount": {
-                    "service": 0
-                  },
+                  "gas_amount": 0
                 }
               },
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              }
+              "gas_amount": 1
             },
             {
               "code": 0,
-              "gas_amount": {
-                "service": 1
-              },
+              "gas_amount": 1
             },
           ],
         });
@@ -1986,12 +1950,11 @@ describe("DB operations", () => {
         expect(executableTx.extra.executed_at).to.equal(null);
         assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1), {
           code: 0,
-          gas_amount: {
+          gas_amount: 1,
+          gas_amount_total: {
+            app: {},
             service: 1
           },
-          gas_amount_total: 1,
-          app_gas_amount_total: {},
-          service_gas_amount_total: 1,
           gas_cost_total: 1,
         });
         // extra.executed_at is updated with a non-null value.
@@ -2002,7 +1965,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1), {
           code: 21,
           error_message: "[executeTransaction] Not executable transaction: {\"tx_body\":{\"operation\":{\"type\":\"SET_VALUE\",\"ref\":\"/test/some/path/for/tx\",\"value\":\"some value\"},\"gas_price\":1000000,\"nonce\":-1,\"timestamp\":1568798344000},\"signature\":\"0xd0c7aee750ef0437ac8efe6c8c8b304d760f3271c36c4ea96d11f3446c9d772124a165aedc7bd6483dd4b318da7729867863f81714c250bf460ec39d0467624a26c47189b3e20eb5d2d698cf00bb11f729833b73282925b759df9e652f0a33dd1c\",\"hash\":\"0xd0c7aee750ef0437ac8efe6c8c8b304d760f3271c36c4ea96d11f3446c9d7721\",\"address\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}",
-          gas_amount: {}
+          gas_amount: 0
         });
         assert.deepEqual(objectTx.extra, undefined);
       });
@@ -2022,7 +1985,10 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1), {
           code: 0,
           gas_amount: 1,
-          gas_amount_total: 1,
+          gas_amount_total: {
+            app: {},
+            service: 1
+          },
           gas_cost_total: 0,
         });
 
@@ -2861,7 +2827,7 @@ describe("DB sharding config", () => {
       assert.deepEqual(node.db.setValue("test/test_sharding/shards/enabled_shard/path", 20), {
         "code": 104,
         "error_message": "Non-writable path with shard config: /values/test/test_sharding/shards/enabled_shard",
-        "gas_amount": {}
+        "gas_amount": 0
       });
     })
 
@@ -2915,7 +2881,7 @@ describe("DB sharding config", () => {
       assert.deepEqual(node.db.incValue("test/test_sharding/shards/enabled_shard/path", 5), {
         "code": 104,
         "error_message": "Non-writable path with shard config: /values/test/test_sharding/shards/enabled_shard",
-        "gas_amount": {}
+        "gas_amount": 0
       });
     })
 
@@ -2969,7 +2935,7 @@ describe("DB sharding config", () => {
       assert.deepEqual(node.db.decValue("test/test_sharding/shards/enabled_shard/path", 5), {
         "code": 104,
         "error_message": "Non-writable path with shard config: /values/test/test_sharding/shards/enabled_shard",
-        "gas_amount": {}
+        "gas_amount": 0
       });
     })
 

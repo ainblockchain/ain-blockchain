@@ -200,21 +200,25 @@ class TransactionPool {
     }
   }
 
+  static getAppStakesTotal(appStakesVal) {
+    return Object.keys(appStakesVal).reduce((acc, cur) => {
+      if (cur === PredefinedDbPaths.CONSENSUS) return acc;
+      return acc + _.get(appStakesVal[cur], 'balance_total', 0);
+    }, 0);
+  }
+
   // NOTE(lia): txList is already sorted by their gas prices and/or timestamps, depending on the
   // types of the transactions (service vs app).
   performBandwidthChecks(txList, baseStateVersion) {
     TransactionPool.setTxIndices(txList);
-    let arr = [];
+    let candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
     const appStakesVal = (baseStateVersion ?
-        this.node.getValueWithStateVersion('staking', false, baseStateVersion) :
-        this.node.db.getValue('staking')) || {};
+        this.node.getValueWithStateVersion(PredefinedDbPaths.STAKING, false, baseStateVersion) :
+        this.node.db.getValue(PredefinedDbPaths.STAKING)) || {};
     // Sum of all apps' staked AIN
-    const appStakesTotal = Object.keys(appStakesVal).reduce((acc, cur) => {
-      if (cur === PredefinedDbPaths.CONSENSUS) return acc;
-      return acc + _.get(appStakesVal[cur], 'balance_total', 0);
-    }, 0);
+    const appStakesTotal = TransactionPool.getAppStakesTotal(appStakesVal);
     // NOTE(lia): Keeps track of whether an address's nonced tx has been discarded. If true, any
     // nonced txs from the same address that come after the discarded tx need to be dropped as well.
     const addrToDiscardedNoncedTx = {};
@@ -226,8 +230,8 @@ class TransactionPool {
         discardedTxList.push(tx);
         continue;
       }
-      const serviceBandwidth = _.get(tx, 'extra.gas.serviceGasAmountTotal', 0);
-      const appBandwidth = _.get(tx, 'extra.gas.appGasAmountTotal', null);
+      const serviceBandwidth = _.get(tx, 'extra.gas.service', 0);
+      const appBandwidth = _.get(tx, 'extra.gas.app', null);
       // Check if tx exceeds service bandwidth
       if (serviceBandwidth) {
         if (serviceBandwidthSum + serviceBandwidth > SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
@@ -247,14 +251,14 @@ class TransactionPool {
         const tempAppBandwidthSum = {};
         for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
           const appStake = _.get(appStakesVal, `${appName}.balance_total`, 0);
-          const appBandwidthAllocatd = appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
+          const appBandwidthAllocated = appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
           const currAppBandwidthSum = _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
-          if (currAppBandwidthSum + bandwidth > appBandwidthAllocatd) {
+          if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
             // Exceeds app bandwidth budget. Discard tx.
             if (nonce >= 0) {
               addrToDiscardedNoncedTx[tx.address] = true;
             }
-            logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocatd}`);
+            logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
             isSkipped = true;
             discardedTxList.push(tx);
             break;
@@ -266,7 +270,7 @@ class TransactionPool {
         }
       }
       if (!isSkipped) {
-        arr.push(tx);
+        candidateTxList.push(tx);
       }
     }
 
@@ -277,11 +281,11 @@ class TransactionPool {
       const newArr = [];
       const noncesAndTimestamps = baseStateVersion ?
         this.node.getValueWithStateVersion(PredefinedDbPaths.ACCOUNTS, false, baseStateVersion) : {};
-      while (i < arr.length || j < discardedTxList.length) {
+      while (i < candidateTxList.length || j < discardedTxList.length) {
         // Make sure the original order within txList is preserved
         while (j < discardedTxList.length &&
-            (i >= arr.length ||
-            (i < arr.length && _.get(discardedTxList, `${j}.extra.temp.index`) < _.get(arr, `${i}.extra.temp.index`)))
+            (i >= candidateTxList.length ||
+            (i < candidateTxList.length && _.get(discardedTxList, `${j}.extra.temp.index`) < _.get(candidateTxList, `${i}.extra.temp.index`)))
         ) {
           const candidateTx = discardedTxList[j];
           const addr = candidateTx.address;
@@ -293,8 +297,8 @@ class TransactionPool {
             j++;
             continue;
           }
-          const serviceBandwidth = _.get(candidateTx, 'extra.gas.serviceGasAmountTotal', 0);
-          const appBandwidth = _.get(candidateTx, 'extra.gas.appGasAmountTotal', null);
+          const serviceBandwidth = _.get(candidateTx, 'extra.gas.service', 0);
+          const appBandwidth = _.get(candidateTx, 'extra.gas.app', null);
           if (serviceBandwidth) {
             if (serviceBandwidthSum + serviceBandwidth > SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
               j++;
@@ -327,17 +331,17 @@ class TransactionPool {
           }
           j++;
         }
-        if (i < arr.length) {
-          TransactionPool.updateNonceAndTimestamp(arr[i], noncesAndTimestamps);
-          newArr.push(arr[i]);
+        if (i < candidateTxList.length) {
+          TransactionPool.updateNonceAndTimestamp(candidateTxList[i], noncesAndTimestamps);
+          newArr.push(candidateTxList[i]);
         }
         i++;
       }
-      arr = newArr;
+      candidateTxList = newArr;
     }
 
     TransactionPool.unsetTxIndices(txList);
-    return arr;
+    return candidateTxList;
   }
 
   static mergeMultipleSortedArrays(arrays) {
@@ -364,8 +368,8 @@ class TransactionPool {
     while (i < len1 && j < len2) {
       const tx1 = arr1[i];
       const tx2 = arr2[j];
-      const isTx1ServiceTx = !!_.get(tx1, 'extra.gas.serviceGasAmountTotal', false);
-      const isTx2ServiceTx = !!_.get(tx2, 'extra.gas.serviceGasAmountTotal', false);
+      const isTx1ServiceTx = !!_.get(tx1, 'extra.gas.service', false);
+      const isTx2ServiceTx = !!_.get(tx2, 'extra.gas.service', false);
       if (isTx1ServiceTx && isTx2ServiceTx) {
         // Compare gas price if both service transactions
         if (tx1.tx_body.gas_price > tx2.tx_body.gas_price) {
