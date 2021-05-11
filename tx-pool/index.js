@@ -318,11 +318,9 @@ class TransactionPool {
           }
           let isSkipped = false;
           if (appBandwidth) {
-            const tempAppBandwidthSum = {};
             const currAllAppBandwidthSum = Object.values(appBandwidthSum)
                 .reduce((acc, cur) => acc + cur, 0);
-            let tempAllAppBandwidthSum = Object.values(tempAppBandwidthSum)
-                .reduce((acc, cur) => acc + cur, 0);
+            let tempAllAppBandwidthSum = 0;
             for (const bandwidth of Object.values(appBandwidth)) {
               // Make sure the sum doesn't exceed the per-block budget
               if (serviceBandwidthSum + currAllAppBandwidthSum + tempAllAppBandwidthSum + bandwidth > BANDWIDTH_BUDGET_PER_BLOCK) {
