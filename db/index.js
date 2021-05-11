@@ -838,7 +838,7 @@ class DB {
             return ChainUtil.returnTxResult(
                 15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
           }
-          tx.setGas(gasAmountTotal);
+          tx.setExtraField('gas', gasAmountTotal);
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
