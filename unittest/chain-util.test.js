@@ -814,18 +814,18 @@ describe("ChainUtil", () => {
   })
 
   describe("getTotalGasAmount", () => {
-    const tx = { tx_body: { operation: { ref: '/test', value: null, type: 'SET_VALUE' } } };
+    const op = { ref: '/test', value: null, type: 'SET_VALUE' };
     it("when abnormal input", () => {
       const emptyVal = { app: {}, service: 0 };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, null), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, undefined), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, {}), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, { gas: 'gas' }), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, { gas: {} }), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, true), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, 'result'), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, 0), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, 1), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, null), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, undefined), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, {}), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, { gas: 'gas' }), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, { gas: {} }), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, true), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 'result'), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 0), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 1), emptyVal);
     })
 
     it("when single operation result input", () => {
@@ -863,14 +863,14 @@ describe("ChainUtil", () => {
         "code": 0,
         "gas_amount": 30
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(tx, result), {
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, result), {
         app: {},
         service: 62
       });
     })
 
     it("when multiple operation result input", () => {
-      const setTx = { tx_body: { operation: { type: 'SET', op_list: [{...tx.tx_body.operation}, {...tx.tx_body.operation}] } } };
+      const setTxOp = { type: 'SET', op_list: [{...op}, {...op}] };
       const result = {
         "result_list": [
           {
@@ -913,7 +913,7 @@ describe("ChainUtil", () => {
           },
         ]
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(setTx, result), {
+      assert.deepEqual(ChainUtil.getTotalGasAmount(setTxOp, result), {
         app: {},
         service: 63
       });
