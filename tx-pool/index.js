@@ -217,7 +217,7 @@ class TransactionPool {
   // types of the transactions (service vs app).
   performBandwidthChecks(txList, baseStateVersion) {
     TransactionPool.setTxIndices(txList);
-    let candidateTxList = [];
+    const candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
     const appStakesVal = (baseStateVersion ?
@@ -283,71 +283,7 @@ class TransactionPool {
       }
     }
 
-    // Try allocating the excess bandwidth to app txs.
-    if (serviceBandwidthSum < SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
-      let i = 0;
-      let j = 0;
-      const newCandidateTxList = [];
-      const noncesAndTimestamps = baseStateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.ACCOUNTS, false, baseStateVersion) : {};
-      while (i < candidateTxList.length || j < discardedTxList.length) {
-        // Make sure the original order within txList is preserved
-        while (j < discardedTxList.length &&
-            (i >= candidateTxList.length ||
-            (i < candidateTxList.length && _.get(discardedTxList, `${j}.extra.temp.index`) < _.get(candidateTxList, `${i}.extra.temp.index`)))
-        ) {
-          const candidateTx = discardedTxList[j];
-          const addr = candidateTx.address;
-          const txNonce = candidateTx.tx_body.nonce;
-          // Nonce checking is needed in addition to order checking, since the tx with txNonce - 1
-          // may have been dropped.
-          if (txNonce >= 0 && _.get(noncesAndTimestamps, `${addr}.nonce`, 0) !== txNonce) {
-            if (FeatureFlags.enableRichTxSelectionLogging) {
-              logger.debug(`Invalid nonce`);
-            }
-            j++;
-            continue;
-          }
-          const serviceBandwidth = _.get(candidateTx, 'extra.gas.service', 0);
-          const appBandwidth = _.get(candidateTx, 'extra.gas.app', null);
-          if (serviceBandwidth) {
-            if (serviceBandwidthSum + serviceBandwidth > SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
-              j++;
-              continue;
-            }
-          }
-          let isSkipped = false;
-          if (appBandwidth) {
-            const currAllAppBandwidthSum = Object.values(appBandwidthSum)
-                .reduce((acc, cur) => acc + cur, 0);
-            let tempAllAppBandwidthSum = 0;
-            for (const bandwidth of Object.values(appBandwidth)) {
-              // Make sure the sum doesn't exceed the per-block budget
-              if (serviceBandwidthSum + currAllAppBandwidthSum + tempAllAppBandwidthSum + bandwidth > BANDWIDTH_BUDGET_PER_BLOCK) {
-                isSkipped = true;
-                break;
-              }
-              tempAllAppBandwidthSum += bandwidth;
-            }
-            if (!isSkipped) {
-              ChainUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
-            }
-          }
-          if (!isSkipped) {
-            serviceBandwidthSum += serviceBandwidth;
-            TransactionPool.updateNonceAndTimestamp(candidateTx, noncesAndTimestamps);
-            newCandidateTxList.push(candidateTx);
-          }
-          j++;
-        }
-        if (i < candidateTxList.length) {
-          TransactionPool.updateNonceAndTimestamp(candidateTxList[i], noncesAndTimestamps);
-          newCandidateTxList.push(candidateTxList[i]);
-        }
-        i++;
-      }
-      candidateTxList = newCandidateTxList;
-    }
+    // TODO(): Try allocating the excess bandwidth to app txs.
 
     TransactionPool.unsetTxIndices(txList);
     return candidateTxList;
