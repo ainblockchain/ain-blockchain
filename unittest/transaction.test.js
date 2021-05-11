@@ -186,19 +186,25 @@ describe('Transaction', () => {
   });
 
   describe('extra', () => {
-    it('setGas', () => {
-      const gas = {
-        gas_amount: {
-          service: 100,
-          app: {
-            app1: 50,
-            app2: 20
-          }
+    const gas = {
+      gas_amount: {
+        service: 100,
+        app: {
+          app1: 50,
+          app2: 20
         }
-      };
+      }
+    };
+    it('setExtraField', () => {
       tx.setGas(gas);
       assert.deepEqual(tx.extra.gas, gas);
-    })
+    });
+
+    it('setExtraField (null)', () => {
+      assert.deepEqual(tx.extra.gas, gas);
+      executable.setExtraField('gas', null);
+      assert.deepEqual(tx.extra.gas, null);
+    });
   })
 
   describe('getTransaction', () => {

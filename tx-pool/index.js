@@ -181,18 +181,6 @@ class TransactionPool {
     return this.performBandwidthChecks(merged, baseStateVersion);
   }
 
-  static setTxIndices(txList) {
-    txList.forEach((tx, index) => {
-      ChainUtil.setJsObject(tx, ['extra', 'temp'], { index });
-    });
-  }
-
-  static unsetTxIndices(txList) {
-    txList.forEach((tx) => {
-      delete tx.extra.temp;
-    });
-  }
-
   static getAppStakesTotal(appStakesVal) {
     return Object.keys(appStakesVal).reduce((acc, cur) => {
       if (cur === PredefinedDbPaths.CONSENSUS) return acc;
@@ -209,7 +197,6 @@ class TransactionPool {
   // types of the transactions (service vs app).
   // TODO(): Try allocating the excess bandwidth to app txs.
   performBandwidthChecks(txList, baseStateVersion) {
-    TransactionPool.setTxIndices(txList);
     const candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
@@ -276,7 +263,6 @@ class TransactionPool {
       }
     }
 
-    TransactionPool.unsetTxIndices(txList);
     return candidateTxList;
   }
 

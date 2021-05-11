@@ -85,8 +85,12 @@ class Transaction {
     ChainUtil.setJsObject(this, ['extra', 'executed_at'], executedAt);
   }
 
-  setGas(gas) {
-    ChainUtil.setJsObject(this, ['extra', 'gas'], gas);
+  setExtraField(name, value) {
+    if (value === null) {
+      delete this.extra[name];
+    } else {
+      ChainUtil.setJsObject(this, ['extra', name], value);
+    }
   }
 
   toString() {
