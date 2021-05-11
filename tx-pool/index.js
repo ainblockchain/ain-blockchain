@@ -14,6 +14,7 @@ const {
   WriteDbOperations,
   AccountProperties,
   PredefinedDbPaths,
+  FeatureFlags,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {
@@ -239,7 +240,9 @@ class TransactionPool {
           if (nonce >= 0) {
             addrToDiscardedNoncedTx[tx.address] = true;
           }
-          logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}`);
+          if (FeatureFlags.enableRichTxSelectionLogging) {
+            logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}`);
+          }
           discardedTxList.push(tx);
           continue;
         }
@@ -258,7 +261,9 @@ class TransactionPool {
             if (nonce >= 0) {
               addrToDiscardedNoncedTx[tx.address] = true;
             }
-            logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
+            if (FeatureFlags.enableRichTxSelectionLogging) {
+              logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
+            }
             isSkipped = true;
             discardedTxList.push(tx);
             break;
@@ -293,7 +298,9 @@ class TransactionPool {
           // Nonce checking is needed in addition to order checking, since the tx with txNonce - 1
           // may have been dropped.
           if (txNonce >= 0 && _.get(noncesAndTimestamps, `${addr}.nonce`, 0) !== txNonce) {
-            logger.debug(`Invalid nonce`);
+            if (FeatureFlags.enableRichTxSelectionLogging) {
+              logger.debug(`Invalid nonce`);
+            }
             j++;
             continue;
           }
