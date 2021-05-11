@@ -463,14 +463,14 @@ class ChainUtil {
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
-    let gasAmountTotal = 0;
-    const gasCostTotal = resList.reduce((acc, cur, index) => {
+    return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
       const totalGasAmount = ChainUtil.getTotalGasAmount(tx, cur);
-      gasAmountTotal += totalGasAmount.service;
-      return acc + ChainUtil.getTotalGasCost(tx.tx_body.gas_price, totalGasAmount.service);
-    }, 0);
-    return { gasAmountTotal, gasCostTotal };
+      return ChainUtil.mergeNumericJsObjects(acc, {
+        gasAmountTotal: totalGasAmount.service,
+        gasCostTotal: ChainUtil.getTotalGasCost(tx.tx_body.gas_price, totalGasAmount.service)
+      });
+    }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
   static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
