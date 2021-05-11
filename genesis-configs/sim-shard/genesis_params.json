@@ -9,7 +9,8 @@
       "aincom2": "192.168.1.14"
     },
     "TRACKER_WS_ADDR": "ws://localhost:6010",
-    "MAX_SHARD_REPORT": 100
+    "MAX_SHARD_REPORT": 100,
+    "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
   "consensus": {
     "MIN_STAKE_PER_VALIDATOR": 100000,
@@ -19,6 +20,7 @@
     "GENESIS_VALIDATORS": {}
   },
   "network": {
+    "P2P_MESSAGE_TIMEOUT_MS": 600000,
     "MAX_OUTBOUND_LIMIT": 2,
     "MAX_INBOUND_LIMIT": 3,
     "DEFAULT_MAX_OUTBOUND": 2,

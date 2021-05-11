@@ -16,6 +16,7 @@ const {
   TokenExchangeSchemes,
   FunctionProperties,
   GasFeeConstants,
+  REST_FUNCTION_CALL_TIMEOUT_MS,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
@@ -45,32 +46,37 @@ class Functions {
     this.tp = tp;
     this.nativeFunctionMap = {
       [NativeFunctionIds.CLAIM]: {
-        func: this._claim.bind(this), ownerOnly: true, execGasAmount: 2 },
+        func: this._claim.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
-        func: this._closeCheckin.bind(this), ownerOnly: true, execGasAmount: 11 },
+        func: this._closeCheckin.bind(this), ownerOnly: true, execGasAmount: 10 },
+      [NativeFunctionIds.COLLECT_FEE]: {
+        func: this._collectFee.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.CREATE_APP]: {
-        func: this._createApp.bind(this), ownerOnly: true, execGasAmount: 2 },
+        func: this._createApp.bind(this), ownerOnly: true, execGasAmount: 0 },
+      [NativeFunctionIds.DISTRIBUTE_FEE]: {
+        func: this._distributeFee.bind(this), ownerOnly: true, execGasAmount: 0 },
+      [NativeFunctionIds.ERASE_VALUE]: {
+        func: this._eraseValue.bind(this), ownerOnly: false, execGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
-        func: this._hold.bind(this), ownerOnly: true, execGasAmount: 2 },
+        func: this._hold.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
-        func: this._openCheckin.bind(this), ownerOnly: true, execGasAmount: 62 },
+        func: this._openCheckin.bind(this), ownerOnly: true, execGasAmount: 60 },
       [NativeFunctionIds.PAY]: {
-        func: this._pay.bind(this), ownerOnly: true, execGasAmount: 2 },
+        func: this._pay.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.RELEASE]: {
-        func: this._release.bind(this), ownerOnly: true, execGasAmount: 3 },
+        func: this._release.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.SAVE_LAST_TX]: {
-        func: this._saveLastTx.bind(this), ownerOnly: false, execGasAmount: 1 },
+        func: this._saveLastTx.bind(this), ownerOnly: false, execGasAmount: 0 },
       [NativeFunctionIds.STAKE]: {
-        func: this._stake.bind(this), ownerOnly: true, execGasAmount: 4 },
+        func: this._stake.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.UNSTAKE]: {
-        func: this._unstake.bind(this), ownerOnly: true, execGasAmount: 3 },
+        func: this._unstake.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.TRANSFER]: {
-        func: this._transfer.bind(this), ownerOnly: true, execGasAmount: 2 },
+        func: this._transfer.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-        func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 2 },
+        func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 0 },
     };
     this.callStack = [];
-    this.totalGasAmount = 0;
   }
 
   /**
@@ -96,9 +102,8 @@ class Functions {
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
-    if (this.callStackSize() === 0) {
-      this.clearTotalGasAmount();
-    }
+    const funcResults = {};
+
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
           parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
@@ -112,7 +117,7 @@ class Functions {
                 `Circular function call [[ ${functionEntry.function_id} ]] ` +
                 `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                 formattedParams);
-            continue;  // Skips function.
+            continue;  // Skips the function.
           }
           const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
           if (nativeFunction) {
@@ -125,16 +130,15 @@ class Functions {
                   `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] ` +
                   `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
                   formattedParams);
-              logger.info(
-                  `    totalGasAmount: ${this.getTotalGasAmount()} with pushed call: ` +
-                  `${JSON.stringify(this.getTopCall(), null, 2)}\n`);
             }
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
+            let result = null;
             try {
-              nativeFunction.func(
+              result = nativeFunction.func(
                   value,
                   {
+                    fid: functionEntry.function_id,
                     valuePath: parsedValuePath,
                     functionPath,
                     params,
@@ -142,26 +146,24 @@ class Functions {
                     executedAt,
                     transaction,
                     auth: newAuth,
+                    opResultList: [],
+                    otherGasAmount: 0,
                   });
-            } finally {
-              // Always pops from the call stack.
-              const call = this.popCall();
+              funcResults[functionEntry.function_id] = result;
               if (FeatureFlags.enableRichFunctionLogging) {
-                if (call.result) {
-                  const formattedResult =
-                      `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]] ` +
-                      `with call stack ${JSON.stringify(this.getFids())}:\n` +
-                      `${JSON.stringify(call.result, null, 2)}`;
-                  if (_.get(call, 'result.code') === FunctionResultCode.SUCCESS) {
-                    logger.info(formattedResult);
-                  } else {
-                    logger.error(formattedResult);
-                  }
-                  logger.info(
-                      `    totalGasAmount: ${this.getTotalGasAmount()} with popped call: ` +
-                      `${JSON.stringify(call, null, 2)}\n`);
+                const formattedResult =
+                    `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]] ` +
+                    `with call stack ${JSON.stringify(this.getFids())}:\n` +
+                    `${JSON.stringify(result, null, 2)}`;
+                if (result.code === FunctionResultCode.SUCCESS) {
+                  logger.info(formattedResult);
+                } else {
+                  logger.error(formattedResult);
                 }
               }
+            } finally {
+              // Always pops from the call stack.
+              this.popCall();
               triggerCount++;
             }
           }
@@ -173,13 +175,12 @@ class Functions {
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
                   `event listener '${functionEntry.event_listener}' with:\n` +
                   formattedParams);
-              logger.info(
-                  `    totalGasAmount: ${this.getTotalGasAmount()} before adding REST function: ` +
-                  `${functionEntry.function_id}\n`);
             }
             promises.push(axios.post(functionEntry.event_listener, {
               function: functionEntry,
               transaction,
+            }, {
+              timeout: REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
               if (FeatureFlags.enableRichFunctionLogging) {
                 logger.error(
@@ -191,25 +192,26 @@ class Functions {
               failCount++;
               return true;
             }));
-            this.addToTotalGasAmount(GasFeeConstants.EXTERNAL_RPC_CALL_GAS_AMOUNT);
-            if (FeatureFlags.enableRichFunctionLogging) {
-              logger.info(
-                  `    totalGasAmount: ${this.getTotalGasAmount()} after adding REST function: ` +
-                  `${functionEntry.function_id}\n`);
-            }
+            funcResults[functionEntry.function_id] = {
+              code: FunctionResultCode.SUCCESS,
+              gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
+            };
             triggerCount++;
           }
         }
       }
     }
-    return Promise.all(promises)
-        .then(() => {
-          return {
-            functionCount: functionList ? functionList.length : 0,
-            triggerCount,
-            failCount,
-          };
-        });
+    const promiseResults = Promise.all(promises).then(() => {
+      return {
+        func_count: functionList ? functionList.length : 0,
+        trigger_count: triggerCount,
+        fail_count: failCount,
+      };
+    });
+    return {
+      func_results: funcResults,
+      promise_results: promiseResults,
+    };
   }
 
   pushCall(valuePath, value, functionPath, fid, nativeFunction) {
@@ -217,7 +219,9 @@ class Functions {
     const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
     const callDepth = this.callStackSize();
-    const gasAmount = nativeFunction.execGasAmount;
+    const gasAmount = {
+      service: nativeFunction.execGasAmount
+    };
     this.callStack.push({
       fid,
       fidList,
@@ -232,9 +236,7 @@ class Functions {
   }
 
   popCall() {
-    const call = this.callStack.pop();
-    this.addToTotalGasAmount(call.gasAmount);
-    return call;
+    return this.callStack.pop();
   }
 
   getTopCall() {
@@ -243,13 +245,6 @@ class Functions {
       return this.callStack[size - 1];
     }
     return null;
-  }
-
-  setCallResult(result) {
-    const call = this.getTopCall();
-    if (call) {
-      call.result = result;
-    }
   }
 
   callStackSize() {
@@ -266,16 +261,12 @@ class Functions {
     return call && call.fidList && call.fidList.includes(fid);
   }
 
-  getTotalGasAmount() {
-    return this.totalGasAmount;
+  static getOpResultList(context) {
+    return JSON.parse(JSON.stringify(context.opResultList));
   }
 
-  clearTotalGasAmount() {
-    this.totalGasAmount = 0;
-  }
-
-  addToTotalGasAmount(amount) {
-    this.totalGasAmount += amount;
+  static addToOpResultList(path, result, context) {
+    context.opResultList.push({ path, result, });
   }
 
   static formatFunctionParams(
@@ -376,90 +367,135 @@ class Functions {
     return params;
   }
 
-  static buildExecutionResult(context, code) {
-    // NOTE(platfowner): Allow only node-independent values to avoid state proof hash issues.
+  setValueOrLog(valuePath, value, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
-    return {
-      timestamp,
-      tx_hash: transaction.hash,
-      code,
-    };
-  }
-
-  setValueOrLog(valuePath, value, auth, timestamp, transaction) {
+    const auth = context.auth;
     const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
+    Functions.addToOpResultList(valuePath, result, context);
     return result;
   }
 
-  incValueOrLog(valuePath, delta, auth, timestamp, transaction) {
+  incValueOrLog(valuePath, delta, context) {
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
     const result = this.db.incValue(valuePath, delta, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
+    Functions.addToOpResultList(valuePath, result, context);
     return result;
   }
 
-  decValueOrLog(valuePath, delta, auth, timestamp, transaction) {
+  decValueOrLog(valuePath, delta, context) {
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const auth = context.auth;
+
     const result = this.db.decValue(valuePath, delta, auth, timestamp, transaction);
     if (ChainUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
     }
+    Functions.addToOpResultList(valuePath, result, context);
     return result;
-  }
-
-  setExecutionResult(context, code) {
-    const execResult = Functions.buildExecutionResult(context, code);
-    this.setCallResult(execResult);
-  }
-
-  saveAndSetExecutionResult(context, resultPath, code) {
-    const execResult = Functions.buildExecutionResult(context, code);
-    this.setCallResult(execResult);
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-    return this.setValueOrLog(resultPath, execResult, auth, timestamp, transaction);
   }
 
   /**
    * Adds a transfer entry from a service account to a regular account or vice versa. Used by
    * service-related native functions such as payments and staking
    */
-  setServiceAccountTransferOrLog(from, to, value, auth, timestamp, transaction) {
+  setServiceAccountTransferOrLog(from, to, value, context) {
+    const timestamp = context.timestamp;
+
     const transferPath = PathUtil.getTransferValuePath(from, to, timestamp);
-    return this.setValueOrLog(transferPath, value, auth, timestamp, transaction);
+    return this.setValueOrLog(transferPath, value, context);
+  }
+
+  buildFuncResultToReturn(context, code, extraGasAmount = 0) {
+    const result = {
+      code,
+      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount,
+    };
+    if (ChainUtil.isNumber(extraGasAmount) && extraGasAmount > 0) {
+      result.gas_amount += extraGasAmount;
+    }
+    return result;
+  }
+
+  buildFuncResultToSave(context, code) {
+    // NOTE(platfowner): Allow only node-independent values to avoid state proof hash issues.
+    const timestamp = context.timestamp;
+    const transaction = context.transaction;
+    const result = {
+      timestamp,
+      tx_hash: transaction.hash,
+      code,
+    };
+    return result;
+  }
+
+  returnFuncResult(context, code, extraGasAmount = 0) {
+    const opResultList = Functions.getOpResultList(context);
+    const funcResultToReturn = {};
+    if (!ChainUtil.isEmpty(opResultList)) {
+      funcResultToReturn.op_results = opResultList;
+    }
+    Object.assign(funcResultToReturn, this.buildFuncResultToReturn(context, code, extraGasAmount));
+    return funcResultToReturn;
+  }
+
+  saveAndReturnFuncResult(context, resultPath, code, extraGasAmount = 0) {
+    const funcResultToSave = this.buildFuncResultToSave(context, code);
+    this.setValueOrLog(resultPath, funcResultToSave, context);
+    return this.returnFuncResult(context, code, extraGasAmount);
   }
 
   /**
    * Saves the transaction's hash to a sibling path.
-   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'
+   * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'.
+   * This is often used for testing purposes.
    */
   _saveLastTx(value, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
-    const auth = context.auth;
-
-    const valuePath = context.valuePath;
-    if (valuePath.length === 0) {
-      return false;
+    const parsedValuePath = context.valuePath;
+    if (parsedValuePath.length === 0) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const lastTxPath = valuePath.slice();
+    const lastTxPath = parsedValuePath.slice();
     // Insert '.last_tx' label just before the last label in the path.
     const lastLabel = lastTxPath.pop();
     lastTxPath.push(PredefinedDbPaths.SAVE_LAST_TX_LAST_TX);
     lastTxPath.push(lastLabel);
-
-    return this.setValueOrLog(
-        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, auth, timestamp,
-        transaction);
+    const result = this.setValueOrLog(
+        ChainUtil.formatPath(lastTxPath), { tx_hash: transaction.hash }, context);
+    if (!ChainUtil.isFailedTx(result)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
   }
+
+  /**
+   * Overwrite the value with 'erased'.
+   * This is often used for testing purposes.
+   */
+  _eraseValue(value, context) {
+    const parsedValuePath = context.valuePath;
+    const result = this.setValueOrLog(ChainUtil.formatPath(parsedValuePath), 'erased', context);
+    if (!ChainUtil.isFailedTx(result)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+  }
+
 
   _transfer(value, context) {
     const from = context.params.from;
@@ -468,30 +504,41 @@ class Functions {
     const fromBalancePath = ChainUtil.getBalancePath(from);
     const toBalancePath = ChainUtil.getBalancePath(to);
     const resultPath = PathUtil.getTransferResultPath(from, to, key);
-    const result = this.transferInternal(fromBalancePath, toBalancePath, value, context);
-    if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (result.code === 1001) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
-    } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+    let extraGasAmount = 0;
+    const fromBalance = this.db.getValue(fromBalancePath);
+    if (fromBalance === null || fromBalance < value) {
+      return this.saveAndReturnFuncResult(
+          context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     }
+    const toBalance = this.db.getValue(toBalancePath);
+    if (toBalance === null) {
+      extraGasAmount = GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+    }
+    const decResult = this.decValueOrLog(fromBalancePath, value, context);
+    if (ChainUtil.isFailedTx(decResult)) {
+      return this.saveAndReturnFuncResult(
+          context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+    }
+    // TODO(lia): remove the from entry, if it's a service account && if the new balance === 0
+    const incResult = this.incValueOrLog(toBalancePath, value, context);
+    if (ChainUtil.isFailedTx(incResult)) {
+      return this.saveAndReturnFuncResult(
+          context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+    }
+    return this.saveAndReturnFuncResult(
+        context, resultPath, FunctionResultCode.SUCCESS, extraGasAmount);
   }
 
   _createApp(value, context) {
     const appName = context.params.app_name;
     const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
     const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
     const sanitizedVal = {};
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
-    if (!ChainUtil.isDict(adminConfig) || !ChainUtil.isDict(serviceConfig)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+    if (!ChainUtil.isDict(adminConfig)) {
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     if (adminConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
@@ -503,12 +550,46 @@ class Functions {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
     }
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
-    const result = this.setValueOrLog(
-        manageAppConfigPath, sanitizedVal, auth, timestamp, transaction);
+    const result = this.setValueOrLog(manageAppConfigPath, sanitizedVal, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
+    }
+  }
+
+  _collectFee(value, context) {
+    const from = context.params.from;
+    const blockNumber = context.params.block_number;
+    const gasFeeServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
+    const result =
+        this.setServiceAccountTransferOrLog(from, gasFeeServiceAccountName, value.amount, context);
+    if (!ChainUtil.isFailedTx(result)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      logger.error(`  ===> _collectFee failed: ${JSON.stringify(result)}`);
+      // TODO(lia): return error, check in setValue(), revert changes
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+  }
+
+  _distributeFee(value, context) {
+    const blockNumber = context.params.number;
+    const gasCostTotal = value.gas_cost_total;
+    const proposer = value.proposer;
+    if (gasCostTotal <= 0) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const gasFeeServiceAccountName = ChainUtil.toServiceAccountName(
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
+    const result = this.setServiceAccountTransferOrLog(
+        gasFeeServiceAccountName, proposer, gasCostTotal, context);
+    if (!ChainUtil.isFailedTx(result)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      logger.error(`  ===> _distributeFee failed: ${JSON.stringify(result)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -519,36 +600,31 @@ class Functions {
     const recordId = context.params.record_id;
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
-    const transaction = context.transaction;
-    const auth = context.auth;
     const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName));
     if (timestamp > executedAt) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     if (value === 0) {
       // Just update the expiration time
-      this.setValueOrLog(
-        expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
-      return;
+      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     }
     const stakingServiceAccountName = ChainUtil.toServiceAccountName(
           PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
-    const result = this.setServiceAccountTransferOrLog(
-        user, stakingServiceAccountName, value, auth, timestamp, transaction);
+    const result =
+        this.setServiceAccountTransferOrLog(user, stakingServiceAccountName, value, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.setValueOrLog(
-          expirationPath, Number(timestamp) + Number(lockup), auth, timestamp, transaction);
+      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
-      this.incValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.incValueOrLog(balanceTotalPath, value, context);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (result.code === 1001) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.saveAndReturnFuncResult(
+          context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -557,29 +633,28 @@ class Functions {
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
     const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
     const executedAt = context.executedAt;
-    const transaction = context.transaction;
-    const auth = context.auth;
-    const resultPath = PathUtil.getStakingUnstakeResultPath(serviceName, user, stakingKey, recordId);
-    const expireAt = this.db.getValue(PathUtil.getStakingExpirationPath(serviceName, user, stakingKey));
+    const resultPath =
+        PathUtil.getStakingUnstakeResultPath(serviceName, user, stakingKey, recordId);
+    const expireAt =
+        this.db.getValue(PathUtil.getStakingExpirationPath(serviceName, user, stakingKey));
     if (expireAt > executedAt) {
       // Still in lock-up period.
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
-      return;
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
     }
     const stakingServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const result = this.setServiceAccountTransferOrLog(
-        stakingServiceAccountName, user, value, auth, timestamp, transaction);
+        stakingServiceAccountName, user, value, context);
     if (!ChainUtil.isFailedTx(result)) {
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
-      this.decValueOrLog(balanceTotalPath, value, auth, timestamp, transaction);
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      this.decValueOrLog(balanceTotalPath, value, context);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else if (result.code === 1001) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.saveAndReturnFuncResult(
+          context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -591,22 +666,21 @@ class Functions {
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
     const transaction = context.transaction;
-    const auth = context.auth;
-    const resultPath = PathUtil.getPaymentPayRecordResultPath(serviceName, user, paymentKey, recordId);
+    const resultPath =
+        PathUtil.getPaymentPayRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
 
     const userServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     const result = this.setServiceAccountTransferOrLog(
-        transaction.address, userServiceAccountName, value.amount, auth, timestamp, transaction);
+        transaction.address, userServiceAccountName, value.amount, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -618,12 +692,11 @@ class Functions {
     const timestamp = context.timestamp;
     const executedAt = context.executedAt;
     const transaction = context.transaction;
-    const auth = context.auth;
-    const resultPath = PathUtil.getPaymentClaimRecordResultPath(serviceName, user, paymentKey, recordId);
+    const resultPath =
+        PathUtil.getPaymentClaimRecordResultPath(serviceName, user, paymentKey, recordId);
 
     if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
-      return;
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
 
     let result;
@@ -634,16 +707,15 @@ class Functions {
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = PathUtil.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
-      result = this.setValueOrLog(
-          escrowHoldPath, { amount: value.amount }, auth, timestamp, transaction);
+      result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, context);
     } else {
       result = this.setServiceAccountTransferOrLog(
-          userServiceAccountName, value.target, value.amount, auth, timestamp, transaction);
+          userServiceAccountName, value.target, value.amount, context);
     }
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -665,21 +737,21 @@ class Functions {
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
     const recordId = context.params.record_id;
-    const { transaction, timestamp, auth } = context;
     const amount = _.get(value, 'amount');
-    const resultPath = PathUtil.getEscrowHoldRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
+    const resultPath =
+        PathUtil.getEscrowHoldRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
     if (!ChainUtil.isNumber(amount)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
     const result = this.setServiceAccountTransferOrLog(
-        sourceAccount, escrowServiceAccountName, amount, auth, timestamp, transaction);
+        sourceAccount, escrowServiceAccountName, amount, context);
     if (!ChainUtil.isFailedTx(result)) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     } else {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -688,112 +760,118 @@ class Functions {
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
     const recordId = context.params.record_id;
-    const { transaction, timestamp, auth } = context;
     const ratio = _.get(value, 'ratio');
-    const resultPath = PathUtil.getEscrowReleaseRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
+    const resultPath = PathUtil.getEscrowReleaseRecordResultPath(
+        sourceAccount, targetAccount, escrowKey, recordId);
     if (!ChainUtil.isNumber(ratio) || ratio < 0 || ratio > 1) {
-      this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     const accountKey = ChainUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
-    const serviceAccountBalancePath = PathUtil.getServiceAccountBalancePathFromAccountName(escrowServiceAccountName);
+    const serviceAccountBalancePath =
+        PathUtil.getServiceAccountBalancePathFromAccountName(escrowServiceAccountName);
     const escrowAmount = this.db.getValue(serviceAccountBalancePath);
     const targetAmount = escrowAmount * ratio;
     const sourceAmount = escrowAmount - targetAmount;
     logger.debug(`  =>> escrowAmount: ${escrowAmount}, ratio: ${ratio}, ` +
         `targetAmount: ${targetAmount}, sourceAmount: ${sourceAmount}`);
+    let targetResult = null;
     if (targetAmount > 0) {
-      const result = this.setServiceAccountTransferOrLog(
-          escrowServiceAccountName, targetAccount, targetAmount, auth, timestamp, transaction);
-      if (ChainUtil.isFailedTx(result)) {
-        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
-        return;
+      targetResult = this.setServiceAccountTransferOrLog(
+          escrowServiceAccountName, targetAccount, targetAmount, context);
+      if (ChainUtil.isFailedTx(targetResult)) {
+        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
       }
     }
+    let sourceResult = null;
     if (sourceAmount > 0) {
-      const result = this.setServiceAccountTransferOrLog(
-          escrowServiceAccountName, sourceAccount, sourceAmount, auth, timestamp, transaction);
-      if (ChainUtil.isFailedTx(result)) {
-        this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      sourceResult = this.setServiceAccountTransferOrLog(
+          escrowServiceAccountName, sourceAccount, sourceAmount, context);
+      if (ChainUtil.isFailedTx(sourceResult)) {
         // TODO(lia): revert the release to target_account if there was any
-        return;
+        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
       }
     }
-    this.saveAndSetExecutionResult(context, resultPath, FunctionResultCode.SUCCESS);
+    return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
   }
 
   _updateLatestShardReport(value, context) {
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-
     const blockNumber = Number(context.params.block_number);
-    const valuePath = context.valuePath;
+    const parsedValuePath = context.valuePath;
     if (!ChainUtil.isArray(context.functionPath)) {
-      return false;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     if (!ChainUtil.isString(value)) {
       // Removing old report or invalid reporting
-      return false;
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const latestReportPath = PathUtil.getLatestShardReportPathFromValuePath(valuePath);
+    const latestReportPath = PathUtil.getLatestShardReportPathFromValuePath(parsedValuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
     if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
       // Nothing to update
-      return false;
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    this.setValueOrLog(latestReportPath, blockNumber, auth, timestamp, transaction);
-    this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+    const result = this.setValueOrLog(latestReportPath, blockNumber, context);
+    if (!ChainUtil.isFailedTx(result)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
   }
 
   // TODO(platfowner): Support refund feature.
   _openCheckin(value, context) {
-    const valuePath = context.valuePath;
+    const parsedValuePath = context.valuePath;
     const payloadTx = _.get(value, 'payload', null);
     const txHash = ChainUtil.hashSignature(payloadTx.signature);
     if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     if (!this.validateCheckinParams(context.params)) {
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     if (!this.validateShardConfig()) {
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     if (!payloadTx || !payloadTx.tx_body || !payloadTx.signature) {
       logger.info('  =>> payloadTx is missing required fields');
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     const createdTx = Transaction.create(payloadTx.tx_body, payloadTx.signature);
     if (!createdTx ||
         !Transaction.verifyTransaction(createdTx) ||
         !this.isTransferTx(createdTx.tx_body.operation)) {
       logger.info('  =>> Invalid payloadTx');
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     // Forward payload tx to parent chain
     try {
       sendSignedTx(parentChainEndpoint, payloadTx)
       .then((result) => {
         if (!_.get(result, 'success', false) === true) {
-          logger.info(`  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
+          logger.info(
+              `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
           return;
         }
-        logger.info(`  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
+        logger.info(
+            `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
         const shardingPath = this.db.getShardingPath();
         const action = {
-          ref: PathUtil.getCheckinParentFinalizeResultPathFromValuePath(shardingPath, valuePath, txHash),
+          ref: PathUtil.getCheckinParentFinalizeResultPathFromValuePath(
+              shardingPath, parsedValuePath, txHash),
           valueFunction: (success) => !!success,
           is_global: true,
           tx_body: payloadTx.tx_body,
         };
         this.tp.addRemoteTransaction(txHash, action);
       });
-    } finally {
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } catch (err) {
+      logger.error(`  => _openCheckin failed with error: ${JSON.stringify(err)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -801,27 +879,28 @@ class Functions {
     if (!this.tp || !this.db.isNodeDb) {
       // It's not the backupDb
       logger.info('  =>> Skip sending transfer transaction to the shard blockchain');
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     if (!this.validateCheckinParams(context.params)) {
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     if (!this.validateShardConfig()) {
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     if (value !== true) {
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     // Transfer shard chain token from shard_owner to user_addr
     const user = context.params.user_addr;
     const checkinId = context.params.checkin_id;
-    const valuePath = context.valuePath;
-    const checkinPayload = this.db.getValue(PathUtil.getCheckinPayloadPathFromValuePath(valuePath));
+    const parsedValuePath = context.valuePath;
+    const checkinPayload =
+        this.db.getValue(PathUtil.getCheckinPayloadPathFromValuePath(parsedValuePath));
     const checkinAmount = _.get(checkinPayload, 'tx_body.operation.value', 0);
     const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
     const tokenToReceive = checkinAmount * tokenExchRate;
     if (!this.validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
-      return;
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const ownerPrivateKey = ChainUtil.getJsObject(
@@ -848,8 +927,10 @@ class Functions {
     const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
     try {
       signAndSendTx(endpoint, transferTx, ownerPrivateKey);
-    } finally {
-      this.setExecutionResult(context, FunctionResultCode.SUCCESS);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } catch (err) {
+      logger.error(`  => _closeCheckin failed with error: ${JSON.stringify(err)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -900,30 +981,6 @@ class Functions {
     }
     const parsedPath = ChainUtil.parsePath(txOp.ref);
     return parsedPath.length && parsedPath[0] === PredefinedDbPaths.TRANSFER;
-  }
-
-  transferInternal(fromPath, toPath, value, context) {
-    const timestamp = context.timestamp;
-    const transaction = context.transaction;
-    const auth = context.auth;
-
-    const fromBalance = this.db.getValue(fromPath);
-    if (fromBalance === null || fromBalance < value) {
-      return ChainUtil.returnTxResult(1001, `Insufficient balance: ${fromBalance}`);
-    }
-    const toBalance = this.db.getValue(toPath);
-    if (toBalance === null) {
-      this.addToTotalGasAmount(GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT);
-    }
-    const decResult = this.decValueOrLog(fromPath, value, auth, timestamp, transaction);
-    if (ChainUtil.isFailedTx(decResult)) {
-      return decResult;
-    }
-    const incResult = this.incValueOrLog(toPath, value, auth, timestamp, transaction);
-    if (ChainUtil.isFailedTx(incResult)) {
-      return incResult;
-    }
-    return ChainUtil.returnTxResult(0);
   }
 }
 

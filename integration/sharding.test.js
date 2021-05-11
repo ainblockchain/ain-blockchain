@@ -40,37 +40,43 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true, ENABLE_DEV_CLIENT_API: true,
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
-    PORT: 9090, P2P_PORT: 6000
+    PORT: 9090, P2P_PORT: 6000,
+    CONSOLE_LOG: false
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9091, P2P_PORT: 6001,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, ENABLE_DEV_CLIENT_API: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9092, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, ENABLE_DEV_CLIENT_API: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9093, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, ENABLE_DEV_CLIENT_API: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9094, P2P_PORT: 6004,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, ENABLE_DEV_CLIENT_API: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -195,72 +201,16 @@ function cleanUp() {
   }
 }
 
-function setUpForSharding(shardingConfig) {
-  const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-  const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
-    json: {
-      op_list: [
-        {
-          type: WriteDbOperations.SET_OWNER,
-          ref: sharding_path,
-          value: {
-            [OwnerProperties.OWNER]: {
-              [OwnerProperties.OWNERS]: {
-                [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-              }
-            }
-          }
-        },
-        {
-          type: WriteDbOperations.SET_RULE,
-          ref: sharding_path,
-          value: {
-            [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
-          }
-        },
-        {
-          type: WriteDbOperations.SET_RULE,
-          ref: `${sharding_path}/${ShardingProperties.LATEST}`,
-          value: {
-            [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
-          }
-        },
-        {
-          type: WriteDbOperations.SET_FUNCTION,
-          ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
-          value: {
-            [FunctionProperties.FUNCTION]: {
-              [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
-              }
-            }
-          }
-        },
-        {
-          type: WriteDbOperations.SET_VALUE,
-          ref: ChainUtil.formatPath([
-            PredefinedDbPaths.SHARDING,
-            PredefinedDbPaths.SHARDING_SHARD,
-            ainUtil.encode(sharding_path)
-          ]),
-          value: shardingConfig
-        }
-      ],
-    }
-  }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUpForSharding() tx.`)
-  }
-}
-
 describe('Sharding', () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
+  const parentAccounts =
+      readConfigFile(path.resolve(__dirname, '../genesis-configs/base', 'genesis_accounts.json'));
+  const parentServerAddr = parentAccounts.others[0].address;
   const accounts =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_accounts.json'));
+  const shardOwnerAddr = accounts.owner.address;
+  const shardReporterAddr = accounts.others[0].address;
   const sharding =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_sharding.json'));
 
@@ -270,20 +220,41 @@ describe('Sharding', () => {
   before(() => {
     rimraf.sync(CHAINS_DIR)
 
-    parent_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
+    parent_tracker_proc =
+        startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
     sleep(2000);
-    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], false);
+    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], true);
     sleep(15000);
-    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
+    // Give AIN to sharding owner and reporter
+    const shardReportRes = parseOrLog(syncRequest(
+      'POST', parentServer + '/set', { json: {
+        op_list: [
+          {
+            type: 'SET_VALUE',
+            ref: `/transfer/${parentServerAddr}/${shardOwnerAddr}/${Date.now()}/value`,
+            value: 100
+          },
+          {
+            type: 'SET_VALUE',
+            ref: `/transfer/${parentServerAddr}/${shardReporterAddr}/${Date.now()}/value`,
+            value: 100
+          }
+        ],
+        nonce: -1
+      } }).body.toString('utf-8')
+    ).result;
+    waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+    
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], false);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], true);
     sleep(2000);
     waitUntilShardReporterStarts();
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], false);
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], true);
     sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], false);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
     sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], false);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
     sleep(2000);
   });
 
@@ -312,8 +283,8 @@ describe('Sharding', () => {
             {},
             sharding,
             {
-              shard_owner: accounts.owner.address,
-              shard_reporter: accounts.others[0].address
+              shard_owner: shardOwnerAddr,
+              shard_reporter: shardReporterAddr
             }
           )
         });
@@ -366,7 +337,7 @@ describe('Sharding', () => {
             `.shard/proof_hash_map/$block_number/proof_hash`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.write']).to.have.string(accounts.others[0].address);
+        expect(body.result['.write']).to.have.string(shardReporterAddr);
       });
     });
 
@@ -376,7 +347,7 @@ describe('Sharding', () => {
             'GET', parentServer + `/get_owner?ref=${sharding.sharding_path}`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
+        expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
       });
     });
   });
@@ -391,13 +362,13 @@ describe('Sharding', () => {
 
       it('accounts', () => {
         const body1 = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=/accounts/' + accounts.owner.address + '/balance')
+            'GET', server1 + '/get_value?ref=/accounts/' + shardOwnerAddr + '/balance')
           .body.toString('utf-8'));
         expect(body1.code).to.equal(0);
         expect(body1.result).to.be.above(0);
 
         const body2 = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=/accounts/' + accounts.others[0].address + '/balance')
+            'GET', server1 + '/get_value?ref=/accounts/' + shardReporterAddr + '/balance')
           .body.toString('utf-8'));
         expect(body2.code).to.equal(0);
         expect(body2.result).to.be.above(0);
@@ -426,7 +397,7 @@ describe('Sharding', () => {
         const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.write']).to.have.string(accounts.owner.address);
+        expect(body.result['.write']).to.have.string(shardOwnerAddr);
       })
     })
 
@@ -435,7 +406,7 @@ describe('Sharding', () => {
         const body = parseOrLog(syncRequest('GET', server4 + '/get_owner?ref=/sharding/config')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.owner'].owners[accounts.owner.address]).to.not.be.null;
+        expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
       })
     })
   });
@@ -1408,44 +1379,36 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), [
-            {
-              "code": 0,
-              "gas": {
+          assert.deepEqual(_.get(body, 'result.result'), {
+            "result_list": [
+              {
+                "code": 0,
                 "gas_amount": 1
-              }
-            },
-            {
-              "code": 0,
-              "gas": {
+              },
+              {
+                "code": 0,
                 "gas_amount": 1
-              }
-            },
-            {
-              "code": 0,
-              "gas": {
+              },
+              {
+                "code": 0,
                 "gas_amount": 1
-              }
-            },
-            {
-              "code": 0,
-              "gas": {
+              },
+              {
+                "code": 0,
                 "gas_amount": 1
-              }
-            },
-            {
-              "code": 0,
-              "gas": {
+              },
+              {
+                "code": 0,
                 "gas_amount": 1
-              }
-            },
-            {
-              "code": 0,
-              "gas": {
+              },
+              {
+                "code": 0,
                 "gas_amount": 1
-              }
-            },
-          ]);
+              },
+            ],
+            "gas_amount_total": 6,
+            "gas_cost_total": 0
+          });
           assert.deepEqual(body.code, 0);
         })
 
@@ -1499,26 +1462,36 @@ describe('Sharding', () => {
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), [
-            {
-              "code": 0,
-            },
-            {
-              "code": 0,
-            },
-            {
-              "code": 0,
-            },
-            {
-              "code": 0,
-            },
-            {
-              "code": 0,
-            },
-            {
-              "code": 0,
-            },
-          ]);
+          assert.deepEqual(_.get(body, 'result.result'), {
+            "result_list": [
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+              {
+                "code": 0,
+                "gas_amount": 0
+              },
+            ],
+            "gas_amount_total": 0,
+            "gas_cost_total": 0
+          });
           assert.deepEqual(body.code, 0);
         })
       })
@@ -1533,7 +1506,6 @@ describe('Sharding', () => {
               value: 'some other value',
               ref: `test/test_value/some/path`
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1549,9 +1521,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    gas: {
-                      gas_amount: 1
-                    }
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1569,7 +1541,6 @@ describe('Sharding', () => {
               ref: `test/test_value/some/path`,
               is_global: false,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1585,9 +1556,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    gas: {
-                      gas_amount: 1
-                    }
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1605,7 +1576,6 @@ describe('Sharding', () => {
               ref: `apps/afan/test/test_value/some/path`,
               is_global: true,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1621,9 +1591,9 @@ describe('Sharding', () => {
                 result: {
                   result: {
                     code: 0,
-                    gas: {
-                      gas_amount: 1
-                    }
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 }
@@ -1642,7 +1612,6 @@ describe('Sharding', () => {
               value: 'some other value',
               ref: `test/test_value/some/path`
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1666,9 +1635,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    gas: {
-                      gas_amount: 1
-                    }
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
@@ -1687,7 +1656,6 @@ describe('Sharding', () => {
               ref: `test/test_value/some/path`,
               is_global: false,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1714,9 +1682,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    gas: {
-                      gas_amount: 1
-                    }
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
@@ -1735,7 +1703,6 @@ describe('Sharding', () => {
               ref: `apps/afan/test/test_value/some/path`,
               is_global: true,
             },
-            gas_price: 1,
             timestamp: Date.now(),
             nonce: -1
           }
@@ -1762,9 +1729,9 @@ describe('Sharding', () => {
                 {
                   result: {
                     code: 0,
-                    gas: {
-                      gas_amount: 1
-                    }
+                    gas_amount: 1,
+                    gas_amount_total: 1,
+                    gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
                 },
@@ -1800,7 +1767,64 @@ describe('Sharding', () => {
 
     describe('_updateLatestShardReport', () => {
       before(() => {
-        setUpForSharding(shardingConfig);
+        const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+        const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
+          json: {
+            op_list: [
+              {
+                type: WriteDbOperations.SET_OWNER,
+                ref: sharding_path,
+                value: {
+                  [OwnerProperties.OWNER]: {
+                    [OwnerProperties.OWNERS]: {
+                      [shard_owner]: buildOwnerPermissions(true ,true, true, true),
+                      [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
+                    }
+                  }
+                }
+              },
+              {
+                type: WriteDbOperations.SET_RULE,
+                ref: sharding_path,
+                value: {
+                  [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
+                }
+              },
+              {
+                type: WriteDbOperations.SET_RULE,
+                ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+                value: {
+                  [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
+                }
+              },
+              {
+                type: WriteDbOperations.SET_FUNCTION,
+                ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
+                value: {
+                  [FunctionProperties.FUNCTION]: {
+                    [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                      [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                      [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                    }
+                  }
+                }
+              },
+              {
+                type: WriteDbOperations.SET_VALUE,
+                ref: ChainUtil.formatPath([
+                  PredefinedDbPaths.SHARDING,
+                  PredefinedDbPaths.SHARDING_SHARD,
+                  ainUtil.encode(sharding_path)
+                ]),
+                value: shardingConfig
+              }
+            ],
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+        if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
+          console.log(`Failed to check finalization of sharding setup tx.`)
+        }
       });
 
       it('update latest shard report', () => {
@@ -1809,10 +1833,32 @@ describe('Sharding', () => {
           value: "0xPROOF_HASH_5",
           nonce: -1,
         }
-        const shardReportRes = parseOrLog(syncRequest(
+        const shardReportBody = parseOrLog(syncRequest(
             'POST', parentServer + '/set_value', { json: reportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+        );
+        assert.deepEqual(_.get(shardReportBody, 'result.result'), {
+          "code": 0,
+          "func_results": {
+            "_updateLatestShardReport": {
+              "code": "SUCCESS",
+              "gas_amount": 0,
+              "op_results": [
+                {
+                  "path": "//apps/a_dapp/latest",
+                  "result": {
+                    "code": 0,
+                    "gas_amount": 1,
+                  }
+                }
+              ]
+            }
+          },
+          "gas_amount": 1,
+          "gas_amount_total": 2,
+          "gas_cost_total": 0,
+        });
+        expect(shardReportBody.code).to.equal(0);
+        waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
@@ -1838,10 +1884,47 @@ describe('Sharding', () => {
           ],
           nonce: -1,
         }
-        const shardReportRes = parseOrLog(syncRequest(
+        const shardReportBody = parseOrLog(syncRequest(
             'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+        );
+        assert.deepEqual(_.get(shardReportBody, 'result.result'), {
+          "result_list": [
+            {
+              "code": 0,
+              "func_results": {
+                "_updateLatestShardReport": {
+                  "code": "SUCCESS",
+                  "gas_amount": 0,
+                  "op_results": [
+                    {
+                      "path": "//apps/a_dapp/latest",
+                      "result": {
+                        "code": 0,
+                        "gas_amount": 1,
+                      }
+                    }
+                  ]
+                }
+              },
+              "gas_amount": 1,
+            },
+            {
+              "code": 0,
+              "func_results": {
+                "_updateLatestShardReport": {
+                  "code": "SUCCESS",
+                  "gas_amount": 0,
+                  "op_results": [],
+                }
+              },
+              "gas_amount": 1,
+            }
+          ],
+          "gas_amount_total": 3,
+          "gas_cost_total": 0,
+        });
+        expect(shardReportBody.code).to.equal(0);
+        waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;

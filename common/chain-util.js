@@ -24,6 +24,9 @@ class ChainUtil {
   }
 
   static signTransaction(txBody, privateKey) {
+    if (!privateKey) {
+      return null;
+    }
     const keyBuffer = Buffer.from(privateKey, 'hex');
     const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
     const sigBuffer = ainUtil.toBuffer(sig);
@@ -85,8 +88,12 @@ class ChainUtil {
     return ruleUtil.isBool(value);
   }
 
-  static isNumber(num) {
-    return ruleUtil.isNumber(num);
+  static isNumber(value) {
+    return ruleUtil.isNumber(value);
+  }
+
+  static isInteger(value) {
+    return ruleUtil.isInteger(value);
   }
 
   static isString(value) {
@@ -199,7 +206,7 @@ class ChainUtil {
   }
 
   static formatPath(parsedPath) {
-    if (!Array.isArray(parsedPath) || parsedPath.length === 0) {
+    if (!ChainUtil.isArray(parsedPath) || parsedPath.length === 0) {
       return '/';
     }
     let formatted = '';
@@ -263,6 +270,14 @@ class ChainUtil {
     return true;
   }
 
+  static mergeNumericJsObjects(obj1, obj2) {
+    return _.mergeWith(obj1, obj2, (a, b) => {
+      if (!ChainUtil.isDict(a) && !ChainUtil.isDict(b)) {
+        return ChainUtil.numberOrZero(a) + ChainUtil.numberOrZero(b);
+      }
+    });
+  }
+
   static simplifyProperties(obj) {
     const newObj = {};
     for (const key of Object.keys(obj)) {
@@ -278,15 +293,28 @@ class ChainUtil {
     if (!result) {
       return true;
     }
-    if (Array.isArray(result)) {
-      for (const elem of result) {
-        if (ChainUtil.isFailedTxResultCode(elem.code)) {
+    if (ChainUtil.isArray(result.result_list)) {
+      for (const subResult of result.result_list) {
+        if (ChainUtil.isFailedTxResultCode(subResult.code)) {
           return true;
+        }
+        if (subResult.func_results) {
+          if (ChainUtil.isFailedFuncTrigger(subResult.func_results)) {
+            return true;
+          }
         }
       }
       return false;
     }
-    return ChainUtil.isFailedTxResultCode(result.code);
+    if (ChainUtil.isFailedTxResultCode(result.code)) {
+      return true;
+    }
+    if (result.func_results) {
+      if (ChainUtil.isFailedFuncTrigger(result.func_results)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static isFailedTxResultCode(code) {
@@ -294,50 +322,129 @@ class ChainUtil {
   }
 
   /**
-   * Returns the total gas amount of the result (esp. multi-operation result).
+   * Returns true if the given result is from a failed function trigger.
    */
-  static getTotalGasAmount(result) {
-    if (!result) {
-      return 0;
-    }
-    if (Array.isArray(result)) {
-      let gasAmount = 0;
-      for (const elem of result) {
-        gasAmount += _.get(elem, 'gas.gas_amount', 0);
+  static isFailedFuncTrigger(result) {
+    if (ChainUtil.isDict(result)) {
+      for (const fid in result) {
+        const funcResult = result[fid];
+        if (ChainUtil.isFailedFuncResultCode(funcResult.code)) {
+          return true;
+        }
+        if (ChainUtil.isArray(funcResult.op_results)) {
+          for (const opResult of funcResult.op_results) {
+            if (ChainUtil.isFailedTx(opResult.result)) {
+              return true;
+            }
+          }
+        }
       }
-      return gasAmount;
     }
-    return _.get(result, 'gas.gas_amount', 0);
+    return false;
+  }
+
+  static isFailedFuncResultCode(code) {
+    const { FunctionResultCode } = require('../common/constants');
+
+    return code !== FunctionResultCode.SUCCESS;
+  }
+
+  static isAppPath(parsedPath) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
+  }
+
+  // TODO(lia): fix testing paths (writing at the root) and update isServicePath().
+  static isServicePath(parsedPath) {
+    const { NATIVE_SERVICE_TYPES } = require('../common/constants');
+    return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
+  }
+
+  static getGasAmountObj(path, value) {
+    const parsedPath = ChainUtil.parsePath(path);
+    const gasAmount = {};
+    if (ChainUtil.isServicePath(parsedPath)) {
+      ChainUtil.setJsObject(gasAmount, ['service'], value);
+    } else if (ChainUtil.isAppPath(parsedPath)) {
+      const appName = _.get(parsedPath, 1);
+      if (!appName) return;
+      ChainUtil.setJsObject(gasAmount, ['app', appName], value);
+    }
+    return gasAmount;
+  }
+
+  static getSingleOpGasAmount(result) {
+    let sum = 0;
+    if (!result) {
+      return sum;
+    }
+    if (ChainUtil.isArray(result)) {
+      for (const elem of result) {
+        sum += ChainUtil.getSingleOpGasAmount(elem);
+      }
+      return sum;
+    }
+    if (ChainUtil.isDict(result)) {
+      for (const key in result) {
+        sum += ChainUtil.getSingleOpGasAmount(result[key]);
+      }
+    }
+    sum += _.get(result, 'gas_amount', 0);
+    return sum;
   }
 
   /**
+   * Returns the total gas amount of the result (esp. multi-operation result).
+   */
+  static getTotalGasAmount(result) {
+    if (ChainUtil.isArray(result)) {
+      let gasAmount = 0;
+      for (const elem of result) {
+        gasAmount += ChainUtil.getSingleOpGasAmount(elem);
+      }
+      return gasAmount;
+    }
+    return ChainUtil.getSingleOpGasAmount(result);
+  }
+  /**
    * Calculate the gas cost (unit = ain).
+   * Only the service bandwidth gas amount is counted toward gas cost.
    * 
    * @param {Number} gasPrice gas price in microain
-   * @param {Object} result transaction execution result
+   * @param {Object} gasAmount gas amount
    * @returns 
    */
-  static getTotalGasCost(gasPrice, result) {
+  static getTotalGasCost(gasPrice, gasAmount) {
     const { MICRO_AIN } = require('./constants');
-    return gasPrice * MICRO_AIN * ChainUtil.getTotalGasAmount(result);
+    if (!ChainUtil.isNumber(gasPrice)) {
+      gasPrice = 0; // Default gas price = 0 microain
+    }
+    if (!ChainUtil.isNumber(gasAmount)) {
+      gasAmount = 0; // Default gas amount = 0
+    }
+    return gasPrice * MICRO_AIN * gasAmount;
   }
 
-  static getGasAmountCostTotalFromTxList(txList, resList) {
-    const gasAmountTotal = resList.reduce((acc, cur) => acc + ChainUtil.getTotalGasAmount(cur), 0);
+  static getServiceGasCostTotalFromTxList(txList, resList) {
+    let gasAmountTotal = 0;
     const gasCostTotal = resList.reduce((acc, cur, index) => {
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, cur);
+      const gasAmount = ChainUtil.getTotalGasAmount(cur);
+      gasAmountTotal += gasAmount;
+      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, gasAmount);
     }, 0);
     return { gasAmountTotal, gasCostTotal };
   }
 
-  static returnTxResult(code, message = null, gas = null) {
-    const result = { code };
+  static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
+    const result = {};
     if (message) {
       result.error_message = message;
     }
-    if (gas) {
-      result.gas = gas;
+    if (!ChainUtil.isEmpty(funcResults)) {
+      result.func_results = funcResults;
     }
+    result.code = code;
+    result.gas_amount = gasAmount;
     return result;
   }
 
@@ -348,9 +455,8 @@ class ChainUtil {
    * @param code error code
    * @param message error message
    * @param level level to log with
-   * @param gas gas object
    */
-  static logAndReturnTxResult(logger, code, message = null, level = 1, gas = null) {
+  static logAndReturnTxResult(logger, code, message = null, level = 1) {
     if (level === 0) {
       logger.error(message);
     } else if (level === 1) {
@@ -358,7 +464,7 @@ class ChainUtil {
     } else {
       logger.debug(message);
     }
-    return ChainUtil.returnTxResult(code, message, gas);
+    return ChainUtil.returnTxResult(code, message);
   }
 
   static keyStackToMetricName(keyStack) {
@@ -415,8 +521,8 @@ class ChainUtil {
     });
   };
 
-  static convertEnvVarInputToBool = (input) => {
-    return input.toLowerCase().startsWith('t');
+  static convertEnvVarInputToBool = (input, defaultValue = false) => {
+    return input ? input.toLowerCase().startsWith('t') : defaultValue;
   }
 }
 

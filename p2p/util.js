@@ -9,7 +9,11 @@ const _ = require('lodash');
 const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
-const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
+const {
+  CURRENT_PROTOCOL_VERSION,
+  DATA_PROTOCOL_VERSION,
+  P2P_MESSAGE_TIMEOUT_MS
+} = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
 async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
@@ -33,18 +37,19 @@ async function sendSignedTx(endpoint, params) {
         id: 0
       }
   ).then((resp) => {
-    const success = !ChainUtil.isFailedTx(_.get(resp, 'data.result.result.result'), null);
-    return {success};
+    const result = _.get(resp, 'data.result.result.result', {});
+    const success = !ChainUtil.isFailedTx(result);
+    return { success, errMsg: result.error_message };
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
-    return {errMsg: err.message, success: false};
+    return { success: false, errMsg: err.message };
   });
 }
 
 async function signAndSendTx(endpoint, tx, privateKey) {
-  const {txHash, signedTx} = ChainUtil.signTransaction(tx, privateKey);
+  const { txHash, signedTx } = ChainUtil.signTransaction(tx, privateKey);
   const result = await sendSignedTx(endpoint, signedTx);
-  return Object.assign(result, {txHash});
+  return Object.assign(result, { txHash });
 }
 
 async function waitUntilTxFinalize(endpoint, txHash) {
@@ -75,7 +80,7 @@ function sendGetRequest(endpoint, method, params) {
       endpoint,
       {
         method,
-        params: Object.assign(params, {protoVer: CURRENT_PROTOCOL_VERSION}),
+        params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
         jsonrpc: '2.0',
         id: 0
       }
@@ -88,7 +93,7 @@ function sendGetRequest(endpoint, method, params) {
 }
 
 function getAddressFromSocket(connectionObj, socket) {
-  return Object.keys(connectionObj).find(address => connectionObj[address] === socket);
+  return Object.keys(connectionObj).find(address => connectionObj[address].socket === socket);
 }
 
 function removeSocketConnectionIfExists(connectionObj, address) {
@@ -103,12 +108,12 @@ function signMessage(messageBody, privateKey) {
 }
 
 function getAddressFromMessage(message) {
-  const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.body));
-  return ChainUtil.getAddressFromSignature(hashedMessage, message.signature);
+  const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
+  return ChainUtil.getAddressFromSignature(hashedMessage, message.data.signature);
 }
 
 function verifySignedMessage(message, address) {
-  return ainUtil.ecVerifySig(JSON.stringify(message.body), message.signature, address);
+  return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
 }
 
 function closeSocketSafe(connections, socket) {
@@ -117,19 +122,44 @@ function closeSocketSafe(connections, socket) {
   socket.close();
 }
 
-function checkProtoVer(connections, socket, minProtocolVersion, maxProtocolVersion, version) {
+function isValidDataProtoVer(version) {
   if (!version || !semver.valid(version)) {
-    closeSocketSafe(connections, socket);
     return false;
+  } else {
+    return true;
   }
-  if (semver.gt(minProtocolVersion, version) ||
-      (maxProtocolVersion && semver.lt(maxProtocolVersion, version))) {
-    logger.error('My protocol version may be outdated. Please check the latest version at ' +
-        'https://github.com/ainblockchain/ain-blockchain/releases');
-    closeSocketSafe(connections, socket);
+}
+
+function encapsulateMessage(type, dataObj) {
+  if (!type) {
+    logger.error('Type must be specified.');
+    return null;
+  };
+  if (!dataObj) {
+    logger.error('dataObj cannot be null or undefined.');
+    return null;
+  }
+  const message = {
+    type: type,
+    data: dataObj,
+    protoVer: CURRENT_PROTOCOL_VERSION,
+    dataProtoVer: DATA_PROTOCOL_VERSION,
+    timestamp: Date.now()
+  };
+  return message;
+}
+
+function checkTimestamp(timestamp) {
+  if (!timestamp) {
     return false;
+  } else {
+    const now = Date.now();
+    if (now - timestamp > P2P_MESSAGE_TIMEOUT_MS) {
+      return false;
+    } else {
+      return true;
+    }
   }
-  return true;
 }
 
 module.exports = {
@@ -143,5 +173,7 @@ module.exports = {
   getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
-  checkProtoVer
+  isValidDataProtoVer,
+  checkTimestamp,
+  encapsulateMessage
 };

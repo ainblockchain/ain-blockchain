@@ -4,12 +4,10 @@ const P2pServer = require('./server');
 const url = require('url');
 const Websocket = require('ws');
 const semver = require('semver');
-const logger = require('../logger')('P2P_SERVER');
+const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStatus } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const {
-  CURRENT_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -21,19 +19,23 @@ const {
   MAX_INBOUND_LIMIT,
   FeatureFlags
 } = require('../common/constants');
+const { sleep } = require('../common/chain-util');
 const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  checkProtoVer,
-  closeSocketSafe
+  isValidDataProtoVer,
+  checkTimestamp,
+  closeSocketSafe,
+  encapsulateMessage
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
+const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -201,40 +203,38 @@ class P2pClient {
     });
   }
 
-  broadcastConsensusMessage(msg) {
-    const payload = {
-      type: MessageTypes.CONSENSUS,
-      message: msg,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: DATA_PROTOCOL_VERSION
-    };
+  broadcastConsensusMessage(consensusMessage) {
+    const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage });
+    if (!payload) {
+      logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
+      return;
+    }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(socket => {
-      socket.send(stringPayload);
+    Object.values(this.outbound).forEach(node => {
+      node.socket.send(stringPayload);
     });
-    logger.debug(`SENDING: ${JSON.stringify(msg)}`);
+    logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
   requestChainSegment(socket, lastBlock) {
-    const payload = {
-      type: MessageTypes.CHAIN_SEGMENT_REQUEST,
-      lastBlock,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: DATA_PROTOCOL_VERSION
-    };
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST,
+        { lastBlock: lastBlock });
+    if (!payload) {
+      logger.error('The request chainSegment cannot be sent because of msg encapsulation failure.');
+      return;
+    }
     socket.send(JSON.stringify(payload));
   }
 
   broadcastTransaction(transaction) {
-    const payload = {
-      type: MessageTypes.TRANSACTION,
-      transaction,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: DATA_PROTOCOL_VERSION
-    };
+    const payload = encapsulateMessage(MessageTypes.TRANSACTION, { transaction: transaction });
+    if (!payload) {
+      logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');
+      return;
+    }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(socket => {
-      socket.send(stringPayload);
+    Object.values(this.outbound).forEach(node => {
+      node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
@@ -245,39 +245,13 @@ class P2pClient {
       timestamp: Date.now(),
     };
     const signature = signMessage(body, this.server.getNodePrivateKey());
-    const payload = {
-      type: MessageTypes.ADDRESS_REQUEST,
-      body,
-      signature,
-      protoVer: CURRENT_PROTOCOL_VERSION,
-      dataProtoVer: DATA_PROTOCOL_VERSION
-    };
+    const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
+        { body: body, signature: signature });
+    if (!payload) {
+      logger.error('The address cannot be sent because of msg encapsulation failure.');
+      return;
+    }
     socket.send(JSON.stringify(payload));
-  }
-
-  checkDataProtoVer(socket, version) {
-    if (!version || !semver.valid(version)) {
-      closeSocketSafe(this.outbound, socket);
-      return false;
-    }
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsu): may necessary auto disconnection based on timestamp??
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error(`The node(${getAddressFromSocket(this.outbound, socket)}) is incompatible ` +
-          `in the data protocol manner. You may be necessary to disconnect the connection with ` +
-          `the node in order to keep harmonious communication in the network.`);
-      }
-    }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('My data protocol version may be outdated. Please check the latest version ' +
-            'at https://github.com/ainblockchain/ain-blockchain/releases');
-      }
-    }
-    return true;
   }
 
   // TODO(minsu): this check will be updated when data compatibility version up.
@@ -310,59 +284,74 @@ class P2pClient {
     return true;
   }
 
-  // TODO(minsu): Check timestamp all round.
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
-      const data = JSON.parse(message);
-      if (!checkProtoVer(this.outbound, socket,
-          this.server.minProtocolVersion, this.server.maxProtocolVersion, data.protoVer)) {
+      const parsedMessage = JSON.parse(message);
+      const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
+      if (!isValidDataProtoVer(dataProtoVer)) {
+        const address = getAddressFromSocket(this.outbound, socket);
+        logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
+              `INAPPROPRIATE. Disconnect the connection.`);
+        closeSocketSafe(this.outbound, socket);
         return;
       }
-      if (!this.checkDataProtoVer(socket, data.dataProtoVer)) {
+      if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
+        logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
+            `Discard the message.`);
+        logger.debug(`[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
         return;
       }
 
-      switch (data.type) {
+      switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
           // TODO(minsu): Add compatibility check here after data version up.
           // this.checkDataProtoVerForAddressResponse(dataProtoVer);
-          const address = _.get(data, 'body.address');
+          const address = _.get(parsedMessage, 'data.body.address');
           if (!address) {
-            logger.error(`Providing an address is compulsary when initiating p2p communication.`);
+            logger.error(`[${LOG_HEADER}] Providing an address is compulsary when initiating ` +
+                `p2p communication.`);
             closeSocketSafe(this.outbound, socket);
             return;
-          } else if (!data.signature) {
-            logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
-                `communication. Cannot proceed the further communication.`);
+          } else if (!_.get(parsedMessage, 'data.signature')) {
+            logger.error(`[${LOG_HEADER}] A sinature of the peer(${address}) is missing during ` +
+                `p2p communication. Cannot proceed the further communication.`);
             closeSocketSafe(this.outbound, socket);   // NOTE(minsu): strictly close socket necessary??
             return;
           } else {
-            const addressFromSig = getAddressFromMessage(data);
+            const addressFromSig = getAddressFromMessage(parsedMessage);
             if (addressFromSig !== address) {
-              logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
+              logger.error(`[${LOG_HEADER}] The addresses(${addressFromSig} and ${address}) are ` +
+                  `not the same!!`);
               closeSocketSafe(this.outbound, socket);
               return;
             }
-            if (!verifySignedMessage(data, addressFromSig)) {
-              logger.error('The message is not correctly signed. Discard the message!!');
+            if (!verifySignedMessage(parsedMessage, addressFromSig)) {
+              logger.error(`[${LOG_HEADER}] The message is not correctly signed. ` +
+                  `Discard the message!!`);
               return;
             }
-            logger.info(`A new websocket(${address}) is established.`);
-            this.outbound[address] = socket;
+            logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
+            this.outbound[address] = {
+              socket: socket,
+              version: dataProtoVer
+            };
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          if (!this.checkDataProtoVerForChainSegmentResponse(data.dataProtoVer)) {
+          if (!this.checkDataProtoVerForChainSegmentResponse(parsedMessage.dataProtoVer)) {
             return;
           }
+          const chainSegment = _.get(parsedMessage, 'data.chainSegment');
+          const number = _.get(parsedMessage, 'data.number');
+          const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
-              `${JSON.stringify(data.chainSegment, null, 2)}`);
+              `${JSON.stringify(chainSegment, null, 2)}`);
           // Check catchup info is behind or equal to me
-          if (data.number <= this.server.node.bc.lastBlockNumber()) {
+          if (number <= this.server.node.bc.lastBlockNumber()) {
             if (this.server.consensus.status === ConsensusStatus.STARTING) {
-              if ((!data.chainSegment && !data.catchUpInfo) ||
-                  data.number === this.server.node.bc.lastBlockNumber()) {
+              if ((!chainSegment && !catchUpInfo) ||
+                  number === this.server.node.bc.lastBlockNumber()) {
                 // Regard this situation as if you're synced.
                 // TODO(lia): ask the tracker server for another peer.
                 // XXX(minsu): Need to more discussion about this.
@@ -370,15 +359,15 @@ class P2pClient {
                 this.server.node.state = BlockchainNodeStates.SERVING;
                 this.server.consensus.init();
                 if (this.server.consensus.isRunning()) {
-                  this.server.consensus.catchUp(data.catchUpInfo);
+                  this.server.consensus.catchUp(catchUpInfo);
                 }
               }
             }
             return;
           }
           // Check if chain segment is valid and can be merged ontop of your local blockchain
-          if (this.server.node.mergeChainSegment(data.chainSegment)) {
-            if (data.number === this.server.node.bc.lastBlockNumber()) {
+          if (this.server.node.mergeChainSegment(chainSegment)) {
+            if (number === this.server.node.bc.lastBlockNumber()) {
               // All caught up with the peer
               if (this.server.node.state !== BlockchainNodeStates.SERVING) {
                 // Regard this situation as if you're synced.
@@ -396,11 +385,11 @@ class P2pClient {
             if (this.server.consensus.isRunning()) {
               // FIXME: add new last block to blockPool and updateLongestNotarizedChains?
               this.server.consensus.blockPool.addSeenBlock(this.server.node.bc.lastBlock());
-              this.server.consensus.catchUp(data.catchUpInfo);
+              this.server.consensus.catchUp(catchUpInfo);
             }
             // Continuously request the blockchain segments until
             // your local blockchain matches the height of the consensus blockchain.
-            if (data.number > this.server.node.bc.lastBlockNumber()) {
+            if (number > this.server.node.bc.lastBlockNumber()) {
               setTimeout(() => {
                 this.requestChainSegment(socket, this.server.node.bc.lastBlock());
               }, 1000);
@@ -408,18 +397,18 @@ class P2pClient {
           } else {
             logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
             // FIXME: Could be that I'm on a wrong chain.
-            if (data.number <= this.server.node.bc.lastBlockNumber()) {
+            if (number <= this.server.node.bc.lastBlockNumber()) {
               logger.info(`[${LOG_HEADER}] I am ahead ` +
-                  `(${data.number} > ${this.server.node.bc.lastBlockNumber()}).`);
+                  `(${number} > ${this.server.node.bc.lastBlockNumber()}).`);
               if (this.server.consensus.status === ConsensusStatus.STARTING) {
                 this.server.consensus.init();
                 if (this.server.consensus.isRunning()) {
-                  this.server.consensus.catchUp(data.catchUpInfo);
+                  this.server.consensus.catchUp(catchUpInfo);
                 }
               }
             } else {
               logger.info(`[${LOG_HEADER}] I am behind ` +
-                  `(${data.number} < ${this.server.node.bc.lastBlockNumber()}).`);
+                  `(${number} < ${this.server.node.bc.lastBlockNumber()}).`);
               setTimeout(() => {
                 this.requestChainSegment(socket, this.server.node.bc.lastBlock());
               }, 1000);
@@ -427,8 +416,8 @@ class P2pClient {
           }
           break;
         default:
-          logger.error(`Wrong message type(${data.type}) has been specified.`);
-          logger.error('Ignore the message.');
+          logger.error(`[${LOG_HEADER}] Wrong message type(${parsedMessage.type}) has been ` +
+              `specified. Igonore the message.`);
           break;
       }
     });
@@ -445,6 +434,19 @@ class P2pClient {
     });
   }
 
+  waitForAddress = (socket) => {
+    sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
+      .then(() => {
+        const address = getAddressFromSocket(this.outbound, socket);
+        if (address) {
+          logger.info(`with (${address}).`);
+        } else {
+          logger.debug(`Waiting for adress of the socket(${JSON.stringify(socket, null, 2)})`);
+          this.waitForAddress(socket);
+        }
+      });
+  }
+
   connectToPeers(newPeerInfoList) {
     let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
@@ -454,10 +456,11 @@ class P2pClient {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
         updated = true;
         const socket = new Websocket(peerInfo.url);
-        socket.on('open', () => {
-          logger.info(`Connected to peer ${peerInfo.address} (${peerInfo.url}).`);
+        socket.on('open', async () => {
+          logger.info(`Connected to peer(${peerInfo.url}),`);
           this.setPeerEventHandlers(socket);
           this.sendAddress(socket);
+          await this.waitForAddress(socket);
           this.requestChainSegment(socket, this.server.node.bc.lastBlock());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
@@ -475,8 +478,8 @@ class P2pClient {
   }
 
   disconnectFromPeers() {
-    Object.values(this.outbound).forEach(socket => {
-      socket.close();
+    Object.values(this.outbound).forEach(node => {
+      node.socket.close();
     });
   }
 
@@ -493,9 +496,10 @@ class P2pClient {
 
   startHeartbeat() {
     this.intervalHeartbeat = setInterval(() => {
-      Object.values(this.outbound).forEach(socket => {
+      Object.values(this.outbound).forEach(node => {
         // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
+        const socket = _.get(node, 'socket');
         if (socket.readyState !== 1) {
           const address = getAddressFromSocket(this.outbound, socket);
           removeSocketConnectionIfExists(this.outbound, address);

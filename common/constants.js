@@ -15,8 +15,6 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
-  // Forces console logging.
-  forceConsoleLogging: false,
   // Enables state version optimization.
   enableStateVersionOpt: true,
   // Enables state tree transfer.
@@ -25,31 +23,24 @@ const FeatureFlags = {
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
   enableRichTransactionLogging: false,
-  // Enables transaction signature verification workaround.
-  enableTxSigVerifWorkaround: false,
-  // Enables develop client API.
-  forceDevClientApi: false,
-  // Enables gas fee related feature workaround.
-  forceGasFeeWorkaround: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
 };
 
 // Environment variables.
-const DEBUG = process.env.DEBUG ? ChainUtil.convertEnvVarInputToBool(process.env.DEBUG) : false;
-const CONSOLE_LOG = FeatureFlags.forceConsoleLogging || (process.env.CONSOLE_LOG ?
-    ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG) : false);
-const ENABLE_DEV_CLIENT_API = FeatureFlags.forceDevClientApi || (process.env.ENABLE_DEV_CLIENT_API ?
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API) : false);
-const ENABLE_GAS_FEE_WORKAROUND = FeatureFlags.forceGasFeeWorkaround ||
-    (process.env.ENABLE_GAS_FEE_WORKAROUND ? ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND) : false);
-const COMCOM_HOST_EXTERNAL_IP =
-    process.env.COMCOM_HOST_EXTERNAL_IP ? process.env.COMCOM_HOST_EXTERNAL_IP : '';
+const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
+const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
+const ENABLE_DEV_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API);
+const ENABLE_TX_SIG_VERIF_WORKAROUND =
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
+const ENABLE_GAS_FEE_WORKAROUND =
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
+const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
+    process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
-const LIGHTWEIGHT = process.env.LIGHTWEIGHT ?
-    ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT) : false;
+const LIGHTWEIGHT = ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 
 // Constants
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -63,7 +54,11 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
 const DATA_PROTOCOL_VERSION = "1.0.0";
 if (!semver.valid(DATA_PROTOCOL_VERSION)) {
-  throw Error('Wrong data version format is specified in GenesisParams.network');
+  throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
+}
+const CONSENSUS_PROTOCOL_VERSION = "1.0.0";
+if (!semver.valid(CONSENSUS_PROTOCOL_VERSION)) {
+  throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 const LOGS_DIR = path.resolve(__dirname, '../logs');
 const CHAINS_DIR = path.resolve(__dirname, '../chains');
@@ -74,6 +69,18 @@ const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
+const NATIVE_SERVICE_TYPES = [
+  'checkin',
+  'consensus',
+  'escrow',
+  'gas_fee',
+  'manage_app',
+  'payments',
+  'sharding',
+  'staking',
+  'test',  // NOTE(platfowner): A temporary solution for tests.
+  'transfer',
+];
 
 // Enums
 /**
@@ -124,6 +131,9 @@ const PredefinedDbPaths = {
   VOTE: 'vote',
   BLOCK_HASH: 'block_hash',
   STAKE: 'stake',
+  // Gas fee
+  GAS_FEE: 'gas_fee',
+  COLLECT: 'collect',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -131,6 +141,8 @@ const PredefinedDbPaths = {
   TOKEN_TOTAL_SUPPLY: 'total_supply',
   // Save last tx
   SAVE_LAST_TX_LAST_TX: '.last_tx',
+  // Erase value
+  ERASE_VALUE_ERASED: 'erased',
   // Accounts & Transfer
   ACCOUNTS: 'accounts',
   ACCOUNTS_NONCE: 'nonce',
@@ -287,7 +299,10 @@ const StateInfoProperties = {
 const NativeFunctionIds = {
   CLAIM: '_claim',
   CLOSE_CHECKIN: '_closeCheckin',
+  COLLECT_FEE: '_collectFee',
   CREATE_APP: '_createApp',
+  DISTRIBUTE_FEE: '_distributeFee',
+  ERASE_VALUE: '_eraseValue',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
   PAY: '_pay',
@@ -425,7 +440,7 @@ const StateVersions = {
  */
 const GasFeeConstants = {
   ACCOUNT_REGISTRATION_GAS_AMOUNT: 1000,
-  EXTERNAL_RPC_CALL_GAS_AMOUNT: 10,
+  REST_FUNCTION_CALL_GAS_AMOUNT: 10,
 };
 
 /**
@@ -467,10 +482,13 @@ function initializeNetworkEnvronments() {
     return GenesisParams.network;
   } else {
     return {
-      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS,
-      MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS,
-      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS,
-      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS
+      // Note(minsu): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT should not be
+      // related to one another.
+      P2P_MESSAGE_TIMEOUT_MS: 600000,
+      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
+      MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
+      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
+      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1
     }
   }
 }
@@ -623,9 +641,11 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 }
 
 module.exports = {
+  FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
+  CONSENSUS_PROTOCOL_VERSION,
   LOGS_DIR,
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
@@ -633,6 +653,8 @@ module.exports = {
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_CLIENT_API,
+  ENABLE_TX_SIG_VERIF_WORKAROUND,
+  ENABLE_GAS_FEE_WORKAROUND,
   COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
   PORT,
@@ -641,9 +663,9 @@ module.exports = {
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
-  ENABLE_GAS_FEE_WORKAROUND,
   MICRO_AIN,
   MILLI_AIN,
+  NATIVE_SERVICE_TYPES,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -664,7 +686,6 @@ module.exports = {
   WriteDbOperations,
   TransactionStatus,
   StateVersions,
-  FeatureFlags,
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,

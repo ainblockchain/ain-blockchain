@@ -13,7 +13,8 @@ NOTE: Tracker Server must be started first before starting any blockchain node i
 
 #### Local
 
-- Clone this repository and install npm packages
+- Clone this repository and install yarn packages
+- Highly recommend to use node version >= 12
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/tracker-server/
@@ -38,7 +39,7 @@ sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_
 ```
 sh setup_blockchain_ubuntu.sh
 ```
-- Copy files to a sharable folder & install npm packages
+- Copy files to a sharable folder & install yarn packages
 ```
 source setup_tracker_gcp.sh
 ```
@@ -84,7 +85,8 @@ Operates a single peer node instance of the AIN blockchain. A single blockchain 
 
 #### Local
 
-- Clone this repository and install npm packages
+- Clone this repository and install yarn packages
+- Highly recommend to use node version >= 12
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/
@@ -92,9 +94,9 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js 
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
@@ -105,17 +107,7 @@ The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDAT
 the genesis-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
 The genesis configs directory used is `genesis-configs/base` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true node client/index.js
-```
-
-### How to run tests
-
-Please check your node version before running the below tests. Tests has passed node version 10.15.*
-
-```
-npm run test_unit
-npm run test_smoke
-npm run test_integration
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 
 #### On Google Coud Platform (GCP)
@@ -130,7 +122,7 @@ sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_
 ```
 sh setup_blockchain_ubuntu.sh
 ```
-- Copy files to a sharable folder & install npm packages
+- Copy files to a sharable folder & install yarn packages
 ```
 source setup_node_gcp.sh
 ```
@@ -172,10 +164,29 @@ cat logger/logs/8080/<log_file>
 
 ### How to run tests
 
+Please check your node version before running the below tests. Tests has passed node version 12.*
+
+How to run unit test and integration test all around.
 ```
-npm run test_unit
-npm run test_smoke
-npm run test_integration
+yarn run test_unit
+yarn run test_integration
+```
+
+Some individual tests already definded in the package.json.
+```
+yarn run test_chain_util
+yarn run test_state_util
+yarn run test_block_pool
+yarn run test_db
+yarn run test_node
+yarn run test_blockchain
+yarn run test_dapp
+yarn run test_sharding
+```
+
+The load test is also supported.
+```
+yarn run loadtest
 ```
 
 ### Client API for development and debugging
@@ -290,6 +301,13 @@ and can be stopped all at once using `stop_servers.sh` like:
 ```
 sh stop_servers.sh
 ```
+
+## Versions
+
+Please check the latest versions below:
+- API_VERSION: [Release](https://github.com/ainblockchain/ain-blockchain/releases)
+- DATA_PROTOCOL_VERSION: [README.md](./p2p/README.md)
+- CONSENSUS_PROTOCOL_VERSION: [README.md](./consensus/README.md)
 
 ## Contribution
 

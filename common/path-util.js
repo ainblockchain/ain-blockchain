@@ -5,7 +5,7 @@ const ruleUtil = new RuleUtil();
 
 class PathUtil {
   static getAccountBalancePath(address) {
-    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, balance]);
+    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.BALANCE]);
   }
 
   static getServiceAccountPath(serviceType, serviceName, accountKey) {
@@ -182,6 +182,11 @@ class PathUtil {
   static getConsensusVotePath(blockNumber, address) {
     return ChainUtil.formatPath([
         PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber, PredefinedDbPaths.VOTE, address]);
+  }
+
+  static getGasFeeCollectPath(userAddr, blockNumber, txHash) {
+    return ChainUtil.formatPath([
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, userAddr, blockNumber, txHash]);
   }
 }
 

@@ -27,25 +27,25 @@ const { waitForNewBlocks, waitUntilNodeSyncs, parseOrLog } = require('../unittes
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 4, EPOCH_MS: 1000, DEBUG: false,
-    ENABLE_DEV_CLIENT_API: true,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -173,25 +173,6 @@ for (let i = 0; i < ENV_VARIABLES.length; i++) {
   SERVER_PROCS.push(new Process(APP_SERVER, ENV_VARIABLES[i]));
 }
 
-// Wait until there are two blocks of multiple validators.
-function waitUntilNodeStakes() {
-  let count = 0;
-  let blocksAfterStaking = 0;
-  let validators = {};
-  while (count <= MAX_PROMISE_STACK_DEPTH && blocksAfterStaking < 2) {
-    const block = parseOrLog(syncRequest('POST', server1 + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: JSON_RPC_GET_RECENT_BLOCK, id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
-    validators = block.validators;
-    if (Object.keys(validators).length >= 2) {
-      blocksAfterStaking++;
-    }
-    count++;
-    sleep(6000);
-  }
-}
-
 function sendTransactions(sentOperations) {
   const txHashList = [];
   for (let i = 0; i < NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
@@ -246,12 +227,12 @@ describe('Blockchain Cluster', () => {
 
     const promises = [];
     // Start up all servers
-    trackerProc = new Process(TRACKER_SERVER, {});
-    trackerProc.start(false);
+    trackerProc = new Process(TRACKER_SERVER, { CONSOLE_LOG: false });
+    trackerProc.start(true);
     sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
-      proc.start(false);
+      proc.start(true);
       sleep(2000);
       const address =
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
@@ -628,6 +609,32 @@ describe('Blockchain Cluster', () => {
           console.log("error:", e);
           reject();
         });
+      });
+    });
+  });
+
+  describe('Gas fee', () => {
+    it('collected gas cost matches the gas_cost_total in the block', () => {
+      return new Promise((resolve) => {
+        jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request
+            (JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+              if (err) throw err;
+              const chain = response.result.result;
+              for (const block of chain) {
+                if (block.number > 0) {
+                  // Amount specified in block
+                  const gasCostTotal = block.gas_cost_total;
+                  // Amount actually collected & distributed. Write rule prevents writing a gas_cost_total
+                  // that is different from the value at /service_accounts/gas_fee/gas_fee/${block.number}/balance.
+                  const collectedGas = parseOrLog(syncRequest(
+                      'GET', server1 + GET_VALUE_ENDPOINT + `?ref=/consensus/number/${block.number}/propose/gas_cost_total`)
+                      .body.toString('utf-8')).result;
+                  assert.deepEqual(gasCostTotal, collectedGas);
+                }
+              }
+              resolve();
+            }
+        );
       });
     });
   });
