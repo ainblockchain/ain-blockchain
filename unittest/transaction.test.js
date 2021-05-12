@@ -195,6 +195,7 @@ describe('Transaction', () => {
         }
       }
     };
+
     it('setExtraField', () => {
       tx.setGas(gas);
       assert.deepEqual(tx.extra.gas, gas);

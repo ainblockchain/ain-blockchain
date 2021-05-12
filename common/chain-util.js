@@ -426,10 +426,7 @@ class ChainUtil {
         const elem = result.result_list[i];
         ChainUtil.mergeNumericJsObjects(
           gasAmount,
-          ChainUtil.getTotalGasAmountInternal(
-            ChainUtil.parsePath(op.op_list[i].ref),
-            elem
-          )
+          ChainUtil.getTotalGasAmountInternal(ChainUtil.parsePath(op.op_list[i].ref), elem)
         );
       }
     } else {
