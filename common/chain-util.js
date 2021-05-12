@@ -384,7 +384,7 @@ class ChainUtil {
       app: {}
     };
     if (!resultObj) return gasAmount;
-    if (resultObj.result_list) return gasAmount; // Assume nested SET is not allowed
+    if (resultObj.result_list) return gasAmount; // NOTE: Assume nested SET is not allowed
 
     if (resultObj.func_results) {
       for (const funcRes of Object.values(resultObj.func_results)) {
