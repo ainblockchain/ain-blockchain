@@ -173,7 +173,7 @@ class Consensus {
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators
         : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
 
-    // FIXME(lia): make the seeds more secure and unpredictable
+    // FIXME(liayoo): Make the seeds more secure and unpredictable.
     // const seed = '' + this.genesisHash + this.state.epoch;
     const seed = '' + lastNotarizedBlock.last_votes_hash + this.state.epoch;
     this.state.proposer = Consensus.selectProposer(seed, validators);
@@ -245,7 +245,7 @@ class Consensus {
         logger.info(`[${LOG_HEADER}] Trying to sync. Current last block number: ` +
             `${lastNotarizedBlock.number}, proposal block number ${proposalBlock.number}`);
         // I might be falling behind. Try to catch up.
-        // FIXME(lia): This has a possibility of being exploited by an attacker. The attacker
+        // FIXME(liayoo): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
         // this.node.state = BlockchainNodeStates.SYNCING;
@@ -331,9 +331,10 @@ class Consensus {
     const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
-    // FIXME(minsu or lia): When I am behind and a newly coming node is ahead of me, then I cannot
-    // get lastBlockInfo from the block-pool. So that, it is not able to create a proper block
-    // proposal and also cannot pass checkProposal() where checking prevBlockInfo.notarized.
+    // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
+    // then I cannot get lastBlockInfo from the block-pool. So that, it is not able to create
+    // a proper block proposal and also cannot pass checkProposal()
+    // where checking prevBlockInfo.notarized.
     const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
     if (lastBlockInfo && lastBlockInfo.proposal) {
       lastVotes.unshift(lastBlockInfo.proposal);
@@ -347,7 +348,7 @@ class Consensus {
       }
     }
 
-    // TODO(lia): restrict the size / number of txs
+    // TODO(liayoo): Restrict the size / number of txs.
     const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
     const validTransactions = [];
     const invalidTransactions = [];
@@ -512,7 +513,7 @@ class Consensus {
       }
       if (!prevBlockInfo.proposal) {
         if (number === this.node.bc.lastBlockNumber() + 1) {
-          // TODO(lia): do more checks on the prevBlockProposal
+          // TODO(liayoo): Do more checks on the prevBlockProposal.
           this.blockPool.addSeenBlock(prevBlockInfo.block, prevBlockProposal);
         } else {
           logger.debug(`[${LOG_HEADER}] Prev block is missing its proposal`);
@@ -579,7 +580,7 @@ class Consensus {
           `${expectedProposer} / actual: ${proposer})`);
       return false;
     }
-    // TODO(lia): Check last_votes if they indeed voted for the previous block
+    // TODO(liayoo): Check last_votes if they indeed voted for the previous block.
     let baseVersion;
     let prevDb;
     let isSnapDb = false;
@@ -1065,7 +1066,8 @@ class Consensus {
           nonce: -1,
           gas_price: 0,  // NOTE(platfowner): A temporary solution.
         };
-        // TODO(lia): save the blockNumber - txHash mapping at /sharding/reports of the child state
+        // TODO(liayoo): save the blockNumber - txHash mapping at /sharding/reports of
+        // the child state.
         await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
       }
     } catch (e) {
