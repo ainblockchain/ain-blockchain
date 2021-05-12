@@ -193,7 +193,7 @@ class TransactionPool {
     return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
   }
 
-  // NOTE(lia): txList is already sorted by their gas prices and/or timestamps, depending on the
+  // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps, depending on the
   // types of the transactions (service vs app).
   // TODO(): Try allocating the excess bandwidth to app txs.
   performBandwidthChecks(txList, baseStateVersion) {
@@ -205,7 +205,7 @@ class TransactionPool {
         this.node.db.getValue(PredefinedDbPaths.STAKING)) || {};
     // Sum of all apps' staked AIN
     const appStakesTotal = TransactionPool.getAppStakesTotal(appStakesVal);
-    // NOTE(lia): Keeps track of whether an address's nonced tx has been discarded. If true, any
+    // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
     // nonced txs from the same address that come after the discarded tx need to be dropped as well.
     const addrToDiscardedNoncedTx = {};
     const discardedTxList = [];
