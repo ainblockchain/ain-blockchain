@@ -219,9 +219,7 @@ class Functions {
     const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
     const callDepth = this.callStackSize();
-    const gasAmount = {
-      service: nativeFunction.execGasAmount
-    };
+    const gasAmount = nativeFunction.execGasAmount;
     this.callStack.push({
       fid,
       fidList,
@@ -421,7 +419,7 @@ class Functions {
   buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
-      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount,
+      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount
     };
     if (ChainUtil.isNumber(extraGasAmount) && extraGasAmount > 0) {
       result.gas_amount += extraGasAmount;

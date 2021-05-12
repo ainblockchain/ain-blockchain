@@ -820,14 +820,16 @@ class DB {
       result = this.executeSingleSetOperation(op, auth, timestamp, tx);
     }
     const gasPrice = tx.tx_body.gas_price;
-    result.gas_amount_total = ChainUtil.getTotalGasAmount(result);
+    const gasAmountTotal = ChainUtil.getTotalGasAmount(tx.tx_body.operation, result);
+    result.gas_amount_total = gasAmountTotal;
     result.gas_cost_total = 0;
     // TODO(platfowner): Consider charging gas fee for the failure cases.
     if (!ChainUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       if (blockNumber > 0) {
-        result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, result.gas_amount_total);
+        // Use only the service gas amount total
+        result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
         if (result.gas_cost_total > 0) {
           const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
           const gasFeeCollectRes = this.setValue(
@@ -836,6 +838,7 @@ class DB {
             return ChainUtil.returnTxResult(
                 15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
           }
+          tx.setExtraField('gas', gasAmountTotal);
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
@@ -855,7 +858,7 @@ class DB {
           `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx)}`, 0);
     }
     // Record when the tx was executed.
-    tx.setExecutedAt(Date.now());
+    tx.setExtraField('executed_at', Date.now());
     const txBody = tx.tx_body;
     if (!txBody) {
       return ChainUtil.logAndReturnTxResult(
