@@ -1406,7 +1406,10 @@ describe('Sharding', () => {
                 "gas_amount": 1
               },
             ],
-            "gas_amount_total": 6,
+            "gas_amount_total": {
+              "app": {},
+              "service": 6
+            },
             "gas_cost_total": 0
           });
           assert.deepEqual(body.code, 0);
@@ -1489,7 +1492,10 @@ describe('Sharding', () => {
                 "gas_amount": 0
               },
             ],
-            "gas_amount_total": 0,
+            "gas_amount_total": {
+              "app": {},
+              "service": 0
+            },
             "gas_cost_total": 0
           });
           assert.deepEqual(body.code, 0);
@@ -1522,7 +1528,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1557,7 +1566,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1592,7 +1604,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {
+                        afan: 1
+                      },
+                      service: 0
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1636,7 +1653,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1683,7 +1703,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1730,7 +1753,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {
+                        afan: 1
+                      },
+                      service: 0,
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1844,7 +1872,7 @@ describe('Sharding', () => {
               "gas_amount": 0,
               "op_results": [
                 {
-                  "path": "//apps/a_dapp/latest",
+                  "path": "/apps/a_dapp/latest",
                   "result": {
                     "code": 0,
                     "gas_amount": 1,
@@ -1854,7 +1882,12 @@ describe('Sharding', () => {
             }
           },
           "gas_amount": 1,
-          "gas_amount_total": 2,
+          "gas_amount_total": {
+            "app": {
+              "a_dapp": 2
+            },
+            "service": 0
+          },
           "gas_cost_total": 0,
         });
         expect(shardReportBody.code).to.equal(0);
@@ -1897,7 +1930,7 @@ describe('Sharding', () => {
                   "gas_amount": 0,
                   "op_results": [
                     {
-                      "path": "//apps/a_dapp/latest",
+                      "path": "/apps/a_dapp/latest",
                       "result": {
                         "code": 0,
                         "gas_amount": 1,
@@ -1917,10 +1950,15 @@ describe('Sharding', () => {
                   "op_results": [],
                 }
               },
-              "gas_amount": 1,
+              "gas_amount": 1
             }
           ],
-          "gas_amount_total": 3,
+          "gas_amount_total": {
+            "app": {
+              "a_dapp": 3
+            },
+            "service": 0
+          },
           "gas_cost_total": 0,
         });
         expect(shardReportBody.code).to.equal(0);

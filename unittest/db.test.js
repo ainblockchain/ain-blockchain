@@ -1330,7 +1330,7 @@ describe("DB operations", () => {
           }
         }, { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
           "code": 0,
-          "gas_amount": 1,
+          "gas_amount": 1
         });
         assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
       })
@@ -1343,7 +1343,7 @@ describe("DB operations", () => {
         }), {
           "code": 201,
           "error_message": "Not a number type: bar or 10",
-          "gas_amount": 0,
+          "gas_amount": 0
         })
         expect(node.db.getValue("test/ai/foo")).to.equal("bar")
       })
@@ -1439,11 +1439,11 @@ describe("DB operations", () => {
                 }
               ],
               "code": "SUCCESS",
-              "gas_amount": 0,
+              "gas_amount": 0
             }
           },
           "code": 0,
-          "gas_amount": 1,
+          "gas_amount": 1
         });
         assert.deepEqual(node.db.getValue(valuePath), value)
       })
@@ -1601,7 +1601,7 @@ describe("DB operations", () => {
             },
             {
               "code": 0,
-              "gas_amount": 1,
+              "gas_amount": 1
             },
             {
               "code": 0,
@@ -1619,7 +1619,7 @@ describe("DB operations", () => {
               "code": 0,
               "gas_amount": 1
             }
-          ],
+          ]
         });
         assert.deepEqual(node.db.getValue("test/nested/far/down"), { "new": 12345 })
         expect(node.db.getValue("test/increment/value")).to.equal(30)
@@ -1773,7 +1773,7 @@ describe("DB operations", () => {
                               }
                             ],
                             "code": "SUCCESS",
-                            "gas_amount": 0,
+                            "gas_amount": 0
                           }
                         },
                         "code": 0,
@@ -1782,7 +1782,7 @@ describe("DB operations", () => {
                     }
                   ],
                   "code": "SUCCESS",
-                  "gas_amount": 0,
+                  "gas_amount": 0
                 }
               },
               "code": 0,
@@ -1790,7 +1790,7 @@ describe("DB operations", () => {
             },
             {
               "code": 0,
-              "gas_amount": 1,
+              "gas_amount": 1
             },
           ],
         });
@@ -1951,7 +1951,10 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1), {
           code: 0,
           gas_amount: 1,
-          gas_amount_total: 1,
+          gas_amount_total: {
+            app: {},
+            service: 1
+          },
           gas_cost_total: 1,
         });
         // extra.executed_at is updated with a non-null value.
@@ -1982,7 +1985,10 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1), {
           code: 0,
           gas_amount: 1,
-          gas_amount_total: 1,
+          gas_amount_total: {
+            app: {},
+            service: 1
+          },
           gas_cost_total: 0,
         });
 

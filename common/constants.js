@@ -25,6 +25,8 @@ const FeatureFlags = {
   enableRichTransactionLogging: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
+  // Enables rich logging for tx selection in tx pool.
+  enableRichTxSelectionLogging: false,
 };
 
 // Environment variables.
@@ -70,12 +72,14 @@ const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
 const NATIVE_SERVICE_TYPES = [
+  'accounts',
   'checkin',
   'consensus',
   'escrow',
   'gas_fee',
   'manage_app',
   'payments',
+  'service_accounts',
   'sharding',
   'staking',
   'test',  // NOTE(platfowner): A temporary solution for tests.

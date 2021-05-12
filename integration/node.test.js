@@ -811,7 +811,10 @@ describe('Blockchain Node', () => {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path",
           "gas_amount": 0,
-          "gas_amount_total": 0,
+          "gas_amount_total": {
+            "app": {},
+            "service": 0
+          },
           "gas_cost_total": 0
         });
 
@@ -863,7 +866,10 @@ describe('Blockchain Node', () => {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path2",
           "gas_amount": 0,
-          "gas_amount_total": 0,
+          "gas_amount_total": {
+            "app": {},
+            "service": 0
+          },
           "gas_cost_total": 0
         });
 
@@ -915,7 +921,10 @@ describe('Blockchain Node', () => {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path3",
           "gas_amount": 0,
-          "gas_amount_total": 0,
+          "gas_amount_total": {
+            "app": {},
+            "service": 0
+          },
           "gas_cost_total": 0
         });
 
@@ -991,7 +1000,10 @@ describe('Blockchain Node', () => {
           "code": 404,
           "error_message": "No write_function permission on: /some/wrong/path",
           "gas_amount": 0,
-          "gas_amount_total": 0,
+          "gas_amount_total": {
+            "app": {},
+            "service": 0
+          },
           "gas_cost_total": 0
         });
 
@@ -1057,7 +1069,10 @@ describe('Blockchain Node', () => {
           "code": 503,
           "error_message": "No write_rule permission on: /some/wrong/path",
           "gas_amount": 0,
-          "gas_amount_total": 0,
+          "gas_amount_total": {
+            "app": {},
+            "service": 0
+          },
           "gas_cost_total": 0
         });
 
@@ -1150,7 +1165,10 @@ describe('Blockchain Node', () => {
           "code": 603,
           "error_message": "No write_owner or branch_owner permission on: /some/wrong/path",
           "gas_amount": 0,
-          "gas_amount_total": 0,
+          "gas_amount_total": {
+            "app": {},
+            "service": 0
+          },
           "gas_cost_total": 0
         });
 
@@ -1240,7 +1258,10 @@ describe('Blockchain Node', () => {
               "gas_amount": 1
             },
           ],
-          "gas_amount_total": 6,
+          "gas_amount_total": {
+            "service": 6,
+            "app": {}
+          },
           "gas_cost_total": 0
         });
 
@@ -1330,7 +1351,10 @@ describe('Blockchain Node', () => {
               "gas_amount": 0
             }
           ],
-          "gas_amount_total": 3,
+          "gas_amount_total": {
+            "app": {},
+            "service": 3
+          },
           "gas_cost_total": 0
         });
 
@@ -1478,7 +1502,22 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
+              "gas_cost_total": 0,
+            },
+            "tx_hash": "erased"
+          },
+          {
+            "result": {
+              "code": 0,
+              "gas_amount": 1,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
               "gas_cost_total": 0
             },
             "tx_hash": "erased"
@@ -1487,7 +1526,10 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
               "gas_cost_total": 0
             },
             "tx_hash": "erased"
@@ -1496,7 +1538,10 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
               "gas_cost_total": 0
             },
             "tx_hash": "erased"
@@ -1505,7 +1550,10 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
               "gas_cost_total": 0
             },
             "tx_hash": "erased"
@@ -1514,16 +1562,10 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
-              "gas_cost_total": 0
-            },
-            "tx_hash": "erased"
-          },
-          {
-            "result": {
-              "code": 0,
-              "gas_amount": 1,
-              "gas_amount_total": 1,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
               "gas_cost_total": 0
             },
             "tx_hash": "erased"
@@ -1533,30 +1575,33 @@ describe('Blockchain Node', () => {
               "result_list": [
                 {
                   "code": 0,
-                  "gas_amount": 1,
+                  "gas_amount": 1
                 },
                 {
                   "code": 0,
-                  "gas_amount": 1,
+                  "gas_amount": 1
                 },
                 {
                   "code": 0,
-                  "gas_amount": 1,
+                  "gas_amount": 1
                 },
                 {
                   "code": 0,
-                  "gas_amount": 1,
+                  "gas_amount": 1
                 },
                 {
                   "code": 0,
-                  "gas_amount": 1,
+                  "gas_amount": 1
                 },
                 {
                   "code": 0,
-                  "gas_amount": 1,
+                  "gas_amount": 1
                 }
               ],
-              "gas_amount_total": 6,
+              "gas_amount_total": {
+                "app": {},
+                "service": 6
+              },
               "gas_cost_total": 0
             },
             "tx_hash": "erased"
@@ -1719,8 +1764,11 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
-              "gas_cost_total": 0,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
@@ -1728,8 +1776,11 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
-              "gas_cost_total": 0,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
@@ -1737,8 +1788,11 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
-              "gas_cost_total": 0,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
@@ -1747,8 +1801,11 @@ describe('Blockchain Node', () => {
               "code": 103,
               "error_message": "No .write permission on: some/wrong/path",
               "gas_amount": 0,
-              "gas_amount_total": 0,
-              "gas_cost_total": 0,
+              "gas_amount_total": {
+                "app": {},
+                "service": 0
+              },
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
@@ -1756,8 +1813,11 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
-              "gas_cost_total": 0,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
@@ -1765,8 +1825,11 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
-              "gas_cost_total": 0,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
@@ -1774,8 +1837,11 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "gas_amount": 1,
-              "gas_amount_total": 1,
-              "gas_cost_total": 0,
+              "gas_amount_total": {
+                "app": {},
+                "service": 1
+              },
+              "gas_cost_total": 0
             },
             "tx_hash": "erased"
           },
@@ -1807,7 +1873,10 @@ describe('Blockchain Node', () => {
                   "gas_amount": 1
                 }
               ],
-              "gas_amount_total": 6,
+              "gas_amount_total": {
+                "app": {},
+                "service": 6
+              },
               "gas_cost_total": 0,
             },
             "tx_hash": "erased"
@@ -1854,8 +1923,11 @@ describe('Blockchain Node', () => {
               result: {
                 code: 0,
                 gas_amount: 1,
-                gas_amount_total: 1,
-                gas_cost_total: 0,
+                gas_amount_total: {
+                  service: 1,
+                  app: {}
+                },
+                gas_cost_total: 0
               },
               tx_hash: ChainUtil.hashSignature(signature),
             }
@@ -1898,7 +1970,10 @@ describe('Blockchain Node', () => {
                 result: {
                   code: 0,
                   gas_amount: 1,
-                  gas_amount_total: 1,
+                  gas_amount_total: {
+                    service: 1,
+                    app: {}
+                  },
                   gas_cost_total: 0,
                 },
                 tx_hash: ChainUtil.hashSignature(signature),
@@ -2699,7 +2774,10 @@ describe('Blockchain Node', () => {
             "code": 403,
             "error_message": "Trying to write owner-only function: _transfer",
             "gas_amount": 0,
-            "gas_amount_total": 0,
+            "gas_amount_total": {
+              "service": 0,
+              "app": {}
+            },
             "gas_cost_total": 0,
           })
           const resp = parseOrLog(syncRequest('GET',
@@ -2738,7 +2816,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 1,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1
+            },
             "gas_cost_total": 0,
           });
           const lastTx = parseOrLog(syncRequest('GET',
@@ -2774,7 +2855,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 2,
+            "gas_amount_total": {
+              "app": {},
+              "service": 2
+            },
             "gas_cost_total": 0,
           });
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
@@ -2816,7 +2900,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 1,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1
+            },
             "gas_cost_total": 0,
           });
           const lastTx = parseOrLog(syncRequest('GET',
@@ -2852,7 +2939,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 2,
+            "gas_amount_total": {
+              "app": {},
+              "service": 2
+            },
             "gas_cost_total": 0,
           });
           if (!waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash'))) {
@@ -3239,7 +3329,10 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "gas_amount": 1,
-          "gas_amount_total": 1004,
+          "gas_amount_total": {
+            "app": {},
+            "service": 1004
+          },
           "gas_cost_total": 0,
         });
       });
@@ -3284,7 +3377,10 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "gas_amount": 1,
-          "gas_amount_total": 4,
+          "gas_amount_total": {
+            "app": {},
+            "service": 4
+          },
           "gas_cost_total": 0,
         });
       });
@@ -3365,7 +3461,10 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "gas_amount": 1,
-          "gas_amount_total": 1008,
+          "gas_amount_total": {
+            "app": {},
+            "service": 1008
+          },
           "gas_cost_total": 0,
         });
       });
@@ -3446,7 +3545,10 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "gas_amount": 1,
-          "gas_amount_total": 8,
+          "gas_amount_total": {
+            "app": {},
+            "service": 8
+          },
           "gas_cost_total": 0,
         });
       });
@@ -3466,7 +3568,10 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "gas_amount": 1,
-          "gas_amount_total": 11,
+          "gas_amount_total": {
+            "app": {},
+            "service": 11
+          },
           "gas_cost_total": 0,
         });
       });
@@ -3685,7 +3790,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 1008,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1008
+            },
             "gas_cost_total": 0,
           });
           assert.deepEqual(body.code, 0);
@@ -3796,7 +3904,10 @@ describe('Blockchain Node', () => {
                 }
               },
               "gas_amount": 1,
-              "gas_amount_total": 2,
+              "gas_amount_total": {
+                "app": {},
+                "service": 2
+              },
               "gas_cost_total": 0,
             });
           });
@@ -3943,7 +4054,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 7,
+            "gas_amount_total": {
+              "app": {},
+              "service": 7
+            },
             "gas_cost_total": 0,
           });
           assert.deepEqual(body.code, 0);
@@ -4125,7 +4239,10 @@ describe('Blockchain Node', () => {
             }
           },
           "gas_amount": 1,
-          "gas_amount_total": 1006,
+          "gas_amount_total": {
+            "app": {},
+            "service": 1006
+          },
           "gas_cost_total": 0,
         });
         expect(body.code).to.equals(0);
@@ -4255,7 +4372,10 @@ describe('Blockchain Node', () => {
             }
           },
           "gas_amount": 1,
-          "gas_amount_total": 6,
+          "gas_amount_total": {
+            "app": {},
+            "service": 6
+          },
           "gas_cost_total": 0,
         });
         expect(body.code).to.equals(0);
@@ -4429,7 +4549,10 @@ describe('Blockchain Node', () => {
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "gas_amount": 1,
-            "gas_amount_total": 1,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1
+            },
             "gas_cost_total": 0,
           });
           expect(body.code).to.equals(0);
@@ -4535,7 +4658,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 1006,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1006
+            },
             "gas_cost_total": 0,
           });
           expect(body.code).to.equals(0);
@@ -4657,7 +4783,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 6,
+            "gas_amount_total": {
+              "app": {},
+              "service": 6
+            },
             "gas_cost_total": 0,
           });
           expect(body.code).to.equals(0);
@@ -4710,7 +4839,10 @@ describe('Blockchain Node', () => {
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "gas_amount": 1,
-            "gas_amount_total": 1,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1
+            },
             "gas_cost_total": 0,
           });
           expect(body.code).to.equals(0);
@@ -4809,7 +4941,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 1006,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1006
+            },
             "gas_cost_total": 0,
           });
           expect(body.code).to.equals(0);
@@ -4898,7 +5033,10 @@ describe('Blockchain Node', () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 6,
+            "gas_amount_total": {
+              "app": {},
+              "service": 6
+            },
             "gas_cost_total": 0,
           });
           expect(body.code).to.equals(0);

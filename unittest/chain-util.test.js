@@ -549,7 +549,7 @@ describe("ChainUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1,
+            "gas_amount": 1
           },
           {
             "code": 0,
@@ -563,7 +563,7 @@ describe("ChainUtil", () => {
       })).to.equal(false);
 
       expect(ChainUtil.isFailedTx({
-        result_list: [
+        "result_list": [
           {
             "code": 0,
             "gas_amount": 1
@@ -575,7 +575,7 @@ describe("ChainUtil", () => {
           },
           {
             "code": 0,
-            "gas_amount": 1,
+            "gas_amount": 1
           },
         ]
       })).to.equal(true);
@@ -778,7 +778,12 @@ describe("ChainUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1
+            "gas_amount": 1,
+            "gas_amount_total": {
+              "service": 1,
+              "app": {}
+            },
+            "gas_cost_total": 0
           },
           {
             "code": 0,
@@ -789,32 +794,43 @@ describe("ChainUtil", () => {
               }
             },
             "gas_amount": 1,
-            "gas_amount_total": 11,
-            "gas_cost_total": 0,
+            "gas_amount_total": {
+              "service": 11,
+              "app": {}
+            },
+            "gas_cost_total": 0
           },
           {
             "code": 0,
             "gas_amount": 1,
-          },
+            "gas_amount_total": {
+              "service": 1,
+              "app": {}
+            }
+          }
         ]
       })).to.equal(false);
     });
   })
 
   describe("getTotalGasAmount", () => {
+    const op = { ref: '/test', value: null, type: 'SET_VALUE' };
+    const appOp = { ref: '/apps/test', value: null, type: 'SET_VALUE' };
+
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.getTotalGasAmount(null), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(undefined), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount({}), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: 'gas' }), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount({ gas: {} }), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(true), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount('result'), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(0), 0);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(1), 0);
+      const emptyVal = { app: {}, service: 0 };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, null), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, undefined), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, {}), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, { gas: 'gas' }), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, { gas: {} }), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, true), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 'result'), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 0), emptyVal);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 1), emptyVal);
     })
 
-    it("when single operation result input", () => {
+    it("when single operation result input (service)", () => {
       const result = {
         "func_results": {
           "_saveLastTx": {
@@ -834,7 +850,7 @@ describe("ChainUtil", () => {
                         }
                       ],
                       "code": "SUCCESS",
-                      "gas_amount": 10,
+                      "gas_amount": 10
                     }
                   },
                   "code": 0,
@@ -847,53 +863,252 @@ describe("ChainUtil", () => {
           }
         },
         "code": 0,
-        "gas_amount": 30,
+        "gas_amount": 30
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 62);
+      assert.deepEqual(ChainUtil.getTotalGasAmount(op, result), {
+        app: {},
+        service: 62
+      });
     })
 
-    it("when multiple operation result input", () => {
-      const result = [
-        {
-          "func_results": {
-            "_saveLastTx": {
-              "op_results": [
-                {
-                  "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
-                  "result": {
-                    "func_results": {
-                      "_eraseValue": {
-                        "op_results": [
-                          {
-                            "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
-                            "result": {
-                              "code": 0,
-                              "gas_amount": 1
-                            }
+    it("when single operation result input (app)", () => {
+      const result = {
+        "func_results": {
+          "_saveLastTx": {
+            "op_results": [
+              {
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  "func_results": {
+                    "_eraseValue": {
+                      "op_results": [
+                        {
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
                           }
-                        ],
-                        "code": "SUCCESS",
-                        "gas_amount": 10,
-                      }
-                    },
-                    "code": 0,
-                    "gas_amount": 1
-                  }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 10
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
                 }
-              ],
-              "code": "SUCCESS",
-              "gas_amount": 20,
-            }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 20,
+          }
+        },
+        "code": 0,
+        "gas_amount": 30
+      };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(appOp, result), {
+        app: {
+          test: 62
+        },
+        service: 0
+      });
+    })
+
+    it("when single operation result input (service & app)", () => {
+      const result = {
+        "func_results": {
+          "_saveLastTx": {
+            "op_results": [
+              {
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                "result": {
+                  "func_results": {
+                    "_eraseValue": {
+                      "op_results": [
+                        {
+                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "result": {
+                            "code": 0,
+                            "gas_amount": 1
+                          }
+                        }
+                      ],
+                      "code": "SUCCESS",
+                      "gas_amount": 10
+                    }
+                  },
+                  "code": 0,
+                  "gas_amount": 1
+                }
+              }
+            ],
+            "code": "SUCCESS",
+            "gas_amount": 20,
+          }
+        },
+        "code": 0,
+        "gas_amount": 30
+      };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(appOp, result), {
+        app: {
+          test: 61
+        },
+        service: 1
+      });
+    })
+
+    it("when multiple operation result input (service)", () => {
+      const setTxOp = { type: 'SET', op_list: [{...op}, {...op}] };
+      const result = {
+        "result_list": [
+          {
+            "func_results": {
+              "_saveLastTx": {
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "result": {
+                      "func_results": {
+                        "_eraseValue": {
+                          "op_results": [
+                            {
+                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "result": {
+                                "code": 0,
+                                "gas_amount": 1
+                              }
+                            }
+                          ],
+                          "code": "SUCCESS",
+                          "gas_amount": 10
+                        }
+                      },
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ],
+                "code": "SUCCESS",
+                "gas_amount": 20
+              }
+            },
+            "code": 0,
+            "gas_amount": 30
           },
-          "code": 0,
-          "gas_amount": 30
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+        ]
+      };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(setTxOp, result), {
+        app: {},
+        service: 63
+      });
+    })
+
+    it("when multiple operation result input (app)", () => {
+      const setTxOp = { type: 'SET', op_list: [{...appOp}, {...appOp}] };
+      const result = {
+        "result_list": [
+          {
+            "func_results": {
+              "_saveLastTx": {
+                "op_results": [
+                  {
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "result": {
+                      "func_results": {
+                        "_eraseValue": {
+                          "op_results": [
+                            {
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "result": {
+                                "code": 0,
+                                "gas_amount": 1
+                              }
+                            }
+                          ],
+                          "code": "SUCCESS",
+                          "gas_amount": 10
+                        }
+                      },
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ],
+                "code": "SUCCESS",
+                "gas_amount": 20
+              }
+            },
+            "code": 0,
+            "gas_amount": 30
+          },
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+        ]
+      };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(setTxOp, result), {
+        app: {
+          test: 63
         },
-        {
-          "code": 0,
-          "gas_amount": 1,
+        service: 0
+      });
+    })
+
+    it("when multiple operation result input (service & app)", () => {
+      const setTxOp = { type: 'SET', op_list: [{...appOp}, {...op}] };
+      const result = {
+        "result_list": [
+          {
+            "func_results": {
+              "_saveLastTx": {
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "result": {
+                      "func_results": {
+                        "_eraseValue": {
+                          "op_results": [
+                            {
+                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "result": {
+                                "code": 0,
+                                "gas_amount": 1
+                              }
+                            }
+                          ],
+                          "code": "SUCCESS",
+                          "gas_amount": 10
+                        }
+                      },
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ],
+                "code": "SUCCESS",
+                "gas_amount": 20
+              }
+            },
+            "code": 0,
+            "gas_amount": 30
+          },
+          {
+            "code": 0,
+            "gas_amount": 1
+          },
+        ]
+      };
+      assert.deepEqual(ChainUtil.getTotalGasAmount(setTxOp, result), {
+        app: {
+          test: 50
         },
-      ];
-      assert.deepEqual(ChainUtil.getTotalGasAmount(result), 63);
+        service: 13
+      });
     })
   })
 

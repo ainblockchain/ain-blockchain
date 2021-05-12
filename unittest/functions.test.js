@@ -423,7 +423,7 @@ describe("Functions", () => {
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 1000,
+            "gas_amount": 1000
           }
         });
         promise_results.then((resp) => {

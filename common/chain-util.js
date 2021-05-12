@@ -362,9 +362,14 @@ class ChainUtil {
     return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
   }
 
-  static getGasAmountObj(path, value) {
-    const parsedPath = ChainUtil.parsePath(path);
-    const gasAmount = {};
+  static getSingleOpGasAmount(parsedPath, value) {
+    const gasAmount = {
+      service: 0,
+      app: {}
+    };
+    if (!value) {
+      return gasAmount;
+    }
     if (ChainUtil.isServicePath(parsedPath)) {
       ChainUtil.setJsObject(gasAmount, ['service'], value);
     } else if (ChainUtil.isAppPath(parsedPath)) {
@@ -375,39 +380,68 @@ class ChainUtil {
     return gasAmount;
   }
 
-  static getSingleOpGasAmount(result) {
-    let sum = 0;
-    if (!result) {
-      return sum;
-    }
-    if (ChainUtil.isArray(result)) {
-      for (const elem of result) {
-        sum += ChainUtil.getSingleOpGasAmount(elem);
+  static getTotalGasAmountInternal(triggeringPath, resultObj) {
+    const gasAmount = {
+      service: 0,
+      app: {}
+    };
+    if (!resultObj) return gasAmount;
+    if (resultObj.result_list) return gasAmount; // NOTE: Assume nested SET is not allowed
+
+    if (resultObj.func_results) {
+      for (const funcRes of Object.values(resultObj.func_results)) {
+        if (ChainUtil.isArray(funcRes.op_results)) {
+          for (const opRes of funcRes.op_results) {
+            ChainUtil.mergeNumericJsObjects(
+              gasAmount,
+              ChainUtil.getTotalGasAmountInternal(ChainUtil.parsePath(opRes.path), opRes.result)
+            );
+          }
+        }
+        // Follow the tx type of the triggering tx.
+        ChainUtil.mergeNumericJsObjects(gasAmount, ChainUtil.getSingleOpGasAmount(triggeringPath, funcRes.gas_amount));
       }
-      return sum;
     }
-    if (ChainUtil.isDict(result)) {
-      for (const key in result) {
-        sum += ChainUtil.getSingleOpGasAmount(result[key]);
-      }
+
+    if (resultObj.gas_amount) {
+      ChainUtil.mergeNumericJsObjects(
+        gasAmount,
+        ChainUtil.getSingleOpGasAmount(triggeringPath, resultObj.gas_amount)
+      );
     }
-    sum += _.get(result, 'gas_amount', 0);
-    return sum;
+
+    return gasAmount;
   }
 
   /**
-   * Returns the total gas amount of the result (esp. multi-operation result).
+   * Returns the total gas amount of the result, separated by the types of operations (service / app)
+   * (esp. multi-operation result).
    */
-  static getTotalGasAmount(result) {
-    if (ChainUtil.isArray(result)) {
-      let gasAmount = 0;
-      for (const elem of result) {
-        gasAmount += ChainUtil.getSingleOpGasAmount(elem);
+  static getTotalGasAmount(op, result) {
+    const gasAmount = {
+      service: 0,
+      app: {}
+    };
+    if (!op || !result) return gasAmount;
+    if (result.result_list) {
+      for (let i = 0, len = result.result_list.length; i < len; i++) {
+        const elem = result.result_list[i];
+        ChainUtil.mergeNumericJsObjects(
+          gasAmount,
+          ChainUtil.getTotalGasAmountInternal(ChainUtil.parsePath(op.op_list[i].ref), elem)
+        );
       }
-      return gasAmount;
+    } else {
+      const triggeringPath = ChainUtil.parsePath(op.ref);
+      ChainUtil.mergeNumericJsObjects(
+        gasAmount,
+        ChainUtil.getTotalGasAmountInternal(triggeringPath, result)
+      );
     }
-    return ChainUtil.getSingleOpGasAmount(result);
+
+    return gasAmount;
   }
+
   /**
    * Calculate the gas cost (unit = ain).
    * Only the service bandwidth gas amount is counted toward gas cost.
@@ -428,13 +462,14 @@ class ChainUtil {
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
-    let gasAmountTotal = 0;
-    const gasCostTotal = resList.reduce((acc, cur, index) => {
-      const gasAmount = ChainUtil.getTotalGasAmount(cur);
-      gasAmountTotal += gasAmount;
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, gasAmount);
-    }, 0);
-    return { gasAmountTotal, gasCostTotal };
+    return resList.reduce((acc, cur, index) => {
+      const tx = txList[index];
+      const totalGasAmount = ChainUtil.getTotalGasAmount(tx.tx_body.operation, cur);
+      return ChainUtil.mergeNumericJsObjects(acc, {
+        gasAmountTotal: totalGasAmount.service,
+        gasCostTotal: ChainUtil.getTotalGasCost(tx.tx_body.gas_price, totalGasAmount.service)
+      });
+    }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
   static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
