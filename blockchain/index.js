@@ -50,7 +50,7 @@ class Blockchain {
       }
       const newChain = this.loadChain();
       if (newChain) {
-        // Note(minsu): Deal with the case the only genesis block was generated.
+        // NOTE(minsulee2): Deal with the case the only genesis block was generated.
         if (newChain.length > 1) {
           lastBlockWithoutProposal = newChain.pop();
           const lastBlockPath = BlockFileUtil.getBlockPath(
@@ -163,7 +163,7 @@ class Blockchain {
       logger.error(`Genesis block is corrupted`);
       return false;
     }
-    // TODO(lia): Check if the tx nonces are correct.
+    // TODO(liayoo): Check if the tx nonces are correct.
     return Blockchain.isValidChainSegment(chain);
   }
 
@@ -285,7 +285,7 @@ class Blockchain {
     if (!Number.isInteger(to) || to < 0) {
       to = this.lastBlockNumber() + 1;
     }
-    if (to - from > CHAIN_SEGMENT_LENGTH) { // Note: To prevent large query
+    if (to - from > CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + CHAIN_SEGMENT_LENGTH;
     }
     const chain = [];

@@ -379,7 +379,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     net_syncing: function(args, done) {
-      // TODO(lia): return { starting, latest } with block numbers if the node is currently syncing.
+      // TODO(liayoo): Return { starting, latest } with block numbers
+      // if the node is currently syncing.
       done(null, addProtocolVersion(
           {result: p2pServer.node.state === BlockchainNodeStates.SYNCING}));
     },

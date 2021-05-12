@@ -52,7 +52,7 @@ class P2pClient {
     this.setIntervalForTrackerConnection();
   }
 
-  // NOTE(minsu): the total number of connection is up to more than 5 without limit.
+  // NOTE(minsulee2): The total number of connection is up to more than 5 without limit.
   // maxOutbound is for now limited equal or less than 2.
   // maxInbound is a rest of connection after maxOutbound is set.
   initConnections() {
@@ -254,16 +254,16 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
-  // TODO(minsu): this check will be updated when data compatibility version up.
+  // TODO(minsulee2): This check will be updated when data compatibility version up.
   checkDataProtoVerForAddressResponse(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsu): compatible message
+      // TODO(minsulee2): Compatible message.
     }
     const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
     if (isLower) {
-      // TODO(minsu): compatible message
+      // TODO(minsulee2): Compatible message.
     }
   }
 
@@ -271,7 +271,7 @@ class P2pClient {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsu): compatible message
+      // TODO(minsulee2): Compatible message.
     }
     const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
     if (isLower) {
@@ -290,7 +290,7 @@ class P2pClient {
       const parsedMessage = JSON.parse(message);
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
       if (!isValidDataProtoVer(dataProtoVer)) {
-        const address = getAddressFromSocket(socket);
+        const address = getAddressFromSocket(this.outbound, socket);
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
@@ -305,7 +305,7 @@ class P2pClient {
 
       switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
-          // TODO(minsu): Add compatibility check here after data version up.
+          // TODO(minsulee2): Add compatibility check here after data version up.
           // this.checkDataProtoVerForAddressResponse(dataProtoVer);
           const address = _.get(parsedMessage, 'data.body.address');
           if (!address) {
@@ -316,7 +316,8 @@ class P2pClient {
           } else if (!_.get(parsedMessage, 'data.signature')) {
             logger.error(`[${LOG_HEADER}] A sinature of the peer(${address}) is missing during ` +
                 `p2p communication. Cannot proceed the further communication.`);
-            closeSocketSafe(this.outbound, socket);   // NOTE(minsu): strictly close socket necessary??
+            // NOTE(minsulee2): Strictly close socket necessary??
+            closeSocketSafe(this.outbound, socket);
             return;
           } else {
             const addressFromSig = getAddressFromMessage(parsedMessage);
@@ -353,8 +354,8 @@ class P2pClient {
               if ((!chainSegment && !catchUpInfo) ||
                   number === this.server.node.bc.lastBlockNumber()) {
                 // Regard this situation as if you're synced.
-                // TODO(lia): ask the tracker server for another peer.
-                // XXX(minsu): Need to more discussion about this.
+                // TODO(liayoo): Ask the tracker server for another peer.
+                // TODO(minsulee2): Need to more discussion about this.
                 logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                 this.server.node.state = BlockchainNodeStates.SERVING;
                 this.server.consensus.init();
@@ -371,7 +372,7 @@ class P2pClient {
               // All caught up with the peer
               if (this.server.node.state !== BlockchainNodeStates.SERVING) {
                 // Regard this situation as if you're synced.
-                // TODO(lia): ask the tracker server for another peer.
+                // TODO(liayoo): Ask the tracker server for another peer.
                 logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                 this.server.node.state = BlockchainNodeStates.SERVING;
               }
@@ -485,7 +486,7 @@ class P2pClient {
 
   stop() {
     this.server.stop();
-    // Note(minsu): The trackerWebsocket should be checked initialized in order not to get error
+    // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
@@ -497,9 +498,10 @@ class P2pClient {
   startHeartbeat() {
     this.intervalHeartbeat = setInterval(() => {
       Object.values(this.outbound).forEach(node => {
-        // NOTE(minsu): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+        // NOTE(minsulee2): readyState; 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
-        if (node.socket.readyState !== 1) {
+        const socket = _.get(node, 'socket');
+        if (socket.readyState !== 1) {
           const address = getAddressFromSocket(this.outbound, socket);
           removeSocketConnectionIfExists(this.outbound, address);
           logger.info(`A peer(${address}) is not ready to communicate with. ` +
