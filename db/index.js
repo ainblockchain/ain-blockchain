@@ -858,7 +858,7 @@ class DB {
           `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx)}`, 0);
     }
     // Record when the tx was executed.
-    tx.setExecutedAt(Date.now());
+    tx.setExtraField('executed_at', Date.now());
     const txBody = tx.tx_body;
     if (!txBody) {
       return ChainUtil.logAndReturnTxResult(
