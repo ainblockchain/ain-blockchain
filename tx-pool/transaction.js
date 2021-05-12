@@ -81,10 +81,6 @@ class Transaction {
     };
   }
 
-  setExecutedAt(executedAt) {
-    ChainUtil.setJsObject(this, ['extra', 'executed_at'], executedAt);
-  }
-
   setExtraField(name, value) {
     if (value === null) {
       delete this.extra[name];
