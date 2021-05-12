@@ -822,7 +822,7 @@ class DB {
     const gasPrice = tx.tx_body.gas_price;
     result.gas_amount_total = ChainUtil.getTotalGasAmount(result);
     result.gas_cost_total = 0;
-    // TODO(seo): Consider charging gas fee for the failure cases.
+    // TODO(platfowner): Consider charging gas fee for the failure cases.
     if (!ChainUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
@@ -1237,7 +1237,7 @@ class DB {
     };
   }
 
-  // XXX(minsu): need to be investigated. Using new Function() is not recommended.
+  // TODO(minsulee2): Need to be investigated. Using new Function() is not recommended.
   makeEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
         'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',

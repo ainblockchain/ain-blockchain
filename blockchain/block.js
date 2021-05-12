@@ -291,7 +291,7 @@ class Block {
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
     const secondTx = this.buildAccountsSetupTx(genesisTime, ownerPrivateKey, ownerAddress);
     const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey, ownerAddress);
-    // TODO(lia): Change the logic to staking & signing by the current node
+    // TODO(liayoo): Change the logic to staking & signing by the current node.
     const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
     return [firstTx, secondTx, thirdTx, ...stakingTxs];

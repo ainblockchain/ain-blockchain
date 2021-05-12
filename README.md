@@ -7,7 +7,7 @@ Official Javascript implementation of AI Network Blockchain.
 
 Tracker server is required by new peers who wish to join the AIN network. Each peer is sent the ipaddress of 2 other nodes in the network. These nodes then gossip information through the network of all transactions and blocks.
 
-NOTE: Tracker Server must be started first before starting any blockchain node instances
+NOTE: Tracker Server must be started first before starting any blockchain node instances.
 
 ### Running without Docker
 
