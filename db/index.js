@@ -538,33 +538,31 @@ class DB {
   }
 
   getAccountNonceAndTimestamp(address) {
-    let nonce = this.getValue(
-        ChainUtil.formatPath(
-            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_NONCE]), false);
-    let timestamp = this.getValue(
-        ChainUtil.formatPath(
-            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_TIMESTAMP]), false);
-    if (nonce === null) {
-      nonce = 0;
-    }
-    if (timestamp === null) {
-      timestamp = 0;
-    }
+    const nonce = this.getValue(PathUtil.getAccountNoncePath(address), false) || 0;
+    const timestamp = this.getValue(PathUtil.getAccountTimestampPath(address), false) || 0;
     return { nonce, timestamp };
   }
 
   updateAccountNonceAndTimestamp(address, nonce, timestamp) {
-    if (!ChainUtil.isNumber(nonce) || !ChainUtil.isNumber(timestamp)) return;
-    const parsedNoncePath = ChainUtil.parsePath(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`);
-    const parsedTimestampPath = ChainUtil.parsePath(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`);
-    const fullNoncePath = DB.getFullPath(parsedNoncePath, PredefinedDbPaths.VALUES_ROOT);
-    const fullTimestampPath = DB.getFullPath(parsedTimestampPath, PredefinedDbPaths.VALUES_ROOT);
-    if (nonce >= 0) { // strictly ordered
+    const LOG_HEADER = 'updateAccountNonceAndTimestamp';
+    if (!ChainUtil.isNumber(nonce)) {
+      logger.error(`[${LOG_HEADER}] Invalid nonce: ${nonce} for address: ${address}`);
+      return;
+    }
+    if (nonce >= 0) { // numbered nonce
+      const noncePath = PathUtil.getAccountNoncePath(address);
+      const fullNoncePath =
+          DB.getFullPath(ChainUtil.parsePath(noncePath), PredefinedDbPaths.VALUES_ROOT);
       this.writeDatabase(fullNoncePath, nonce + 1);
     }
-    if (nonce === -2) { // loosely ordered
+    if (nonce === -2) { // ordered nonce
+      if (!ChainUtil.isNumber(timestamp)) {
+        logger.error(`[${LOG_HEADER}] Invalid timestamp: ${timestamp} for address: ${address}`);
+        return;
+      }
+      const timestampPath = PathUtil.getAccountTimestampPath(address);
+      const fullTimestampPath =
+          DB.getFullPath(ChainUtil.parsePath(timestampPath), PredefinedDbPaths.VALUES_ROOT);
       this.writeDatabase(fullTimestampPath, timestamp);
     }
   }

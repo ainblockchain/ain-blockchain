@@ -348,8 +348,7 @@ class Consensus {
       }
     }
 
-    // TODO(liayoo): Restrict the size / number of txs.
-    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
+    const transactions = this.node.tp.getValidTransactions(tempDb, longestNotarizedChain);
     const validTransactions = [];
     const invalidTransactions = [];
     const resList = [];

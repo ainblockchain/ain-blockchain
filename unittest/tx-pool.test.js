@@ -39,7 +39,7 @@ describe('TransactionPool', async () => {
 
     beforeEach(async () => {
       for (let i = 0; i < 10; i++) {
-        t = getTransaction(node, {
+        const tx = getTransaction(node, {
           operation: {
             type: 'SET_VALUE',
             ref: 'REF',
@@ -48,9 +48,11 @@ describe('TransactionPool', async () => {
           nonce: node.nonce++,
           gas_price: 1
         });
-        node.tp.addTransaction(t);
+        node.tp.addTransaction(tx);
         await ChainUtil.sleep(1);
       }
+      // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
+      // their proper ordering
       node.tp.transactions[node.account.address] =
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
 
@@ -63,7 +65,7 @@ describe('TransactionPool', async () => {
       const nodes = [node2, node3, node4];
       for (let j = 0; j < nodes.length; j++) {
         for (let i = 0; i < 11; i++) {
-          t = getTransaction(nodes[j], {
+          const tx = getTransaction(nodes[j], {
             operation: {
               type: 'SET_VALUE',
               ref: 'REF',
@@ -72,45 +74,46 @@ describe('TransactionPool', async () => {
             nonce: nodes[j].nonce++,
             gas_price: 1
           });
-          node.tp.addTransaction(t);
+          node.tp.addTransaction(tx);
           await ChainUtil.sleep(1);
         }
+        // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
+        // their proper ordering
         node.tp.transactions[nodes[j].account.address] =
             shuffleSeed.shuffle(node.tp.transactions[nodes[j].account.address]);
       }
-
-      // Shuffle transactions and see if the transaction-pool can re-sort them according to them according to their proper ordering
     });
 
     describe('getValidTransactions()', () => {
       it('transactions are correctly ordered by nonces', () => {
-        const sortedNonces1 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node.account.address)) {
-            return transaction;
+        const validTransactions = node.tp.getValidTransactions();
+        const sortedNonces1 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
-        const sortedNonces2 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node2.account.address)) {
-            return transaction;
+        const sortedNonces2 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node2.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
-        const sortedNonces3 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node3.account.address)) {
-            return transaction;
+        const sortedNonces3 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node3.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
-        const sortedNonces4 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node4.account.address)) {
-            return transaction;
+        const sortedNonces4 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node4.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
         assert.deepEqual(sortedNonces1, [...Array(11).keys()]);
         assert.deepEqual(sortedNonces2, [...Array(11).keys()]);
