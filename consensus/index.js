@@ -932,10 +932,10 @@ class Consensus {
     return validators;
   }
 
-  getWhitelist() {
+  getWhitelist(stateVersion) {
     const LOG_HEADER = 'getWhitelist';
     const whitelist = this.node.getValueWithStateVersion(
-        PathUtil.getConsensusWhitelistPath(), false, this.node.stateManager.getFinalVersion());
+        PathUtil.getConsensusWhitelistPath(), false, stateVersion);
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
@@ -950,8 +950,7 @@ class Consensus {
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = this.node.getValueWithStateVersion(
-        PathUtil.getConsensusWhitelistPath(), false, stateVersion) || {};
+    const whitelist = this.getWhitelist(stateVersion);
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
       const stakingAccount = this.node.getValueWithStateVersion(
