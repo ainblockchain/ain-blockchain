@@ -126,15 +126,15 @@ describe('DApp Test', () => {
   before(() => {
     rimraf.sync(CHAINS_DIR);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
-    sleep(2000);
+    sleep(5000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
-    sleep(2000);
+    sleep(5000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
-    sleep(2000);
+    sleep(5000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
-    sleep(2000);
+    sleep(5000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    sleep(2000);
+    sleep(5000);
   });
 
   after(() => {
