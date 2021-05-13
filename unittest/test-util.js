@@ -82,7 +82,7 @@ function waitUntilTxFinalized(servers, txHash) {
       return false;
     }
     unchecked.forEach((server) => {
-      const txStatus = JSON.parse(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
+      const txStatus = parseOrLog(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
           .body
           .toString('utf-8')).result;
       if (txStatus && txStatus.is_finalized === true) {
@@ -96,12 +96,12 @@ function waitUntilTxFinalized(servers, txHash) {
 
 function waitForNewBlocks(server, waitFor = 1) {
   const initialLastBlockNumber =
-      JSON.parse(syncRequest('GET', server + '/last_block_number')
+      parseOrLog(syncRequest('GET', server + '/last_block_number')
         .body.toString('utf-8'))['result'];
   let updatedLastBlockNumber = initialLastBlockNumber;
   while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
     sleep(1000);
-    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server + '/last_block_number')
+    updatedLastBlockNumber = parseOrLog(syncRequest('GET', server + '/last_block_number')
       .body.toString('utf-8'))['result'];
   }
 }
@@ -109,7 +109,7 @@ function waitForNewBlocks(server, waitFor = 1) {
 function waitUntilNodeSyncs(server) {
   let isSyncing = true;
   while (isSyncing) {
-    isSyncing = JSON.parse(syncRequest('POST', server + '/json-rpc',
+    isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
         {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
                 params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
         .body.toString('utf-8')).result.result;
