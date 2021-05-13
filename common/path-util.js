@@ -8,6 +8,14 @@ class PathUtil {
     return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.BALANCE]);
   }
 
+  static getAccountNoncePath(address) {
+    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_NONCE]);
+  }
+
+  static getAccountTimestampPath(address) {
+    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_TIMESTAMP]);
+  }
+
   static getServiceAccountPath(serviceType, serviceName, accountKey) {
     return ChainUtil.formatPath([PredefinedDbPaths.SERVICE_ACCOUNTS, serviceType, serviceName, accountKey]);
   }

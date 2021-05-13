@@ -82,9 +82,7 @@ class BlockchainNode {
     this.executeChainOnDb(startingDb);
     this.nonce = this.getNonceFromChain();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
-    this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.finalVersion),
-        this.bc.lastBlockNumber() + 1);
+    this.db.executeTransactionList(this.tp.getValidTransactions(), this.bc.lastBlockNumber() + 1);
     this.state = BlockchainNodeStates.SYNCING;
     return lastBlockWithoutProposal;
   }

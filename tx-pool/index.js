@@ -93,8 +93,8 @@ class TransactionPool {
 
   static isCorrectlyNoncedOrTimestamped(txNonce, txTimestamp, accountNonce, accountTimestamp) {
     return txNonce === -1 || // unordered
-        (txNonce === -2 && txTimestamp > accountTimestamp) || // loosely ordered
-        txNonce === accountNonce; // strictly ordered
+        (txNonce === -2 && txTimestamp > accountTimestamp) || // ordered
+        txNonce === accountNonce; // numbered
   }
 
   static excludeConsensusTransactions(txList) {
@@ -135,12 +135,13 @@ class TransactionPool {
         // sort transactions
         addrToTxList[address].sort((a, b) => {
           if (a.tx_body.nonce === b.tx_body.nonce) {
-            if (a.tx_body.nonce >= 0) { // both strictly ordered
+            if (a.tx_body.nonce >= 0) { // both with numbered nonces
               return 0;
             }
-            return a.tx_body.timestamp - b.tx_body.timestamp; // both loosely ordered / unordered
+            // both with ordered or unordered nonces
+            return a.tx_body.timestamp - b.tx_body.timestamp;
           }
-          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both strictly ordered
+          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both with numbered nonces
             return a.tx_body.nonce - b.tx_body.nonce;
           }
           return 0;
@@ -149,36 +150,35 @@ class TransactionPool {
     }
   }
 
-  getValidTransactions(excludeBlockList, baseStateVersion) {
+  getValidTransactions(baseDb = this.node.db, excludeBlockList = []) {
     const addrToTxList = JSON.parse(JSON.stringify(this.transactions));
     TransactionPool.filterAndSortTransactions(addrToTxList, excludeBlockList);
     // Remove incorrectly nonced / timestamped transactions
-    const noncesAndTimestamps = baseStateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.ACCOUNTS, false, baseStateVersion) : {};
     for (const [addr, txList] of Object.entries(addrToTxList)) {
       const newTxList = [];
       for (let index = 0; index < txList.length; index++) {
         const tx = txList[index];
         const txNonce = tx.tx_body.nonce;
         const txTimestamp = tx.tx_body.timestamp;
-        const accountNonce = _.get(noncesAndTimestamps, `${addr}.nonce`, 0);
-        const accountTimestamp = _.get(noncesAndTimestamps, `${addr}.timestamp`, 0);
+        const { nonce: accountNonce, timestamp: accountTimestamp } =
+            baseDb.getAccountNonceAndTimestamp(addr);
         if (TransactionPool.isCorrectlyNoncedOrTimestamped(
             txNonce, txTimestamp, accountNonce, accountTimestamp)) {
           newTxList.push(tx);
-          if (txNonce >= 0) {
-            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'nonce'], txNonce + 1);
-          }
-          if (txNonce === -2) {
-            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'timestamp'], txTimestamp);
-          }
+          baseDb.updateAccountNonceAndTimestamp(addr, txNonce, txTimestamp);
         }
       }
       addrToTxList[addr] = newTxList;
     }
     // Merge lists of transactions while ordering by gas price and timestamp. Initial ordering by nonce is preserved.
     const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
-    return this.performBandwidthChecks(merged, baseStateVersion);
+    return this.performBandwidthChecks(merged, baseDb.stateVersion);
+  }
+
+  getAppStakes(baseStateVersion) {
+    return (baseStateVersion ?
+        this.node.getValueWithStateVersion(PredefinedDbPaths.STAKING, false, baseStateVersion) :
+        this.node.db.getValue(PredefinedDbPaths.STAKING)) || {};
   }
 
   static getAppStakesTotal(appStakesVal) {
@@ -200,9 +200,7 @@ class TransactionPool {
     const candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
-    const appStakesVal = (baseStateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.STAKING, false, baseStateVersion) :
-        this.node.db.getValue(PredefinedDbPaths.STAKING)) || {};
+    const appStakesVal = this.getAppStakes(baseStateVersion);
     // Sum of all apps' staked AIN
     const appStakesTotal = TransactionPool.getAppStakesTotal(appStakesVal);
     // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
@@ -392,7 +390,7 @@ class TransactionPool {
     const addrToTimestamp = {};
     for (const voteTx of block.last_votes) {
       const txTimestamp = voteTx.tx_body.timestamp;
-      // voting txs are loosely ordered.
+      // voting txs with ordered nonces.
       this.transactionTracker[voteTx.hash] = {
         status: TransactionStatus.BLOCK_STATUS,
         number: block.number,

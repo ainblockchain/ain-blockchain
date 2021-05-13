@@ -771,12 +771,12 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, "some value with nonce unordered");
       })
 
-      it('set_value with nonce strictly ordered', async () => {
+      it('set_value with numbered nonce', async () => {
         const nonce = parseOrLog(
             syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
         const request = {
           ref: 'test/test_value/some/path',
-          value: "some value with nonce strictly ordered",
+          value: "some value with numbered nonce",
           nonce,
         };
         const body = parseOrLog(syncRequest(
@@ -792,7 +792,7 @@ describe('Blockchain Node', () => {
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some/path')
             .body.toString('utf-8')).result;
-        assert.deepEqual(resultAfter, "some value with nonce strictly ordered");
+        assert.deepEqual(resultAfter, "some value with numbered nonce");
       })
 
       it('set_value with failing operation', () => {
@@ -1935,7 +1935,7 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('accepts a transaction with nonce strictly ordered', () => {
+      it('accepts a transaction with numbered nonce', () => {
         const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
@@ -1952,7 +1952,7 @@ describe('Blockchain Node', () => {
               ref: `test/test_value/some/path`
             },
             timestamp: Date.now(),
-            nonce,  // strictly ordered nonce
+            nonce,  // numbered nonce
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
