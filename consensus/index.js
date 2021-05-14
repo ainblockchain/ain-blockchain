@@ -96,8 +96,8 @@ class Consensus {
       this.startEpochTransition();
       logger.info(`[${LOG_HEADER}] Initialized to number ${finalizedNumber} and ` +
           `epoch ${this.state.epoch}`);
-    } catch (e) {
-      logger.error(`[${LOG_HEADER}] Init error: ${e}`);
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Init error: ${err} ${err.stack}`);
       this.setStatus(ConsensusStatus.STARTING, 'init');
     }
   }
@@ -130,8 +130,8 @@ class Consensus {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
           logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
           this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
-        } catch (e) {
-          logger.error(`ntpsync error: ${e}`);
+        } catch (err) {
+          logger.error(`ntpsync error: ${err} ${err.stack}`);
         }
       }
       currentTime -= this.timeAdjustment;
@@ -728,8 +728,8 @@ class Consensus {
               proposal, ConsensusMessageTypes.PROPOSE);
           this.handleConsensusMessage(consensusMsg);
         }
-      } catch (e) {
-        logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${e}`);
+      } catch (err) {
+        logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${err} ${err.stack}`);
       }
     } else {
       logger.info(`[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
@@ -1068,8 +1068,8 @@ class Consensus {
         // the child state.
         await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
       }
-    } catch (e) {
-      logger.error(`Failed to report state proof hashes: ${e}`);
+    } catch (err) {
+      logger.error(`Failed to report state proof hashes: ${err} ${err.stack}`);
     }
     this.isReporting = false;
   }

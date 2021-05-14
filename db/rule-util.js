@@ -81,7 +81,7 @@ class RuleUtil {
   toCksumAddr(addr) {
     try {
       return ainUtil.toChecksumAddress(addr);
-    } catch (e) {
+    } catch (err) {
       return '';
     }
   }

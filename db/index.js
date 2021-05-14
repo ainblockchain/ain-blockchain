@@ -554,8 +554,7 @@ class DB {
       const fullNoncePath =
           DB.getFullPath(ChainUtil.parsePath(noncePath), PredefinedDbPaths.VALUES_ROOT);
       this.writeDatabase(fullNoncePath, nonce + 1);
-    }
-    if (nonce === -2) { // ordered nonce
+    } else if (nonce === -2) { // ordered nonce
       if (!ChainUtil.isNumber(timestamp)) {
         logger.error(`[${LOG_HEADER}] Invalid timestamp: ${timestamp} for address: ${address}`);
         return;
@@ -805,10 +804,13 @@ class DB {
     if (tx && auth && auth.addr && !auth.fid) {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return ChainUtil.returnTxResult(12, `Invalid nonce: ${tx.tx_body.nonce}`);
+        return ChainUtil.returnTxResult(
+          12, `Invalid nonce (!== ${nonce}) of transaction: ${JSON.stringify(tx)}`);
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return ChainUtil.returnTxResult(13, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+        return ChainUtil.returnTxResult(
+          13, `Invalid timestamp (<= ${accountTimestamp}) of transaction: ` +
+          `${JSON.stringify(tx)}`);
       }
     }
     let result;
@@ -926,11 +928,11 @@ class DB {
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
           `timestamp: ${timestamp}\n`);
       }
-    } catch (e) {
+    } catch (err) {
       logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-          `timestamp: ${timestamp}\nError: ${e}`);
+          `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
     }
     return evalRuleRes;
   }
