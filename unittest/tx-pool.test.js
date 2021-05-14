@@ -6,13 +6,12 @@ const ChainUtil = require('../common/chain-util');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
 const {setNodeForTesting, getTransaction} = require('./test-util');
-const { msleep } = require('sleep');
 const TransactionPool = require('../tx-pool');
 
-describe('TransactionPool', () => {
+describe('TransactionPool', async () => {
   let node, transaction;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     node = new BlockchainNode();
     setNodeForTesting(node);
     transaction = getTransaction(node, {
@@ -25,7 +24,7 @@ describe('TransactionPool', () => {
       gas_price: 1
     });
     node.tp.addTransaction(transaction);
-    msleep(1);
+    await ChainUtil.sleep(1);
   });
 
   describe('Transaction addition', () => {
@@ -35,10 +34,10 @@ describe('TransactionPool', () => {
     });
   });
 
-  describe('Transaction ordering', () => {
+  describe('Transaction ordering', async () => {
     let node2; let node3; let node4;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       for (let i = 0; i < 10; i++) {
         t = getTransaction(node, {
           operation: {
@@ -50,7 +49,7 @@ describe('TransactionPool', () => {
           gas_price: 1
         });
         node.tp.addTransaction(t);
-        msleep(1);
+        await ChainUtil.sleep(1);
       }
       node.tp.transactions[node.account.address] =
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
@@ -74,7 +73,7 @@ describe('TransactionPool', () => {
             gas_price: 1
           });
           node.tp.addTransaction(t);
-          msleep(1);
+          await ChainUtil.sleep(1);
         }
         node.tp.transactions[nodes[j].account.address] =
             shuffleSeed.shuffle(node.tp.transactions[nodes[j].account.address]);
