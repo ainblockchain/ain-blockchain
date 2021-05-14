@@ -36,7 +36,6 @@
     "ajv": "^5.5.2",
     "axios": "^0.21.1",
     "bluebird": "^3.5.3",
-    "body-parser": "^1.18.3",
     "diskusage": "^1.1.3",
     "elliptic": "^6.4.1",
     "escape-string-regexp": "^2.0.0",
