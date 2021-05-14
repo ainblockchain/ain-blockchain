@@ -184,6 +184,25 @@ class P2pServer {
     }
   }
 
+  getCpuUsage() {
+    const cores = os.cpus();
+    let free = 0;
+    let total = 0;
+    for (const core of cores) {
+      const cpuInfo = _.get(core, 'times');
+      const idle = _.get(cpuInfo, 'idle');
+      const allTimes = Object.values(cpuInfo).reduce((acc, cur) => { return acc + cur }, 0);
+      free += idle;
+      total += allTimes;
+    }
+    const usage = total - free;
+    return {
+      free,
+      usage,
+      total
+    };
+  }
+
   getMemoryUsage() {
     const free = os.freemem();
     const total = os.totalmem();
