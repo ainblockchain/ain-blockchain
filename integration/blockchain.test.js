@@ -7,11 +7,11 @@ const jayson = require('jayson/promise');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
-const sleep = require('sleep').msleep;
 const expect = chai.expect;
 // eslint-disable-next-line no-unused-vars
 const syncRequest = require('sync-request');
 const ainUtil = require('@ainblockchain/ain-util');
+const ChainUtil = require('../common/chain-util');
 const stringify = require('fast-json-stable-stringify');
 const {
   CURRENT_PROTOCOL_VERSION,
@@ -229,11 +229,11 @@ describe('Blockchain Cluster', () => {
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, { CONSOLE_LOG: false });
     trackerProc.start(true);
-    sleep(2000);
+    ChainUtil.sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
       proc.start(true);
-      sleep(2000);
+      ChainUtil.sleep(2000);
       const address =
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
@@ -315,7 +315,7 @@ describe('Blockchain Cluster', () => {
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
       });
       newServerProc.start();
-      sleep(2000);
+      ChainUtil.sleep(2000);
       waitForNewBlocks(newServer);
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)
@@ -642,9 +642,9 @@ describe('Blockchain Cluster', () => {
   describe('Restart', () => {
     it('blockchain nodes can be stopped and restarted', () => {
       SERVER_PROCS[0].kill();
-      sleep(10000);
+      ChainUtil.sleep(2000);
       SERVER_PROCS[0].start();
-      sleep(10000);
+      ChainUtil.sleep(2000);
       waitUntilNodeSyncs(server1);
       for (let i = 0; i < 4; i++) {
         sendTransactions(sentOperations);

@@ -3,10 +3,9 @@ const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
 const ChainUtil = require('../common/chain-util');
-const {Block} = require('../blockchain/block');
+const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const {setNodeForTesting, getTransaction} = require('./test-util');
-const { msleep } = require('sleep');
+const { setNodeForTesting, getTransaction } = require('./test-util');
 const TransactionPool = require('../tx-pool');
 
 describe('TransactionPool', () => {
@@ -25,7 +24,7 @@ describe('TransactionPool', () => {
       gas_price: 1
     });
     node.tp.addTransaction(transaction);
-    msleep(1);
+    ChainUtil.sleep(1);
   });
 
   describe('Transaction addition', () => {
@@ -50,7 +49,7 @@ describe('TransactionPool', () => {
           gas_price: 1
         });
         node.tp.addTransaction(t);
-        msleep(1);
+        ChainUtil.sleep(1);
       }
       node.tp.transactions[node.account.address] =
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
@@ -74,7 +73,7 @@ describe('TransactionPool', () => {
             gas_price: 1
           });
           node.tp.addTransaction(t);
-          msleep(1);
+          ChainUtil.sleep(1);
         }
         node.tp.transactions[nodes[j].account.address] =
             shuffleSeed.shuffle(node.tp.transactions[nodes[j].account.address]);

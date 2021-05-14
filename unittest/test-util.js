@@ -1,8 +1,6 @@
 const path = require('path');
 const fs = require("fs");
 const syncRequest = require('sync-request');
-const sleep = require('sleep').msleep;
-const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -89,7 +87,7 @@ function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     });
-    sleep(200);
+    ChainUtil.sleep(200);
     iterCount++;
   }
 }
@@ -100,7 +98,7 @@ function waitForNewBlocks(server, waitFor = 1) {
         .body.toString('utf-8'))['result'];
   let updatedLastBlockNumber = initialLastBlockNumber;
   while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
-    sleep(1000);
+    ChainUtil.sleep(1000);
     updatedLastBlockNumber = parseOrLog(syncRequest('GET', server + '/last_block_number')
       .body.toString('utf-8'))['result'];
   }
@@ -113,7 +111,7 @@ function waitUntilNodeSyncs(server) {
         {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
                 params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
         .body.toString('utf-8')).result.result;
-    sleep(1000);
+    ChainUtil.sleep(1000);
   }
 }
 
