@@ -176,24 +176,6 @@ class BlockchainNode {
         versionRoot, PredefinedDbPaths.VALUES_ROOT, refPath, isGlobal, this.db.shardingPath);
   }
 
-  getFunctionWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.FUNCTIONS_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
-  getRuleWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.RULES_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
-  getOwnerWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.OWNERS_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
   getNonceFromChain() {
     const LOG_HEADER = 'getNonceFromChain';
 

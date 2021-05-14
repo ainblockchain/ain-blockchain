@@ -515,8 +515,8 @@ class TransactionPool {
     }
     try {
       value = action.valueFunction(success);
-    } catch (e) {
-      logger.info(`  =>> valueFunction() failed: ${e}`);
+    } catch (err) {
+      logger.info(`  =>> valueFunction() failed: ${err} ${err.stack}`);
       return;
     }
     const actionTxBody = {
