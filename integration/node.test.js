@@ -3,7 +3,6 @@ const assert = chai.assert;
 const expect = chai.expect;
 const _ = require("lodash");
 const spawn = require("child_process").spawn;
-const sleep = require('sleep').msleep;
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
@@ -172,19 +171,19 @@ function cleanUp() {
 describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
-  before(() => {
+  before(async () => {
     rimraf.sync(CHAINS_DIR)
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
   });
 
   after(() => {
@@ -1367,7 +1366,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('/batch', () => {
-      it('batch with successful transactions', () => {
+      it('batch with successful transactions', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
@@ -1609,7 +1608,7 @@ describe('Blockchain Node', () => {
         ]);
 
         // Confirm that the value is set properly.
-        sleep(3);
+        await ChainUtil.sleep(3);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
