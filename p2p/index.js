@@ -133,6 +133,7 @@ class P2pClient {
       consensusStatus: this.server.getConsensusStatus(),
       nodeStatus: this.server.getNodeStatus(),
       shardingStatus: this.server.getShardingStatus(),
+      cpuStatus: this.server.getCpuUsage(),
       memoryStatus: this.server.getMemoryUsage(),
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
