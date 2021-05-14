@@ -2,7 +2,6 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const rimraf = require('rimraf');
-const sleep = require('sleep').msleep;
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
@@ -120,21 +119,21 @@ function cleanUp() {
   }
 }
 
-describe('DApp Test', () => {
+describe('DApp Test', async () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
-  before(() => {
+  before(async () => {
     rimraf.sync(CHAINS_DIR);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
   });
 
   after(() => {
@@ -215,9 +214,9 @@ describe('DApp Test', () => {
           });
       });
 
-      it('two fans', () => {
+      it('two fans', async () => {
         const afanClient = new AfanClient(server2);
-        sleep(200);
+        await ChainUtil.sleep(200);
         return set_value('/apps/afan/balance/uid0', 30)
           .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/balance/uid1', 10))

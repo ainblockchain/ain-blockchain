@@ -7,7 +7,6 @@ const jayson = require('jayson/promise');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
-const sleep = require('sleep').msleep;
 const expect = chai.expect;
 // eslint-disable-next-line no-unused-vars
 const syncRequest = require('sync-request');
@@ -19,6 +18,7 @@ const {
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const { waitUntilTxFinalized } = require('../unittest/test-util');
+const Chainutil = require('../common/chain-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
@@ -222,18 +222,18 @@ describe('Blockchain Cluster', () => {
   const sentOperations = [];
   const nodeAddressList = [];
 
-  before(() => {
+  before(async () => {
     rimraf.sync(CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, { CONSOLE_LOG: false });
     trackerProc.start(true);
-    sleep(2000);
+    await Chainutil.sleep(2000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
       proc.start(true);
-      sleep(2000);
+      await Chainutil.sleep(2000);
       const address =
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
@@ -315,7 +315,7 @@ describe('Blockchain Cluster', () => {
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
       });
       newServerProc.start();
-      sleep(2000);
+      await Chainutil.sleep(2000);
       waitForNewBlocks(newServer);
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)
@@ -640,11 +640,11 @@ describe('Blockchain Cluster', () => {
   });
 
   describe('Restart', () => {
-    it('blockchain nodes can be stopped and restarted', () => {
+    it('blockchain nodes can be stopped and restarted', async () => {
       SERVER_PROCS[0].kill();
-      sleep(10000);
+      await Chainutil.sleep(10000);
       SERVER_PROCS[0].start();
-      sleep(10000);
+      await Chainutil.sleep(10000);
       waitUntilNodeSyncs(server1);
       for (let i = 0; i < 4; i++) {
         sendTransactions(sentOperations);

@@ -4,7 +4,6 @@ const assert = chai.assert;
 const expect = chai.expect;
 const spawn = require("child_process").spawn;
 const ainUtil = require('@ainblockchain/ain-util');
-const sleep = require('sleep').msleep;
 const syncRequest = require('sync-request');
 const jayson = require('jayson/promise');
 const rimraf = require("rimraf")
@@ -108,13 +107,13 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 
 // Needed to make sure the shard initialization is finished
 // before other shard nodes start
-function waitUntilShardReporterStarts() {
+async function waitUntilShardReporterStarts() {
   let consensusState;
   while (true) {
     consensusState = parseOrLog(syncRequest('GET', server1 + '/get_consensus_state')
         .body.toString('utf-8')).result;
     if (consensusState && consensusState.state === ConsensusStatus.RUNNING) return;
-    sleep(1000);
+    await ChainUtil.sleep(1000);
   }
 }
 
@@ -217,14 +216,14 @@ describe('Sharding', () => {
   let parent_tracker_proc, parent_server_proc,
       tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
-  before(() => {
+  before(async () => {
     rimraf.sync(CHAINS_DIR)
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], true);
-    sleep(15000);
+    await ChainUtil.sleep(15000);
     // Give AIN to sharding owner and reporter
     const shardReportRes = parseOrLog(syncRequest(
       'POST', parentServer + '/set', { json: {
@@ -246,16 +245,16 @@ describe('Sharding', () => {
     waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], true);
-    sleep(2000);
-    waitUntilShardReporterStarts();
+    await ChainUtil.sleep(2000);
+    await waitUntilShardReporterStarts();
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
   });
 
   after(() => {
