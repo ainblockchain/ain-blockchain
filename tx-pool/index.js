@@ -2,6 +2,7 @@
 const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {
+  FeatureFlags,
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
   LIGHTWEIGHT,
@@ -14,13 +15,14 @@ const {
   WriteDbOperations,
   AccountProperties,
   PredefinedDbPaths,
-  FeatureFlags,
+  StateVersions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {
   sendGetRequest,
   signAndSendTx
 } = require('../p2p/util');
+const DB = require('../db');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -150,7 +152,28 @@ class TransactionPool {
     }
   }
 
-  getValidTransactions(baseDb = this.node.db, excludeBlockList = []) {
+  getValidTransactions(excludeBlockList, stateVersion) {
+    let stateRoot = null;
+    let tempVersion = null;
+    if (stateVersion) {
+      stateRoot = this.node.stateManager.getRoot(stateVersion);
+      if (!stateRoot) {
+        logger.error(
+            `[${LOG_HEADER}] Invalid state version: ${stateVersion}`);
+        return null;
+      }
+    } else {
+      const baseVersion = this.node.stateManager.getFinalVersion();
+      tempVersion = this.node.stateManager.createUniqueVersionName(
+          `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`);
+      stateRoot = this.node.stateManager.cloneVersion(baseVersion, tempVersion);
+      if (!stateRoot) {
+        logger.error(
+            `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
+        return null;
+      }
+    }
+
     const addrToTxList = JSON.parse(JSON.stringify(this.transactions));
     TransactionPool.filterAndSortTransactions(addrToTxList, excludeBlockList);
     // Remove incorrectly nonced / timestamped transactions
@@ -161,18 +184,26 @@ class TransactionPool {
         const txNonce = tx.tx_body.nonce;
         const txTimestamp = tx.tx_body.timestamp;
         const { nonce: accountNonce, timestamp: accountTimestamp } =
-            baseDb.getAccountNonceAndTimestamp(addr);
+            DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, addr);
         if (TransactionPool.isCorrectlyNoncedOrTimestamped(
             txNonce, txTimestamp, accountNonce, accountTimestamp)) {
           newTxList.push(tx);
-          baseDb.updateAccountNonceAndTimestamp(addr, txNonce, txTimestamp);
+          DB.updateAccountNonceAndTimestampToStateRoot(
+              stateRoot, stateVersion ? stateVersion : tempVersion, addr, txNonce, txTimestamp);
         }
       }
       addrToTxList[addr] = newTxList;
     }
+
+    if (tempVersion) {
+      if (!this.node.stateManager.deleteVersion(tempVersion)) {
+        logger.error(`[${LOG_HEADER}] Failed to delete version: ${tempVersion}`);
+      }
+    }
+
     // Merge lists of transactions while ordering by gas price and timestamp. Initial ordering by nonce is preserved.
     const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
-    return this.performBandwidthChecks(merged, baseDb.stateVersion);
+    return this.performBandwidthChecks(merged, stateVersion);
   }
 
   getAppStakes(baseStateVersion) {

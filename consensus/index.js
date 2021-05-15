@@ -348,7 +348,7 @@ class Consensus {
       }
     }
 
-    const transactions = this.node.tp.getValidTransactions(tempDb, longestNotarizedChain);
+    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
     const validTransactions = [];
     const invalidTransactions = [];
     const resList = [];
