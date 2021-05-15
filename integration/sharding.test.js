@@ -411,8 +411,8 @@ describe('Sharding', () => {
   });
 
   describe('State proof hash reporting', () => {
-    before(() => {
-      waitForNewBlocks(server1, sharding.reporting_period * 3);
+    before(async () => {
+      await waitForNewBlocks(server1, sharding.reporting_period * 3);
     });
 
     describe('Periodic reports', () => {
@@ -446,18 +446,18 @@ describe('Sharding', () => {
     });
 
     describe('Shard reporter node restart', () => {
-      it('can resume reporting after missing some reports', () => {
+      it('can resume reporting after missing some reports', async () => {
         const reportsBefore = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         console.log(`Shutting down server[0]...`);
         server1_proc.kill();
-        waitForNewBlocks(server2, sharding.reporting_period);
+        await waitForNewBlocks(server2, sharding.reporting_period);
         console.log(`Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
-        waitForNewBlocks(server2, sharding.reporting_period * 2);
+        await waitForNewBlocks(server2, sharding.reporting_period * 2);
         waitUntilNodeSyncs(server1);
-        waitForNewBlocks(server1, sharding.reporting_period);
+        await waitForNewBlocks(server1, sharding.reporting_period);
         const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
