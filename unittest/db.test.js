@@ -3657,14 +3657,16 @@ describe("State version handling", () => {
   describe("getRefForWriting()", () => {
     it("the nodes of single access path are not cloned", () => {
       // First referencing to make the number of access paths = 1.
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(DB.getRefForWriting(
+          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
       const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const child21 = child2.getChild('child_21');
       const child212 = child21.getChild('child_212');
 
       // Second referencing.
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(DB.getRefForWriting(
+          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path are not cloned.
@@ -3684,7 +3686,8 @@ describe("State version handling", () => {
       const child21 = child2.getChild('child_21');
       const child212 = child21.getChild('child_212');
 
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(DB.getRefForWriting(
+          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path are cloned.
@@ -3703,7 +3706,8 @@ describe("State version handling", () => {
       // Make child21's number of parents = 2.
       const clonedChild2 = child2.clone('new version');
 
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(DB.getRefForWriting(
+          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // Only the nodes of multiple paths are cloned.
@@ -3722,7 +3726,8 @@ describe("State version handling", () => {
       // Make child212's number of parents = 2.
       const clonedChild21 = child21.clone('new version');
 
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(DB.getRefForWriting(
+          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // Only the nodes of multiple paths are cloned.
@@ -3741,7 +3746,8 @@ describe("State version handling", () => {
       const beforeOtherChild21 = beforeOtherChild2.getChild('child_21');
       const beforeOtherChild212 = beforeOtherChild21.getChild('child_212');
 
-      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(DB.getRefForWriting(
+          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path from other roots are not affected.

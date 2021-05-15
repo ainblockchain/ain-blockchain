@@ -3,6 +3,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const logger = require('../logger')('NODE');
 const {
+  FeatureFlags,
   PORT,
   ACCOUNT_INDEX,
   TX_NONCE_ERROR_CODE,
@@ -14,7 +15,6 @@ const {
   GenesisAccounts,
   GenesisSharding,
   StateVersions,
-  FeatureFlags,
   LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -82,7 +82,9 @@ class BlockchainNode {
     this.executeChainOnDb(startingDb);
     this.nonce = this.getNonceFromChain();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
-    this.db.executeTransactionList(this.tp.getValidTransactions(), this.bc.lastBlockNumber() + 1);
+    this.db.executeTransactionList(
+        this.tp.getValidTransactions(null, this.stateManager.finalVersion),
+        this.bc.lastBlockNumber() + 1);
     this.state = BlockchainNodeStates.SYNCING;
     return lastBlockWithoutProposal;
   }
