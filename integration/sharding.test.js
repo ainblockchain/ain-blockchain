@@ -117,7 +117,7 @@ async function waitUntilShardReporterStarts() {
   }
 }
 
-function setUp() {
+async function setUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -162,12 +162,12 @@ function setUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(shardServerList, res.tx_hash))) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
 }
 
-function cleanUp() {
+async function cleanUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -195,7 +195,7 @@ function cleanUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(shardServerList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
 }
@@ -242,7 +242,7 @@ describe('Sharding', () => {
         nonce: -1
       } }).body.toString('utf-8')
     ).result;
-    waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+    await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await ChainUtil.sleep(2000);
@@ -456,7 +456,7 @@ describe('Sharding', () => {
         console.log(`Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
         await waitForNewBlocks(server2, sharding.reporting_period * 2);
-        waitUntilNodeSyncs(server1);
+        await waitUntilNodeSyncs(server1);
         await waitForNewBlocks(server1, sharding.reporting_period);
         const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
@@ -475,12 +475,12 @@ describe('Sharding', () => {
 
   describe('API Tests', () => {
     describe('Get API', () => {
-      before(() => {
-        setUp();
+      before(async () => {
+        await setUp();
       })
 
-      after(() => {
-        cleanUp();
+      after(async () => {
+        await cleanUp();
       })
 
       describe('/get_value', () => {
@@ -1154,12 +1154,12 @@ describe('Sharding', () => {
     })
 
     describe('Set API', () => {
-      beforeEach(() => {
-        setUp();
+      beforeEach(async () => {
+        await setUp();
       })
 
-      afterEach(() => {
-        cleanUp();
+      afterEach(async () => {
+        await cleanUp();
       })
 
       describe('/set_value', () => {
@@ -1793,7 +1793,7 @@ describe('Sharding', () => {
     })
 
     describe('_updateLatestShardReport', () => {
-      before(() => {
+      before(async () => {
         const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
@@ -1849,12 +1849,12 @@ describe('Sharding', () => {
           }
         }).body.toString('utf-8')).result;
         assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-        if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
+        if (!(await waitUntilTxFinalized(parentServerList, res.tx_hash))) {
           console.log(`Failed to check finalization of sharding setup tx.`)
         }
       });
 
-      it('update latest shard report', () => {
+      it('update latest shard report', async () => {
         const reportVal = {
           ref: `${shardingPath}/5/proof_hash`,
           value: "0xPROOF_HASH_5",
@@ -1890,7 +1890,7 @@ describe('Sharding', () => {
           "gas_cost_total": 0,
         });
         expect(shardReportBody.code).to.equal(0);
-        waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
+        await waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
@@ -1902,7 +1902,7 @@ describe('Sharding', () => {
         });
       });
 
-      it('update latest shard report - can handle reports that are out of order', () => {
+      it('update latest shard report - can handle reports that are out of order', async () => {
         const multipleReportVal = {
           op_list: [
             {
@@ -1961,7 +1961,7 @@ describe('Sharding', () => {
           "gas_cost_total": 0,
         });
         expect(shardReportBody.code).to.equal(0);
-        waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
+        await waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
