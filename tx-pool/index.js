@@ -153,25 +153,18 @@ class TransactionPool {
   }
 
   getValidTransactions(excludeBlockList, stateVersion) {
-    let stateRoot = null;
     let tempVersion = null;
-    if (stateVersion) {
-      stateRoot = this.node.stateManager.getRoot(stateVersion);
-      if (!stateRoot) {
-        logger.error(
-            `[${LOG_HEADER}] Invalid state version: ${stateVersion}`);
-        return null;
-      }
-    } else {
-      const baseVersion = this.node.stateManager.getFinalVersion();
-      tempVersion = this.node.stateManager.createUniqueVersionName(
-          `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`);
-      stateRoot = this.node.stateManager.cloneVersion(baseVersion, tempVersion);
-      if (!stateRoot) {
-        logger.error(
-            `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
-        return null;
-      }
+    let tempRoot = null;
+    if (!stateVersion) {
+      stateVersion = this.node.db.stateVersion;
+    }
+    tempVersion = this.node.stateManager.createUniqueVersionName(
+        `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`);
+    tempRoot = this.node.stateManager.cloneVersion(stateVersion, tempVersion);
+    if (!tempRoot) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${stateVersion}`);
+      return null;
     }
 
     const addrToTxList = JSON.parse(JSON.stringify(this.transactions));
@@ -184,21 +177,19 @@ class TransactionPool {
         const txNonce = tx.tx_body.nonce;
         const txTimestamp = tx.tx_body.timestamp;
         const { nonce: accountNonce, timestamp: accountTimestamp } =
-            DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, addr);
+            DB.getAccountNonceAndTimestampFromStateRoot(tempRoot, addr);
         if (TransactionPool.isCorrectlyNoncedOrTimestamped(
             txNonce, txTimestamp, accountNonce, accountTimestamp)) {
           newTxList.push(tx);
           DB.updateAccountNonceAndTimestampToStateRoot(
-              stateRoot, stateVersion ? stateVersion : tempVersion, addr, txNonce, txTimestamp);
+              tempRoot, tempVersion, addr, txNonce, txTimestamp);
         }
       }
       addrToTxList[addr] = newTxList;
     }
 
-    if (tempVersion) {
-      if (!this.node.stateManager.deleteVersion(tempVersion)) {
-        logger.error(`[${LOG_HEADER}] Failed to delete version: ${tempVersion}`);
-      }
+    if (!this.node.stateManager.deleteVersion(tempVersion)) {
+      logger.error(`[${LOG_HEADER}] Failed to delete version: ${tempVersion}`);
     }
 
     // Merge lists of transactions while ordering by gas price and timestamp. Initial ordering by nonce is preserved.
@@ -206,9 +197,9 @@ class TransactionPool {
     return this.performBandwidthChecks(merged, stateVersion);
   }
 
-  getAppStakes(baseStateVersion) {
-    return (baseStateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.STAKING, false, baseStateVersion) :
+  getAppStakes(stateVersion) {
+    return (stateVersion ?
+        this.node.getValueWithStateVersion(PredefinedDbPaths.STAKING, false, stateVersion) :
         this.node.db.getValue(PredefinedDbPaths.STAKING)) || {};
   }
 
@@ -227,11 +218,11 @@ class TransactionPool {
   // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps, depending on the
   // types of the transactions (service vs app).
   // TODO(): Try allocating the excess bandwidth to app txs.
-  performBandwidthChecks(txList, baseStateVersion) {
+  performBandwidthChecks(txList, stateVersion) {
     const candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
-    const appStakesVal = this.getAppStakes(baseStateVersion);
+    const appStakesVal = this.getAppStakes(stateVersion);
     // Sum of all apps' staked AIN
     const appStakesTotal = TransactionPool.getAppStakesTotal(appStakesVal);
     // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
