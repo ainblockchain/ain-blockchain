@@ -80,16 +80,16 @@ async function waitUntilTxFinalized(servers, txHash) {
       console.log(`Iteration count exceeded its limit before the given tx ${txHash} is finalized!`);
       return false;
     }
-    unchecked.forEach((server) => {
+    for (const server of unchecked) {
       const txStatus = parseOrLog(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
           .body
           .toString('utf-8')).result;
       if (txStatus && txStatus.is_finalized === true) {
         unchecked.delete(server);
       }
-    });
-    await ChainUtil.sleep(200);
-    iterCount++;
+      await ChainUtil.sleep(200);
+      iterCount++;
+    }
   }
 }
 
