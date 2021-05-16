@@ -17,12 +17,16 @@ const {
   CHAINS_DIR
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
-const { waitUntilTxFinalized } = require('../unittest/test-util');
 const Chainutil = require('../common/chain-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_PROMISE_STACK_DEPTH = 10;
 const MAX_CHAIN_LENGTH_DIFF = 5;
-const { waitForNewBlocks, waitUntilNodeSyncs, parseOrLog } = require('../unittest/test-util');
+const {
+  waitUntilTxFinalized,
+  waitForNewBlocks,
+  waitUntilNodeSyncs,
+  parseOrLog
+} = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
   {
@@ -173,7 +177,7 @@ for (let i = 0; i < ENV_VARIABLES.length; i++) {
   SERVER_PROCS.push(new Process(APP_SERVER, ENV_VARIABLES[i]));
 }
 
-function sendTransactions(sentOperations) {
+async function sendTransactions(sentOperations) {
   const txHashList = [];
   for (let i = 0; i < NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST; i++) {
     const randomOperation =
@@ -209,7 +213,7 @@ function sendTransactions(sentOperations) {
               .result.tx_hash);
     }
     for (const txHash of txHashList) {
-      waitUntilTxFinalized(serverList, txHash);
+      await waitUntilTxFinalized(serverList, txHash);
     }
   }
 }
@@ -264,9 +268,9 @@ describe('Blockchain Cluster', () => {
   });
 
   describe(`Synchronization`, () => {
-    it('syncs across all blockchain nodes', () => {
+    it('syncs across all blockchain nodes', async () => {
       for (let i = 1; i < serverList.length; i++) {
-        sendTransactions(sentOperations);
+        await sendTransactions(sentOperations);
         return new Promise((resolve) => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)
           .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
@@ -302,9 +306,9 @@ describe('Blockchain Cluster', () => {
 
     // TODO(platfowner): Uncomment this. It's flaky.
     /*
-    it('syncs new peers on startup', () => {
-      sendTransactions(sentOperations);
-      waitForNewBlocks(server1);
+    it('syncs new peers on startup', async () => {
+      await sendTransactions(sentOperations);
+      await waitForNewBlocks(server1);
       let baseChain;
       let number;
       const accountIndex = 4;
@@ -316,7 +320,7 @@ describe('Blockchain Cluster', () => {
       });
       newServerProc.start();
       await Chainutil.sleep(2000);
-      waitForNewBlocks(newServer);
+      await waitForNewBlocks(newServer);
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)
         .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
@@ -352,9 +356,9 @@ describe('Blockchain Cluster', () => {
   });
 
   describe('Block validity', () => {
-    it('blocks have correct validators and voting data', () => {
+    it('blocks have correct validators and voting data', async () => {
       for (let i = 0; i < serverList.length; i++) {
-        sendTransactions(sentOperations);
+        await sendTransactions(sentOperations);
         const blocks = parseOrLog(syncRequest(
             'POST', serverList[i] + '/json-rpc', {
               json: {
@@ -392,7 +396,7 @@ describe('Blockchain Cluster', () => {
       }
     });
 
-    it('blocks have valid hashes', () => {
+    it('blocks have valid hashes', async () => {
       const hashString = (str) => {
         return '0x' + ainUtil.hashMessage(str).toString('hex');
       }
@@ -412,7 +416,7 @@ describe('Blockchain Cluster', () => {
         }));
       }
       for (let i = 0; i < serverList.length; i++) {
-        sendTransactions(sentOperations);
+        await sendTransactions(sentOperations);
         const blocks = parseOrLog(syncRequest('POST', serverList[i] + '/json-rpc',
             {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
                     params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
@@ -436,11 +440,11 @@ describe('Blockchain Cluster', () => {
 
     // TODO(platfowner): Uncomment or remove this once find a good solution to flaky test cases.
     /*
-    it('not dropping any transations ', () => {
+    it('not dropping any transations ', async () => {
       let blocks;
       for (let i = 0; i < serverList.length; i++) {
-        sendTransactions(sentOperations);
-        waitForNewBlocks(serverList[i]);
+        await sendTransactions(sentOperations);
+        await waitForNewBlocks(serverList[i]);
         blocks = parseOrLog(syncRequest(
             'GET', serverList[i] + BLOCKS_ENDPOINT).body.toString('utf-8'))['result'];
         const transactionsOnBlockChain = [];
@@ -479,8 +483,8 @@ describe('Blockchain Cluster', () => {
   });
 
   describe('Database', () => {
-    it('rules correctly prevent users from restricted areas', () => {
-      sendTransactions(sentOperations);
+    it('rules correctly prevent users from restricted areas', async () => {
+      await sendTransactions(sentOperations);
       const body = parseOrLog(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
         ref: 'restricted/path', value: 'anything' 
       }}).body.toString('utf-8'));
@@ -489,10 +493,10 @@ describe('Blockchain Cluster', () => {
 
     // FIXME(liayoo): This test case is flaky.
     /*
-    it('maintaining correct order', () => {
+    it('maintaining correct order', async () => {
       for (let i = 1; i < serverList.length; i++) {
-        sendTransactions(sentOperations);
-        waitForNewBlocks(serverList[i]);
+        await sendTransactions(sentOperations);
+        await waitForNewBlocks(serverList[i]);
         body1 = parseOrLog(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
             .body.toString('utf-8'));
         body2 = parseOrLog(syncRequest('GET', serverList[i] + GET_VALUE_ENDPOINT + '?ref=test')
@@ -504,8 +508,8 @@ describe('Blockchain Cluster', () => {
   });
 
   describe('Block API', () => {
-    it('ain_getBlockHeadersList', () => {
-      sendTransactions(sentOperations);
+    it('ain_getBlockHeadersList', async () => {
+      await sendTransactions(sentOperations);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
                               {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
@@ -520,8 +524,8 @@ describe('Blockchain Cluster', () => {
       })
     });
 
-    it('ain_getBlockByHash and ain_getBlockByNumber', () => {
-      sendTransactions(sentOperations);
+    it('ain_getBlockByHash and ain_getBlockByNumber', async () => {
+      await sendTransactions(sentOperations);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
             {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
@@ -573,13 +577,13 @@ describe('Blockchain Cluster', () => {
               { address, protoVer: CURRENT_PROTOCOL_VERSION }));
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
               { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
-          Promise.all(promises).then(resAfterBroadcast => {
+          Promise.all(promises).then(async resAfterBroadcast => {
             promises = [];
             committedNonceAfterBroadcast = resAfterBroadcast[0].result.result;
             pendingNonceAfterBroadcast = resAfterBroadcast[1].result.result;
             expect(committedNonceAfterBroadcast).to.equal(committedNonceBefore);
             expect(pendingNonceAfterBroadcast).to.equal(pendingNonceBefore + 1);
-            waitUntilTxFinalized(serverList, txHash);
+            await waitUntilTxFinalized(serverList, txHash);
             resolve();
           })
           .catch((e) => {
@@ -590,9 +594,9 @@ describe('Blockchain Cluster', () => {
       });
     });
 
-    it('committedNonceTracker', () => {
-      return new Promise((resolve, reject) => {
-        waitForNewBlocks(server2);
+    it('committedNonceTracker', async () => {
+      return new Promise(async (resolve, reject) => {
+        await waitForNewBlocks(server2);
         let promises = [];
         promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
             { address, protoVer: CURRENT_PROTOCOL_VERSION }));
@@ -645,9 +649,9 @@ describe('Blockchain Cluster', () => {
       await Chainutil.sleep(10000);
       SERVER_PROCS[0].start();
       await Chainutil.sleep(10000);
-      waitUntilNodeSyncs(server1);
+      await waitUntilNodeSyncs(server1);
       for (let i = 0; i < 4; i++) {
-        sendTransactions(sentOperations);
+        await sendTransactions(sentOperations);
       }
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)
