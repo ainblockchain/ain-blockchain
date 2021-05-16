@@ -36,7 +36,7 @@ jobs:
       # - name: yarn unittest
       #   run: yarn run test_unit
       - name: yarn integration test
-        run: yarn run test_dapp
+        run: yarn run test_integration
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
