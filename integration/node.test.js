@@ -1367,6 +1367,8 @@ describe('Blockchain Node', () => {
 
     describe('/batch', () => {
       it('batch with successful transactions', async () => {
+        const address = parseOrLog(syncRequest(
+            'GET', server1 + '/get_address').body.toString('utf-8')).result;
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
@@ -1377,7 +1379,8 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
 
-        const nonce = parseOrLog(syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
+        const nonce = parseOrLog(syncRequest(
+            'GET', server1 + `/get_nonce?address=${address}`).body.toString('utf-8')).result;
         const request = {
           tx_list: [
             {
@@ -1620,6 +1623,8 @@ describe('Blockchain Node', () => {
       });
 
       it('batch with a failing transaction', async () => {
+        const address = parseOrLog(syncRequest(
+            'GET', server1 + '/get_address').body.toString('utf-8')).result;
         // Check the original values.
         const resultBefore = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some202/path')
@@ -1629,7 +1634,8 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_value?ref=test/test_value/some203/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore2, null);
-        const nonce = parseOrLog(syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
+        const nonce = parseOrLog(syncRequest(
+            'GET', server1 + `/get_nonce?address=${address}`).body.toString('utf-8')).result;
 
         const request = {
           tx_list: [
