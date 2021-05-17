@@ -434,6 +434,11 @@ class DB {
     return rootProof;
   }
 
+  static getValueFromStateRoot(stateRoot, statePath) {
+    return DB.readFromStateRoot(
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, []);
+  }
+
   /**
    * Returns a state node's information.
    * @param {string} statePath full database path to the state node
@@ -546,10 +551,8 @@ class DB {
   static getAccountNonceAndTimestampFromStateRoot(stateRoot, address) {
     const noncePath = PathUtil.getAccountNoncePath(address);
     const timestampPath = PathUtil.getAccountTimestampPath(address);
-    const nonce = DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, noncePath, false, []) || 0;
-    const timestamp = DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, timestampPath, false, []) || 0;
+    const nonce = DB.getValueFromStateRoot(stateRoot, noncePath) || 0;
+    const timestamp = DB.getValueFromStateRoot(stateRoot, timestampPath) || 0;
     return { nonce, timestamp };
   }
 
@@ -586,6 +589,20 @@ class DB {
   updateAccountNonceAndTimestamp(address, nonce, timestamp) {
     return DB.updateAccountNonceAndTimestampToStateRoot(
         this.stateRoot, this.stateVersion, address, nonce, timestamp);
+  }
+
+  // TODO(platfowner): Use shallow fetch once available.
+  static getAppStakesTotal(stateRoot) {
+    const appStakes = DB.getValueFromStateRoot(stateRoot, PredefinedDbPaths.STAKING) || {};
+    return Object.keys(appStakes).reduce((acc, cur) => {
+      if (cur === PredefinedDbPaths.CONSENSUS) return acc;
+      return acc + _.get(appStakes[cur], PredefinedDbPaths.STAKING_BALANCE_TOTAL, 0);
+    }, 0);
+  }
+
+  static getAppStake(stateRoot, appName) {
+    const appStakePath = PathUtil.getStakingBalanceTotalPath(appName);
+    return DB.getValueFromStateRoot(stateRoot, appStakePath) || 0;
   }
 
   // TODO(platfowner): Define error code explicitly.

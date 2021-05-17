@@ -25,6 +25,8 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const { isValAddr, toCksumAddr } = require('../common/chain-util');
 
+// TODO(platfowner): Migrate nonce to getAccountNonceAndTimestamp() and
+// updateAccountNonceAndTimestamp().
 class BlockchainNode {
   constructor() {
     const LOG_HEADER = 'constructor';
@@ -83,7 +85,7 @@ class BlockchainNode {
     this.nonce = this.getNonceFromChain();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
     this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.finalVersion),
+        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()),
         this.bc.lastBlockNumber() + 1);
     this.state = BlockchainNodeStates.SYNCING;
     return lastBlockWithoutProposal;
@@ -132,8 +134,8 @@ class BlockchainNode {
           `${this.stateManager.getFinalVersion()}`);
     }
     this.db.setStateVersion(newVersion, clonedRoot);
-    const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
-    this.nonce = newNonce;
+    const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
+    this.nonce = nonce;
     return true;
   }
 
@@ -172,12 +174,6 @@ class BlockchainNode {
     return this.stateManager.getFinalRoot().toJsObject(withDetails);
   }
 
-  getValueWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.VALUES_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
   getNonceFromChain() {
     const LOG_HEADER = 'getNonceFromChain';
 
@@ -212,10 +208,9 @@ class BlockchainNode {
     if (cksumAddr === this.account.address) {
       return this.nonce;
     }
-    const nonce = this.getValueWithStateVersion(
-        `${PredefinedDbPaths.ACCOUNTS}/${cksumAddr}/${PredefinedDbPaths.ACCOUNTS_NONCE}`,
-        false, this.stateManager.finalVersion);
-    return nonce === null ? 0 : nonce;
+    const stateRoot = this.stateManager.getFinalRoot();
+    const { nonce } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
+    return nonce;
   }
 
   getSharding() {

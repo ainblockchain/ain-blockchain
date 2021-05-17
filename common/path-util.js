@@ -182,6 +182,11 @@ class PathUtil {
     return PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
   }
 
+  static getConsensusStakingAccountBalancePath(address) {
+    const accountPath =  PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
+    return ChainUtil.appendPath(accountPath, PredefinedDbPaths.BALANCE)
+  }
+
   static getConsensusProposePath(blockNumber) {
     return ChainUtil.formatPath([
         PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber, PredefinedDbPaths.PROPOSE]);

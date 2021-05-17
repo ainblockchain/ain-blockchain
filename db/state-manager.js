@@ -11,6 +11,7 @@ const {
   StateVersions,
 } = require('../common/constants');
 
+// TODO(seo): Consider introducing cloneToTempVersion().
 class StateManager {
   constructor() {
     this.rootMap = new Map();
@@ -51,7 +52,7 @@ class StateManager {
    * Returns the final state root.
    */
   getFinalRoot() {
-    return this.getRoot(this.finalVersion);
+    return this.getRoot(this.getFinalVersion());
   }
 
   /**
@@ -182,7 +183,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return false;
     }
-    if (version === this.finalVersion) {
+    if (version === this.getFinalVersion()) {
       logger.error(`[${LOG_HEADER}] Not allowed to delete final version: ${version}`);
       return false;
     }
@@ -212,7 +213,7 @@ class StateManager {
     logger.debug(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
         `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
         ` with latest final version: '${this.getFinalVersion()}'`);
-    if (version === this.finalVersion) {
+    if (version === this.getFinalVersion()) {
       logger.error(`[${LOG_HEADER}] Already final version: ${version}`);
       return false;
     }

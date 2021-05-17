@@ -461,7 +461,7 @@ describe('TransactionPool', async () => {
       const APP_BANDWIDTH_BUDGET_PER_BLOCK = BANDWIDTH_BUDGET_PER_BLOCK - SERVICE_BANDWIDTH_BUDGET_PER_BLOCK;
       it('empty array', () => {
         assert.deepEqual(
-          node.tp.performBandwidthChecks([]),
+          node.tp.performBandwidthChecks([], node.db.stateRoot),
           []
         );
       });
@@ -472,7 +472,7 @@ describe('TransactionPool', async () => {
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
-          ]),
+          ], node.db.stateRoot),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
@@ -483,7 +483,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}}
-          ]),
+          ], node.db.stateRoot),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}},
@@ -497,14 +497,14 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: BANDWIDTH_BUDGET_PER_BLOCK + 1}}}
-          ]),
+          ], node.db.stateRoot),
           []
         );
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: BANDWIDTH_BUDGET_PER_BLOCK}}}
-          ]),
+          ], node.db.stateRoot),
           [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}}]
         );
       });
@@ -513,7 +513,7 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
-          ]),
+          ], node.db.stateRoot),
           [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}]
         );
       });
@@ -522,7 +522,7 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK + 1}}}
-          ]),
+          ], node.db.stateRoot),
           []
         );
       });
@@ -535,7 +535,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
-          ]),
+          ], node.db.stateRoot),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
@@ -547,7 +547,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: (APP_BANDWIDTH_BUDGET_PER_BLOCK / 2) + 1}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
-          ]),
+          ], node.db.stateRoot),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
@@ -561,7 +561,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 0}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 1}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 2}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: 1}}}
-          ]),
+          ], node.db.stateRoot),
           [{tx_body: {timestamp: 1, gas_price: 1, nonce: 0}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: 1}}}]
         );
       });
