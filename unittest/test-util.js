@@ -87,9 +87,9 @@ async function waitUntilTxFinalized(servers, txHash) {
       if (txStatus && txStatus.is_finalized === true) {
         unchecked.delete(server);
       }
-      await ChainUtil.sleep(200);
-      iterCount++;
     }
+    await ChainUtil.sleep(200);
+    iterCount++;
   }
 }
 
