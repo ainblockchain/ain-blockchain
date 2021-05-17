@@ -205,10 +205,10 @@ class BlockchainNode {
     return nonce;
   }
 
-  getNonceForAddr(address, pending) {
+  getNonceForAddr(address, fromPending) {
     if (!isValAddr(address)) return -1;
     const cksumAddr = toCksumAddr(address);
-    if (pending) {
+    if (fromPending) {
       const { nonce } = this.db.getAccountNonceAndTimestamp(cksumAddr);
       return nonce;
     }
