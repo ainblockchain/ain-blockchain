@@ -328,9 +328,13 @@ class Consensus {
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
-    const tempVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`);
-    const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
+    const tempDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`,
+        lastBlock.number - 1);
+    if (!tempDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
@@ -350,7 +354,8 @@ class Consensus {
       }
     }
 
-    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
+    const transactions =
+        this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
     const validTransactions = [];
     const invalidTransactions = [];
     const resList = [];
@@ -537,9 +542,13 @@ class Consensus {
         }
         baseVersion = prevDb.stateVersion;
       }
-      const tempVersion = this.node.stateManager.createUniqueVersionName(
-          `${StateVersions.CONSENSUS_VOTE}:${prevBlock.number}:${number}`);
-      const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
+      const tempDb = this.node.createTempDb(
+          baseVersion, `${StateVersions.CONSENSUS_VOTE}:${prevBlock.number}:${number}`,
+          prevBlock.number - 1);
+      if (!tempDb) {
+        logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+        return null;
+      }
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
       }
@@ -598,9 +607,12 @@ class Consensus {
       isSnapDb = true;
       baseVersion = prevDb.stateVersion;
     }
-    const newVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.POOL}:${prevBlock.number}:${number}`);
-    const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
+    const newDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.POOL}:${prevBlock.number}:${number}`, prevBlock.number);
+    if (!newDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
@@ -636,9 +648,13 @@ class Consensus {
       this.node.destroyDb(newDb);
       return false;
     }
-    const tempVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
-    const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
+    const tempDb = this.node.createTempDb(
+        newDb.stateVersion, `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`,
+        prevBlock.number - 1);
+    if (!tempDb) {
+      logger.error(`Failed to create a temp database with state version: ${newDb.stateVersion}.`);
+      return null;
+    }
     const proposalTxExecRes = tempDb.executeTransaction(executableTx);
     if (ChainUtil.isFailedTx(proposalTxExecRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx: ${JSON.stringify(proposalTxExecRes)}`);
@@ -899,10 +915,13 @@ class Consensus {
     } else if (blockHash === lastFinalizedHash) {
       baseVersion = this.node.stateManager.getFinalVersion();
     }
-    const snapVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.SNAP}:${currBlock.number}`);
     const blockNumberSnapshot = chain.length ? chain[0].number : latestBlock.number;
-    const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
+    const snapDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.SNAP}:${currBlock.number}`, blockNumberSnapshot);
+    if (!snapDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
 
     while (chain.length) {
       // apply last_votes and transactions
