@@ -435,6 +435,7 @@ const StateVersions = {
   SEGMENT: 'SEGMENT',
   SNAP: 'SNAP',
   START: 'START',
+  TX_POOL: 'TX_POOL',
 };
 
 /**

@@ -51,7 +51,7 @@ class StateManager {
    * Returns the final state root.
    */
   getFinalRoot() {
-    return this.getRoot(this.finalVersion);
+    return this.getRoot(this.getFinalVersion());
   }
 
   /**
@@ -182,7 +182,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Non-existing version: ${version}`);
       return false;
     }
-    if (version === this.finalVersion) {
+    if (version === this.getFinalVersion()) {
       logger.error(`[${LOG_HEADER}] Not allowed to delete final version: ${version}`);
       return false;
     }
@@ -212,7 +212,7 @@ class StateManager {
     logger.debug(`[${LOG_HEADER}] Finalizing version '${version}' among ` +
         `${this.numVersions()} versions: ${JSON.stringify(this.getVersionList())}` +
         ` with latest final version: '${this.getFinalVersion()}'`);
-    if (version === this.finalVersion) {
+    if (version === this.getFinalVersion()) {
       logger.error(`[${LOG_HEADER}] Already final version: ${version}`);
       return false;
     }
@@ -237,6 +237,24 @@ class StateManager {
       index++;
     } while (this.hasVersion(version));
     return version;
+  }
+
+  cloneToTempVersion(stateVersion, versionPrefix) {
+    const LOG_HEADER = 'cloneToTempVersion';
+    const tempVersion = this.createUniqueVersionName(versionPrefix);
+    const tempRoot = this.cloneVersion(stateVersion, tempVersion);
+    if (!tempRoot) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${stateVersion}`);
+      return {
+        tempVersion: null,
+        tempRoot: null,
+      };
+    }
+    return {
+      tempVersion,
+      tempRoot,
+    };
   }
 }
 

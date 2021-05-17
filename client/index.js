@@ -409,7 +409,7 @@ if (ENABLE_DEV_CLIENT_API) {
   });
 
   app.get('/get_nonce', (req, res, next) => {
-    const result = node.nonce;
+    const result = node.getNonceForAddr(req.query.address, req.query.from === 'pending');
     res.status(200)
       .set('Content-Type', 'application/json')
       .send({code: 0, result})

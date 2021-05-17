@@ -36,6 +36,7 @@ const {
   sendGetRequest
 } = require('../p2p/util');
 const PathUtil = require('../common/path-util');
+const DB = require('../db');
 const VersionUtil = require('../common/version-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -81,7 +82,8 @@ class Consensus {
     const myAddr = this.node.account.address;
     try {
       const targetStake = process.env.STAKE ? Number(process.env.STAKE) : 0;
-      const currentStake = this.getValidConsensusStake(myAddr);
+      const currentStake =
+          this.getValidConsensusStake(this.node.stateManager.getFinalVersion(), myAddr);
       logger.info(`[${LOG_HEADER}] Current stake: ${currentStake} / Target stake: ${targetStake}`);
       if (!targetStake && !currentStake) {
         logger.info(`[${LOG_HEADER}] Node doesn't have any stakes. ` +
@@ -96,8 +98,8 @@ class Consensus {
       this.startEpochTransition();
       logger.info(`[${LOG_HEADER}] Initialized to number ${finalizedNumber} and ` +
           `epoch ${this.state.epoch}`);
-    } catch (e) {
-      logger.error(`[${LOG_HEADER}] Init error: ${e}`);
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Init error: ${err} ${err.stack}`);
       this.setStatus(ConsensusStatus.STARTING, 'init');
     }
   }
@@ -130,8 +132,8 @@ class Consensus {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
           logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
           this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
-        } catch (e) {
-          logger.error(`ntpsync error: ${e}`);
+        } catch (err) {
+          logger.error(`ntpsync error: ${err} ${err.stack}`);
         }
       }
       currentTime -= this.timeAdjustment;
@@ -326,9 +328,13 @@ class Consensus {
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.stateManager.getFinalVersion() :
             this.blockPool.hashToDb.get(lastBlock.hash).stateVersion;
-    const tempVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`);
-    const tempDb = this.node.createTempDb(baseVersion, tempVersion, lastBlock.number - 1);
+    const tempDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.CONSENSUS_CREATE}:${lastBlock.number}:${blockNumber}`,
+        lastBlock.number - 1);
+    if (!tempDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
@@ -348,8 +354,8 @@ class Consensus {
       }
     }
 
-    // TODO(liayoo): Restrict the size / number of txs.
-    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempVersion);
+    const transactions =
+        this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
     const validTransactions = [];
     const invalidTransactions = [];
     const resList = [];
@@ -536,9 +542,13 @@ class Consensus {
         }
         baseVersion = prevDb.stateVersion;
       }
-      const tempVersion = this.node.stateManager.createUniqueVersionName(
-          `${StateVersions.CONSENSUS_VOTE}:${prevBlock.number}:${number}`);
-      const tempDb = this.node.createTempDb(baseVersion, tempVersion, prevBlock.number - 1);
+      const tempDb = this.node.createTempDb(
+          baseVersion, `${StateVersions.CONSENSUS_VOTE}:${prevBlock.number}:${number}`,
+          prevBlock.number - 1);
+      if (!tempDb) {
+        logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+        return null;
+      }
       if (isSnapDb) {
         this.node.destroyDb(prevDb);
       }
@@ -597,9 +607,12 @@ class Consensus {
       isSnapDb = true;
       baseVersion = prevDb.stateVersion;
     }
-    const newVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.POOL}:${prevBlock.number}:${number}`);
-    const newDb = this.node.createTempDb(baseVersion, newVersion, prevBlock.number);
+    const newDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.POOL}:${prevBlock.number}:${number}`, prevBlock.number);
+    if (!newDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
@@ -635,9 +648,13 @@ class Consensus {
       this.node.destroyDb(newDb);
       return false;
     }
-    const tempVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`);
-    const tempDb = this.node.createTempDb(newVersion, tempVersion, prevBlock.number - 1);
+    const tempDb = this.node.createTempDb(
+        newDb.stateVersion, `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`,
+        prevBlock.number - 1);
+    if (!tempDb) {
+      logger.error(`Failed to create a temp database with state version: ${newDb.stateVersion}.`);
+      return null;
+    }
     const proposalTxExecRes = tempDb.executeTransaction(executableTx);
     if (ChainUtil.isFailedTx(proposalTxExecRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx: ${JSON.stringify(proposalTxExecRes)}`);
@@ -729,8 +746,8 @@ class Consensus {
               proposal, ConsensusMessageTypes.PROPOSE);
           this.handleConsensusMessage(consensusMsg);
         }
-      } catch (e) {
-        logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${e}`);
+      } catch (err) {
+        logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${err} ${err.stack}`);
       }
     } else {
       logger.info(`[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
@@ -898,10 +915,13 @@ class Consensus {
     } else if (blockHash === lastFinalizedHash) {
       baseVersion = this.node.stateManager.getFinalVersion();
     }
-    const snapVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.SNAP}:${currBlock.number}`);
     const blockNumberSnapshot = chain.length ? chain[0].number : latestBlock.number;
-    const snapDb = this.node.createTempDb(baseVersion, snapVersion, blockNumberSnapshot);
+    const snapDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.SNAP}:${currBlock.number}`, blockNumberSnapshot);
+    if (!snapDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
 
     while (chain.length) {
       // apply last_votes and transactions
@@ -932,10 +952,10 @@ class Consensus {
     return validators;
   }
 
-  getWhitelist() {
+  getWhitelist(stateVersion) {
     const LOG_HEADER = 'getWhitelist';
-    const whitelist = this.node.getValueWithStateVersion(
-        PathUtil.getConsensusWhitelistPath(), false, this.node.stateManager.getFinalVersion());
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusWhitelistPath());
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
@@ -950,15 +970,12 @@ class Consensus {
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = this.node.getValueWithStateVersion(
-        PathUtil.getConsensusWhitelistPath(), false, stateVersion) || {};
+    const whitelist = this.getWhitelist(stateVersion);
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
-      const stakingAccount = this.node.getValueWithStateVersion(
-          PathUtil.getConsensusStakingAccountPath(address), false, stateVersion);
-      if (whitelist[address] === true && stakingAccount &&
-          stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
-        validators[address] = stakingAccount.balance;
+      const stake = this.getValidConsensusStake(stateVersion, address);
+      if (whitelist[address] === true && stake >= MIN_STAKE_PER_VALIDATOR) {
+        validators[address] = stake;
       }
     });
     logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
@@ -966,14 +983,10 @@ class Consensus {
     return validators;
   }
 
-  getValidConsensusStake(address) {
-    const stakingAccount = this.node.getValueWithStateVersion(
-        PathUtil.getConsensusStakingAccountPath(address), false,
-        this.node.stateManager.getFinalVersion());
-    if (stakingAccount && stakingAccount.balance > 0) {
-      return stakingAccount.balance;
-    }
-    return 0;
+  getValidConsensusStake(stateVersion, address) {
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    return DB.getValueFromStateRoot(
+        stateRoot, PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
   votedForEpoch(epoch) {
@@ -1070,8 +1083,8 @@ class Consensus {
         // the child state.
         await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
       }
-    } catch (e) {
-      logger.error(`Failed to report state proof hashes: ${e}`);
+    } catch (err) {
+      logger.error(`Failed to report state proof hashes: ${err} ${err.stack}`);
     }
     this.isReporting = false;
   }

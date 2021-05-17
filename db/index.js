@@ -262,7 +262,8 @@ class DB {
   /**
    * Returns reference to the input path for reading if exists, otherwise null.
    */
-  static getRefForReading(node, fullPath) {
+  static getRefForReadingFromStateRoot(stateRoot, fullPath) {
+    let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
@@ -272,6 +273,10 @@ class DB {
       }
     }
     return node;
+  }
+
+  getRefForReading(fullPath) {
+    return DB.getRefForReadingFromStateRoot(this.stateRoot, fullPath);
   }
 
   /**
@@ -290,8 +295,8 @@ class DB {
   // - Reference from root_a: child_1a -> child_2a -> child_3a
   // - Reference from root_b: child_1b -> child_2 -> child_3 (not affected)
   //
-  getRefForWriting(fullPath) {
-    let node = this.stateRoot;
+  static getRefForWritingToStateRoot(stateRoot, fullPath) {
+    let node = stateRoot;
     let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
@@ -328,33 +333,42 @@ class DB {
     return node;
   }
 
-  writeDatabase(fullPath, stateObj) {
-    const stateTree = StateNode.fromJsObject(stateObj, this.stateVersion);
+  getRefForWriting(fullPath) {
+    return DB.getRefForWritingToStateRoot(this.stateRoot, fullPath);
+  }
+
+  static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
+    const stateTree = StateNode.fromJsObject(stateObj, stateVersion);
     const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
-      this.stateRoot = stateTree;
+      stateRoot = stateTree;
     } else {
       const label = fullPath[fullPath.length - 1];
-      const parent = this.getRefForWriting(pathToParent);
+      const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
       parent.setChild(label, stateTree);
     }
     if (isEmptyNode(stateTree)) {
-      this.removeEmptyNodes(fullPath);
+      DB.removeEmptyNodesFromStateRoot(stateRoot, fullPath);
     } else if (!LIGHTWEIGHT) {
       setProofHashForStateTree(stateTree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForAllRootPaths(pathToParent, this.stateRoot);
+      updateProofHashForAllRootPaths(pathToParent, stateRoot);
     }
+    return stateRoot;
   }
 
-  removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
+  writeDatabase(fullPath, stateObj) {
+    this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
+  }
+
+  static removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
     if (depth < fullPath.length - 1) {
       const nextDbNode = curDbNode.getChild(fullPath[depth]);
       if (nextDbNode === null) {
         logger.error(`Unavailable path in the database: ${ChainUtil.formatPath(fullPath)}`);
       } else {
-        this.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
+        DB.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
       }
     }
     for (const label of curDbNode.getChildLabels()) {
@@ -365,8 +379,8 @@ class DB {
     }
   }
 
-  removeEmptyNodes(fullPath) {
-    return this.removeEmptyNodesRecursive(fullPath, 0, this.stateRoot);
+  static removeEmptyNodesFromStateRoot(stateRoot, fullPath) {
+    return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, isGlobal, shardingPath) {
@@ -378,7 +392,7 @@ class DB {
       return null;
     }
     const fullPath = DB.getFullPath(localPath, rootLabel);
-    const stateNode = DB.getRefForReading(stateRoot, fullPath);
+    const stateNode = DB.getRefForReadingFromStateRoot(stateRoot, fullPath);
     return stateNode !== null ? stateNode.toJsObject() : null;
   }
 
@@ -428,13 +442,18 @@ class DB {
     return rootProof;
   }
 
+  static getValueFromStateRoot(stateRoot, statePath) {
+    return DB.readFromStateRoot(
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, []);
+  }
+
   /**
    * Returns a state node's information.
    * @param {string} statePath full database path to the state node
    */
   getStateInfo(statePath) {
     const parsedPath = ChainUtil.parsePath(statePath);
-    const stateNode = DB.getRefForReading(this.stateRoot, parsedPath);
+    const stateNode = this.getRefForReading(parsedPath);
     if (stateNode === null) {
       return null;
     }
@@ -537,36 +556,69 @@ class DB {
     return resultList;
   }
 
-  getAccountNonceAndTimestamp(address) {
-    let nonce = this.getValue(
-        ChainUtil.formatPath(
-            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_NONCE]), false);
-    let timestamp = this.getValue(
-        ChainUtil.formatPath(
-            [PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_TIMESTAMP]), false);
-    if (nonce === null) {
-      nonce = 0;
-    }
-    if (timestamp === null) {
-      timestamp = 0;
-    }
+  static getAccountNonceAndTimestampFromStateRoot(stateRoot, address) {
+    const noncePath = PathUtil.getAccountNoncePath(address);
+    const timestampPath = PathUtil.getAccountTimestampPath(address);
+    const nonce = DB.getValueFromStateRoot(stateRoot, noncePath) || 0;
+    const timestamp = DB.getValueFromStateRoot(stateRoot, timestampPath) || 0;
     return { nonce, timestamp };
   }
 
+  getAccountNonceAndTimestamp(address) {
+    return DB.getAccountNonceAndTimestampFromStateRoot(this.stateRoot, address);
+  }
+
+  static updateAccountNonceAndTimestampToStateRoot(
+      stateRoot, stateVersion, address, nonce, timestamp) {
+    const LOG_HEADER = 'updateAccountNonceAndTimestampToStateRoot';
+    if (!ChainUtil.isNumber(nonce)) {
+      logger.error(`[${LOG_HEADER}] Invalid nonce: ${nonce} for address: ${address}`);
+      return false;
+    }
+    if (nonce >= 0) { // numbered nonce
+      const noncePath = PathUtil.getAccountNoncePath(address);
+      const fullNoncePath =
+          DB.getFullPath(ChainUtil.parsePath(noncePath), PredefinedDbPaths.VALUES_ROOT);
+      DB.writeToStateRoot(stateRoot, stateVersion, fullNoncePath, nonce + 1);
+    } else if (nonce === -2) { // ordered nonce
+      if (!ChainUtil.isNumber(timestamp)) {
+        logger.error(`[${LOG_HEADER}] Invalid timestamp: ${timestamp} for address: ${address}`);
+        return false;
+      }
+      const timestampPath = PathUtil.getAccountTimestampPath(address);
+      const fullTimestampPath =
+          DB.getFullPath(ChainUtil.parsePath(timestampPath), PredefinedDbPaths.VALUES_ROOT);
+      DB.writeToStateRoot(stateRoot, stateVersion, fullTimestampPath, timestamp);
+    }
+
+    return true;
+  }
+
   updateAccountNonceAndTimestamp(address, nonce, timestamp) {
-    if (!ChainUtil.isNumber(nonce) || !ChainUtil.isNumber(timestamp)) return;
-    const parsedNoncePath = ChainUtil.parsePath(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_NONCE}`);
-    const parsedTimestampPath = ChainUtil.parsePath(
-        `/${PredefinedDbPaths.ACCOUNTS}/${address}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`);
-    const fullNoncePath = DB.getFullPath(parsedNoncePath, PredefinedDbPaths.VALUES_ROOT);
-    const fullTimestampPath = DB.getFullPath(parsedTimestampPath, PredefinedDbPaths.VALUES_ROOT);
-    if (nonce >= 0) { // strictly ordered
-      this.writeDatabase(fullNoncePath, nonce + 1);
-    }
-    if (nonce === -2) { // loosely ordered
-      this.writeDatabase(fullTimestampPath, timestamp);
-    }
+    return DB.updateAccountNonceAndTimestampToStateRoot(
+        this.stateRoot, this.stateVersion, address, nonce, timestamp);
+  }
+
+  // TODO(platfowner): Use shallow fetch once available.
+  static getAppStakesTotalFromStateRoot(stateRoot) {
+    const appStakes = DB.getValueFromStateRoot(stateRoot, PredefinedDbPaths.STAKING) || {};
+    return Object.keys(appStakes).reduce((acc, cur) => {
+      if (cur === PredefinedDbPaths.CONSENSUS) return acc;
+      return acc + _.get(appStakes[cur], PredefinedDbPaths.STAKING_BALANCE_TOTAL, 0);
+    }, 0);
+  }
+
+  getAppStakesTotal() {
+    return DB.getAppStakesTotalFromStateRoot(this.stateRoot);
+  }
+
+  static getAppStakeFromStateRoot(stateRoot, appName) {
+    const appStakePath = PathUtil.getStakingBalanceTotalPath(appName);
+    return DB.getValueFromStateRoot(stateRoot, appStakePath) || 0;
+  }
+
+  getAppStake(appName) {
+    return DB.getAppStakeFromStateRoot(this.stateRoot, appName);
   }
 
   // TODO(platfowner): Define error code explicitly.
@@ -807,10 +859,13 @@ class DB {
     if (tx && auth && auth.addr && !auth.fid) {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return ChainUtil.returnTxResult(12, `Invalid nonce: ${tx.tx_body.nonce}`);
+        return ChainUtil.returnTxResult(
+          12, `Invalid nonce (!== ${nonce}) of transaction: ${JSON.stringify(tx)}`);
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return ChainUtil.returnTxResult(13, `Invalid timestamp: ${tx.tx_body.timestamp}`);
+        return ChainUtil.returnTxResult(
+          13, `Invalid timestamp (<= ${accountTimestamp}) of transaction: ` +
+          `${JSON.stringify(tx)}`);
       }
     }
     let result;
@@ -928,11 +983,11 @@ class DB {
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
           `timestamp: ${timestamp}\n`);
       }
-    } catch (e) {
+    } catch (err) {
       logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-          `timestamp: ${timestamp}\nError: ${e}`);
+          `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
     }
     return evalRuleRes;
   }

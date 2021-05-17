@@ -3,6 +3,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const logger = require('../logger')('NODE');
 const {
+  FeatureFlags,
   PORT,
   ACCOUNT_INDEX,
   TX_NONCE_ERROR_CODE,
@@ -14,7 +15,6 @@ const {
   GenesisAccounts,
   GenesisSharding,
   StateVersions,
-  FeatureFlags,
   LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -25,6 +25,8 @@ const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const { isValAddr, toCksumAddr } = require('../common/chain-util');
 
+// TODO(platfowner): Migrate nonce to getAccountNonceAndTimestamp() and
+// updateAccountNonceAndTimestamp().
 class BlockchainNode {
   constructor() {
     const LOG_HEADER = 'constructor';
@@ -83,14 +85,21 @@ class BlockchainNode {
     this.nonce = this.getNonceFromChain();
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
     this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.finalVersion),
+        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()),
         this.bc.lastBlockNumber() + 1);
     this.state = BlockchainNodeStates.SYNCING;
     return lastBlockWithoutProposal;
   }
 
-  createTempDb(baseVersion, newVersion, blockNumberSnapshot) {
-    return this.createDb(baseVersion, newVersion, null, null, false, false, blockNumberSnapshot);
+  createTempDb(baseVersion, versionPrefix, blockNumberSnapshot) {
+    const { tempVersion, tempRoot } = this.stateManager.cloneToTempVersion(
+        baseVersion, versionPrefix);
+    if (!tempRoot) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
+      return null;
+    }
+    return new DB(tempRoot, tempVersion, null, null, false, blockNumberSnapshot, this.stateManager);
   }
 
   createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
@@ -132,8 +141,8 @@ class BlockchainNode {
           `${this.stateManager.getFinalVersion()}`);
     }
     this.db.setStateVersion(newVersion, clonedRoot);
-    const newNonce = this.db.getAccountNonceAndTimestamp(this.account.address).nonce;
-    this.nonce = newNonce;
+    const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
+    this.nonce = nonce;
     return true;
   }
 
@@ -172,30 +181,6 @@ class BlockchainNode {
     return this.stateManager.getFinalRoot().toJsObject(withDetails);
   }
 
-  getValueWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.VALUES_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
-  getFunctionWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.FUNCTIONS_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
-  getRuleWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.RULES_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
-  getOwnerWithStateVersion(refPath, isGlobal, version) {
-    const versionRoot = this.stateManager.getRoot(version);
-    return DB.readFromStateRoot(
-        versionRoot, PredefinedDbPaths.OWNERS_ROOT, refPath, isGlobal, this.db.shardingPath);
-  }
-
   getNonceFromChain() {
     const LOG_HEADER = 'getNonceFromChain';
 
@@ -220,20 +205,19 @@ class BlockchainNode {
     return nonce;
   }
 
-  getNonceForAddr(address, pending) {
+  getNonceForAddr(address, fromPending) {
     if (!isValAddr(address)) return -1;
     const cksumAddr = toCksumAddr(address);
-    if (pending) {
+    if (fromPending) {
       const { nonce } = this.db.getAccountNonceAndTimestamp(cksumAddr);
       return nonce;
     }
     if (cksumAddr === this.account.address) {
       return this.nonce;
     }
-    const nonce = this.getValueWithStateVersion(
-        `${PredefinedDbPaths.ACCOUNTS}/${cksumAddr}/${PredefinedDbPaths.ACCOUNTS_NONCE}`,
-        false, this.stateManager.finalVersion);
-    return nonce === null ? 0 : nonce;
+    const stateRoot = this.stateManager.getFinalRoot();
+    const { nonce } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
+    return nonce;
   }
 
   getSharding() {
@@ -425,9 +409,13 @@ class BlockchainNode {
     }
 
     const baseVersion = this.stateManager.getFinalVersion();
-    const tempVersion = this.stateManager.createUniqueVersionName(
-        `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`);
-    const tempDb = this.createTempDb(baseVersion, tempVersion, this.bc.lastBlockNumber());
+    const tempDb = this.createTempDb(
+        baseVersion, `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`,
+        this.bc.lastBlockNumber());
+    if (!tempDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
     const validBlocks = this.bc.getValidBlocks(chainSegment);
     if (validBlocks.length > 0) {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {

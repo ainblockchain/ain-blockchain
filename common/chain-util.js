@@ -67,7 +67,7 @@ class ChainUtil {
           ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
     } catch (err) {
       logger.error(
-          `[${LOG_HEADER}] Failed to extract address with error: ${JSON.stringify(err)}.`);
+          `[${LOG_HEADER}] Failed to extract address with error: ${err} ${err.stack}.`);
     }
     return address;
   }

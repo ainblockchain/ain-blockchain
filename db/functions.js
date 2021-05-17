@@ -868,7 +868,7 @@ class Functions {
       });
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } catch (err) {
-      logger.error(`  => _openCheckin failed with error: ${JSON.stringify(err)}`);
+      logger.error(`  => _openCheckin failed with error: ${err} ${err.stack}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
@@ -927,7 +927,7 @@ class Functions {
       signAndSendTx(endpoint, transferTx, ownerPrivateKey);
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } catch (err) {
-      logger.error(`  => _closeCheckin failed with error: ${JSON.stringify(err)}`);
+      logger.error(`  => _closeCheckin failed with error: ${err} ${err.stack}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }

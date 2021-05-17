@@ -177,8 +177,8 @@ class P2pClient {
             node.init(false);
           }
         }
-      } catch (error) {
-        logger.error(error.stack);
+      } catch (err) {
+        logger.error(`Error: ${err} ${err.stack}`);
       }
     });
 
