@@ -275,6 +275,10 @@ class DB {
     return node;
   }
 
+  getRefForReading(fullPath) {
+    return DB.getRefForReadingFromStateRoot(this.stateRoot, fullPath);
+  }
+
   /**
    * Returns reference to the input path for writing if exists, otherwise creates path.
    */
@@ -327,6 +331,10 @@ class DB {
       }
     }
     return node;
+  }
+
+  getRefForWriting(fullPath) {
+    return DB.getRefForWritingToStateRoot(this.stateRoot, fullPath);
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
@@ -445,7 +453,7 @@ class DB {
    */
   getStateInfo(statePath) {
     const parsedPath = ChainUtil.parsePath(statePath);
-    const stateNode = DB.getRefForReadingFromStateRoot(this.stateRoot, parsedPath);
+    const stateNode = this.getRefForReading(parsedPath);
     if (stateNode === null) {
       return null;
     }
