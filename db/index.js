@@ -262,7 +262,7 @@ class DB {
   /**
    * Returns reference to the input path for reading if exists, otherwise null.
    */
-  static getRefForReading(stateRoot, fullPath) {
+  static getRefForReadingFromStateRoot(stateRoot, fullPath) {
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
@@ -291,7 +291,7 @@ class DB {
   // - Reference from root_a: child_1a -> child_2a -> child_3a
   // - Reference from root_b: child_1b -> child_2 -> child_3 (not affected)
   //
-  static getRefForWriting(stateRoot, fullPath) {
+  static getRefForWritingToStateRoot(stateRoot, fullPath) {
     let node = stateRoot;
     let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
@@ -336,11 +336,11 @@ class DB {
       stateRoot = stateTree;
     } else {
       const label = fullPath[fullPath.length - 1];
-      const parent = DB.getRefForWriting(stateRoot, pathToParent);
+      const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
       parent.setChild(label, stateTree);
     }
     if (isEmptyNode(stateTree)) {
-      DB.removeEmptyNodes(stateRoot, fullPath);
+      DB.removeEmptyNodesFromStateRoot(stateRoot, fullPath);
     } else if (!LIGHTWEIGHT) {
       setProofHashForStateTree(stateTree);
     }
@@ -371,7 +371,7 @@ class DB {
     }
   }
 
-  static removeEmptyNodes(stateRoot, fullPath) {
+  static removeEmptyNodesFromStateRoot(stateRoot, fullPath) {
     return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
@@ -384,7 +384,7 @@ class DB {
       return null;
     }
     const fullPath = DB.getFullPath(localPath, rootLabel);
-    const stateNode = DB.getRefForReading(stateRoot, fullPath);
+    const stateNode = DB.getRefForReadingFromStateRoot(stateRoot, fullPath);
     return stateNode !== null ? stateNode.toJsObject() : null;
   }
 
@@ -445,7 +445,7 @@ class DB {
    */
   getStateInfo(statePath) {
     const parsedPath = ChainUtil.parsePath(statePath);
-    const stateNode = DB.getRefForReading(this.stateRoot, parsedPath);
+    const stateNode = DB.getRefForReadingFromStateRoot(this.stateRoot, parsedPath);
     if (stateNode === null) {
       return null;
     }
@@ -592,7 +592,7 @@ class DB {
   }
 
   // TODO(platfowner): Use shallow fetch once available.
-  static getAppStakesTotal(stateRoot) {
+  static getAppStakesTotalFromStateRoot(stateRoot) {
     const appStakes = DB.getValueFromStateRoot(stateRoot, PredefinedDbPaths.STAKING) || {};
     return Object.keys(appStakes).reduce((acc, cur) => {
       if (cur === PredefinedDbPaths.CONSENSUS) return acc;
@@ -600,7 +600,7 @@ class DB {
     }, 0);
   }
 
-  static getAppStake(stateRoot, appName) {
+  static getAppStakeFromStateRoot(stateRoot, appName) {
     const appStakePath = PathUtil.getStakingBalanceTotalPath(appName);
     return DB.getValueFromStateRoot(stateRoot, appStakePath) || 0;
   }

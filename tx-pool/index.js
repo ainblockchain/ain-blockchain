@@ -7,14 +7,13 @@ const {
   TRANSACTION_TRACKER_TIMEOUT_MS,
   LIGHTWEIGHT,
   BANDWIDTH_BUDGET_PER_BLOCK,
-	SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
+  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
   TransactionStatus,
   WriteDbOperations,
   AccountProperties,
-  PredefinedDbPaths,
   StateVersions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
@@ -197,7 +196,7 @@ class TransactionPool {
   }
 
   getAppBandwidthAllocated(stateRoot, appStakesTotal, appName) {
-    const appStake = DB.getAppStake(stateRoot, appName);
+    const appStake = DB.getAppStakeFromStateRoot(stateRoot, appName);
     return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
   }
 
@@ -209,7 +208,7 @@ class TransactionPool {
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
     // Sum of all apps' staked AIN
-    const appStakesTotal = DB.getAppStakesTotal(stateRoot);
+    const appStakesTotal = DB.getAppStakesTotalFromStateRoot(stateRoot);
     // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
     // nonced txs from the same address that come after the discarded tx need to be dropped as well.
     const addrToDiscardedNoncedTx = {};
