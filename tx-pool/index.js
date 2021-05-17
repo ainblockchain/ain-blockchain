@@ -2,25 +2,27 @@
 const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {
+  FeatureFlags,
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
   LIGHTWEIGHT,
-	BANDWIDTH_BUDGET_PER_BLOCK,
-	SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
+  BANDWIDTH_BUDGET_PER_BLOCK,
+  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
   TransactionStatus,
   WriteDbOperations,
   AccountProperties,
-  PredefinedDbPaths,
-  FeatureFlags,
+  StateVersions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
+const PathUtil = require('../common/path-util');
 const {
   sendGetRequest,
   signAndSendTx
 } = require('../p2p/util');
+const DB = require('../db');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -93,8 +95,8 @@ class TransactionPool {
 
   static isCorrectlyNoncedOrTimestamped(txNonce, txTimestamp, accountNonce, accountTimestamp) {
     return txNonce === -1 || // unordered
-        (txNonce === -2 && txTimestamp > accountTimestamp) || // loosely ordered
-        txNonce === accountNonce; // strictly ordered
+        (txNonce === -2 && txTimestamp > accountTimestamp) || // ordered
+        txNonce === accountNonce; // numbered
   }
 
   static excludeConsensusTransactions(txList) {
@@ -135,12 +137,13 @@ class TransactionPool {
         // sort transactions
         addrToTxList[address].sort((a, b) => {
           if (a.tx_body.nonce === b.tx_body.nonce) {
-            if (a.tx_body.nonce >= 0) { // both strictly ordered
+            if (a.tx_body.nonce >= 0) { // both with numbered nonces
               return 0;
             }
-            return a.tx_body.timestamp - b.tx_body.timestamp; // both loosely ordered / unordered
+            // both with ordered or unordered nonces
+            return a.tx_body.timestamp - b.tx_body.timestamp;
           }
-          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both strictly ordered
+          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both with numbered nonces
             return a.tx_body.nonce - b.tx_body.nonce;
           }
           return 0;
@@ -149,62 +152,61 @@ class TransactionPool {
     }
   }
 
-  getValidTransactions(excludeBlockList, baseStateVersion) {
+  getValidTransactions(excludeBlockList, baseVersion) {
+    const LOG_HEADER = 'getValidTransactions';
+    if (!baseVersion) {
+      baseVersion = this.node.db.stateVersion;
+    }
+    const tempDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`, -2);
+    if (!tempDb) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
+
     const addrToTxList = JSON.parse(JSON.stringify(this.transactions));
     TransactionPool.filterAndSortTransactions(addrToTxList, excludeBlockList);
     // Remove incorrectly nonced / timestamped transactions
-    const noncesAndTimestamps = baseStateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.ACCOUNTS, false, baseStateVersion) : {};
     for (const [addr, txList] of Object.entries(addrToTxList)) {
       const newTxList = [];
       for (let index = 0; index < txList.length; index++) {
         const tx = txList[index];
         const txNonce = tx.tx_body.nonce;
         const txTimestamp = tx.tx_body.timestamp;
-        const accountNonce = _.get(noncesAndTimestamps, `${addr}.nonce`, 0);
-        const accountTimestamp = _.get(noncesAndTimestamps, `${addr}.timestamp`, 0);
+        const { nonce: accountNonce, timestamp: accountTimestamp } =
+            tempDb.getAccountNonceAndTimestamp(addr);
         if (TransactionPool.isCorrectlyNoncedOrTimestamped(
             txNonce, txTimestamp, accountNonce, accountTimestamp)) {
           newTxList.push(tx);
-          if (txNonce >= 0) {
-            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'nonce'], txNonce + 1);
-          }
-          if (txNonce === -2) {
-            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'timestamp'], txTimestamp);
-          }
+          tempDb.updateAccountNonceAndTimestamp(addr, txNonce, txTimestamp);
         }
       }
       addrToTxList[addr] = newTxList;
     }
-    // Merge lists of transactions while ordering by gas price and timestamp. Initial ordering by nonce is preserved.
+
+    // Merge lists of transactions while ordering by gas price and timestamp.
+    // Initial ordering by nonce is preserved.
     const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
-    return this.performBandwidthChecks(merged, baseStateVersion);
+    const checkedTxs = this.performBandwidthChecks(merged, tempDb);
+    this.node.destroyDb(tempDb);
+    return checkedTxs;
   }
 
-  static getAppStakesTotal(appStakesVal) {
-    return Object.keys(appStakesVal).reduce((acc, cur) => {
-      if (cur === PredefinedDbPaths.CONSENSUS) return acc;
-      return acc + _.get(appStakesVal[cur], 'balance_total', 0);
-    }, 0);
-  }
-
-  static getAppBandwidthAllocated(appStakesVal, appStakesTotal, appName) {
-    const appStake = _.get(appStakesVal, `${appName}.balance_total`, 0);
+  getAppBandwidthAllocated(db, appStakesTotal, appName) {
+    const appStake = db ? db.getAppStake(appName) : 0;
     return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
   }
 
-  // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps, depending on the
-  // types of the transactions (service vs app).
+  // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps,
+  // depending on the types of the transactions (service vs app).
   // TODO(): Try allocating the excess bandwidth to app txs.
-  performBandwidthChecks(txList, baseStateVersion) {
+  performBandwidthChecks(txList, db) {
     const candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
-    const appStakesVal = (baseStateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.STAKING, false, baseStateVersion) :
-        this.node.db.getValue(PredefinedDbPaths.STAKING)) || {};
     // Sum of all apps' staked AIN
-    const appStakesTotal = TransactionPool.getAppStakesTotal(appStakesVal);
+    const appStakesTotal = db ? db.getAppStakesTotal() : 0;
     // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
     // nonced txs from the same address that come after the discarded tx need to be dropped as well.
     const addrToDiscardedNoncedTx = {};
@@ -238,8 +240,10 @@ class TransactionPool {
       if (appBandwidth) {
         const tempAppBandwidthSum = {};
         for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
-          const appBandwidthAllocated = TransactionPool.getAppBandwidthAllocated(appStakesVal, appStakesTotal, appName);
-          const currAppBandwidthSum = _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
+          const appBandwidthAllocated =
+              this.getAppBandwidthAllocated(db, appStakesTotal, appName);
+          const currAppBandwidthSum =
+              _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
           if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
             // Exceeds app bandwidth budget. Discard tx.
             if (nonce >= 0) {
@@ -392,7 +396,7 @@ class TransactionPool {
     const addrToTimestamp = {};
     for (const voteTx of block.last_votes) {
       const txTimestamp = voteTx.tx_body.timestamp;
-      // voting txs are loosely ordered.
+      // voting txs with ordered nonces.
       this.transactionTracker[voteTx.hash] = {
         status: TransactionStatus.BLOCK_STATUS,
         number: block.number,
@@ -517,8 +521,8 @@ class TransactionPool {
     }
     try {
       value = action.valueFunction(success);
-    } catch (e) {
-      logger.info(`  =>> valueFunction() failed: ${e}`);
+    } catch (err) {
+      logger.info(`  =>> valueFunction() failed: ${err} ${err.stack}`);
       return;
     }
     const actionTxBody = {

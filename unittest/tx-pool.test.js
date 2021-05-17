@@ -39,7 +39,7 @@ describe('TransactionPool', async () => {
 
     beforeEach(async () => {
       for (let i = 0; i < 10; i++) {
-        t = getTransaction(node, {
+        const tx = getTransaction(node, {
           operation: {
             type: 'SET_VALUE',
             ref: 'REF',
@@ -48,9 +48,11 @@ describe('TransactionPool', async () => {
           nonce: node.nonce++,
           gas_price: 1
         });
-        node.tp.addTransaction(t);
+        node.tp.addTransaction(tx);
         await ChainUtil.sleep(1);
       }
+      // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
+      // their proper ordering
       node.tp.transactions[node.account.address] =
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
 
@@ -63,7 +65,7 @@ describe('TransactionPool', async () => {
       const nodes = [node2, node3, node4];
       for (let j = 0; j < nodes.length; j++) {
         for (let i = 0; i < 11; i++) {
-          t = getTransaction(nodes[j], {
+          const tx = getTransaction(nodes[j], {
             operation: {
               type: 'SET_VALUE',
               ref: 'REF',
@@ -72,45 +74,46 @@ describe('TransactionPool', async () => {
             nonce: nodes[j].nonce++,
             gas_price: 1
           });
-          node.tp.addTransaction(t);
+          node.tp.addTransaction(tx);
           await ChainUtil.sleep(1);
         }
+        // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
+        // their proper ordering
         node.tp.transactions[nodes[j].account.address] =
             shuffleSeed.shuffle(node.tp.transactions[nodes[j].account.address]);
       }
-
-      // Shuffle transactions and see if the transaction-pool can re-sort them according to them according to their proper ordering
     });
 
     describe('getValidTransactions()', () => {
       it('transactions are correctly ordered by nonces', () => {
-        const sortedNonces1 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node.account.address)) {
-            return transaction;
+        const validTransactions = node.tp.getValidTransactions();
+        const sortedNonces1 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
-        const sortedNonces2 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node2.account.address)) {
-            return transaction;
+        const sortedNonces2 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node2.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
-        const sortedNonces3 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node3.account.address)) {
-            return transaction;
+        const sortedNonces3 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node3.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
-        const sortedNonces4 = node.tp.getValidTransactions().filter((transaction) => {
-          if (ChainUtil.areSameAddrs(transaction.address, node4.account.address)) {
-            return transaction;
+        const sortedNonces4 = validTransactions.filter((tx) => {
+          if (ChainUtil.areSameAddrs(tx.address, node4.account.address)) {
+            return tx;
           }
-        }).map((transaction) => {
-          return transaction.tx_body.nonce;
+        }).map((tx) => {
+          return tx.tx_body.nonce;
         });
         assert.deepEqual(sortedNonces1, [...Array(11).keys()]);
         assert.deepEqual(sortedNonces2, [...Array(11).keys()]);
@@ -458,7 +461,7 @@ describe('TransactionPool', async () => {
       const APP_BANDWIDTH_BUDGET_PER_BLOCK = BANDWIDTH_BUDGET_PER_BLOCK - SERVICE_BANDWIDTH_BUDGET_PER_BLOCK;
       it('empty array', () => {
         assert.deepEqual(
-          node.tp.performBandwidthChecks([]),
+          node.tp.performBandwidthChecks([], node.db),
           []
         );
       });
@@ -469,7 +472,7 @@ describe('TransactionPool', async () => {
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
-          ]),
+          ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
@@ -480,7 +483,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}}
-          ]),
+          ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}},
@@ -494,14 +497,14 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: BANDWIDTH_BUDGET_PER_BLOCK + 1}}}
-          ]),
+          ], node.db),
           []
         );
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: BANDWIDTH_BUDGET_PER_BLOCK}}}
-          ]),
+          ], node.db),
           [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}}]
         );
       });
@@ -510,7 +513,7 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
-          ]),
+          ], node.db),
           [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}]
         );
       });
@@ -519,7 +522,7 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK + 1}}}
-          ]),
+          ], node.db),
           []
         );
       });
@@ -532,7 +535,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
-          ]),
+          ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
@@ -544,7 +547,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: (APP_BANDWIDTH_BUDGET_PER_BLOCK / 2) + 1}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
-          ]),
+          ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
@@ -558,7 +561,7 @@ describe('TransactionPool', async () => {
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 0}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 1}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 2}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: 1}}}
-          ]),
+          ], node.db),
           [{tx_body: {timestamp: 1, gas_price: 1, nonce: 0}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {service: 1}}}]
         );
       });

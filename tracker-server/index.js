@@ -263,7 +263,7 @@ function getDiskUsage() {
     const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
     return Object.assign({}, diskUsage, { used });
   } catch (err) {
-    logger.error(err);
+    logger.error(`Error: ${err} ${err.stack}`);
     return {};
   }
 }

@@ -179,7 +179,7 @@ class P2pServer {
       const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
       return Object.assign({}, diskUsage, { used });
     } catch (err) {
-      logger.error(err);
+      logger.error(`Error: ${err} ${err.stack}`);
       return {};
     }
   }
@@ -528,8 +528,8 @@ class P2pServer {
             logger.error('Ignore the message.');
             break;
         }
-      } catch (error) {
-        logger.error(error.stack);
+      } catch (err) {
+        logger.error(`Error: ${err} ${err.stack}`);
       }
     });
 
