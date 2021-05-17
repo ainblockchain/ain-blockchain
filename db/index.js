@@ -600,9 +600,17 @@ class DB {
     }, 0);
   }
 
+  getAppStakesTotal() {
+    return DB.getAppStakesTotalFromStateRoot(this.stateRoot);
+  }
+
   static getAppStakeFromStateRoot(stateRoot, appName) {
     const appStakePath = PathUtil.getStakingBalanceTotalPath(appName);
     return DB.getValueFromStateRoot(stateRoot, appStakePath) || 0;
+  }
+
+  getAppStake(appName) {
+    return DB.getAppStakeFromStateRoot(this.stateRoot, appName);
   }
 
   // TODO(platfowner): Define error code explicitly.
