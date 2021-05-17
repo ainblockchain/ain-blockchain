@@ -153,18 +153,16 @@ class TransactionPool {
     }
   }
 
-  getValidTransactions(excludeBlockList, stateVersion) {
-    if (!stateVersion) {
-      stateVersion = this.node.db.stateVersion;
+  getValidTransactions(excludeBlockList, baseVersion) {
+    const LOG_HEADER = 'getValidTransactions';
+    if (!baseVersion) {
+      baseVersion = this.node.db.stateVersion;
     }
-    let tempVersion = null;
-    let tempRoot = null;
-    tempVersion = this.node.stateManager.createUniqueVersionName(
-        `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`);
-    tempRoot = this.node.stateManager.cloneVersion(stateVersion, tempVersion);
+    const { tempVersion, tempRoot } = this.node.stateManager.cloneToTempVersion(
+        baseVersion, `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`);
     if (!tempRoot) {
       logger.error(
-          `[${LOG_HEADER}] Failed to clone state version: ${stateVersion}`);
+          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
       return null;
     }
 

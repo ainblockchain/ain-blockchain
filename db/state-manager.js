@@ -11,7 +11,6 @@ const {
   StateVersions,
 } = require('../common/constants');
 
-// TODO(seo): Consider introducing cloneToTempVersion().
 class StateManager {
   constructor() {
     this.rootMap = new Map();
@@ -238,6 +237,24 @@ class StateManager {
       index++;
     } while (this.hasVersion(version));
     return version;
+  }
+
+  cloneToTempVersion(stateVersion, versionPrefix) {
+    const LOG_HEADER = 'cloneToTempVersion';
+    const tempVersion = this.createUniqueVersionName(versionPrefix);
+    const tempRoot = this.cloneVersion(stateVersion, tempVersion);
+    if (!tempRoot) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${stateVersion}`);
+      return {
+        tempVersion: null,
+        tempRoot: null,
+      };
+    }
+    return {
+      tempVersion,
+      tempRoot,
+    };
   }
 }
 

@@ -91,8 +91,15 @@ class BlockchainNode {
     return lastBlockWithoutProposal;
   }
 
-  createTempDb(baseVersion, newVersion, blockNumberSnapshot) {
-    return this.createDb(baseVersion, newVersion, null, null, false, false, blockNumberSnapshot);
+  createTempDb(baseVersion, versionPrefix, blockNumberSnapshot) {
+    const { tempVersion, tempRoot } = this.stateManager.cloneToTempVersion(
+        baseVersion, versionPrefix);
+    if (!tempRoot) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
+      return null;
+    }
+    return new DB(tempRoot, tempVersion, null, null, false, blockNumberSnapshot, this.stateManager);
   }
 
   createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
@@ -402,9 +409,13 @@ class BlockchainNode {
     }
 
     const baseVersion = this.stateManager.getFinalVersion();
-    const tempVersion = this.stateManager.createUniqueVersionName(
-        `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`);
-    const tempDb = this.createTempDb(baseVersion, tempVersion, this.bc.lastBlockNumber());
+    const tempDb = this.createTempDb(
+        baseVersion, `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`,
+        this.bc.lastBlockNumber());
+    if (!tempDb) {
+      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
     const validBlocks = this.bc.getValidBlocks(chainSegment);
     if (validBlocks.length > 0) {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {
