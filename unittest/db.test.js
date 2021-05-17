@@ -3377,10 +3377,10 @@ describe("Proof hash", () => {
 
   describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
     it("checks proof hash of under $root_path/test", () => {
-      const valuesNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['values', 'test']);
-      const ownersNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['owners', 'test']);
-      const rulesNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['rules', 'test']);
-      const functionNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['functions', 'test']);
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
       expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
       expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
       expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
@@ -3429,10 +3429,10 @@ describe("Proof hash", () => {
       node.db.setOwner("test/empty_owners/.owner/owners/*/write_function", false);
       node.db.setRule("test/test_rules", nestedRules);
       node.db.setFunction("test/test_functions", dbFuncs);
-      const valuesNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['values', 'test']);
-      const ownersNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['owners', 'test']);
-      const rulesNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['rules', 'test']);
-      const functionNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['functions', 'test']);
+      const valuesNode = node.db.getRefForReading(['values', 'test']);
+      const ownersNode = node.db.getRefForReading(['owners', 'test']);
+      const rulesNode = node.db.getRefForReading(['rules', 'test']);
+      const functionNode = node.db.getRefForReading(['functions', 'test']);
       expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
       expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
       expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
@@ -3448,10 +3448,10 @@ describe("Proof hash", () => {
 
     it("tests proof with owners, rules, values and functions", () => {
       const rootNode = node.db.stateRoot;
-      const ownersNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['owners']);
-      const rulesNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['rules']);
-      const valuesNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['values']);
-      const functionNode = DB.getRefForReadingFromStateRoot(node.db.stateRoot, ['functions']);
+      const ownersNode = node.db.getRefForReading(['owners']);
+      const rulesNode = node.db.getRefForReading(['rules']);
+      const valuesNode = node.db.getRefForReading(['values']);
+      const functionNode = node.db.getRefForReading(['functions']);
       const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
       const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
       rootNode.getChildLabels().forEach(label => {
@@ -3633,16 +3633,15 @@ describe("State version handling", () => {
     rimraf.sync(CHAINS_DIR);
   });
 
-  describe("getRefForReadingFromStateRoot()", () => {
+  describe("getRefForReading()", () => {
     it("the nodes on the path are not affected", () => {
       expect(node.db.deleteBackupStateVersion()).to.equal(true);
       const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const child21 = child2.getChild('child_21');
       const child212 = child21.getChild('child_212');
 
-      expect(
-          DB.getRefForReadingFromStateRoot(node.db.stateRoot,
-          ['values', 'test', 'child_2', 'child_21', 'child_212'])).to.not.equal(null);
+      expect(node.db.getRefForReading(['values', 'test', 'child_2', 'child_21', 'child_212']))
+          .to.not.equal(null);
 
       // The nodes on the path are not affected.
       const newChild2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
@@ -3654,19 +3653,17 @@ describe("State version handling", () => {
     });
   });
 
-  describe("getRefForWritingToStateRoot()", () => {
+  describe("getRefForWriting()", () => {
     it("the nodes of single access path are not cloned", () => {
       // First referencing to make the number of access paths = 1.
-      expect(DB.getRefForWritingToStateRoot(
-          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
       const child2 = node.db.stateRoot.getChild('values').getChild('test').getChild('child_2');
       const child21 = child2.getChild('child_21');
       const child212 = child21.getChild('child_212');
 
       // Second referencing.
-      expect(DB.getRefForWritingToStateRoot(
-          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path are not cloned.
@@ -3686,8 +3683,7 @@ describe("State version handling", () => {
       const child21 = child2.getChild('child_21');
       const child212 = child21.getChild('child_212');
 
-      expect(DB.getRefForWritingToStateRoot(
-          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path are cloned.
@@ -3706,8 +3702,7 @@ describe("State version handling", () => {
       // Make child21's number of parents = 2.
       const clonedChild2 = child2.clone('new version');
 
-      expect(DB.getRefForWritingToStateRoot(
-          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // Only the nodes of multiple paths are cloned.
@@ -3726,8 +3721,7 @@ describe("State version handling", () => {
       // Make child212's number of parents = 2.
       const clonedChild21 = child21.clone('new version');
 
-      expect(DB.getRefForWritingToStateRoot(
-          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // Only the nodes of multiple paths are cloned.
@@ -3746,8 +3740,7 @@ describe("State version handling", () => {
       const beforeOtherChild21 = beforeOtherChild2.getChild('child_21');
       const beforeOtherChild212 = beforeOtherChild21.getChild('child_212');
 
-      expect(DB.getRefForWritingToStateRoot(
-          node.db.stateRoot, ['values', 'test', 'child_2', 'child_21', 'child_212']))
+      expect(node.db.getRefForWriting(['values', 'test', 'child_2', 'child_21', 'child_212']))
           .to.not.equal(null);
 
       // The nodes on the path from other roots are not affected.
