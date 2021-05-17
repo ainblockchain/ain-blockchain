@@ -157,11 +157,11 @@ class TransactionPool {
     if (!baseVersion) {
       baseVersion = this.node.db.stateVersion;
     }
-    const { tempVersion, tempRoot } = this.node.stateManager.cloneToTempVersion(
-        baseVersion, `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`);
-    if (!tempRoot) {
+    const tempDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`, -2);
+    if (!tempDb) {
       logger.error(
-          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
+          `[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
       return null;
     }
 
@@ -175,40 +175,38 @@ class TransactionPool {
         const txNonce = tx.tx_body.nonce;
         const txTimestamp = tx.tx_body.timestamp;
         const { nonce: accountNonce, timestamp: accountTimestamp } =
-            DB.getAccountNonceAndTimestampFromStateRoot(tempRoot, addr);
+            tempDb.getAccountNonceAndTimestamp(addr);
         if (TransactionPool.isCorrectlyNoncedOrTimestamped(
             txNonce, txTimestamp, accountNonce, accountTimestamp)) {
           newTxList.push(tx);
-          DB.updateAccountNonceAndTimestampToStateRoot(
-              tempRoot, tempVersion, addr, txNonce, txTimestamp);
+          tempDb.updateAccountNonceAndTimestamp(addr, txNonce, txTimestamp);
         }
       }
       addrToTxList[addr] = newTxList;
     }
 
-    // Merge lists of transactions while ordering by gas price and timestamp. Initial ordering by nonce is preserved.
+    // Merge lists of transactions while ordering by gas price and timestamp.
+    // Initial ordering by nonce is preserved.
     const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
-    const checkedTxs = this.performBandwidthChecks(merged, tempRoot);
-    if (!this.node.stateManager.deleteVersion(tempVersion)) {
-      logger.error(`[${LOG_HEADER}] Failed to delete version: ${tempVersion}`);
-    }
+    const checkedTxs = this.performBandwidthChecks(merged, tempDb);
+    this.node.destroyDb(tempDb);
     return checkedTxs;
   }
 
-  getAppBandwidthAllocated(stateRoot, appStakesTotal, appName) {
-    const appStake = DB.getAppStakeFromStateRoot(stateRoot, appName);
+  getAppBandwidthAllocated(db, appStakesTotal, appName) {
+    const appStake = db ? db.getAppStake(appName) : 0;
     return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
   }
 
-  // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps, depending on the
-  // types of the transactions (service vs app).
+  // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps,
+  // depending on the types of the transactions (service vs app).
   // TODO(): Try allocating the excess bandwidth to app txs.
-  performBandwidthChecks(txList, stateRoot) {
+  performBandwidthChecks(txList, db) {
     const candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
     // Sum of all apps' staked AIN
-    const appStakesTotal = DB.getAppStakesTotalFromStateRoot(stateRoot);
+    const appStakesTotal = db ? db.getAppStakesTotal() : 0;
     // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
     // nonced txs from the same address that come after the discarded tx need to be dropped as well.
     const addrToDiscardedNoncedTx = {};
@@ -243,7 +241,7 @@ class TransactionPool {
         const tempAppBandwidthSum = {};
         for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
           const appBandwidthAllocated =
-              this.getAppBandwidthAllocated(stateRoot, appStakesTotal, appName);
+              this.getAppBandwidthAllocated(db, appStakesTotal, appName);
           const currAppBandwidthSum =
               _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
           if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
