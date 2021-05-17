@@ -36,6 +36,7 @@ const {
   sendGetRequest
 } = require('../p2p/util');
 const PathUtil = require('../common/path-util');
+const DB = require('../db');
 const VersionUtil = require('../common/version-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -81,7 +82,8 @@ class Consensus {
     const myAddr = this.node.account.address;
     try {
       const targetStake = process.env.STAKE ? Number(process.env.STAKE) : 0;
-      const currentStake = this.getValidConsensusStake(myAddr);
+      const currentStake =
+          this.getValidConsensusStake(this.node.stateManager.getFinalVersion(), myAddr);
       logger.info(`[${LOG_HEADER}] Current stake: ${currentStake} / Target stake: ${targetStake}`);
       if (!targetStake && !currentStake) {
         logger.info(`[${LOG_HEADER}] Node doesn't have any stakes. ` +
@@ -933,8 +935,8 @@ class Consensus {
 
   getWhitelist(stateVersion) {
     const LOG_HEADER = 'getWhitelist';
-    const whitelist = this.node.getValueWithStateVersion(
-        PathUtil.getConsensusWhitelistPath(), false, stateVersion);
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusWhitelistPath());
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
@@ -952,11 +954,9 @@ class Consensus {
     const whitelist = this.getWhitelist(stateVersion);
     const validators = {};
     Object.keys(whitelist).forEach((address) => {
-      const stakingAccount = this.node.getValueWithStateVersion(
-          PathUtil.getConsensusStakingAccountPath(address), false, stateVersion);
-      if (whitelist[address] === true && stakingAccount &&
-          stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
-        validators[address] = stakingAccount.balance;
+      const stake = this.getValidConsensusStake(stateVersion, address);
+      if (whitelist[address] === true && stake >= MIN_STAKE_PER_VALIDATOR) {
+        validators[address] = stake;
       }
     });
     logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
@@ -964,14 +964,10 @@ class Consensus {
     return validators;
   }
 
-  getValidConsensusStake(address) {
-    const stakingAccount = this.node.getValueWithStateVersion(
-        PathUtil.getConsensusStakingAccountPath(address), false,
-        this.node.stateManager.getFinalVersion());
-    if (stakingAccount && stakingAccount.balance > 0) {
-      return stakingAccount.balance;
-    }
-    return 0;
+  getValidConsensusStake(stateVersion, address) {
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    return DB.getValueFromStateRoot(
+        stateRoot, PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
   votedForEpoch(epoch) {

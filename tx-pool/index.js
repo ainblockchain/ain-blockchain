@@ -6,7 +6,7 @@ const {
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
   LIGHTWEIGHT,
-	BANDWIDTH_BUDGET_PER_BLOCK,
+  BANDWIDTH_BUDGET_PER_BLOCK,
 	SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
   GenesisSharding,
   GenesisAccounts,
@@ -18,6 +18,7 @@ const {
   StateVersions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
+const PathUtil = require('../common/path-util');
 const {
   sendGetRequest,
   signAndSendTx
@@ -153,11 +154,11 @@ class TransactionPool {
   }
 
   getValidTransactions(excludeBlockList, stateVersion) {
-    let tempVersion = null;
-    let tempRoot = null;
     if (!stateVersion) {
       stateVersion = this.node.db.stateVersion;
     }
+    let tempVersion = null;
+    let tempRoot = null;
     tempVersion = this.node.stateManager.createUniqueVersionName(
         `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`);
     tempRoot = this.node.stateManager.cloneVersion(stateVersion, tempVersion);
@@ -188,43 +189,29 @@ class TransactionPool {
       addrToTxList[addr] = newTxList;
     }
 
+    // Merge lists of transactions while ordering by gas price and timestamp. Initial ordering by nonce is preserved.
+    const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
+    const checkedTxs = this.performBandwidthChecks(merged, tempRoot);
     if (!this.node.stateManager.deleteVersion(tempVersion)) {
       logger.error(`[${LOG_HEADER}] Failed to delete version: ${tempVersion}`);
     }
-
-    // Merge lists of transactions while ordering by gas price and timestamp. Initial ordering by nonce is preserved.
-    const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
-    return this.performBandwidthChecks(merged, stateVersion);
+    return checkedTxs;
   }
 
-  getAppStakes(stateVersion) {
-    return (stateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.STAKING, false, stateVersion) :
-        this.node.db.getValue(PredefinedDbPaths.STAKING)) || {};
-  }
-
-  static getAppStakesTotal(appStakesVal) {
-    return Object.keys(appStakesVal).reduce((acc, cur) => {
-      if (cur === PredefinedDbPaths.CONSENSUS) return acc;
-      return acc + _.get(appStakesVal[cur], 'balance_total', 0);
-    }, 0);
-  }
-
-  static getAppBandwidthAllocated(appStakesVal, appStakesTotal, appName) {
-    const appStake = _.get(appStakesVal, `${appName}.balance_total`, 0);
+  getAppBandwidthAllocated(stateRoot, appStakesTotal, appName) {
+    const appStake = DB.getAppStake(stateRoot, appName);
     return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
   }
 
   // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps, depending on the
   // types of the transactions (service vs app).
   // TODO(): Try allocating the excess bandwidth to app txs.
-  performBandwidthChecks(txList, stateVersion) {
+  performBandwidthChecks(txList, stateRoot) {
     const candidateTxList = [];
     let serviceBandwidthSum = 0;
     const appBandwidthSum = {};
-    const appStakesVal = this.getAppStakes(stateVersion);
     // Sum of all apps' staked AIN
-    const appStakesTotal = TransactionPool.getAppStakesTotal(appStakesVal);
+    const appStakesTotal = DB.getAppStakesTotal(stateRoot);
     // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
     // nonced txs from the same address that come after the discarded tx need to be dropped as well.
     const addrToDiscardedNoncedTx = {};
@@ -258,8 +245,10 @@ class TransactionPool {
       if (appBandwidth) {
         const tempAppBandwidthSum = {};
         for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
-          const appBandwidthAllocated = TransactionPool.getAppBandwidthAllocated(appStakesVal, appStakesTotal, appName);
-          const currAppBandwidthSum = _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
+          const appBandwidthAllocated =
+              this.getAppBandwidthAllocated(stateRoot, appStakesTotal, appName);
+          const currAppBandwidthSum =
+              _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
           if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
             // Exceeds app bandwidth budget. Discard tx.
             if (nonce >= 0) {
