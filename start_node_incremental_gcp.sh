@@ -114,13 +114,15 @@ sudo mkdir $NEW_DIR_PATH
 sudo chmod 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
 
-# 5. Start a new node process
+# 5. Install dependencies
 cd $NEW_DIR_PATH
 npm install
+
+# 6. Start a new node process
 printf "Starting up Node server.."
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
 
-# 6. Wait until the new node catches up
+# 7. Wait until the new node catches up
 loopCount=0
 
 generate_post_data()
