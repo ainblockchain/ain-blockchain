@@ -33,7 +33,10 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+# For one-off deploy
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+# For incremental deploy
+sh deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -116,7 +119,10 @@ GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDE
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+# For one-off deploy
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+# For incremental deploy
+sh deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
