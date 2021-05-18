@@ -128,14 +128,16 @@ loopCount=0
 generate_post_data()
 {
   cat <<EOF
-  {"method":"net_consensusState","params":{"protoVer":"0.7.1"},"jsonrpc":"2.0","id":"1"}
+  {"method":"$1","params":{"protoVer":"0.7.1"},"jsonrpc":"2.0","id":"1"}
 EOF
 }
 
 while :
 do
-    consensusState=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data)" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
+    consensusState=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'net_consensusState')" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
+    lastBlockNumber=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
     printf "\nconsensusState = ${consensusState}"
+    printf "\nlastBlockNumber = ${lastBlockNumber}"
     if [ "$consensusState" == "RUNNING" ]; then
         printf "\nNode is synced & running!\n\n"
         break
