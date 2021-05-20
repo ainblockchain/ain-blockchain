@@ -54,7 +54,31 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 function setUp() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+  const addr = parseOrLog(syncRequest(
+      'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set', {
+    json: {
+      op_list: [
+        {
+          type: 'SET_VALUE',
+          ref: `/manage_app/afan/create/${Date.now()}`,
+          value: {
+            admin: { [addr]: true }
+          }
+        },
+        {
+          type: 'SET_VALUE',
+          ref: `/staking/afan/${addr}/0/stake/${Date.now()}/value`,
+          value: 1
+        }
+      ]
+    }
+  }).body.toString('utf-8')).result;
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+  if (!waitUntilTxFinalized(serverList, createAppRes.tx_hash)) {
+    console.log(`setUp(): Failed to check finalization of create app tx.`)
+  }
+  const legacySetupRes = parseOrLog(syncRequest('POST', server1 + '/set', {
     json: {
       op_list: [
         {
@@ -84,9 +108,9 @@ function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUp() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(legacySetupRes, 'result')), false);
+  if (!waitUntilTxFinalized(serverList, legacySetupRes.tx_hash)) {
+    console.log(`setUp(): Failed to check finalization of legacy setup tx.`)
   }
 }
 
