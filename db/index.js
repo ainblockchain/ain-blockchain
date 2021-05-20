@@ -882,6 +882,7 @@ class DB {
     if (!ChainUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
+      tx.setExtraField('gas', gasAmountTotal);
       if (blockNumber > 0) {
         // Use only the service gas amount total
         result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
@@ -893,7 +894,6 @@ class DB {
             return ChainUtil.returnTxResult(
                 15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
           }
-          tx.setExtraField('gas', gasAmountTotal);
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
