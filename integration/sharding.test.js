@@ -200,7 +200,7 @@ async function cleanUp() {
   }
 }
 
-describe('Sharding', () => {
+describe('Sharding', async () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
   const parentAccounts =
@@ -243,6 +243,29 @@ describe('Sharding', () => {
       } }).body.toString('utf-8')
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+    // Create app at the parent chain for the shard
+    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set', {
+      json: {
+        op_list: [
+          {
+            type: 'SET_VALUE',
+            ref: `/manage_app/afan/create/${Date.now()}`,
+            value: {
+              admin: { [shardOwnerAddr]: true }
+            }
+          },
+          {
+            type: 'SET_VALUE',
+            ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
+            value: 1
+          }
+        ]
+      }
+    }).body.toString('utf-8')).result;
+    assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+    if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+      console.log(`Failed to check finalization of create app tx.`);
+    }
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await ChainUtil.sleep(2000);
@@ -1795,6 +1818,28 @@ describe('Sharding', () => {
     describe('_updateLatestShardReport', () => {
       before(async () => {
         const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set', {
+          json: {
+            op_list: [
+              {
+                type: 'SET_VALUE',
+                ref: `/manage_app/a_dapp/create/${Date.now()}`,
+                value: {
+                  admin: { [shard_owner]: true }
+                }
+              },
+              {
+                type: 'SET_VALUE',
+                ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
+                value: 1
+              }
+            ]
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+          console.log(`Failed to check finalization of create app tx.`)
+        }
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
             op_list: [
