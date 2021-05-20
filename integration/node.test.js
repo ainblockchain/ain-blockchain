@@ -19,6 +19,7 @@ const {
   ProofProperties,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
+  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
@@ -1902,8 +1903,13 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_sendSignedTransaction', () => {
+      const account = {
+        address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+        private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
+        public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
+      };
+
       it('accepts a transaction with nonce unordered (-1)', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -1942,7 +1948,6 @@ describe('Blockchain Node', () => {
       })
 
       it('accepts a transaction with numbered nonce', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
           address: account.address,
@@ -1990,7 +1995,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a transaction that exceeds its size limit.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
@@ -2020,7 +2024,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a transaction of missing properties.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -2049,7 +2052,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a transaction in an invalid format.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -2079,7 +2081,12 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_sendSignedTransactionBatch', () => {
-      const account = ainUtil.createAccount();
+      const account = {
+        address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+        private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
+        public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
+      };
+
       let txBodyBefore;
       let txBodyAfter;
       let signatureBefore;
@@ -2235,13 +2242,9 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(Array.isArray(resultList)).to.equal(true);
-          for (let i = 0; i < txList.length; i++) {
-            resultList[i].tx_hash = ChainUtil.hashSignature(txList[i].signature);
+          for (let i = 0; i < resultList.length; i++) {
+            expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
-          assert.deepEqual(res.result, {
-            result: resultList,
-            protoVer: CURRENT_PROTOCOL_VERSION,
-          });
         })
       })
 
@@ -2344,6 +2347,77 @@ describe('Blockchain Node', () => {
             protoVer: CURRENT_PROTOCOL_VERSION,
           });
         })
+      })
+
+      // NOTE(platfowner): As a workaround for BATCH_TX_LIST_SIZE_LIMIT, the transactions are
+      // divided into two batch transaction.
+      it('rejects batch transactions that cause over per-account transaction pool size limit.',
+          async () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBodyTemplate = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          nonce: -1
+        };
+
+        const txList1 = [];
+        // Not over the limit.
+        for (let i = 0; i < TX_POOL_SIZE_LIMIT_PER_ACCOUNT; i++) {
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList1.push({
+            tx_body: txBody,
+            signature,
+          });
+        }
+        const res1 = await client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList1,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        const resultList1 = _.get(res1, 'result.result', null);
+        // Accepts transactions.
+        expect(Array.isArray(resultList1)).to.equal(true);
+        for (let i = 0; i < resultList1.length; i++) {
+          expect(ChainUtil.isFailedTx(resultList1[i].result)).to.equal(false);
+        }
+
+        const txList2 = [];
+        // Just over the limit.
+        for (let i = 0; i < 1; i++) {
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + TX_POOL_SIZE_LIMIT_PER_ACCOUNT + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList2.push({
+            tx_body: txBody,
+            signature,
+          });
+        }
+        const res2 = await client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList2,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        const resultList2 = _.get(res2, 'result.result', null);
+        // Rejects transactions.
+        expect(Array.isArray(resultList2)).to.equal(true);
+        expect(resultList2.length).to.equal(1);
+        resultList2[0].tx_hash = 'erased';
+        assert.deepEqual(resultList2, [
+          {
+            "result": {
+              "code": 4,
+              "error_message": "[executeTransactionAndAddToPool] Tx pool does NOT have enough room (50) for account: 0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+              "gas_amount": 0
+            },
+            "tx_hash": "erased"
+          }
+        ]);
       })
 
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
