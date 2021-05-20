@@ -53,7 +53,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-function setUp() {
+async function setUp() {
   const addr = parseOrLog(syncRequest(
       'GET', server1 + '/get_address').body.toString('utf-8')).result;
   const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set', {
@@ -75,7 +75,7 @@ function setUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, createAppRes.tx_hash)) {
+  if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
     console.log(`setUp(): Failed to check finalization of create app tx.`)
   }
   const legacySetupRes = parseOrLog(syncRequest('POST', server1 + '/set', {
@@ -109,12 +109,12 @@ function setUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(legacySetupRes, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, legacySetupRes.tx_hash)) {
+  if (!(await waitUntilTxFinalized(serverList, legacySetupRes.tx_hash))) {
     console.log(`setUp(): Failed to check finalization of legacy setup tx.`)
   }
 }
 
-function cleanUp() {
+async function cleanUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -138,7 +138,7 @@ function cleanUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(serverList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
 }
@@ -186,12 +186,12 @@ describe('DApp Test', async () => {
   };
 
   describe('aFan Txs', () => {
-    before(() => {
-      setUp();
+    before(async () => {
+      await setUp();
     })
 
-    after(() => {
-      cleanUp();
+    after(async () => {
+      await cleanUp();
     })
 
     describe('tx_invest', () => {
