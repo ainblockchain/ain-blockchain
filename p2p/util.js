@@ -15,12 +15,33 @@ const {
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
+async function _waitUntilTxFinalize(endpoint, txHash) {
+  while (true) {
+    const confirmed = await sendGetRequest(
+        endpoint,
+        'ain_getTransactionByHash',
+        {hash: txHash}
+    )
+    .then((resp) => {
+      return (_.get(resp, 'data.result.result.is_finalized', false) === true);
+    })
+    .catch((err) => {
+      logger.error(`Failed to confirm transaction: ${err}`);
+      return false;
+    });
+    if (confirmed) {
+      return true;
+    }
+    await ChainUtil.sleep(1000);
+  }
+}
+
 async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
   const res = await signAndSendTx(endpoint, tx, privateKey);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
   }
-  if (!(await waitUntilTxFinalize(endpoint, _.get(res, 'txHash', null)))) {
+  if (!(await _waitUntilTxFinalize(endpoint, _.get(res, 'txHash', null)))) {
     throw Error('Transaction did not finalize in time.' +
         'Try selecting a different parent_chain_poc.');
   }
@@ -49,27 +70,6 @@ async function signAndSendTx(endpoint, tx, privateKey) {
   const { txHash, signedTx } = ChainUtil.signTransaction(tx, privateKey);
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, { txHash });
-}
-
-async function waitUntilTxFinalize(endpoint, txHash) {
-  while (true) {
-    const confirmed = await sendGetRequest(
-        endpoint,
-        'ain_getTransactionByHash',
-        {hash: txHash}
-    )
-    .then((resp) => {
-      return (_.get(resp, 'data.result.result.is_finalized', false) === true);
-    })
-    .catch((err) => {
-      logger.error(`Failed to confirm transaction: ${err}`);
-      return false;
-    });
-    if (confirmed) {
-      return true;
-    }
-    await ChainUtil.sleep(1000);
-  }
 }
 
 function sendGetRequest(endpoint, method, params) {
