@@ -317,6 +317,11 @@ class BlockchainNode {
     if (FeatureFlags.enableRichTransactionLogging) {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
+    if (!this.tp.hasRoomForNewTransaction()) {
+      return ChainUtil.logAndReturnTxResult(
+          logger, 3,
+          `[${LOG_HEADER}] Tx pool does NOT have enough room (${this.tp.getPoolSize()}).`);
+    }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return ChainUtil.logAndReturnTxResult(
           logger, 1,
@@ -327,6 +332,13 @@ class BlockchainNode {
           logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
+    if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
+      const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
+      return ChainUtil.logAndReturnTxResult(
+          logger, 4,
+          `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
+          `for account: ${executableTx.address}`);
+    }
     const result = this.executeOrRollbackTransaction(executableTx);
     if (ChainUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
