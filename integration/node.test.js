@@ -1495,7 +1495,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body).to.not.equal(null);
         expect(body.code).to.equal(0);
-        expect(Array.isArray(body.result)).to.equal(true);
+        expect(ChainUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
           result.tx_hash = 'erased';
@@ -1760,7 +1760,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body).to.not.equal(null);
         expect(body.code).to.equal(0);
-        expect(Array.isArray(body.result)).to.equal(true);
+        expect(ChainUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
           result.tx_hash = 'erased';
@@ -2241,7 +2241,7 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
-          expect(Array.isArray(resultList)).to.equal(true);
+          expect(ChainUtil.isArray(resultList)).to.equal(true);
           for (let i = 0; i < resultList.length; i++) {
             expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
@@ -2305,7 +2305,7 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
-          expect(Array.isArray(resultList)).to.equal(true);
+          expect(ChainUtil.isArray(resultList)).to.equal(true);
           expect(resultList.length).to.equal(BATCH_TX_LIST_SIZE_LIMIT);
           for (let i = 0; i < resultList.length; i++) {
             expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
@@ -2382,7 +2382,7 @@ describe('Blockchain Node', () => {
         });
         const resultList1 = _.get(res1, 'result.result', null);
         // Accepts transactions.
-        expect(Array.isArray(resultList1)).to.equal(true);
+        expect(ChainUtil.isArray(resultList1)).to.equal(true);
         for (let i = 0; i < resultList1.length; i++) {
           expect(ChainUtil.isFailedTx(resultList1[i].result)).to.equal(false);
         }
@@ -2405,7 +2405,7 @@ describe('Blockchain Node', () => {
         });
         const resultList2 = _.get(res2, 'result.result', null);
         // Rejects transactions.
-        expect(Array.isArray(resultList2)).to.equal(true);
+        expect(ChainUtil.isArray(resultList2)).to.equal(true);
         expect(resultList2.length).to.equal(1);
         resultList2[0].tx_hash = 'erased';
         assert.deepEqual(resultList2, [
@@ -2452,7 +2452,7 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result');
-          expect(Array.isArray(resultList)).to.equal(false);
+          expect(ChainUtil.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
             result: {
               code: 3,
