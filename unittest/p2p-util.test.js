@@ -113,4 +113,24 @@ describe("P2P Util", () => {
       });
     });
   });
+
+  describe("checkTimestamp", () => {
+    it("fails when getting wrong timestamp values", () => {
+      const wrongTimestamp1 = 'timestamp';
+      const wrongTimestamp2 = undefined;
+      const wrongTimestamp3 = ['a', 1];
+      const wrongTimestamp4 = { foo: 'bar' };
+      const wrongTimestamp5 = true;
+      expect(util.checkTimestamp(wrongTimestamp1)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp2)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp3)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp4)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp5)).to.equal(false);
+    });
+
+    it("passes the timestamp check", () => {
+      const timestamp = Date.now();
+      expect(util.checkTimestamp(timestamp)).to.equal(true);
+    });
+  });
 });
