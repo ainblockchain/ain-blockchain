@@ -1644,7 +1644,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
@@ -1691,7 +1691,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
@@ -1741,7 +1741,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
