@@ -78,6 +78,7 @@ async function setUp() {
   if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
     console.log(`setUp(): Failed to check finalization of create app tx.`)
   }
+  // TODO(lia): set owner & rule at apps/<app_name> in _createApp, and remove this setup tx
   const legacySetupRes = parseOrLog(syncRequest('POST', server1 + '/set', {
     json: {
       op_list: [
