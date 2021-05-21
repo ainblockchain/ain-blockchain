@@ -103,6 +103,12 @@ function removeSocketConnectionIfExists(connectionObj, address) {
   }
 }
 
+function closeSocketSafe(connections, socket) {
+  const address = getAddressFromSocket(connections, socket);
+  removeSocketConnectionIfExists(connections, address);
+  socket.close();
+}
+
 function signMessage(messageBody, privateKey) {
   return ainUtil.ecSignMessage(JSON.stringify(messageBody), Buffer.from(privateKey, 'hex'));
 }
@@ -114,12 +120,6 @@ function getAddressFromMessage(message) {
 
 function verifySignedMessage(message, address) {
   return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
-}
-
-function closeSocketSafe(connections, socket) {
-  const address = getAddressFromSocket(connections, socket);
-  removeSocketConnectionIfExists(connections, address);
-  socket.close();
 }
 
 function isValidDataProtoVer(version) {
