@@ -46,7 +46,7 @@ const {
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  isValidDataProtoVer,
+  isValidProtocolVersion,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
@@ -372,7 +372,7 @@ class P2pServer {
       try {
         const parsedMessage = JSON.parse(message);
         const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
-        if (!isValidDataProtoVer(dataProtoVer)) {
+        if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
           const address = getAddressFromSocket(this.inbound, socket);
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
