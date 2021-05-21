@@ -4,12 +4,22 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
+const {
+  CURRENT_PROTOCOL_VERSION,
+  DATA_PROTOCOL_VERSION
+} = require('../common/constants');
+const Chainutil = require('../common/chain-util');
+
 describe("P2P Util", () => {
   const mockAddress = '0x012345678abcdef';
+  let webServer;
   let mockSocket;
+  let comparingSocket;
   let connectionObj;
   before(() => {
+    webServer = new Websocket.Server({ port: 5000 });
     mockSocket = new Websocket('ws://127.0.0.1:5000');
+    comparingSocket = new Websocket('ws://127.0.0.1:5000');
     connectionObj = {
       [mockAddress]: {
         socket: mockSocket
@@ -21,6 +31,8 @@ describe("P2P Util", () => {
     if (mockSocket.readyState !== 3) {
       mockSocket.close();
     }
+    comparingSocket.close();
+    webServer.close();
   });
 
   describe("getAddressFromSocket", () => {
@@ -47,15 +59,6 @@ describe("P2P Util", () => {
     });
   });
 
-  let comparingSocket;
-  before(() => {
-    comparingSocket = new Websocket('ws://127.0.0.1:5000');
-  });
-
-  after(() => {
-    comparingSocket.close();
-  });
-
   describe("closeSocketSafe", () => {
     it("closes nothing", () => {
       util.closeSocketSafe(connectionObj, comparingSocket);
@@ -65,6 +68,49 @@ describe("P2P Util", () => {
     it("closes the socket successfully", () => {
       util.closeSocketSafe(connectionObj, mockSocket);
       expect(connectionObj[mockAddress]).to.equal(undefined);
+    });
+  });
+
+  describe("encapsulateMessage", () => {
+    const mockType = 'mockType';
+    const wrongType1 = 1;
+    const wrongType2 = undefined;
+    const wrongType3 = ['a', 1];
+    const wrongType4 = { foo: 'bar' };
+    const wrongType5 = true;
+
+    const mockDataObj = { test: 'encapsulation' };
+    const wrongData1 = -5;
+    const wrongData2 = null;
+    const wrongData3 = 'wrongData';
+    const wrongData4 = [];
+    const wrongData5 = false;
+
+    it("cannot encapsulate messages with wrong types", () => {
+      expect(util.encapsulateMessage(wrongType1, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType2, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType3, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType4, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType5, mockDataObj)).to.equal(null);
+    });
+
+    it("cannot encapsulate messages with wrong data", () => {
+      expect(util.encapsulateMessage(mockType, wrongData1)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData2)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData3)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData4)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData5)).to.equal(null);
+    });
+
+    it("encapsulates the message successfully", () => {
+      const encapsulatedMessage = util.encapsulateMessage(mockType, mockDataObj);
+      assert.deepEqual(encapsulatedMessage, {
+        type: mockType,
+        data: mockDataObj,
+        protoVer: CURRENT_PROTOCOL_VERSION,
+        dataProtoVer: DATA_PROTOCOL_VERSION,
+        timestamp: encapsulatedMessage.timestamp
+      });
     });
   });
 });

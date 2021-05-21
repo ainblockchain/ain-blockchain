@@ -121,14 +121,12 @@ function verifySignedMessage(message, address) {
   return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
 }
 
-
-
 function encapsulateMessage(type, dataObj) {
-  if (!type) {
+  if (!type || !ChainUtil.isString(type)) {
     logger.error('Type must be specified.');
     return null;
   };
-  if (!dataObj) {
+  if (!dataObj || !ChainUtil.isDict(dataObj)) {
     logger.error('dataObj cannot be null or undefined.');
     return null;
   }
