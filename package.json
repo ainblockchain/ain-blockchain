@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "0.7.1",
+  "version": "0.7.3",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -45,7 +45,7 @@
     "glob": "^7.1.4",
     "ip": "^1.1.5",
     "jayson": "^3.1.1",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "moment": "^2.24.0",
     "natural-orderby": "^2.0.3",
     "node-cron": "^2.0.3",
