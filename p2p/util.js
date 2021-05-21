@@ -6,7 +6,6 @@
 
 const axios = require('axios');
 const _ = require('lodash');
-const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');
 const {
@@ -122,13 +121,7 @@ function verifySignedMessage(message, address) {
   return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
 }
 
-function isValidDataProtoVer(version) {
-  if (!version || !semver.valid(version)) {
-    return false;
-  } else {
-    return true;
-  }
-}
+
 
 function encapsulateMessage(type, dataObj) {
   if (!type) {
@@ -173,7 +166,6 @@ module.exports = {
   getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
-  isValidDataProtoVer,
   checkTimestamp,
   encapsulateMessage
 };
