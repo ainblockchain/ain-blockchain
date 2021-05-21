@@ -25,7 +25,7 @@ class RuleUtil {
   }
 
   isDict(value) {
-    return (typeof value === 'object' && value !== null && !Array.isArray(value));
+    return (typeof value === 'object' && value !== null && !this.isArray(value));
   }
 
   isEmpty(value) {
@@ -81,7 +81,7 @@ class RuleUtil {
   toCksumAddr(addr) {
     try {
       return ainUtil.toChecksumAddress(addr);
-    } catch (e) {
+    } catch (err) {
       return '';
     }
   }

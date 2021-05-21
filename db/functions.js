@@ -219,9 +219,7 @@ class Functions {
     const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
     const callDepth = this.callStackSize();
-    const gasAmount = {
-      service: nativeFunction.execGasAmount
-    };
+    const gasAmount = nativeFunction.execGasAmount;
     this.callStack.push({
       fid,
       fidList,
@@ -421,7 +419,7 @@ class Functions {
   buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
-      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount,
+      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount
     };
     if (ChainUtil.isNumber(extraGasAmount) && extraGasAmount > 0) {
       result.gas_amount += extraGasAmount;
@@ -519,7 +517,7 @@ class Functions {
       return this.saveAndReturnFuncResult(
           context, resultPath, FunctionResultCode.INTERNAL_ERROR);
     }
-    // TODO(lia): remove the from entry, if it's a service account && if the new balance === 0
+    // TODO(liayoo): Remove the from entry, if it's a service account && if the new balance === 0.
     const incResult = this.incValueOrLog(toBalancePath, value, context);
     if (ChainUtil.isFailedTx(incResult)) {
       return this.saveAndReturnFuncResult(
@@ -569,7 +567,7 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
       logger.error(`  ===> _collectFee failed: ${JSON.stringify(result)}`);
-      // TODO(lia): return error, check in setValue(), revert changes
+      // TODO(liayoo): Return error, check in setValue(), revert changes.
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
@@ -703,7 +701,7 @@ class Functions {
     const userServiceAccountName = ChainUtil.toServiceAccountName(
         PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     // NOTE: By specifying `escrow_key`, the claimed payment is held in escrow instead of being
-    // transferred directly to the admin account
+    // transferred directly to the admin account.
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = PathUtil.getEscrowHoldRecordPath(
           userServiceAccountName, value.target, value.escrow_key, timestamp);
@@ -789,7 +787,7 @@ class Functions {
       sourceResult = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, sourceAccount, sourceAmount, context);
       if (ChainUtil.isFailedTx(sourceResult)) {
-        // TODO(lia): revert the release to target_account if there was any
+        // TODO(liayoo): Revert the release to target_account if there was any.
         return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
       }
     }
@@ -870,7 +868,7 @@ class Functions {
       });
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } catch (err) {
-      logger.error(`  => _openCheckin failed with error: ${JSON.stringify(err)}`);
+      logger.error(`  => _openCheckin failed with error: ${err} ${err.stack}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
@@ -929,7 +927,7 @@ class Functions {
       signAndSendTx(endpoint, transferTx, ownerPrivateKey);
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } catch (err) {
-      logger.error(`  => _closeCheckin failed with error: ${JSON.stringify(err)}`);
+      logger.error(`  => _closeCheckin failed with error: ${err} ${err.stack}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }

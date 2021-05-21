@@ -112,13 +112,13 @@ async function processArguments() {
   }
 
   // directory for shard genesis files
-  const shardDir = path.resolve(__dirname, `../blockchain/shard_${index}`);
+  const shardDir = path.resolve(__dirname, `../genesis-configs/shard_${index}`);
   if (!fs.existsSync(shardDir)) {
     fs.mkdirSync(shardDir);
   }
   // genesis_accounts.json
   // prefixing rule: shard 1 = 'B0', shard 2 = 'B1', ... shard 11 = 'C0' ... shard 20 = 'C9'
-  // TODO(lia): improve the prefixing rule to support shards of index > 20
+  // TODO(liayoo): Improve the prefixing rule to support shards of index > 20.
   const prefix = (index < 11 ? 'B' : 'C') + (index - 1) % 10;
   const accounts = createAccounts(num, prefix);
   const accountsFile = path.join(shardDir, 'genesis_accounts.json');

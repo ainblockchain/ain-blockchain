@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -26,6 +26,7 @@
     "test_dapp": "./node_modules/mocha/bin/mocha --timeout 160000 integration/afan_dapp.test.js",
     "test_sharding": "./node_modules/mocha/bin/mocha --timeout 320000 integration/sharding.test.js",
     "test_integration": "./node_modules/mocha/bin/mocha --timeout 640000 \"integration/*.test.js\"",
+    "test_tx_pool": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/tx-pool.test.js",
     "loadtest": "sh loadtest/load_tester.sh",
     "lint": "eslint --ext js -c .eslintrc.json ."
   },
@@ -35,7 +36,6 @@
     "ajv": "^5.5.2",
     "axios": "^0.21.1",
     "bluebird": "^3.5.3",
-    "body-parser": "^1.18.3",
     "diskusage": "^1.1.3",
     "elliptic": "^6.4.1",
     "escape-string-regexp": "^2.0.0",
@@ -58,7 +58,6 @@
     "seedrandom": "^2.4.4",
     "semver": "^6.3.0",
     "shuffle-seed": "^1.1.6",
-    "sleep": "^6.3.0",
     "url": "^0.11.0",
     "util": "^0.11.1",
     "uuid": "^3.4.0",

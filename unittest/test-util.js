@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require("fs");
 const syncRequest = require('sync-request');
-const sleep = require('sleep').msleep;
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
@@ -69,7 +68,7 @@ function addBlock(node, txs, votes, validators) {
       node.account.address, validators, 0, 0));
 }
 
-function waitUntilTxFinalized(servers, txHash) {
+async function waitUntilTxFinalized(servers, txHash) {
   const MAX_ITERATION = 200;
   let iterCount = 0;
   const unchecked = new Set(servers);
@@ -81,39 +80,39 @@ function waitUntilTxFinalized(servers, txHash) {
       console.log(`Iteration count exceeded its limit before the given tx ${txHash} is finalized!`);
       return false;
     }
-    unchecked.forEach((server) => {
-      const txStatus = JSON.parse(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
+    for (const server of unchecked) {
+      const txStatus = parseOrLog(syncRequest('GET', server + `/get_transaction?hash=${txHash}`)
           .body
           .toString('utf-8')).result;
       if (txStatus && txStatus.is_finalized === true) {
         unchecked.delete(server);
       }
-    });
-    sleep(200);
+    }
+    await ChainUtil.sleep(200);
     iterCount++;
   }
 }
 
-function waitForNewBlocks(server, waitFor = 1) {
+async function waitForNewBlocks(server, waitFor = 1) {
   const initialLastBlockNumber =
-      JSON.parse(syncRequest('GET', server + '/last_block_number')
+      parseOrLog(syncRequest('GET', server + '/last_block_number')
         .body.toString('utf-8'))['result'];
   let updatedLastBlockNumber = initialLastBlockNumber;
   while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
-    sleep(1000);
-    updatedLastBlockNumber = JSON.parse(syncRequest('GET', server + '/last_block_number')
+    await ChainUtil.sleep(1000);
+    updatedLastBlockNumber = parseOrLog(syncRequest('GET', server + '/last_block_number')
       .body.toString('utf-8'))['result'];
   }
 }
 
-function waitUntilNodeSyncs(server) {
+async function waitUntilNodeSyncs(server) {
   let isSyncing = true;
   while (isSyncing) {
-    isSyncing = JSON.parse(syncRequest('POST', server + '/json-rpc',
+    isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
         {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
                 params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
         .body.toString('utf-8')).result.result;
-    sleep(1000);
+    await ChainUtil.sleep(1000);
   }
 }
 

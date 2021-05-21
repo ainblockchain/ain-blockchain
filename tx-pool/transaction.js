@@ -81,8 +81,12 @@ class Transaction {
     };
   }
 
-  setExecutedAt(executedAt) {
-    ChainUtil.setJsObject(this, ['extra', 'executed_at'], executedAt);
+  setExtraField(name, value) {
+    if (value === null) {
+      delete this.extra[name];
+    } else {
+      ChainUtil.setJsObject(this, ['extra', name], value);
+    }
   }
 
   toString() {
@@ -94,7 +98,7 @@ class Transaction {
    */
   static sanitizeSetOperation(setOp) {
     const opList = [];
-    if (Array.isArray(setOp.op_list)) {
+    if (ChainUtil.isArray(setOp.op_list)) {
       for (const op of setOp.op_list) {
         opList.push(this.sanitizeSimpleOperation(op));
       }
@@ -232,11 +236,11 @@ class Transaction {
   }
 
   static isBatchTxBody(txBody) {
-    return txBody && Array.isArray(txBody.tx_body_list);
+    return txBody && ChainUtil.isArray(txBody.tx_body_list);
   }
 
   static isBatchTransaction(tx) {
-    return tx && Array.isArray(tx.tx_list);
+    return tx && ChainUtil.isArray(tx.tx_list);
   }
 }
 

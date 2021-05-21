@@ -59,7 +59,7 @@ const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
 // A peer-to-peer network server that broadcasts changes in the database.
-// TODO(minsu): Sign messages to tracker or peer.
+// TODO(minsulee2): Sign messages to tracker or peer.
 class P2pServer {
   constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion, maxInbound) {
     this.wsServer = null;
@@ -179,9 +179,28 @@ class P2pServer {
       const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
       return Object.assign({}, diskUsage, { used });
     } catch (err) {
-      logger.error(err);
+      logger.error(`Error: ${err} ${err.stack}`);
       return {};
     }
+  }
+
+  getCpuUsage() {
+    const cores = os.cpus();
+    let free = 0;
+    let total = 0;
+    for (const core of cores) {
+      const cpuInfo = _.get(core, 'times');
+      const idle = _.get(cpuInfo, 'idle');
+      const allTimes = Object.values(cpuInfo).reduce((acc, cur) => { return acc + cur }, 0);
+      free += idle;
+      total += allTimes;
+    }
+    const usage = total - free;
+    return {
+      free,
+      usage,
+      total
+    };
   }
 
   getMemoryUsage() {
@@ -301,16 +320,16 @@ class P2pServer {
     });
   }
 
-  // TODO(minsu): this check will be updated when data compatibility version up.
+  // TODO(minsulee2): This check will be updated when data compatibility version up.
   checkDataProtoVerForAddressRequest(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsu): compatible message
+      // TODO(minsulee2): Compatible message.
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
-      // TODO(minsu): compatible message
+      // TODO(minsulee2): Compatible message.
     }
   }
 
@@ -318,7 +337,7 @@ class P2pServer {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsu): compatible message
+      // TODO(minsulee2): Compatible message.
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
@@ -335,7 +354,7 @@ class P2pServer {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsu): compatible message
+      // TODO(minsulee2): Compatible message.
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
@@ -353,8 +372,8 @@ class P2pServer {
       try {
         const parsedMessage = JSON.parse(message);
         const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
+        const address = getAddressFromSocket(this.inbound, socket);
         if (!isValidDataProtoVer(dataProtoVer)) {
-          const address = getAddressFromSocket(this.inbound, socket);
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
           closeSocketSafe(this.outbound, socket);
@@ -368,7 +387,7 @@ class P2pServer {
 
         switch (_.get(parsedMessage, 'type')) {
           case MessageTypes.ADDRESS_REQUEST:
-            // TODO(minsu): Add compatibility check here after data version up.
+            // TODO(minsulee2): Add compatibility check here after data version up.
             // this.checkDataProtoVerForAddressRequest(dataProtoVer);
             const address = _.get(parsedMessage, 'data.body.address');
             if (!address) {
@@ -378,7 +397,8 @@ class P2pServer {
             } else if (!_.get(parsedMessage, 'data.signature')) {
               logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                   `communication. Cannot proceed the further communication.`);
-              closeSocketSafe(this.inbound, socket);   // NOTE(minsu): strictly close socket necessary??
+              // NOTE(minsulee2): Strictly close socket necessary??
+              closeSocketSafe(this.inbound, socket);
               return;
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
@@ -464,7 +484,8 @@ class P2pServer {
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
             const lastBlock = _.get(parsedMessage, 'data.lastBlock');
-            // NOTE(minsu): communicate with each other even if the data protocol is incompatible.
+            // NOTE(minsulee2): Communicate with each other
+            // even if the data protocol is incompatible.
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
@@ -507,8 +528,8 @@ class P2pServer {
             logger.error('Ignore the message.');
             break;
         }
-      } catch (error) {
-        logger.error(error.stack);
+      } catch (err) {
+        logger.error(`Error: ${err} ${err.stack}`);
       }
     });
 

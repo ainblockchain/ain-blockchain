@@ -2,7 +2,6 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
 const rimraf = require('rimraf');
-const sleep = require('sleep').msleep;
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
@@ -16,19 +15,19 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
 ];
 
@@ -54,8 +53,33 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-function setUp() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+async function setUp() {
+  const addr = parseOrLog(syncRequest(
+      'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set', {
+    json: {
+      op_list: [
+        {
+          type: 'SET_VALUE',
+          ref: `/manage_app/afan/create/${Date.now()}`,
+          value: {
+            admin: { [addr]: true }
+          }
+        },
+        {
+          type: 'SET_VALUE',
+          ref: `/staking/afan/${addr}/0/stake/${Date.now()}/value`,
+          value: 1
+        }
+      ]
+    }
+  }).body.toString('utf-8')).result;
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+  if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+    console.log(`setUp(): Failed to check finalization of create app tx.`)
+  }
+  // TODO(lia): set owner & rule at apps/<app_name> in _createApp, and remove this setup tx
+  const legacySetupRes = parseOrLog(syncRequest('POST', server1 + '/set', {
     json: {
       op_list: [
         {
@@ -85,13 +109,13 @@ function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUp() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(legacySetupRes, 'result')), false);
+  if (!(await waitUntilTxFinalized(serverList, legacySetupRes.tx_hash))) {
+    console.log(`setUp(): Failed to check finalization of legacy setup tx.`)
   }
 }
 
-function cleanUp() {
+async function cleanUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -115,26 +139,26 @@ function cleanUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(serverList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
 }
 
-describe('DApp Test', () => {
+describe('DApp Test', async () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
-  before(() => {
+  before(async () => {
     rimraf.sync(CHAINS_DIR);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    sleep(2000);
+    await ChainUtil.sleep(2000);
   });
 
   after(() => {
@@ -163,12 +187,12 @@ describe('DApp Test', () => {
   };
 
   describe('aFan Txs', () => {
-    before(() => {
-      setUp();
+    before(async () => {
+      await setUp();
     })
 
-    after(() => {
-      cleanUp();
+    after(async () => {
+      await cleanUp();
     })
 
     describe('tx_invest', () => {
@@ -215,9 +239,9 @@ describe('DApp Test', () => {
           });
       });
 
-      it('two fans', () => {
+      it('two fans', async () => {
         const afanClient = new AfanClient(server2);
-        sleep(200);
+        await ChainUtil.sleep(200);
         return set_value('/apps/afan/balance/uid0', 30)
           .then((res) => waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/balance/uid1', 10))
