@@ -15,8 +15,10 @@ const {
   AccountProperties,
   TokenExchangeSchemes,
   FunctionProperties,
+  OwnerProperties,
   GasFeeConstants,
   REST_FUNCTION_CALL_TIMEOUT_MS,
+  buildOwnerPermissions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
@@ -67,6 +69,8 @@ class Functions {
         func: this._release.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.SAVE_LAST_TX]: {
         func: this._saveLastTx.bind(this), ownerOnly: false, execGasAmount: 0 },
+      [NativeFunctionIds.SET_OWNER_CONFIG]: {
+        func: this._setOwnerConfig.bind(this), ownerOnly: false, execGasAmount: 0 },
       [NativeFunctionIds.STAKE]: {
         func: this._stake.bind(this), ownerOnly: true, execGasAmount: 0 },
       [NativeFunctionIds.UNSTAKE]: {
@@ -416,6 +420,17 @@ class Functions {
     return this.setValueOrLog(transferPath, value, context);
   }
 
+  setOwnerOrLog(ownerPath, owner, context) {
+    const auth = context.auth;
+    const result = this.db.setOwner(ownerPath, owner, auth);
+    if (ChainUtil.isFailedTx(result)) {
+      logger.error(
+          `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
+    }
+    Functions.addToOpResultList(ownerPath, result, context);
+    return result;
+  }
+
   buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
@@ -494,6 +509,28 @@ class Functions {
     }
   }
 
+  /**
+   * Sets owner config on the path.
+   * This is often used for testing purposes.
+   */
+  _setOwnerConfig(value, context) {
+    const parsedValuePath = context.valuePath;
+    const auth = context.auth;
+    const owner = {
+      [OwnerProperties.OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [auth.addr]: buildOwnerPermissions(false, true, true, true),
+          [OwnerProperties.ANYONE]: buildOwnerPermissions(false, true, true, true),
+        }
+      }
+    };
+    const result = this.setOwnerOrLog(ChainUtil.formatPath(parsedValuePath), owner, context);
+    if (!ChainUtil.isFailedTx(result)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+  }
 
   _transfer(value, context) {
     const from = context.params.from;
