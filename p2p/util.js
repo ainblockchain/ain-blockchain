@@ -141,7 +141,7 @@ function encapsulateMessage(type, dataObj) {
 }
 
 function checkTimestamp(timestamp) {
-  if (!timestamp) {
+  if (!timestamp || !ChainUtil.isNumber(timestamp)) {
     return false;
   } else {
     const now = Date.now();
