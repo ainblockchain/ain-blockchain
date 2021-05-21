@@ -53,8 +53,33 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-function setUp() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+async function setUp() {
+  const addr = parseOrLog(syncRequest(
+      'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set', {
+    json: {
+      op_list: [
+        {
+          type: 'SET_VALUE',
+          ref: `/manage_app/afan/create/${Date.now()}`,
+          value: {
+            admin: { [addr]: true }
+          }
+        },
+        {
+          type: 'SET_VALUE',
+          ref: `/staking/afan/${addr}/0/stake/${Date.now()}/value`,
+          value: 1
+        }
+      ]
+    }
+  }).body.toString('utf-8')).result;
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+  if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+    console.log(`setUp(): Failed to check finalization of create app tx.`)
+  }
+  // TODO(lia): set owner & rule at apps/<app_name> in _createApp, and remove this setup tx
+  const legacySetupRes = parseOrLog(syncRequest('POST', server1 + '/set', {
     json: {
       op_list: [
         {
@@ -84,13 +109,13 @@ function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUp() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(legacySetupRes, 'result')), false);
+  if (!(await waitUntilTxFinalized(serverList, legacySetupRes.tx_hash))) {
+    console.log(`setUp(): Failed to check finalization of legacy setup tx.`)
   }
 }
 
-function cleanUp() {
+async function cleanUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -114,7 +139,7 @@ function cleanUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(serverList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
 }
@@ -162,12 +187,12 @@ describe('DApp Test', async () => {
   };
 
   describe('aFan Txs', () => {
-    before(() => {
-      setUp();
+    before(async () => {
+      await setUp();
     })
 
-    after(() => {
-      cleanUp();
+    after(async () => {
+      await cleanUp();
     })
 
     describe('tx_invest', () => {
