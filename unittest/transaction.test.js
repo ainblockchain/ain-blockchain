@@ -10,7 +10,6 @@ const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
 const { setNodeForTesting, getTransaction } = require('./test-util');
 const ChainUtil = require('../common/chain-util');
-const { msleep } = require('sleep');
 
 describe('Transaction', () => {
   let node;
@@ -176,14 +175,38 @@ describe('Transaction', () => {
       tx.extra.created_at = 'erased';
       assert.deepEqual(executable, tx);
     });
-
-    it('setExecutedAt', () => {
-      const executable = Transaction.toExecutable(Transaction.toJsObject(tx));
-      assert.deepEqual(executable.extra.executed_at, null);
-      executable.setExecutedAt(123456789);
-      assert.deepEqual(executable.extra.executed_at, 123456789);
-    });
   });
+
+  describe('extra', () => {
+    const gas = {
+      gas_amount: {
+        service: 100,
+        app: {
+          app1: 50,
+          app2: 20
+        }
+      }
+    };
+
+    it('setExtraField', () => {
+      // executed_at
+      assert.deepEqual(tx.extra.executed_at, null);
+      tx.setExtraField('executed_at', 123456789);
+      assert.deepEqual(tx.extra.executed_at, 123456789);
+      
+      // gas
+      assert.deepEqual(tx.extra.gas, undefined);
+      tx.setExtraField('gas', gas);
+      assert.deepEqual(tx.extra.gas, gas);
+    });
+
+    it('setExtraField (null)', () => {
+      tx.setExtraField('gas', gas);
+      assert.deepEqual(tx.extra.gas, gas);
+      tx.setExtraField('gas', null);
+      assert.deepEqual(tx.extra.gas, undefined);
+    });
+  })
 
   describe('getTransaction', () => {
     it('construction', () => {
@@ -195,14 +218,14 @@ describe('Transaction', () => {
       expect(txForNode.address).to.equal(node.account.address);
     });
 
-    it('assigns nonces correctly', () => {
+    it('assigns nonces correctly', async () => {
       let tx2;
       let currentNonce;
       for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
         delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
         node.db.executeTransaction(tx2, node.bc.lastBlockNumber() + 1);
-        msleep(1);
+        await ChainUtil.sleep(1);
       }
       expect(tx2).to.not.equal(null);
       expect(tx2.tx_body.nonce).to.equal(currentNonce);

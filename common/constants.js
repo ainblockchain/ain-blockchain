@@ -25,12 +25,14 @@ const FeatureFlags = {
   enableRichTransactionLogging: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
+  // Enables rich logging for tx selection in tx pool.
+  enableRichTxSelectionLogging: false,
 };
 
 // Environment variables.
 const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-const ENABLE_DEV_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API);
+const ENABLE_DEV_SET_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
     ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
@@ -62,20 +64,22 @@ if (!semver.valid(CONSENSUS_PROTOCOL_VERSION)) {
 }
 const LOGS_DIR = path.resolve(__dirname, '../logs');
 const CHAINS_DIR = path.resolve(__dirname, '../chains');
-const CHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
-const CHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
+const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
+const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
 const NATIVE_SERVICE_TYPES = [
+  'accounts',
   'checkin',
   'consensus',
   'escrow',
   'gas_fee',
   'manage_app',
   'payments',
+  'service_accounts',
   'sharding',
   'staking',
   'test',  // NOTE(platfowner): A temporary solution for tests.
@@ -431,6 +435,7 @@ const StateVersions = {
   SEGMENT: 'SEGMENT',
   SNAP: 'SNAP',
   START: 'START',
+  TX_POOL: 'TX_POOL',
 };
 
 /**
@@ -475,15 +480,15 @@ function overwriteGenesisParams(overwritingParams, type) {
 overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
-// Note(minsu): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
+// NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
 // The minimum network connections are set based on the MIN_NUM_VALIDATORS otherwise.
 function initializeNetworkEnvronments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
     return {
-      // Note(minsu): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT should not be
-      // related to one another.
+      // NOTE(minsulee2): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT
+      // should not be related to one another.
       P2P_MESSAGE_TIMEOUT_MS: 600000,
       MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
       MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
@@ -652,7 +657,7 @@ module.exports = {
   CHAINS_H2N_DIR_NAME,
   DEBUG,
   CONSOLE_LOG,
-  ENABLE_DEV_CLIENT_API,
+  ENABLE_DEV_SET_CLIENT_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   COMCOM_HOST_EXTERNAL_IP,

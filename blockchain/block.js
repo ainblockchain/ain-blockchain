@@ -208,7 +208,7 @@ class Block {
   static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
-    if (otherAccounts && Array.isArray(otherAccounts) && otherAccounts.length > 0 &&
+    if (otherAccounts && ChainUtil.isArray(otherAccounts) && otherAccounts.length > 0 &&
         GenesisAccounts[AccountProperties.SHARES] > 0) {
       for (let i = 0; i < otherAccounts.length; i++) {
         const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
@@ -291,7 +291,7 @@ class Block {
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
     const secondTx = this.buildAccountsSetupTx(genesisTime, ownerPrivateKey, ownerAddress);
     const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey, ownerAddress);
-    // TODO(lia): Change the logic to staking & signing by the current node
+    // TODO(liayoo): Change the logic to staking & signing by the current node.
     const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
 
     return [firstTx, secondTx, thirdTx, ...stakingTxs];

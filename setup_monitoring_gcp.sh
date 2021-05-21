@@ -14,7 +14,7 @@ fi
 SEASON="$1"
 
 
-echo 'Killing jobs..'
+echo 'Killing old jobs..'
 killall prometheus
 killall grafana-server
 

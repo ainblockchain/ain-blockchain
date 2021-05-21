@@ -2,25 +2,33 @@
 const logger = require('../logger')('TX_POOL');
 const _ = require('lodash');
 const {
+  FeatureFlags,
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
   LIGHTWEIGHT,
+  TX_POOL_SIZE_LIMIT,
+  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
+  BANDWIDTH_BUDGET_PER_BLOCK,
+  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
   TransactionStatus,
   WriteDbOperations,
   AccountProperties,
-  PredefinedDbPaths,
+  StateVersions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
+const PathUtil = require('../common/path-util');
 const {
   sendGetRequest,
   signAndSendTx
 } = require('../p2p/util');
+const DB = require('../db');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+const APP_BANDWIDTH_BUDGET_PER_BLOCK = BANDWIDTH_BUDGET_PER_BLOCK - SERVICE_BANDWIDTH_BUDGET_PER_BLOCK;
 
 class TransactionPool {
   constructor(node) {
@@ -30,6 +38,7 @@ class TransactionPool {
     // Track transactions in remote blockchains (e.g. parent blockchain).
     this.remoteTransactionTracker = {};
     this.isChecking = false;
+    this.txCountTotal = 0;
   }
 
   addTransaction(tx) {
@@ -62,7 +71,8 @@ class TransactionPool {
       tracked_at: tx.extra.created_at,
       executed_at: tx.extra.executed_at,
     };
-    logger.debug(`ADDING: ${JSON.stringify(tx)}`);
+    this.txCountTotal++;
+    logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
   }
 
@@ -81,6 +91,14 @@ class TransactionPool {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIMEOUT_MS);
   }
 
+  hasRoomForNewTransaction() {
+    return this.getPoolSize() < TX_POOL_SIZE_LIMIT;
+  }
+
+  hasPerAccountRoomForNewTransaction(address) {
+    return this.getPerAccountPoolSize(address) < TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+  }
+
   isNotEligibleTransaction(tx) {
     return (tx.address in this.transactions &&
         this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined) ||
@@ -89,8 +107,8 @@ class TransactionPool {
 
   static isCorrectlyNoncedOrTimestamped(txNonce, txTimestamp, accountNonce, accountTimestamp) {
     return txNonce === -1 || // unordered
-        (txNonce === -2 && txTimestamp > accountTimestamp) || // loosely ordered
-        txNonce === accountNonce; // strictly ordered
+        (txNonce === -2 && txTimestamp > accountTimestamp) || // ordered
+        txNonce === accountNonce; // numbered
   }
 
   static excludeConsensusTransactions(txList) {
@@ -131,12 +149,13 @@ class TransactionPool {
         // sort transactions
         addrToTxList[address].sort((a, b) => {
           if (a.tx_body.nonce === b.tx_body.nonce) {
-            if (a.tx_body.nonce >= 0) { // both strictly ordered
+            if (a.tx_body.nonce >= 0) { // both with numbered nonces
               return 0;
             }
-            return a.tx_body.timestamp - b.tx_body.timestamp; // both loosely ordered / unordered
+            // both with ordered or unordered nonces
+            return a.tx_body.timestamp - b.tx_body.timestamp;
           }
-          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both strictly ordered
+          if (a.tx_body.nonce >= 0 && b.tx_body.nonce >= 0) { // both with numbered nonces
             return a.tx_body.nonce - b.tx_body.nonce;
           }
           return 0;
@@ -145,35 +164,122 @@ class TransactionPool {
     }
   }
 
-  getValidTransactions(excludeBlockList, baseStateVersion) {
+  getValidTransactions(excludeBlockList, baseVersion) {
+    const LOG_HEADER = 'getValidTransactions';
+    if (!baseVersion) {
+      baseVersion = this.node.db.stateVersion;
+    }
+    const tempDb = this.node.createTempDb(
+        baseVersion, `${StateVersions.TX_POOL}:${this.node.bc.lastBlockNumber()}`, -2);
+    if (!tempDb) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
+      return null;
+    }
+
     const addrToTxList = JSON.parse(JSON.stringify(this.transactions));
     TransactionPool.filterAndSortTransactions(addrToTxList, excludeBlockList);
     // Remove incorrectly nonced / timestamped transactions
-    const noncesAndTimestamps = baseStateVersion ?
-        this.node.getValueWithStateVersion(PredefinedDbPaths.ACCOUNTS, false, baseStateVersion) : {};
     for (const [addr, txList] of Object.entries(addrToTxList)) {
       const newTxList = [];
       for (let index = 0; index < txList.length; index++) {
         const tx = txList[index];
         const txNonce = tx.tx_body.nonce;
         const txTimestamp = tx.tx_body.timestamp;
-        const accountNonce = _.get(noncesAndTimestamps, `${addr}.nonce`, 0);
-        const accountTimestamp = _.get(noncesAndTimestamps, `${addr}.timestamp`, 0);
+        const { nonce: accountNonce, timestamp: accountTimestamp } =
+            tempDb.getAccountNonceAndTimestamp(addr);
         if (TransactionPool.isCorrectlyNoncedOrTimestamped(
             txNonce, txTimestamp, accountNonce, accountTimestamp)) {
           newTxList.push(tx);
-          if (txNonce >= 0) {
-            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'nonce'], txNonce + 1);
-          }
-          if (txNonce === -2) {
-            ChainUtil.setJsObject(noncesAndTimestamps, [addr, 'timestamp'], txTimestamp);
-          }
+          tempDb.updateAccountNonceAndTimestamp(addr, txNonce, txTimestamp);
         }
       }
       addrToTxList[addr] = newTxList;
     }
-    // Merge lists of transactions while ordering by timestamp. Initial ordering by nonce is preserved.
-    return TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
+
+    // Merge lists of transactions while ordering by gas price and timestamp.
+    // Initial ordering by nonce is preserved.
+    const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
+    const checkedTxs = this.performBandwidthChecks(merged, tempDb);
+    this.node.destroyDb(tempDb);
+    return checkedTxs;
+  }
+
+  getAppBandwidthAllocated(db, appStakesTotal, appName) {
+    const appStake = db ? db.getAppStake(appName) : 0;
+    return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
+  }
+
+  // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps,
+  // depending on the types of the transactions (service vs app).
+  // TODO(): Try allocating the excess bandwidth to app txs.
+  performBandwidthChecks(txList, db) {
+    const candidateTxList = [];
+    let serviceBandwidthSum = 0;
+    const appBandwidthSum = {};
+    // Sum of all apps' staked AIN
+    const appStakesTotal = db ? db.getAppStakesTotal() : 0;
+    // NOTE(liayoo): Keeps track of whether an address's nonced tx has been discarded. If true, any
+    // nonced txs from the same address that come after the discarded tx need to be dropped as well.
+    const addrToDiscardedNoncedTx = {};
+    const discardedTxList = [];
+    for (const tx of txList) {
+      const nonce = tx.tx_body.nonce;
+      if (addrToDiscardedNoncedTx[tx.address] && nonce >= 0) {
+        // Tx nonce is no longer valid
+        discardedTxList.push(tx);
+        continue;
+      }
+      const serviceBandwidth = _.get(tx, 'extra.gas.service', 0);
+      const appBandwidth = _.get(tx, 'extra.gas.app', null);
+      // Check if tx exceeds service bandwidth
+      if (serviceBandwidth) {
+        if (serviceBandwidthSum + serviceBandwidth > SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
+          // Exceeds service bandwidth budget. Discard tx.
+          if (nonce >= 0) {
+            addrToDiscardedNoncedTx[tx.address] = true;
+          }
+          if (FeatureFlags.enableRichTxSelectionLogging) {
+            logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}`);
+          }
+          discardedTxList.push(tx);
+          continue;
+        }
+        serviceBandwidthSum += serviceBandwidth;
+      }
+      // Check if tx exceeds app bandwidth
+      let isSkipped = false;
+      if (appBandwidth) {
+        const tempAppBandwidthSum = {};
+        for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
+          const appBandwidthAllocated =
+              this.getAppBandwidthAllocated(db, appStakesTotal, appName);
+          const currAppBandwidthSum =
+              _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
+          if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
+            // Exceeds app bandwidth budget. Discard tx.
+            if (nonce >= 0) {
+              addrToDiscardedNoncedTx[tx.address] = true;
+            }
+            if (FeatureFlags.enableRichTxSelectionLogging) {
+              logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
+            }
+            isSkipped = true;
+            discardedTxList.push(tx);
+            break;
+          }
+          ChainUtil.setJsObject(tempAppBandwidthSum, [appName], bandwidth);
+        }
+        if (!isSkipped) {
+          ChainUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
+        }
+      }
+      if (!isSkipped) {
+        candidateTxList.push(tx);
+      }
+    }
+
+    return candidateTxList;
   }
 
   static mergeMultipleSortedArrays(arrays) {
@@ -200,12 +306,35 @@ class TransactionPool {
     while (i < len1 && j < len2) {
       const tx1 = arr1[i];
       const tx2 = arr2[j];
-      if (tx1.tx_body.timestamp < tx2.tx_body.timestamp) {
-        newArr.push(tx1);
-        i++;
+      const isTx1ServiceTx = !!_.get(tx1, 'extra.gas.service', false);
+      const isTx2ServiceTx = !!_.get(tx2, 'extra.gas.service', false);
+      if (isTx1ServiceTx && isTx2ServiceTx) {
+        // Compare gas price if both service transactions
+        if (tx1.tx_body.gas_price > tx2.tx_body.gas_price) {
+          newArr.push(tx1);
+          i++;
+        } else {
+          newArr.push(tx2);
+          j++;
+        }
+      } else if (!isTx1ServiceTx && !isTx2ServiceTx) {
+        // Compare timestamp if both app transactions
+        if (tx1.tx_body.timestamp < tx2.tx_body.timestamp) {
+          newArr.push(tx1);
+          i++;
+        } else {
+          newArr.push(tx2);
+          j++;
+        }
       } else {
-        newArr.push(tx2);
-        j++;
+        // Service tx has priority over app tx
+        if (isTx1ServiceTx) {
+          newArr.push(tx1);
+          i++;
+        } else {
+          newArr.push(tx2);
+          j++;
+        }
       }
     }
     while (i < len1) {
@@ -229,9 +358,12 @@ class TransactionPool {
     }
     // Remove transactions from the pool.
     for (const address in this.transactions) {
+      const sizeBefore = this.transactions[address].length;
       this.transactions[address] = this.transactions[address].filter((tx) => {
         return !timedOutTxs.has(tx.hash);
       });
+      const sizeAfter = this.transactions[address].length;
+      this.txCountTotal += sizeAfter - sizeBefore;
     }
     return timedOutTxs.size > 0;
   }
@@ -263,11 +395,14 @@ class TransactionPool {
       }
     });
     for (const address in addrToTxSet) {
+      const sizeBefore = this.transactions[address].length;
       if (this.transactions[address]) {
         this.transactions[address] = this.transactions[address].filter((tx) => {
           return !(addrToTxSet[address].has(tx.hash));
         })
       }
+      const sizeAfter = this.transactions[address].length;
+      this.txCountTotal += sizeAfter - sizeBefore;
     }
   }
 
@@ -279,7 +414,7 @@ class TransactionPool {
     const addrToTimestamp = {};
     for (const voteTx of block.last_votes) {
       const txTimestamp = voteTx.tx_body.timestamp;
-      // voting txs are loosely ordered.
+      // voting txs with ordered nonces.
       this.transactionTracker[voteTx.hash] = {
         status: TransactionStatus.BLOCK_STATUS,
         number: block.number,
@@ -322,6 +457,7 @@ class TransactionPool {
       // Remove transactions from the pool.
       const lastNonce = addrToNonce[address];
       const lastTimestamp = addrToTimestamp[address];
+      const sizeBefore = this.transactions[address].length;
       this.transactions[address] = this.transactions[address].filter((tx) => {
         if (lastNonce !== undefined && tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= lastNonce) {
           return false;
@@ -331,6 +467,8 @@ class TransactionPool {
         }
         return !inBlockTxs.has(tx.hash);
       });
+      const sizeAfter = this.transactions[address].length;
+      this.txCountTotal += sizeAfter - sizeBefore;
       if (this.transactions[address].length === 0) {
         delete this.transactions[address];
       }
@@ -341,11 +479,11 @@ class TransactionPool {
   }
 
   getPoolSize() {
-    let size = 0;
-    for (const address in this.transactions) {
-      size += this.transactions[address].length;
-    }
-    return size;
+    return this.txCountTotal;
+  }
+
+  getPerAccountPoolSize(address) {
+    return this.transactions[address] ? this.transactions[address].length : 0;
   }
 
   addRemoteTransaction(txHash, action) {
@@ -404,8 +542,8 @@ class TransactionPool {
     }
     try {
       value = action.valueFunction(success);
-    } catch (e) {
-      logger.info(`  =>> valueFunction() failed: ${e}`);
+    } catch (err) {
+      logger.info(`  =>> valueFunction() failed: ${err} ${err.stack}`);
       return;
     }
     const actionTxBody = {
