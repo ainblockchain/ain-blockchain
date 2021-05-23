@@ -1387,7 +1387,11 @@ class DB {
     let permissions = null;
     // Step 1: Check if the given address or fid exists in owners.
     if (auth) {
-      if (auth.addr) {
+      // Step 1.1: Try to use the auth fid first.
+      if (auth.fid) {
+        permissions = owners[OwnerProperties.FID_PREFIX + auth.fid];
+      // Step 1.2: Try to use the auth address then.
+      } else if (auth.addr) {
         permissions = owners[auth.addr];
       } else {
         return null;
