@@ -237,6 +237,7 @@ const AccountProperties = {
 const OwnerProperties = {
   ANYONE: '*',
   BRANCH_OWNER: 'branch_owner',
+  FID_PREFIX: 'fid:',
   OWNER: '.owner',
   OWNERS: 'owners',
   WRITE_FUNCTION: 'write_function',
@@ -312,6 +313,7 @@ const NativeFunctionIds = {
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
+  SET_OWNER_CONFIG: '_setOwnerConfig',
   STAKE: '_stake',
   TRANSFER: '_transfer',
   UNSTAKE: '_unstake',
