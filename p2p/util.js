@@ -36,6 +36,7 @@ async function _waitUntilTxFinalize(endpoint, txHash) {
   }
 }
 
+// FIXME(minsulee2): need discussion that this is p2p util?
 async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
   const res = await signAndSendTx(endpoint, tx, privateKey);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
@@ -47,6 +48,7 @@ async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
   }
 }
 
+// FIXME(minsulee2): need discussion that this is p2p util?
 async function sendSignedTx(endpoint, params) {
   return await axios.post(
       endpoint,
@@ -72,6 +74,7 @@ async function signAndSendTx(endpoint, tx, privateKey) {
   return Object.assign(result, { txHash });
 }
 
+// FIXME(minsulee2): need discussion that this is p2p util?
 function sendGetRequest(endpoint, method, params) {
   // NOTE(platfowner): .then() was used here to avoid some unexpected behavior of axios.post()
   //                   (see https://github.com/ainblockchain/ain-blockchain/issues/101)
