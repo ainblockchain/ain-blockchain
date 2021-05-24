@@ -68,6 +68,7 @@ async function sendSignedTx(endpoint, params) {
   });
 }
 
+// FIXME(minsulee2): need discussion that this is p2p util?
 async function signAndSendTx(endpoint, tx, privateKey) {
   const { txHash, signedTx } = ChainUtil.signTransaction(tx, privateKey);
   const result = await sendSignedTx(endpoint, signedTx);
@@ -112,7 +113,21 @@ function closeSocketSafe(connections, socket) {
 }
 
 function signMessage(messageBody, privateKey) {
-  return ainUtil.ecSignMessage(JSON.stringify(messageBody), Buffer.from(privateKey, 'hex'));
+  if (!ChainUtil.isDict(messageBody)) {
+    logger.error('The message body must be the object type.');
+    return null;
+  }
+  let privateKeyBuffer;
+  try {
+    privateKeyBuffer = Buffer.from(privateKey, 'hex');
+  } catch {
+    return null;
+  }
+  if (!privateKey || !ainUtil.isValidPrivate(privateKeyBuffer)) {
+    logger.error('The private key is not optional but mandatory or worng private key is typed.');
+    return null;
+  }
+  return ainUtil.ecSignMessage(JSON.stringify(messageBody), privateKeyBuffer);
 }
 
 function getAddressFromMessage(message) {

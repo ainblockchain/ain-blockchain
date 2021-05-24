@@ -3,12 +3,10 @@ const util = require('../p2p/util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-
 const {
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION
 } = require('../common/constants');
-const Chainutil = require('../common/chain-util');
 
 describe("P2P Util", () => {
   const mockAddress = '0x012345678abcdef';
@@ -131,6 +129,48 @@ describe("P2P Util", () => {
     it("passes the timestamp check", () => {
       const timestamp = Date.now();
       expect(util.checkTimestamp(timestamp)).to.equal(true);
+    });
+  });
+
+  describe("signMessage", () => {
+    const mockPrivateKey = '6204d4e083dd09c7b084e5923c5d664d2e1f3ce8440f90a773638f30c61d9c40';
+    it("returns null when no object type but the other types", () => {
+      const wrongInput1 = 'string';
+      const wrongInput2 = undefined;
+      const wrongInput3 = ['a', 1];
+      const wrongInput4 = -1000;
+      const wrongInput5 = true;
+      expect(util.signMessage(wrongInput1, mockPrivateKey)).to.equal(null);
+      expect(util.signMessage(wrongInput2, mockPrivateKey)).to.equal(null);
+      expect(util.signMessage(wrongInput3, mockPrivateKey)).to.equal(null);
+      expect(util.signMessage(wrongInput4, mockPrivateKey)).to.equal(null);
+      expect(util.signMessage(wrongInput5, mockPrivateKey)).to.equal(null);
+    });
+
+    it("returns null when no valid private key but other values", () => {
+      const wrongPrivateKey1 = 'string';
+      const wrongPrivateKey2 = null;
+      const wrongPrivateKey3 = ['a', 1];
+      const wrongPrivateKey4 = 1000000000;
+      const wrongPrivateKey5 = false;
+      const wrongPrivateKey6 = { object: 123 };
+      expect(util.signMessage({ correct: 'body' }, wrongPrivateKey1)).to.equal(null);
+      expect(util.signMessage({ correct: 'body' }, wrongPrivateKey2)).to.equal(null);
+      expect(util.signMessage({ correct: 'body' }, wrongPrivateKey3)).to.equal(null);
+      expect(util.signMessage({ correct: 'body' }, wrongPrivateKey4)).to.equal(null);
+      expect(util.signMessage({ correct: 'body' }, wrongPrivateKey5)).to.equal(null);
+      expect(util.signMessage({ correct: 'body' }, wrongPrivateKey6)).to.equal(null);
+    });
+
+    it("returns correct the correct digital signature", () => {
+      const body = {
+        foo: 'bar',
+        test: {
+          1: 2,
+          success: [1, 2, 3]
+        }
+      };
+      expect(util.signMessage(body, mockPrivateKey)).to.equal('0x4455e15b20f5125fff5196081b02ce827a2eaa931a74e6f1ecdcacddb1a91469319c7cdccfa492a96df6cc0d06eace1c4023b2067b6465dc5858d602f72e19dc2f09ea7cd575ff7a54c77dc6f0de33256e309e5e0c9a0aef66082c670e92775c1c');
     });
   });
 });
