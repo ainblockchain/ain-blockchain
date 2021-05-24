@@ -244,22 +244,22 @@ describe('Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set', {
+    const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
       json: {
-        op_list: [
-          {
-            type: 'SET_VALUE',
-            ref: `/manage_app/afan/create/${Date.now()}`,
-            value: {
-              admin: { [shardOwnerAddr]: true }
-            }
-          },
-          {
-            type: 'SET_VALUE',
-            ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
-            value: 1
-          }
-        ]
+        ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
+        value: 1
+      }
+    }).body.toString('utf-8')).result;
+    assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+    if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+      console.log(`Failed to check finalization of app staking tx.`);
+    }
+    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+      json: {
+        ref: `/manage_app/afan/create/${Date.now()}`,
+        value: {
+          admin: { [shardOwnerAddr]: true }
+        }
       }
     }).body.toString('utf-8')).result;
     assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
@@ -1818,22 +1818,22 @@ describe('Sharding', async () => {
     describe('_updateLatestShardReport', () => {
       before(async () => {
         const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set', {
+        const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
           json: {
-            op_list: [
-              {
-                type: 'SET_VALUE',
-                ref: `/manage_app/a_dapp/create/${Date.now()}`,
-                value: {
-                  admin: { [shard_owner]: true }
-                }
-              },
-              {
-                type: 'SET_VALUE',
-                ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
-                value: 1
-              }
-            ]
+            ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
+            value: 1
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+          console.log(`Failed to check finalization of app staking tx.`)
+        }
+        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+          json: {
+            ref: `/manage_app/a_dapp/create/${Date.now()}`,
+            value: {
+              admin: { [shard_owner]: true }
+            }
           }
         }).body.toString('utf-8')).result;
         assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
@@ -1843,25 +1843,6 @@ describe('Sharding', async () => {
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
             op_list: [
-              {
-                type: WriteDbOperations.SET_OWNER,
-                ref: sharding_path,
-                value: {
-                  [OwnerProperties.OWNER]: {
-                    [OwnerProperties.OWNERS]: {
-                      [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                      [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-                    }
-                  }
-                }
-              },
-              {
-                type: WriteDbOperations.SET_RULE,
-                ref: sharding_path,
-                value: {
-                  [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
-                }
-              },
               {
                 type: WriteDbOperations.SET_RULE,
                 ref: `${sharding_path}/${ShardingProperties.LATEST}`,
