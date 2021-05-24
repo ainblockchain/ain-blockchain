@@ -25,21 +25,21 @@ const {
   BlockchainNodeStates,
   PredefinedDbPaths,
   WriteDbOperations,
+  ReadDbOperations,
   GenesisSharding,
   GenesisAccounts,
   AccountProperties,
-  OwnerProperties,
   RuleProperties,
   ShardingProperties,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-  buildOwnerPermissions,
   LIGHTWEIGHT,
   FeatureFlags
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {
+  sendGetRequest,
   sendTxAndWaitForFinalization,
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -51,6 +51,7 @@ const {
   closeSocketSafe,
   encapsulateMessage
 } = require('./util');
+const PathUtil = require('../common/path-util');
 
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
@@ -124,7 +125,8 @@ class P2pServer {
       CURRENT_PROTOCOL_VERSION: CURRENT_PROTOCOL_VERSION,
       COMPATIBLE_MIN_PROTOCOL_VERSION: this.minProtocolVersion,
       COMPATIBLE_MAX_PROTOCOL_VERSION: this.maxProtocolVersion,
-      DATA_PROTOCOL_VERSION: this.dataProtocolVersion
+      DATA_PROTOCOL_VERSION: this.dataProtocolVersion,
+      CONSENSUS_PROTOCOL_VERSION: this.consensus.consensusProtocolVersion,
     };
   }
 
@@ -615,16 +617,50 @@ class P2pServer {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const ownerPrivateKey = ChainUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
+    const appName = _.get(ChainUtil.parsePath(shardingPath), 1);
+    const shardingAppConfig = await P2pServer.getShardingAppConfig(parentChainEndpoint, appName);
+    if (shardingAppConfig !== null && _.get(shardingAppConfig, `admin.${shardOwner}`) !== true) {
+      const errMsg = `Shard owner (${shardOwner}) doesn't have the permission to create a shard (${appName})`;
+      throw Error(errMsg);
+    }
+    if (shardingAppConfig === null) {
+      // Create app first. Note that the app should have staked some AIN.
+      const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName);
+      await sendTxAndWaitForFinalization(parentChainEndpoint, shardAppCreateTxBody, ownerPrivateKey);
+    }
     const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
     logger.info(`setUpDbForSharding success`);
   }
 
-  static buildShardingSetupTxBody() {
+  static async getShardingAppConfig(parentChainEndpoint, appName) {
+    const resp = await sendGetRequest(parentChainEndpoint, 'ain_get', {
+      type: ReadDbOperations.GET_VALUE,
+      ref: PathUtil.getManageAppConfigPath(appName)
+    });
+    return _.get(resp, 'data.result.result');
+  }
+
+  static buildShardAppCreateTxBody(appName) {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    return {
+      operation: {
+        type: WriteDbOperations.SET,
+        ref: PathUtil.getCreateAppRecordPath(appName, Date.now()),
+        value: {
+          [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
+            [shardOwner]: true
+          }
+        }
+      }
+    }
+  }
+
+  static buildShardingSetupTxBody() {
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-    const shardingPathRules = `auth.addr === '${shardOwner}'`;
     const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
     const proofHashRules = `auth.addr === '${shardReporter}' && ` +
         '((newData === null && ' +
@@ -638,25 +674,6 @@ class P2pServer {
       operation: {
         type: WriteDbOperations.SET,
         op_list: [
-          {
-            type: WriteDbOperations.SET_OWNER,
-            ref: shardingPath,
-            value: {
-              [OwnerProperties.OWNER]: {
-                [OwnerProperties.OWNERS]: {
-                  [shardOwner]: buildOwnerPermissions(false, true, true, true),
-                  [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
-                }
-              }
-            }
-          },
-          {
-            type: WriteDbOperations.SET_RULE,
-            ref: shardingPath,
-            value: {
-              [RuleProperties.WRITE]: shardingPathRules
-            }
-          },
           {
             type: WriteDbOperations.SET_RULE,
             ref: ChainUtil.appendPath(
