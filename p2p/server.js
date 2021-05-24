@@ -421,6 +421,10 @@ class P2pServer {
                 timestamp: Date.now(),
               };
               const signature = signMessage(body, this.getNodePrivateKey());
+              if (!signature) {
+                logger.error('The signaure is not correctly generated. Discard the message!');
+                return;
+              }
               const payload = encapsulateMessage(MessageTypes.ADDRESS_RESPONSE,
                   { body: body, signature: signature });
               if (!payload) {

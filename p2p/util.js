@@ -131,12 +131,32 @@ function signMessage(messageBody, privateKey) {
 }
 
 function getAddressFromMessage(message) {
-  const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
-  return ChainUtil.getAddressFromSignature(hashedMessage, message.data.signature);
+  const body = _.get(message, 'data.body');
+  const signature = _.get(message, 'data.signature');
+  if (!body || !ChainUtil.isDict(body)) {
+    logger.error('Data body is not included in the message.');
+    return null;
+  }
+  if (!signature) {
+    logger.error('Data signature is not included in the message.');
+    return null;
+  }
+  const hashedMessage = ainUtil.hashMessage(JSON.stringify(body));
+  return ChainUtil.getAddressFromSignature(hashedMessage, signature);
 }
 
 function verifySignedMessage(message, address) {
-  return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
+  const body = _.get(message, 'data.body');
+  const signature = _.get(message, 'data.signature');
+  if (!body || !ChainUtil.isDict(body)) {
+    logger.error('Data body is not included in the message.');
+    return null;
+  }
+  if (!signature) {
+    logger.error('Data signature is not included in the message.');
+    return null;
+  }
+  return ainUtil.ecVerifySig(JSON.stringify(body), signature, address);
 }
 
 function encapsulateMessage(type, dataObj) {
