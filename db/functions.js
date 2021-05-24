@@ -19,6 +19,7 @@ const {
   GasFeeConstants,
   REST_FUNCTION_CALL_TIMEOUT_MS,
   buildOwnerPermissions,
+  buildRulePermission,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
@@ -431,6 +432,17 @@ class Functions {
     return result;
   }
 
+  setRuleOrLog(rulePath, rule, context) {
+    const auth = context.auth;
+    const result = this.db.setRule(rulePath, rule, auth);
+    if (ChainUtil.isFailedTx(result)) {
+      logger.error(
+          `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);
+    }
+    Functions.addToOpResultList(rulePath, result, context);
+    return result;
+  }
+
   buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
@@ -577,6 +589,24 @@ class Functions {
     }
     if (adminConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
+      const appPath = PathUtil.getAppPath(appName);
+      const owner = {
+        [OwnerProperties.OWNER]: {
+          [OwnerProperties.OWNERS]: {
+            [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+          }
+        }
+      };
+      let rule = '';
+      const adminAddrList = Object.keys(adminConfig);
+      for (let i = 0; i < adminAddrList.length; i++) {
+        const addr = adminAddrList[i];
+        ChainUtil.setJsObject(owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, addr],
+            buildOwnerPermissions(true, true, true, true));
+        rule += `auth.addr === '${addr}'` + (i < adminAddrList.length - 1 ? ' || ' : '');
+      }
+      this.setRuleOrLog(appPath, buildRulePermission(rule), context);
+      this.setOwnerOrLog(appPath, owner, context);
     }
     if (billingConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingConfig;
