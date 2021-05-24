@@ -54,64 +54,42 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 async function setUp() {
-  const addr = parseOrLog(syncRequest(
+  const server1Addr = parseOrLog(syncRequest(
       'GET', server1 + '/get_address').body.toString('utf-8')).result;
-  const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set', {
+  const server2Addr = parseOrLog(syncRequest(
+      'GET', server2 + '/get_address').body.toString('utf-8')).result;
+  const server3Addr = parseOrLog(syncRequest(
+      'GET', server3 + '/get_address').body.toString('utf-8')).result;
+  const server4Addr = parseOrLog(syncRequest(
+      'GET', server4 + '/get_address').body.toString('utf-8')).result;
+
+  const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
     json: {
-      op_list: [
-        {
-          type: 'SET_VALUE',
-          ref: `/manage_app/afan/create/${Date.now()}`,
-          value: {
-            admin: { [addr]: true }
-          }
-        },
-        {
-          type: 'SET_VALUE',
-          ref: `/staking/afan/${addr}/0/stake/${Date.now()}/value`,
-          value: 1
+      ref: `/staking/afan/${server1Addr}/0/stake/${Date.now()}/value`,
+      value: 1
+    }
+  }).body.toString('utf-8')).result;
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+  if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+    console.log(`setUp(): Failed to check finalization of app staking tx.`)
+  }
+
+  const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
+    json: {
+      ref: `/manage_app/afan/create/${Date.now()}`,
+      value: {
+        admin: {
+          [server1Addr]: true,
+          [server2Addr]: true,
+          [server3Addr]: true,
+          [server4Addr]: true,
         }
-      ]
+      }
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
   if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
     console.log(`setUp(): Failed to check finalization of create app tx.`)
-  }
-  // TODO(lia): set owner & rule at apps/<app_name> in _createApp, and remove this setup tx
-  const legacySetupRes = parseOrLog(syncRequest('POST', server1 + '/set', {
-    json: {
-      op_list: [
-        {
-          type: 'SET_OWNER',
-          ref: '/apps/afan',
-          value: {
-            ".owner": {
-              "owners": {
-                "*": {
-                  "branch_owner": false,
-                  "write_function": false,
-                  "write_owner": true,
-                  "write_rule": true,
-                }
-              }
-            }
-          }
-        },
-        {
-          type: 'SET_RULE',
-          ref: '/apps/afan',
-          value: {
-            ".write": true
-          }
-        },
-      ],
-      nonce: -1,
-    }
-  }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(legacySetupRes, 'result')), false);
-  if (!(await waitUntilTxFinalized(serverList, legacySetupRes.tx_hash))) {
-    console.log(`setUp(): Failed to check finalization of legacy setup tx.`)
   }
 }
 
@@ -126,11 +104,6 @@ async function cleanUp() {
         },
         {
           type: 'SET_RULE',
-          ref: '/apps/afan',
-          value: null
-        },
-        {
-          type: 'SET_OWNER',
           ref: '/apps/afan',
           value: null
         },

@@ -80,13 +80,32 @@ describe("DB initialization", () => {
 
   describe("Rules", () => {
     it("loading rules properly on initialization", () => {
-      assert.deepEqual(node.db.getRule("/"), GenesisRules);
+      const genesisRuleWithConsensusApp = JSON.parse(JSON.stringify(GenesisRules));
+      ChainUtil.setJsObject(
+        genesisRuleWithConsensusApp,
+        ['apps', 'consensus'],
+        {".write": "auth.addr === '0xAAAf6f50A0304F12119D218b94bea8082642515B'"}
+      );
+      assert.deepEqual(node.db.getRule("/"), genesisRuleWithConsensusApp);
     })
   })
 
   describe("Owners", () => {
     it("loading owners properly on initialization", () => {
-      assert.deepEqual(node.db.getOwner('/'), GenesisOwners);
+      const genesisOwnerWithConsensusApp = JSON.parse(JSON.stringify(GenesisOwners));
+      ChainUtil.setJsObject(genesisOwnerWithConsensusApp, ['apps', 'consensus'], {
+        ".owner": {
+          owners: {
+            "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+              branch_owner: true,
+              write_function: true,
+              write_owner: true,
+              write_rule: true
+            }
+          }
+        }
+      });
+      assert.deepEqual(node.db.getOwner('/'), genesisOwnerWithConsensusApp);
     })
   })
 })
@@ -2031,7 +2050,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 24,
-          error_message: "Out of tree size limit (1001521 > 1000000)",
+          error_message: "Out of tree size limit (1001532 > 1000000)",
           gas_amount: 0,
         });
       })
