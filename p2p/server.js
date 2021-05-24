@@ -619,11 +619,13 @@ class P2pServer {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-    const appName = _.get(ChainUtil.parsePath(shardingPath), 1);
+    const appName = _.get(ChainUtil.parsePath(shardingPath), 1, null);
+    if (!appName) {
+      throw Error(`Invalid appName given for a shard (${shardingPath})`);
+    }
     const shardingAppConfig = await P2pServer.getShardingAppConfig(parentChainEndpoint, appName);
     if (shardingAppConfig !== null && _.get(shardingAppConfig, `admin.${shardOwner}`) !== true) {
-      const errMsg = `Shard owner (${shardOwner}) doesn't have the permission to create a shard (${appName})`;
-      throw Error(errMsg);
+      throw Error(`Shard owner (${shardOwner}) doesn't have the permission to create a shard (${appName})`);
     }
     if (shardingAppConfig === null) {
       // Create app first. Note that the app should have staked some AIN.
