@@ -647,6 +647,10 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
   };
 }
 
+function buildRulePermission(rule) {
+  return { [RuleProperties.WRITE]: rule };
+}
+
 module.exports = {
   FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
@@ -702,6 +706,7 @@ module.exports = {
   GenesisOwners,
   GasFeeConstants,
   buildOwnerPermissions,
+  buildRulePermission,
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
   ...GenesisParams.resource,

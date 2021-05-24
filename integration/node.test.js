@@ -3542,15 +3542,22 @@ describe('Blockchain Node', () => {
 
     describe('Gas fee', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_gas_fee/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_gas_fee/create/1'
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
           value: {
             admin: { [serviceAdmin]: true },
           },
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(0);
-        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
           console.error(`Failed to check finalization of tx.`);
         }
       });
@@ -3960,6 +3967,14 @@ describe('Blockchain Node', () => {
 
     describe('Staking: _stake, _unstake', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_staking/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_staking/create/1'
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
@@ -4082,7 +4097,7 @@ describe('Blockchain Node', () => {
           expect(stakeValue).to.equal(stakeAmount);
           expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance + stakeAmount);
           expect(afterBalance).to.equal(beforeBalance - stakeAmount);
-          expect(stakingAppBalanceTotal).to.equal(stakeAmount);
+          expect(stakingAppBalanceTotal).to.equal(stakeAmount + 1);
         });
 
         it('stake: stake more than account balance', () => {
@@ -4343,7 +4358,7 @@ describe('Blockchain Node', () => {
           expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
           expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance - stakeAmount);
           expect(afterBalance).to.equal(beforeBalance + stakeAmount);
-          expect(stakingAppBalanceTotal).to.equal(0);
+          expect(stakingAppBalanceTotal).to.equal(1);
         });
 
         it('unstake: stake after unstake', async () => {
@@ -4380,6 +4395,14 @@ describe('Blockchain Node', () => {
 
     describe('Payments: _pay, _claim', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_payment/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_payment/create/1'
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
@@ -4786,6 +4809,14 @@ describe('Blockchain Node', () => {
 
     describe('Escrow: _hold, _release', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_escrow/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_escrow/create/1'
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
@@ -5075,6 +5106,15 @@ describe('Blockchain Node', () => {
       describe('Escrow: service -> individual', () => {
         it('escrow: service -> individual: open escrow', async () => {
           const key = 1234567890000 + 101;
+          const server4Addr = parseOrLog(syncRequest(
+            'GET', server4 + '/get_address').body.toString('utf-8')).result;
+          const transferBody = parseOrLog(syncRequest('POST', server4 + '/set_value', {json: {
+            ref: `transfer/${server4Addr}/${serviceAdmin}/${key}/value`,
+            value: 100
+          }}).body.toString('utf-8'));
+          if (!(await waitUntilTxFinalized(serverList, _.get(transferBody, 'result.tx_hash')))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
           const payRef = `/payments/test_service_escrow/${serviceUser}/0/pay/${key}`;
           const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
