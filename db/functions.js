@@ -590,13 +590,7 @@ class Functions {
     if (adminConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
       const appPath = PathUtil.getAppPath(appName);
-      const owner = {
-        [OwnerProperties.OWNER]: {
-          [OwnerProperties.OWNERS]: {
-            [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
-          }
-        }
-      };
+      const owner = {};
       let rule = '';
       const adminAddrList = Object.keys(adminConfig);
       for (let i = 0; i < adminAddrList.length; i++) {
