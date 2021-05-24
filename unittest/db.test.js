@@ -96,12 +96,6 @@ describe("DB initialization", () => {
       ChainUtil.setJsObject(genesisOwnerWithConsensusApp, ['apps', 'consensus'], {
         ".owner": {
           owners: {
-            "*": {
-              branch_owner: false,
-              write_function: false,
-              write_owner: false,
-              write_rule: false
-            },
             "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
               branch_owner: true,
               write_function: true,
@@ -2056,7 +2050,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 24,
-          error_message: "Out of tree size limit (1001537 > 1000000)",
+          error_message: "Out of tree size limit (1001532 > 1000000)",
           gas_amount: 0,
         });
       })
