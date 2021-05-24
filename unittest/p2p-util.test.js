@@ -173,4 +173,149 @@ describe("P2P Util", () => {
       expect(util.signMessage(body, mockPrivateKey)).to.equal('0x4455e15b20f5125fff5196081b02ce827a2eaa931a74e6f1ecdcacddb1a91469319c7cdccfa492a96df6cc0d06eace1c4023b2067b6465dc5858d602f72e19dc2f09ea7cd575ff7a54c77dc6f0de33256e309e5e0c9a0aef66082c670e92775c1c');
     });
   });
+
+  describe("getAddressFromMessage", () => {
+    const mockPrivateKey = '6204d4e083dd09c7b084e5923c5d664d2e1f3ce8440f90a773638f30c61d9c40';
+    const body = {
+      foo: 'bar',
+      test: {
+        1: 2,
+        success: [1, 2, 3]
+      }
+    };
+    const signature = util.signMessage(body, mockPrivateKey);
+    it("returns null with wrong messages", () => {
+      const wrongMessage1 = {
+        data: {
+          signature: signature
+        }
+      };
+      const wrongMessage2 = {
+        data: {
+          body: 'string',
+          signature: signature
+        }
+      };
+      const wrongMessage3 = {
+        data: {
+          body: null,
+          signature: signature
+        }
+      };
+      const wrongMessage4 = {
+        data: {
+          body: ['a', 1],
+          signature: signature
+        }
+      };
+      const wrongMessage5 = {
+        data: {
+          body: 123123,
+          signature: signature
+        }
+      };
+      const wrongMessage6 = {
+        data: {
+          body: false,
+          signature: signature
+        }
+      };
+      const wrongMessage7 = {
+        data: {
+          body: body
+        }
+      };
+      expect(util.getAddressFromMessage(wrongMessage1)).to.equal(null);
+      expect(util.getAddressFromMessage(wrongMessage2)).to.equal(null);
+      expect(util.getAddressFromMessage(wrongMessage3)).to.equal(null);
+      expect(util.getAddressFromMessage(wrongMessage4)).to.equal(null);
+      expect(util.getAddressFromMessage(wrongMessage5)).to.equal(null);
+      expect(util.getAddressFromMessage(wrongMessage6)).to.equal(null);
+      expect(util.getAddressFromMessage(wrongMessage7)).to.equal(null);
+    });
+
+    it("gets correct address", () => {
+      const mockMessage = {
+        type: 'test',
+        data: {
+          body: body,
+          signature: signature
+        }
+      };
+      expect(util.getAddressFromMessage(mockMessage)).to.equal('0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891');
+    });
+  });
+
+  describe("verifySignedMessage", () => {
+    const mockPrivateKey = '6204d4e083dd09c7b084e5923c5d664d2e1f3ce8440f90a773638f30c61d9c40';
+    const body = {
+      foo: 'bar',
+      test: {
+        1: 2,
+        success: [1, 2, 3]
+      }
+    };
+    const signature = util.signMessage(body, mockPrivateKey);
+    it("returns null with wrong messages", () => {
+      const wrongMessage1 = {
+        data: {
+          signature: signature
+        }
+      };
+      const wrongMessage2 = {
+        data: {
+          body: 'string',
+          signature: signature
+        }
+      };
+      const wrongMessage3 = {
+        data: {
+          body: null,
+          signature: signature
+        }
+      };
+      const wrongMessage4 = {
+        data: {
+          body: ['a', 1],
+          signature: signature
+        }
+      };
+      const wrongMessage5 = {
+        data: {
+          body: 123123,
+          signature: signature
+        }
+      };
+      const wrongMessage6 = {
+        data: {
+          body: false,
+          signature: signature
+        }
+      };
+      const wrongMessage7 = {
+        data: {
+          body: body
+        }
+      };
+      expect(util.verifySignedMessage(wrongMessage1)).to.equal(null);
+      expect(util.verifySignedMessage(wrongMessage2)).to.equal(null);
+      expect(util.verifySignedMessage(wrongMessage3)).to.equal(null);
+      expect(util.verifySignedMessage(wrongMessage4)).to.equal(null);
+      expect(util.verifySignedMessage(wrongMessage5)).to.equal(null);
+      expect(util.verifySignedMessage(wrongMessage6)).to.equal(null);
+      expect(util.verifySignedMessage(wrongMessage7)).to.equal(null);
+    });
+
+    it("verifies signature correctly", () => {
+      const mockMessage = {
+        type: 'test',
+        data: {
+          body: body,
+          signature: signature
+        }
+      };
+      const address = util.getAddressFromMessage(mockMessage);
+      expect(util.verifySignedMessage(mockMessage, address)).to.equal(true);
+    });
+  });
 });
