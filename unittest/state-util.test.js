@@ -6,6 +6,7 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  applyFunctionChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
@@ -483,6 +484,135 @@ describe("state-util", () => {
       }), {isValid: true, invalidPath: ''});
     })
   })
+
+  describe("applyFunctionChange()", () => {
+    const curFunction = {
+      ".function": {
+        "0x111": {
+          "function_type": "NATIVE",
+          "function_id": "0x111"
+        },
+        "0x222": {
+          "function_type": "NATIVE",
+          "function_id": "0x222"
+        },
+        "0x333": {
+          "function_type": "NATIVE",
+          "function_id": "0x333"
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing function", () => {
+      assert.deepEqual(applyFunctionChange(null, {
+        ".function": {  // function
+          "0x111": null,
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+        },
+        "deeper": {
+          ".function": {  // deeper function
+            "0x999": {
+              "function_type": "REST",
+              "function_id": "0x999"
+            }
+          }
+        }
+      }), {  // the same as the given function change.
+        ".function": {
+          "0x111": null,
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+        },
+        "deeper": {
+          ".function": {
+            "0x999": {
+              "function_type": "REST",
+              "function_id": "0x999"
+            }
+          }
+        }
+      });
+    });
+
+    it("add / delete / modify existing function", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, {
+        ".function": {
+          "0x111": null,  // delete
+          "0x222": {  // modify
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x444": {  // add
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        }
+      }), {
+        ".function": {
+          "0x222": {  // modified
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x333": {  // untouched
+            "function_type": "NATIVE",
+            "function_id": "0x333"
+          },
+          "0x444": {  // added
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        }
+      });
+    });
+
+    it("add / delete / modify existing function with deeper function", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, {
+        ".function": {
+          "0x111": null,  // delete
+          "0x222": {  // modify
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x444": {  // add
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        },
+        "deeper": {
+          ".function": {  // deeper function
+            "0x999": {
+              "function_type": "REST",
+              "function_id": "0x999"
+            }
+          }
+        }
+      }), {
+        ".function": {  // deeper function has no effect
+          "0x222": {  // modified
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+          "0x333": {  // untouched
+            "function_type": "NATIVE",
+            "function_id": "0x333"
+          },
+          "0x444": {  // added
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        }
+      });
+    });
+
+    it("with null function change", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, null), null);
+    });
+  });
 
   describe("setStateTreeVersion", () => {
     it("leaf node", () => {
