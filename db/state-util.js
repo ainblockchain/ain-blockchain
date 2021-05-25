@@ -149,6 +149,44 @@ function isValidJsObjectForStates(obj) {
 }
 
 /**
+ * Returns a new function created by applying the function change to the current function.
+ * @param {Object} curFunction current function (to be modified and returned by this function)
+ * @param {Object} functionChange function change
+ */
+function applyFunctionChange(curFunction, functionChange) {
+  if (curFunction === null) {
+    // Just write the function change.
+    return functionChange;
+  }
+  if (functionChange === null) {
+    // Just delete the existing value.
+    return null;
+  }
+  const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
+  if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
+    return curFunction;
+  }
+  const newFunction =
+      ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
+  let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+  if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
+    // Add a place holder.
+    ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
+    newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+  }
+  for (const functionKey in funcChangeMap) {
+    const functionValue = funcChangeMap[functionKey];
+    if (functionValue === null) {
+      delete newFuncMap[functionKey];
+    } else {
+      newFuncMap[functionKey] = functionValue;
+    }
+  }
+
+  return newFunction;
+}
+
+/**
  * Returns affected nodes' number.
  */
 function setStateTreeVersion(node, version) {
@@ -338,6 +376,7 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  applyFunctionChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
