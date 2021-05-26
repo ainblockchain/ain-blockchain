@@ -33,6 +33,7 @@ const {
   isValidPathForStates,
   isValidJsObjectForStates,
   applyFunctionChange,
+  isValidOwnerTree,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -752,6 +753,10 @@ class DB {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`);
+    }
+    const isValidOwner = isValidOwnerTree(owner);
+    if (!isValidOwner.isValid) {
+      return ChainUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
