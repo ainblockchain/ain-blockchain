@@ -215,16 +215,7 @@ function isValidOwnerPermissions(ownerPermissions) {
  * Checks the validity of the given owner configuration.
  */
 function isValidOwnerConfig(ownerConfig) {
-  if (ownerConfig === null) {
-    return { isValid: true, invalidPath: '' };
-  }
-
-  const path = [OwnerProperties.OWNER];
-  const ownerProp = ChainUtil.getJsObject(ownerConfig, path);
-  if (!ChainUtil.isDict(ownerProp)) {
-    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
-  }
-  path.push(OwnerProperties.OWNERS);
+  const path = [OwnerProperties.OWNERS];
   const ownersProp = ChainUtil.getJsObject(ownerConfig, path);
   if (!ChainUtil.isDict(ownersProp)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
@@ -254,6 +245,45 @@ function isValidOwnerConfig(ownerConfig) {
   }
 
   return { isValid: true, invalidPath: '' };
+}
+
+function isValidOwnerTreeRecursive(ownerTree, path) {
+  if (!ChainUtil.isDict(ownerTree) || ChainUtil.isEmpty(ownerTree)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+  }
+
+  for (const label in ownerTree) {
+    path.push(label);
+    const subtree = ownerTree[label];
+    if (label === OwnerProperties.OWNER) {
+      const isValidConfig = isValidOwnerConfig(subtree);
+      if (!isValidConfig.isValid) {
+        return {
+          isValid: false,
+          invalidPath: ChainUtil.appendPath(ChainUtil.formatPath(path), isValidConfig.invalidPath)
+        };
+      }
+    } else {
+      const isValidSubtree = isValidOwnerTreeRecursive(subtree, path);
+      if (!isValidSubtree.isValid) {
+        return isValidSubtree;
+      }
+    }
+    path.pop();
+  }
+
+  return { isValid: true, invalidPath: '' };
+}
+
+/**
+ * Checks the validity of the given owner tree.
+ */
+function isValidOwnerTree(ownerTree) {
+  if (ownerTree === null) {
+    return { isValid: true, invalidPath: '' };
+  }
+
+  return isValidOwnerTreeRecursive(ownerTree, []);
 }
 
 /**
@@ -448,6 +478,7 @@ module.exports = {
   isValidJsObjectForStates,
   applyFunctionChange,
   isValidOwnerConfig,
+  isValidOwnerTree,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
