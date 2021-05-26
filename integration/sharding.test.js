@@ -1330,7 +1330,16 @@ describe('Sharding', async () => {
           const request = {
             ref: "test/test_owner/other/path",
             value: {
-              ".owner": "some other owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             nonce: -1
           };
@@ -1344,7 +1353,16 @@ describe('Sharding', async () => {
           const request = {
             ref: "apps/afan/test/test_owner/other2/path",
             value: {
-              ".owner": "some other2 owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             is_global: true,
             nonce: -1,
@@ -1393,7 +1411,16 @@ describe('Sharding', async () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other3/path",
                 value: {
-                  ".owner": "some other3 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               }
             ],
@@ -1478,7 +1505,16 @@ describe('Sharding', async () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other4/path",
                 value: {
-                  ".owner": "some other4 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 },
                 is_global: true,
               }
@@ -1972,7 +2008,6 @@ describe('Sharding', async () => {
                 "_updateLatestShardReport": {
                   "code": "SUCCESS",
                   "gas_amount": 0,
-                  "op_results": [],
                 }
               },
               "gas_amount": 1
