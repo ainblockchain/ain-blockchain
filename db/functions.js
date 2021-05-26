@@ -84,6 +84,14 @@ class Functions {
     this.callStack = [];
   }
 
+  static isNativeFunctionId(fid) {
+    if (!fid) {
+      return false;
+    }
+    const fidList = Object.values(NativeFunctionIds);
+    return fidList.find((elem) => elem === fid) !== undefined;
+  }
+
   /**
    * Runs functions of function paths matched with given database path.
    *

@@ -7,6 +7,7 @@ const {
   isValidPathForStates,
   isValidJsObjectForStates,
   applyFunctionChange,
+  isValidOwnerConfig,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
@@ -481,6 +482,191 @@ describe("state-util", () => {
           'a': {
             '*': 'x'
           }
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidOwnerConfig", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidOwnerConfig(undefined), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({}), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig([]), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig([1, 2, 3]), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(
+          isValidOwnerConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        array: []
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          '.': 'x'
+        }
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          '$': 'x'
+        }
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          '*b': 'x'
+        }
+      }), {isValid: false, invalidPath: '/.owner'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          'b*': 'x'
+        }
+      }), {isValid: false, invalidPath: '/.owner'});
+    })
+
+    it("when invalid input with deeper path", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': null
+      }), {isValid: false, invalidPath: '/.owner'});
+
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners'});
+
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          some_key: {
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners'});
+
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': null
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners'});
+    })
+
+    it("when invalid input with empty owners", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners'});
+    })
+
+    it("when invalid input with invalid owner (address or fid)", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+            '0x0': {  // Invalid address
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners/0x0'});
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+            '0x09a0d53fdf1c36a131938eb379b98910e55eefe1': {  // Non-checksum address
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners/0x09a0d53fdf1c36a131938eb379b98910e55eefe1'});
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+            'fid:_invalidFid': {  // Invalid fid
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners/fid:_invalidFid'});
+    })
+
+    it("when invalid input with invalid owner permissions", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              // Missing write_rule
+            },
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+              "do_something_else": true,  // Unknown permission
+            },
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": 'true',  // Non-boolean value
+            },
+          }
+        }
+      }), {isValid: false, invalidPath: '/.owner/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        '.owner': {
+          'owners': {
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+            '0x08Aed7AF9354435c38d52143EE50ac839D20696b': {
+              "branch_owner": false,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            'fid:_createApp': {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        }
       }), {isValid: true, invalidPath: ''});
     })
   })

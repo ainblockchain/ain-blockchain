@@ -159,7 +159,6 @@ describe("RuleUtil", () => {
       expect(util.isEmpty('')).to.equal(false);
       expect(util.isEmpty('abc')).to.equal(false);
       expect(util.isEmpty('0')).to.equal(false);
-      expect(util.isEmpty([])).to.equal(false);
       expect(util.isEmpty([10])).to.equal(false);
       expect(util.isEmpty({a: 'A'})).to.equal(false);
     })
@@ -167,6 +166,7 @@ describe("RuleUtil", () => {
     it("when valid input", () => {
       expect(util.isEmpty(null)).to.equal(true);
       expect(util.isEmpty(undefined)).to.equal(true);
+      expect(util.isEmpty([])).to.equal(true);
       expect(util.isEmpty({})).to.equal(true);
     })
   })
