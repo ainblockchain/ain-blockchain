@@ -39,9 +39,6 @@ fi
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_tracker_gcp.sh setup_blockchain_ubuntu.sh start_tracker_gcp.sh"
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ json_rpc/ genesis-configs/ logger/ node/ tx-pool/ p2p/ package.json setup_node_gcp.sh setup_blockchain_ubuntu.sh start_node_gcp.sh"
 
-printf "\nRemoving redundant files..."
-rm -rf chains logs
-
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
 NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-node-1-oregon"
@@ -67,10 +64,10 @@ if [ "$NUM_SHARDS" -gt 0 ]; then
             SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
             SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
 
-            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "killall node" --project $PROJECT_ID
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "killall node" --project $PROJECT_ID
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "killall node" --project $PROJECT_ID
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "killall node" --project $PROJECT_ID
+            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
+            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
+            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
+            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID
         done
 fi
 
@@ -119,8 +116,9 @@ gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_node_gcp.sh && . start
 printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
 gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 4" --project $PROJECT_ID
 
-printf "\nDeploying shard blockchains..."
+
 if [ "$NUM_SHARDS" -gt 0 ]; then
+    printf "\nDeploying shard blockchains..."
     for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"

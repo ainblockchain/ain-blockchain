@@ -95,6 +95,7 @@ export ENABLE_TX_SIG_VERIF_WORKAROUND=false
 export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
 export STAKE=100000
+export DATA_DIR="/home/.ain"
 
 date=$(date '+%Y-%m-%dT%H:%M')
 echo "date=$date"
@@ -105,7 +106,7 @@ echo "NEW_DIR_PATH=$NEW_DIR_PATH"
 OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
 echo "OLD_DIR_PATH=$OLD_DIR_PATH"
 
-# 3. Kill old node & remove old directory
+# 3. Kill old node & remove old directory (but keep the chain data)
 sudo killall node
 sudo rm -rf ../ain-blockchain*
 
@@ -113,6 +114,8 @@ sudo rm -rf ../ain-blockchain*
 sudo mkdir $NEW_DIR_PATH
 sudo chmod 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
+sudo mkdir -p $DATA_DIR
+sudo chmod 777 $DATA_DIR
 
 # 5. Install dependencies
 cd $NEW_DIR_PATH

@@ -39,9 +39,6 @@ fi
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_tracker_gcp.sh setup_blockchain_ubuntu.sh start_tracker_gcp.sh"
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ json_rpc/ genesis-configs/ logger/ node/ tx-pool/ p2p/ package.json setup_blockchain_ubuntu.sh start_node_incremental_gcp.sh"
 
-printf "\nRemoving redundant files..."
-rm -rf chains logs
-
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
 NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-node-1-oregon"
@@ -96,6 +93,7 @@ gcloud compute ssh $NODE_4_TARGET_ADDR --command ". start_node_incremental_gcp.s
 
 # 3. Shards
 if [ "$NUM_SHARDS" -gt 0 ]; then
+    printf "\nDeploying shard blockchains..."
     for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"
