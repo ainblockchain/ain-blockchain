@@ -1,6 +1,7 @@
 /* eslint guard-for-in: "off" */
 const logger = require('../logger')('STATE_UTIL');
 
+const _ = require('lodash');
 const ChainUtil = require('../common/chain-util');
 const {
   FunctionProperties,
@@ -8,6 +9,7 @@ const {
   OwnerProperties,
   ShardingProperties,
 } = require('../common/constants');
+const Functions = require('./functions');
 
 function isEmptyNode(node) {
   return node.getIsLeaf() && node.getValue() === null;
@@ -115,7 +117,7 @@ function isValidPathForStates(fullPath) {
       break;
     }
   }
-  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
+  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
 function isValidJsObjectForStatesRecursive(obj, path) {
@@ -145,7 +147,7 @@ function isValidJsObjectForStatesRecursive(obj, path) {
 function isValidJsObjectForStates(obj) {
   const path = [];
   const isValid = isValidJsObjectForStatesRecursive(obj, path);
-  return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
+  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
 /**
@@ -184,6 +186,70 @@ function applyFunctionChange(curFunction, functionChange) {
   }
 
   return newFunction;
+}
+
+function sanitizeOwnerPermissions(ownerPermissions) {
+  if (!ownerPermissions) {
+    return null;
+  }
+  return {
+    [OwnerProperties.BRANCH_OWNER]:
+        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.BRANCH_OWNER]),
+    [OwnerProperties.WRITE_FUNCTION]:
+        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.WRITE_FUNCTION]),
+    [OwnerProperties.WRITE_OWNER]:
+        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.WRITE_OWNER]),
+    [OwnerProperties.WRITE_RULE]:
+        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.WRITE_RULE]),
+  };
+}
+
+function isValidOwnerPermissions(ownerPermissions) {
+  const sanitized = sanitizeOwnerPermissions(ownerPermissions);
+  const isIdentical =
+      _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissions, { strict: true });
+  return isIdentical;
+}
+
+/**
+ * Checks the validity of the given owner configuration.
+ */
+function isValidOwnerConfig(ownerConfig) {
+  const path = [OwnerProperties.OWNER];
+  const ownerProp = ChainUtil.getJsObject(ownerConfig, path);
+  if (!ChainUtil.isDict(ownerProp)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+  }
+  path.push(OwnerProperties.OWNERS);
+  const ownersProp = ChainUtil.getJsObject(ownerConfig, path);
+  if (!ChainUtil.isDict(ownersProp)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+  }
+  const ownerList = Object.keys(ownersProp);
+  if (!ChainUtil.isArray(ownerList) || ChainUtil.isEmpty(ownerList)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+  }
+  for (const owner of ownerList) {
+    const invalidPath = ChainUtil.formatPath([...path, owner]);
+    if (!ChainUtil.isString(owner)) {
+      return { isValid: false, invalidPath };
+    }
+    if (!ChainUtil.isCksumAddr(owner)) {
+      if (!owner.startsWith(OwnerProperties.FID_PREFIX)) {
+        return { isValid: false, invalidPath };
+      }
+      const fid = owner.substring(OwnerProperties.FID_PREFIX.length);
+      if (!Functions.isNativeFunctionId(fid)) {
+        return { isValid: false, invalidPath };
+      }
+    }
+    const ownerPermissions = ChainUtil.getJsObject(ownerConfig, [...path, owner]);
+    if (!isValidOwnerPermissions(ownerPermissions)) {
+      return { isValid: false, invalidPath };
+    }
+  }
+
+  return { isValid: true, invalidPath: '' };
 }
 
 /**
@@ -377,6 +443,7 @@ module.exports = {
   isValidPathForStates,
   isValidJsObjectForStates,
   applyFunctionChange,
+  isValidOwnerConfig,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
