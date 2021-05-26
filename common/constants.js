@@ -1,3 +1,4 @@
+const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
@@ -63,7 +64,11 @@ if (!semver.valid(CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 const LOGS_DIR = path.resolve(__dirname, '../logs');
-const CHAINS_DIR = path.resolve(__dirname, '../chains');
+const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), '.ain');
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+const CHAINS_DIR = path.resolve(DATA_DIR, 'chains');
 const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
 const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
 const HASH_DELIMITER = '#';
