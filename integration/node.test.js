@@ -1612,7 +1612,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(3);
+        await ChainUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
@@ -1890,7 +1890,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(3);
+        await ChainUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
