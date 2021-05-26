@@ -644,20 +644,22 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
+      assert.deepEqual(isValidOwnerConfig(null), {isValid: true, invalidPath: ''});
+
       assert.deepEqual(isValidOwnerConfig({
         '.owner': {
           'owners': {
-            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+            '*': {
               "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            },
-            '0x08Aed7AF9354435c38d52143EE50ac839D20696b': {
-              "branch_owner": false,
               "write_function": false,
               "write_owner": false,
               "write_rule": false,
+            },
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": false,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
             },
             'fid:_createApp': {
               "branch_owner": true,

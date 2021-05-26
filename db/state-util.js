@@ -215,6 +215,10 @@ function isValidOwnerPermissions(ownerPermissions) {
  * Checks the validity of the given owner configuration.
  */
 function isValidOwnerConfig(ownerConfig) {
+  if (ownerConfig === null) {
+    return { isValid: true, invalidPath: '' };
+  }
+
   const path = [OwnerProperties.OWNER];
   const ownerProp = ChainUtil.getJsObject(ownerConfig, path);
   if (!ChainUtil.isDict(ownerProp)) {
@@ -234,7 +238,7 @@ function isValidOwnerConfig(ownerConfig) {
     if (!ChainUtil.isString(owner)) {
       return { isValid: false, invalidPath };
     }
-    if (!ChainUtil.isCksumAddr(owner)) {
+    if (owner !== OwnerProperties.ANYONE && !ChainUtil.isCksumAddr(owner)) {
       if (!owner.startsWith(OwnerProperties.FID_PREFIX)) {
         return { isValid: false, invalidPath };
       }
