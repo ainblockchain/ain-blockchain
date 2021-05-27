@@ -32,6 +32,8 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
+  applyFunctionChange,
+  isValidOwnerTree,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -714,7 +716,7 @@ class DB {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
-    const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
+    const newFunction = applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
     return ChainUtil.returnTxResult(0, null, 1);
@@ -751,6 +753,10 @@ class DB {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`);
+    }
+    const isValidOwner = isValidOwnerTree(owner);
+    if (!isValidOwner.isValid) {
+      return ChainUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);

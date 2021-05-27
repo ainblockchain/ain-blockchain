@@ -1155,7 +1155,16 @@ describe('Blockchain Node', () => {
         const request = {
           ref: "/some/wrong/path",
           value: {
-            ".owner": "some other owner config"
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                  "write_function": true
+                }
+              }
+            }
           }
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
@@ -1223,7 +1232,16 @@ describe('Blockchain Node', () => {
               type: 'SET_OWNER',
               ref: "/test/test_owner/other100/path",
               value: {
-                ".owner": "some other100 owner config"
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                      "write_function": true
+                    }
+                  }
+                }
               }
             }
           ]
@@ -1438,7 +1456,16 @@ describe('Blockchain Node', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other200/path",
                 value: {
-                  ".owner": "some other200 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1481,7 +1508,16 @@ describe('Blockchain Node', () => {
                     type: 'SET_OWNER',
                     ref: "/test/test_owner/other201/path",
                     value: {
-                      ".owner": "some other201 owner config"
+                      ".owner": {
+                        "owners": {
+                          "*": {
+                            "branch_owner": true,
+                            "write_owner": true,
+                            "write_rule": true,
+                            "write_function": true
+                          }
+                        }
+                      }
                     }
                   }
                 ]
@@ -1612,7 +1648,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(3);
+        await ChainUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
@@ -1703,7 +1739,16 @@ describe('Blockchain Node', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other202/path",
                 value: {
-                  ".owner": "some other202 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1746,7 +1791,16 @@ describe('Blockchain Node', () => {
                     type: 'SET_OWNER',
                     ref: "/test/test_owner/other203/path",
                     value: {
-                      ".owner": "some other203 owner config"
+                      ".owner": {
+                        "owners": {
+                          "*": {
+                            "branch_owner": true,
+                            "write_owner": true,
+                            "write_rule": true,
+                            "write_function": true
+                          }
+                        }
+                      }
                     }
                   }
                 ]
@@ -1890,7 +1944,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(3);
+        await ChainUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
@@ -2175,7 +2229,16 @@ describe('Blockchain Node', () => {
               type: 'SET_OWNER',
               ref: "/test/test_owner/other300/path",
               value: {
-                ".owner": "some other300 owner config"
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                      "write_function": true
+                    }
+                  }
+                }
               }
             },
             timestamp: Date.now(),
@@ -2218,7 +2281,16 @@ describe('Blockchain Node', () => {
                   type: 'SET_OWNER',
                   ref: "/test/test_owner/other301/path",
                   value: {
-                    ".owner": "some other301 owner config"
+                    ".owner": {
+                      "owners": {
+                        "*": {
+                          "branch_owner": true,
+                          "write_owner": true,
+                          "write_rule": true,
+                          "write_function": true
+                        }
+                      }
+                    }
                   }
                 }
               ]
