@@ -647,16 +647,20 @@ class P2pServer {
 
   static buildShardAppCreateTxBody(appName) {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    const timestamp = Date.now();
     return {
       operation: {
-        type: WriteDbOperations.SET,
-        ref: PathUtil.getCreateAppRecordPath(appName, Date.now()),
+        type: WriteDbOperations.SET_VALUE,
+        ref: PathUtil.getCreateAppRecordPath(appName, timestamp),
         value: {
           [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
             [shardOwner]: true
           }
         }
-      }
+      },
+      timestamp,
+      nonce: -1,
+      gas_price: 0,  // NOTE(platfowner): A temporary solution.
     }
   }
 

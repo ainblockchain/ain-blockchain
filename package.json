@@ -19,7 +19,7 @@
     "test_chain_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/chain-util.test.js",
     "test_state_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-util.test.js",
     "test_block_pool": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/block-pool.test.js",
-    "test_db": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/db.test.js",
+    "test_db": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/db.test.js",
     "test_unit": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 \"unittest/*.test.js\"",
     "test_node": "./node_modules/mocha/bin/mocha --timeout 160000 integration/node.test.js",
     "test_blockchain": "./node_modules/mocha/bin/mocha --timeout 160000 integration/blockchain.test.js",
