@@ -95,7 +95,7 @@ export ENABLE_TX_SIG_VERIF_WORKAROUND=false
 export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
 export STAKE=100000
-export DATA_DIR="/home/.ain"
+export BLOCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
 date=$(date '+%Y-%m-%dT%H:%M')
 echo "date=$date"
@@ -114,8 +114,8 @@ sudo rm -rf ../ain-blockchain*
 sudo mkdir $NEW_DIR_PATH
 sudo chmod 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
-sudo mkdir -p $DATA_DIR
-sudo chmod 777 $DATA_DIR
+sudo mkdir -p $BLOCHAIN_DATA_DIR
+sudo chmod 777 $BLOCHAIN_DATA_DIR
 
 # 5. Install dependencies
 cd $NEW_DIR_PATH
