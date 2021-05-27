@@ -106,7 +106,7 @@ Before starting node jobs, remove existing blockchain files and logs if necessar
 ```
 rm -rf /path/to/data/dir logs
 ```
-The default blockchain data directory is ~/.ain (e.g. chain data will be at ~/.ain/chains). You can use a different directory by specifying the `DATA_DIR` environment variable.
+The default blockchain data directory is ~/ain_blockchain_data (e.g. chain data will be at ~/ain_blockchain_data/chains). You can use a different directory by specifying the `BLOCHAIN_DATA_DIR` environment variable.
   
 The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDATORS parameter in 
 the genesis-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
