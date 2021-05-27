@@ -748,7 +748,6 @@ class DB {
     return ChainUtil.returnTxResult(0, null, 1);
   }
 
-  // TODO(platfowner): Add owner config sanitization logic.
   setOwner(ownerPath, owner, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
