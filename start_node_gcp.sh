@@ -87,6 +87,7 @@ export ENABLE_TX_SIG_VERIF_WORKAROUND=false
 export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
 export STAKE=100000
+export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
 echo 'Starting up Node server..'
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
