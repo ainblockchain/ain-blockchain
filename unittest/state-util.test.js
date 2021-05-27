@@ -6,9 +6,10 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
-  applyFunctionChange,
+  isValidFunctionConfig,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyFunctionChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
@@ -483,6 +484,174 @@ describe("state-util", () => {
           'a': {
             '*': 'x'
           }
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidFunctionConfig", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidFunctionConfig(null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidFunctionConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/undef'});
+      assert.deepEqual(isValidFunctionConfig({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/empty_obj'});
+      assert.deepEqual(isValidFunctionConfig({
+        array: []
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionConfig({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionConfig({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          '.': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          '$': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          '*b': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          'b*': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+    })
+
+    it("when invalid input with deeper path", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        a_fid: {}
+      }), {isValid: false, invalidPath: '/a_fid'});
+      assert.deepEqual(isValidFunctionConfig({
+        a_fid: null
+      }), {isValid: false, invalidPath: '/a_fid'});
+      assert.deepEqual(isValidFunctionConfig({
+        a_fid: {}
+      }), {isValid: false, invalidPath: '/a_fid'});
+    })
+
+    it("when invalid input with NATIVE type", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          // Missing function_type
+          "function_id": "_transfer"
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          // Missing function_id
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          "function_id": "_transfer",
+          "unknown_property": "some value"  // Unknown property
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "unknown type",  // Unknown function_type
+          "function_id": "_transfer"
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          "function_id": "some other fid"  // Wrong function_id
+        }
+      }), {isValid: false, invalidPath: '/_transfer/function_id'});
+    })
+
+    it("when invalid input with REST type", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          // Missing function_type
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          // Missing function_id
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          // Missing event_listener
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          // Missing service_name
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+          "unknown_property": "some value"  // Unknown property
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "some other fid",  // Wrong function_id
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111/function_id'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "some non-url value",  // Invalid url
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          "function_id": "_transfer",
+        },
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        }
       }), {isValid: true, invalidPath: ''});
     })
   })

@@ -61,6 +61,7 @@
     "url": "^0.11.0",
     "util": "^0.11.1",
     "uuid": "^3.4.0",
+    "valid-url": "^1.0.9",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.4.2",
     "ws": "^6.1.2"

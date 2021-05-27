@@ -2,9 +2,11 @@
 const logger = require('../logger')('STATE_UTIL');
 
 const _ = require('lodash');
+const validUrl = require('valid-url');
 const ChainUtil = require('../common/chain-util');
 const {
   FunctionProperties,
+  FunctionTypes,
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
@@ -150,42 +152,74 @@ function isValidJsObjectForStates(obj) {
   return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
-/**
- * Returns a new function created by applying the function change to the current function.
- * @param {Object} curFunction current function (to be modified and returned by this function)
- * @param {Object} functionChange function change
- */
-function applyFunctionChange(curFunction, functionChange) {
-  if (curFunction === null) {
-    // Just write the function change.
-    return functionChange;
-  }
-  if (functionChange === null) {
-    // Just delete the existing value.
+function sanitizeFunctionInfo(functionInfo) {
+  if (!functionInfo) {
     return null;
   }
-  const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
-  if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
-    return curFunction;
+
+  const functionType = functionInfo[FunctionProperties.FUNCTION_TYPE];
+  const sanitized = {};
+  if (functionType === FunctionTypes.NATIVE) {
+    sanitized[FunctionProperties.FUNCTION_TYPE] = ChainUtil.stringOrEmpty(functionType)
+    sanitized[FunctionProperties.FUNCTION_ID] =
+        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.FUNCTION_ID]);
+  } else if (functionType === FunctionTypes.REST) {
+    sanitized[FunctionProperties.FUNCTION_TYPE] = ChainUtil.stringOrEmpty(functionType)
+    sanitized[FunctionProperties.FUNCTION_ID] =
+        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.FUNCTION_ID]);
+    sanitized[FunctionProperties.EVENT_LISTENER] =
+        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.EVENT_LISTENER]);
+    sanitized[FunctionProperties.SERVICE_NAME] =
+        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.SERVICE_NAME]);
   }
-  const newFunction =
-      ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
-  let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
-  if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
-    // Add a place holder.
-    ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
-    newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+
+  return sanitized;
+}
+
+function isValidFunctionInfo(functionInfo) {
+  if (ChainUtil.isEmpty(functionInfo)) {
+    return false;
   }
-  for (const functionKey in funcChangeMap) {
-    const functionValue = funcChangeMap[functionKey];
-    if (functionValue === null) {
-      delete newFuncMap[functionKey];
-    } else {
-      newFuncMap[functionKey] = functionValue;
+  const sanitized = sanitizeFunctionInfo(functionInfo);
+  const isIdentical =
+      _.isEqual(JSON.parse(JSON.stringify(sanitized)), functionInfo, { strict: true });
+  if (!isIdentical) {
+    return false;
+  }
+  const eventListener = functionInfo[FunctionProperties.EVENT_LISTENER];
+  if (eventListener !== undefined &&
+      !validUrl.isUri(functionInfo[FunctionProperties.EVENT_LISTENER])) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Checks the validity of the given function configuration.
+ */
+function isValidFunctionConfig(functionConfig) {
+  if (!ChainUtil.isDict(functionConfig)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
+  }
+  const fidList = Object.keys(functionConfig);
+  if (ChainUtil.isEmpty(fidList)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
+  }
+  for (const fid of fidList) {
+    const invalidPath = ChainUtil.formatPath([fid]);
+    const functionInfo = ChainUtil.getJsObject(functionConfig, [fid]);
+    if (!isValidFunctionInfo(functionInfo)) {
+      return { isValid: false, invalidPath };
+    }
+    if (functionInfo[FunctionProperties.FUNCTION_ID] !== fid) {
+      return {
+        isValid: false,
+        invalidPath: ChainUtil.formatPath([fid, FunctionProperties.FUNCTION_ID])
+      };
     }
   }
 
-  return newFunction;
+  return { isValid: true, invalidPath: '' };
 }
 
 function sanitizeOwnerPermissions(ownerPermissions) {
@@ -205,6 +239,9 @@ function sanitizeOwnerPermissions(ownerPermissions) {
 }
 
 function isValidOwnerPermissions(ownerPermissions) {
+  if (ChainUtil.isEmpty(ownerPermissions)) {
+    return false;
+  }
   const sanitized = sanitizeOwnerPermissions(ownerPermissions);
   const isIdentical =
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissions, { strict: true });
@@ -221,14 +258,11 @@ function isValidOwnerConfig(ownerConfig) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
   }
   const ownerList = Object.keys(ownersProp);
-  if (!ChainUtil.isArray(ownerList) || ChainUtil.isEmpty(ownerList)) {
+  if (ChainUtil.isEmpty(ownerList)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
   }
   for (const owner of ownerList) {
     const invalidPath = ChainUtil.formatPath([...path, owner]);
-    if (!ChainUtil.isString(owner)) {
-      return { isValid: false, invalidPath };
-    }
     if (owner !== OwnerProperties.ANYONE && !ChainUtil.isCksumAddr(owner)) {
       if (!owner.startsWith(OwnerProperties.FID_PREFIX)) {
         return { isValid: false, invalidPath };
@@ -284,6 +318,44 @@ function isValidOwnerTree(ownerTree) {
   }
 
   return isValidOwnerTreeRecursive(ownerTree, []);
+}
+
+/**
+ * Returns a new function created by applying the function change to the current function.
+ * @param {Object} curFunction current function (to be modified and returned by this function)
+ * @param {Object} functionChange function change
+ */
+function applyFunctionChange(curFunction, functionChange) {
+  if (curFunction === null) {
+    // Just write the function change.
+    return functionChange;
+  }
+  if (functionChange === null) {
+    // Just delete the existing value.
+    return null;
+  }
+  const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
+  if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
+    return curFunction;
+  }
+  const newFunction =
+      ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
+  let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+  if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
+    // Add a place holder.
+    ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
+    newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+  }
+  for (const functionKey in funcChangeMap) {
+    const functionValue = funcChangeMap[functionKey];
+    if (functionValue === null) {
+      delete newFuncMap[functionKey];
+    } else {
+      newFuncMap[functionKey] = functionValue;
+    }
+  }
+
+  return newFunction;
 }
 
 /**
@@ -476,9 +548,10 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
-  applyFunctionChange,
+  isValidFunctionConfig,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyFunctionChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
