@@ -43,7 +43,7 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
     this.trackerWebSocket = null;
     this.outbound = {};
-    this.startHeartbeat();
+    // this.startHeartbeat();
   }
 
   run() {
@@ -76,16 +76,24 @@ class P2pClient {
     };
   }
 
-  setIntervalForTrackerConnection() {
-    this.connectToTracker();
-    this.intervalConnection = setInterval(() => {
-      this.connectToTracker();
-    }, RECONNECT_INTERVAL_MS);
-  }
-
-  clearIntervalForTrackerConnection() {
-    clearInterval(this.intervalConnection);
-    this.intervalConnection = null;
+  getStatus() {
+    const blockStatus = this.server.getBlockStatus();
+    return {
+      address: this.server.getNodeAddress(),
+      updatedAt: Date.now(),
+      lastBlockNumber: blockStatus.number,
+      networkStatus: this.getNetworkStatus(),
+      blockStatus: blockStatus,
+      txStatus: this.server.getTxStatus(),
+      consensusStatus: this.server.getConsensusStatus(),
+      nodeStatus: this.server.getNodeStatus(),
+      shardingStatus: this.server.getShardingStatus(),
+      cpuStatus: this.server.getCpuUsage(),
+      memoryStatus: this.server.getMemoryUsage(),
+      diskStatus: this.server.getDiskUsage(),
+      runtimeInfo: this.server.getRuntimeInfo(),
+      protocolInfo: this.server.getProtocolInfo(),
+    };
   }
 
   getNetworkStatus() {
@@ -117,27 +125,19 @@ class P2pClient {
         port: PORT,
       },
       connectionStatus: this.getConnectionStatus()
-    }
+    };
   }
 
-  getStatus() {
-    const blockStatus = this.server.getBlockStatus();
-    return {
-      address: this.server.getNodeAddress(),
-      updatedAt: Date.now(),
-      lastBlockNumber: blockStatus.number,
-      networkStatus: this.getNetworkStatus(),
-      blockStatus: blockStatus,
-      txStatus: this.server.getTxStatus(),
-      consensusStatus: this.server.getConsensusStatus(),
-      nodeStatus: this.server.getNodeStatus(),
-      shardingStatus: this.server.getShardingStatus(),
-      cpuStatus: this.server.getCpuUsage(),
-      memoryStatus: this.server.getMemoryUsage(),
-      diskStatus: this.server.getDiskUsage(),
-      runtimeInfo: this.server.getRuntimeInfo(),
-      protocolInfo: this.server.getProtocolInfo(),
-    };
+  setIntervalForTrackerConnection() {
+    this.connectToTracker();
+    this.intervalConnection = setInterval(() => {
+      this.connectToTracker();
+    }, RECONNECT_INTERVAL_MS);
+  }
+
+  clearIntervalForTrackerConnection() {
+    clearInterval(this.intervalConnection);
+    this.intervalConnection = null;
   }
 
   updateNodeStatusToTracker() {
@@ -492,6 +492,7 @@ class P2pClient {
     this.server.stop();
     // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
+    this.clearIntervalForTrackerConnection();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();
