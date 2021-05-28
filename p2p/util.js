@@ -15,6 +15,20 @@ const {
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
+function _isValidMessage(message) {
+  const body = _.get(message, 'data.body');
+  if (!body || !ChainUtil.isDict(body)) {
+    logger.error('Data body is not included in the message.');
+    return false;
+  }
+  const signature = _.get(message, 'data.signature');
+  if (!signature) {
+    logger.error('Data signature is not included in the message.');
+    return false;
+  }
+  return true;
+}
+
 function getAddressFromSocket(connectionObj, socket) {
   return Object.keys(connectionObj).find(address => connectionObj[address].socket === socket);
 }
@@ -41,6 +55,7 @@ function signMessage(messageBody, privateKey) {
   try {
     privateKeyBuffer = Buffer.from(privateKey, 'hex');
   } catch {
+    logger.error('The private key is not correctly set on the buffer to sign a message.');
     return null;
   }
   if (!privateKey || !ainUtil.isValidPrivate(privateKeyBuffer)) {
@@ -51,32 +66,20 @@ function signMessage(messageBody, privateKey) {
 }
 
 function getAddressFromMessage(message) {
-  const body = _.get(message, 'data.body');
-  const signature = _.get(message, 'data.signature');
-  if (!body || !ChainUtil.isDict(body)) {
-    logger.error('Data body is not included in the message.');
+  if (!_isValidMessage(message)) {
     return null;
+  } else {
+    const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
+    return ChainUtil.getAddressFromSignature(hashedMessage, message.data.signature);
   }
-  if (!signature) {
-    logger.error('Data signature is not included in the message.');
-    return null;
-  }
-  const hashedMessage = ainUtil.hashMessage(JSON.stringify(body));
-  return ChainUtil.getAddressFromSignature(hashedMessage, signature);
 }
 
 function verifySignedMessage(message, address) {
-  const body = _.get(message, 'data.body');
-  const signature = _.get(message, 'data.signature');
-  if (!body || !ChainUtil.isDict(body)) {
-    logger.error('Data body is not included in the message.');
+  if (!_isValidMessage(message)) {
     return null;
+  } else {
+    return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
   }
-  if (!signature) {
-    logger.error('Data signature is not included in the message.');
-    return null;
-  }
-  return ainUtil.ecVerifySig(JSON.stringify(body), signature, address);
 }
 
 function encapsulateMessage(type, dataObj) {
