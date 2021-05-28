@@ -207,7 +207,11 @@ function isValidFunctionConfig(functionConfig) {
   }
   for (const fid of fidList) {
     const invalidPath = ChainUtil.formatPath([fid]);
-    const functionInfo = ChainUtil.getJsObject(functionConfig, [fid]);
+    const functionInfo = functionConfig[fid];
+    if (functionInfo === null) {
+      // Function deletion.
+      continue;
+    }
     if (!isValidFunctionInfo(functionInfo)) {
       return { isValid: false, invalidPath };
     }
