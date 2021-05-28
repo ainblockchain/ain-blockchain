@@ -129,7 +129,7 @@ class P2pClient {
   }
 
   setIntervalForTrackerConnection() {
-    this.connectToTracker();
+    console.log(2);
     this.intervalConnection = setInterval(() => {
       this.connectToTracker();
     }, RECONNECT_INTERVAL_MS);
@@ -183,12 +183,15 @@ class P2pClient {
 
     this.trackerWebSocket.on('close', (code) => {
       logger.info(`\n Disconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
+      console.log(4)
       this.clearIntervalForTrackerUpdate();
+      this.clearIntervalForTrackerConnection();
       this.setIntervalForTrackerConnection();
     });
   }
 
   connectToTracker() {
+    console.log(3);
     logger.info(`Reconnecting to tracker (${TRACKER_WS_ADDR})`);
     this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
     this.trackerWebSocket.on('open', () => {
@@ -493,6 +496,7 @@ class P2pClient {
     // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
     this.clearIntervalForTrackerConnection();
+    this.clearIntervalForTrackerUpdate();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();

@@ -46,7 +46,6 @@ const {
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  isValidProtocolVersion,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
