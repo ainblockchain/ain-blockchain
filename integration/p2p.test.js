@@ -1,6 +1,5 @@
 const chai = require('chai');
 const url = require('url');
-const process = require('process');
 
 const BlockchainNode = require('../node');
 const VersionUtil = require('../common/version-util');
