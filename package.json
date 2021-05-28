@@ -65,7 +65,7 @@
     "uuid": "^3.4.0",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.4.2",
-    "ws": "^6.1.2"
+    "ws": "^7.4.6"
   },
   "devDependencies": {
     "chai": "^4.2.0",

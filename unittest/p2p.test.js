@@ -34,14 +34,16 @@ describe("p2p", () => {
   });
 
   after(() => {
+    clearInterval(p2pClient.intervalConnection);
     p2pClient.stop();
     // This is added since p2pClient.stop() calls wsServer.close() though, it does not really close
     // the server but still some wsServer in process leaves somehow(perhaps intended? or bug?).
     // So that, the server should be manully shut down via process.kill().
     // See also: https://github.com/websockets/ws/blob/master/doc/ws.md#class-websocketserver
-    if (process.ppid) {
-      process.kill(process.ppid);
-    }
+    // console.log(process.argv0)
+    // if (process.ppid) {
+    //   process.kill(process.ppid);
+    // }
   });
 
   describe("server status", () => {
