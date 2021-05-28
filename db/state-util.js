@@ -222,6 +222,45 @@ function isValidFunctionConfig(functionConfig) {
   return { isValid: true, invalidPath: '' };
 }
 
+function isValidFunctionTreeRecursive(functionTree, path) {
+  if (!ChainUtil.isDict(functionTree) || ChainUtil.isEmpty(functionTree)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+  }
+
+  for (const label in functionTree) {
+    path.push(label);
+    const subtree = functionTree[label];
+    if (label === FunctionProperties.FUNCTION) {
+      const isValidConfig = isValidFunctionConfig(subtree);
+      if (!isValidConfig.isValid) {
+        return {
+          isValid: false,
+          invalidPath: ChainUtil.appendPath(ChainUtil.formatPath(path), isValidConfig.invalidPath)
+        };
+      }
+    } else {
+      const isValidSubtree = isValidFunctionTreeRecursive(subtree, path);
+      if (!isValidSubtree.isValid) {
+        return isValidSubtree;
+      }
+    }
+    path.pop();
+  }
+
+  return { isValid: true, invalidPath: '' };
+}
+
+/**
+ * Checks the validity of the given function tree.
+ */
+function isValidFunctionTree(functionTree) {
+  if (functionTree === null) {
+    return { isValid: true, invalidPath: '' };
+  }
+
+  return isValidFunctionTreeRecursive(functionTree, []);
+}
+
 function sanitizeOwnerPermissions(ownerPermissions) {
   if (!ownerPermissions) {
     return null;
@@ -252,8 +291,15 @@ function isValidOwnerPermissions(ownerPermissions) {
  * Checks the validity of the given owner configuration.
  */
 function isValidOwnerConfig(ownerConfig) {
-  const path = [OwnerProperties.OWNERS];
-  const ownersProp = ChainUtil.getJsObject(ownerConfig, path);
+  if (!ChainUtil.isDict(ownerConfig)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
+  }
+  const path = [];
+  const ownersProp = ownerConfig[OwnerProperties.OWNERS];
+  if (ownersProp === undefined) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+  }
+  path.push(OwnerProperties.OWNERS);
   if (!ChainUtil.isDict(ownersProp)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
   }
@@ -549,6 +595,7 @@ module.exports = {
   isValidPathForStates,
   isValidJsObjectForStates,
   isValidFunctionConfig,
+  isValidFunctionTree,
   isValidOwnerConfig,
   isValidOwnerTree,
   applyFunctionChange,
