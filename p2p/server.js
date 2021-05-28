@@ -46,7 +46,7 @@ const {
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  isValidDataProtoVer,
+  isValidProtocolVersion,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
@@ -375,7 +375,7 @@ class P2pServer {
         const parsedMessage = JSON.parse(message);
         const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
         const address = getAddressFromSocket(this.inbound, socket);
-        if (!isValidDataProtoVer(dataProtoVer)) {
+        if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
           closeSocketSafe(this.outbound, socket);
@@ -423,6 +423,10 @@ class P2pServer {
                 timestamp: Date.now(),
               };
               const signature = signMessage(body, this.getNodePrivateKey());
+              if (!signature) {
+                logger.error('The signaure is not correctly generated. Discard the message!');
+                return;
+              }
               const payload = encapsulateMessage(MessageTypes.ADDRESS_RESPONSE,
                   { body: body, signature: signature });
               if (!payload) {
