@@ -19,6 +19,7 @@ const {
   ProofProperties,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
+  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
@@ -26,25 +27,25 @@ const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -714,8 +715,8 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
-        expect(body.code).to.equal(0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -735,8 +736,8 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -757,8 +758,8 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -781,8 +782,8 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
 
         // Confirm that the value is set properly.
@@ -805,7 +806,6 @@ describe('Blockchain Node', () => {
         const request = {ref: 'some/wrong/path', value: "some other value"};
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
-        expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path",
@@ -816,6 +816,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(1);
 
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -836,8 +837,8 @@ describe('Blockchain Node', () => {
         const request = {ref: "test/test_value/some/path2", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -860,7 +861,6 @@ describe('Blockchain Node', () => {
         const request = {ref: "some/wrong/path2", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
-        expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path2",
@@ -871,6 +871,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(1);
 
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -891,8 +892,8 @@ describe('Blockchain Node', () => {
         const request = {ref: "test/test_value/some/path3", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -915,7 +916,6 @@ describe('Blockchain Node', () => {
         const request = {ref: "some/wrong/path3", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
-        expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
           "error_message": "No .write permission on: some/wrong/path3",
@@ -926,6 +926,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(1);
 
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -994,7 +995,6 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest(
             'POST', server1 + '/set_function', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 404,
           "error_message": "No write_function permission on: /some/wrong/path",
@@ -1005,6 +1005,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(1);
 
         // Confirm that the original function is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -1032,8 +1033,8 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1063,7 +1064,6 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 503,
           "error_message": "No write_rule permission on: /some/wrong/path",
@@ -1074,6 +1074,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(1);
 
         // Confirm that the original rule is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -1119,8 +1120,8 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1154,12 +1155,20 @@ describe('Blockchain Node', () => {
         const request = {
           ref: "/some/wrong/path",
           value: {
-            ".owner": "some other owner config"
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                  "write_function": true
+                }
+              }
+            }
           }
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 603,
           "error_message": "No write_owner or branch_owner permission on: /some/wrong/path",
@@ -1170,6 +1179,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(1);
 
         // Confirm that the original owner is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -1222,14 +1232,22 @@ describe('Blockchain Node', () => {
               type: 'SET_OWNER',
               ref: "/test/test_owner/other100/path",
               value: {
-                ".owner": "some other100 owner config"
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                      "write_function": true
+                    }
+                  }
+                }
               }
             }
           ]
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(0);
         assert.deepEqual(_.get(body, 'result.result'), {
           "result_list": [
             {
@@ -1263,6 +1281,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(0);
 
         // Confirm that the original value is set properly.
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -1329,7 +1348,6 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
-        expect(body.code).to.equal(1);
         assert.deepEqual(_.get(body, 'result.result'), {
           "result_list": [
             {
@@ -1356,6 +1374,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
+        expect(body.code).to.equal(1);
 
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
@@ -1437,7 +1456,16 @@ describe('Blockchain Node', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other200/path",
                 value: {
-                  ".owner": "some other200 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1480,7 +1508,16 @@ describe('Blockchain Node', () => {
                     type: 'SET_OWNER',
                     ref: "/test/test_owner/other201/path",
                     value: {
-                      ".owner": "some other201 owner config"
+                      ".owner": {
+                        "owners": {
+                          "*": {
+                            "branch_owner": true,
+                            "write_owner": true,
+                            "write_rule": true,
+                            "write_function": true
+                          }
+                        }
+                      }
                     }
                   }
                 ]
@@ -1493,8 +1530,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
         expect(body).to.not.equal(null);
-        expect(body.code).to.equal(0);
-        expect(Array.isArray(body.result)).to.equal(true);
+        expect(ChainUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
           result.tx_hash = 'erased';
@@ -1609,9 +1645,10 @@ describe('Blockchain Node', () => {
             "tx_hash": "erased"
           }
         ]);
+        expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(3);
+        await ChainUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
@@ -1702,7 +1739,16 @@ describe('Blockchain Node', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other202/path",
                 value: {
-                  ".owner": "some other202 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1745,7 +1791,16 @@ describe('Blockchain Node', () => {
                     type: 'SET_OWNER',
                     ref: "/test/test_owner/other203/path",
                     value: {
-                      ".owner": "some other203 owner config"
+                      ".owner": {
+                        "owners": {
+                          "*": {
+                            "branch_owner": true,
+                            "write_owner": true,
+                            "write_rule": true,
+                            "write_function": true
+                          }
+                        }
+                      }
                     }
                   }
                 ]
@@ -1758,8 +1813,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
         expect(body).to.not.equal(null);
-        expect(body.code).to.equal(0);
-        expect(Array.isArray(body.result)).to.equal(true);
+        expect(ChainUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
           result.tx_hash = 'erased';
@@ -1887,9 +1941,10 @@ describe('Blockchain Node', () => {
             "tx_hash": "erased"
           }
         ]);
+        expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(3);
+        await ChainUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
@@ -1902,8 +1957,13 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_sendSignedTransaction', () => {
+      const account = {
+        address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+        private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
+        public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
+      };
+
       it('accepts a transaction with nonce unordered (-1)', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -1942,7 +2002,6 @@ describe('Blockchain Node', () => {
       })
 
       it('accepts a transaction with numbered nonce', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
           address: account.address,
@@ -1990,7 +2049,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a transaction that exceeds its size limit.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
         const txBody = {
@@ -2020,7 +2078,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a transaction of missing properties.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -2049,7 +2106,6 @@ describe('Blockchain Node', () => {
       })
 
       it('rejects a transaction in an invalid format.', () => {
-        const account = ainUtil.createAccount();
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -2079,7 +2135,12 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_sendSignedTransactionBatch', () => {
-      const account = ainUtil.createAccount();
+      const account = {
+        address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+        private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
+        public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
+      };
+
       let txBodyBefore;
       let txBodyAfter;
       let signatureBefore;
@@ -2168,7 +2229,16 @@ describe('Blockchain Node', () => {
               type: 'SET_OWNER',
               ref: "/test/test_owner/other300/path",
               value: {
-                ".owner": "some other300 owner config"
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                      "write_function": true
+                    }
+                  }
+                }
               }
             },
             timestamp: Date.now(),
@@ -2211,7 +2281,16 @@ describe('Blockchain Node', () => {
                   type: 'SET_OWNER',
                   ref: "/test/test_owner/other301/path",
                   value: {
-                    ".owner": "some other301 owner config"
+                    ".owner": {
+                      "owners": {
+                        "*": {
+                          "branch_owner": true,
+                          "write_owner": true,
+                          "write_rule": true,
+                          "write_function": true
+                        }
+                      }
+                    }
                   }
                 }
               ]
@@ -2234,14 +2313,10 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
-          expect(Array.isArray(resultList)).to.equal(true);
-          for (let i = 0; i < txList.length; i++) {
-            resultList[i].tx_hash = ChainUtil.hashSignature(txList[i].signature);
+          expect(ChainUtil.isArray(resultList)).to.equal(true);
+          for (let i = 0; i < resultList.length; i++) {
+            expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
-          assert.deepEqual(res.result, {
-            result: resultList,
-            protoVer: CURRENT_PROTOCOL_VERSION,
-          });
         })
       })
 
@@ -2302,7 +2377,7 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
-          expect(Array.isArray(resultList)).to.equal(true);
+          expect(ChainUtil.isArray(resultList)).to.equal(true);
           expect(resultList.length).to.equal(BATCH_TX_LIST_SIZE_LIMIT);
           for (let i = 0; i < resultList.length; i++) {
             expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
@@ -2346,6 +2421,77 @@ describe('Blockchain Node', () => {
         })
       })
 
+      // NOTE(platfowner): As a workaround for BATCH_TX_LIST_SIZE_LIMIT, the transactions are
+      // divided into two batch transaction.
+      it('rejects batch transactions that cause over per-account transaction pool size limit.',
+          async () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBodyTemplate = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value',
+            ref: `test/test_value/some/path`
+          },
+          nonce: -1
+        };
+
+        const txList1 = [];
+        // Not over the limit.
+        for (let i = 0; i < TX_POOL_SIZE_LIMIT_PER_ACCOUNT; i++) {
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList1.push({
+            tx_body: txBody,
+            signature,
+          });
+        }
+        const res1 = await client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList1,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        const resultList1 = _.get(res1, 'result.result', null);
+        // Accepts transactions.
+        expect(ChainUtil.isArray(resultList1)).to.equal(true);
+        for (let i = 0; i < resultList1.length; i++) {
+          expect(ChainUtil.isFailedTx(resultList1[i].result)).to.equal(false);
+        }
+
+        const txList2 = [];
+        // Just over the limit.
+        for (let i = 0; i < 1; i++) {
+          const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
+          txBody.timestamp = timestamp + TX_POOL_SIZE_LIMIT_PER_ACCOUNT + i;
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          txList2.push({
+            tx_body: txBody,
+            signature,
+          });
+        }
+        const res2 = await client.request('ain_sendSignedTransactionBatch', {
+          tx_list: txList2,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        const resultList2 = _.get(res2, 'result.result', null);
+        // Rejects transactions.
+        expect(ChainUtil.isArray(resultList2)).to.equal(true);
+        expect(resultList2.length).to.equal(1);
+        resultList2[0].tx_hash = 'erased';
+        assert.deepEqual(resultList2, [
+          {
+            "result": {
+              "code": 4,
+              "error_message": "[executeTransactionAndAddToPool] Tx pool does NOT have enough room (50) for account: 0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+              "gas_amount": 0
+            },
+            "tx_hash": "erased"
+          }
+        ]);
+      })
+
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
@@ -2378,7 +2524,7 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result');
-          expect(Array.isArray(resultList)).to.equal(false);
+          expect(ChainUtil.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
             result: {
               code: 3,
@@ -2470,11 +2616,13 @@ describe('Blockchain Node', () => {
   })
 
   describe('Function triggering', () => {
-    const saveLastTxAllowedPath = '/test/test_function_triggering/allowed_path';
-    const saveLastTxNotAllowedPath = '/test/test_function_triggering/not_allowed_path';
+    const setFunctionWithOwnerOnlyPath = '/test/test_function_triggering/owner_only';
+    const saveLastTxAllowedPath = '/test/test_function_triggering/allowed_path_with_fid';
+    const saveLastTxNotAllowedPath = '/test/test_function_triggering/not_allowed_path_with_fid';
     const saveLastTxAllowedPathWithFids = '/test/test_function_triggering/allowed_path_with_fids';
     const saveLastTxNotAllowedPathWithFids = '/test/test_function_triggering/not_allowed_path_with_fids';
-    const setFunctionWithOwnerOnlyPath = '/test/test_function_triggering/owner_only';
+    const setOwnerConfigAllowedPath = '/test/test_function_triggering/set_owner_allowed_path_with_fid';
+    const setOwnerConfigNotAllowedPath = '/test/test_function_triggering/set_owner_not_allowed_path_with_fid';
     const triggerRestFunctionPath = '/test/test_function_triggering/rest_function_path';
 
     let transferFrom; // = server1
@@ -2534,7 +2682,7 @@ describe('Blockchain Node', () => {
           op_list: [
             {
               type: 'SET_FUNCTION',
-              ref: '/test/test_function_triggering/allowed_path/value',
+              ref: '/test/test_function_triggering/allowed_path_with_fid/value',
               value: {
                 ".function": {
                   "_saveLastTx": {
@@ -2546,21 +2694,21 @@ describe('Blockchain Node', () => {
             },
             {
               type: 'SET_RULE',
-              ref: '/test/test_function_triggering/allowed_path/value',
+              ref: '/test/test_function_triggering/allowed_path_with_fid/value',
               value: {
                 ".write": true,
               }
             },
             {
               type: 'SET_RULE',
-              ref: '/test/test_function_triggering/allowed_path/.last_tx/value',
+              ref: '/test/test_function_triggering/allowed_path_with_fid/.last_tx/value',
               value: {
                 ".write": "auth.fid === '_saveLastTx'",
               }
             },
             {
               type: 'SET_FUNCTION',
-              ref: '/test/test_function_triggering/not_allowed_path/value',
+              ref: '/test/test_function_triggering/not_allowed_path_with_fid/value',
               value: {
                 ".function": {
                   "_saveLastTx": {
@@ -2572,14 +2720,14 @@ describe('Blockchain Node', () => {
             },
             {
               type: 'SET_RULE',
-              ref: '/test/test_function_triggering/not_allowed_path/value',
+              ref: '/test/test_function_triggering/not_allowed_path_with_fid/value',
               value: {
                 ".write": true,
               }
             },
             {
               type: 'SET_RULE',
-              ref: '/test/test_function_triggering/not_allowed_path/.last_tx/value',
+              ref: '/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value',
               value: {
                 ".write": "auth.fid === 'some function id'",
               }
@@ -2638,6 +2786,74 @@ describe('Blockchain Node', () => {
             },
             {
               type: 'SET_FUNCTION',
+              ref: '/test/test_function_triggering/set_owner_allowed_path_with_fid/value',
+              value: {
+                ".function": {
+                  "_setOwnerConfig": {
+                    "function_type": "NATIVE",
+                    "function_id": "_setOwnerConfig"
+                  }
+                }
+              }
+            },
+            {
+              type: 'SET_OWNER',
+              ref: '/test/test_function_triggering/set_owner_allowed_path_with_fid',
+              value: {
+                ".owner": {
+                  "owners": {
+                    "fid:_setOwnerConfig": {
+                      "branch_owner": true,  // allow branching
+                      "write_function": false,
+                      "write_owner": false,
+                      "write_rule": false,
+                    },
+                    "*": {
+                      "branch_owner": false,  // not allow branching
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                    }
+                  }
+                }
+              }
+            },
+            {
+              type: 'SET_FUNCTION',
+              ref: '/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value',
+              value: {
+                ".function": {
+                  "_setOwnerConfig": {
+                    "function_type": "NATIVE",
+                    "function_id": "_setOwnerConfig"
+                  }
+                }
+              }
+            },
+            {
+              type: 'SET_OWNER',
+              ref: '/test/test_function_triggering/set_owner_not_allowed_path_with_fid',
+              value: {
+                ".owner": {
+                  "owners": {
+                    "fid:_setOwnerConfig": {
+                      "branch_owner": false,  // not allow branching
+                      "write_function": false,
+                      "write_owner": false,
+                      "write_rule": false,
+                    },
+                    "*": {
+                      "branch_owner": false,  // not allow branching
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                    }
+                  }
+                }
+              }
+            },
+            {
+              type: 'SET_FUNCTION',
               ref: '/test/test_function_triggering/rest_function_path',
               value: {
                 ".function": {
@@ -2673,22 +2889,22 @@ describe('Blockchain Node', () => {
           op_list: [
             {
               type: 'SET_FUNCTION',
-              ref: '/test/test_function_triggering/allowed_path/value',
+              ref: '/test/test_function_triggering/allowed_path_with_fid/value',
               value: null
             },
             {
               type: 'SET_RULE',
-              ref: '/test/test_function_triggering/allowed_path/value',
+              ref: '/test/test_function_triggering/allowed_path_with_fid/value',
               value: null
             },
             {
               type: 'SET_FUNCTION',
-              ref: '/test/test_function_triggering/not_allowed_path/value',
+              ref: '/test/test_function_triggering/not_allowed_path_with_fid/value',
               value: null
             },
             {
               type: 'SET_RULE',
-              ref: '/test/test_function_triggering/not_allowed_path/value',
+              ref: '/test/test_function_triggering/not_allowed_path_with_fid/value',
               value: null
             },
             {
@@ -2710,6 +2926,36 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: '/test/test_function_triggering/not_allowed_path_with_fids/value',
               value: null
+            },
+            {
+              type: 'SET_FUNCTION',
+              ref: '/test/test_function_triggering/set_owner_allowed_path_with_fid/value',
+              value: null
+            },
+            {
+              type: 'SET_OWNER',
+              ref: '/test/test_function_triggering/set_owner_allowed_path_with_fid',
+              value: null
+            },
+            {
+              type: 'SET_FUNCTION',
+              ref: '/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value',
+              value: null
+            },
+            {
+              type: 'SET_OWNER',
+              ref: '/test/test_function_triggering/set_owner_not_allowed_path_with_fid',
+              value: null
+            },
+            {
+              type: 'SET_FUNCTION',
+              ref: '/test/test_function_triggering/rest_function_path',
+              value: null,
+            },
+            {
+              type: 'SET_RULE',
+              ref: '/test/test_function_triggering/rest_function_path',
+              value: null,
             },
           ],
           nonce: -1,
@@ -2752,8 +2998,8 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(body.code, 0);
           assert.deepEqual(_.get(body, 'result.result.code'), 0);
+          assert.deepEqual(body.code, 0);
           if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2804,7 +3050,6 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(body.code, 1);
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "func_results": {
@@ -2813,10 +3058,10 @@ describe('Blockchain Node', () => {
                 "gas_amount": 0,
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/not_allowed_path/.last_tx/value",
+                    "path": "/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                     "result": {
                       "code": 103,
-                      "error_message": "No .write permission on: /test/test_function_triggering/not_allowed_path/.last_tx/value",
+                      "error_message": "No .write permission on: /test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                       "gas_amount": 0,
                     }
                   }
@@ -2830,6 +3075,7 @@ describe('Blockchain Node', () => {
             },
             "gas_cost_total": 0,
           });
+          assert.deepEqual(body.code, 1);
           const lastTx = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${saveLastTxNotAllowedPath + '/.last_tx/value'}`)
             .body.toString('utf-8')).result
@@ -2844,7 +3090,6 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(body.code, 0);
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "func_results": {
@@ -2853,7 +3098,7 @@ describe('Blockchain Node', () => {
                 "gas_amount": 0,
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "path": "/test/test_function_triggering/allowed_path_with_fid/.last_tx/value",
                     "result": {
                       "code": 0,
                       "gas_amount": 1,
@@ -2869,6 +3114,7 @@ describe('Blockchain Node', () => {
             },
             "gas_cost_total": 0,
           });
+          assert.deepEqual(body.code, 0);
           if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2888,7 +3134,6 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(body.code, 1);
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "func_results": {
@@ -2914,6 +3159,7 @@ describe('Blockchain Node', () => {
             },
             "gas_cost_total": 0,
           });
+          assert.deepEqual(body.code, 1);
           const lastTx = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${saveLastTxNotAllowedPathWithFids + '/.last_tx/value'}`)
             .body.toString('utf-8')).result
@@ -2928,7 +3174,6 @@ describe('Blockchain Node', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          assert.deepEqual(body.code, 0);
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "func_results": {
@@ -2953,6 +3198,7 @@ describe('Blockchain Node', () => {
             },
             "gas_cost_total": 0,
           });
+          assert.deepEqual(body.code, 0);
           if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2961,6 +3207,90 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result
           // Should be the tx hash value.
           assert.deepEqual(_.get(lastTx, 'tx_hash', null), body.result.tx_hash);
+        });
+      });
+
+      describe('Owner rule: auth.fid', () => {
+        it('owner rule: auth.fid: without function permission', () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: setOwnerConfigNotAllowedPath + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(_.get(body, 'result.result'), {
+            "code": 0,
+            "func_results": {
+              "_setOwnerConfig": {
+                "code": "FAILURE",
+                "gas_amount": 0,
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
+                    "result": {
+                      "code": 603,
+                      "error_message": "No write_owner or branch_owner permission on: /test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
+                      "gas_amount": 0,
+                    }
+                  }
+                ]
+              }
+            },
+            "gas_amount": 1,
+            "gas_amount_total": {
+              "app": {},
+              "service": 1
+            },
+            "gas_cost_total": 0,
+          });
+          assert.deepEqual(body.code, 1);
+          const ownerConfig = parseOrLog(syncRequest('GET',
+              server2 + `/get_owner?ref=${setOwnerConfigNotAllowedPath + '/value'}`)
+            .body.toString('utf-8')).result
+          // Should be null.
+          expect(ownerConfig).to.equal(null);
+        });
+
+        it('owner rule: auth.fid: with function permission', async () => {
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: setOwnerConfigAllowedPath + '/value',
+            value: 'some value',
+            timestamp: Date.now(),
+            nonce: -1,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(_.get(body, 'result.result'), {
+            "code": 0,
+            "func_results": {
+              "_setOwnerConfig": {
+                "code": "SUCCESS",
+                "gas_amount": 0,
+                "op_results": [
+                  {
+                    "path": "/test/test_function_triggering/set_owner_allowed_path_with_fid/value",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1,
+                    }
+                  }
+                ]
+              }
+            },
+            "gas_amount": 1,
+            "gas_amount_total": {
+              "app": {},
+              "service": 2
+            },
+            "gas_cost_total": 0,
+          });
+          assert.deepEqual(body.code, 0);
+          if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
+          const ownerConfig = parseOrLog(syncRequest('GET',
+              server2 + `/get_owner?ref=${setOwnerConfigAllowedPath + '/value'}`)
+            .body.toString('utf-8')).result
+          // Should be not null.
+          expect(ownerConfig).to.not.equal(null);
         });
       });
     });
@@ -3284,15 +3614,22 @@ describe('Blockchain Node', () => {
 
     describe('Gas fee', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_gas_fee/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_gas_fee/create/1'
-        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
           value: {
             admin: { [serviceAdmin]: true },
           },
-        }}).body.toString('utf-8'));
-        expect(body.code).to.equals(0);
-        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
           console.error(`Failed to check finalization of tx.`);
         }
       });
@@ -3304,7 +3641,6 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_transfer": {
@@ -3343,6 +3679,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0,
         });
+        assert.deepEqual(body.code, 0);
       });
 
       it("native function (_transfer) without individual account registration", () => {
@@ -3352,7 +3689,6 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_transfer": {
@@ -3391,6 +3727,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0,
         });
+        assert.deepEqual(body.code, 0);
       });
 
       it("native function (_transfer) with service account registration", () => {
@@ -3400,7 +3737,6 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_stake": {
@@ -3475,6 +3811,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0,
         });
+        assert.deepEqual(body.code, 0);
       });
 
       it("native function (_transfer) without service account registration", () => {
@@ -3484,7 +3821,6 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890001,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_stake": {
@@ -3559,6 +3895,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0,
         });
+        assert.deepEqual(body.code, 0);
       });
 
       it("REST function with external RPC call", () => {
@@ -3566,7 +3903,6 @@ describe('Blockchain Node', () => {
           ref: triggerRestFunctionPath,
           value: 'some value',
         }}).body.toString('utf-8'));
-        assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "0x11111": {
@@ -3582,10 +3918,11 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0,
         });
+        assert.deepEqual(body.code, 0);
       });
     });
 
-    describe('Transfer (_transfer)', () => {
+    describe('Transfer: _transfer', () => {
       it('transfer: transfer', async () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
@@ -3595,8 +3932,8 @@ describe('Blockchain Node', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        assert.deepEqual(body.code, 0);
         assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        assert.deepEqual(body.code, 0);
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3702,6 +4039,14 @@ describe('Blockchain Node', () => {
 
     describe('Staking: _stake, _unstake', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_staking/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_staking/create/1'
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
@@ -3824,7 +4169,7 @@ describe('Blockchain Node', () => {
           expect(stakeValue).to.equal(stakeAmount);
           expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance + stakeAmount);
           expect(afterBalance).to.equal(beforeBalance - stakeAmount);
-          expect(stakingAppBalanceTotal).to.equal(stakeAmount);
+          expect(stakingAppBalanceTotal).to.equal(stakeAmount + 1);
         });
 
         it('stake: stake more than account balance', () => {
@@ -4085,7 +4430,7 @@ describe('Blockchain Node', () => {
           expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
           expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance - stakeAmount);
           expect(afterBalance).to.equal(beforeBalance + stakeAmount);
-          expect(stakingAppBalanceTotal).to.equal(0);
+          expect(stakingAppBalanceTotal).to.equal(1);
         });
 
         it('unstake: stake after unstake', async () => {
@@ -4122,6 +4467,14 @@ describe('Blockchain Node', () => {
 
     describe('Payments: _pay, _claim', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_payment/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_payment/create/1'
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
@@ -4528,6 +4881,14 @@ describe('Blockchain Node', () => {
 
     describe('Escrow: _hold, _release', () => {
       before(async () => {
+        const appStakingPath = `/staking/test_service_escrow/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const manageAppPath = '/manage_app/test_service_escrow/create/1'
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
@@ -4817,6 +5178,15 @@ describe('Blockchain Node', () => {
       describe('Escrow: service -> individual', () => {
         it('escrow: service -> individual: open escrow', async () => {
           const key = 1234567890000 + 101;
+          const server4Addr = parseOrLog(syncRequest(
+            'GET', server4 + '/get_address').body.toString('utf-8')).result;
+          const transferBody = parseOrLog(syncRequest('POST', server4 + '/set_value', {json: {
+            ref: `transfer/${server4Addr}/${serviceAdmin}/${key}/value`,
+            value: 100
+          }}).body.toString('utf-8'));
+          if (!(await waitUntilTxFinalized(serverList, _.get(transferBody, 'result.tx_hash')))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
           const payRef = `/payments/test_service_escrow/${serviceUser}/0/pay/${key}`;
           const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
               `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;

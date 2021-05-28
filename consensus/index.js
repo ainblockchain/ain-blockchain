@@ -284,23 +284,26 @@ class Consensus {
     }
   }
 
-  executeOrRollbackTransactionForBlock(db, tx, blockNumber, validTransactions, invalidTransactions) {
+  executeOrRollbackTransactionForBlock(db, tx, blockNumber, validTransactions, invalidTransactions, resList) {
     const LOG_HEADER = 'executeOrRollbackTransactionForBlock';
     if (!db.backupDb()) {
       logger.error(
           `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
+      return null;
     }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx), blockNumber);
     if (!ChainUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
+      resList.push(txRes);
     } else {
       logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
       invalidTransactions.push(tx);
       if (!db.restoreDb()) {
         logger.error(
             `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
+        return null;
       }
     }
     return txRes;
@@ -361,12 +364,11 @@ class Consensus {
     const resList = [];
     for (const tx of transactions) {
       const res = this.executeOrRollbackTransactionForBlock(
-          tempDb, tx, blockNumber, validTransactions, invalidTransactions);
+          tempDb, tx, blockNumber, validTransactions, invalidTransactions, resList);
       if (!res) {
         this.node.destroyDb(tempDb);
         return null;
       }
-      resList.push(res);
     }
     const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
 

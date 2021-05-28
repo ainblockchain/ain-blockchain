@@ -33,7 +33,10 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+# For one-off deploy
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+# For incremental deploy
+sh deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -94,20 +97,22 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
+MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
 ```
-rm -rf chains logs
+rm -rf /path/to/data/dir logs
 ```
+The default blockchain data directory is ~/ain_blockchain_data (e.g. chain data will be at ~/ain_blockchain_data/chains). You can use a different directory by specifying the `BLOCKCHAIN_DATA_DIR` environment variable.
+  
 The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDATORS parameter in 
 the genesis-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
 The genesis configs directory used is `genesis-configs/base` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 
 #### On Google Coud Platform (GCP)
@@ -116,7 +121,10 @@ GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDE
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS>
+# For one-off deploy
+sh deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+# For incremental deploy
+sh deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```

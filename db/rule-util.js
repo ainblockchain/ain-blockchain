@@ -25,11 +25,12 @@ class RuleUtil {
   }
 
   isDict(value) {
-    return (typeof value === 'object' && value !== null && !Array.isArray(value));
+    return (typeof value === 'object' && value !== null && !this.isArray(value));
   }
 
   isEmpty(value) {
     return value === null || value === undefined ||
+        (this.isArray(value) && value.length === 0) ||
         (this.isDict(value) && Object.keys(value).length === 0);
   }
 

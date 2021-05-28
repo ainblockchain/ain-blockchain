@@ -40,7 +40,7 @@ const ENV_VARIABLES = [
   {
     // For parent chain poc node
     MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
@@ -51,7 +51,7 @@ const ENV_VARIABLES = [
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9091, P2P_PORT: 6001,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -59,7 +59,7 @@ const ENV_VARIABLES = [
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9092, P2P_PORT: 6002,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -67,7 +67,7 @@ const ENV_VARIABLES = [
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9093, P2P_PORT: 6003,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -75,7 +75,7 @@ const ENV_VARIABLES = [
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
     PORT: 9094, P2P_PORT: 6004,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -200,7 +200,7 @@ async function cleanUp() {
   }
 }
 
-describe('Sharding', () => {
+describe('Sharding', async () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
   const parentAccounts =
@@ -243,6 +243,29 @@ describe('Sharding', () => {
       } }).body.toString('utf-8')
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+    // Create app at the parent chain for the shard
+    const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+      json: {
+        ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
+        value: 1
+      }
+    }).body.toString('utf-8')).result;
+    assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+    if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+      console.log(`Failed to check finalization of app staking tx.`);
+    }
+    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+      json: {
+        ref: `/manage_app/afan/create/${Date.now()}`,
+        value: {
+          admin: { [shardOwnerAddr]: true }
+        }
+      }
+    }).body.toString('utf-8')).result;
+    assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+    if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+      console.log(`Failed to check finalization of create app tx.`);
+    }
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await ChainUtil.sleep(2000);
@@ -1307,7 +1330,16 @@ describe('Sharding', () => {
           const request = {
             ref: "test/test_owner/other/path",
             value: {
-              ".owner": "some other owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             nonce: -1
           };
@@ -1321,7 +1353,16 @@ describe('Sharding', () => {
           const request = {
             ref: "apps/afan/test/test_owner/other2/path",
             value: {
-              ".owner": "some other2 owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             is_global: true,
             nonce: -1,
@@ -1370,7 +1411,16 @@ describe('Sharding', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other3/path",
                 value: {
-                  ".owner": "some other3 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               }
             ],
@@ -1455,7 +1505,16 @@ describe('Sharding', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other4/path",
                 value: {
-                  ".owner": "some other4 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 },
                 is_global: true,
               }
@@ -1644,7 +1703,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
@@ -1691,7 +1750,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
@@ -1741,7 +1800,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
@@ -1795,28 +1854,31 @@ describe('Sharding', () => {
     describe('_updateLatestShardReport', () => {
       before(async () => {
         const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+        const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+          json: {
+            ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
+            value: 1
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+          console.log(`Failed to check finalization of app staking tx.`)
+        }
+        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+          json: {
+            ref: `/manage_app/a_dapp/create/${Date.now()}`,
+            value: {
+              admin: { [shard_owner]: true }
+            }
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+          console.log(`Failed to check finalization of create app tx.`)
+        }
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
             op_list: [
-              {
-                type: WriteDbOperations.SET_OWNER,
-                ref: sharding_path,
-                value: {
-                  [OwnerProperties.OWNER]: {
-                    [OwnerProperties.OWNERS]: {
-                      [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                      [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-                    }
-                  }
-                }
-              },
-              {
-                type: WriteDbOperations.SET_RULE,
-                ref: sharding_path,
-                value: {
-                  [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
-                }
-              },
               {
                 type: WriteDbOperations.SET_RULE,
                 ref: `${sharding_path}/${ShardingProperties.LATEST}`,
@@ -1946,7 +2008,6 @@ describe('Sharding', () => {
                 "_updateLatestShardReport": {
                   "code": "SUCCESS",
                   "gas_amount": 0,
-                  "op_results": [],
                 }
               },
               "gas_amount": 1

@@ -32,6 +32,8 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
+  applyFunctionChange,
+  isValidOwnerTree,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -714,7 +716,7 @@ class DB {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
-    const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
+    const newFunction = applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
     return ChainUtil.returnTxResult(0, null, 1);
@@ -751,6 +753,10 @@ class DB {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`);
+    }
+    const isValidOwner = isValidOwnerTree(owner);
+    if (!isValidOwner.isValid) {
+      return ChainUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
@@ -882,6 +888,7 @@ class DB {
     if (!ChainUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
+      tx.setExtraField('gas', gasAmountTotal);
       if (blockNumber > 0) {
         // Use only the service gas amount total
         result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
@@ -893,7 +900,6 @@ class DB {
             return ChainUtil.returnTxResult(
                 15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
           }
-          tx.setExtraField('gas', gasAmountTotal);
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
@@ -1387,7 +1393,11 @@ class DB {
     let permissions = null;
     // Step 1: Check if the given address or fid exists in owners.
     if (auth) {
-      if (auth.addr) {
+      // Step 1.1: Try to use the auth fid first.
+      if (auth.fid) {
+        permissions = owners[OwnerProperties.FID_PREFIX + auth.fid];
+      // Step 1.2: Try to use the auth address then.
+      } else if (auth.addr) {
         permissions = owners[auth.addr];
       } else {
         return null;
