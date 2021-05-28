@@ -32,8 +32,9 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
-  applyFunctionChange,
+  isValidFunctionTree,
   isValidOwnerTree,
+  applyFunctionChange,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -693,6 +694,10 @@ class DB {
     const isValidObj = isValidJsObjectForStates(functionChange);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
+    }
+    const isValidFunction = isValidFunctionTree(functionChange);
+    if (!isValidFunction.isValid) {
+      return ChainUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);

@@ -540,9 +540,6 @@ describe("state-util", () => {
         a_fid: {}
       }), {isValid: false, invalidPath: '/a_fid'});
       assert.deepEqual(isValidFunctionConfig({
-        a_fid: null
-      }), {isValid: false, invalidPath: '/a_fid'});
-      assert.deepEqual(isValidFunctionConfig({
         a_fid: {}
       }), {isValid: false, invalidPath: '/a_fid'});
     })
@@ -652,7 +649,8 @@ describe("state-util", () => {
           "function_id": "0x11111",
           "event_listener": "https://events.ainetwork.ai/trigger",
           "service_name": "https://ainetwork.ai",
-        }
+        },
+        "fid_to_delete": null  // To be deleted
       }), {isValid: true, invalidPath: ''});
     })
   })
