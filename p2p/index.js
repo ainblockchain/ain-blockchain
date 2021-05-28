@@ -446,7 +446,7 @@ class P2pClient {
         if (address) {
           logger.info(`with (${address}).`);
         } else {
-          logger.debug(`Waiting for adress of the socket(${JSON.stringify(socket, null, 2)})`);
+          logger.debug(`Waiting for address of the socket(${JSON.stringify(socket, null, 2)})`);
           this.waitForAddress(socket);
         }
       });

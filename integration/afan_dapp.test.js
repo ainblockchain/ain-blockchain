@@ -15,19 +15,19 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
 ];
 
@@ -53,44 +53,47 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
   });
 }
 
-function setUp() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+async function setUp() {
+  const server1Addr = parseOrLog(syncRequest(
+      'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  const server2Addr = parseOrLog(syncRequest(
+      'GET', server2 + '/get_address').body.toString('utf-8')).result;
+  const server3Addr = parseOrLog(syncRequest(
+      'GET', server3 + '/get_address').body.toString('utf-8')).result;
+  const server4Addr = parseOrLog(syncRequest(
+      'GET', server4 + '/get_address').body.toString('utf-8')).result;
+
+  const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
     json: {
-      op_list: [
-        {
-          type: 'SET_OWNER',
-          ref: '/apps/afan',
-          value: {
-            ".owner": {
-              "owners": {
-                "*": {
-                  "branch_owner": false,
-                  "write_function": false,
-                  "write_owner": true,
-                  "write_rule": true,
-                }
-              }
-            }
-          }
-        },
-        {
-          type: 'SET_RULE',
-          ref: '/apps/afan',
-          value: {
-            ".write": true
-          }
-        },
-      ],
-      nonce: -1,
+      ref: `/staking/afan/${server1Addr}/0/stake/${Date.now()}/value`,
+      value: 1
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUp() tx.`)
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+  if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+    console.log(`setUp(): Failed to check finalization of app staking tx.`)
+  }
+
+  const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
+    json: {
+      ref: `/manage_app/afan/create/${Date.now()}`,
+      value: {
+        admin: {
+          [server1Addr]: true,
+          [server2Addr]: true,
+          [server3Addr]: true,
+          [server4Addr]: true,
+        }
+      }
+    }
+  }).body.toString('utf-8')).result;
+  assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+  if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+    console.log(`setUp(): Failed to check finalization of create app tx.`)
   }
 }
 
-function cleanUp() {
+async function cleanUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -104,17 +107,12 @@ function cleanUp() {
           ref: '/apps/afan',
           value: null
         },
-        {
-          type: 'SET_OWNER',
-          ref: '/apps/afan',
-          value: null
-        },
       ],
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(serverList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(serverList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
 }
@@ -162,12 +160,12 @@ describe('DApp Test', async () => {
   };
 
   describe('aFan Txs', () => {
-    before(() => {
-      setUp();
+    before(async () => {
+      await setUp();
     })
 
-    after(() => {
-      cleanUp();
+    after(async () => {
+      await cleanUp();
     })
 
     describe('tx_invest', () => {

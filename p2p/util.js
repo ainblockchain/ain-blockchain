@@ -4,7 +4,6 @@
  * into a module, or replaced with another protocol for cross-shard communication.
  */
 
-const axios = require('axios');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('SERVER_UTIL');

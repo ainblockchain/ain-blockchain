@@ -9,6 +9,7 @@ const {
   P2P_PORT,
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
+  CONSENSUS_PROTOCOL_VERSION,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION
@@ -81,9 +82,10 @@ describe("p2p", () => {
     describe("getProtocolInfo", () => {
       it("gets external IP address", () => {
         const actual = {
-          CURRENT_PROTOCOL_VERSION: CURRENT_PROTOCOL_VERSION,
-          COMPATIBLE_MIN_PROTOCOL_VERSION: minProtocolVersion,
           COMPATIBLE_MAX_PROTOCOL_VERSION: maxProtocolVersion,
+          COMPATIBLE_MIN_PROTOCOL_VERSION: minProtocolVersion,
+          CONSENSUS_PROTOCOL_VERSION: CONSENSUS_PROTOCOL_VERSION,
+          CURRENT_PROTOCOL_VERSION: CURRENT_PROTOCOL_VERSION,
           DATA_PROTOCOL_VERSION: DATA_PROTOCOL_VERSION
         };
         assert.deepEqual(actual, p2pServer.getProtocolInfo());

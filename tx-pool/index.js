@@ -6,6 +6,8 @@ const {
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
   LIGHTWEIGHT,
+  TX_POOL_SIZE_LIMIT,
+  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   BANDWIDTH_BUDGET_PER_BLOCK,
   SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
   GenesisSharding,
@@ -34,6 +36,7 @@ class TransactionPool {
     // Track transactions in remote blockchains (e.g. parent blockchain).
     this.remoteTransactionTracker = {};
     this.isChecking = false;
+    this.txCountTotal = 0;
   }
 
   addTransaction(tx) {
@@ -66,7 +69,8 @@ class TransactionPool {
       tracked_at: tx.extra.created_at,
       executed_at: tx.extra.executed_at,
     };
-    logger.debug(`ADDING: ${JSON.stringify(tx)}`);
+    this.txCountTotal++;
+    logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
   }
 
@@ -83,6 +87,14 @@ class TransactionPool {
 
   isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIMEOUT_MS);
+  }
+
+  hasRoomForNewTransaction() {
+    return this.getPoolSize() < TX_POOL_SIZE_LIMIT;
+  }
+
+  hasPerAccountRoomForNewTransaction(address) {
+    return this.getPerAccountPoolSize(address) < TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
   }
 
   isNotEligibleTransaction(tx) {
@@ -344,9 +356,12 @@ class TransactionPool {
     }
     // Remove transactions from the pool.
     for (const address in this.transactions) {
+      const sizeBefore = this.transactions[address].length;
       this.transactions[address] = this.transactions[address].filter((tx) => {
         return !timedOutTxs.has(tx.hash);
       });
+      const sizeAfter = this.transactions[address].length;
+      this.txCountTotal += sizeAfter - sizeBefore;
     }
     return timedOutTxs.size > 0;
   }
@@ -378,11 +393,14 @@ class TransactionPool {
       }
     });
     for (const address in addrToTxSet) {
+      const sizeBefore = this.transactions[address].length;
       if (this.transactions[address]) {
         this.transactions[address] = this.transactions[address].filter((tx) => {
           return !(addrToTxSet[address].has(tx.hash));
         })
       }
+      const sizeAfter = this.transactions[address].length;
+      this.txCountTotal += sizeAfter - sizeBefore;
     }
   }
 
@@ -437,6 +455,7 @@ class TransactionPool {
       // Remove transactions from the pool.
       const lastNonce = addrToNonce[address];
       const lastTimestamp = addrToTimestamp[address];
+      const sizeBefore = this.transactions[address].length;
       this.transactions[address] = this.transactions[address].filter((tx) => {
         if (lastNonce !== undefined && tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= lastNonce) {
           return false;
@@ -446,6 +465,8 @@ class TransactionPool {
         }
         return !inBlockTxs.has(tx.hash);
       });
+      const sizeAfter = this.transactions[address].length;
+      this.txCountTotal += sizeAfter - sizeBefore;
       if (this.transactions[address].length === 0) {
         delete this.transactions[address];
       }
@@ -456,11 +477,11 @@ class TransactionPool {
   }
 
   getPoolSize() {
-    let size = 0;
-    for (const address in this.transactions) {
-      size += this.transactions[address].length;
-    }
-    return size;
+    return this.txCountTotal;
+  }
+
+  getPerAccountPoolSize(address) {
+    return this.transactions[address] ? this.transactions[address].length : 0;
   }
 
   addRemoteTransaction(txHash, action) {

@@ -54,6 +54,10 @@ class PathUtil {
     return ChainUtil.formatPath([PredefinedDbPaths.MANAGE_APP, appName, PredefinedDbPaths.MANAGE_APP_CONFIG]);
   }
 
+  static getAppPath(appName) {
+    return ChainUtil.formatPath([PredefinedDbPaths.APPS, appName]);
+  }
+
   static getAppAdminPathFromServiceAccountName(accountName) {
     return ruleUtil.getAppAdminPath(accountName);
   }

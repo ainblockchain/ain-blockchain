@@ -112,7 +112,7 @@ async function processArguments() {
   }
 
   // directory for shard genesis files
-  const shardDir = path.resolve(__dirname, `../blockchain/shard_${index}`);
+  const shardDir = path.resolve(__dirname, `../genesis-configs/shard_${index}`);
   if (!fs.existsSync(shardDir)) {
     fs.mkdirSync(shardDir);
   }
