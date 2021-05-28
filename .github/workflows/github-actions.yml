@@ -11,6 +11,10 @@ on:
       - 'develop'
       - 'release/*'
       - 'master'
+env:
+  PERF_TEST_PIPELINE_PROJECT_ID: ${{ secrets.PERF_TEST_PIPELINE_GCP_PROJECT_ID }}
+  PERF_TEST_PIPELINE_GCE_INSTANCE: ${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE }}
+  PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE: ${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE }}
 jobs:
   performance_test:
     runs-on: ubuntu-latest
