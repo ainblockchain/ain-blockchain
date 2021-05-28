@@ -43,7 +43,7 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
     this.trackerWebSocket = null;
     this.outbound = {};
-    // this.startHeartbeat();
+    this.startHeartbeat();
   }
 
   run() {
