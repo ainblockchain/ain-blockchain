@@ -26,7 +26,7 @@ const PathUtil = require('../common/path-util');
 const {
   sendSignedTx,
   signAndSendTx
-} = require('../p2p/util');
+} = require('../common/network-util');
 const Transaction = require('../tx-pool/transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';

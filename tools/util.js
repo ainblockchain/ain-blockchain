@@ -3,6 +3,7 @@ const axios = require('axios');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
+// FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
   const {txHash, signedTx} = ChainUtil.signTransaction(txBody, privateKey);
