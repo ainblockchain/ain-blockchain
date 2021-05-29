@@ -48,7 +48,7 @@ class P2pClient {
 
   run() {
     this.server.listen();
-    this.setIntervalForTrackerConnection();
+    if (!process.env.P2P_UNITTEST_FLAG) this.connectToTracker();
   }
 
   // NOTE(minsulee2): The total number of connection is up to more than 5 without limit.
@@ -129,10 +129,11 @@ class P2pClient {
   }
 
   setIntervalForTrackerConnection() {
-    console.log(2);
-    this.intervalConnection = setInterval(() => {
-      this.connectToTracker();
-    }, RECONNECT_INTERVAL_MS);
+    if (!this.intervalConnection) {
+      this.intervalConnection = setInterval(() => {
+        this.connectToTracker();
+      }, RECONNECT_INTERVAL_MS);
+    }
   }
 
   clearIntervalForTrackerConnection() {
@@ -157,41 +158,33 @@ class P2pClient {
   async setTrackerEventHandlers() {
     const node = this.server.node;
     this.trackerWebSocket.on('message', async (message) => {
-      try {
-        const parsedMsg = JSON.parse(message);
-        logger.info(`\n << Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
-        if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-          logger.debug(`Updated MANAGED peers info: ` +
-              `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
+      const parsedMsg = JSON.parse(message);
+      logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
+      if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
+        logger.debug(`Updated MANAGED peers info: ` +
+          `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
+      }
+      if (node.state === BlockchainNodeStates.STARTING) {
+        node.state = BlockchainNodeStates.SYNCING;
+        if (parsedMsg.numLivePeers === 0) {
+          const lastBlockWithoutProposal = node.init(true);
+          await this.server.tryInitializeShard();
+          node.state = BlockchainNodeStates.SERVING;
+          this.server.consensus.init(lastBlockWithoutProposal);
+        } else {
+          // Consensus will be initialized after syncing with peers
+          node.init(false);
         }
-        if (node.state === BlockchainNodeStates.STARTING) {
-          node.state = BlockchainNodeStates.SYNCING;
-          if (parsedMsg.numLivePeers === 0) {
-            const lastBlockWithoutProposal = node.init(true);
-            await this.server.tryInitializeShard();
-            node.state = BlockchainNodeStates.SERVING;
-            this.server.consensus.init(lastBlockWithoutProposal);
-          } else {
-            // Consensus will be initialized after syncing with peers
-            node.init(false);
-          }
-        }
-      } catch (err) {
-        logger.error(`Error: ${err} ${err.stack}`);
       }
     });
-
     this.trackerWebSocket.on('close', (code) => {
-      logger.info(`\n Disconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
-      console.log(4)
+      logger.info(`\nDisconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
       this.clearIntervalForTrackerUpdate();
-      this.clearIntervalForTrackerConnection();
       this.setIntervalForTrackerConnection();
     });
   }
 
   connectToTracker() {
-    console.log(3);
     logger.info(`Reconnecting to tracker (${TRACKER_WS_ADDR})`);
     this.trackerWebSocket = new Websocket(TRACKER_WS_ADDR);
     this.trackerWebSocket.on('open', () => {
@@ -203,6 +196,8 @@ class P2pClient {
     this.trackerWebSocket.on('error', (error) => {
       logger.error(`Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
         `${JSON.stringify(error, null, 2)}`);
+      this.clearIntervalForTrackerUpdate();
+      this.setIntervalForTrackerConnection();
     });
   }
 
