@@ -160,17 +160,32 @@ describe("DB operations", () => {
       "some": {
         "$var_path": {
           ".function": {
-            "fid_var": "some function config with var path"
+            "fid_var": {
+              "function_type": "REST",
+              "function_id": "fid_var",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            },
           }
         },
         "path": {
           ".function": {
-            "fid": "some function config"
+            "fid": {
+              "function_type": "REST",
+              "function_id": "fid",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            },
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "function_type": "REST",
+                  "function_id": "fid_deeper",
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "service_name": "https://ainetwork.ai",
+                }
               }
             }
           }
@@ -276,12 +291,22 @@ describe("DB operations", () => {
       it("when retrieving existing function config", () => {
         assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
           ".function": {
-            "fid": "some function config"
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           }
@@ -366,7 +391,12 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              "fid_var": "some function config with var path"
+              "fid_var": {
+                "function_type": "REST",
+                "function_id": "fid_var",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             },
             "path": "/test/test_function/some/$var_path"
           },
@@ -383,14 +413,24 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              "fid": "some function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             },
             "path": "/test/test_function/some/path"
           },
           "subtree_configs": [
             {
               "config": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/deeper/path"
             }
@@ -404,7 +444,12 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              "fid_deeper": "some function config deeper"
+              "fid_deeper": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid_deeper",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             },
             "path": "/test/test_function/some/path/deeper/path"
           },
@@ -426,7 +471,12 @@ describe("DB operations", () => {
           "subtree_configs": [
             {
               "config": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/path"
             }
@@ -782,7 +832,12 @@ describe("DB operations", () => {
             "subtree_configs": [
               {
                 "config": {
-                  "fid_deeper": "some function config deeper"
+                  "fid_deeper": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid_deeper",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/path"
               }
@@ -890,12 +945,22 @@ describe("DB operations", () => {
           },
           {
             ".function": {
-              "fid": "some function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             },
             "deeper": {
               "path": {
                 ".function": {
-                  "fid_deeper": "some function config deeper"
+                  "fid_deeper": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid_deeper",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 }
               }
             }
@@ -946,14 +1011,24 @@ describe("DB operations", () => {
             },
             "matched_config": {
               "config": {
-                "fid": "some function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/test/test_function/some/path"
             },
             "subtree_configs": [
               {
                 "config": {
-                  "fid_deeper": "some function config deeper"
+                  "fid_deeper": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid_deeper",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/deeper/path"
               }
@@ -1216,19 +1291,34 @@ describe("DB operations", () => {
       it("when overwriting existing function config with simple path", () => {
         const functionConfig = {
           ".function": {
-            "fid": "other function config"
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           }
         };
         expect(node.db.setFunction("/test/test_function/some/path", functionConfig).code)
             .to.equal(0);
         assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
           ".function": {
-            "fid": "other function config"  // modified
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",  // modified
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           }
@@ -1238,7 +1328,12 @@ describe("DB operations", () => {
       it("when writing with variable path", () => {
         const functionConfig = {
           ".function": {
-            "fid_other": "other function config"
+            "fid_other": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",
+              "function_id": "fid_other",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           }
         };
         expect(node.db.setFunction("/test/test_function/some/$variable/path", functionConfig).code)
@@ -1263,9 +1358,29 @@ describe("DB operations", () => {
         expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
       })
 
+      it("when writing invalid function tree", () => {
+        const functionTreeBefore = node.db.getOwner("/test/test_function/some/path");
+        assert.deepEqual(node.db.setFunction(
+            "/test/test_function/some/path", { ".function": null }), {
+          "code": 405,
+          "error_message": "Invalid function tree: /.function",
+          "gas_amount": 0
+        });
+        assert.deepEqual(node.db.getOwner("/test/test_function/some/path"), functionTreeBefore);
+      })
+
       it("when writing with invalid path", () => {
         assert.deepEqual(node.db.setFunction(
-            "/test/test_function/some/path/.", "some function config"), {
+            "/test/test_function/some/path/.", {
+              ".function": {
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger2",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
+              }
+            }), {
           "code": 402,
           "error_message": "Invalid path: /test/test_function/some/path/.",
           "gas_amount": 0
@@ -1356,7 +1471,7 @@ describe("DB operations", () => {
           ".owner": "invalid owners config"
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 604,
-          "error_message": "Invalid owner tree: /.owner/owners",
+          "error_message": "Invalid owner tree: /.owner",
           "gas_amount": 0
         });
         assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerTreeBefore);
@@ -1648,7 +1763,12 @@ describe("DB operations", () => {
             ref: "/test/test_function/some/path",
             value: {
               ".function": {
-                "fid": "other function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger2",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           },
@@ -1708,12 +1828,22 @@ describe("DB operations", () => {
         expect(node.db.getValue("test/decrement/value")).to.equal(10)
         assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
           ".function": {
-            "fid": "other function config"  // modiied
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",  // modified
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           }
@@ -2849,11 +2979,21 @@ describe("DB sharding config", () => {
         "path": {
           "to": {
             ".function": {
-              "fid": "some function config",
+              "fid": {
+                "function_type": "REST",
+                "function_id": "fid",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              }
             },
             "deeper": {
               ".function": {
-                "fid_deeper": "some deeper function config",
+                "fid_deeper": {
+                  "function_type": "REST",
+                  "function_id": "fid_deeper",
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "service_name": "https://ainetwork.ai",
+                }
               }
             }
           }
@@ -3117,26 +3257,51 @@ describe("DB sharding config", () => {
   describe("Function operations", () => {
     const func = {
       ".function": {
-        "fid": "some function config",
+        "fid": {
+          "function_type": "REST",
+          "function_id": "fid",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        },
       },
       "deeper": {
         ".function": {
-          "fid_deeper": "some deeper function config"
+          "fid_deeper": {
+            "function_type": "REST",
+            "function_id": "fid_deeper",
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainetwork.ai",
+          },
         }
       }
     };
     const funcChange = {
       ".function": {
-        "fid": "another function config"
+        "fid": {
+          "function_type": "REST",
+          "function_id": "fid",
+          "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+          "service_name": "https://ainetwork.ai",
+        },
       }
     };
     const newFunc = {
       ".function": {
-        "fid": "another function config"
+        "fid": {
+          "function_type": "REST",
+          "function_id": "fid",
+          "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+          "service_name": "https://ainetwork.ai",
+        },
       },
       "deeper": {
         ".function": {
-          "fid_deeper": "some deeper function config"
+          "fid_deeper": {
+            "function_type": "REST",
+            "function_id": "fid_deeper",
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainetwork.ai",
+          },
         }
       }
     };
@@ -3187,14 +3352,24 @@ describe("DB sharding config", () => {
         },
         "matched_config": {
           "config": {
-            "fid": "some function config"
+            "fid": {
+              "function_type": "REST",
+              "function_id": "fid",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            }
           },
           "path": "/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
             "config": {
-              "fid_deeper": "some deeper function config"
+              "fid_deeper": {
+                "function_type": "REST",
+                "function_id": "fid_deeper",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             },
             "path": "/deeper",
           }
@@ -3211,14 +3386,24 @@ describe("DB sharding config", () => {
         },
         "matched_config": {
           "config": {
-            "fid": "some function config"
+            "fid": {
+              "function_type": "REST",
+              "function_id": "fid",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            }
           },
           "path": "/apps/afan/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
             "config": {
-              "fid_deeper": "some deeper function config"
+              "fid_deeper": {
+                "function_type": "REST",
+                "function_id": "fid_deeper",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             },
             "path": "/deeper",
           }
