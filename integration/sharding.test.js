@@ -1452,7 +1452,14 @@ describe('Sharding', async () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other3/path",
                 value: {
-                  ".function": "some other3 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 }
               },
               {
@@ -1544,7 +1551,14 @@ describe('Sharding', async () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other4/path",
                 value: {
-                  ".function": "some other4 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 },
                 is_global: true,
               },
