@@ -32,8 +32,9 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
-  applyFunctionChange,
+  isValidFunctionTree,
   isValidOwnerTree,
+  applyFunctionChange,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -694,6 +695,10 @@ class DB {
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
+    const isValidFunction = isValidFunctionTree(functionChange);
+    if (!isValidFunction.isValid) {
+      return ChainUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`);
+    }
     const parsedPath = ChainUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
@@ -748,7 +753,6 @@ class DB {
     return ChainUtil.returnTxResult(0, null, 1);
   }
 
-  // TODO(platfowner): Add owner config sanitization logic.
   setOwner(ownerPath, owner, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {

@@ -105,7 +105,12 @@ async function setUp() {
           ref: '/test/test_function/some/path',
           value: {
             ".function": {
-              "fid": "some function config"
+              "fid": {
+                "function_type": "REST",
+                "function_id": "fid",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             }
           }
         },
@@ -224,7 +229,12 @@ describe('Blockchain Node', () => {
           code: 0,
           result: {
             ".function": {
-              "fid": "some function config"
+              "fid": {
+                "function_type": "REST",
+                "function_id": "fid",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             }
           }
         });
@@ -281,7 +291,12 @@ describe('Blockchain Node', () => {
           },
           "matched_config": {
             "config": {
-              "fid": "some function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             },
             "path": "/test/test_function/some/path"
           },
@@ -415,7 +430,12 @@ describe('Blockchain Node', () => {
             100,
             {
               ".function": {
-                "fid": "some function config"
+                "fid": {
+                  "function_type": "REST",
+                  "function_id": "fid",
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "service_name": "https://ainetwork.ai",
+                },
               }
             },
             {
@@ -504,7 +524,12 @@ describe('Blockchain Node', () => {
             },
             "matched_config": {
               "config": {
-                "fid": "some function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/test/test_function/some/path"
             },
@@ -944,7 +969,12 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
           ".function": {
-            "fid": "some function config"
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           }
         });
 
@@ -952,7 +982,12 @@ describe('Blockchain Node', () => {
           ref: "/test/test_function/some/path",
           value: {
             ".function": {
-              "fid": "some other function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           }
         };
@@ -972,7 +1007,12 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
           ".function": {
-            "fid": "some other function config"
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           }
         });
       })
@@ -988,7 +1028,12 @@ describe('Blockchain Node', () => {
           ref: "/some/wrong/path",
           value: {
             ".function": {
-              "fid": "some other function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           }
         };
@@ -1218,7 +1263,14 @@ describe('Blockchain Node', () => {
               type: 'SET_FUNCTION',
               ref: "/test/test_function/other100/path",
               value: {
-                ".function": "some other100 function config"
+                ".function": {
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
+                }
               }
             },
             {
@@ -1327,7 +1379,14 @@ describe('Blockchain Node', () => {
               type: 'SET_FUNCTION',
               ref: "/test/test_function/other101/path",
               value: {
-                ".function": "some other101 function config"
+                ".function": {
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
+                }
               }
             },
             {
@@ -1434,7 +1493,14 @@ describe('Blockchain Node', () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other200/path",
                 value: {
-                  ".function": "some other200 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1494,7 +1560,14 @@ describe('Blockchain Node', () => {
                     type: 'SET_FUNCTION',
                     ref: "/test/test_function/other201/path",
                     value: {
-                      ".function": "some other201 function config"
+                      ".function": {
+                        "fid": {
+                          "event_listener": "https://events.ainetwork.ai/trigger",
+                          "function_id": "fid",
+                          "function_type": "REST",
+                          "service_name": "https://ainetwork.ai"
+                        }
+                      }
                     }
                   },
                   {
@@ -1717,7 +1790,14 @@ describe('Blockchain Node', () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other202/path",
                 value: {
-                  ".function": "some other202 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1777,7 +1857,14 @@ describe('Blockchain Node', () => {
                     type: 'SET_FUNCTION',
                     ref: "/test/test_function/other203/path",
                     value: {
-                      ".function": "some other203 function config"
+                      ".function": {
+                        "fid": {
+                          "event_listener": "https://events.ainetwork.ai/trigger",
+                          "function_id": "fid",
+                          "function_type": "REST",
+                          "service_name": "https://ainetwork.ai"
+                        }
+                      }
                     }
                   },
                   {
@@ -2207,7 +2294,14 @@ describe('Blockchain Node', () => {
               type: 'SET_FUNCTION',
               ref: "/test/test_function/other300/path",
               value: {
-                ".function": "some other300 function config"
+                ".function": {
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
+                }
               }
             },
             timestamp: Date.now(),
@@ -2267,7 +2361,14 @@ describe('Blockchain Node', () => {
                   type: 'SET_FUNCTION',
                   ref: "/test/test_function/other301/path",
                   value: {
-                    ".function": "some other301 function config"
+                    ".function": {
+                      "fid": {
+                        "event_listener": "https://events.ainetwork.ai/trigger",
+                        "function_id": "fid",
+                        "function_type": "REST",
+                        "service_name": "https://ainetwork.ai"
+                      }
+                    }
                   }
                 },
                 {

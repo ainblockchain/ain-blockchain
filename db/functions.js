@@ -103,7 +103,6 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  // TODO(platfowner): Add account registration gas amount.
   triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;

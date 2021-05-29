@@ -1,6 +1,5 @@
 'use strict';
 
-const process = require('process');
 const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
