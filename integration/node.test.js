@@ -1264,9 +1264,9 @@ describe('Blockchain Node', () => {
               ref: "/test/test_function/other100/path",
               value: {
                 ".function": {
-                  "fid100": {
+                  "fid": {
                     "event_listener": "https://events.ainetwork.ai/trigger",
-                    "function_id": "fid100",
+                    "function_id": "fid",
                     "function_type": "REST",
                     "service_name": "https://ainetwork.ai"
                   }
@@ -1380,9 +1380,9 @@ describe('Blockchain Node', () => {
               ref: "/test/test_function/other101/path",
               value: {
                 ".function": {
-                  "fid101": {
+                  "fid": {
                     "event_listener": "https://events.ainetwork.ai/trigger",
-                    "function_id": "fid101",
+                    "function_id": "fid",
                     "function_type": "REST",
                     "service_name": "https://ainetwork.ai"
                   }
@@ -1494,9 +1494,9 @@ describe('Blockchain Node', () => {
                 ref: "/test/test_function/other200/path",
                 value: {
                   ".function": {
-                    "fid200": {
+                    "fid": {
                       "event_listener": "https://events.ainetwork.ai/trigger",
-                      "function_id": "fid200",
+                      "function_id": "fid",
                       "function_type": "REST",
                       "service_name": "https://ainetwork.ai"
                     }
@@ -1561,9 +1561,9 @@ describe('Blockchain Node', () => {
                     ref: "/test/test_function/other201/path",
                     value: {
                       ".function": {
-                        "fid201": {
+                        "fid": {
                           "event_listener": "https://events.ainetwork.ai/trigger",
-                          "function_id": "fid201",
+                          "function_id": "fid",
                           "function_type": "REST",
                           "service_name": "https://ainetwork.ai"
                         }
@@ -1791,9 +1791,9 @@ describe('Blockchain Node', () => {
                 ref: "/test/test_function/other202/path",
                 value: {
                   ".function": {
-                    "fid202": {
+                    "fid": {
                       "event_listener": "https://events.ainetwork.ai/trigger",
-                      "function_id": "fid202",
+                      "function_id": "fid",
                       "function_type": "REST",
                       "service_name": "https://ainetwork.ai"
                     }
@@ -1858,9 +1858,9 @@ describe('Blockchain Node', () => {
                     ref: "/test/test_function/other203/path",
                     value: {
                       ".function": {
-                        "fid203": {
+                        "fid": {
                           "event_listener": "https://events.ainetwork.ai/trigger",
-                          "function_id": "fid203",
+                          "function_id": "fid",
                           "function_type": "REST",
                           "service_name": "https://ainetwork.ai"
                         }
@@ -2295,9 +2295,9 @@ describe('Blockchain Node', () => {
               ref: "/test/test_function/other300/path",
               value: {
                 ".function": {
-                  "fid300": {
+                  "fid": {
                     "event_listener": "https://events.ainetwork.ai/trigger",
-                    "function_id": "fid300",
+                    "function_id": "fid",
                     "function_type": "REST",
                     "service_name": "https://ainetwork.ai"
                   }
@@ -2362,9 +2362,9 @@ describe('Blockchain Node', () => {
                   ref: "/test/test_function/other301/path",
                   value: {
                     ".function": {
-                      "fid301": {
+                      "fid": {
                         "event_listener": "https://events.ainetwork.ai/trigger",
-                        "function_id": "fid301",
+                        "function_id": "fid",
                         "function_type": "REST",
                         "service_name": "https://ainetwork.ai"
                       }
