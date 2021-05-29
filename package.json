@@ -22,7 +22,7 @@
     "test_db": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/db.test.js",
     "test_tx_pool": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/tx-pool.test.js",
     "test_p2p_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/p2p-util.test.js",
-    "test_p2p": "./node_modules/mocha/bin/mocha --timeout 320000 unittest/p2p.test.js",
+    "test_p2p": "P2P_UNITTEST_FLAG=true ./node_modules/mocha/bin/mocha --timeout 320000 unittest/p2p.test.js",
     "test_unit": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 \"unittest/*.test.js\"",
     "test_node": "./node_modules/mocha/bin/mocha --timeout 160000 integration/node.test.js",
     "test_blockchain": "./node_modules/mocha/bin/mocha --timeout 160000 integration/blockchain.test.js",
