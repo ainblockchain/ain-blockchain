@@ -160,11 +160,11 @@ function sanitizeFunctionInfo(functionInfo) {
   const functionType = functionInfo[FunctionProperties.FUNCTION_TYPE];
   const sanitized = {};
   if (functionType === FunctionTypes.NATIVE) {
-    sanitized[FunctionProperties.FUNCTION_TYPE] = ChainUtil.stringOrEmpty(functionType)
+    sanitized[FunctionProperties.FUNCTION_TYPE] = functionType;
     sanitized[FunctionProperties.FUNCTION_ID] =
         ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.FUNCTION_ID]);
   } else if (functionType === FunctionTypes.REST) {
-    sanitized[FunctionProperties.FUNCTION_TYPE] = ChainUtil.stringOrEmpty(functionType)
+    sanitized[FunctionProperties.FUNCTION_TYPE] = functionType;
     sanitized[FunctionProperties.FUNCTION_ID] =
         ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.FUNCTION_ID]);
     sanitized[FunctionProperties.EVENT_LISTENER] =
