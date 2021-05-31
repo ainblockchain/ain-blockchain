@@ -26,6 +26,6 @@ jobs:
           project_id: ${{ secrets.PERF_TEST_PIPELINE_GCP_PROJECT_ID }}
       - name: Connect GCE And execute docker ps
         run: |-
-          gcloud compute ssh "$PERF_TEST_PIPELINE_GCE_INSTANCE" --zone "$PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE" -- 'cd ~/../workspace/ain-benchmark && nohup sh start_test.sh >> test_log.txt'
+          gcloud compute ssh "$PERF_TEST_PIPELINE_GCE_INSTANCE" --zone "$PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE" -- 'cd ~/../workspace/ain-benchmark && nohup sh start_test.sh >> test_log.txt &'
       - name: test
         run: echo "${{ github.event.pull_request.head.ref }}"
