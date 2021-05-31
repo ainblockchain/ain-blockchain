@@ -30,7 +30,7 @@ describe("p2p", () => {
   before(() => {
     p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
     p2pServer = p2pClient.server;
-    p2pClient.run();
+    p2pServer.listen();
   });
 
   after(() => {
@@ -40,7 +40,7 @@ describe("p2p", () => {
   describe("server status", () => {
     describe("getIpAddress", () => {
       it("gets ip address", async () => {
-        const actual = '172.0.0.1';
+        const actual = await p2pServer.getIpAddress();
         const ipAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         expect(ipAddressRegex.test(actual)).to.be.true;
       });
