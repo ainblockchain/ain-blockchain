@@ -125,31 +125,32 @@ function isValidPathForStates(fullPath) {
 function isValidJsObjectForStatesRecursive(obj, path) {
   if (ChainUtil.isDict(obj)) {
     if (ChainUtil.isEmpty(obj)) {
-      return false;
+      return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
     }
     for (const key in obj) {
       path.push(key);
       if (!isValidStateLabel(key)) {
-        return false;
+        return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
       }
       const childObj = obj[key];
       const isValidChild = isValidJsObjectForStatesRecursive(childObj, path);
-      if (!isValidChild) {
-        return false;
+      if (!isValidChild.isValid) {
+        return isValidChild;
       }
       path.pop();
     }
-    return true;
   } else {
-    return ChainUtil.isBool(obj) || ChainUtil.isNumber(obj) || ChainUtil.isString(obj) ||
-        obj === null;
+    if (!ChainUtil.isBool(obj) && !ChainUtil.isNumber(obj) && !ChainUtil.isString(obj) &&
+        obj !== null) {
+      return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+    }
   }
+
+  return { isValid: true, invalidPath: '' };
 }
 
 function isValidJsObjectForStates(obj) {
-  const path = [];
-  const isValid = isValidJsObjectForStatesRecursive(obj, path);
-  return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
+  return isValidJsObjectForStatesRecursive(obj, []);
 }
 
 /**
