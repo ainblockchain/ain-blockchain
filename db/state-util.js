@@ -152,6 +152,56 @@ function isValidJsObjectForStates(obj) {
   return { isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path) };
 }
 
+/**
+ * Checks the validity of the given rule configuration.
+ */
+ function isValidRuleConfig(ruleConfig) {
+  if (!ChainUtil.isBool(ruleConfig) && !ChainUtil.isString(ruleConfig)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
+  }
+
+  return { isValid: true, invalidPath: '' };
+}
+
+function isValidRuleTreeRecursive(ruleTree, path) {
+  if (!ChainUtil.isDict(ruleTree) || ChainUtil.isEmpty(ruleTree)) {
+    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
+  }
+
+  for (const label in ruleTree) {
+    path.push(label);
+    const subtree = ruleTree[label];
+    if (label === RuleProperties.WRITE) {
+      const isValidConfig = isValidRuleConfig(subtree);
+      if (!isValidConfig.isValid) {
+        return {
+          isValid: false,
+          invalidPath: ChainUtil.appendPath(ChainUtil.formatPath(path), isValidConfig.invalidPath)
+        };
+      }
+    } else {
+      const isValidSubtree = isValidRuleTreeRecursive(subtree, path);
+      if (!isValidSubtree.isValid) {
+        return isValidSubtree;
+      }
+    }
+    path.pop();
+  }
+
+  return { isValid: true, invalidPath: '' };
+}
+
+/**
+ * Checks the validity of the given rule tree.
+ */
+function isValidRuleTree(ruleTree) {
+  if (ruleTree === null) {
+    return { isValid: true, invalidPath: '' };
+  }
+
+  return isValidRuleTreeRecursive(ruleTree, []);
+}
+
 function sanitizeFunctionInfo(functionInfo) {
   if (!functionInfo) {
     return null;
@@ -598,6 +648,8 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidRuleConfig,
+  isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
