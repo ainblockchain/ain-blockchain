@@ -30,24 +30,17 @@ describe("p2p", () => {
   before(() => {
     p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
     p2pServer = p2pClient.server;
-    p2pClient.run();
+    p2pServer.listen();
   });
 
   after(() => {
     p2pClient.stop();
-    // This is added since p2pClient.stop() calls wsServer.close() though, it does not really close
-    // the server but still some wsServer in process leaves somehow(perhaps intended? or bug?).
-    // So that, the server should be manully shut down via process.kill().
-    // See also: https://github.com/websockets/ws/blob/master/doc/ws.md#class-websocketserver
-    if (process.ppid) {
-      process.kill(process.ppid);
-    }
   });
 
   describe("server status", () => {
     describe("getIpAddress", () => {
       it("gets ip address", async () => {
-        const actual = '172.0.0.1';
+        const actual = await p2pServer.getIpAddress();
         const ipAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         expect(ipAddressRegex.test(actual)).to.be.true;
       });
