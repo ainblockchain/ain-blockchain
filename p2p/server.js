@@ -41,6 +41,8 @@ const ChainUtil = require('../common/chain-util');
 const {
   sendGetRequest,
   sendTxAndWaitForFinalization,
+} = require('../common/network-util');
+const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
   signMessage,
