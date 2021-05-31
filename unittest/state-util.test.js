@@ -331,7 +331,6 @@ describe("state-util", () => {
       expect(isValidStateLabel('+')).to.equal(true);
       expect(isValidStateLabel('|')).to.equal(true);
       expect(isValidStateLabel(';')).to.equal(true);
-      expect(isValidStateLabel('|')).to.equal(true);
       expect(isValidStateLabel(',')).to.equal(true);
       expect(isValidStateLabel('?')).to.equal(true);
     })
