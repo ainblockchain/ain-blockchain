@@ -89,13 +89,13 @@ function isWritablePathWithSharding(fullPath, root) {
 }
 
 function hasReservedChar(label) {
-  const reservedCharRegex = /[\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]/gm;
+  const reservedCharRegex = /[\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]/gm;
   return ChainUtil.isString(label) ? reservedCharRegex.test(label) : false;
 }
 
 function hasAllowedPattern(label) {
   const wildCardPatternRegex = /^\*$/gm;
-  const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]\x00-\x1F\x7F]+$/gm;
+  const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]+$/gm;
   return ChainUtil.isString(label) ?
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
