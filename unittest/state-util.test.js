@@ -192,15 +192,21 @@ describe("state-util", () => {
       expect(hasReservedChar('/abc')).to.equal(true);
       expect(hasReservedChar('a/bc')).to.equal(true);
       expect(hasReservedChar('abc/')).to.equal(true);
-      expect(hasReservedChar('\u2000/\u2E00')).to.equal(true);
       expect(hasReservedChar('.')).to.equal(true);
-      expect(hasReservedChar('*')).to.equal(true);
       expect(hasReservedChar('$')).to.equal(true);
+      expect(hasReservedChar('*')).to.equal(true);
       expect(hasReservedChar('#')).to.equal(true);
       expect(hasReservedChar('{')).to.equal(true);
       expect(hasReservedChar('}')).to.equal(true);
       expect(hasReservedChar('[')).to.equal(true);
       expect(hasReservedChar(']')).to.equal(true);
+      expect(hasReservedChar('<')).to.equal(true);
+      expect(hasReservedChar('>')).to.equal(true);
+      expect(hasReservedChar("'")).to.equal(true);
+      expect(hasReservedChar('"')).to.equal(true);
+      expect(hasReservedChar('`')).to.equal(true);
+      expect(hasReservedChar(' ')).to.equal(true);
+      expect(hasReservedChar('\u2000/\u2E00')).to.equal(true);
       expect(hasReservedChar('\x00')).to.equal(true);
       expect(hasReservedChar('\x01')).to.equal(true);
       expect(hasReservedChar('\x02')).to.equal(true);
@@ -249,20 +255,35 @@ describe("state-util", () => {
     })
 
     it("when string input returning false", () => {
+      expect(hasAllowedPattern('/')).to.equal(false);
+      expect(hasAllowedPattern('/abc')).to.equal(false);
+      expect(hasAllowedPattern('a/bc')).to.equal(false);
+      expect(hasAllowedPattern('abc/')).to.equal(false);
       expect(hasAllowedPattern('.')).to.equal(false);
-      expect(hasAllowedPattern('$')).to.equal(false);
       expect(hasAllowedPattern('./')).to.equal(false);
-      expect(hasAllowedPattern('$/')).to.equal(false);
       expect(hasAllowedPattern('a.')).to.equal(false);
-      expect(hasAllowedPattern('a$')).to.equal(false);
       expect(hasAllowedPattern('a.b')).to.equal(false);
-      expect(hasAllowedPattern('a$b')).to.equal(false);
       expect(hasAllowedPattern('..')).to.equal(false);
-      expect(hasAllowedPattern('$$')).to.equal(false);
       expect(hasAllowedPattern('.$')).to.equal(false);
       expect(hasAllowedPattern('$.')).to.equal(false);
+      expect(hasAllowedPattern('$')).to.equal(false);
+      expect(hasAllowedPattern('$/')).to.equal(false);
+      expect(hasAllowedPattern('a$')).to.equal(false);
+      expect(hasAllowedPattern('a$b')).to.equal(false);
+      expect(hasAllowedPattern('$$')).to.equal(false);
       expect(hasAllowedPattern('*a')).to.equal(false);
       expect(hasAllowedPattern('a*')).to.equal(false);
+      expect(hasAllowedPattern('#')).to.equal(false);
+      expect(hasAllowedPattern('{')).to.equal(false);
+      expect(hasAllowedPattern('}')).to.equal(false);
+      expect(hasAllowedPattern('[')).to.equal(false);
+      expect(hasAllowedPattern(']')).to.equal(false);
+      expect(hasAllowedPattern('<')).to.equal(false);
+      expect(hasAllowedPattern('>')).to.equal(false);
+      expect(hasAllowedPattern("'")).to.equal(false);
+      expect(hasAllowedPattern('"')).to.equal(false);
+      expect(hasAllowedPattern('`')).to.equal(false);
+      expect(hasAllowedPattern(' ')).to.equal(false);
     })
 
     it("when string input returning true", () => {
@@ -288,6 +309,9 @@ describe("state-util", () => {
       expect(isValidStateLabel('.')).to.equal(false);
       expect(isValidStateLabel('$')).to.equal(false);
       expect(isValidStateLabel('/')).to.equal(false);
+      expect(isValidStateLabel("'")).to.equal(false);
+      expect(isValidStateLabel('"')).to.equal(false);
+      expect(isValidStateLabel('`')).to.equal(false);
     })
 
     it("when string input returning true", () => {
@@ -295,6 +319,21 @@ describe("state-util", () => {
       expect(isValidStateLabel('.a')).to.equal(true);
       expect(isValidStateLabel('$a')).to.equal(true);
       expect(isValidStateLabel('*')).to.equal(true);
+      expect(isValidStateLabel('~')).to.equal(true);
+      expect(isValidStateLabel('!')).to.equal(true);
+      expect(isValidStateLabel('@')).to.equal(true);
+      expect(isValidStateLabel('%')).to.equal(true);
+      expect(isValidStateLabel('^')).to.equal(true);
+      expect(isValidStateLabel('&')).to.equal(true);
+      expect(isValidStateLabel('-')).to.equal(true);
+      expect(isValidStateLabel('_')).to.equal(true);
+      expect(isValidStateLabel('=')).to.equal(true);
+      expect(isValidStateLabel('+')).to.equal(true);
+      expect(isValidStateLabel('|')).to.equal(true);
+      expect(isValidStateLabel(';')).to.equal(true);
+      expect(isValidStateLabel('|')).to.equal(true);
+      expect(isValidStateLabel(',')).to.equal(true);
+      expect(isValidStateLabel('?')).to.equal(true);
     })
   })
 
