@@ -48,7 +48,7 @@ class P2pClient {
 
   run() {
     this.server.listen();
-    if (!process.env.P2P_UNITTEST_FLAG) this.connectToTracker();
+    this.connectToTracker();
   }
 
   // NOTE(minsulee2): The total number of connection is up to more than 5 without limit.
