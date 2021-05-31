@@ -32,6 +32,7 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidRuleTree,
   isValidFunctionTree,
   isValidOwnerTree,
   applyFunctionChange,
@@ -733,6 +734,10 @@ class DB {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`);
+    }
+    const isValidRule = isValidRuleTree(rule);
+    if (!isValidRule.isValid) {
+      return ChainUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
