@@ -163,45 +163,6 @@ function isValidJsObjectForStates(obj) {
   return { isValid: true, invalidPath: '' };
 }
 
-function isValidRuleTreeRecursive(ruleTree, path) {
-  if (!ChainUtil.isDict(ruleTree) || ChainUtil.isEmpty(ruleTree)) {
-    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
-  }
-
-  for (const label in ruleTree) {
-    path.push(label);
-    const subtree = ruleTree[label];
-    if (label === RuleProperties.WRITE) {
-      const isValidConfig = isValidRuleConfig(subtree);
-      if (!isValidConfig.isValid) {
-        return {
-          isValid: false,
-          invalidPath: ChainUtil.appendPath(ChainUtil.formatPath(path), isValidConfig.invalidPath)
-        };
-      }
-    } else {
-      const isValidSubtree = isValidRuleTreeRecursive(subtree, path);
-      if (!isValidSubtree.isValid) {
-        return isValidSubtree;
-      }
-    }
-    path.pop();
-  }
-
-  return { isValid: true, invalidPath: '' };
-}
-
-/**
- * Checks the validity of the given rule tree.
- */
-function isValidRuleTree(ruleTree) {
-  if (ruleTree === null) {
-    return { isValid: true, invalidPath: '' };
-  }
-
-  return isValidRuleTreeRecursive(ruleTree, []);
-}
-
 function sanitizeFunctionInfo(functionInfo) {
   if (!functionInfo) {
     return null;
@@ -276,45 +237,6 @@ function isValidFunctionConfig(functionConfig) {
   return { isValid: true, invalidPath: '' };
 }
 
-function isValidFunctionTreeRecursive(functionTree, path) {
-  if (!ChainUtil.isDict(functionTree) || ChainUtil.isEmpty(functionTree)) {
-    return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
-  }
-
-  for (const label in functionTree) {
-    path.push(label);
-    const subtree = functionTree[label];
-    if (label === FunctionProperties.FUNCTION) {
-      const isValidConfig = isValidFunctionConfig(subtree);
-      if (!isValidConfig.isValid) {
-        return {
-          isValid: false,
-          invalidPath: ChainUtil.appendPath(ChainUtil.formatPath(path), isValidConfig.invalidPath)
-        };
-      }
-    } else {
-      const isValidSubtree = isValidFunctionTreeRecursive(subtree, path);
-      if (!isValidSubtree.isValid) {
-        return isValidSubtree;
-      }
-    }
-    path.pop();
-  }
-
-  return { isValid: true, invalidPath: '' };
-}
-
-/**
- * Checks the validity of the given function tree.
- */
-function isValidFunctionTree(functionTree) {
-  if (functionTree === null) {
-    return { isValid: true, invalidPath: '' };
-  }
-
-  return isValidFunctionTreeRecursive(functionTree, []);
-}
-
 function sanitizeOwnerPermissions(ownerPermissions) {
   if (!ownerPermissions) {
     return null;
@@ -381,16 +303,16 @@ function isValidOwnerConfig(ownerConfig) {
   return { isValid: true, invalidPath: '' };
 }
 
-function isValidOwnerTreeRecursive(ownerTree, path) {
-  if (!ChainUtil.isDict(ownerTree) || ChainUtil.isEmpty(ownerTree)) {
+function isValidConfigTreeRecursive(stateTree, path, configLabel, isValidStateConfig) {
+  if (!ChainUtil.isDict(stateTree) || ChainUtil.isEmpty(stateTree)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
   }
 
-  for (const label in ownerTree) {
+  for (const label in stateTree) {
     path.push(label);
-    const subtree = ownerTree[label];
-    if (label === OwnerProperties.OWNER) {
-      const isValidConfig = isValidOwnerConfig(subtree);
+    const subtree = stateTree[label];
+    if (label === configLabel) {
+      const isValidConfig = isValidStateConfig(subtree);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
@@ -398,7 +320,8 @@ function isValidOwnerTreeRecursive(ownerTree, path) {
         };
       }
     } else {
-      const isValidSubtree = isValidOwnerTreeRecursive(subtree, path);
+      const isValidSubtree =
+          isValidConfigTreeRecursive(subtree, path, configLabel, isValidStateConfig);
       if (!isValidSubtree.isValid) {
         return isValidSubtree;
       }
@@ -410,6 +333,29 @@ function isValidOwnerTreeRecursive(ownerTree, path) {
 }
 
 /**
+ * Checks the validity of the given rule tree.
+ */
+function isValidRuleTree(ruleTree) {
+  if (ruleTree === null) {
+    return { isValid: true, invalidPath: '' };
+  }
+
+  return isValidConfigTreeRecursive(ruleTree, [], RuleProperties.WRITE, isValidRuleConfig);
+}
+
+/**
+ * Checks the validity of the given function tree.
+ */
+function isValidFunctionTree(functionTree) {
+  if (functionTree === null) {
+    return { isValid: true, invalidPath: '' };
+  }
+
+  return isValidConfigTreeRecursive(
+      functionTree, [], FunctionProperties.FUNCTION, isValidFunctionConfig);
+}
+
+/**
  * Checks the validity of the given owner tree.
  */
 function isValidOwnerTree(ownerTree) {
@@ -417,7 +363,7 @@ function isValidOwnerTree(ownerTree) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidOwnerTreeRecursive(ownerTree, []);
+  return isValidConfigTreeRecursive(ownerTree, [], OwnerProperties.OWNER, isValidOwnerConfig);
 }
 
 /**
