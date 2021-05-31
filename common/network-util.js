@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const axios = require('axios');
 const logger = require('../logger')('NETWORK-UTIL');
 const {
   CURRENT_PROTOCOL_VERSION
