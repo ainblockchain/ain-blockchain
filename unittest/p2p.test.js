@@ -185,7 +185,10 @@ describe("p2p", () => {
         const expected = p2pServer.getMemoryUsage();
         assert.deepEqual(Object.keys(actual), Object.keys(expected));
         assert.deepEqual(Object.keys(actual.os), Object.keys(expected.os));
-        assert.deepEqual(Object.keys(actual.heap), Object.keys(expected.heap));
+        // NOTE(minsulee2): Since the actual.heap part have in difference between the node version
+        // (> 12.16) and (<= 12.17), which newly includes arrayBuffers info as well.
+        // See also: the issue #419(https://github.com/ainblockchain/ain-blockchain/issues/419)
+        expect(Object.keys(actual.heap)).include.members(Object.keys(expected.heap));
         assert.deepEqual(Object.keys(actual.heapStats), Object.keys(expected.heapStats));
       });
     });
