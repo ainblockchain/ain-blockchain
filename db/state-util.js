@@ -304,7 +304,7 @@ function isValidOwnerConfig(ownerConfig) {
   return { isValid: true, invalidPath: '' };
 }
 
-function isValidConfigTreeRecursive(stateTree, path, configLabel, isValidStateConfig) {
+function isValidConfigTreeRecursive(stateTree, path, configLabel, stateConfigValidator) {
   if (!ChainUtil.isDict(stateTree) || ChainUtil.isEmpty(stateTree)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
   }
@@ -313,7 +313,7 @@ function isValidConfigTreeRecursive(stateTree, path, configLabel, isValidStateCo
     path.push(label);
     const subtree = stateTree[label];
     if (label === configLabel) {
-      const isValidConfig = isValidStateConfig(subtree);
+      const isValidConfig = stateConfigValidator(subtree);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
@@ -322,7 +322,7 @@ function isValidConfigTreeRecursive(stateTree, path, configLabel, isValidStateCo
       }
     } else {
       const isValidSubtree =
-          isValidConfigTreeRecursive(subtree, path, configLabel, isValidStateConfig);
+          isValidConfigTreeRecursive(subtree, path, configLabel, stateConfigValidator);
       if (!isValidSubtree.isValid) {
         return isValidSubtree;
       }
