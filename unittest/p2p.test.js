@@ -188,7 +188,7 @@ describe("p2p", () => {
         // NOTE(minsulee2): Since the actual.heap part have in difference between the node version
         // (> 12.16) and (<= 12.17), which newly includes arrayBuffers info as well.
         // See also: the issue #419(https://github.com/ainblockchain/ain-blockchain/issues/419)
-        expect(Object.keys(actual.heap)).include.members(Object.keys(expected.heap));
+        expect(Object.keys(expected.heap)).include.members(Object.keys(actual.heap));
         assert.deepEqual(Object.keys(actual.heapStats), Object.keys(expected.heapStats));
       });
     });
