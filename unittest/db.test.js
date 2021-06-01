@@ -1418,8 +1418,20 @@ describe("DB operations", () => {
         expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
       })
 
+      it("when writing invalid rule tree", () => {
+        const ruleTreeBefore = node.db.getRule("/test/test_rule/some/path");
+        assert.deepEqual(node.db.setRule(
+            "/test/test_rule/some/path", { ".write": null }), {
+          "code": 504,
+          "error_message": "Invalid rule tree: /.write",
+          "gas_amount": 0
+        });
+        assert.deepEqual(node.db.getRule("/test/test_rule/some/path"), ruleTreeBefore);
+      })
+
       it("when writing with invalid path", () => {
-        assert.deepEqual(node.db.setRule("/test/test_rule/some/path/.", "some rule config"), {
+        assert.deepEqual(node.db.setRule("/test/test_rule/some/path/.",
+           { ".write": "some rule config" } ), {
           "code": 502,
           "error_message": "Invalid path: /test/test_rule/some/path/.",
           "gas_amount": 0
@@ -2281,19 +2293,19 @@ describe("DB operations", () => {
       assert.deepEqual(valueResult.code, 0);
 
       emptyRules = {
-        "terminal_1a": null,
-        "terminal_1b": null,
-        "terminal_1c": "",
         "node_1a": {
-          "node_2": {
-            "terminal_3": null,
-            "node_3": {
-              ".write": "some rule"
+          "node_2a": {
+            "node_3a": {
+              ".write": "some rule a"
             }
           }
         },
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".write": "some rule b"
+            }
+          }
         }
       };
       const ruleResult = node.db.setRule("/test/empty_rules/node_0", emptyRules);
@@ -2380,34 +2392,37 @@ describe("DB operations", () => {
 
     it("when setRule() with non-empty rule", () => {
       expect(node.db.setRule(
-          "/test/empty_rules/node_0/node_1a/node_2/node_3", {
+          "/test/empty_rules/node_0/node_1a/node_2a/node_3a", {
             ".write": "some other rule"
           }).code).to.equal(0)
       assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
-        "terminal_1a": null,
-        "terminal_1b": null,
-        "terminal_1c": "",
         "node_1a": {
-          "node_2": {
-            "terminal_3": null,
-            "node_3": {
+          "node_2a": {
+            "node_3a": {
               ".write": "some other rule"
             }
           }
         },
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".write": "some rule b"
+            }
+          }
         }
       })
     })
 
     it("when setRule() with 'null' rule", () => {
       expect(node.db.setRule(
-          "/test/empty_rules/node_0/node_1a/node_2/node_3", null).code).to.equal(0);
+          "/test/empty_rules/node_0/node_1a/node_2a/node_3a", null).code).to.equal(0);
       assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
-        "terminal_1c": "",
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".write": "some rule b"
+            }
+          }
         }
       })
     })
