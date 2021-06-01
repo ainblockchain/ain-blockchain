@@ -6,6 +6,8 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidRuleConfig,
+  isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
@@ -527,6 +529,131 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidRuleConfig", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidRuleConfig(null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidRuleConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        array: []
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          '.': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          '$': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          '*b': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          'b*': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidRuleConfig(true), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig(false), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig("auth.addr === 'abcd'"), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig(
+          "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"),
+          {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidRuleTree", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidRuleTree(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidRuleTree(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/undef'});
+      assert.deepEqual(isValidRuleTree({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/empty_obj'});
+      assert.deepEqual(isValidRuleTree({
+        array: []
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidRuleTree({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidRuleTree({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidRuleTree({
+        some_key: {}
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidRuleTree({
+        some_key: null
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidRuleTree({
+        some_key: undefined
+      }), {isValid: false, invalidPath: '/some_key'});
+    })
+
+    it("when invalid input with invalid owner config", () => {
+      assert.deepEqual(isValidRuleTree({
+        some_path: {
+          '.write': {
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_path/.write'});
+      assert.deepEqual(isValidRuleTree({
+        some_path: {
+          '.write': null 
+        }
+      }), {isValid: false, invalidPath: '/some_path/.write'});
+      assert.deepEqual(isValidRuleTree({
+        some_path: {
+          '.write': undefined
+        }
+      }), {isValid: false, invalidPath: '/some_path/.write'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidRuleTree(null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleTree({
+        '.write': true 
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleTree({
+        some_path1: {
+          '.write': true
+        },
+        some_path2: {
+          '.write': "auth.addr === 'abcd'"
+        }
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
   describe("isValidFunctionConfig", () => {
     it("when invalid input", () => {
       assert.deepEqual(isValidFunctionConfig(null), {isValid: false, invalidPath: '/'});
@@ -578,7 +705,7 @@ describe("state-util", () => {
         a_fid: {}
       }), {isValid: false, invalidPath: '/a_fid'});
       assert.deepEqual(isValidFunctionConfig({
-        a_fid: {}
+        a_fid: 'some string'
       }), {isValid: false, invalidPath: '/a_fid'});
     })
 
@@ -716,29 +843,6 @@ describe("state-util", () => {
       assert.deepEqual(isValidFunctionTree({
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionTree({
-        'a': {
-          '.': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/.'});
-      assert.deepEqual(isValidFunctionTree({
-        'a': {
-          '$': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/$'});
-      assert.deepEqual(isValidFunctionTree({
-        'a': {
-          '*b': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/*b'});
-      assert.deepEqual(isValidFunctionTree({
-        'a': {
-          'b*': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/b*'});
-    })
-
-    it("when invalid input with deeper path", () => {
       assert.deepEqual(isValidFunctionTree({
         some_key: {}
       }), {isValid: false, invalidPath: '/some_key'});
@@ -992,29 +1096,6 @@ describe("state-util", () => {
       assert.deepEqual(isValidOwnerTree({
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidOwnerTree({
-        'a': {
-          '.': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/.'});
-      assert.deepEqual(isValidOwnerTree({
-        'a': {
-          '$': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/$'});
-      assert.deepEqual(isValidOwnerTree({
-        'a': {
-          '*b': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/*b'});
-      assert.deepEqual(isValidOwnerTree({
-        'a': {
-          'b*': 'x'
-        }
-      }), {isValid: false, invalidPath: '/a/b*'});
-    })
-
-    it("when invalid input with deeper path", () => {
       assert.deepEqual(isValidOwnerTree({
         some_key: {}
       }), {isValid: false, invalidPath: '/some_key'});
