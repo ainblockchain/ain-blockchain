@@ -296,6 +296,10 @@ function isValidOwnerConfig(ownerConfigObj) {
       }
     }
     const ownerPermissions = ChainUtil.getJsObject(ownerConfigObj, [...path, owner]);
+    if (ownerPermissions === null) {
+      // Owner deletion.
+      continue;
+    }
     if (!isValidOwnerPermissions(ownerPermissions)) {
       return { isValid: false, invalidPath };
     }
