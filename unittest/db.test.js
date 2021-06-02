@@ -3078,16 +3078,28 @@ describe("DB sharding config", () => {
             ".owner": {
               "owners": {
                 "*": {
-                  "branch_owner": false,
-                  "write_function": false,
-                  "write_owner": false,
-                  "write_rule": false,
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
                 },
                 "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                   "branch_owner": true,
                   "write_function": true,
                   "write_owner": true,
                   "write_rule": true,
+                }
+              }
+            },
+            "deeper": {
+              ".owner": {  // deeper owner
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_function": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                  },
                 }
               }
             }
@@ -3581,10 +3593,10 @@ describe("DB sharding config", () => {
       ".owner": {
         "owners": {
           "*": {
-            "branch_owner": false,
-            "write_function": false,
-            "write_owner": false,
-            "write_rule": false,
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
           },
           "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
             "branch_owner": true,
@@ -3593,16 +3605,35 @@ describe("DB sharding config", () => {
             "write_rule": true,
           }
         }
+      },
+      "deeper": {
+        ".owner": {  // deeper owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        }
+      }
+    };
+    const ownerChange = {
+      ".owner": {
+        "owners": {
+          "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": null
+        }
       }
     };
     const newOwner = {
       ".owner": {
         "owners": {
           "*": {
-            "branch_owner": false,
-            "write_function": false,
-            "write_owner": false,
-            "write_rule": false,
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
           },
         }
       },
@@ -3614,7 +3645,7 @@ describe("DB sharding config", () => {
               "write_function": true,
               "write_owner": true,
               "write_rule": true,
-            }
+            },
           }
         }
       }
@@ -3637,7 +3668,7 @@ describe("DB sharding config", () => {
 
     it("setOwner with isGlobal = false", () => {
       expect(node.db.setOwner(
-          "test/test_sharding/some/path/to", newOwner,
+          "test/test_sharding/some/path/to", ownerChange,
           { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
               .to.equal(0);
       assert.deepEqual(node.db.getOwner("test/test_sharding/some/path/to"), newOwner);
@@ -3645,7 +3676,7 @@ describe("DB sharding config", () => {
 
     it("setOwner with isGlobal = true", () => {
       expect(node.db.setOwner(
-          "apps/afan/test/test_sharding/some/path/to", newOwner,
+          "apps/afan/test/test_sharding/some/path/to", ownerChange,
           { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code)
               .to.equal(0);
       assert.deepEqual(
@@ -3654,7 +3685,7 @@ describe("DB sharding config", () => {
 
     it("setOwner with isGlobal = true and non-existing path", () => {
       expect(node.db.setOwner(
-          "some/non-existing/path", newOwner,
+          "some/non-existing/path", ownerChange,
           { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code).to.equal(0);
     })
 
@@ -3667,10 +3698,10 @@ describe("DB sharding config", () => {
           "config": {
             "owners": {
               "*": {
-                "branch_owner": false,
-                "write_function": false,
-                "write_owner": false,
-                "write_rule": false,
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
               },
               "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                 "branch_owner": true,
@@ -3694,10 +3725,10 @@ describe("DB sharding config", () => {
           "config": {
             "owners": {
               "*": {
-                "branch_owner": false,
-                "write_function": false,
-                "write_owner": false,
-                "write_rule": false,
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
               },
               "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                 "branch_owner": true,
