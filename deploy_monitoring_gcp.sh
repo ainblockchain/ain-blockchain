@@ -36,15 +36,16 @@ fi
 FILES_FOR_MONITORING="monitoring/ setup_monitoring_gcp.sh setup_monitoring_ubuntu.sh start_monitoring_gcp.sh"
 
 MONITORING_TARGET_ADDR="${GCP_USER}@${SEASON}-monitoring-taiwan"
+MONITORING_ZONE="asia-east1-b"
 
 # kill any processes still alive
-gcloud compute ssh $MONITORING_TARGET_ADDR --command "sudo killall prometheus" --project $PROJECT_ID
-gcloud compute ssh $MONITORING_TARGET_ADDR --command "sudo killall grafana-server" --project $PROJECT_ID
+gcloud compute ssh $MONITORING_TARGET_ADDR --command "sudo killall prometheus" --project $PROJECT_ID --zone $MONITORING_ZONE
+gcloud compute ssh $MONITORING_TARGET_ADDR --command "sudo killall grafana-server" --project $PROJECT_ID --zone $MONITORING_ZONE
 
 # deploy files to GCP instances
 printf "\nDeploying monitoring..."
 printf "\nDeploying files to ${MONITORING_TARGET_ADDR}..."
-gcloud compute scp --recurse $FILES_FOR_MONITORING ${MONITORING_TARGET_ADDR}:~/ --project $PROJECT_ID
+gcloud compute scp --recurse $FILES_FOR_MONITORING ${MONITORING_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $MONITORING_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 # printf "\n\n##########################\n# Setting up monitoring #\n###########################\n\n"
@@ -52,4 +53,4 @@ gcloud compute scp --recurse $FILES_FOR_MONITORING ${MONITORING_TARGET_ADDR}:~/ 
 
 # ssh into each instance, install packages and start up the server
 printf "\n\n############################\n# Running monitoring #\n############################\n\n"
-gcloud compute ssh $MONITORING_TARGET_ADDR --command ". setup_monitoring_gcp.sh ${SEASON} && . start_monitoring_gcp.sh" --project $PROJECT_ID
+gcloud compute ssh $MONITORING_TARGET_ADDR --command ". setup_monitoring_gcp.sh ${SEASON} && . start_monitoring_gcp.sh" --project $PROJECT_ID --zone $MONITORING_ZONE

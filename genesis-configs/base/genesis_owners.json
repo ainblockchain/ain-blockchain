@@ -2,11 +2,11 @@
   "apps": {
     ".owner": {
       "owners": {
-        "*": {
+        "fid:_createApp": {
           "branch_owner": true,
-          "write_function": true,
+          "write_function": false,
           "write_owner": false,
-          "write_rule": false
+          "write_rule": true
         }
       }
     }

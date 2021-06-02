@@ -80,13 +80,32 @@ describe("DB initialization", () => {
 
   describe("Rules", () => {
     it("loading rules properly on initialization", () => {
-      assert.deepEqual(node.db.getRule("/"), GenesisRules);
+      const genesisRuleWithConsensusApp = JSON.parse(JSON.stringify(GenesisRules));
+      ChainUtil.setJsObject(
+        genesisRuleWithConsensusApp,
+        ['apps', 'consensus'],
+        {".write": "auth.addr === '0xAAAf6f50A0304F12119D218b94bea8082642515B'"}
+      );
+      assert.deepEqual(node.db.getRule("/"), genesisRuleWithConsensusApp);
     })
   })
 
   describe("Owners", () => {
     it("loading owners properly on initialization", () => {
-      assert.deepEqual(node.db.getOwner('/'), GenesisOwners);
+      const genesisOwnerWithConsensusApp = JSON.parse(JSON.stringify(GenesisOwners));
+      ChainUtil.setJsObject(genesisOwnerWithConsensusApp, ['apps', 'consensus'], {
+        ".owner": {
+          owners: {
+            "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+              branch_owner: true,
+              write_function: true,
+              write_owner: true,
+              write_rule: true
+            }
+          }
+        }
+      });
+      assert.deepEqual(node.db.getOwner('/'), genesisOwnerWithConsensusApp);
     })
   })
 })
@@ -141,17 +160,32 @@ describe("DB operations", () => {
       "some": {
         "$var_path": {
           ".function": {
-            "fid_var": "some function config with var path"
+            "fid_var": {
+              "function_type": "REST",
+              "function_id": "fid_var",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            },
           }
         },
         "path": {
           ".function": {
-            "fid": "some function config"
+            "fid": {
+              "function_type": "REST",
+              "function_id": "fid",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            },
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "function_type": "REST",
+                  "function_id": "fid_deeper",
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "service_name": "https://ainetwork.ai",
+                }
               }
             }
           }
@@ -190,7 +224,7 @@ describe("DB operations", () => {
                 "write_owner": false,
                 "write_rule": true,
               },
-              "abcd": {
+              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                 "branch_owner": true,
                 "write_function": false,
                 "write_owner": true,
@@ -208,7 +242,7 @@ describe("DB operations", () => {
                     "write_owner": false,
                     "write_rule": true,
                   },
-                  "ijkl": {
+                  "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
                     "branch_owner": true,
                     "write_function": false,
                     "write_owner": true,
@@ -257,12 +291,22 @@ describe("DB operations", () => {
       it("when retrieving existing function config", () => {
         assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
           ".function": {
-            "fid": "some function config"
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           }
@@ -303,7 +347,7 @@ describe("DB operations", () => {
                 "write_owner": false,
                 "write_rule": true,
               },
-              "abcd": {
+              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                 "branch_owner": true,
                 "write_function": false,
                 "write_owner": true,
@@ -321,7 +365,7 @@ describe("DB operations", () => {
                     "write_owner": false,
                     "write_rule": true,
                   },
-                  "ijkl": {
+                  "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
                     "branch_owner": true,
                     "write_function": false,
                     "write_owner": true,
@@ -347,7 +391,12 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              "fid_var": "some function config with var path"
+              "fid_var": {
+                "function_type": "REST",
+                "function_id": "fid_var",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             },
             "path": "/test/test_function/some/$var_path"
           },
@@ -364,14 +413,24 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              "fid": "some function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             },
             "path": "/test/test_function/some/path"
           },
           "subtree_configs": [
             {
               "config": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/deeper/path"
             }
@@ -385,7 +444,12 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              "fid_deeper": "some function config deeper"
+              "fid_deeper": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid_deeper",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             },
             "path": "/test/test_function/some/path/deeper/path"
           },
@@ -407,7 +471,12 @@ describe("DB operations", () => {
           "subtree_configs": [
             {
               "config": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/path"
             }
@@ -502,7 +571,7 @@ describe("DB operations", () => {
                   "write_owner": false,
                   "write_rule": true
                 },
-                "abcd": {
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                   "branch_owner": true,
                   "write_function": false,
                   "write_owner": true,
@@ -526,7 +595,7 @@ describe("DB operations", () => {
                   "write_owner": false,
                   "write_rule": true
                 },
-                "ijkl": {
+                "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
                   "branch_owner": true,
                   "write_function": false,
                   "write_owner": true,
@@ -553,7 +622,7 @@ describe("DB operations", () => {
                   "write_owner": false,
                   "write_rule": true
                 },
-                "abcd": {
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                   "branch_owner": true,
                   "write_function": false,
                   "write_owner": true,
@@ -577,7 +646,7 @@ describe("DB operations", () => {
                   "write_owner": false,
                   "write_rule": true
                 },
-                "ijkl": {
+                "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
                   "branch_owner": true,
                   "write_function": false,
                   "write_owner": true,
@@ -604,7 +673,7 @@ describe("DB operations", () => {
                   "write_owner": false,
                   "write_rule": true
                 },
-                "abcd": {
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                   "branch_owner": true,
                   "write_function": false,
                   "write_owner": true,
@@ -653,15 +722,19 @@ describe("DB operations", () => {
 
     describe("evalOwner()", () => {
       it("when evaluating existing owner with matching address", () => {
-        expect(node.db.evalOwner("/test/test_owner/some/path", 'write_owner', { addr: 'abcd' }))
-            .to.equal(true);
-        expect(node.db.evalOwner("/test/test_owner/some/path", 'write_rule', { addr: 'abcd' }))
+        expect(node.db.evalOwner(
+            "/test/test_owner/some/path", 'write_owner',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
+                .to.equal(true);
+        expect(node.db.evalOwner("/test/test_owner/some/path", 'write_rule', { addr: '' }))
             .to.equal(false);
         expect(node.db.evalOwner(
-            "/test/test_owner/some/path/deeper/path", 'write_owner', { addr: 'ijkl' }))
+            "/test/test_owner/some/path/deeper/path", 'write_owner',
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
                 .to.equal(true);
         expect(node.db.evalOwner(
-            "/test/test_owner/some/path/deeper/path", 'write_rule', { addr: 'ijkl' }))
+            "/test/test_owner/some/path/deeper/path", 'write_rule',
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
                 .to.equal(false);
       })
 
@@ -680,10 +753,12 @@ describe("DB operations", () => {
 
       it("when evaluating closest owner", () => {
         expect(node.db.evalOwner(
-            "/test/test_owner/some/path/deeper", 'write_owner', { addr: 'abcd' }))
+            "/test/test_owner/some/path/deeper", 'write_owner',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
                 .to.equal(true);
         expect(node.db.evalOwner(
-            "/test/test_owner/some/path/deeper", 'write_rule', { addr: 'abcd' }))
+            "/test/test_owner/some/path/deeper", 'write_rule',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
                 .to.equal(false);
         expect(node.db.evalOwner(
             "/test/test_owner/some/path/deeper", 'write_owner', { addr: 'other' }))
@@ -757,7 +832,12 @@ describe("DB operations", () => {
             "subtree_configs": [
               {
                 "config": {
-                  "fid_deeper": "some function config deeper"
+                  "fid_deeper": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid_deeper",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/path"
               }
@@ -793,7 +873,7 @@ describe("DB operations", () => {
                     "write_owner": false,
                     "write_rule": true
                   },
-                  "abcd": {
+                  "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                     "branch_owner": true,
                     "write_function": false,
                     "write_owner": true,
@@ -850,7 +930,7 @@ describe("DB operations", () => {
             type: "EVAL_OWNER",
             ref: "/test/test_owner/some/path",
             permission: "write_owner",
-            address: "abcd",
+            address: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
             timestamp: Date.now(),
           },
         ]), [
@@ -865,12 +945,22 @@ describe("DB operations", () => {
           },
           {
             ".function": {
-              "fid": "some function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             },
             "deeper": {
               "path": {
                 ".function": {
-                  "fid_deeper": "some function config deeper"
+                  "fid_deeper": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid_deeper",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 }
               }
             }
@@ -884,7 +974,7 @@ describe("DB operations", () => {
                   "write_owner": false,
                   "write_rule": true,
                 },
-                "abcd": {
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                   "branch_owner": true,
                   "write_function": false,
                   "write_owner": true,
@@ -902,7 +992,7 @@ describe("DB operations", () => {
                       "write_owner": false,
                       "write_rule": true,
                     },
-                    "ijkl": {
+                    "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
                       "branch_owner": true,
                       "write_function": false,
                       "write_owner": true,
@@ -921,14 +1011,24 @@ describe("DB operations", () => {
             },
             "matched_config": {
               "config": {
-                "fid": "some function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/test/test_function/some/path"
             },
             "subtree_configs": [
               {
                 "config": {
-                  "fid_deeper": "some function config deeper"
+                  "fid_deeper": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid_deeper",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/deeper/path"
               }
@@ -964,7 +1064,7 @@ describe("DB operations", () => {
                     "write_owner": false,
                     "write_rule": true
                   },
-                  "abcd": {
+                  "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                     "branch_owner": true,
                     "write_function": false,
                     "write_owner": true,
@@ -1191,19 +1291,34 @@ describe("DB operations", () => {
       it("when overwriting existing function config with simple path", () => {
         const functionConfig = {
           ".function": {
-            "fid": "other function config"
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           }
         };
         expect(node.db.setFunction("/test/test_function/some/path", functionConfig).code)
             .to.equal(0);
         assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
           ".function": {
-            "fid": "other function config"  // modified
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",  // modified
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           }
@@ -1213,7 +1328,12 @@ describe("DB operations", () => {
       it("when writing with variable path", () => {
         const functionConfig = {
           ".function": {
-            "fid_other": "other function config"
+            "fid_other": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",
+              "function_id": "fid_other",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           }
         };
         expect(node.db.setFunction("/test/test_function/some/$variable/path", functionConfig).code)
@@ -1238,9 +1358,29 @@ describe("DB operations", () => {
         expect(node.db.getFunction("test/new2/unchartered/nested/path2")).to.equal(null)
       })
 
+      it("when writing invalid function tree", () => {
+        const functionTreeBefore = node.db.getOwner("/test/test_function/some/path");
+        assert.deepEqual(node.db.setFunction(
+            "/test/test_function/some/path", { ".function": null }), {
+          "code": 405,
+          "error_message": "Invalid function tree: /.function",
+          "gas_amount": 0
+        });
+        assert.deepEqual(node.db.getOwner("/test/test_function/some/path"), functionTreeBefore);
+      })
+
       it("when writing with invalid path", () => {
         assert.deepEqual(node.db.setFunction(
-            "/test/test_function/some/path/.", "some function config"), {
+            "/test/test_function/some/path/.", {
+              ".function": {
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger2",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
+              }
+            }), {
           "code": 402,
           "error_message": "Invalid path: /test/test_function/some/path/.",
           "gas_amount": 0
@@ -1278,8 +1418,20 @@ describe("DB operations", () => {
         expect(node.db.getRule("/test/test_rule/some/path2")).to.equal(null)
       })
 
+      it("when writing invalid rule tree", () => {
+        const ruleTreeBefore = node.db.getRule("/test/test_rule/some/path");
+        assert.deepEqual(node.db.setRule(
+            "/test/test_rule/some/path", { ".write": null }), {
+          "code": 504,
+          "error_message": "Invalid rule tree: /.write",
+          "gas_amount": 0
+        });
+        assert.deepEqual(node.db.getRule("/test/test_rule/some/path"), ruleTreeBefore);
+      })
+
       it("when writing with invalid path", () => {
-        assert.deepEqual(node.db.setRule("/test/test_rule/some/path/.", "some rule config"), {
+        assert.deepEqual(node.db.setRule("/test/test_rule/some/path/.",
+           { ".write": "some rule config" } ), {
           "code": 502,
           "error_message": "Invalid path: /test/test_rule/some/path/.",
           "gas_amount": 0
@@ -1289,10 +1441,24 @@ describe("DB operations", () => {
 
     describe("setOwner()", () => {
       it("when overwriting existing owner config", () => {
-        const ownerConfig = {".owner": "other owner config"};
-        expect(node.db.setOwner("/test/test_owner/some/path", ownerConfig, { addr: 'abcd' }).code)
-            .to.equal(0)
-        assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerConfig)
+        const ownerTree = {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }};
+        assert.deepEqual(node.db.setOwner(
+            "/test/test_owner/some/path", ownerTree,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 0,
+          "gas_amount": 1
+        });
+        assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerTree)
       })
 
       it("when writing invalid object", () => {
@@ -1311,8 +1477,42 @@ describe("DB operations", () => {
         expect(node.db.getOwner("/test/test_owner/some/path2")).to.equal(null)
       })
 
+      it("when writing invalid owner tree", () => {
+        const ownerTreeBefore = node.db.getOwner("/test/test_owner/some/path");
+        assert.deepEqual(node.db.setOwner("/test/test_owner/some/path", {
+          ".owner": "invalid owners config"
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 604,
+          "error_message": "Invalid owner tree: /.owner",
+          "gas_amount": 0
+        });
+        assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerTreeBefore);
+
+        assert.deepEqual(node.db.setOwner("/test/test_owner/some/path", {
+          ".owner": {
+            "owners": "invalid owners config"
+          }
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 604,
+          "error_message": "Invalid owner tree: /.owner/owners",
+          "gas_amount": 0
+        });
+        assert.deepEqual(node.db.getOwner("/test/test_owner/some/path"), ownerTreeBefore);
+      })
+
       it("when writing with invalid path", () => {
-        assert.deepEqual(node.db.setOwner("/test/test_owner/some/path/.", "some owner config"), {
+        assert.deepEqual(node.db.setOwner("/test/test_owner/some/path/.", {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 602,
           "error_message": "Invalid path: /test/test_owner/some/path/.",
           "gas_amount": 0
@@ -1575,7 +1775,12 @@ describe("DB operations", () => {
             ref: "/test/test_function/some/path",
             value: {
               ".function": {
-                "fid": "other function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger2",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           },
@@ -1590,10 +1795,19 @@ describe("DB operations", () => {
             type: "SET_OWNER",
             ref: "/test/test_owner/some/path",
             value: {
-              ".owner": "other owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_function": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                  }
+                }
+              }
             }
           }
-        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
+        ], { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, { extra: { executed_at: 1234567890000 }}), {
           "result_list": [
             {
               "code": 0,
@@ -1626,12 +1840,22 @@ describe("DB operations", () => {
         expect(node.db.getValue("test/decrement/value")).to.equal(10)
         assert.deepEqual(node.db.getFunction("/test/test_function/some/path"), {
           ".function": {
-            "fid": "other function config"  // modiied
+            "fid": {
+              "event_listener": "https://events.ainetwork.ai/trigger2",  // modified
+              "function_id": "fid",
+              "function_type": "REST",
+              "service_name": "https://ainetwork.ai"
+            }
           },
           "deeper": {
             "path": {
               ".function": {
-                "fid_deeper": "some function config deeper"
+                "fid_deeper": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             }
           }
@@ -1639,7 +1863,18 @@ describe("DB operations", () => {
         assert.deepEqual(
             node.db.getRule("/test/test_rule/some/path"), { ".write": "other rule config" });
         assert.deepEqual(
-            node.db.getOwner("/test/test_owner/some/path"), { ".owner": "other owner config" });
+            node.db.getOwner("/test/test_owner/some/path"), {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_function": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                  }
+                }
+              }
+            });
       })
 
       it("returning error code and leaving value unchanged when an operation fails", () => {
@@ -2031,7 +2266,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 24,
-          error_message: "Out of tree size limit (1001521 > 1000000)",
+          error_message: "Out of tree size limit (1001532 > 1000000)",
           gas_amount: 0,
         });
       })
@@ -2058,32 +2293,28 @@ describe("DB operations", () => {
       assert.deepEqual(valueResult.code, 0);
 
       emptyRules = {
-        "terminal_1a": null,
-        "terminal_1b": null,
-        "terminal_1c": "",
         "node_1a": {
-          "node_2": {
-            "terminal_3": null,
-            "node_3": {
-              ".write": "some rule"
+          "node_2a": {
+            "node_3a": {
+              ".write": "some rule a"
             }
           }
         },
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".write": "some rule b"
+            }
+          }
         }
       };
       const ruleResult = node.db.setRule("/test/empty_rules/node_0", emptyRules);
       assert.deepEqual(ruleResult.code, 0);
 
       emptyOwners = {
-        "terminal_1a": null,
-        "terminal_1b": null,
-        "terminal_1c": "",
         "node_1a": {
-          "node_2": {
-            "terminal_3": null,
-            "node_3": {
+          "node_2a": {
+            "node_3a": {
               ".owner": {
                 "owners": {
                   "*": {
@@ -2098,7 +2329,20 @@ describe("DB operations", () => {
           }
         },
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_owner": false,
+                    "write_rule": false,
+                    "write_function": false
+                  }
+                }
+              }
+            }
+          }
         }
       };
       const ownerResult = node.db.setOwner("/test/empty_owners/node_0", emptyOwners);
@@ -2148,41 +2392,44 @@ describe("DB operations", () => {
 
     it("when setRule() with non-empty rule", () => {
       expect(node.db.setRule(
-          "/test/empty_rules/node_0/node_1a/node_2/node_3", {
+          "/test/empty_rules/node_0/node_1a/node_2a/node_3a", {
             ".write": "some other rule"
           }).code).to.equal(0)
       assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
-        "terminal_1a": null,
-        "terminal_1b": null,
-        "terminal_1c": "",
         "node_1a": {
-          "node_2": {
-            "terminal_3": null,
-            "node_3": {
+          "node_2a": {
+            "node_3a": {
               ".write": "some other rule"
             }
           }
         },
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".write": "some rule b"
+            }
+          }
         }
       })
     })
 
     it("when setRule() with 'null' rule", () => {
       expect(node.db.setRule(
-          "/test/empty_rules/node_0/node_1a/node_2/node_3", null).code).to.equal(0);
+          "/test/empty_rules/node_0/node_1a/node_2a/node_3a", null).code).to.equal(0);
       assert.deepEqual(node.db.getRule("/test/empty_rules/node_0"), {
-        "terminal_1c": "",
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".write": "some rule b"
+            }
+          }
         }
       })
     })
 
     it("when setOwner() with non-empty owner", () => {
       expect(node.db.setOwner(
-          "/test/empty_owners/node_0/node_1a/node_2/node_3", {
+          "/test/empty_owners/node_0/node_1a/node_2a/node_3a", {
             ".owner": {
               "owners": {
                 "*": {
@@ -2195,13 +2442,9 @@ describe("DB operations", () => {
             }
           }).code).to.equal(0)
       assert.deepEqual(node.db.getOwner("/test/empty_owners/node_0"), {
-        "terminal_1a": null,
-        "terminal_1b": null,
-        "terminal_1c": "",
         "node_1a": {
-          "node_2": {
-            "terminal_3": null,
-            "node_3": {
+          "node_2a": {
+            "node_3a": {
               ".owner": {
                 "owners": {
                   "*": {
@@ -2216,18 +2459,43 @@ describe("DB operations", () => {
           }
         },
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_owner": false,
+                    "write_rule": false,
+                    "write_function": false
+                  }
+                }
+              }
+            }
+          }
         }
       })
     })
 
     it("when setOwner() with 'null' owner", () => {
       expect(node.db.setOwner(
-          "/test/empty_owners/node_0/node_1a/node_2/node_3", null).code).to.equal(0);
+          "/test/empty_owners/node_0/node_1a/node_2a/node_3a", null).code).to.equal(0);
       assert.deepEqual(node.db.getOwner("/test/empty_owners/node_0"), {
-        "terminal_1c": "",
         "node_1b": {
-          "terminal_2": null,
+          "node_2b": {
+            "node_3b": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_owner": false,
+                    "write_rule": false,
+                    "write_function": false
+                  }
+                }
+              }
+            }
+          }
         }
       })
     })
@@ -2371,13 +2639,13 @@ describe("DB owner config", () => {
               "write_rule": false,
               "write_function": false
             },
-            "aaaa": {
+            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
               "branch_owner": false,
               "write_owner": false,
               "write_rule": false,
               "write_function": false
             },
-            "known_user": {
+            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
               "branch_owner": true,
               "write_owner": true,
               "write_rule": true,
@@ -2397,13 +2665,13 @@ describe("DB owner config", () => {
               "write_rule": false,
               "write_function": false
             },
-            "aaaa": {
+            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
               "branch_owner": true,
               "write_owner": false,
               "write_rule": false,
               "write_function": false
             },
-            "known_user": {
+            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
               "branch_owner": false,
               "write_owner": true,
               "write_rule": true,
@@ -2423,13 +2691,13 @@ describe("DB owner config", () => {
               "write_rule": false,
               "write_function": false
             },
-            "aaaa": {
+            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
               "branch_owner": false,
               "write_owner": true,
               "write_rule": false,
               "write_function": false
             },
-            "known_user": {
+            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
               "branch_owner": true,
               "write_owner": false,
               "write_rule": true,
@@ -2449,13 +2717,13 @@ describe("DB owner config", () => {
               "write_rule": true,
               "write_function": true
             },
-            "aaaa": {
+            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
               "branch_owner": false,
               "write_owner": false,
               "write_rule": true,
               "write_function": true
             },
-            "known_user": {
+            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
               "branch_owner": true,
               "write_owner": true,
               "write_rule": false,
@@ -2474,186 +2742,210 @@ describe("DB owner config", () => {
   // Known user
   it("branch_owner permission for known user with mixed config", () => {
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/true/branch', 'branch_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/true/branch', 'branch_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/false/true/true/branch', 'branch_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/false/true/true/branch', 'branch_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(false)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/false/true/branch', 'branch_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/false/true/branch', 'branch_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/false/branch', 'branch_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/false/branch', 'branch_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
   })
 
   it("write_owner permission for known user with mixed config", () => {
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/true', 'write_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/true', 'write_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/false/true/true', 'write_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/false/true/true', 'write_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/false/true', 'write_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/false/true', 'write_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(false)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/false', 'write_owner', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/false', 'write_owner',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
   })
 
   it("write_rule permission for known user with mixed config", () => {
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/true', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/true', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/false/true/true', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/false/true/true', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/false/true', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/false/true', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/false', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/false', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(false)
   })
 
   it("write_rule permission on deeper path for known user with mixed config", () => {
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(false)
   })
 
   it("write_function permission for known user with mixed config", () => {
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/true', 'write_function', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/true', 'write_function',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/false/true/true', 'write_function', { addr: 'known_user' }))
+        '/test/test_owner/mixed/false/true/true', 'write_function',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/false/true', 'write_function', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/false/true', 'write_function',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/false', 'write_function', { addr: 'known_user' }))
+        '/test/test_owner/mixed/true/true/false', 'write_function',
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(false)
   })
 
-  it("write_Function permission on deeper path for known user with mixed config", () => {
+  it("write_function permission on deeper path for known user with mixed config", () => {
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/true/true/true/deeper_path', 'write_function',
-        { addr: 'known_user' }))
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/false/true/true/deeper_path', 'write_function',
-        { addr: 'known_user' }))
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/true/false/true/deeper_path', 'write_function',
-        { addr: 'known_user' }))
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(true)
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
-        { addr: 'known_user' }))
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
             .to.equal(false)
   })
 
   // Unknown user
   it("branch_owner permission for unknown user with mixed config", () => {
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/true/branch', 'branch_owner', { addr: 'unknown_user' }))
+        '/test/test_owner/mixed/true/true/true/branch', 'branch_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/false/true/true/branch', 'branch_owner', { addr: 'unknown_user' }))
+        '/test/test_owner/mixed/false/true/true/branch', 'branch_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(true)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/false/true/branch', 'branch_owner', { addr: 'unknown_user' }))
+        '/test/test_owner/mixed/true/false/true/branch', 'branch_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner(
-        '/test/test_owner/mixed/true/true/false/branch', 'branch_owner', { addr: 'unknown_user' }))
+        '/test/test_owner/mixed/true/true/false/branch', 'branch_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
   })
 
   it("write_owner permission for unknown user with mixed config", () => {
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/true', 'write_owner',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/false/true/true', 'write_owner',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/false/true', 'write_owner',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(true)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/false', 'write_owner',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
   })
 
   it("write_rule permission for unknown user with mixed config", () => {
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/true', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/false/true/true', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/false/true', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/false', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(true)
   })
 
   it("write_rule permission on deeper path for unknown user with mixed config", () => {
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(true)
   })
 
   it("write_function permission for unknown user with mixed config", () => {
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/true', 'write_function',
-        { addr: 'unknown_user' })).to.equal(false)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/false/true/true', 'write_function',
-        { addr: 'unknown_user' })).to.equal(false)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/false/true', 'write_function',
-        { addr: 'unknown_user' })).to.equal(false)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
     expect(node.db.evalOwner('/test/test_owner/mixed/true/true/false', 'write_function',
-        { addr: 'unknown_user' })).to.equal(true)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(true)
   })
 
   it("write_function permission on deeper path for unknown user with mixed config", () => {
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/true/true/true/deeper_path', 'write_function',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/false/true/true/deeper_path', 'write_function',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/true/false/true/deeper_path', 'write_function',
-         { addr: 'unknown_user' }))
+         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(false)
     expect(node.db.evalOwner(
         '/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
-        { addr: 'unknown_user' }))
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
             .to.equal(true)
   })
 })
@@ -2702,11 +2994,21 @@ describe("DB sharding config", () => {
         "path": {
           "to": {
             ".function": {
-              "fid": "some function config",
+              "fid": {
+                "function_type": "REST",
+                "function_id": "fid",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              }
             },
             "deeper": {
               ".function": {
-                "fid_deeper": "some deeper function config",
+                "fid_deeper": {
+                  "function_type": "REST",
+                  "function_id": "fid_deeper",
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "service_name": "https://ainetwork.ai",
+                }
               }
             }
           }
@@ -2721,7 +3023,7 @@ describe("DB sharding config", () => {
         "path": {
           ".write": "false",
           "to": {
-            ".write": "auth.addr === 'known_user'",
+            ".write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'",
             "deeper": {
               ".write": "some deeper rule config",
             }
@@ -2744,7 +3046,7 @@ describe("DB sharding config", () => {
                   "write_owner": false,
                   "write_rule": false,
                 },
-                "known_user": {
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                   "branch_owner": true,
                   "write_function": true,
                   "write_owner": true,
@@ -2802,7 +3104,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = false", () => {
       expect(node.db.setValue(
-          "test/test_sharding/some/path/to/value", newValue, { addr: 'known_user' },
+          "test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
@@ -2810,7 +3112,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true", () => {
       expect(node.db.setValue(
-          "apps/afan/test/test_sharding/some/path/to/value", newValue, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/value")).to.equal(newValue);
@@ -2818,7 +3120,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true and non-existing path", () => {
       expect(node.db.setValue(
-          "some/non-existing/path", newValue, { addr: 'known_user' },
+          "some/non-existing/path", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
     })
@@ -2833,7 +3135,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true and non-writable path with sharding", () => {
       expect(node.db.setValue(
-          "apps/afan/test/test_sharding/shards/enabled_shard/path", 20, 'known_user', null, null,
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", 20, '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
           true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/enabled_shard/path", true))
@@ -2848,7 +3150,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.setValue(
-          "apps/afan/test/test_sharding/shards/disabled_shard/path", 20, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/shards/disabled_shard/path", 20, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
@@ -2857,7 +3159,7 @@ describe("DB sharding config", () => {
 
     it("incValue with isGlobal = false", () => {
       expect(node.db.incValue(
-          "test/test_sharding/some/path/to/number", incDelta, { addr: 'known_user' },
+          "test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
@@ -2865,7 +3167,7 @@ describe("DB sharding config", () => {
 
     it("incValue with isGlobal = true", () => {
       expect(node.db.incValue(
-          "apps/afan/test/test_sharding/some/path/to/number", incDelta, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
@@ -2873,7 +3175,7 @@ describe("DB sharding config", () => {
 
     it("incValue with isGlobal = true and non-existing path", () => {
       expect(node.db.incValue(
-          "some/non-existing/path", incDelta, { addr: 'known_user' }, null, null, true).code)
+          "some/non-existing/path", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, true).code)
               .to.equal(0);
     })
 
@@ -2887,7 +3189,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true and non-writable path with sharding", () => {
       expect(node.db.incValue(
-          "apps/afan/test/test_sharding/shards/enabled_shard/path", 5, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, null, true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/enabled_shard/path", true))
@@ -2902,7 +3204,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.incValue(
-          "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
@@ -2911,7 +3213,7 @@ describe("DB sharding config", () => {
 
     it("decValue with isGlobal = false", () => {
       expect(node.db.decValue(
-          "test/test_sharding/some/path/to/number", decDelta, { addr: 'known_user' },
+          "test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
@@ -2919,7 +3221,7 @@ describe("DB sharding config", () => {
 
     it("decValue with isGlobal = true", () => {
       expect(node.db.decValue(
-          "apps/afan/test/test_sharding/some/path/to/number", decDelta, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
@@ -2927,7 +3229,7 @@ describe("DB sharding config", () => {
 
     it("decValue with isGlobal = true and non-existing path", () => {
       expect(node.db.decValue(
-          "some/non-existing/path", decDelta, { addr: 'known_user' }, null, null, true).code)
+          "some/non-existing/path", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, true).code)
               .to.equal(0);
     })
 
@@ -2941,7 +3243,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true and non-writable path with sharding", () => {
       expect(node.db.decValue(
-          "apps/afan/test/test_sharding/shards/enabled_shard/path", 5, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, null, true).code)
               .to.equal(0);
       expect(node.db.getValue(
@@ -2958,7 +3260,7 @@ describe("DB sharding config", () => {
 
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.decValue(
-          "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/test/test_sharding/shards/disabled_shard/path", true))
@@ -2970,26 +3272,51 @@ describe("DB sharding config", () => {
   describe("Function operations", () => {
     const func = {
       ".function": {
-        "fid": "some function config",
+        "fid": {
+          "function_type": "REST",
+          "function_id": "fid",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        },
       },
       "deeper": {
         ".function": {
-          "fid_deeper": "some deeper function config"
+          "fid_deeper": {
+            "function_type": "REST",
+            "function_id": "fid_deeper",
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainetwork.ai",
+          },
         }
       }
     };
     const funcChange = {
       ".function": {
-        "fid": "another function config"
+        "fid": {
+          "function_type": "REST",
+          "function_id": "fid",
+          "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+          "service_name": "https://ainetwork.ai",
+        },
       }
     };
     const newFunc = {
       ".function": {
-        "fid": "another function config"
+        "fid": {
+          "function_type": "REST",
+          "function_id": "fid",
+          "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+          "service_name": "https://ainetwork.ai",
+        },
       },
       "deeper": {
         ".function": {
-          "fid_deeper": "some deeper function config"
+          "fid_deeper": {
+            "function_type": "REST",
+            "function_id": "fid_deeper",
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainetwork.ai",
+          },
         }
       }
     };
@@ -3011,14 +3338,14 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = false", () => {
       expect(node.db.setFunction(
-          "test/test_sharding/some/path/to", funcChange, { addr: 'known_user' }).code)
+          "test/test_sharding/some/path/to", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
               .to.equal(0);
       assert.deepEqual(node.db.getFunction("test/test_sharding/some/path/to"), newFunc);
     })
 
     it("setFunction with isGlobal = true", () => {
       expect(node.db.setFunction(
-          "apps/afan/test/test_sharding/some/path/to", funcChange, { addr: 'known_user' },
+          "apps/afan/test/test_sharding/some/path/to", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           true).code)
               .to.equal(0);
       assert.deepEqual(
@@ -3027,7 +3354,7 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = true and non-existing path", () => {
       expect(node.db.setFunction(
-          "some/non-existing/path", funcChange, { addr: 'known_user' }, true).code)
+          "some/non-existing/path", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code)
               .to.equal(0);
     })
 
@@ -3040,14 +3367,24 @@ describe("DB sharding config", () => {
         },
         "matched_config": {
           "config": {
-            "fid": "some function config"
+            "fid": {
+              "function_type": "REST",
+              "function_id": "fid",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            }
           },
           "path": "/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
             "config": {
-              "fid_deeper": "some deeper function config"
+              "fid_deeper": {
+                "function_type": "REST",
+                "function_id": "fid_deeper",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             },
             "path": "/deeper",
           }
@@ -3064,14 +3401,24 @@ describe("DB sharding config", () => {
         },
         "matched_config": {
           "config": {
-            "fid": "some function config"
+            "fid": {
+              "function_type": "REST",
+              "function_id": "fid",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            }
           },
           "path": "/apps/afan/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
             "config": {
-              "fid_deeper": "some deeper function config"
+              "fid_deeper": {
+                "function_type": "REST",
+                "function_id": "fid_deeper",
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "service_name": "https://ainetwork.ai",
+              },
             },
             "path": "/deeper",
           }
@@ -3086,7 +3433,7 @@ describe("DB sharding config", () => {
 
   describe("Rule operations", () => {
     const rule = {
-      ".write": "auth.addr === 'known_user'",
+      ".write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'",
       "deeper": {
         ".write": "some deeper rule config"
       }
@@ -3111,21 +3458,21 @@ describe("DB sharding config", () => {
 
     it("setRule with isGlobal = false", () => {
       expect(node.db.setRule(
-          "test/test_sharding/some/path/to", newRule, { addr: 'known_user' }).code)
+          "test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
               .to.equal(0);
       assert.deepEqual(node.db.getRule("test/test_sharding/some/path/to"), newRule);
     })
 
     it("setRule with isGlobal = true", () => {
       expect(node.db.setRule(
-          "apps/afan/test/test_sharding/some/path/to", newRule, { addr: 'known_user' }, true).code)
+          "apps/afan/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code)
               .to.equal(0);
       assert.deepEqual(
           node.db.getRule("apps/afan/test/test_sharding/some/path/to", true), newRule);
     })
 
     it("setRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.setRule("some/non-existing/path", newRule, { addr: 'known_user' }, true).code)
+      expect(node.db.setRule("some/non-existing/path", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code)
           .to.equal(0);
     })
 
@@ -3137,7 +3484,7 @@ describe("DB sharding config", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "auth.addr === 'known_user'",
+          "config": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'",
           "path": "/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
@@ -3157,7 +3504,7 @@ describe("DB sharding config", () => {
           "path_vars": {},
         },
         "matched_config": {
-          "config": "auth.addr === 'known_user'",
+          "config": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'",
           "path": "/apps/afan/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
@@ -3174,20 +3521,20 @@ describe("DB sharding config", () => {
     })
 
     it("evalRule with isGlobal = false", () => {
-      expect(node.db.evalRule("/test/test_sharding/some/path/to", newValue, { addr: "known_user" }))
+      expect(node.db.evalRule("/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }))
           .to.equal(true);
     })
 
     it("evalRule with isGlobal = true", () => {
       expect(node.db.evalRule(
-          "/apps/afan/test/test_sharding/some/path/to", newValue, { addr: "known_user" },
+          "/apps/afan/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" },
           null, true))
               .to.equal(true);
     })
 
     it("evalRule with isGlobal = true and non-existing path", () => {
       expect(node.db.evalRule(
-          "/some/non-existing/path", newValue, { addr: "known_user" }, null, true))
+          "/some/non-existing/path", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, true))
               .to.equal(null);
     })
   })
@@ -3202,7 +3549,7 @@ describe("DB sharding config", () => {
             "write_owner": false,
             "write_rule": false,
           },
-          "known_user": {
+          "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
             "branch_owner": true,
             "write_function": true,
             "write_owner": true,
@@ -3241,22 +3588,25 @@ describe("DB sharding config", () => {
 
     it("setOwner with isGlobal = false", () => {
       expect(node.db.setOwner(
-          "test/test_sharding/some/path/to", newOwner, { addr: 'known_user' }).code)
+          "test/test_sharding/some/path/to", newOwner,
+          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
               .to.equal(0);
       assert.deepEqual(node.db.getOwner("test/test_sharding/some/path/to"), newOwner);
     })
 
     it("setOwner with isGlobal = true", () => {
       expect(node.db.setOwner(
-          "apps/afan/test/test_sharding/some/path/to", newOwner, { addr: 'known_user' }, true).code)
+          "apps/afan/test/test_sharding/some/path/to", newOwner,
+          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code)
               .to.equal(0);
       assert.deepEqual(
           node.db.getOwner("apps/afan/test/test_sharding/some/path/to", true), newOwner);
     })
 
     it("setOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.setOwner("some/non-existing/path", newOwner, { addr: 'known_user' },
-          true).code).to.equal(0);
+      expect(node.db.setOwner(
+          "some/non-existing/path", newOwner,
+          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code).to.equal(0);
     })
 
     it("matchOwner with isGlobal = false", () => {
@@ -3273,7 +3623,7 @@ describe("DB sharding config", () => {
                 "write_owner": false,
                 "write_rule": false,
               },
-              "known_user": {
+              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                 "branch_owner": true,
                 "write_function": true,
                 "write_owner": true,
@@ -3300,7 +3650,7 @@ describe("DB sharding config", () => {
                 "write_owner": false,
                 "write_rule": false,
               },
-              "known_user": {
+              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
                 "branch_owner": true,
                 "write_function": true,
                 "write_owner": true,
@@ -3319,20 +3669,20 @@ describe("DB sharding config", () => {
 
     it("evalOwner with isGlobal = false", () => {
       expect(node.db.evalOwner(
-          "/test/test_sharding/some/path/to", "write_rule", { addr: "known_user" }))
-        .to.equal(true);
+          "/test/test_sharding/some/path/to", "write_rule",
+          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })).to.equal(true);
     })
 
     it("evalOwner with isGlobal = true", () => {
       expect(node.db.evalOwner(
-          "/apps/afan/test/test_sharding/some/path/to", "write_rule", { addr: "known_user" }, true))
-        .to.equal(true);
+          "/apps/afan/test/test_sharding/some/path/to", "write_rule",
+          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, true)).to.equal(true);
     })
 
     it("evalOwner with isGlobal = true and non-existing path", () => {
       expect(node.db.evalOwner(
-          "/some/non-existing/path", "write_rule", { addr: "known_user" }, true))
-        .to.equal(null);
+          "/some/non-existing/path", "write_rule",
+          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, true)).to.equal(null);
     })
   })
 })
