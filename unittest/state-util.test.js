@@ -1137,7 +1137,20 @@ describe("state-util", () => {
               "write_function": false,
               "write_owner": false,
               "write_rule": false,
-            }
+            },
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            'fid:_createApp': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
           }
         }
       }), {isValid: true, invalidPath: ''});
@@ -1150,7 +1163,20 @@ describe("state-util", () => {
                 "write_function": false,
                 "write_owner": false,
                 "write_rule": false,
-              }
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
             }
           }
         },
@@ -1162,7 +1188,20 @@ describe("state-util", () => {
                 "write_function": false,
                 "write_owner": false,
                 "write_rule": false,
-              }
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
             }
           }
         }
