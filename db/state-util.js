@@ -370,11 +370,11 @@ function isValidOwnerTree(ownerTreeObj) {
 /**
  * Returns whether the given state tree object has the given config label as a property.
  */
-function hasConfigObj(stateTreeObj, configLabel) {
+function hasConfigLabel(stateTreeObj, configLabel) {
   if (!ChainUtil.isDict(stateTreeObj)) {
     return false;
   }
-  if (!ChainUtil.getJsObject(stateTreeObj, [configLabel])) {
+  if (ChainUtil.getJsObject(stateTreeObj, [configLabel]) === null) {
     return false;
   }
 
@@ -384,11 +384,8 @@ function hasConfigObj(stateTreeObj, configLabel) {
 /**
  * Returns whether the given state tree object has the given config label as the only property.
  */
-function hasOnlyConfigObj(stateTreeObj, configLabel) {
-  if (!ChainUtil.isDict(stateTreeObj)) {
-    return false;
-  }
-  if (!ChainUtil.getJsObject(stateTreeObj, [configLabel])) {
+function hasConfigLabelOnly(stateTreeObj, configLabel) {
+  if (!hasConfigLabel(stateTreeObj, configLabel)) {
     return false;
   }
   if (Object.keys(stateTreeObj).length !== 1) {
@@ -405,10 +402,10 @@ function hasOnlyConfigObj(stateTreeObj, configLabel) {
  * @param {Object} functionChange function change
  */
 function applyFunctionChange(curFuncTree, functionChange) {
-  // NoTE(platfowner): Partial set is applied only when the current function tree has
+  // NOTE(platfowner): Partial set is applied only when the current function tree has
   // .function property and the function change has .function property as the only property.
-  if (!hasConfigObj(curFuncTree, FunctionProperties.FUNCTION) ||
-      !hasOnlyConfigObj(functionChange, FunctionProperties.FUNCTION)) {
+  if (!hasConfigLabel(curFuncTree, FunctionProperties.FUNCTION) ||
+      !hasConfigLabelOnly(functionChange, FunctionProperties.FUNCTION)) {
     return ChainUtil.isDict(functionChange) ?
         JSON.parse(JSON.stringify(functionChange)) : functionChange;
   }
@@ -443,10 +440,10 @@ function applyFunctionChange(curFuncTree, functionChange) {
  * @param {Object} ownerChange owner change
  */
 function applyOwnerChange(curOwnerTree, ownerChange) {
-  // NoTE(platfowner): Partial set is applied only when the current owner tree has
+  // NOTE(platfowner): Partial set is applied only when the current owner tree has
   // .owner property and the owner change has .owner property as the only property.
-  if (!hasConfigObj(curOwnerTree, OwnerProperties.OWNER) ||
-      !hasOnlyConfigObj(ownerChange, OwnerProperties.OWNER)) {
+  if (!hasConfigLabel(curOwnerTree, OwnerProperties.OWNER) ||
+      !hasConfigLabelOnly(ownerChange, OwnerProperties.OWNER)) {
     return ChainUtil.isDict(ownerChange) ?
         JSON.parse(JSON.stringify(ownerChange)) : ownerChange;
   }
