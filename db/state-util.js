@@ -368,41 +368,111 @@ function isValidOwnerTree(ownerTree) {
 }
 
 /**
- * Returns a new function created by applying the function change to the current function.
- * @param {Object} curFunction current function (to be modified and returned by this function)
+ * Returns whether the given state tree object has the given config label as a property.
+ */
+function hasConfigObj(stateTreeObj, configLabel) {
+  if (!ChainUtil.isDict(stateTreeObj)) {
+    return false;
+  }
+  if (!ChainUtil.getJsObject(stateTreeObj, [configLabel])) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Returns whether the given state tree object has the given config label as the only property.
+ */
+function hasOnlyConfigObj(stateTreeObj, configLabel) {
+  if (!ChainUtil.isDict(stateTreeObj)) {
+    return false;
+  }
+  if (!ChainUtil.getJsObject(stateTreeObj, [configLabel])) {
+    return false;
+  }
+  if (Object.keys(stateTreeObj).length !== 1) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Returns a new function tree created by applying the function change to
+ * the current function tree.
+ * @param {Object} curFuncTree current function tree (to be modified by this function)
  * @param {Object} functionChange function change
  */
-function applyFunctionChange(curFunction, functionChange) {
-  if (curFunction === null) {
-    // Just write the function change.
-    return functionChange;
-  }
-  if (functionChange === null) {
-    // Just delete the existing value.
-    return null;
+function applyFunctionChange(curFuncTree, functionChange) {
+  // NoTE(platfowner): Partial set is applied only when the current function tree has
+  // .function property and the function change has .function property has the only property.
+  if (!hasConfigObj(curFuncTree, FunctionProperties.FUNCTION) ||
+      !hasOnlyConfigObj(functionChange, FunctionProperties.FUNCTION)) {
+    return ChainUtil.isDict(functionChange) ?
+        JSON.parse(JSON.stringify(functionChange)) : functionChange;
   }
   const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
   if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
-    return curFunction;
+    return curFuncTree;
   }
-  const newFunction =
-      ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
-  let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
-  if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
+  const newFuncConfig =
+      ChainUtil.isDict(curFuncTree) ? JSON.parse(JSON.stringify(curFuncTree)) : {};
+  let newFuncMap = ChainUtil.getJsObject(newFuncConfig, [FunctionProperties.FUNCTION]);
+  if (!ChainUtil.isDict(newFuncMap)) {
     // Add a place holder.
-    ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
-    newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    ChainUtil.setJsObject(newFuncConfig, [FunctionProperties.FUNCTION], {});
+    newFuncMap = ChainUtil.getJsObject(newFuncConfig, [FunctionProperties.FUNCTION]);
   }
   for (const functionKey in funcChangeMap) {
-    const functionValue = funcChangeMap[functionKey];
-    if (functionValue === null) {
+    const functionInfo = funcChangeMap[functionKey];
+    if (functionInfo === null) {
       delete newFuncMap[functionKey];
     } else {
-      newFuncMap[functionKey] = functionValue;
+      newFuncMap[functionKey] = functionInfo;
     }
   }
 
-  return newFunction;
+  return newFuncConfig;
+}
+
+/**
+ * Returns a new owner tree created by applying the owner change to
+ * the current owner tree.
+ * @param {Object} curOwnerTree current owner tree (to be modified by this function)
+ * @param {Object} ownerChange owner change
+ */
+function applyOwnerChange(curOwnerTree, ownerChange) {
+  // NoTE(platfowner): Partial set is applied only when the current owner tree has
+  // .owner property and the owner change has .owner property has the only property.
+  if (!hasConfigObj(curOwnerTree, OwnerProperties.OWNER) ||
+      !hasOnlyConfigObj(ownerChange, OwnerProperties.OWNER)) {
+    return ChainUtil.isDict(ownerChange) ?
+        JSON.parse(JSON.stringify(ownerChange)) : ownerChange;
+  }
+  const ownerMapPath = [OwnerProperties.OWNER, OwnerProperties.OWNERS];
+  const ownerChangeMap = ChainUtil.getJsObject(ownerChange, ownerMapPath);
+  if (!ownerChangeMap || Object.keys(ownerChangeMap).length === 0) {
+    return curOwnerTree;
+  }
+  const newOwnerConfig =
+      ChainUtil.isDict(curOwnerTree) ? JSON.parse(JSON.stringify(curOwnerTree)) : {};
+  let newOwnerMap = ChainUtil.getJsObject(newOwnerConfig, ownerMapPath);
+  if (!ChainUtil.isDict(newOwnerMap)) {
+    // Add a place holder.
+    ChainUtil.setJsObject(newOwnerConfig, ownerMapPath, {});
+    newOwnerMap = ChainUtil.getJsObject(newOwnerConfig, ownerMapPath);
+  }
+  for (const ownerKey in ownerChangeMap) {
+    const ownerPermissions = ownerChangeMap[ownerKey];
+    if (ownerPermissions === null) {
+      delete newOwnerMap[ownerKey];
+    } else {
+      newOwnerMap[ownerKey] = ownerPermissions;
+    }
+  }
+
+  return newOwnerConfig;
 }
 
 /**
@@ -602,6 +672,7 @@ module.exports = {
   isValidOwnerConfig,
   isValidOwnerTree,
   applyFunctionChange,
+  applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,

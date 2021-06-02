@@ -1451,7 +1451,20 @@ describe("DB operations", () => {
                 "write_rule": true,
               }
             }
-          }};
+          },
+          "deeper": {
+            ".owner": {  // deeper owner
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                }
+              }
+            }
+          }
+        };
         assert.deepEqual(node.db.setOwner(
             "/test/test_owner/some/path", ownerTree,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
@@ -1804,6 +1817,18 @@ describe("DB operations", () => {
                     "write_rule": true,
                   }
                 }
+              },
+              "deeper": {
+                ".owner": {  // deeper owner
+                  "owners": {
+                    "*": {
+                      "branch_owner": true,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                    }
+                  }
+                }
               }
             }
           }
@@ -1871,6 +1896,18 @@ describe("DB operations", () => {
                     "write_function": true,
                     "write_owner": true,
                     "write_rule": true,
+                  }
+                }
+              },
+              "deeper": {
+                ".owner": {  // deeper owner
+                  "owners": {
+                    "*": {
+                      "branch_owner": true,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": true,
+                    }
                   }
                 }
               }
@@ -3567,6 +3604,18 @@ describe("DB sharding config", () => {
             "write_owner": false,
             "write_rule": false,
           },
+        }
+      },
+      "deeper": {
+        ".owner": {  // deeper owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
         }
       }
     };
