@@ -13,6 +13,7 @@ const {
   isValidOwnerConfig,
   isValidOwnerTree,
   applyFunctionChange,
+  applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
@@ -1136,7 +1137,20 @@ describe("state-util", () => {
               "write_function": false,
               "write_owner": false,
               "write_rule": false,
-            }
+            },
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            'fid:_createApp': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
           }
         }
       }), {isValid: true, invalidPath: ''});
@@ -1149,7 +1163,20 @@ describe("state-util", () => {
                 "write_function": false,
                 "write_owner": false,
                 "write_rule": false,
-              }
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
             }
           }
         },
@@ -1161,7 +1188,20 @@ describe("state-util", () => {
                 "write_function": false,
                 "write_owner": false,
                 "write_rule": false,
-              }
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
             }
           }
         }
@@ -1173,16 +1213,24 @@ describe("state-util", () => {
     const curFunction = {
       ".function": {
         "0x111": {
-          "function_type": "NATIVE",
+          "function_type": "REST",
           "function_id": "0x111"
         },
         "0x222": {
-          "function_type": "NATIVE",
+          "function_type": "REST",
           "function_id": "0x222"
         },
         "0x333": {
-          "function_type": "NATIVE",
+          "function_type": "REST",
           "function_id": "0x333"
+        }
+      },
+      "deeper": {
+        ".function": {  // deeper function
+          "0x999": {
+            "function_type": "REST",
+            "function_id": "0x999"
+          }
         }
       }
     };
@@ -1198,9 +1246,9 @@ describe("state-util", () => {
         },
         "deeper": {
           ".function": {  // deeper function
-            "0x999": {
+            "0x888": {
               "function_type": "REST",
-              "function_id": "0x999"
+              "function_id": "0x888"
             }
           }
         }
@@ -1214,9 +1262,9 @@ describe("state-util", () => {
         },
         "deeper": {
           ".function": {
-            "0x999": {
+            "0x888": {
               "function_type": "REST",
-              "function_id": "0x999"
+              "function_id": "0x888"
             }
           }
         }
@@ -1229,7 +1277,8 @@ describe("state-util", () => {
           "0x111": null,  // delete
           "0x222": {  // modify
             "function_type": "REST",
-            "function_id": "0x222"
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
           },
           "0x444": {  // add
             "function_type": "REST",
@@ -1240,29 +1289,14 @@ describe("state-util", () => {
         ".function": {
           "0x222": {  // modified
             "function_type": "REST",
-            "function_id": "0x222"
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
           },
           "0x333": {  // untouched
-            "function_type": "NATIVE",
+            "function_type": "REST",
             "function_id": "0x333"
           },
           "0x444": {  // added
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        }
-      });
-    });
-
-    it("add / delete / modify existing function with deeper function", () => {
-      assert.deepEqual(applyFunctionChange(curFunction, {
-        ".function": {
-          "0x111": null,  // delete
-          "0x222": {  // modify
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-          "0x444": {  // add
             "function_type": "REST",
             "function_id": "0x444"
           }
@@ -1275,19 +1309,48 @@ describe("state-util", () => {
             }
           }
         }
-      }), {
-        ".function": {  // deeper function has no effect
-          "0x222": {  // modified
+      });
+    });
+
+    it("replace existing function with deeper function", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, {
+        ".function": {
+          "0x222": {  // modify
             "function_type": "REST",
-            "function_id": "0x222"
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
           },
-          "0x333": {  // untouched
-            "function_type": "NATIVE",
-            "function_id": "0x333"
-          },
-          "0x444": {  // added
+          "0x444": {  // add
             "function_type": "REST",
             "function_id": "0x444"
+          }
+        },
+        "deeper": {
+          ".function": {  // deeper function
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
+          }
+        }
+      }), {
+        ".function": {  // replaced
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
+          },
+          "0x444": {
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        },
+        "deeper": {  // replaced
+          ".function": {
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
           }
         }
       });
@@ -1295,6 +1358,218 @@ describe("state-util", () => {
 
     it("with null function change", () => {
       assert.deepEqual(applyFunctionChange(curFunction, null), null);
+    });
+  });
+
+  describe("applyOwnerChange()", () => {
+    const curOwner = {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+          "aaaa": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+          "bbbb": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          }
+        }
+      },
+      "deeper": {
+        ".owner": {  // deeper owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing owner", () => {
+      assert.deepEqual(applyOwnerChange(null, {
+        ".owner": {  // owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      }), {  // the same as the given owner change.
+        ".owner": {  // owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      });
+    });
+
+    it("add / delete / modify existing owner", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, {
+        ".owner": {
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "aaaa": null,  // delete
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        }
+      }), {
+        ".owner": {
+          "owners": {
+            "*": {  // modified
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "bbbb": {  // untouched
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+            "cccc": {  // added
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      });
+    });
+
+    it("replace existing owner with deeper owner", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, {
+        ".owner": {
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "CCCC": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }
+      }), {
+        ".owner": {  // replaced
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {  // replaced
+          ".owner": {
+            "owners": {
+              "CCCC": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }
+      });
+    });
+
+    it("with null owner change", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, null), null);
     });
   });
 
