@@ -4,6 +4,14 @@ const {
 } = require('../common/constants');
 
 class VersionUtil {
+  static isValidProtocolVersion(version) {
+    if (!version || !semver.valid(version)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   static isValidVersionMatch(ver) {
     return ver && semver.valid(semver.coerce(ver.min)) &&
       (!ver.max || semver.valid(semver.coerce(ver.max)));

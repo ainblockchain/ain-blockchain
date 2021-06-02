@@ -138,7 +138,12 @@ async function setUp() {
           ref: '/test/test_function/some/path',
           value: {
             ".function": {
-              "fid": "some function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           }
         },
@@ -244,22 +249,22 @@ describe('Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set', {
+    const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
       json: {
-        op_list: [
-          {
-            type: 'SET_VALUE',
-            ref: `/manage_app/afan/create/${Date.now()}`,
-            value: {
-              admin: { [shardOwnerAddr]: true }
-            }
-          },
-          {
-            type: 'SET_VALUE',
-            ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
-            value: 1
-          }
-        ]
+        ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
+        value: 1
+      }
+    }).body.toString('utf-8')).result;
+    assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+    if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+      console.log(`Failed to check finalization of app staking tx.`);
+    }
+    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+      json: {
+        ref: `/manage_app/afan/create/${Date.now()}`,
+        value: {
+          admin: { [shardOwnerAddr]: true }
+        }
       }
     }).body.toString('utf-8')).result;
     assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
@@ -540,7 +545,12 @@ describe('Sharding', async () => {
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             '.function': {
-              'fid': 'some function config'
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           });
         })
@@ -552,7 +562,12 @@ describe('Sharding', async () => {
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             '.function': {
-              'fid': 'some function config'
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           });
         })
@@ -629,7 +644,12 @@ describe('Sharding', async () => {
             },
             "matched_config": {
               "config": {
-                "fid": "some function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/test/test_function/some/path"
             },
@@ -650,7 +670,12 @@ describe('Sharding', async () => {
             },
             "matched_config": {
               "config": {
-                "fid": "some function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/apps/afan/test/test_function/some/path"
             },
@@ -844,7 +869,12 @@ describe('Sharding', async () => {
               100,
               {
                 ".function": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 }
               },
               {
@@ -915,7 +945,12 @@ describe('Sharding', async () => {
               100,
               {
                 ".function": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 }
               },
               {
@@ -997,7 +1032,12 @@ describe('Sharding', async () => {
               },
               "matched_config": {
                 "config": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/test/test_function/some/path"
               },
@@ -1019,7 +1059,12 @@ describe('Sharding', async () => {
               },
               "matched_config": {
                 "config": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/apps/afan/test/test_function/some/path"
               },
@@ -1265,7 +1310,12 @@ describe('Sharding', async () => {
             ref: "test/test_function/other/path",
             value: {
               ".function": {
-                "fid": "some other function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             },
             nonce: -1
@@ -1281,7 +1331,12 @@ describe('Sharding', async () => {
             ref: "apps/afan/test/test_function/other/path",
             value: {
               ".function": {
-                "fid": "some other function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger3",  // Listener 3
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             },
             is_global: true,
@@ -1330,7 +1385,16 @@ describe('Sharding', async () => {
           const request = {
             ref: "test/test_owner/other/path",
             value: {
-              ".owner": "some other owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             nonce: -1
           };
@@ -1344,7 +1408,16 @@ describe('Sharding', async () => {
           const request = {
             ref: "apps/afan/test/test_owner/other2/path",
             value: {
-              ".owner": "some other2 owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             is_global: true,
             nonce: -1,
@@ -1379,7 +1452,14 @@ describe('Sharding', async () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other3/path",
                 value: {
-                  ".function": "some other3 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 }
               },
               {
@@ -1393,7 +1473,16 @@ describe('Sharding', async () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other3/path",
                 value: {
-                  ".owner": "some other3 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               }
             ],
@@ -1462,7 +1551,14 @@ describe('Sharding', async () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other4/path",
                 value: {
-                  ".function": "some other4 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 },
                 is_global: true,
               },
@@ -1478,7 +1574,16 @@ describe('Sharding', async () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other4/path",
                 value: {
-                  ".owner": "some other4 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 },
                 is_global: true,
               }
@@ -1818,22 +1923,22 @@ describe('Sharding', async () => {
     describe('_updateLatestShardReport', () => {
       before(async () => {
         const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set', {
+        const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
           json: {
-            op_list: [
-              {
-                type: 'SET_VALUE',
-                ref: `/manage_app/a_dapp/create/${Date.now()}`,
-                value: {
-                  admin: { [shard_owner]: true }
-                }
-              },
-              {
-                type: 'SET_VALUE',
-                ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
-                value: 1
-              }
-            ]
+            ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
+            value: 1
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+          console.log(`Failed to check finalization of app staking tx.`)
+        }
+        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+          json: {
+            ref: `/manage_app/a_dapp/create/${Date.now()}`,
+            value: {
+              admin: { [shard_owner]: true }
+            }
           }
         }).body.toString('utf-8')).result;
         assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
@@ -1843,25 +1948,6 @@ describe('Sharding', async () => {
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
             op_list: [
-              {
-                type: WriteDbOperations.SET_OWNER,
-                ref: sharding_path,
-                value: {
-                  [OwnerProperties.OWNER]: {
-                    [OwnerProperties.OWNERS]: {
-                      [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                      [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-                    }
-                  }
-                }
-              },
-              {
-                type: WriteDbOperations.SET_RULE,
-                ref: sharding_path,
-                value: {
-                  [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
-                }
-              },
               {
                 type: WriteDbOperations.SET_RULE,
                 ref: `${sharding_path}/${ShardingProperties.LATEST}`,
@@ -1991,7 +2077,6 @@ describe('Sharding', async () => {
                 "_updateLatestShardReport": {
                   "code": "SUCCESS",
                   "gas_amount": 0,
-                  "op_results": [],
                 }
               },
               "gas_amount": 1

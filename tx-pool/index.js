@@ -19,12 +19,10 @@ const {
   StateVersions,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
-const PathUtil = require('../common/path-util');
 const {
   sendGetRequest,
   signAndSendTx
-} = require('../p2p/util');
-const DB = require('../db');
+} = require('../common/network-util');
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';

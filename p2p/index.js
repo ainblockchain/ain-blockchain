@@ -26,7 +26,6 @@ const {
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
-  isValidDataProtoVer,
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage
@@ -49,7 +48,7 @@ class P2pClient {
 
   run() {
     this.server.listen();
-    this.setIntervalForTrackerConnection();
+    this.connectToTracker();
   }
 
   // NOTE(minsulee2): The total number of connection is up to more than 5 without limit.
@@ -77,16 +76,24 @@ class P2pClient {
     };
   }
 
-  setIntervalForTrackerConnection() {
-    this.connectToTracker();
-    this.intervalConnection = setInterval(() => {
-      this.connectToTracker();
-    }, RECONNECT_INTERVAL_MS);
-  }
-
-  clearIntervalForTrackerConnection() {
-    clearInterval(this.intervalConnection);
-    this.intervalConnection = null;
+  getStatus() {
+    const blockStatus = this.server.getBlockStatus();
+    return {
+      address: this.server.getNodeAddress(),
+      updatedAt: Date.now(),
+      lastBlockNumber: blockStatus.number,
+      networkStatus: this.getNetworkStatus(),
+      blockStatus: blockStatus,
+      txStatus: this.server.getTxStatus(),
+      consensusStatus: this.server.getConsensusStatus(),
+      nodeStatus: this.server.getNodeStatus(),
+      shardingStatus: this.server.getShardingStatus(),
+      cpuStatus: this.server.getCpuUsage(),
+      memoryStatus: this.server.getMemoryUsage(),
+      diskStatus: this.server.getDiskUsage(),
+      runtimeInfo: this.server.getRuntimeInfo(),
+      protocolInfo: this.server.getProtocolInfo(),
+    };
   }
 
   getNetworkStatus() {
@@ -118,27 +125,20 @@ class P2pClient {
         port: PORT,
       },
       connectionStatus: this.getConnectionStatus()
+    };
+  }
+
+  setIntervalForTrackerConnection() {
+    if (!this.intervalConnection) {
+      this.intervalConnection = setInterval(() => {
+        this.connectToTracker();
+      }, RECONNECT_INTERVAL_MS);
     }
   }
 
-  getStatus() {
-    const blockStatus = this.server.getBlockStatus();
-    return {
-      address: this.server.getNodeAddress(),
-      updatedAt: Date.now(),
-      lastBlockNumber: blockStatus.number,
-      networkStatus: this.getNetworkStatus(),
-      blockStatus: blockStatus,
-      txStatus: this.server.getTxStatus(),
-      consensusStatus: this.server.getConsensusStatus(),
-      nodeStatus: this.server.getNodeStatus(),
-      shardingStatus: this.server.getShardingStatus(),
-      cpuStatus: this.server.getCpuUsage(),
-      memoryStatus: this.server.getMemoryUsage(),
-      diskStatus: this.server.getDiskUsage(),
-      runtimeInfo: this.server.getRuntimeInfo(),
-      protocolInfo: this.server.getProtocolInfo(),
-    };
+  clearIntervalForTrackerConnection() {
+    clearInterval(this.intervalConnection);
+    this.intervalConnection = null;
   }
 
   updateNodeStatusToTracker() {
@@ -158,32 +158,27 @@ class P2pClient {
   async setTrackerEventHandlers() {
     const node = this.server.node;
     this.trackerWebSocket.on('message', async (message) => {
-      try {
-        const parsedMsg = JSON.parse(message);
-        logger.info(`\n << Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
-        if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-          logger.debug(`Updated MANAGED peers info: ` +
-              `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
+      const parsedMsg = JSON.parse(message);
+      logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
+      if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
+        logger.debug(`Updated MANAGED peers info: ` +
+          `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
+      }
+      if (node.state === BlockchainNodeStates.STARTING) {
+        node.state = BlockchainNodeStates.SYNCING;
+        if (parsedMsg.numLivePeers === 0) {
+          const lastBlockWithoutProposal = node.init(true);
+          await this.server.tryInitializeShard();
+          node.state = BlockchainNodeStates.SERVING;
+          this.server.consensus.init(lastBlockWithoutProposal);
+        } else {
+          // Consensus will be initialized after syncing with peers
+          node.init(false);
         }
-        if (node.state === BlockchainNodeStates.STARTING) {
-          node.state = BlockchainNodeStates.SYNCING;
-          if (parsedMsg.numLivePeers === 0) {
-            const lastBlockWithoutProposal = node.init(true);
-            await this.server.tryInitializeShard();
-            node.state = BlockchainNodeStates.SERVING;
-            this.server.consensus.init(lastBlockWithoutProposal);
-          } else {
-            // Consensus will be initialized after syncing with peers
-            node.init(false);
-          }
-        }
-      } catch (err) {
-        logger.error(`Error: ${err} ${err.stack}`);
       }
     });
-
     this.trackerWebSocket.on('close', (code) => {
-      logger.info(`\n Disconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
+      logger.info(`\nDisconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
       this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
@@ -201,6 +196,8 @@ class P2pClient {
     this.trackerWebSocket.on('error', (error) => {
       logger.error(`Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
         `${JSON.stringify(error, null, 2)}`);
+      this.clearIntervalForTrackerUpdate();
+      this.setIntervalForTrackerConnection();
     });
   }
 
@@ -246,6 +243,10 @@ class P2pClient {
       timestamp: Date.now(),
     };
     const signature = signMessage(body, this.server.getNodePrivateKey());
+    if (!signature) {
+      logger.error('The signaure is not correctly generated. Discard the message!');
+      return;
+    }
     const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
     if (!payload) {
@@ -290,7 +291,7 @@ class P2pClient {
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
-      if (!isValidDataProtoVer(dataProtoVer)) {
+      if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
         const address = getAddressFromSocket(this.outbound, socket);
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
@@ -489,6 +490,8 @@ class P2pClient {
     this.server.stop();
     // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
+    this.clearIntervalForTrackerConnection();
+    this.clearIntervalForTrackerUpdate();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();

@@ -30,6 +30,7 @@ class RuleUtil {
 
   isEmpty(value) {
     return value === null || value === undefined ||
+        (this.isArray(value) && value.length === 0) ||
         (this.isDict(value) && Object.keys(value).length === 0);
   }
 

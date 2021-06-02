@@ -32,6 +32,10 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidRuleTree,
+  isValidFunctionTree,
+  isValidOwnerTree,
+  applyFunctionChange,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -692,6 +696,10 @@ class DB {
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
+    const isValidFunction = isValidFunctionTree(functionChange);
+    if (!isValidFunction.isValid) {
+      return ChainUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`);
+    }
     const parsedPath = ChainUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
@@ -714,7 +722,7 @@ class DB {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
-    const newFunction = Functions.applyFunctionChange(curFunction, functionChange);
+    const newFunction = applyFunctionChange(curFunction, functionChange);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
     return ChainUtil.returnTxResult(0, null, 1);
@@ -726,6 +734,10 @@ class DB {
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`);
+    }
+    const isValidRule = isValidRuleTree(rule);
+    if (!isValidRule.isValid) {
+      return ChainUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
@@ -746,11 +758,14 @@ class DB {
     return ChainUtil.returnTxResult(0, null, 1);
   }
 
-  // TODO(platfowner): Add owner config sanitization logic.
   setOwner(ownerPath, owner, auth, isGlobal) {
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`);
+    }
+    const isValidOwner = isValidOwnerTree(owner);
+    if (!isValidOwner.isValid) {
+      return ChainUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`);
     }
     const parsedPath = ChainUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
@@ -1387,7 +1402,11 @@ class DB {
     let permissions = null;
     // Step 1: Check if the given address or fid exists in owners.
     if (auth) {
-      if (auth.addr) {
+      // Step 1.1: Try to use the auth fid first.
+      if (auth.fid) {
+        permissions = owners[OwnerProperties.FID_PREFIX + auth.fid];
+      // Step 1.2: Try to use the auth address then.
+      } else if (auth.addr) {
         permissions = owners[auth.addr];
       } else {
         return null;

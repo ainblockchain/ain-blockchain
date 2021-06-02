@@ -15,15 +15,18 @@ const {
   AccountProperties,
   TokenExchangeSchemes,
   FunctionProperties,
+  OwnerProperties,
   GasFeeConstants,
   REST_FUNCTION_CALL_TIMEOUT_MS,
+  buildOwnerPermissions,
+  buildRulePermission,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
 const {
   sendSignedTx,
   signAndSendTx
-} = require('../p2p/util');
+} = require('../common/network-util');
 const Transaction = require('../tx-pool/transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
@@ -38,45 +41,55 @@ const EventListenerWhitelist = {
  * Built-in functions with function paths.
  */
 // NOTE(platfowner): ownerOnly means that the function can be set only by the blockchain owner.
-// NOTE(platfowner): execGasAmount means the amount of gas required to execute the function, which
-//                   reflects the number of database write operations and external RPC calls.
+// NOTE(platfowner): extraGasAmount means the extra gas amount required to execute the function,
+// which often reflects the external RPC calls needed.
 class Functions {
   constructor(db, tp) {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
       [NativeFunctionIds.CLAIM]: {
-        func: this._claim.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._claim.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
-        func: this._closeCheckin.bind(this), ownerOnly: true, execGasAmount: 10 },
+        func: this._closeCheckin.bind(this), ownerOnly: true, extraGasAmount: 10 },
       [NativeFunctionIds.COLLECT_FEE]: {
-        func: this._collectFee.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._collectFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CREATE_APP]: {
-        func: this._createApp.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._createApp.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.DISTRIBUTE_FEE]: {
-        func: this._distributeFee.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._distributeFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.ERASE_VALUE]: {
-        func: this._eraseValue.bind(this), ownerOnly: false, execGasAmount: 0 },
+        func: this._eraseValue.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
-        func: this._hold.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._hold.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
-        func: this._openCheckin.bind(this), ownerOnly: true, execGasAmount: 60 },
+        func: this._openCheckin.bind(this), ownerOnly: true, extraGasAmount: 60 },
       [NativeFunctionIds.PAY]: {
-        func: this._pay.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._pay.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.RELEASE]: {
-        func: this._release.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._release.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.SAVE_LAST_TX]: {
-        func: this._saveLastTx.bind(this), ownerOnly: false, execGasAmount: 0 },
+        func: this._saveLastTx.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.SET_OWNER_CONFIG]: {
+        func: this._setOwnerConfig.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.STAKE]: {
-        func: this._stake.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._stake.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.UNSTAKE]: {
-        func: this._unstake.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._unstake.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.TRANSFER]: {
-        func: this._transfer.bind(this), ownerOnly: true, execGasAmount: 0 },
+        func: this._transfer.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-        func: this._updateLatestShardReport.bind(this), ownerOnly: false, execGasAmount: 0 },
+        func: this._updateLatestShardReport.bind(this), ownerOnly: false, extraGasAmount: 0 },
     };
     this.callStack = [];
+  }
+
+  static isNativeFunctionId(fid) {
+    if (!fid) {
+      return false;
+    }
+    const fidList = Object.values(NativeFunctionIds);
+    return fidList.find((elem) => elem === fid) !== undefined;
   }
 
   /**
@@ -90,7 +103,6 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  // TODO(platfowner): Add account registration gas amount.
   triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
@@ -219,7 +231,7 @@ class Functions {
     const fidList = topCall ? Array.from(topCall.fidList) : [];
     fidList.push(fid);
     const callDepth = this.callStackSize();
-    const gasAmount = nativeFunction.execGasAmount;
+    const gasAmount = nativeFunction.extraGasAmount;
     this.callStack.push({
       fid,
       fidList,
@@ -315,45 +327,6 @@ class Functions {
     return null;
   }
 
-  /**
-   * Returns a new function created by applying the function change to the current function.
-   *
-   * @param {Object} curFunction current function (to be modified and returned by this function)
-   * @param {Object} functionChange function change
-   */
-  static applyFunctionChange(curFunction, functionChange) {
-    if (curFunction === null) {
-      // Just write the function change.
-      return functionChange;
-    }
-    if (functionChange === null) {
-      // Just delete the existing value.
-      return null;
-    }
-    const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
-    if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
-      return curFunction;
-    }
-    const newFunction =
-        ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
-    let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
-    if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
-      // Add a place holder.
-      ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
-      newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
-    }
-    for (const functionKey in funcChangeMap) {
-      const functionValue = funcChangeMap[functionKey];
-      if (functionValue === null) {
-        delete newFuncMap[functionKey];
-      } else {
-        newFuncMap[functionKey] = functionValue;
-      }
-    }
-
-    return newFunction;
-  }
-
   static convertPathVars2Params(pathVars) {
     const params = {};
     if (ChainUtil.isDict(pathVars)) {
@@ -416,10 +389,32 @@ class Functions {
     return this.setValueOrLog(transferPath, value, context);
   }
 
+  setOwnerOrLog(ownerPath, owner, context) {
+    const auth = context.auth;
+    const result = this.db.setOwner(ownerPath, owner, auth);
+    if (ChainUtil.isFailedTx(result)) {
+      logger.error(
+          `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
+    }
+    Functions.addToOpResultList(ownerPath, result, context);
+    return result;
+  }
+
+  setRuleOrLog(rulePath, rule, context) {
+    const auth = context.auth;
+    const result = this.db.setRule(rulePath, rule, auth);
+    if (ChainUtil.isFailedTx(result)) {
+      logger.error(
+          `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);
+    }
+    Functions.addToOpResultList(rulePath, result, context);
+    return result;
+  }
+
   buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
-      gas_amount: this.nativeFunctionMap[context.fid].execGasAmount
+      gas_amount: this.nativeFunctionMap[context.fid].extraGasAmount
     };
     if (ChainUtil.isNumber(extraGasAmount) && extraGasAmount > 0) {
       result.gas_amount += extraGasAmount;
@@ -494,6 +489,28 @@ class Functions {
     }
   }
 
+  /**
+   * Sets owner config on the path.
+   * This is often used for testing purposes.
+   */
+  _setOwnerConfig(value, context) {
+    const parsedValuePath = context.valuePath;
+    const auth = context.auth;
+    const owner = {
+      [OwnerProperties.OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [auth.addr]: buildOwnerPermissions(false, true, true, true),
+          [OwnerProperties.ANYONE]: buildOwnerPermissions(false, true, true, true),
+        }
+      }
+    };
+    const result = this.setOwnerOrLog(ChainUtil.formatPath(parsedValuePath), owner, context);
+    if (!ChainUtil.isFailedTx(result)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+  }
 
   _transfer(value, context) {
     const from = context.params.from;
@@ -540,6 +557,18 @@ class Functions {
     }
     if (adminConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
+      const appPath = PathUtil.getAppPath(appName);
+      const owner = {};
+      let rule = '';
+      const adminAddrList = Object.keys(adminConfig);
+      for (let i = 0; i < adminAddrList.length; i++) {
+        const addr = adminAddrList[i];
+        ChainUtil.setJsObject(owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, addr],
+            buildOwnerPermissions(true, true, true, true));
+        rule += `auth.addr === '${addr}'` + (i < adminAddrList.length - 1 ? ' || ' : '');
+      }
+      this.setRuleOrLog(appPath, buildRulePermission(rule), context);
+      this.setOwnerOrLog(appPath, owner, context);
     }
     if (billingConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingConfig;

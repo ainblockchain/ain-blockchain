@@ -34,7 +34,7 @@ const {
 const {
   signAndSendTx,
   sendGetRequest
-} = require('../p2p/util');
+} = require('../common/network-util');
 const PathUtil = require('../common/path-util');
 const DB = require('../db');
 const VersionUtil = require('../common/version-util');

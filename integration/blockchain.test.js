@@ -98,7 +98,12 @@ RANDOM_OPERATION = [
   ['set_rule', {ref: 'test/test_rule/', value: { ".write": "some rule config"}}],
   ['set_function', {ref: 'test/test_function/', value: {
     ".function": {
-      "fid": "some function config"
+      "fid": {
+        "function_type": "REST",
+        "function_id": "fid",
+        "event_listener": "https://events.ainetwork.ai/trigger",
+        "service_name": "https://ainetwork.ai",
+      },
     }
   }}],
   ['set_owner', {ref: 'test/test_owner/', value: {
