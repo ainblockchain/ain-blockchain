@@ -36,6 +36,7 @@ const {
   isValidFunctionTree,
   isValidOwnerTree,
   applyFunctionChange,
+  applyOwnerChange,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -691,12 +692,12 @@ class DB {
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
   }
 
-  setFunction(functionPath, functionChange, auth, isGlobal) {
-    const isValidObj = isValidJsObjectForStates(functionChange);
+  setFunction(functionPath, func, auth, isGlobal) {
+    const isValidObj = isValidJsObjectForStates(func);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
-    const isValidFunction = isValidFunctionTree(functionChange);
+    const isValidFunction = isValidFunctionTree(func);
     if (!isValidFunction.isValid) {
       return ChainUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`);
     }
@@ -706,7 +707,7 @@ class DB {
       return ChainUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`);
     }
     if (!auth || auth.addr !== this.ownerAddress) {
-      const ownerOnlyFid = this.func.hasOwnerOnlyFunction(functionChange);
+      const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
       if (ownerOnlyFid !== null) {
         return ChainUtil.returnTxResult(
             403, `Trying to write owner-only function: ${ownerOnlyFid}`);
@@ -722,7 +723,7 @@ class DB {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
-    const newFunction = applyFunctionChange(curFunction, functionChange);
+    const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
     return ChainUtil.returnTxResult(0, null, 1);
@@ -781,9 +782,10 @@ class DB {
       return ChainUtil.returnTxResult(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
+    const curOwner = this.getOwner(ownerPath, isGlobal);
+    const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
-    const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
-    this.writeDatabase(fullPath, ownerCopy);
+    this.writeDatabase(fullPath, newOwner);
     return ChainUtil.returnTxResult(0, null, 1);
   }
 
