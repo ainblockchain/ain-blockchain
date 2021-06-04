@@ -343,27 +343,6 @@ class P2pServer {
     return true;
   }
 
-  checkDataProtoVerForConsensus(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with lower data protocol version.' +
-            'Discard the CONSENSUS message.');
-      }
-      return false;
-    }
-    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with higher data protocol version.' +
-            'Discard the CONSENSUS message.');
-      }
-      return false;
-    }
-    return true;
-  }
-
   checkDataProtoVerForTransaction(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
@@ -457,8 +436,19 @@ class P2pServer {
             const consensusMessage = _.get(parsedMessage, 'data.message');
             logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
                 `${JSON.stringify(consensusMessage)}`);
-            if (!this.checkDataProtoVerForConsensus(dataProtoVer)) {
+            const majorVersion = VersionUtil.toMajorVersion(dataProtoVer);
+            const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+            if (isLower) {
+              if (FeatureFlags.enableRichP2pCommunicationLogging) {
+                logger.error('CANNOT deal with higher data protocol version.' +
+                  'Discard the CONSENSUS message.');
+              }
               return;
+            }
+            const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+            if (isGreater) {
+              // TODO(minsulee2): need to convert message when updating CONSENSUS message necessary.
+              // this.convertConsensusMessage();
             }
             if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(consensusMessage);
