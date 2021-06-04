@@ -256,32 +256,18 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
-  // TODO(minsulee2): This check will be updated when data compatibility version up.
   checkDataProtoVerForAddressResponse(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsulee2): Compatible message.
-    }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      // TODO(minsulee2): Compatible message.
-    }
-  }
-
-  checkDataProtoVerForChainSegmentResponse(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsulee2): Compatible message.
-    }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with higher data protocol version. Discard the ' +
-          'CHAIN_SEGMENT_RESPONSE message.');
+        logger.error('The version of the given address reponse is stale.');
       }
       return false;
+    }
+    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      // TODO(minsulee2): Compatible message.
     }
     return true;
   }
@@ -307,8 +293,10 @@ class P2pClient {
 
       switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
-          // TODO(minsulee2): Add compatibility check here after data version up.
-          // this.checkDataProtoVerForAddressResponse(dataProtoVer);
+          if (!this.checkDataProtoVerForAddressResponse(dataProtoVer)) {
+            // TODO(minsulee2): need to convert message when updating ADDRESS_RESPONSE necessary.
+            // this.convertAddressMessage();
+          }
           const address = _.get(parsedMessage, 'data.body.address');
           if (!address) {
             logger.error(`[${LOG_HEADER}] Providing an address is compulsary when initiating ` +
@@ -342,8 +330,22 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          if (!this.checkDataProtoVerForChainSegmentResponse(parsedMessage.dataProtoVer)) {
+          const majorVersion = VersionUtil.toMajorVersion(parsedMessage.dataProtoVer);
+          const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
+          if (isLower) {
+            if (FeatureFlags.enableRichP2pCommunicationLogging) {
+              logger.error('CANNOT deal with higher data protocol version. Discard the ' +
+                'CHAIN_SEGMENT_RESPONSE message.');
+            }
             return;
+          }
+          const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
+          if (isGreater) {
+            if (FeatureFlags.enableRichP2pCommunicationLogging) {
+              logger.error('The version of CHAIN_SEGMENT_RESPONSE message is stale.');
+              // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
+              // this.convertChainSegmentResponseMessage();
+            }
           }
           const chainSegment = _.get(parsedMessage, 'data.chainSegment');
           const number = _.get(parsedMessage, 'data.number');
