@@ -323,24 +323,35 @@ class P2pServer {
     });
   }
 
-  // TODO(minsulee2): This check will be updated when data compatibility version up.
   checkDataProtoVerForAddressRequest(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsulee2): Compatible message.
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('The given address request is stale. It may need to convert the message.');
+      }
+      return false;
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
-      // TODO(minsulee2): Compatible message.
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('I may be running of the old version ain-blockchain node. ' +
+          'Please check the new release via visiting the URL below:');
+        logger.error('https://github.com/ainblockchain/ain-blockchain');
+      }
     }
+    return true;
   }
 
   checkDataProtoVerForConsensus(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsulee2): Compatible message.
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with lower data protocol version.' +
+            'Discard the CONSENSUS message.');
+      }
+      return false;
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
@@ -357,7 +368,10 @@ class P2pServer {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
-      // TODO(minsulee2): Compatible message.
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('CANNOT deal with lower data protocol ver. Discard the TRANSACTION message.');
+      }
+      return false;
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
@@ -390,8 +404,10 @@ class P2pServer {
 
         switch (_.get(parsedMessage, 'type')) {
           case MessageTypes.ADDRESS_REQUEST:
-            // TODO(minsulee2): Add compatibility check here after data version up.
-            // this.checkDataProtoVerForAddressRequest(dataProtoVer);
+            if (!this.checkDataProtoVerForAddressRequest(dataProtoVer)) {
+              // TODO(minsulee2): need to convert message when updating ADDRESS_REQUEST necessary.
+              // this.convertAddressMessage();
+            }
             const address = _.get(parsedMessage, 'data.body.address');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
@@ -451,6 +467,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.TRANSACTION:
+            if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
+              return;
+            }
             const tx = _.get(parsedMessage, 'data.transaction');
             logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
             if (this.node.tp.transactionTracker[tx.hash]) {
@@ -463,9 +482,6 @@ class P2pServer {
               return;
             }
             if (Transaction.isBatchTransaction(tx)) {
-              if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
-                return;
-              }
               const newTxList = [];
               for (const subTx of tx.tx_list) {
                 const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
@@ -491,8 +507,6 @@ class P2pServer {
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
             const lastBlock = _.get(parsedMessage, 'data.lastBlock');
-            // NOTE(minsulee2): Communicate with each other
-            // even if the data protocol is incompatible.
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(lastBlock, null, 2)}`);
             if (this.node.bc.chain.length === 0) {
