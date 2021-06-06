@@ -265,10 +265,6 @@ class P2pClient {
       }
       return false;
     }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      // TODO(minsulee2): Compatible message.
-    }
     return true;
   }
 
@@ -343,9 +339,9 @@ class P2pClient {
           if (isGreater) {
             if (FeatureFlags.enableRichP2pCommunicationLogging) {
               logger.error('The version of CHAIN_SEGMENT_RESPONSE message is stale.');
-              // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
-              // this.convertChainSegmentResponseMessage();
             }
+            // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
+            // this.convertChainSegmentResponseMessage();
           }
           const chainSegment = _.get(parsedMessage, 'data.chainSegment');
           const number = _.get(parsedMessage, 'data.number');

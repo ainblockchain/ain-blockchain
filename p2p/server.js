@@ -328,7 +328,7 @@ class P2pServer {
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('The given address request is stale. It may need to convert the message.');
+        logger.error('The given ADDRESS_REQUEST is stale. It may need to convert the message.');
       }
       return false;
     }
@@ -343,21 +343,42 @@ class P2pServer {
     return true;
   }
 
-  checkDataProtoVerForTransaction(version) {
+  checkDataProtoVerForConsensus(version) {
     const majorVersion = VersionUtil.toMajorVersion(version);
     const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
     if (isGreater) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with lower data protocol ver. Discard the TRANSACTION message.');
+        logger.error('The given CONSENSUS msg is stale. It may need to convert the message.');
       }
       return false;
     }
     const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
     if (isLower) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with higher data protocol ver. Discard the TRANSACTION message.');
+        logger.error('I may be running of the old version ain-blockchain node. ' +
+            'Please check the new release via visiting the URL below:');
+        logger.error('https://github.com/ainblockchain/ain-blockchain');
+      }
+    }
+    return true;
+  }
+
+  checkDataProtoVerForTransaction(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('The given TRANSACTION msg is stale. It may need to convert the message.');
       }
       return false;
+    }
+    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+    if (isLower) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('I may be running of the old version ain-blockchain node. ' +
+            'Please check the new release via visiting the URL below:');
+        logger.error('https://github.com/ainblockchain/ain-blockchain');
+      }
     }
     return true;
   }
@@ -433,23 +454,13 @@ class P2pServer {
             }
             break;
           case MessageTypes.CONSENSUS:
-            const consensusMessage = _.get(parsedMessage, 'data.message');
-            logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
-                `${JSON.stringify(consensusMessage)}`);
-            const majorVersion = VersionUtil.toMajorVersion(dataProtoVer);
-            const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
-            if (isLower) {
-              if (FeatureFlags.enableRichP2pCommunicationLogging) {
-                logger.error('CANNOT deal with higher data protocol version.' +
-                  'Discard the CONSENSUS message.');
-              }
-              return;
-            }
-            const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-            if (isGreater) {
+            if (!this.checkDataProtoVerForConsensus(dataProtoVer)) {
               // TODO(minsulee2): need to convert message when updating CONSENSUS message necessary.
               // this.convertConsensusMessage();
             }
+            const consensusMessage = _.get(parsedMessage, 'data.message');
+            logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
+                `${JSON.stringify(consensusMessage)}`);
             if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(consensusMessage);
             } else {
@@ -458,7 +469,8 @@ class P2pServer {
             break;
           case MessageTypes.TRANSACTION:
             if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
-              return;
+              // TODO(minsulee2): need to convert msg when updating TRANSACTION message necessary.
+              // this.convertTransactionMessage();
             }
             const tx = _.get(parsedMessage, 'data.transaction');
             logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
