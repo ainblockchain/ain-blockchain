@@ -3,6 +3,7 @@ const {
   isWritablePathWithSharding,
   hasReservedChar,
   hasAllowedPattern,
+  isValidAppName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
@@ -296,6 +297,69 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidAppName", () => {
+    it("when non-string input", () => {
+      expect(isValidAppName(null)).to.equal(false);
+      expect(isValidAppName(undefined)).to.equal(false);
+      expect(isValidAppName(true)).to.equal(false);
+      expect(isValidAppName(false)).to.equal(false);
+      expect(isValidAppName(0)).to.equal(false);
+      expect(isValidAppName([])).to.equal(false);
+      expect(isValidAppName({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(isValidAppName('')).to.equal(false);
+      expect(isValidAppName('.')).to.equal(false);
+      expect(isValidAppName('.a')).to.equal(false);
+      expect(isValidAppName('$')).to.equal(false);
+      expect(isValidAppName('$a')).to.equal(false);
+      expect(isValidAppName('*')).to.equal(false);
+      expect(isValidAppName('~')).to.equal(false);
+      expect(isValidAppName('!')).to.equal(false);
+      expect(isValidAppName('@')).to.equal(false);
+      expect(isValidAppName('%')).to.equal(false);
+      expect(isValidAppName('^')).to.equal(false);
+      expect(isValidAppName('&')).to.equal(false);
+      expect(isValidAppName('-')).to.equal(false);
+      expect(isValidAppName('=')).to.equal(false);
+      expect(isValidAppName('+')).to.equal(false);
+      expect(isValidAppName('|')).to.equal(false);
+      expect(isValidAppName(';')).to.equal(false);
+      expect(isValidAppName(',')).to.equal(false);
+      expect(isValidAppName('?')).to.equal(false);
+      expect(isValidAppName('/')).to.equal(false);
+      expect(isValidAppName("'")).to.equal(false);
+      expect(isValidAppName('"')).to.equal(false);
+      expect(isValidAppName('`')).to.equal(false);
+      expect(isValidAppName('\x00')).to.equal(false);
+      expect(isValidAppName('\x7F')).to.equal(false);
+    })
+
+    it("when string input without alphabetic prefix returning false", () => {
+      expect(isValidAppName('0')).to.equal(false);
+      expect(isValidAppName('0a')).to.equal(false);
+      expect(isValidAppName('0a0')).to.equal(false);
+      expect(isValidAppName('0_')).to.equal(false);
+      expect(isValidAppName('0_0')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(isValidAppName('a')).to.equal(true);
+      expect(isValidAppName('aa')).to.equal(true);
+      expect(isValidAppName('a_')).to.equal(true);
+      expect(isValidAppName('a0')).to.equal(true);
+      expect(isValidAppName('a0a')).to.equal(true);
+      expect(isValidAppName('_')).to.equal(true);
+      expect(isValidAppName('_0')).to.equal(true);
+      expect(isValidAppName('_0_')).to.equal(true);
+      expect(isValidAppName('consensus')).to.equal(true);
+      expect(isValidAppName('afan')).to.equal(true);
+      expect(isValidAppName('collaborative_ai')).to.equal(true);
+      expect(isValidAppName('_a_dapp')).to.equal(true);
+    })
+  })
+
   describe("isValidStateLabel", () => {
     it("when non-string input", () => {
       expect(isValidStateLabel(null)).to.equal(false);
@@ -319,6 +383,7 @@ describe("state-util", () => {
 
     it("when string input returning true", () => {
       expect(isValidStateLabel('a')).to.equal(true);
+      expect(isValidStateLabel('0')).to.equal(true);
       expect(isValidStateLabel('.a')).to.equal(true);
       expect(isValidStateLabel('$a')).to.equal(true);
       expect(isValidStateLabel('*')).to.equal(true);
