@@ -3803,7 +3803,7 @@ describe('Blockchain Node', () => {
             "code": 0,
             "func_results": {
               "_createApp": {
-                "code": "INVALID_SERVICE_APP_NAME",
+                "code": "INVALID_SERVICE_NAME",
                 "gas_amount": 0,
                 "op_results": [
                   {
