@@ -3713,9 +3713,10 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('Gas fee', () => {
+    describe('App creation', () => {
       before(async () => {
-        const appStakingPath = `/staking/test_service_gas_fee/${serviceAdmin}/0/stake/${Date.now()}/value`
+        const appStakingPath =
+            `/staking/test_service_create_app/${serviceAdmin}/0/stake/${Date.now()}/value`;
         const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: appStakingPath,
           value: 1
@@ -3723,7 +3724,122 @@ describe('Blockchain Node', () => {
         if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        const manageAppPath = '/manage_app/test_service_gas_fee/create/1'
+      });
+
+      it("when successful with valid app name", async () => {
+        const manageAppPath = '/manage_app/test_service_create_app0/create/1';
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "result": {
+            "code": 0,
+            "func_results": {
+              "_createApp": {
+                "code": "SUCCESS",
+                "gas_amount": 0,
+                "op_results": [
+                  {
+                    "path": "/apps/test_service_create_app0",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  },
+                  {
+                    "path": "/apps/test_service_create_app0",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  },
+                  {
+                    "path": "/manage_app/test_service_create_app0/config",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  },
+                  {
+                    "path": "/manage_app/test_service_create_app0/create/1/result",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ]
+              }
+            },
+            "gas_amount": 1,
+            "gas_amount_total": {
+              "app": {
+                "test_service_create_app0": 2
+              },
+              "service": 3
+            },
+            "gas_cost_total": 0
+          },
+          "tx_hash": "0x4e2a4bc009347bbaa1a14f1ddecb0f2b06d02d46326d33def7c346c613093079"
+        });
+      });
+
+      it("when failed with invalid app name", async () => {
+        const manageAppPath = '/manage_app/0test_service_create_app/create/1';
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "result": {
+            "code": 0,
+            "func_results": {
+              "_createApp": {
+                "code": "INVALID_SERVICE_APP_NAME",
+                "gas_amount": 0,
+                "op_results": [
+                  {
+                    "path": "/manage_app/0test_service_create_app/create/1/result",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ]
+              }
+            },
+            "gas_amount": 1,
+            "gas_amount_total": {
+              "app": {},
+              "service": 2
+            },
+            "gas_cost_total": 0
+          },
+          "tx_hash": "0x60f6a71fedc8bbe457680ff6cf2e24b5c2097718f226c4f40fb4f9849d52f7fa"
+        });
+      });
+    });
+
+    describe('Gas fee', () => {
+      before(async () => {
+        const appStakingPath =
+            `/staking/test_service_gas_fee/${serviceAdmin}/0/stake/${Date.now()}/value`;
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const manageAppPath = '/manage_app/test_service_gas_fee/create/1';
         const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
           value: {

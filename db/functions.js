@@ -545,6 +545,8 @@ class Functions {
   }
 
   _createApp(value, context) {
+    const { isValidServiceAppName } = require('./state-util');
+
     const appName = context.params.app_name;
     const recordId = context.params.record_id;
     const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
@@ -552,6 +554,10 @@ class Functions {
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
+    if (!isValidServiceAppName(appName)) {
+      return this.saveAndReturnFuncResult(
+          context, resultPath, FunctionResultCode.INVALID_SERVICE_APP_NAME);
+    }
     if (!ChainUtil.isDict(adminConfig)) {
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
