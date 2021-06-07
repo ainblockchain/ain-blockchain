@@ -549,7 +549,7 @@ class Functions {
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
     if (!isValidServiceName(appName)) {
       return this.saveAndReturnFuncResult(
-          context, resultPath, FunctionResultCode.INVALID_SERVICE_APP_NAME);
+          context, resultPath, FunctionResultCode.INVALID_SERVICE_NAME);
     }
     if (!ChainUtil.isDict(adminConfig)) {
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
