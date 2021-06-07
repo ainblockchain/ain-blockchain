@@ -88,6 +88,11 @@ function isWritablePathWithSharding(fullPath, root) {
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
+function hasVarNamePattern(name) {
+  const varNameRegex = /^[A-Za-z_]+[A-Za-z0-9_]*$/gm;
+  return ChainUtil.isString(name) ? varNameRegex.test(name) : false;
+}
+
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]/gm;
   return ChainUtil.isString(label) ? reservedCharRegex.test(label) : false;
@@ -98,6 +103,10 @@ function hasAllowedPattern(label) {
   const configPatternRegex = /^[\.\$]{1}[^\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]+$/gm;
   return ChainUtil.isString(label) ?
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
+}
+
+function isValidAppName(name) {
+  return hasVarNamePattern(name);
 }
 
 function isValidStateLabel(label) {
@@ -663,6 +672,7 @@ module.exports = {
   hasReservedChar,
   hasAllowedPattern,
   isWritablePathWithSharding,
+  isValidAppName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
