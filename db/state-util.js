@@ -7,6 +7,7 @@ const ChainUtil = require('../common/chain-util');
 const {
   FunctionProperties,
   FunctionTypes,
+  isNativeFunctionId,
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
@@ -105,7 +106,7 @@ function hasAllowedPattern(label) {
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
-function isValidServiceAppName(name) {
+function isValidServiceName(name) {
   return hasVarNamePattern(name);
 }
 
@@ -300,7 +301,7 @@ function isValidOwnerConfig(ownerConfigObj) {
         return { isValid: false, invalidPath };
       }
       const fid = owner.substring(OwnerProperties.FID_PREFIX.length);
-      if (!Functions.isNativeFunctionId(fid)) {
+      if (!isNativeFunctionId(fid)) {
         return { isValid: false, invalidPath };
       }
     }
@@ -672,7 +673,7 @@ module.exports = {
   hasReservedChar,
   hasAllowedPattern,
   isWritablePathWithSharding,
-  isValidServiceAppName,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,

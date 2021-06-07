@@ -3,7 +3,7 @@ const {
   isWritablePathWithSharding,
   hasReservedChar,
   hasAllowedPattern,
-  isValidServiceAppName,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
@@ -297,66 +297,66 @@ describe("state-util", () => {
     })
   })
 
-  describe("isValidServiceAppName", () => {
+  describe("isValidServiceName", () => {
     it("when non-string input", () => {
-      expect(isValidServiceAppName(null)).to.equal(false);
-      expect(isValidServiceAppName(undefined)).to.equal(false);
-      expect(isValidServiceAppName(true)).to.equal(false);
-      expect(isValidServiceAppName(false)).to.equal(false);
-      expect(isValidServiceAppName(0)).to.equal(false);
-      expect(isValidServiceAppName([])).to.equal(false);
-      expect(isValidServiceAppName({})).to.equal(false);
+      expect(isValidServiceName(null)).to.equal(false);
+      expect(isValidServiceName(undefined)).to.equal(false);
+      expect(isValidServiceName(true)).to.equal(false);
+      expect(isValidServiceName(false)).to.equal(false);
+      expect(isValidServiceName(0)).to.equal(false);
+      expect(isValidServiceName([])).to.equal(false);
+      expect(isValidServiceName({})).to.equal(false);
     })
 
     it("when string input returning false", () => {
-      expect(isValidServiceAppName('')).to.equal(false);
-      expect(isValidServiceAppName('.')).to.equal(false);
-      expect(isValidServiceAppName('.a')).to.equal(false);
-      expect(isValidServiceAppName('$')).to.equal(false);
-      expect(isValidServiceAppName('$a')).to.equal(false);
-      expect(isValidServiceAppName('*')).to.equal(false);
-      expect(isValidServiceAppName('~')).to.equal(false);
-      expect(isValidServiceAppName('!')).to.equal(false);
-      expect(isValidServiceAppName('@')).to.equal(false);
-      expect(isValidServiceAppName('%')).to.equal(false);
-      expect(isValidServiceAppName('^')).to.equal(false);
-      expect(isValidServiceAppName('&')).to.equal(false);
-      expect(isValidServiceAppName('-')).to.equal(false);
-      expect(isValidServiceAppName('=')).to.equal(false);
-      expect(isValidServiceAppName('+')).to.equal(false);
-      expect(isValidServiceAppName('|')).to.equal(false);
-      expect(isValidServiceAppName(';')).to.equal(false);
-      expect(isValidServiceAppName(',')).to.equal(false);
-      expect(isValidServiceAppName('?')).to.equal(false);
-      expect(isValidServiceAppName('/')).to.equal(false);
-      expect(isValidServiceAppName("'")).to.equal(false);
-      expect(isValidServiceAppName('"')).to.equal(false);
-      expect(isValidServiceAppName('`')).to.equal(false);
-      expect(isValidServiceAppName('\x00')).to.equal(false);
-      expect(isValidServiceAppName('\x7F')).to.equal(false);
+      expect(isValidServiceName('')).to.equal(false);
+      expect(isValidServiceName('.')).to.equal(false);
+      expect(isValidServiceName('.a')).to.equal(false);
+      expect(isValidServiceName('$')).to.equal(false);
+      expect(isValidServiceName('$a')).to.equal(false);
+      expect(isValidServiceName('*')).to.equal(false);
+      expect(isValidServiceName('~')).to.equal(false);
+      expect(isValidServiceName('!')).to.equal(false);
+      expect(isValidServiceName('@')).to.equal(false);
+      expect(isValidServiceName('%')).to.equal(false);
+      expect(isValidServiceName('^')).to.equal(false);
+      expect(isValidServiceName('&')).to.equal(false);
+      expect(isValidServiceName('-')).to.equal(false);
+      expect(isValidServiceName('=')).to.equal(false);
+      expect(isValidServiceName('+')).to.equal(false);
+      expect(isValidServiceName('|')).to.equal(false);
+      expect(isValidServiceName(';')).to.equal(false);
+      expect(isValidServiceName(',')).to.equal(false);
+      expect(isValidServiceName('?')).to.equal(false);
+      expect(isValidServiceName('/')).to.equal(false);
+      expect(isValidServiceName("'")).to.equal(false);
+      expect(isValidServiceName('"')).to.equal(false);
+      expect(isValidServiceName('`')).to.equal(false);
+      expect(isValidServiceName('\x00')).to.equal(false);
+      expect(isValidServiceName('\x7F')).to.equal(false);
     })
 
     it("when string input without alphabetic prefix returning false", () => {
-      expect(isValidServiceAppName('0')).to.equal(false);
-      expect(isValidServiceAppName('0a')).to.equal(false);
-      expect(isValidServiceAppName('0a0')).to.equal(false);
-      expect(isValidServiceAppName('0_')).to.equal(false);
-      expect(isValidServiceAppName('0_0')).to.equal(false);
+      expect(isValidServiceName('0')).to.equal(false);
+      expect(isValidServiceName('0a')).to.equal(false);
+      expect(isValidServiceName('0a0')).to.equal(false);
+      expect(isValidServiceName('0_')).to.equal(false);
+      expect(isValidServiceName('0_0')).to.equal(false);
     })
 
     it("when string input returning true", () => {
-      expect(isValidServiceAppName('a')).to.equal(true);
-      expect(isValidServiceAppName('aa')).to.equal(true);
-      expect(isValidServiceAppName('a_')).to.equal(true);
-      expect(isValidServiceAppName('a0')).to.equal(true);
-      expect(isValidServiceAppName('a0a')).to.equal(true);
-      expect(isValidServiceAppName('_')).to.equal(true);
-      expect(isValidServiceAppName('_0')).to.equal(true);
-      expect(isValidServiceAppName('_0_')).to.equal(true);
-      expect(isValidServiceAppName('consensus')).to.equal(true);
-      expect(isValidServiceAppName('afan')).to.equal(true);
-      expect(isValidServiceAppName('collaborative_ai')).to.equal(true);
-      expect(isValidServiceAppName('_a_dapp')).to.equal(true);
+      expect(isValidServiceName('a')).to.equal(true);
+      expect(isValidServiceName('aa')).to.equal(true);
+      expect(isValidServiceName('a_')).to.equal(true);
+      expect(isValidServiceName('a0')).to.equal(true);
+      expect(isValidServiceName('a0a')).to.equal(true);
+      expect(isValidServiceName('_')).to.equal(true);
+      expect(isValidServiceName('_0')).to.equal(true);
+      expect(isValidServiceName('_0_')).to.equal(true);
+      expect(isValidServiceName('consensus')).to.equal(true);
+      expect(isValidServiceName('afan')).to.equal(true);
+      expect(isValidServiceName('collaborative_ai')).to.equal(true);
+      expect(isValidServiceName('_a_dapp')).to.equal(true);
     })
   })
 

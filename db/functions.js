@@ -5,6 +5,7 @@ const {
   FeatureFlags,
   PredefinedDbPaths,
   FunctionTypes,
+  isServiceType,
   FunctionResultCode,
   NativeFunctionIds,
   ShardingProperties,
@@ -82,14 +83,6 @@ class Functions {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false, extraGasAmount: 0 },
     };
     this.callStack = [];
-  }
-
-  static isNativeFunctionId(fid) {
-    if (!fid) {
-      return false;
-    }
-    const fidList = Object.values(NativeFunctionIds);
-    return fidList.find((elem) => elem === fid) !== undefined;
   }
 
   /**
@@ -545,7 +538,7 @@ class Functions {
   }
 
   _createApp(value, context) {
-    const { isValidServiceAppName } = require('./state-util');
+    const { isValidServiceName } = require('./state-util');
 
     const appName = context.params.app_name;
     const recordId = context.params.record_id;
@@ -554,7 +547,7 @@ class Functions {
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
-    if (!isValidServiceAppName(appName)) {
+    if (!isValidServiceName(appName)) {
       return this.saveAndReturnFuncResult(
           context, resultPath, FunctionResultCode.INVALID_SERVICE_APP_NAME);
     }

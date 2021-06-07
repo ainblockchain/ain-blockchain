@@ -325,6 +325,34 @@ const NativeFunctionIds = {
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
 };
 
+function isNativeFunctionId(fid) {
+  if (!fid) {
+    return false;
+  }
+  const fidList = Object.values(NativeFunctionIds);
+  return fidList.find((elem) => elem === fid) !== undefined;
+}
+
+/**
+ * Types of service.
+ *
+ * @enum {string}
+ */
+const ServiceTypes = {
+  ESCROW: 'escrow',
+  GAS_FEE: 'gas_fee',
+  PAYMENTS: 'payments',
+  STAKING: 'staking',
+};
+
+function isServiceType(type) {
+  if (!type) {
+    return false;
+  }
+  const typeList = Object.values(ServiceTypes);
+  return typeList.find((elem) => elem === type) !== undefined;
+}
+
 /**
  * Properties of sharding configs.
  *
@@ -410,6 +438,7 @@ const FunctionResultCode = {
   IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
+  INVALID_ACCOUNT_NAME: 'INVALID_ACCOUNT_NAME',
   INVALID_SERVICE_APP_NAME: 'INVALID_SERVICE_APP_NAME',
   SUCCESS: 'SUCCESS',
 };
@@ -696,6 +725,9 @@ module.exports = {
   ProofProperties,
   StateInfoProperties,
   NativeFunctionIds,
+  isNativeFunctionId,
+  ServiceTypes,
+  isServiceType,
   ShardingProperties,
   ShardingProtocols,
   TokenExchangeSchemes,
