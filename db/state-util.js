@@ -105,7 +105,7 @@ function hasAllowedPattern(label) {
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
-function isValidAppName(name) {
+function isValidServiceAppName(name) {
   return hasVarNamePattern(name);
 }
 
@@ -672,7 +672,7 @@ module.exports = {
   hasReservedChar,
   hasAllowedPattern,
   isWritablePathWithSharding,
-  isValidAppName,
+  isValidServiceAppName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
