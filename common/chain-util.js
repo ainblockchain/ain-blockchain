@@ -1,5 +1,3 @@
-const EC = require('elliptic').ec;
-const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
@@ -70,18 +68,6 @@ class ChainUtil {
           `[${LOG_HEADER}] Failed to extract address with error: ${err} ${err.stack}.`);
     }
     return address;
-  }
-
-  // TODO(liayoo): Remove this function.
-  static genKeyPair() {
-    let keyPair;
-    if (PRIVATE_KEY) {
-      keyPair = ec.keyFromPrivate(PRIVATE_KEY, 'hex');
-      keyPair.getPublic();
-    } else {
-      keyPair = ec.genKeyPair();
-    }
-    return keyPair;
   }
 
   static isBool(value) {
