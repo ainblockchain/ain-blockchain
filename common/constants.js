@@ -44,6 +44,7 @@ const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
+const SYNC_MODE = process.env.SYNC_MODE || 'full';
 
 // Constants
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -71,6 +72,10 @@ if (!fs.existsSync(BLOCKCHAIN_DATA_DIR)) {
 const CHAINS_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'chains');
 const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
 const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
+const SNAPSHOTS_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
+const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // NOTE: Block number to snapshot.
+const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // NOTE: How often the snapshot is made
+const MAX_NUM_SNAPSHOTS = 10; // NOTE: max number of snapshots to keep
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
@@ -456,6 +461,16 @@ const GasFeeConstants = {
 };
 
 /**
+ * Sync mode options.
+ *
+ * @enum {string}
+ */
+const SyncModeOptions = {
+  FULL: 'full',
+  FAST: 'fast',
+}
+
+/**
  * Overwriting environment variables.
  * These parameters are defined in genesis_params.json, but if specified as environment variables,
  * the env vars take precedence.
@@ -666,6 +681,10 @@ module.exports = {
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
+  SNAPSHOTS_DIR,
+  SNAPSHOTS_N2S_DIR_NAME,
+  SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
+  MAX_NUM_SNAPSHOTS,
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_SET_CLIENT_API,
@@ -676,6 +695,7 @@ module.exports = {
   PORT,
   P2P_PORT,
   LIGHTWEIGHT,
+  SYNC_MODE,
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
@@ -710,6 +730,7 @@ module.exports = {
   GenesisRules,
   GenesisOwners,
   GasFeeConstants,
+  SyncModeOptions,
   buildOwnerPermissions,
   buildRulePermission,
   ...GenesisParams.blockchain,
