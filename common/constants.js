@@ -3,7 +3,7 @@ const path = require('path');
 const semver = require('semver');
 const ChainUtil = require('./chain-util');
 
-// Genesis configs **
+// ** Genesis configs **
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
@@ -11,7 +11,7 @@ const GenesisParams = getGenesisConfig('genesis_params.json');
 const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
-// Feature flags **
+// ** Feature flags **
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
@@ -29,7 +29,7 @@ const FeatureFlags = {
   enableRichTxSelectionLogging: false,
 };
 
-// Environment variables **
+// ** Environment variables **
 const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
 const ENABLE_DEV_SET_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
@@ -44,7 +44,7 @@ const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 
-// Constants **
+// ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
@@ -76,7 +76,7 @@ const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
 
-// Enums **
+// ** Enums **
 /**
  * Message types for communication between nodes.
  *
@@ -447,7 +447,7 @@ const GasFeeConstants = {
   REST_FUNCTION_CALL_GAS_AMOUNT: 10,
 };
 
-// Lists **
+// ** Lists **
 
 /**
  * Root labels of service paths.
