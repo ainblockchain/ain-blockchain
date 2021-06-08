@@ -103,7 +103,7 @@ describe('Blockchain', () => {
 
     it('can sync on startup', () => {
       while (!node1.bc.lastBlock() || !node2.bc.lastBlock() || node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
-        const blockSection = node1.bc.requestBlockchainSection(node2.bc.lastBlock());
+        const blockSection = node1.bc.requestBlockchainSection(node2.bc.lastBlock().number);
         if (blockSection) {
           node2.mergeChainSegment(blockSection);
         }
