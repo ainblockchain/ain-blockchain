@@ -67,7 +67,7 @@ class RuleUtil {
   }
 
   isServAcntName(name) {
-    const { isServiceType } = require('../common/constants');
+    const { isServiceAccountServiceType } = require('../common/constants');
     const { isValidServiceName } = require('./state-util');
 
     if (!this.isString(name)) {
@@ -77,7 +77,7 @@ class RuleUtil {
     if (parsed.length < 3) {
       return false;
     }
-    return isServiceType(parsed[0]) && isValidServiceName(parsed[1]);
+    return isServiceAccountServiceType(parsed[0]) && isValidServiceName(parsed[1]);
   }
 
   isValShardProto(value) {

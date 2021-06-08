@@ -353,13 +353,15 @@ class ChainUtil {
 
   static isAppPath(parsedPath) {
     const { PredefinedDbPaths } = require('../common/constants');
+
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
   // TODO(liayoo): Fix testing paths (writing at the root) and update isServicePath().
   static isServicePath(parsedPath) {
-    const { NATIVE_SERVICE_TYPES } = require('../common/constants');
-    return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
+    const { isServiceType } = require('../common/constants');
+
+    return isServiceType(_.get(parsedPath, 0));
   }
 
   static getSingleOpGasAmount(parsedPath, value) {
