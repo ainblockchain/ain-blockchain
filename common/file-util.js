@@ -9,7 +9,7 @@ const {
 } = require('./constants');
 const ChainUtil = require('./chain-util');
 const FILE_NAME_SUFFIX = 'json.gz';
-const logger = require('../logger')('BLOCK-FILE-UTIL');
+const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
   static getBlockPath(chainPath, blockNumber) {
