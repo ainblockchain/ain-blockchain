@@ -5,7 +5,6 @@ const {
   FeatureFlags,
   PredefinedDbPaths,
   FunctionTypes,
-  isServiceType,
   FunctionResultCode,
   NativeFunctionIds,
   ShardingProperties,
