@@ -3,8 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const logger = require('../logger')('BLOCKCHAIN');
 const { Block } = require('./block');
-const BlockFileUtil = require('./block-file-util');
-const { CHAINS_DIR } = require('../common/constants');
+const FileUtil = require('../common/file-util');
+const {
+  CHAINS_DIR,
+  CHAINS_N2B_DIR_NAME,
+} = require('../common/constants');
 const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 
@@ -13,11 +16,13 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainPath = path.resolve(CHAINS_DIR, basePath);
+    this.initSnapshotBlockNumber = -1;
   }
 
-  init(isFirstNode) {
+  init(isFirstNode, latestSnapshotBlockNumber) {
     let lastBlockWithoutProposal;
-    if (BlockFileUtil.createBlockchainDir(this.blockchainPath)) {
+    this.initSnapshotBlockNumber = latestSnapshotBlockNumber;
+    if (FileUtil.createBlockchainDir(this.blockchainPath)) {
       if (isFirstNode) {
         logger.info('\n');
         logger.info('############################################################');
@@ -48,17 +53,22 @@ class Blockchain {
         logger.info('################################################################');
         logger.info('\n');
       }
-      const newChain = this.loadChain();
+      const newChain = this.loadChain(latestSnapshotBlockNumber);
       if (newChain) {
         // NOTE(minsulee2): Deal with the case the only genesis block was generated.
         if (newChain.length > 1) {
           lastBlockWithoutProposal = newChain.pop();
-          const lastBlockPath = BlockFileUtil.getBlockPath(
+          const lastBlockPath = FileUtil.getBlockPath(
               this.blockchainPath, lastBlockWithoutProposal.number);
           fs.unlinkSync(lastBlockPath);
         }
         this.chain = newChain;
       }
+    }
+    if (!this.getBlockByNumber(0)) {
+      const genesisBlock = Block.genesis();
+      FileUtil.writeBlock(this.blockchainPath, genesisBlock);
+      FileUtil.writeHashToNumber(this.blockchainPath, genesisBlock.hash, genesisBlock.number);
     }
     return lastBlockWithoutProposal;
   }
@@ -72,13 +82,13 @@ class Blockchain {
     */
   getBlockByHash(hash) {
     if (!hash) return null;
-    const blockPath = BlockFileUtil.getBlockPath(this.blockchainPath,
-        BlockFileUtil.readHashToNumber(this.blockchainPath, hash));
-    if (blockPath === undefined) {
+    const blockPath = FileUtil.getBlockPath(this.blockchainPath,
+        FileUtil.readHashToNumber(this.blockchainPath, hash));
+    if (!blockPath) {
       const found = this.chain.filter((block) => block.hash === hash);
       return found.length ? found[0] : null;
     } else {
-      return Block.parse(BlockFileUtil.readBlock(blockPath));
+      return Block.parse(FileUtil.readCompressedJson(blockPath));
     }
   }
 
@@ -90,12 +100,12 @@ class Blockchain {
     */
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
-    const blockPath = BlockFileUtil.getBlockPath(this.blockchainPath, number);
-    if (blockPath === undefined || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
+    const blockPath = FileUtil.getBlockPath(this.blockchainPath, number);
+    if (!blockPath || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
       const found = this.chain.filter((block) => block.number === number);
       return found.length ? found[0] : null;
     } else {
-      return Block.parse(BlockFileUtil.readBlock(blockPath));
+      return Block.parse(FileUtil.readCompressedJson(blockPath));
     }
   }
 
@@ -109,6 +119,9 @@ class Blockchain {
   lastBlockNumber() {
     const lastBlock = this.lastBlock();
     if (!lastBlock) {
+      if (this.initSnapshotBlockNumber) {
+        return this.initSnapshotBlockNumber;
+      }
       return -1;
     }
     return lastBlock.number;
@@ -153,21 +166,31 @@ class Blockchain {
     return true;
   }
 
-  static isValidChain(chain) {
+  static isValidChain(chain, latestSnapshotBlockNumber) {
+    if (!chain.length) {
+      return true;
+    }
     const firstBlock = Block.parse(chain[0]);
-    if (!firstBlock || firstBlock.hash !== Block.genesis().hash) {
-      logger.error(`First block is not the Genesis block: ${firstBlock}\n${Block.genesis()}`);
+    if (!firstBlock) {
       return false;
     }
-    if (!Block.validateHashes(firstBlock)) {
-      logger.error(`Genesis block is corrupted`);
+    if (latestSnapshotBlockNumber > 0 && latestSnapshotBlockNumber + 1 !== firstBlock.number) {
+      logger.error(`Missing blocks between ${latestSnapshotBlockNumber + 1} and ${firstBlock.number}`);
       return false;
     }
-    // TODO(liayoo): Check if the tx nonces are correct.
+    if (firstBlock.number === 0 && firstBlock.hash !== Block.genesis().hash) {
+      logger.error(`Invalid genesis block: ${firstBlock}\n${Block.genesis()}`);
+      return false;
+    }
     return Blockchain.isValidChainSegment(chain);
   }
 
   static isValidChainSegment(chainSegment) {
+    if (chainSegment.length) {
+      if (!Block.validateHashes(chainSegment[0])) {
+        return false;
+      }
+    }
     for (let i = 1; i < chainSegment.length; i++) {
       const block = chainSegment[i];
       const lastBlock = Block.parse(chainSegment[i - 1]);
@@ -181,8 +204,8 @@ class Blockchain {
   writeChain() {
     for (let i = 0; i < this.chain.length; i++) {
       const block = this.chain[i];
-      BlockFileUtil.writeBlock(this.blockchainPath, block);
-      BlockFileUtil.writeHashToNumber(this.blockchainPath, block.hash, block.number);
+      FileUtil.writeBlock(this.blockchainPath, block);
+      FileUtil.writeHashToNumber(this.blockchainPath, block.hash, block.number);
     }
   }
 
@@ -190,43 +213,36 @@ class Blockchain {
     * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
     * the block number of the reference block.
     *
-    * @param {Block} refBlock - The current highest block tin the querying nodes blockchain
+    * @param {Block} refBlockNumber - The current highest block number in the querying nodes blockchain
     * @return {list} A list of Block instances with refBlock at index 0, up to a maximuim length
     *                CHAIN_SEGMENT_LENGTH
     */
-  requestBlockchainSection(refBlock) {
-    const refBlockNumber = refBlock ? refBlock.number : -1;
-    const nextBlockNumber = refBlockNumber + 1;
-
+  requestBlockchainSection(refBlockNumber) {
     logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
                 `Requester's last block number: ${refBlockNumber}`);
-
-    const blockPaths = BlockFileUtil.getBlockPaths(this.blockchainPath, nextBlockNumber, nextBlockNumber + CHAIN_SEGMENT_LENGTH);
-
-    if (blockPaths.length > 0 &&
-        (!!(refBlock) && Block.parse(BlockFileUtil.readBlock(blockPaths[0])).last_hash !== refBlock.hash)) {
-      logger.error('Invalid blockchain request. Requesters last block does not belong to ' +
-          'this blockchain');
-      return;
-    }
-
-    const refBlockHash = refBlock ? refBlock.hash : null;
-    if (refBlockHash === this.lastBlock().hash) {
-      logger.info(`Requesters blockchain is up to date with this blockchain`);
-      return [this.lastBlock()];
-    }
-
     const chainSegment = [];
+    const nextBlockNumber = refBlockNumber + 1;
+    const blockPaths = FileUtil.getBlockPaths(this.blockchainPath, nextBlockNumber, CHAIN_SEGMENT_LENGTH);
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return chainSegment;
+    }
+    if (refBlockNumber === lastBlock.number) {
+      logger.info(`Requesters blockchain is up to date with this blockchain`);
+      chainSegment.push(lastBlock);
+      return chainSegment;
+    }
     blockPaths.forEach((blockFile) => {
-      chainSegment.push(Block.parse(BlockFileUtil.readBlock(blockFile)));
+      chainSegment.push(Block.parse(FileUtil.readCompressedJson(blockFile)));
     });
-    return chainSegment.length > 0 ? chainSegment : [];
+    return chainSegment;
   }
 
   getValidBlocks(chainSegment) {
     logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
     const firstBlock = Block.parse(chainSegment[0]);
-    const lastBlockHash = this.lastBlockNumber() >= 0 ? this.lastBlock().hash : null;
+    const lastBlock = this.lastBlock();
+    const lastBlockHash = this.lastBlockNumber() >= 0 && lastBlock ? lastBlock.hash : null;
     const overlap = lastBlockHash ?
         chainSegment.filter((block) => block.number === this.lastBlockNumber()) : null;
     const overlappingBlock = overlap ? overlap[0] : null;
@@ -234,13 +250,13 @@ class Blockchain {
     if (lastBlockHash) {
       // Case 1: Not a cold start.
       if (overlappingBlock && overlappingBlock.hash !== lastBlockHash) {
-        logger.info(`The last block's hash ${this.lastBlock().hash.substring(0, 5)} ` +
+        logger.info(`The last block's hash ${lastBlock.hash.substring(0, 5)} ` +
             `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
         return validBlocks;
       }
     } else {
       // Case 2: A cold start.
-      if (firstBlock.last_hash !== '') {
+      if (firstBlock.number === 0 && firstBlock.last_hash !== '') {
         logger.info(`First block of hash ${firstBlock.hash.substring(0, 5)} ` +
             `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
         return validBlocks;
@@ -259,17 +275,20 @@ class Blockchain {
     return validBlocks;
   }
 
-  loadChain() {
+  loadChain(latestSnapshotBlockNumber) {
     const chainPath = this.blockchainPath;
     const newChain = [];
-    const blockPaths = BlockFileUtil.getAllBlockPaths(chainPath);
+    const numBlockFiles = fs.readdirSync(path.join(chainPath, CHAINS_N2B_DIR_NAME)).length;
+    const fromBlockNumber = latestSnapshotBlockNumber === undefined ? latestSnapshotBlockNumber :
+        latestSnapshotBlockNumber + 1;
+    const blockPaths = FileUtil.getBlockPaths(chainPath, fromBlockNumber, numBlockFiles);
 
     blockPaths.forEach((blockPath) => {
-      const block = Block.parse(BlockFileUtil.readBlock(blockPath));
+      const block = Block.parse(FileUtil.readCompressedJson(blockPath));
       newChain.push(block);
     });
 
-    if (Blockchain.isValidChain(newChain)) {
+    if (Blockchain.isValidChain(newChain, latestSnapshotBlockNumber)) {
       logger.info(`Valid chain of size ${newChain.length}`);
       return newChain;
     }
@@ -289,9 +308,9 @@ class Blockchain {
       to = from + CHAIN_SEGMENT_LENGTH;
     }
     const chain = [];
-    const blockPaths = BlockFileUtil.getBlockPaths(this.blockchainPath, from, to);
+    const blockPaths = FileUtil.getBlockPaths(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {
-      const block = Block.parse(BlockFileUtil.readBlock(blockPath));
+      const block = Block.parse(FileUtil.readCompressedJson(blockPath));
       chain.push(block);
     });
     return chain;
