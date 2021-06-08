@@ -373,10 +373,10 @@ describe("RuleUtil", () => {
       expect(util.isServAcntName('staking|consensus')).to.equal(false);
       expect(util.isServAcntName(
           'invalid_service_type|consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0'))
-          .to.equal(false);  // invalid service type
+          .to.equal(false);  // invalid service account service type
       expect(util.isServAcntName(
           'staking|0invalid_service_name|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0'))
-          .to.equal(false);  // invalid service name
+          .to.equal(false);  // invalid service account service name
     })
 
     it("when valid-address input", () => {

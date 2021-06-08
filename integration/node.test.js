@@ -4253,7 +4253,7 @@ describe('Blockchain Node', () => {
         expect(bodyToUpperCase.code).to.equals(1);
       });
 
-      it('transfer: transfer with valid service type', async () => {
+      it('transfer: transfer with valid service account service type', async () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const transferToService = `staking|test_service|${transferTo}|0`;
@@ -4328,7 +4328,7 @@ describe('Blockchain Node', () => {
         expect(resultCode).to.equal(FunctionResultCode.SUCCESS);
       });
 
-      it('transfer: transfer with invalid service type', async () => {
+      it('transfer: transfer with invalid service account service type', async () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         const transferToService = `invalid_service_type|test_service|${transferTo}|0`;
