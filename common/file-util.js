@@ -151,17 +151,16 @@ class FileUtil {
 
   static writeSnapshot(snapshotPath, blockNumber, snapshot) {
     const filePath = this.getSnapshotPathByBlockNumber(snapshotPath, blockNumber);
-    fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
-  }
-
-  static deleteSnapshot(snapshotPath, blockNumber) {
-    const filePath = this.getSnapshotPathByBlockNumber(snapshotPath, blockNumber);
-    if (fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath);
-      } catch (err) {
-        logger.debug(`Failed to delete ${filePath}: ${err.stack}`);
+    if (snapshot === null) { // Delete
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          logger.debug(`Failed to delete ${filePath}: ${err.stack}`);
+        }
       }
+    } else {
+      fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
     }
   }
 }
