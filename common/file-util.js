@@ -62,7 +62,7 @@ class FileUtil {
       if (fs.existsSync(blockFile)) {
         blockPaths.push(blockFile);
       } else {
-        logger.error(`blockFile (${blockFile}) does not exist`);
+        logger.debug(`blockFile (${blockFile}) does not exist`);
         return blockPaths;
       }
     }
