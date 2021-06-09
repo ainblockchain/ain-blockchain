@@ -160,6 +160,7 @@ class FileUtil {
         }
       }
     } else {
+      // TODO(liayoo): Change this operation to be asynchronous
       fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
     }
   }
