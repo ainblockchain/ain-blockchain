@@ -213,8 +213,10 @@ class BlockchainNode {
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDbAndNonce(nodeVersion);
+    this.updateSnapshots(blockNumber);
+  }
 
-    // Create a snapshot of the new state
+  updateSnapshots(blockNumber) {
     if (blockNumber > 0 && blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.dumpFinalVersion(false);
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
