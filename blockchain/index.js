@@ -85,8 +85,7 @@ class Blockchain {
     const blockPath = FileUtil.getBlockPath(this.blockchainPath,
         FileUtil.readHashToNumber(this.blockchainPath, hash));
     if (!blockPath) {
-      const found = this.chain.filter((block) => block.hash === hash);
-      return found.length ? found[0] : null;
+      return this.chain.find((block) => block.hash === hash);
     } else {
       return Block.parse(FileUtil.readCompressedJson(blockPath));
     }
@@ -102,8 +101,7 @@ class Blockchain {
     if (number === undefined || number === null) return null;
     const blockPath = FileUtil.getBlockPath(this.blockchainPath, number);
     if (!blockPath || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
-      const found = this.chain.filter((block) => block.number === number);
-      return found.length ? found[0] : null;
+      return this.chain.find((block) => block.number === number);
     } else {
       return Block.parse(FileUtil.readCompressedJson(blockPath));
     }

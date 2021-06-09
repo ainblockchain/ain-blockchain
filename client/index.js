@@ -384,7 +384,9 @@ app.get('/get_transaction', (req, res, next) => {
     if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
-      if (index >= 0) {
+      if (!block) {
+        logger.debug(`No block found for the tx: ${req.query.hash}`);
+      } else if (index >= 0) {
         transactionInfo.transaction = block.transactions[index];
       } else {
         transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);

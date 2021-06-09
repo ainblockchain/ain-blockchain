@@ -215,7 +215,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          if (index >= 0) {
+          if (!block) {
+            // TODO(liayoo): Ask peers for the transaction / block
+          } else if (index >= 0) {
             transactionInfo.transaction = block.transactions[index];
           } else {
             transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
@@ -233,7 +235,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (args.block_hash && Number.isInteger(args.index)) {
         const index = Number(args.index);
         const block = node.bc.getBlockByHash(args.block_hash);
-        if (block.transactions.length > index && index >= 0) {
+        if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
             is_finalized: true
@@ -248,7 +250,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (Number.isInteger(args.block_number) && Number.isInteger(args.index)) {
         const index = Number(args.index);
         const block = node.bc.getBlockByNumber(args.block_number);
-        if (block.transactions.length > index && index >= 0) {
+        if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
             is_finalized: true
