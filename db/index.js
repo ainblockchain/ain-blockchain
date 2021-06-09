@@ -63,19 +63,26 @@ class DB {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   }
 
-  initDbStates() {
-    // Initialize DB owners.
-    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
-      [OwnerProperties.OWNER]: {
-        [OwnerProperties.OWNERS]: {
-          [OwnerProperties.ANYONE]: buildOwnerPermissions(true, true, true, true),
+  initDbStates(snapshot) {
+    if (snapshot) {
+      this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
+      this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
+      this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
+      this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+    } else {
+      // Initialize DB owners.
+      this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
+        [OwnerProperties.OWNER]: {
+          [OwnerProperties.OWNERS]: {
+            [OwnerProperties.ANYONE]: buildOwnerPermissions(true, true, true, true),
+          }
         }
-      }
-    });
-    // Initialize DB rules.
-    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
-      [RuleProperties.WRITE]: true
-    });
+      });
+      // Initialize DB rules.
+      this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
+        [RuleProperties.WRITE]: true
+      });
+    }
   }
 
   /**

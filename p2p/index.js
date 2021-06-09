@@ -165,7 +165,6 @@ class P2pClient {
           `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
       }
       if (node.state === BlockchainNodeStates.STARTING) {
-        node.state = BlockchainNodeStates.SYNCING;
         if (parsedMsg.numLivePeers === 0) {
           const lastBlockWithoutProposal = node.init(true);
           await this.server.tryInitializeShard();
@@ -214,9 +213,12 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
-  requestChainSegment(socket, lastBlock) {
-    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST,
-        { lastBlock: lastBlock });
+  requestChainSegment(socket, lastBlockNumber) {
+    if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+      this.server.node.state !== BlockchainNodeStates.SERVING) {
+      return;
+    }
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
     if (!payload) {
       logger.error('The request chainSegment cannot be sent because of msg encapsulation failure.');
       return;
@@ -342,6 +344,12 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
+          if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+              this.server.node.state !== BlockchainNodeStates.SERVING) {
+            logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
+                `Node state: ${this.server.node.state}.`);
+            return;
+          }
           if (!this.checkDataProtoVerForChainSegmentResponse(parsedMessage.dataProtoVer)) {
             return;
           }
@@ -394,7 +402,7 @@ class P2pClient {
             // your local blockchain matches the height of the consensus blockchain.
             if (number > this.server.node.bc.lastBlockNumber()) {
               setTimeout(() => {
-                this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+                this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
               }, 1000);
             }
           } else {
@@ -413,7 +421,7 @@ class P2pClient {
               logger.info(`[${LOG_HEADER}] I am behind ` +
                   `(${number} < ${this.server.node.bc.lastBlockNumber()}).`);
               setTimeout(() => {
-                this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+                this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
               }, 1000);
             }
           }
@@ -464,7 +472,7 @@ class P2pClient {
           this.setPeerEventHandlers(socket);
           this.sendAddress(socket);
           await this.waitForAddress(socket);
-          this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+          this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
             this.server.consensus.stakeTx = null;
