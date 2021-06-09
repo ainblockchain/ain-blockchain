@@ -67,11 +67,22 @@ class RuleUtil {
   }
 
   isServAcntName(name) {
-    return this.isString(name) && name.split('|').length >= 3;
+    const { isServiceAccountServiceType } = require('../common/constants');
+    const { isValidServiceName } = require('./state-util');
+
+    if (!this.isString(name)) {
+      return false;
+    }
+    const parsed = name.split('|');
+    if (parsed.length < 3) {
+      return false;
+    }
+    return isServiceAccountServiceType(parsed[0]) && isValidServiceName(parsed[1]);
   }
 
   isValShardProto(value) {
-    const {ShardingProtocols} = require('../common/constants');
+    const { ShardingProtocols } = require('../common/constants');
+
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 

@@ -1,10 +1,9 @@
-const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
 const ChainUtil = require('./chain-util');
 
-// Genesis configs.
+// ** Genesis configs **
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
@@ -12,7 +11,7 @@ const GenesisParams = getGenesisConfig('genesis_params.json');
 const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
-// Feature flags.
+// ** Feature flags **
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
@@ -30,7 +29,7 @@ const FeatureFlags = {
   enableRichTxSelectionLogging: false,
 };
 
-// Environment variables.
+// ** Environment variables **
 const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
 const ENABLE_DEV_SET_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
@@ -46,7 +45,7 @@ const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 
-// Constants
+// ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
@@ -81,22 +80,8 @@ const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
-const NATIVE_SERVICE_TYPES = [
-  'accounts',
-  'checkin',
-  'consensus',
-  'escrow',
-  'gas_fee',
-  'manage_app',
-  'payments',
-  'service_accounts',
-  'sharding',
-  'staking',
-  'test',  // NOTE(platfowner): A temporary solution for tests.
-  'transfer',
-];
 
-// Enums
+// ** Enums **
 /**
  * Message types for communication between nodes.
  *
@@ -330,6 +315,11 @@ const NativeFunctionIds = {
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
 };
 
+function isNativeFunctionId(fid) {
+  const fidList = Object.values(NativeFunctionIds);
+  return fidList.includes(fid);
+}
+
 /**
  * Properties of sharding configs.
  *
@@ -415,6 +405,8 @@ const FunctionResultCode = {
   IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
+  INVALID_ACCOUNT_NAME: 'INVALID_ACCOUNT_NAME',
+  INVALID_SERVICE_NAME: 'INVALID_SERVICE_NAME',
   SUCCESS: 'SUCCESS',
 };
 
@@ -459,6 +451,44 @@ const GasFeeConstants = {
   ACCOUNT_REGISTRATION_GAS_AMOUNT: 1000,
   REST_FUNCTION_CALL_GAS_AMOUNT: 10,
 };
+
+// ** Lists **
+
+/**
+ * Root labels of service paths.
+ */
+const SERVICE_TYPES = [
+  PredefinedDbPaths.ACCOUNTS,
+  PredefinedDbPaths.CHECKIN,
+  PredefinedDbPaths.CONSENSUS,
+  PredefinedDbPaths.ESCROW,
+  PredefinedDbPaths.GAS_FEE,
+  PredefinedDbPaths.MANAGE_APP,
+  PredefinedDbPaths.PAYMENTS,
+  PredefinedDbPaths.SERVICE_ACCOUNTS,
+  PredefinedDbPaths.SHARDING,
+  PredefinedDbPaths.STAKING,
+  PredefinedDbPaths.TRANSFER,
+  'test',  // NOTE(platfowner): A temporary solution for tests.
+];
+
+function isServiceType(type) {
+  return SERVICE_TYPES.includes(type);
+}
+
+/**
+ * Service types allowed to create service accounts.
+ */
+const SERVICE_ACCOUNT_SERVICE_TYPES = [
+  PredefinedDbPaths.ESCROW,
+  PredefinedDbPaths.GAS_FEE,
+  PredefinedDbPaths.PAYMENTS,
+  PredefinedDbPaths.STAKING,
+];
+
+function isServiceAccountServiceType(type) {
+  return SERVICE_ACCOUNT_SERVICE_TYPES.includes(type);
+}
 
 /**
  * Sync mode options.
@@ -701,7 +731,6 @@ module.exports = {
   TX_TIMESTAMP_ERROR_CODE,
   MICRO_AIN,
   MILLI_AIN,
-  NATIVE_SERVICE_TYPES,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -715,6 +744,7 @@ module.exports = {
   ProofProperties,
   StateInfoProperties,
   NativeFunctionIds,
+  isNativeFunctionId,
   ShardingProperties,
   ShardingProtocols,
   TokenExchangeSchemes,
@@ -731,6 +761,8 @@ module.exports = {
   GenesisOwners,
   GasFeeConstants,
   SyncModeOptions,
+  isServiceType,
+  isServiceAccountServiceType,
   buildOwnerPermissions,
   buildRulePermission,
   ...GenesisParams.blockchain,
