@@ -214,7 +214,8 @@ class P2pClient {
   }
 
   requestChainSegment(socket, lastBlockNumber) {
-    if (this.server.node.state === BlockchainNodeStates.STARTING) {
+    if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+      this.server.node.state !== BlockchainNodeStates.SERVING) {
       return;
     }
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
@@ -343,7 +344,8 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          if (this.server.node.state === BlockchainNodeStates.STARTING) {
+          if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+              this.server.node.state !== BlockchainNodeStates.SERVING) {
             logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
                 `Node state: ${this.server.node.state}.`);
             return;
