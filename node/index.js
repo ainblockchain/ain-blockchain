@@ -487,17 +487,17 @@ class BlockchainNode {
 
     for (const block of this.bc.chain) {
       if (!db.executeTransactionList(block.last_votes)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes`);
-        return; // TODO(liayoo): remove the invalid block and blocks that follow.
+        logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
+        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       }
       if (!db.executeTransactionList(block.transactions, block.number)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute transactions`)
-        return; // TODO(liayoo): remove the invalid block and blocks that follow.
+        logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
+        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       }
       if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
-        logger.error(`[${LOG_HEADER}] Invalid state proof hash: ` +
+        logger.error(`[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
             `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
-        return; // TODO(liayoo): remove the invalid block and blocks that follow.
+        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       }
       this.tp.cleanUpForNewBlock(block);
     }
