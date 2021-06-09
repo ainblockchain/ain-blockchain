@@ -113,7 +113,7 @@ class BlockchainNode {
     startingDb.initDbStates(latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
-    this.executeChainOnDb(startingDb, latestSnapshotBlockNumber);
+    this.executeChainOnDb(startingDb);
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
     this.nonce = this.getNonceForAddr(this.account.address, false, true);
 
