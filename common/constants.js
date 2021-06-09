@@ -25,7 +25,7 @@ const FeatureFlags = {
   // Enables rich logging for transactions.
   enableRichTransactionLogging: false,
   // Enables rich logging for p2p communication.
-  enableRichP2pCommunicationLogging: true,
+  enableRichP2pCommunicationLogging: false,
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
 };
@@ -55,7 +55,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const DATA_PROTOCOL_VERSION = "2.0.0";
+const DATA_PROTOCOL_VERSION = "1.0.0";
 if (!semver.valid(DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
 }
