@@ -505,7 +505,7 @@ class P2pServer {
             // Send a chunk of 20 blocks from your blockchain to the requester.
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
-            const chainSegment = this.node.bc.requestBlockchainSection(lastBlockNumber);
+            const chainSegment = this.node.bc.getBlockList(lastBlockNumber + 1);
             if (chainSegment) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(

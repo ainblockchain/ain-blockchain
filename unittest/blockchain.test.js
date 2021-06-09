@@ -103,7 +103,7 @@ describe('Blockchain', () => {
 
     it('can sync on startup', () => {
       while (!node1.bc.lastBlock() || !node2.bc.lastBlock() || node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
-        const blockSection = node1.bc.requestBlockchainSection(node2.bc.lastBlock().number);
+        const blockSection = node1.bc.getBlockList(node2.bc.lastBlock().number + 1);
         if (blockSection) {
           node2.mergeChainSegment(blockSection);
         }
@@ -112,9 +112,9 @@ describe('Blockchain', () => {
     });
 
     it('can be queried by index', () => {
-      assert.deepEqual(JSON.stringify(node1.bc.getChainSection(10, 30)),
+      assert.deepEqual(JSON.stringify(node1.bc.getBlockList(10, 30)),
           JSON.stringify(blocks.slice(9, 29)));
-      assert.deepEqual(JSON.stringify(node1.bc.getChainSection(980, 1000)),
+      assert.deepEqual(JSON.stringify(node1.bc.getBlockList(980, 1000)),
           JSON.stringify(blocks.slice(979, 999)));
     });
 

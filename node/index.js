@@ -449,7 +449,7 @@ class BlockchainNode {
       logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
       return null;
     }
-    const validBlocks = this.bc.getValidBlocks(chainSegment);
+    const validBlocks = this.bc.getValidBlocksInChainSegment(chainSegment);
     if (validBlocks.length > 0) {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {
         logger.error(`[${LOG_HEADER}] Failed to apply valid blocks to database: ` +

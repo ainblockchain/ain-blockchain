@@ -209,36 +209,7 @@ class Blockchain {
     }
   }
 
-  /**
-    * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
-    * the block number of the reference block.
-    *
-    * @param {Block} refBlockNumber - The current highest block number in the querying nodes blockchain
-    * @return {list} A list of Block instances with refBlock at index 0, up to a maximuim length
-    *                CHAIN_SEGMENT_LENGTH
-    */
-  requestBlockchainSection(refBlockNumber) {
-    logger.info(`Current last block number: ${this.lastBlockNumber()}, ` +
-                `Requester's last block number: ${refBlockNumber}`);
-    const chainSegment = [];
-    const nextBlockNumber = refBlockNumber + 1;
-    const blockPaths = FileUtil.getBlockPaths(this.blockchainPath, nextBlockNumber, CHAIN_SEGMENT_LENGTH);
-    const lastBlock = this.lastBlock();
-    if (!lastBlock) {
-      return chainSegment;
-    }
-    if (refBlockNumber === lastBlock.number) {
-      logger.info(`Requesters blockchain is up to date with this blockchain`);
-      chainSegment.push(lastBlock);
-      return chainSegment;
-    }
-    blockPaths.forEach((blockFile) => {
-      chainSegment.push(Block.parse(FileUtil.readCompressedJson(blockFile)));
-    });
-    return chainSegment;
-  }
-
-  getValidBlocks(chainSegment) {
+  getValidBlocksInChainSegment(chainSegment) {
     logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
     const firstBlock = Block.parse(chainSegment[0]);
     const lastBlock = this.lastBlock();
@@ -297,7 +268,25 @@ class Blockchain {
     return null;
   }
 
-  getChainSection(from, to) {
+  /**
+    * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
+    * the `from` block number up till `to` block number.
+    *
+    * @param {Number} from - The lowest block number to get
+    * @param {Number} to - The highest block number to geet
+    * @return {list} A list of Blocks, up to a maximuim length of CHAIN_SEGMENT_LENGTH
+    */
+  getBlockList(from, to) {
+    const blockList = [];
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return blockList;
+    }
+    if (from === lastBlock.number + 1) {
+      logger.info(`Requesters blockchain is up to date with this blockchain`);
+      blockList.push(lastBlock);
+      return blockList;
+    }
     if (!Number.isInteger(from) || from < 0) {
       from = 0;
     }
@@ -307,13 +296,11 @@ class Blockchain {
     if (to - from > CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + CHAIN_SEGMENT_LENGTH;
     }
-    const chain = [];
     const blockPaths = FileUtil.getBlockPaths(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {
-      const block = Block.parse(FileUtil.readCompressedJson(blockPath));
-      chain.push(block);
+      blockList.push(Block.parse(FileUtil.readCompressedJson(blockPath)));
     });
-    return chain;
+    return blockList;
   }
 }
 
