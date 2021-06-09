@@ -490,11 +490,10 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
-            const lastBlock = _.get(parsedMessage, 'data.lastBlock');
+            const lastBlockNumber = _.get(parsedMessage, 'data.lastBlockNumber');
             // NOTE(minsulee2): Communicate with each other
             // even if the data protocol is incompatible.
-            logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
-                `${JSON.stringify(lastBlock, null, 2)}`);
+            logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ${lastBlockNumber}`);
             if (this.node.bc.chain.length === 0) {
               return;
             }
@@ -506,8 +505,7 @@ class P2pServer {
             // Send a chunk of 20 blocks from your blockchain to the requester.
             // Requester will continue to request blockchain chunks
             // until their blockchain height matches the consensus blockchain height
-            const chainSegment = this.node.bc.requestBlockchainSection(
-                lastBlock ? Block.parse(lastBlock) : null);
+            const chainSegment = this.node.bc.getBlockList(lastBlockNumber + 1);
             if (chainSegment) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
               logger.debug(
