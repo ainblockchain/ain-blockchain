@@ -11,7 +11,7 @@ const {
   SYNC_MODE,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
-  SNAPSHOTS_DIR,
+  SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
   BlockchainNodeStates,
@@ -59,8 +59,8 @@ class BlockchainNode {
     this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;  // nonce from current final version
     this.state = BlockchainNodeStates.STARTING;
-    this.snapshotPath = path.resolve(SNAPSHOTS_DIR, `${PORT}`);
-    FileUtil.createSnapshotDir(this.snapshotPath);
+    this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
+    FileUtil.createSnapshotDir(this.snapshotDir);
   }
 
   // For testing purpose only.
@@ -92,7 +92,7 @@ class BlockchainNode {
 
     // 1. Get the latest snapshot if in the "fast" sync mode.
     if (SYNC_MODE === SyncModeOptions.FAST) {
-      const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotPath);
+      const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
       latestSnapshotBlockNumber = latestSnapshotInfo.latestSnapshotBlockNumber;
       if (latestSnapshotPath) {
@@ -217,8 +217,8 @@ class BlockchainNode {
     // Create a snapshot of the new state
     if (blockNumber > 0 && blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.dumpFinalVersion(false);
-      FileUtil.writeSnapshot(this.snapshotPath, blockNumber, snapshot);
-      FileUtil.deleteSnapshot(this.snapshotPath, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER);
+      FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
+      FileUtil.deleteSnapshot(this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER);
     }
   }
 
