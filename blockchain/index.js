@@ -246,13 +246,17 @@ class Blockchain {
     return validBlocks;
   }
 
+  /**
+   * Reads the block files at the chains n2b directory and returns a list of blocks starting from
+   * the latestSnapshotBlockNumber + 1.
+   * @param {Number} latestSnapshotBlockNumber
+   * @returns {list} A list of Blocks
+   */
   loadChain(latestSnapshotBlockNumber) {
     const chainPath = this.blockchainPath;
     const newChain = [];
     const numBlockFiles = fs.readdirSync(path.join(chainPath, CHAINS_N2B_DIR_NAME)).length;
-    const fromBlockNumber = latestSnapshotBlockNumber === undefined ? latestSnapshotBlockNumber :
-        latestSnapshotBlockNumber + 1;
-    const blockPaths = FileUtil.getBlockPaths(chainPath, fromBlockNumber, numBlockFiles);
+    const blockPaths = FileUtil.getBlockPaths(chainPath, latestSnapshotBlockNumber + 1, numBlockFiles);
 
     blockPaths.forEach((blockPath) => {
       const block = Block.parse(FileUtil.readCompressedJson(blockPath));
