@@ -48,7 +48,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     // Bloock API
     ain_getBlockList: function(args, done) {
-      const blocks = node.bc.getChainSection(args.from, args.to);
+      const blocks = node.bc.getBlockList(args.from, args.to);
       done(null, addProtocolVersion({result: blocks}));
     },
 
@@ -62,7 +62,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_getBlockHeadersList: function(args, done) {
-      const blocks = node.bc.getChainSection(args.from, args.to);
+      const blocks = node.bc.getBlockList(args.from, args.to);
       const blockHeaders = [];
       blocks.forEach((block) => {
         blockHeaders.push(block.header);

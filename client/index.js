@@ -298,7 +298,7 @@ app.get('/connection_status', (req, res) => {
 app.get('/blocks', (req, res, next) => {
   const blockEnd = node.bc.lastBlockNumber() + 1;
   const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
-  const result = node.bc.getChainSection(blockBegin, blockEnd);
+  const result = node.bc.getBlockList(blockBegin, blockEnd);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
