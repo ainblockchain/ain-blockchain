@@ -3,6 +3,7 @@ const {
   isWritablePathWithSharding,
   hasReservedChar,
   hasAllowedPattern,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
@@ -296,6 +297,69 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidServiceName", () => {
+    it("when non-string input", () => {
+      expect(isValidServiceName(null)).to.equal(false);
+      expect(isValidServiceName(undefined)).to.equal(false);
+      expect(isValidServiceName(true)).to.equal(false);
+      expect(isValidServiceName(false)).to.equal(false);
+      expect(isValidServiceName(0)).to.equal(false);
+      expect(isValidServiceName([])).to.equal(false);
+      expect(isValidServiceName({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(isValidServiceName('')).to.equal(false);
+      expect(isValidServiceName('.')).to.equal(false);
+      expect(isValidServiceName('.a')).to.equal(false);
+      expect(isValidServiceName('$')).to.equal(false);
+      expect(isValidServiceName('$a')).to.equal(false);
+      expect(isValidServiceName('*')).to.equal(false);
+      expect(isValidServiceName('~')).to.equal(false);
+      expect(isValidServiceName('!')).to.equal(false);
+      expect(isValidServiceName('@')).to.equal(false);
+      expect(isValidServiceName('%')).to.equal(false);
+      expect(isValidServiceName('^')).to.equal(false);
+      expect(isValidServiceName('&')).to.equal(false);
+      expect(isValidServiceName('-')).to.equal(false);
+      expect(isValidServiceName('=')).to.equal(false);
+      expect(isValidServiceName('+')).to.equal(false);
+      expect(isValidServiceName('|')).to.equal(false);
+      expect(isValidServiceName(';')).to.equal(false);
+      expect(isValidServiceName(',')).to.equal(false);
+      expect(isValidServiceName('?')).to.equal(false);
+      expect(isValidServiceName('/')).to.equal(false);
+      expect(isValidServiceName("'")).to.equal(false);
+      expect(isValidServiceName('"')).to.equal(false);
+      expect(isValidServiceName('`')).to.equal(false);
+      expect(isValidServiceName('\x00')).to.equal(false);
+      expect(isValidServiceName('\x7F')).to.equal(false);
+    })
+
+    it("when string input without alphabetic prefix returning false", () => {
+      expect(isValidServiceName('0')).to.equal(false);
+      expect(isValidServiceName('0a')).to.equal(false);
+      expect(isValidServiceName('0a0')).to.equal(false);
+      expect(isValidServiceName('0_')).to.equal(false);
+      expect(isValidServiceName('0_0')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(isValidServiceName('a')).to.equal(true);
+      expect(isValidServiceName('aa')).to.equal(true);
+      expect(isValidServiceName('a_')).to.equal(true);
+      expect(isValidServiceName('a0')).to.equal(true);
+      expect(isValidServiceName('a0a')).to.equal(true);
+      expect(isValidServiceName('_')).to.equal(true);
+      expect(isValidServiceName('_0')).to.equal(true);
+      expect(isValidServiceName('_0_')).to.equal(true);
+      expect(isValidServiceName('consensus')).to.equal(true);
+      expect(isValidServiceName('afan')).to.equal(true);
+      expect(isValidServiceName('collaborative_ai')).to.equal(true);
+      expect(isValidServiceName('_a_dapp')).to.equal(true);
+    })
+  })
+
   describe("isValidStateLabel", () => {
     it("when non-string input", () => {
       expect(isValidStateLabel(null)).to.equal(false);
@@ -319,6 +383,7 @@ describe("state-util", () => {
 
     it("when string input returning true", () => {
       expect(isValidStateLabel('a')).to.equal(true);
+      expect(isValidStateLabel('0')).to.equal(true);
       expect(isValidStateLabel('.a')).to.equal(true);
       expect(isValidStateLabel('$a')).to.equal(true);
       expect(isValidStateLabel('*')).to.equal(true);

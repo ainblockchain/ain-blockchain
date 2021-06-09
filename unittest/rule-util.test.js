@@ -352,4 +352,38 @@ describe("RuleUtil", () => {
       expect(util.isCksumAddr('0xCAcD898dBaEdBD9037aCd25b82417587E972838d')).to.equal(true);
     })
   })
+
+  describe("isServAcntName", () => {
+    it("when invalid-address input", () => {
+      expect(util.isServAcntName(0)).to.equal(false);
+      expect(util.isServAcntName(10)).to.equal(false);
+      expect(util.isServAcntName(null)).to.equal(false);
+      expect(util.isServAcntName(undefined)).to.equal(false);
+      expect(util.isServAcntName(Infinity)).to.equal(false);
+      expect(util.isServAcntName(NaN)).to.equal(false);
+      expect(util.isServAcntName({})).to.equal(false);
+      expect(util.isServAcntName({a: 'a'})).to.equal(false);
+      expect(util.isServAcntName('')).to.equal(false);
+      expect(util.isServAcntName('abc')).to.equal(false);
+      expect(util.isServAcntName('0')).to.equal(false);
+      expect(util.isServAcntName([])).to.equal(false);
+      expect(util.isServAcntName([10])).to.equal(false);
+      expect(util.isServAcntName([10, 'abc'])).to.equal(false);
+      expect(util.isServAcntName('staking')).to.equal(false);
+      expect(util.isServAcntName('staking|consensus')).to.equal(false);
+      expect(util.isServAcntName(
+          'invalid_service_type|consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0'))
+          .to.equal(false);  // invalid service account service type
+      expect(util.isServAcntName(
+          'staking|0invalid_service_name|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0'))
+          .to.equal(false);  // invalid service account service name
+    })
+
+    it("when valid-address input", () => {
+      expect(util.isServAcntName(
+          'staking|consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1')).to.equal(true);
+      expect(util.isServAcntName(
+          'staking|consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0')).to.equal(true);
+    })
+  })
 })
