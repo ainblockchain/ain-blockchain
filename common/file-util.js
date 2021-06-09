@@ -8,7 +8,7 @@ const {
   SNAPSHOTS_N2S_DIR_NAME,
 } = require('./constants');
 const ChainUtil = require('./chain-util');
-const FILE_NAME_SUFFIX = 'json.gz';
+const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
@@ -26,7 +26,7 @@ class FileUtil {
   }
 
   static getBlockFilenameByNumber(blockNumber) {
-    return `${blockNumber}.${FILE_NAME_SUFFIX}`;
+    return `${blockNumber}.${JSON_GZIP_FILE_EXTENSION}`;
   }
 
   static getBlockFilename(block) {
@@ -45,7 +45,7 @@ class FileUtil {
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
     for (const file of files) {
-      const blockNumber = _.get(file.split('.json.gz'), 0);
+      const blockNumber = _.get(file.split(`.${JSON_GZIP_FILE_EXTENSION}`), 0);
       if (blockNumber !== undefined && blockNumber > latestSnapshotBlockNumber) {
         latestSnapshotPath = path.join(snapshotPathPrefix, file);
         latestSnapshotBlockNumber = Number(blockNumber);
