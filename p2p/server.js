@@ -383,6 +383,19 @@ class P2pServer {
     return true;
   }
 
+  checkDataProtoVerForChainSegmentRequest(version) {
+    const majorVersion = VersionUtil.toMajorVersion(version);
+    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    if (isGreater) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('The given CHAIN_SEGMENT_REQUEST msg is stale.' +
+            'It may need to convert the message.');
+      }
+      return false;
+    }
+    return true;
+  }
+
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -508,6 +521,10 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
+            if (this.checkDataProtoVerForChainSegmentRequest(dataProtoVer)) {
+              // TODO(minsulee2): need to convert msg when updating CHAIN_SEGMENT_REQUEST necessary.
+              // this.convertChainSegmentRequestMessage();
+            }
             const lastBlock = _.get(parsedMessage, 'data.lastBlock');
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(lastBlock, null, 2)}`);
