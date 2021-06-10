@@ -3,7 +3,6 @@ const Websocket = require('ws');
 const ip = require('ip');
 const publicIp = require('public-ip');
 const axios = require('axios');
-const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
@@ -34,8 +33,7 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-  LIGHTWEIGHT,
-  FeatureFlags
+  LIGHTWEIGHT
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {
@@ -50,7 +48,8 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage
+  encapsulateMessage,
+  checkDataProtoVer
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -323,79 +322,6 @@ class P2pServer {
     });
   }
 
-  checkDataProtoVerForAddressRequest(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('The given ADDRESS_REQUEST is stale. It may need to convert the message.');
-      }
-      return false;
-    }
-    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('I may be running of the old version ain-blockchain node. ' +
-          'Please check the new release via visiting the URL below:');
-        logger.error('https://github.com/ainblockchain/ain-blockchain');
-      }
-    }
-    return true;
-  }
-
-  checkDataProtoVerForConsensus(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('The given CONSENSUS msg is stale. It may need to convert the message.');
-      }
-      return false;
-    }
-    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('I may be running of the old version ain-blockchain node. ' +
-            'Please check the new release via visiting the URL below:');
-        logger.error('https://github.com/ainblockchain/ain-blockchain');
-      }
-    }
-    return true;
-  }
-
-  checkDataProtoVerForTransaction(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('The given TRANSACTION msg is stale. It may need to convert the message.');
-      }
-      return false;
-    }
-    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('I may be running of the old version ain-blockchain node. ' +
-            'Please check the new release via visiting the URL below:');
-        logger.error('https://github.com/ainblockchain/ain-blockchain');
-      }
-    }
-    return true;
-  }
-
-  checkDataProtoVerForChainSegmentRequest(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('The given CHAIN_SEGMENT_REQUEST msg is stale.' +
-            'It may need to convert the message.');
-      }
-      return false;
-    }
-    return true;
-  }
-
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -417,7 +343,9 @@ class P2pServer {
 
         switch (_.get(parsedMessage, 'type')) {
           case MessageTypes.ADDRESS_REQUEST:
-            if (!this.checkDataProtoVerForAddressRequest(dataProtoVer)) {
+            const dataVersionCheckForAddress = checkDataProtoVer(
+                this.majorDataProtocolVersion, dataProtoVer, 'ADDRESS_REQUEST');
+            if (dataVersionCheckForAddress > 0) {
               // TODO(minsulee2): need to convert message when updating ADDRESS_REQUEST necessary.
               // this.convertAddressMessage();
             }
@@ -467,7 +395,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.CONSENSUS:
-            if (!this.checkDataProtoVerForConsensus(dataProtoVer)) {
+            const dataVersionCheckForConsensus = checkDataProtoVer(
+                this.majorDataProtocolVersion, dataProtoVer, 'CONSENSUS');
+            if (dataVersionCheckForConsensus > 0) {
               // TODO(minsulee2): need to convert message when updating CONSENSUS message necessary.
               // this.convertConsensusMessage();
             }
@@ -481,7 +411,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.TRANSACTION:
-            if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
+            const dataVersionCheckForTransaction = checkDataProtoVer(
+                this.majorDataProtocolVersion, dataProtoVer, 'TRANSACTION');
+            if (dataVersionCheckForTransaction > 0) {
               // TODO(minsulee2): need to convert msg when updating TRANSACTION message necessary.
               // this.convertTransactionMessage();
             }
@@ -521,7 +453,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
-            if (this.checkDataProtoVerForChainSegmentRequest(dataProtoVer)) {
+            const dataVersionCheckForChainSegment = checkDataProtoVer(
+                this.majorDataProtocolVersion, dataProtoVer, 'CHAIN_SEGMENT_REQUEST');
+            if (dataVersionCheckForChainSegment > 0) {
               // TODO(minsulee2): need to convert msg when updating CHAIN_SEGMENT_REQUEST necessary.
               // this.convertChainSegmentRequestMessage();
             }

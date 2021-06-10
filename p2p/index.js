@@ -15,8 +15,7 @@ const {
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
   MAX_OUTBOUND_LIMIT,
-  MAX_INBOUND_LIMIT,
-  FeatureFlags
+  MAX_INBOUND_LIMIT
 } = require('../common/constants');
 const { sleep } = require('../common/chain-util');
 const {
@@ -278,7 +277,7 @@ class P2pClient {
       switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
           const dataVersionCheckForAddress = checkDataProtoVer(
-              this.server.majorDataProtocolVersion, dataProtoVer, "ADDRESS_RESPONSE");
+              this.server.majorDataProtocolVersion, dataProtoVer, 'ADDRESS_RESPONSE');
           if (dataVersionCheckForAddress > 0) {
             // TODO(minsulee2): need to convert message when updating ADDRESS_RESPONSE necessary.
             // this.convertAddressMessage();
@@ -317,7 +316,7 @@ class P2pClient {
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           const dataVersionCheckForChainSegment = checkDataProtoVer(
-              this.server.majorDataProtocolVersion, dataProtoVer, "CHAIN_SEGMENT_RESPONSE");
+              this.server.majorDataProtocolVersion, dataProtoVer, 'CHAIN_SEGMENT_RESPONSE');
           if (dataVersionCheckForChainSegment < 0) {
             logger.error('CANNOT deal with higher data protocol version. Discard the ' +
                 'CHAIN_SEGMENT_RESPONSE message.');
