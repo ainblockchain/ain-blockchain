@@ -6,13 +6,16 @@
 
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
+const semver = require('semver');
 const logger = require('../logger')('SERVER_UTIL');
 const {
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
-  P2P_MESSAGE_TIMEOUT_MS
+  P2P_MESSAGE_TIMEOUT_MS,
+  FeatureFlags
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
+const VersionUtil = require('../common/version-util');
 
 function _isValidMessage(message) {
   const body = _.get(message, 'data.body');
@@ -113,6 +116,27 @@ function checkTimestamp(timestamp) {
   }
 }
 
+function checkDataProtoVer(nodeMajorVersion, comningVersion, msgType) {
+  const comingMajorVersion = VersionUtil.toMajorVersion(comningVersion);
+  const isGreater = semver.gt(nodeMajorVersion, comingMajorVersion);
+  if (isGreater) {
+    if (FeatureFlags.enableRichP2pCommunicationLogging) {
+      logger.error(`The given ${msgType} message is stale.`);
+    }
+    return 1;
+  }
+  const isLower = semver.lt(nodeMajorVersion, comingMajorVersion);
+  if (isLower) {
+    if (FeatureFlags.enableRichP2pCommunicationLogging) {
+      logger.error('I may be running of the old DATA_PROTOCOL_VERSION of ain-blockchain node. ' +
+          'Please check the new release via visiting the URL below:');
+      logger.error('https://github.com/ainblockchain/ain-blockchain');
+    }
+    return -1;
+  }
+  return 0;
+}
+
 module.exports = {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -121,5 +145,6 @@ module.exports = {
   verifySignedMessage,
   closeSocketSafe,
   checkTimestamp,
+  checkDataProtoVer,
   encapsulateMessage
 };
