@@ -25,7 +25,7 @@ const FeatureFlags = {
   // Enables rich logging for transactions.
   enableRichTransactionLogging: false,
   // Enables rich logging for p2p communication.
-  enableRichP2pCommunicationLogging: false,
+  enableRichP2pCommunicationLogging: true,
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
 };

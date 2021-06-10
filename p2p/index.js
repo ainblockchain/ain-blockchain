@@ -3,7 +3,6 @@ const _ = require('lodash');
 const P2pServer = require('./server');
 const url = require('url');
 const Websocket = require('ws');
-const semver = require('semver');
 const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStatus } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
@@ -28,7 +27,8 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage
+  encapsulateMessage,
+  checkDataProtoVer
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -256,18 +256,6 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
-  checkDataProtoVerForAddressResponse(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('The version of the given address reponse is stale.');
-      }
-      return false;
-    }
-    return true;
-  }
-
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -289,7 +277,9 @@ class P2pClient {
 
       switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
-          if (!this.checkDataProtoVerForAddressResponse(dataProtoVer)) {
+          const dataVersionCheckForAddress = checkDataProtoVer(
+              this.server.majorDataProtocolVersion, dataProtoVer, "ADDRESS_RESPONSE");
+          if (dataVersionCheckForAddress > 0) {
             // TODO(minsulee2): need to convert message when updating ADDRESS_RESPONSE necessary.
             // this.convertAddressMessage();
           }
@@ -326,20 +316,13 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          const majorVersion = VersionUtil.toMajorVersion(parsedMessage.dataProtoVer);
-          const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-          if (isLower) {
-            if (FeatureFlags.enableRichP2pCommunicationLogging) {
-              logger.error('CANNOT deal with higher data protocol version. Discard the ' +
+          const dataVersionCheckForChainSegment = checkDataProtoVer(
+              this.server.majorDataProtocolVersion, dataProtoVer, "CHAIN_SEGMENT_RESPONSE");
+          if (dataVersionCheckForChainSegment < 0) {
+            logger.error('CANNOT deal with higher data protocol version. Discard the ' +
                 'CHAIN_SEGMENT_RESPONSE message.');
-            }
             return;
-          }
-          const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-          if (isGreater) {
-            if (FeatureFlags.enableRichP2pCommunicationLogging) {
-              logger.error('The version of CHAIN_SEGMENT_RESPONSE message is stale.');
-            }
+          } else if (dataVersionCheckForChainSegment > 0) {
             // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
             // this.convertChainSegmentResponseMessage();
           }
