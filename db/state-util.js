@@ -11,6 +11,7 @@ const {
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
+  STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 const Functions = require('./functions');
 
@@ -113,6 +114,7 @@ function isValidServiceName(name) {
 function isValidStateLabel(label) {
   if (!ChainUtil.isString(label) ||
       label === '' ||
+      label.length > STATE_LABEL_LENGTH_LIMIT ||
       (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
