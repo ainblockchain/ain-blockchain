@@ -3,6 +3,7 @@ const {
   isWritablePathWithSharding,
   hasReservedChar,
   hasAllowedPattern,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
@@ -24,6 +25,9 @@ const {
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree
 } = require('../db/state-util');
+const {
+  STATE_LABEL_LENGTH_LIMIT,
+} = require('../common/constants');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
@@ -296,6 +300,69 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidServiceName", () => {
+    it("when non-string input", () => {
+      expect(isValidServiceName(null)).to.equal(false);
+      expect(isValidServiceName(undefined)).to.equal(false);
+      expect(isValidServiceName(true)).to.equal(false);
+      expect(isValidServiceName(false)).to.equal(false);
+      expect(isValidServiceName(0)).to.equal(false);
+      expect(isValidServiceName([])).to.equal(false);
+      expect(isValidServiceName({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(isValidServiceName('')).to.equal(false);
+      expect(isValidServiceName('.')).to.equal(false);
+      expect(isValidServiceName('.a')).to.equal(false);
+      expect(isValidServiceName('$')).to.equal(false);
+      expect(isValidServiceName('$a')).to.equal(false);
+      expect(isValidServiceName('*')).to.equal(false);
+      expect(isValidServiceName('~')).to.equal(false);
+      expect(isValidServiceName('!')).to.equal(false);
+      expect(isValidServiceName('@')).to.equal(false);
+      expect(isValidServiceName('%')).to.equal(false);
+      expect(isValidServiceName('^')).to.equal(false);
+      expect(isValidServiceName('&')).to.equal(false);
+      expect(isValidServiceName('-')).to.equal(false);
+      expect(isValidServiceName('=')).to.equal(false);
+      expect(isValidServiceName('+')).to.equal(false);
+      expect(isValidServiceName('|')).to.equal(false);
+      expect(isValidServiceName(';')).to.equal(false);
+      expect(isValidServiceName(',')).to.equal(false);
+      expect(isValidServiceName('?')).to.equal(false);
+      expect(isValidServiceName('/')).to.equal(false);
+      expect(isValidServiceName("'")).to.equal(false);
+      expect(isValidServiceName('"')).to.equal(false);
+      expect(isValidServiceName('`')).to.equal(false);
+      expect(isValidServiceName('\x00')).to.equal(false);
+      expect(isValidServiceName('\x7F')).to.equal(false);
+    })
+
+    it("when string input without alphabetic prefix returning false", () => {
+      expect(isValidServiceName('0')).to.equal(false);
+      expect(isValidServiceName('0a')).to.equal(false);
+      expect(isValidServiceName('0a0')).to.equal(false);
+      expect(isValidServiceName('0_')).to.equal(false);
+      expect(isValidServiceName('0_0')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(isValidServiceName('a')).to.equal(true);
+      expect(isValidServiceName('aa')).to.equal(true);
+      expect(isValidServiceName('a_')).to.equal(true);
+      expect(isValidServiceName('a0')).to.equal(true);
+      expect(isValidServiceName('a0a')).to.equal(true);
+      expect(isValidServiceName('_')).to.equal(true);
+      expect(isValidServiceName('_0')).to.equal(true);
+      expect(isValidServiceName('_0_')).to.equal(true);
+      expect(isValidServiceName('consensus')).to.equal(true);
+      expect(isValidServiceName('afan')).to.equal(true);
+      expect(isValidServiceName('collaborative_ai')).to.equal(true);
+      expect(isValidServiceName('_a_dapp')).to.equal(true);
+    })
+  })
+
   describe("isValidStateLabel", () => {
     it("when non-string input", () => {
       expect(isValidStateLabel(null)).to.equal(false);
@@ -319,6 +386,7 @@ describe("state-util", () => {
 
     it("when string input returning true", () => {
       expect(isValidStateLabel('a')).to.equal(true);
+      expect(isValidStateLabel('0')).to.equal(true);
       expect(isValidStateLabel('.a')).to.equal(true);
       expect(isValidStateLabel('$a')).to.equal(true);
       expect(isValidStateLabel('*')).to.equal(true);
@@ -336,6 +404,13 @@ describe("state-util", () => {
       expect(isValidStateLabel(';')).to.equal(true);
       expect(isValidStateLabel(',')).to.equal(true);
       expect(isValidStateLabel('?')).to.equal(true);
+    })
+
+    it("when long string input", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      expect(isValidStateLabel(labelLong)).to.equal(true);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      expect(isValidStateLabel(labelTooLong)).to.equal(false);
     })
   })
 
@@ -381,6 +456,19 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates(['a', '.b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '$b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
+    })
+
+    it("when input with long labels", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelLong]), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+          isValidPathForStates([labelTooLong, labelLong]),
+          {isValid: false, invalidPath: `/${labelTooLong}`});
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelTooLong]),
+          {isValid: false, invalidPath: `/${labelLong}/${labelTooLong}`});
     })
   })
 
@@ -527,6 +615,29 @@ describe("state-util", () => {
             '*': 'x'
           }
       }), {isValid: true, invalidPath: ''});
+    })
+
+    it("when input with long labels", () => {
+      const textLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const textTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textTooLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textTooLong}`});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textTooLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textLong}/${textTooLong}`});
     })
   })
 

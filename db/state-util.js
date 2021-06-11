@@ -7,9 +7,11 @@ const ChainUtil = require('../common/chain-util');
 const {
   FunctionProperties,
   FunctionTypes,
+  isNativeFunctionId,
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
+  STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 const Functions = require('./functions');
 
@@ -88,6 +90,11 @@ function isWritablePathWithSharding(fullPath, root) {
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
+function hasVarNamePattern(name) {
+  const varNameRegex = /^[A-Za-z_]+[A-Za-z0-9_]*$/gm;
+  return ChainUtil.isString(name) ? varNameRegex.test(name) : false;
+}
+
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]/gm;
   return ChainUtil.isString(label) ? reservedCharRegex.test(label) : false;
@@ -100,9 +107,14 @@ function hasAllowedPattern(label) {
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
+function isValidServiceName(name) {
+  return hasVarNamePattern(name);
+}
+
 function isValidStateLabel(label) {
   if (!ChainUtil.isString(label) ||
       label === '' ||
+      label.length > STATE_LABEL_LENGTH_LIMIT ||
       (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
@@ -291,7 +303,7 @@ function isValidOwnerConfig(ownerConfigObj) {
         return { isValid: false, invalidPath };
       }
       const fid = owner.substring(OwnerProperties.FID_PREFIX.length);
-      if (!Functions.isNativeFunctionId(fid)) {
+      if (!isNativeFunctionId(fid)) {
         return { isValid: false, invalidPath };
       }
     }
@@ -663,6 +675,7 @@ module.exports = {
   hasReservedChar,
   hasAllowedPattern,
   isWritablePathWithSharding,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,

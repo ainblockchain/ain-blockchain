@@ -298,7 +298,7 @@ app.get('/connection_status', (req, res) => {
 app.get('/blocks', (req, res, next) => {
   const blockEnd = node.bc.lastBlockNumber() + 1;
   const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
-  const result = node.bc.getChainSection(blockBegin, blockEnd);
+  const result = node.bc.getBlockList(blockBegin, blockEnd);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -384,7 +384,9 @@ app.get('/get_transaction', (req, res, next) => {
     if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
-      if (index >= 0) {
+      if (!block) {
+        logger.debug(`No block found for the tx: ${req.query.hash}`);
+      } else if (index >= 0) {
         transactionInfo.transaction = block.transactions[index];
       } else {
         transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
