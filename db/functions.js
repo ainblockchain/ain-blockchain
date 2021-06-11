@@ -84,14 +84,6 @@ class Functions {
     this.callStack = [];
   }
 
-  static isNativeFunctionId(fid) {
-    if (!fid) {
-      return false;
-    }
-    const fidList = Object.values(NativeFunctionIds);
-    return fidList.find((elem) => elem === fid) !== undefined;
-  }
-
   /**
    * Runs functions of function paths matched with given database path.
    *
@@ -545,6 +537,8 @@ class Functions {
   }
 
   _createApp(value, context) {
+    const { isValidServiceName } = require('./state-util');
+
     const appName = context.params.app_name;
     const recordId = context.params.record_id;
     const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
@@ -552,6 +546,10 @@ class Functions {
     const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
+    if (!isValidServiceName(appName)) {
+      return this.saveAndReturnFuncResult(
+          context, resultPath, FunctionResultCode.INVALID_SERVICE_NAME);
+    }
     if (!ChainUtil.isDict(adminConfig)) {
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }

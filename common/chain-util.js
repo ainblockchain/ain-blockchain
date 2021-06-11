@@ -1,5 +1,3 @@
-const EC = require('elliptic').ec;
-const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
@@ -70,18 +68,6 @@ class ChainUtil {
           `[${LOG_HEADER}] Failed to extract address with error: ${err} ${err.stack}.`);
     }
     return address;
-  }
-
-  // TODO(liayoo): Remove this function.
-  static genKeyPair() {
-    let keyPair;
-    if (PRIVATE_KEY) {
-      keyPair = ec.keyFromPrivate(PRIVATE_KEY, 'hex');
-      keyPair.getPublic();
-    } else {
-      keyPair = ec.genKeyPair();
-    }
-    return keyPair;
   }
 
   static isBool(value) {
@@ -353,13 +339,15 @@ class ChainUtil {
 
   static isAppPath(parsedPath) {
     const { PredefinedDbPaths } = require('../common/constants');
+
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
   // TODO(liayoo): Fix testing paths (writing at the root) and update isServicePath().
   static isServicePath(parsedPath) {
-    const { NATIVE_SERVICE_TYPES } = require('../common/constants');
-    return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
+    const { isServiceType } = require('../common/constants');
+
+    return isServiceType(_.get(parsedPath, 0));
   }
 
   static getSingleOpGasAmount(parsedPath, value) {
