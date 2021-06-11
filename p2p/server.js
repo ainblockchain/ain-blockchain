@@ -397,9 +397,8 @@ class P2pServer {
           case MessageTypes.CONSENSUS:
             const dataVersionCheckForConsensus = checkDataProtoVer(
                 this.majorDataProtocolVersion, dataProtoVer, 'CONSENSUS');
-            if (dataVersionCheckForConsensus > 0) {
-              // TODO(minsulee2): need to convert message when updating CONSENSUS message necessary.
-              // this.convertConsensusMessage();
+            if (dataVersionCheckForConsensus !== 0) {
+              return;
             }
             const consensusMessage = _.get(parsedMessage, 'data.message');
             logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
@@ -413,7 +412,12 @@ class P2pServer {
           case MessageTypes.TRANSACTION:
             const dataVersionCheckForTransaction = checkDataProtoVer(
                 this.majorDataProtocolVersion, dataProtoVer, 'TRANSACTION');
-            if (dataVersionCheckForTransaction > 0) {
+            if (dataVersionCheckForTransaction < 0) {
+              logger.error('CANNOT deal with higher data protocol version. Discard the ' +
+                  'TRANSACTION message.');
+              return;
+            }
+            else if (dataVersionCheckForTransaction > 0) {
               // TODO(minsulee2): need to convert msg when updating TRANSACTION message necessary.
               // this.convertTransactionMessage();
             }
@@ -453,12 +457,6 @@ class P2pServer {
             }
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
-            const dataVersionCheckForChainSegment = checkDataProtoVer(
-                this.majorDataProtocolVersion, dataProtoVer, 'CHAIN_SEGMENT_REQUEST');
-            if (dataVersionCheckForChainSegment > 0) {
-              // TODO(minsulee2): need to convert msg when updating CHAIN_SEGMENT_REQUEST necessary.
-              // this.convertChainSegmentRequestMessage();
-            }
             const lastBlock = _.get(parsedMessage, 'data.lastBlock');
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ` +
                 `${JSON.stringify(lastBlock, null, 2)}`);
