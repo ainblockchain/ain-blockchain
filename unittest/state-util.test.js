@@ -25,6 +25,9 @@ const {
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree
 } = require('../db/state-util');
+const {
+  STATE_LABEL_LENGTH_LIMIT,
+} = require('../common/constants');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
@@ -402,6 +405,13 @@ describe("state-util", () => {
       expect(isValidStateLabel(',')).to.equal(true);
       expect(isValidStateLabel('?')).to.equal(true);
     })
+
+    it("when long string input", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      expect(isValidStateLabel(labelLong)).to.equal(true);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      expect(isValidStateLabel(labelTooLong)).to.equal(false);
+    })
   })
 
   describe("isValidPathForStates", () => {
@@ -446,6 +456,19 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates(['a', '.b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '$b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
+    })
+
+    it("when input with long labels", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelLong]), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+          isValidPathForStates([labelTooLong, labelLong]),
+          {isValid: false, invalidPath: `/${labelTooLong}`});
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelTooLong]),
+          {isValid: false, invalidPath: `/${labelLong}/${labelTooLong}`});
     })
   })
 
@@ -592,6 +615,29 @@ describe("state-util", () => {
             '*': 'x'
           }
       }), {isValid: true, invalidPath: ''});
+    })
+
+    it("when input with long labels", () => {
+      const textLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const textTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textTooLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textTooLong}`});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textTooLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textLong}/${textTooLong}`});
     })
   })
 
