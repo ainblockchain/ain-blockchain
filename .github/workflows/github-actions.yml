@@ -22,7 +22,6 @@ jobs:
           echo "${{ github.event.pull_request.merged }}"
           echo "${{ github.event.pull_request.base.ref }}"
           echo "${{ github.event_name }}"
-          echo "${{ toJson(github) }}"
   performance_test:
     if: ${{ github.event.pull_request.merged == 'true' }}
     runs-on: ubuntu-latest
