@@ -46,8 +46,8 @@ class P2pClient {
     this.startHeartbeat();
   }
 
-  run() {
-    this.server.listen();
+  async run() {
+    await this.server.listen();
     this.connectToTracker();
   }
 
