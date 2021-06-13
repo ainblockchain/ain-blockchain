@@ -1,4 +1,4 @@
-const logger = require('../logger')('DATABASE');
+const logger = require('../logger')('DATABASE');//
 const {
   FeatureFlags,
   AccountProperties,
