@@ -76,7 +76,7 @@ class P2pServer {
     this.maxInbound = maxInbound;
   }
 
-  listen() {
+  async listen() {
     this.wsServer = new Websocket.Server({
       port: P2P_PORT,
       // Enables server-side compression. For option details, see
@@ -106,7 +106,7 @@ class P2pServer {
       this.setPeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
-    this.setUpIpAddresses().then(() => { });
+    await this.setUpIpAddresses();
   }
 
   getNodeAddress() {
