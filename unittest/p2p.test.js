@@ -1,5 +1,4 @@
 const chai = require('chai');
-const url = require('url');
 
 const BlockchainNode = require('../node');
 const VersionUtil = require('../common/version-util');
@@ -270,31 +269,26 @@ describe("p2p", () => {
 
     describe("getNetworkStatus", () => {
       it("shows initial values of connection status", () => {
+        const extIp = p2pClient.server.getExternalIp();
+        const url = new URL(`ws://${extIp}:${P2P_PORT}`);
+        const p2pUrl = url.toString();
+        url.protocol = 'http:';
+        url.port = PORT;
+        const clientApiUrl = url.toString();
+        url.pathname = 'json-rpc';
+        const jsonRpcUrl = url.toString();
         const actual = {
-          ip: p2pClient.server.getExternalIp(),
+          ip: extIp,
           p2p: {
-            url: url.format({
-              protocol: 'ws',
-              hostname: p2pClient.server.getExternalIp(),
-              port: P2P_PORT
-            }),
+            url: p2pUrl,
             port: P2P_PORT,
           },
           clientApi: {
-            url: url.format({
-              protocol: 'http',
-              hostname: p2pClient.server.getExternalIp(),
-              port: PORT
-            }),
+            url: clientApiUrl,
             port: PORT,
           },
           jsonRpc: {
-            url: url.format({
-              protocol: 'http',
-              hostname: p2pClient.server.getExternalIp(),
-              port: PORT,
-              pathname: '/json-rpc',
-            }),
+            url: jsonRpcUrl,
             port: PORT,
           },
           connectionStatus: p2pClient.getConnectionStatus()
