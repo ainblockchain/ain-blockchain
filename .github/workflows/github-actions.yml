@@ -1,10 +1,16 @@
 name: AIN-blockchain CI/CD
 
 on:
+  push:
+    branches:
+      - 'develop'
+      - 'release/*'
+      - 'master'
   pull_request:
     branches:
-      - master
-    types: [closed]
+      - 'develop'
+      - 'release/*'
+      - 'master'
 jobs:
   print:
     runs-on: ubuntu-latest
