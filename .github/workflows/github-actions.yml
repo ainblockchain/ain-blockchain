@@ -12,6 +12,15 @@ on:
       - 'release/*'
       - 'master'
 jobs:
+  print:
+    runs-on: ubuntu-latest
+    steps:
+      - name: pr
+        run: |-
+          echo "${{ github.event_name }}"
+          echo "${{ github.event.action }}"
+          echo "${{ github.github.event.pull_request.merged }}"
+          echo "${{ github.event.pull_request.base.ref }}"
   performance_test:
     if: ${{ github.event_name == 'pull_request' && github.event.action == 'close' && github.event.pull_request.merged == 'true' && github.event.pull_request.base.ref == 'master' }}
     runs-on: ubuntu-latest
