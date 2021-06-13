@@ -1,16 +1,10 @@
 name: AIN-blockchain CI/CD
 
 on:
-  push:
-    branches:
-      - 'develop'
-      - 'release/*'
-      - 'master'
   pull_request:
     branches:
-      - 'develop'
-      - 'release/*'
-      - 'master'
+      - master
+    types: [closed]
 jobs:
   print:
     runs-on: ubuntu-latest
@@ -24,7 +18,7 @@ jobs:
           echo "${{ github.event_name }}"
           echo "${{ toJson(github) }}"
   performance_test:
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'close' && github.event.pull_request.merged == 'true' && github.event.pull_request.base.ref == 'master' }}
+    if: ${{ github.event.pull_request.merged == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Triggered Test
