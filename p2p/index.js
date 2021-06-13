@@ -1,7 +1,6 @@
 /* eslint no-mixed-operators: "off" */
 const _ = require('lodash');
 const P2pServer = require('./server');
-const url = require('url');
 const Websocket = require('ws');
 const semver = require('semver');
 const logger = require('../logger')('P2P_CLIENT');
@@ -97,31 +96,26 @@ class P2pClient {
   }
 
   getNetworkStatus() {
+    const extIp = this.server.getExternalIp();
+    const url = new URL(`ws://${extIp}:${P2P_PORT}`);
+    const p2pUrl = url.toString();
+    url.protocol = 'http:';
+    url.port = PORT;
+    const clientApiUrl = url.toString();
+    url.pathname = 'json-rpc';
+    const jsonRpcUrl = url.toString();
     return {
-      ip: this.server.getExternalIp(),
+      ip: extIp,
       p2p: {
-        url: url.format({
-          protocol: 'ws',
-          hostname: this.server.getExternalIp(),
-          port: P2P_PORT
-        }),
+        url: p2pUrl,
         port: P2P_PORT,
       },
       clientApi: {
-        url: url.format({
-          protocol: 'http',
-          hostname: this.server.getExternalIp(),
-          port: PORT
-        }),
+        url: clientApiUrl,
         port: PORT,
       },
       jsonRpc: {
-        url: url.format({
-          protocol: 'http',
-          hostname: this.server.getExternalIp(),
-          port: PORT,
-          pathname: '/json-rpc',
-        }),
+        url: jsonRpcUrl,
         port: PORT,
       },
       connectionStatus: this.getConnectionStatus()
