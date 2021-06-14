@@ -5932,7 +5932,6 @@ describe('Blockchain Node', () => {
     });
 
     it('app-dependent service tx: individual account', async () => {
-      const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
       const gasPrice = 1;
       const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
@@ -5945,11 +5944,12 @@ describe('Blockchain Node', () => {
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
-      const balanceAfter = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
-      assert.deepEqual(
-        balanceAfter,
-        balanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service)
-      );
+      const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
+      const gasFeeCollected = parseOrLog(syncRequest(
+        'GET',
+        `${server2}/get_value?ref=/gas_fee/collect/${billingUserA}/${tx.number}/${txRes.tx_hash}/amount`
+      ).body.toString('utf-8')).result;
+      assert.deepEqual(gasFeeCollected, gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service);
     });
 
     it('app-dependent service tx: invalid billing param', async () => {
@@ -6010,7 +6010,6 @@ describe('Blockchain Node', () => {
     });
 
     it('app-independent service tx: individual account', async () => {
-      const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
       const gasPrice = 1;
       const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `/transfer/${billingUserA}/${billingUserB}/${Date.now()}/value`,
@@ -6023,11 +6022,12 @@ describe('Blockchain Node', () => {
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
-      const balanceAfter = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
-      assert.deepEqual(
-        balanceAfter,
-        balanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service) - 1
-      );
+      const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
+      const gasFeeCollected = parseOrLog(syncRequest(
+        'GET',
+        `${server2}/get_value?ref=/gas_fee/collect/${billingUserA}/${tx.number}/${txRes.tx_hash}/amount`
+      ).body.toString('utf-8')).result;
+      assert.deepEqual(gasFeeCollected, gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service);
     });
 
     it('app-independent service tx: billing account', async () => {
@@ -6055,7 +6055,6 @@ describe('Blockchain Node', () => {
     });
 
     it('multi-set service tx: individual account', async () => {
-      const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
       const gasPrice = 1;
       const txRes = parseOrLog(syncRequest('POST', server2 + '/set', {json: {
           op_list: [
@@ -6078,11 +6077,12 @@ describe('Blockchain Node', () => {
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
-      const balanceAfter = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
-      assert.deepEqual(
-        balanceAfter,
-        balanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service) - 1,
-      );
+      const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
+      const gasFeeCollected = parseOrLog(syncRequest(
+        'GET',
+        `${server2}/get_value?ref=/gas_fee/collect/${billingUserA}/${tx.number}/${txRes.tx_hash}/amount`
+      ).body.toString('utf-8')).result;
+      assert.deepEqual(gasFeeCollected, gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service);
     });
 
     it('multi-set service tx: billing account', async () => {
