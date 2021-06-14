@@ -350,6 +350,34 @@ class ChainUtil {
     return isServiceType(_.get(parsedPath, 0));
   }
 
+  static getDependentAppNameFromRef(ref) {
+    const { isAppDependentServiceType } = require('../common/constants');
+    const parsedPath = ChainUtil.parsePath(ref);
+    const type = _.get(parsedPath, 0);
+    if (!type || !isAppDependentServiceType(type)) {
+      return null;
+    }
+    return _.get(parsedPath, 1, null);
+  }
+
+  static getServiceDependentAppNameList(op) {
+    if (!op) {
+      return [];
+    }
+    if (op.op_list) {
+      const appNames = {};
+      for (const innerOp of op.op_list) {
+        const name = ChainUtil.getDependentAppNameFromRef(innerOp.ref);
+        if (name) {
+          appNames[name] = true;
+        }
+      }
+      return Object.keys(appNames);
+    }
+    const name = ChainUtil.getDependentAppNameFromRef(op.ref);
+    return name ? [name] : [];
+  }
+
   static getSingleOpGasAmount(parsedPath, value) {
     const gasAmount = {
       service: 0,

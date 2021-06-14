@@ -910,14 +910,10 @@ class DB {
       if (blockNumber > 0) {
         // Use only the service gas amount total
         result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
-        if (result.gas_cost_total > 0) {
-          const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
-          const gasFeeCollectRes = this.setValue(
-              gasFeeCollectPath, { amount: result.gas_cost_total }, auth, timestamp, tx, false);
-          if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
-            return ChainUtil.returnTxResult(
-                15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
-          }
+        logger.error(`gas_cost_total: ${result.gas_cost_total} (${gasPrice}, ${gasAmountTotal.service})`);
+        const collectFeeRes = this.checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result);
+        if (collectFeeRes !== true) {
+          return collectFeeRes;
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
@@ -925,6 +921,48 @@ class DB {
       }
     }
     return result;
+  }
+
+  checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result) {
+    if (result.gas_cost_total <= 0) { // No fees to collect
+      return true;
+    }
+
+    const billing = tx.tx_body.billing;
+    if (!billing) { // Charge the individual account
+      return this.collectFee(auth.addr, result.gas_cost_total, auth, timestamp, tx, blockNumber);
+    }
+    const billingParsed = billing.split('|');
+    if (billingParsed.length !== 2) {
+      const reason = 'Invalid billing param';
+      return ChainUtil.returnTxResult(15, `Failed to collect gas fee: ${reason}`, 0);
+    }
+    const billingAppName = billingParsed[0];
+    const billingServiceAcntName = `billing|${billing}`;
+    const appNameList = ChainUtil.getServiceDependentAppNameList(op);
+    if (appNameList.length > 1) {
+      // More than 1 apps are involved. Cannot charge an app-related billing account.
+      const reason = 'Multiple app-dependent service operations for a billing account';
+      return ChainUtil.returnTxResult(15, `Failed to collect gas fee: ${reason}`, 0);
+    } else if (appNameList.length === 1 && appNameList[0] !== billingAppName) {
+      // Tx app name doesn't match the billing account.
+      const reason = 'Invalid billing account';
+      return ChainUtil.returnTxResult(15, `Failed to collect gas fee: ${reason}`, 0);
+    }
+    // Either app-independent or app name matches the billing account.
+    return this.collectFee(
+        billingServiceAcntName, result.gas_cost_total, auth, timestamp, tx, blockNumber);
+  }
+
+  collectFee(billedTo, gasCost, auth, timestamp, tx, blockNumber) {
+    const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
+    const gasFeeCollectRes = this.setValue(
+        gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
+    if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
+      return ChainUtil.returnTxResult(
+          15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
+    }
+    return true;
   }
 
   executeTransaction(tx, blockNumber = 0) {
