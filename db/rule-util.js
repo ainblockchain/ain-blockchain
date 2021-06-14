@@ -146,6 +146,16 @@ class RuleUtil {
     }
   }
 
+  getBillingUserPath(billingServAcntName, userAddr) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const parsed = this.parseServAcntName(billingServAcntName);
+    const appName = parsed[1];
+    const billingId = parsed[2];
+    return `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/${billingId}/` +
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`;
+  }
+
   getOwnerAddr() {
     const { GenesisAccounts, AccountProperties } = require('../common/constants');
     return _.get(GenesisAccounts, `${AccountProperties.OWNER}.${AccountProperties.ADDRESS}`, null);

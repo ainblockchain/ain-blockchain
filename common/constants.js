@@ -133,6 +133,7 @@ const PredefinedDbPaths = {
   // Gas fee
   GAS_FEE: 'gas_fee',
   COLLECT: 'collect',
+  BILLING: 'billing',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -460,7 +461,6 @@ const GasFeeConstants = {
 const SERVICE_TYPES = [
   PredefinedDbPaths.ACCOUNTS,
   PredefinedDbPaths.CHECKIN,
-  PredefinedDbPaths.CONSENSUS,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.MANAGE_APP,
@@ -484,10 +484,24 @@ const SERVICE_ACCOUNT_SERVICE_TYPES = [
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.PAYMENTS,
   PredefinedDbPaths.STAKING,
+  PredefinedDbPaths.BILLING,
 ];
 
 function isServiceAccountServiceType(type) {
   return SERVICE_ACCOUNT_SERVICE_TYPES.includes(type);
+}
+
+/**
+ * Service types that are NOT app-dependent.
+ */
+const APP_DEPENDENT_SERVICE_TYPES = [
+  PredefinedDbPaths.MANAGE_APP,
+  PredefinedDbPaths.PAYMENTS,
+  PredefinedDbPaths.STAKING,
+];
+
+function isAppDependentServiceType(type) {
+  return APP_DEPENDENT_SERVICE_TYPES.includes(type);
 }
 
 /**
@@ -763,6 +777,7 @@ module.exports = {
   SyncModeOptions,
   isServiceType,
   isServiceAccountServiceType,
+  isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
   ...GenesisParams.blockchain,
