@@ -7,10 +7,10 @@ const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
 const _ = require('lodash');
+const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
 const Consensus = require('../consensus');
-const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
@@ -33,7 +33,8 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-  LIGHTWEIGHT
+  LIGHTWEIGHT,
+  FeatureFlags
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const {
@@ -48,8 +49,7 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage,
-  checkDataProtoVer
+  encapsulateMessage
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -322,6 +322,27 @@ class P2pServer {
     });
   }
 
+  checkDataProtoVer(messageVersion, msgType) {
+    const messageMajorVersion = VersionUtil.toMajorVersion(messageVersion);
+    const isLower = semver.lt(messageMajorVersion, this.majorDataProtocolVersion);
+    if (isLower) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error(`The given ${msgType} message is stale.`);
+      }
+      return -1;
+    }
+    const isGreater = semver.gt(messageMajorVersion, this.majorDataProtocolVersion);
+    if (isGreater) {
+      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+        logger.error('I may be running of the old DATA_PROTOCOL_VERSION of ain-blockchain node. ' +
+            'Please check the new release via visiting the URL below:\n' +
+            'https://github.com/ainblockchain/ain-blockchain');
+      }
+      return 1;
+    }
+    return 0;
+  }
+
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -343,9 +364,8 @@ class P2pServer {
 
         switch (_.get(parsedMessage, 'type')) {
           case MessageTypes.ADDRESS_REQUEST:
-            const dataVersionCheckForAddress = checkDataProtoVer(
-                this.majorDataProtocolVersion, dataProtoVer, 'ADDRESS_REQUEST');
-            if (dataVersionCheckForAddress > 0) {
+            const dataVersionCheckForAddress = this.checkDataProtoVer(dataProtoVer, 'ADDRESS_REQUEST');
+            if (dataVersionCheckForAddress < 0) {
               // TODO(minsulee2): need to convert message when updating ADDRESS_REQUEST necessary.
               // this.convertAddressMessage();
             }
@@ -395,8 +415,7 @@ class P2pServer {
             }
             break;
           case MessageTypes.CONSENSUS:
-            const dataVersionCheckForConsensus = checkDataProtoVer(
-                this.majorDataProtocolVersion, dataProtoVer, 'CONSENSUS');
+            const dataVersionCheckForConsensus = this.checkDataProtoVer(dataProtoVer, 'CONSENSUS');
             if (dataVersionCheckForConsensus !== 0) {
               return;
             }
@@ -410,9 +429,8 @@ class P2pServer {
             }
             break;
           case MessageTypes.TRANSACTION:
-            const dataVersionCheckForTransaction = checkDataProtoVer(
-                this.majorDataProtocolVersion, dataProtoVer, 'TRANSACTION');
-            if (dataVersionCheckForTransaction < 0) {
+            const dataVersionCheckForTransaction = checkDataProtoVer(dataProtoVer, 'TRANSACTION');
+            if (dataVersionCheckForTransaction > 0) {
               logger.error('CANNOT deal with higher data protocol version. Discard the ' +
                   'TRANSACTION message.');
               return;
