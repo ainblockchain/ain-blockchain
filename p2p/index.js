@@ -26,8 +26,7 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage,
-  checkDataProtoVer
+  encapsulateMessage
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -278,9 +277,8 @@ class P2pClient {
 
       switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
-          const dataVersionCheckForAddress = checkDataProtoVer(
-              this.server.majorDataProtocolVersion, dataProtoVer, 'ADDRESS_RESPONSE');
-          if (dataVersionCheckForAddress > 0) {
+          const dataVersionCheckForAddress = this.server.checkDataProtoVer(dataProtoVer, 'ADDRESS_RESPONSE');
+          if (dataVersionCheckForAddress < 0) {
             // TODO(minsulee2): need to convert message when updating ADDRESS_RESPONSE necessary.
             // this.convertAddressMessage();
           }
@@ -317,13 +315,12 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          const dataVersionCheckForChainSegment = checkDataProtoVer(
-              this.server.majorDataProtocolVersion, dataProtoVer, 'CHAIN_SEGMENT_RESPONSE');
-          if (dataVersionCheckForChainSegment < 0) {
+          const dataVersionCheckForChainSegment = this.server.checkDataProtoVer(dataProtoVer, 'CHAIN_SEGMENT_RESPONSE');
+          if (dataVersionCheckForChainSegment > 0) {
             logger.error('CANNOT deal with higher data protocol version. Discard the ' +
                 'CHAIN_SEGMENT_RESPONSE message.');
             return;
-          } else if (dataVersionCheckForChainSegment > 0) {
+          } else if (dataVersionCheckForChainSegment < 0) {
             // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
             // this.convertChainSegmentResponseMessage();
           }
