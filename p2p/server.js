@@ -366,7 +366,8 @@ class P2pServer {
 
         switch (_.get(parsedMessage, 'type')) {
           case MessageTypes.ADDRESS_REQUEST:
-            const dataVersionCheckForAddress = this.checkDataProtoVer(dataProtoVer, 'ADDRESS_REQUEST');
+            const dataVersionCheckForAddress =
+                this.checkDataProtoVer(dataProtoVer, MessageTypes.ADDRESS_REQUEST);
             if (dataVersionCheckForAddress < 0) {
               // TODO(minsulee2): need to convert message when updating ADDRESS_REQUEST necessary.
               // this.convertAddressMessage();
@@ -417,7 +418,8 @@ class P2pServer {
             }
             break;
           case MessageTypes.CONSENSUS:
-            const dataVersionCheckForConsensus = this.checkDataProtoVer(dataProtoVer, 'CONSENSUS');
+            const dataVersionCheckForConsensus =
+                this.checkDataProtoVer(dataProtoVer, MessageTypes.CONSENSUS);
             if (dataVersionCheckForConsensus !== 0) {
               return;
             }
@@ -431,7 +433,8 @@ class P2pServer {
             }
             break;
           case MessageTypes.TRANSACTION:
-            const dataVersionCheckForTransaction = checkDataProtoVer(dataProtoVer, 'TRANSACTION');
+            const dataVersionCheckForTransaction =
+                this.checkDataProtoVer(dataProtoVer, MessageTypes.TRANSACTION);
             if (dataVersionCheckForTransaction > 0) {
               logger.error('CANNOT deal with higher data protocol version. Discard the ' +
                   'TRANSACTION message.');

@@ -277,7 +277,8 @@ class P2pClient {
 
       switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
-          const dataVersionCheckForAddress = this.server.checkDataProtoVer(dataProtoVer, 'ADDRESS_RESPONSE');
+          const dataVersionCheckForAddress =
+              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.ADDRESS_RESPONSE);
           if (dataVersionCheckForAddress < 0) {
             // TODO(minsulee2): need to convert message when updating ADDRESS_RESPONSE necessary.
             // this.convertAddressMessage();
@@ -321,7 +322,8 @@ class P2pClient {
                 `Node state: ${this.server.node.state}.`);
             return;
           }
-          const dataVersionCheckForChainSegment = this.server.checkDataProtoVer(dataProtoVer, 'CHAIN_SEGMENT_RESPONSE');
+          const dataVersionCheckForChainSegment =
+              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.CHAIN_SEGMENT_RESPONSE);
           if (dataVersionCheckForChainSegment > 0) {
             logger.error('CANNOT deal with higher data protocol version. Discard the ' +
                 'CHAIN_SEGMENT_RESPONSE message.');
