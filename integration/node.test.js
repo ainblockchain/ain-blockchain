@@ -20,6 +20,7 @@ const {
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
+  MICRO_AIN,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
@@ -5813,6 +5814,369 @@ describe('Blockchain Node', () => {
               `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
           expect(adminBalanceAfter).to.equals(adminBalanceBefore + escrowServiceAccountBalanceBefore / 2);
         });
+      });
+    });
+  });
+
+  describe('Billing', async () => {
+    let serviceAdmin; // = server1
+    let billingUserA; // = server2
+    let billingUserB; // = server3
+    let userBalancePathA;
+    let userBalancePathB;
+    const billingAccountBalancePathA = '/get_value?ref=/service_accounts/billing/test_billing/A/balance';
+    before(async () => {
+      serviceAdmin =
+          parseOrLog(syncRequest('GET', server1 + '/get_address').body.toString('utf-8')).result;
+      billingUserA =
+          parseOrLog(syncRequest('GET', server2 + '/get_address').body.toString('utf-8')).result;
+      billingUserB =
+          parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
+      userBalancePathA = `/get_value?ref=/accounts/${billingUserA}/balance`;
+      userBalancePathB = `/get_value?ref=/accounts/${billingUserB}/balance`;
+
+      const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: `/staking/test_billing/${serviceAdmin}/0/stake/${Date.now()}/value`,
+        value: 1
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+        console.error(`Failed to check finalization of app staking tx.`);
+      }
+
+      const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+        ref: '/manage_app/test_billing/create/0',
+        value: {
+          admin: {
+            [serviceAdmin]: true,
+            [billingUserA]: true,
+            [billingUserB]: true
+          },
+          billing: {
+            A: { 
+              users: {
+                [serviceAdmin]: true,
+                [billingUserA]: true
+              }
+            },
+            B: {
+              users: {
+                [serviceAdmin]: true,
+                [billingUserB]: true
+              }
+            }
+          }
+        },
+        nonce: -1,
+        timestamp: Date.now(),
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+        console.error(`Failed to check finalization of create app tx.`);
+      }
+
+      const server4Addr =
+          parseOrLog(syncRequest('GET', server4 + '/get_address').body.toString('utf-8')).result;
+      const transferRes = parseOrLog(syncRequest('POST', server4 + '/set', {json: {
+        op_list: [
+          {
+            ref: `/transfer/${server4Addr}/billing|test_billing|A/${Date.now()}/value`,
+            value: 100,
+            type: 'SET_VALUE'
+          },
+          {
+            ref: `/transfer/${server4Addr}/billing|test_billing|B/${Date.now()}/value`,
+            value: 100,
+            type: 'SET_VALUE'
+          }
+        ],
+        nonce: -1,
+        timestamp: Date.now(),
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, transferRes.tx_hash))) {
+        console.error(`Failed to check finalization of transfer tx.`);
+      }
+    });
+
+    it('app txs are not charged by transfer', async () => {
+      const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      const txWithoutBillingRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: '/apps/test_billing/test',
+          value: 'testing app tx',
+          gas_price: 1,
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txWithoutBillingRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const balanceAfter = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(balanceAfter, balanceBefore);
+
+      const billingAccountBalanceBefore = parseOrLog(syncRequest(
+          'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      const txWithBillingRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: '/apps/test_billing/test',
+          value: 'testing app tx',
+          gas_price: 1,
+          billing: 'test_billing|A',
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txWithBillingRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const billingAccountBalanceAfter = parseOrLog(syncRequest(
+          'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(billingAccountBalanceAfter, billingAccountBalanceBefore);
+    });
+
+    it('app-dependent service tx: individual account', async () => {
+      const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      const gasPrice = 1;
+      const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
+          value: 1000,
+          gas_price: gasPrice,
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const balanceAfter = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(
+        balanceAfter,
+        balanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service)
+      );
+    });
+
+    it('app-dependent service tx: invalid billing param', async () => {
+      const txResBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
+          value: 1000,
+          gas_price: 1,
+          billing: 'A',
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8'));
+      expect(txResBody.code).to.equals(1);
+      assert.deepEqual(txResBody.result.result, {
+        "error_message": "Failed to collect gas fee: Invalid billing param",
+        "code": 15,
+        "gas_amount": 0
+      });
+    });
+
+    it('app-dependent service tx: not a billing account user', async () => {
+      const txResBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
+          value: 1000,
+          gas_price: 1,
+          billing: 'test_billing|B',
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8'));
+      expect(txResBody.code).to.equals(1);
+      expect(txResBody.result.result.code, 15);
+      expect(txResBody.result.result.error_message.includes('No .write permission on: /gas_fee/collect/billing|test_billing|B'), true);
+    });
+
+    it('app-dependent service tx: billing account', async () => {
+      const billingAccountBalanceBefore = parseOrLog(syncRequest(
+        'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      const gasPrice = 1;
+      const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
+          value: 1000,
+          gas_price: 1,
+          billing: 'test_billing|A',
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const billingAccountBalanceAfter = parseOrLog(syncRequest(
+          'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(
+        billingAccountBalanceAfter,
+        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service)
+      );
+    });
+
+    it('app-independent service tx: individual account', async () => {
+      const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      const gasPrice = 1;
+      const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/transfer/${billingUserA}/${billingUserB}/${Date.now()}/value`,
+          value: 1,
+          gas_price: gasPrice,
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const balanceAfter = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(
+        balanceAfter,
+        balanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service) - 1
+      );
+    });
+
+    it('app-independent service tx: billing account', async () => {
+      const billingAccountBalanceBefore = parseOrLog(syncRequest(
+          'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      const gasPrice = 1;
+      const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/transfer/${billingUserA}/${billingUserB}/${Date.now()}/value`,
+          value: 1,
+          gas_price: gasPrice,
+          billing: 'test_billing|A',
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const billingAccountBalanceAfter = parseOrLog(syncRequest(
+          'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(
+        billingAccountBalanceAfter,
+        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service)
+      );
+    });
+
+    it('multi-set service tx: individual account', async () => {
+      const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      const gasPrice = 1;
+      const txRes = parseOrLog(syncRequest('POST', server2 + '/set', {json: {
+          op_list: [
+            {
+              ref: `/transfer/${billingUserA}/${billingUserB}/${Date.now()}/value`,
+              value: 1,
+              type: 'SET_VALUE'
+            },
+            {
+              ref: `/manage_app/test_billing/config/service/staking/lockup_duration`,
+              value: 100,
+              type: 'SET_VALUE'
+            }
+          ],
+          gas_price: gasPrice,
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const balanceAfter = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(
+        balanceAfter,
+        balanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service) - 1,
+      );
+    });
+
+    it('multi-set service tx: billing account', async () => {
+      const billingAccountBalanceBefore = parseOrLog(syncRequest(
+          'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      const gasPrice = 1;
+      const txRes = parseOrLog(syncRequest('POST', server2 + '/set', {json: {
+          op_list: [
+            {
+              ref: `/transfer/${billingUserA}/${billingUserB}/${Date.now()}/value`,
+              value: 1,
+              type: 'SET_VALUE'
+            },
+            {
+              ref: `/manage_app/test_billing/config/service/staking/lockup_duration`,
+              value: 100,
+              type: 'SET_VALUE'
+            }
+          ],
+          billing: 'test_billing|A',
+          gas_price: gasPrice,
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
+      const billingAccountBalanceAfter = parseOrLog(syncRequest(
+          'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
+      assert.deepEqual(
+        billingAccountBalanceAfter,
+        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_total.service)
+      );
+    });
+
+    it('multi-set service tx: multiple apps', async () => {
+      // Set up another app
+      const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: `/staking/test_billing_2/${serviceAdmin}/0/stake/${Date.now()}/value`,
+        value: 1
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+        console.error(`Failed to check finalization of app staking tx.`);
+      }
+
+      const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+        ref: '/manage_app/test_billing_2/create/0',
+        value: {
+          admin: {
+            [serviceAdmin]: true,
+            [billingUserA]: true,
+            [billingUserB]: true
+          },
+          billing: {
+            '0': { 
+              users: {
+                [serviceAdmin]: true,
+                [billingUserA]: true,
+                [billingUserB]: true
+              }
+            }
+          }
+        },
+        nonce: -1,
+        timestamp: Date.now(),
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+        console.error(`Failed to check finalization of create app tx.`);
+      }
+
+      const txResBody = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
+          op_list: [
+            {
+              ref: `/manage_app/test_billing/config/service/staking/lockup_duration`,
+              value: 100,
+              type: 'SET_VALUE'
+            },
+            {
+              ref: `/manage_app/test_billing_2/config/service/staking/lockup_duration`,
+              value: 100,
+              type: 'SET_VALUE'
+            }
+          ],
+          billing: 'test_billing|A',
+          gas_price: 1,
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8'));
+      assert.deepEqual(txResBody.result.result, {
+        "error_message": "Failed to collect gas fee: Multiple app-dependent service operations for a billing account",
+        "code": 15,
+        "gas_amount": 0
       });
     });
   });
