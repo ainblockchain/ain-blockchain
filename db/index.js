@@ -910,7 +910,6 @@ class DB {
       if (blockNumber > 0) {
         // Use only the service gas amount total
         result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
-        logger.error(`gas_cost_total: ${result.gas_cost_total} (${gasPrice}, ${gasAmountTotal.service})`);
         const collectFeeRes = this.checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result);
         if (collectFeeRes !== true) {
           return collectFeeRes;
