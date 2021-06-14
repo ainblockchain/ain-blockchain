@@ -315,6 +315,12 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
+          if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+              this.server.node.state !== BlockchainNodeStates.SERVING) {
+            logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
+                `Node state: ${this.server.node.state}.`);
+            return;
+          }
           const dataVersionCheckForChainSegment = this.server.checkDataProtoVer(dataProtoVer, 'CHAIN_SEGMENT_RESPONSE');
           if (dataVersionCheckForChainSegment > 0) {
             logger.error('CANNOT deal with higher data protocol version. Discard the ' +
@@ -323,12 +329,6 @@ class P2pClient {
           } else if (dataVersionCheckForChainSegment < 0) {
             // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
             // this.convertChainSegmentResponseMessage();
-          }
-          if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
-              this.server.node.state !== BlockchainNodeStates.SERVING) {
-            logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
-                `Node state: ${this.server.node.state}.`);
-            return;
           }
           const chainSegment = _.get(parsedMessage, 'data.chainSegment');
           const number = _.get(parsedMessage, 'data.number');

@@ -327,14 +327,16 @@ class P2pServer {
     const isLower = semver.lt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isLower) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error(`The given ${msgType} message is stale.`);
+        logger.error(`The given ${msgType} message has unsupported DATA_PROTOCOL_VERSION: ` +
+            `theirs(${messageVersion}) < ours(${this.majorDataProtocolVersion})`);
       }
       return -1;
     }
     const isGreater = semver.gt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isGreater) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('I may be running of the old DATA_PROTOCOL_VERSION of ain-blockchain node. ' +
+        logger.error('I may be running of the old DATA_PROTOCOL_VERSION ' +
+            `theirs(${messageVersion}) > ours(${this.majorDataProtocolVersion}). ` +
             'Please check the new release via visiting the URL below:\n' +
             'https://github.com/ainblockchain/ain-blockchain');
       }
@@ -434,8 +436,7 @@ class P2pServer {
               logger.error('CANNOT deal with higher data protocol version. Discard the ' +
                   'TRANSACTION message.');
               return;
-            }
-            else if (dataVersionCheckForTransaction > 0) {
+            } else if (dataVersionCheckForTransaction < 0) {
               // TODO(minsulee2): need to convert msg when updating TRANSACTION message necessary.
               // this.convertTransactionMessage();
             }
@@ -512,8 +513,8 @@ class P2pServer {
             }
             break;
           default:
-            logger.error(`Wrong message type(${parsedMessage.type}) has been specified.`);
-            logger.error('Ignore the message.');
+            logger.error(`Wrong message type(${parsedMessage.type}) has been specified.` +
+                'Ignore the message.');
             break;
         }
       } catch (err) {
