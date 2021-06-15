@@ -480,6 +480,9 @@ function createSingleSetTxBody(input, opType) {
   if (input.gas_price !== undefined) {
     txBody.gas_price = input.gas_price;
   }
+  if (input.billing !== undefined) {
+    txBody.billing = input.billing;
+  }
   return txBody;
 }
 
@@ -501,6 +504,9 @@ function createMultiSetTxBody(input) {
   }
   if (input.gas_price !== undefined) {
     txBody.gas_price = input.gas_price;
+  }
+  if (input.billing !== undefined) {
+    txBody.billing = input.billing;
   }
   return txBody;
 }

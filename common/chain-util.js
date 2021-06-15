@@ -150,6 +150,12 @@ class ChainUtil {
     return ruleUtil.toServiceAccountName(serviceType, serviceName, key);
   }
 
+  // NOTE(liayoo): billing is in the form <app name>|<billing id>
+  static toBillingAccountName(billing) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return `${PredefinedDbPaths.BILLING}|${billing}`;
+  }
+
   static toEscrowAccountName(source, target, escrowKey) {
     return ruleUtil.toEscrowAccountName(source, target, escrowKey);
   }
@@ -348,6 +354,34 @@ class ChainUtil {
     const { isServiceType } = require('../common/constants');
 
     return isServiceType(_.get(parsedPath, 0));
+  }
+
+  static getDependentAppNameFromRef(ref) {
+    const { isAppDependentServiceType } = require('../common/constants');
+    const parsedPath = ChainUtil.parsePath(ref);
+    const type = _.get(parsedPath, 0);
+    if (!type || !isAppDependentServiceType(type)) {
+      return null;
+    }
+    return _.get(parsedPath, 1, null);
+  }
+
+  static getServiceDependentAppNameList(op) {
+    if (!op) {
+      return [];
+    }
+    if (op.op_list) {
+      const appNames = new Set();
+      for (const innerOp of op.op_list) {
+        const name = ChainUtil.getDependentAppNameFromRef(innerOp.ref);
+        if (name) {
+          appNames.add(name);
+        }
+      }
+      return [...appNames];
+    }
+    const name = ChainUtil.getDependentAppNameFromRef(op.ref);
+    return name ? [name] : [];
   }
 
   static getSingleOpGasAmount(parsedPath, value) {
