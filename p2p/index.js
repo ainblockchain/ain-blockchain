@@ -1,9 +1,7 @@
 /* eslint no-mixed-operators: "off" */
 const _ = require('lodash');
 const P2pServer = require('./server');
-const url = require('url');
 const Websocket = require('ws');
-const semver = require('semver');
 const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStatus } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
@@ -16,8 +14,7 @@ const {
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
   MAX_OUTBOUND_LIMIT,
-  MAX_INBOUND_LIMIT,
-  FeatureFlags
+  MAX_INBOUND_LIMIT
 } = require('../common/constants');
 const { sleep } = require('../common/chain-util');
 const {
@@ -46,8 +43,8 @@ class P2pClient {
     this.startHeartbeat();
   }
 
-  run() {
-    this.server.listen();
+  async run() {
+    await this.server.listen();
     this.connectToTracker();
   }
 
@@ -97,31 +94,26 @@ class P2pClient {
   }
 
   getNetworkStatus() {
+    const extIp = this.server.getExternalIp();
+    const url = new URL(`ws://${extIp}:${P2P_PORT}`);
+    const p2pUrl = url.toString();
+    url.protocol = 'http:';
+    url.port = PORT;
+    const clientApiUrl = url.toString();
+    url.pathname = 'json-rpc';
+    const jsonRpcUrl = url.toString();
     return {
-      ip: this.server.getExternalIp(),
+      ip: extIp,
       p2p: {
-        url: url.format({
-          protocol: 'ws',
-          hostname: this.server.getExternalIp(),
-          port: P2P_PORT
-        }),
+        url: p2pUrl,
         port: P2P_PORT,
       },
       clientApi: {
-        url: url.format({
-          protocol: 'http',
-          hostname: this.server.getExternalIp(),
-          port: PORT
-        }),
+        url: clientApiUrl,
         port: PORT,
       },
       jsonRpc: {
-        url: url.format({
-          protocol: 'http',
-          hostname: this.server.getExternalIp(),
-          port: PORT,
-          pathname: '/json-rpc',
-        }),
+        url: jsonRpcUrl,
         port: PORT,
       },
       connectionStatus: this.getConnectionStatus()
@@ -165,7 +157,6 @@ class P2pClient {
           `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
       }
       if (node.state === BlockchainNodeStates.STARTING) {
-        node.state = BlockchainNodeStates.SYNCING;
         if (parsedMsg.numLivePeers === 0) {
           const lastBlockWithoutProposal = node.init(true);
           await this.server.tryInitializeShard();
@@ -214,9 +205,12 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
-  requestChainSegment(socket, lastBlock) {
-    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST,
-        { lastBlock: lastBlock });
+  requestChainSegment(socket, lastBlockNumber) {
+    if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+      this.server.node.state !== BlockchainNodeStates.SERVING) {
+      return;
+    }
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
     if (!payload) {
       logger.error('The request chainSegment cannot be sent because of msg encapsulation failure.');
       return;
@@ -256,36 +250,6 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
-  // TODO(minsulee2): This check will be updated when data compatibility version up.
-  checkDataProtoVerForAddressResponse(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsulee2): Compatible message.
-    }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      // TODO(minsulee2): Compatible message.
-    }
-  }
-
-  checkDataProtoVerForChainSegmentResponse(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsulee2): Compatible message.
-    }
-    const isLower = semver.lt(this.server.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with higher data protocol version. Discard the ' +
-          'CHAIN_SEGMENT_RESPONSE message.');
-      }
-      return false;
-    }
-    return true;
-  }
-
   setPeerEventHandlers(socket) {
     const LOG_HEADER = 'setPeerEventHandlers';
     socket.on('message', (message) => {
@@ -307,8 +271,12 @@ class P2pClient {
 
       switch (parsedMessage.type) {
         case MessageTypes.ADDRESS_RESPONSE:
-          // TODO(minsulee2): Add compatibility check here after data version up.
-          // this.checkDataProtoVerForAddressResponse(dataProtoVer);
+          const dataVersionCheckForAddress =
+              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.ADDRESS_RESPONSE);
+          if (dataVersionCheckForAddress < 0) {
+            // TODO(minsulee2): need to convert message when updating ADDRESS_RESPONSE necessary.
+            // this.convertAddressMessage();
+          }
           const address = _.get(parsedMessage, 'data.body.address');
           if (!address) {
             logger.error(`[${LOG_HEADER}] Providing an address is compulsary when initiating ` +
@@ -342,8 +310,21 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          if (!this.checkDataProtoVerForChainSegmentResponse(parsedMessage.dataProtoVer)) {
+          if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+              this.server.node.state !== BlockchainNodeStates.SERVING) {
+            logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
+                `Node state: ${this.server.node.state}.`);
             return;
+          }
+          const dataVersionCheckForChainSegment =
+              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.CHAIN_SEGMENT_RESPONSE);
+          if (dataVersionCheckForChainSegment > 0) {
+            logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
+                `version(${dataProtoVer}). Discard the CHAIN_SEGMENT_RESPONSE message.`);
+            return;
+          } else if (dataVersionCheckForChainSegment < 0) {
+            // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
+            // this.convertChainSegmentResponseMessage();
           }
           const chainSegment = _.get(parsedMessage, 'data.chainSegment');
           const number = _.get(parsedMessage, 'data.number');
@@ -394,7 +375,7 @@ class P2pClient {
             // your local blockchain matches the height of the consensus blockchain.
             if (number > this.server.node.bc.lastBlockNumber()) {
               setTimeout(() => {
-                this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+                this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
               }, 1000);
             }
           } else {
@@ -413,13 +394,13 @@ class P2pClient {
               logger.info(`[${LOG_HEADER}] I am behind ` +
                   `(${number} < ${this.server.node.bc.lastBlockNumber()}).`);
               setTimeout(() => {
-                this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+                this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
               }, 1000);
             }
           }
           break;
         default:
-          logger.error(`[${LOG_HEADER}] Wrong message type(${parsedMessage.type}) has been ` +
+          logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
               `specified. Igonore the message.`);
           break;
       }
@@ -464,7 +445,7 @@ class P2pClient {
           this.setPeerEventHandlers(socket);
           this.sendAddress(socket);
           await this.waitForAddress(socket);
-          this.requestChainSegment(socket, this.server.node.bc.lastBlock());
+          this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
             this.server.consensus.stakeTx = null;

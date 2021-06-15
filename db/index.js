@@ -36,6 +36,7 @@ const {
   isValidFunctionTree,
   isValidOwnerTree,
   applyFunctionChange,
+  applyOwnerChange,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
 } = require('./state-util');
@@ -62,19 +63,26 @@ class DB {
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   }
 
-  initDbStates() {
-    // Initialize DB owners.
-    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
-      [OwnerProperties.OWNER]: {
-        [OwnerProperties.OWNERS]: {
-          [OwnerProperties.ANYONE]: buildOwnerPermissions(true, true, true, true),
+  initDbStates(snapshot) {
+    if (snapshot) {
+      this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
+      this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
+      this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
+      this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+    } else {
+      // Initialize DB owners.
+      this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
+        [OwnerProperties.OWNER]: {
+          [OwnerProperties.OWNERS]: {
+            [OwnerProperties.ANYONE]: buildOwnerPermissions(true, true, true, true),
+          }
         }
-      }
-    });
-    // Initialize DB rules.
-    this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
-      [RuleProperties.WRITE]: true
-    });
+      });
+      // Initialize DB rules.
+      this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
+        [RuleProperties.WRITE]: true
+      });
+    }
   }
 
   /**
@@ -691,12 +699,12 @@ class DB {
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
   }
 
-  setFunction(functionPath, functionChange, auth, isGlobal) {
-    const isValidObj = isValidJsObjectForStates(functionChange);
+  setFunction(functionPath, func, auth, isGlobal) {
+    const isValidObj = isValidJsObjectForStates(func);
     if (!isValidObj.isValid) {
       return ChainUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
     }
-    const isValidFunction = isValidFunctionTree(functionChange);
+    const isValidFunction = isValidFunctionTree(func);
     if (!isValidFunction.isValid) {
       return ChainUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`);
     }
@@ -706,7 +714,7 @@ class DB {
       return ChainUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`);
     }
     if (!auth || auth.addr !== this.ownerAddress) {
-      const ownerOnlyFid = this.func.hasOwnerOnlyFunction(functionChange);
+      const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
       if (ownerOnlyFid !== null) {
         return ChainUtil.returnTxResult(
             403, `Trying to write owner-only function: ${ownerOnlyFid}`);
@@ -722,7 +730,7 @@ class DB {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
     const curFunction = this.getFunction(functionPath, isGlobal);
-    const newFunction = applyFunctionChange(curFunction, functionChange);
+    const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
     return ChainUtil.returnTxResult(0, null, 1);
@@ -781,9 +789,10 @@ class DB {
       return ChainUtil.returnTxResult(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
+    const curOwner = this.getOwner(ownerPath, isGlobal);
+    const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
-    const ownerCopy = ChainUtil.isDict(owner) ? JSON.parse(JSON.stringify(owner)) : owner;
-    this.writeDatabase(fullPath, ownerCopy);
+    this.writeDatabase(fullPath, newOwner);
     return ChainUtil.returnTxResult(0, null, 1);
   }
 
@@ -901,14 +910,9 @@ class DB {
       if (blockNumber > 0) {
         // Use only the service gas amount total
         result.gas_cost_total = ChainUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
-        if (result.gas_cost_total > 0) {
-          const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(auth.addr, blockNumber, tx.hash);
-          const gasFeeCollectRes = this.setValue(
-              gasFeeCollectPath, { amount: result.gas_cost_total }, auth, timestamp, tx, false);
-          if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
-            return ChainUtil.returnTxResult(
-                15, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
-          }
+        const collectFeeRes = this.checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result);
+        if (collectFeeRes !== true) {
+          return collectFeeRes;
         }
       }
       if (tx && auth && auth.addr && !auth.fid) {
@@ -916,6 +920,48 @@ class DB {
       }
     }
     return result;
+  }
+
+  checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result) {
+    if (result.gas_cost_total <= 0) { // No fees to collect
+      return true;
+    }
+
+    const billing = tx.tx_body.billing;
+    if (!billing) { // Charge the individual account
+      return this.collectFee(auth.addr, result.gas_cost_total, auth, timestamp, tx, blockNumber);
+    }
+    const billingParsed = billing.split('|');
+    if (billingParsed.length !== 2) {
+      const reason = 'Invalid billing param';
+      return ChainUtil.returnTxResult(15, `Failed to collect gas fee: ${reason}`, 0);
+    }
+    const billingAppName = billingParsed[0];
+    const billingServiceAcntName = ChainUtil.toBillingAccountName(billing);
+    const appNameList = ChainUtil.getServiceDependentAppNameList(op);
+    if (appNameList.length > 1) {
+      // More than 1 apps are involved. Cannot charge an app-related billing account.
+      const reason = 'Multiple app-dependent service operations for a billing account';
+      return ChainUtil.returnTxResult(16, `Failed to collect gas fee: ${reason}`, 0);
+    } else if (appNameList.length === 1 && appNameList[0] !== billingAppName) {
+      // Tx app name doesn't match the billing account.
+      const reason = 'Invalid billing account';
+      return ChainUtil.returnTxResult(17, `Failed to collect gas fee: ${reason}`, 0);
+    }
+    // Either app-independent or app name matches the billing account.
+    return this.collectFee(
+        billingServiceAcntName, result.gas_cost_total, auth, timestamp, tx, blockNumber);
+  }
+
+  collectFee(billedTo, gasCost, auth, timestamp, tx, blockNumber) {
+    const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
+    const gasFeeCollectRes = this.setValue(
+        gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
+    if (ChainUtil.isFailedTx(gasFeeCollectRes)) {
+      return ChainUtil.returnTxResult(
+          18, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
+    }
+    return true;
   }
 
   executeTransaction(tx, blockNumber = 0) {

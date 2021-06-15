@@ -67,11 +67,22 @@ class RuleUtil {
   }
 
   isServAcntName(name) {
-    return this.isString(name) && name.split('|').length >= 3;
+    const { isServiceAccountServiceType } = require('../common/constants');
+    const { isValidServiceName } = require('./state-util');
+
+    if (!this.isString(name)) {
+      return false;
+    }
+    const parsed = name.split('|');
+    if (parsed.length < 3) {
+      return false;
+    }
+    return isServiceAccountServiceType(parsed[0]) && isValidServiceName(parsed[1]);
   }
 
   isValShardProto(value) {
-    const {ShardingProtocols} = require('../common/constants');
+    const { ShardingProtocols } = require('../common/constants');
+
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 
@@ -133,6 +144,16 @@ class RuleUtil {
     } else {
       return `/${PredefinedDbPaths.ACCOUNTS}/${addrOrServAcnt}/${PredefinedDbPaths.BALANCE}`;
     }
+  }
+
+  getBillingUserPath(billingServAcntName, userAddr) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const parsed = this.parseServAcntName(billingServAcntName);
+    const appName = parsed[1];
+    const billingId = parsed[2];
+    return `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/${billingId}/` +
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`;
   }
 
   getOwnerAddr() {

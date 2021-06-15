@@ -3,6 +3,7 @@ const {
   isWritablePathWithSharding,
   hasReservedChar,
   hasAllowedPattern,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
@@ -13,6 +14,7 @@ const {
   isValidOwnerConfig,
   isValidOwnerTree,
   applyFunctionChange,
+  applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
@@ -23,6 +25,9 @@ const {
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree
 } = require('../db/state-util');
+const {
+  STATE_LABEL_LENGTH_LIMIT,
+} = require('../common/constants');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
@@ -295,6 +300,69 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidServiceName", () => {
+    it("when non-string input", () => {
+      expect(isValidServiceName(null)).to.equal(false);
+      expect(isValidServiceName(undefined)).to.equal(false);
+      expect(isValidServiceName(true)).to.equal(false);
+      expect(isValidServiceName(false)).to.equal(false);
+      expect(isValidServiceName(0)).to.equal(false);
+      expect(isValidServiceName([])).to.equal(false);
+      expect(isValidServiceName({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(isValidServiceName('')).to.equal(false);
+      expect(isValidServiceName('.')).to.equal(false);
+      expect(isValidServiceName('.a')).to.equal(false);
+      expect(isValidServiceName('$')).to.equal(false);
+      expect(isValidServiceName('$a')).to.equal(false);
+      expect(isValidServiceName('*')).to.equal(false);
+      expect(isValidServiceName('~')).to.equal(false);
+      expect(isValidServiceName('!')).to.equal(false);
+      expect(isValidServiceName('@')).to.equal(false);
+      expect(isValidServiceName('%')).to.equal(false);
+      expect(isValidServiceName('^')).to.equal(false);
+      expect(isValidServiceName('&')).to.equal(false);
+      expect(isValidServiceName('-')).to.equal(false);
+      expect(isValidServiceName('=')).to.equal(false);
+      expect(isValidServiceName('+')).to.equal(false);
+      expect(isValidServiceName('|')).to.equal(false);
+      expect(isValidServiceName(';')).to.equal(false);
+      expect(isValidServiceName(',')).to.equal(false);
+      expect(isValidServiceName('?')).to.equal(false);
+      expect(isValidServiceName('/')).to.equal(false);
+      expect(isValidServiceName("'")).to.equal(false);
+      expect(isValidServiceName('"')).to.equal(false);
+      expect(isValidServiceName('`')).to.equal(false);
+      expect(isValidServiceName('\x00')).to.equal(false);
+      expect(isValidServiceName('\x7F')).to.equal(false);
+    })
+
+    it("when string input without alphabetic prefix returning false", () => {
+      expect(isValidServiceName('0')).to.equal(false);
+      expect(isValidServiceName('0a')).to.equal(false);
+      expect(isValidServiceName('0a0')).to.equal(false);
+      expect(isValidServiceName('0_')).to.equal(false);
+      expect(isValidServiceName('0_0')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(isValidServiceName('a')).to.equal(true);
+      expect(isValidServiceName('aa')).to.equal(true);
+      expect(isValidServiceName('a_')).to.equal(true);
+      expect(isValidServiceName('a0')).to.equal(true);
+      expect(isValidServiceName('a0a')).to.equal(true);
+      expect(isValidServiceName('_')).to.equal(true);
+      expect(isValidServiceName('_0')).to.equal(true);
+      expect(isValidServiceName('_0_')).to.equal(true);
+      expect(isValidServiceName('consensus')).to.equal(true);
+      expect(isValidServiceName('afan')).to.equal(true);
+      expect(isValidServiceName('collaborative_ai')).to.equal(true);
+      expect(isValidServiceName('_a_dapp')).to.equal(true);
+    })
+  })
+
   describe("isValidStateLabel", () => {
     it("when non-string input", () => {
       expect(isValidStateLabel(null)).to.equal(false);
@@ -318,6 +386,7 @@ describe("state-util", () => {
 
     it("when string input returning true", () => {
       expect(isValidStateLabel('a')).to.equal(true);
+      expect(isValidStateLabel('0')).to.equal(true);
       expect(isValidStateLabel('.a')).to.equal(true);
       expect(isValidStateLabel('$a')).to.equal(true);
       expect(isValidStateLabel('*')).to.equal(true);
@@ -335,6 +404,13 @@ describe("state-util", () => {
       expect(isValidStateLabel(';')).to.equal(true);
       expect(isValidStateLabel(',')).to.equal(true);
       expect(isValidStateLabel('?')).to.equal(true);
+    })
+
+    it("when long string input", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      expect(isValidStateLabel(labelLong)).to.equal(true);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      expect(isValidStateLabel(labelTooLong)).to.equal(false);
     })
   })
 
@@ -380,6 +456,19 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates(['a', '.b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '$b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
+    })
+
+    it("when input with long labels", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelLong]), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+          isValidPathForStates([labelTooLong, labelLong]),
+          {isValid: false, invalidPath: `/${labelTooLong}`});
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelTooLong]),
+          {isValid: false, invalidPath: `/${labelLong}/${labelTooLong}`});
     })
   })
 
@@ -526,6 +615,29 @@ describe("state-util", () => {
             '*': 'x'
           }
       }), {isValid: true, invalidPath: ''});
+    })
+
+    it("when input with long labels", () => {
+      const textLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const textTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textTooLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textTooLong}`});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textTooLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textLong}/${textTooLong}`});
     })
   })
 
@@ -1136,7 +1248,20 @@ describe("state-util", () => {
               "write_function": false,
               "write_owner": false,
               "write_rule": false,
-            }
+            },
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            'fid:_createApp': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
           }
         }
       }), {isValid: true, invalidPath: ''});
@@ -1149,7 +1274,20 @@ describe("state-util", () => {
                 "write_function": false,
                 "write_owner": false,
                 "write_rule": false,
-              }
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
             }
           }
         },
@@ -1161,7 +1299,20 @@ describe("state-util", () => {
                 "write_function": false,
                 "write_owner": false,
                 "write_rule": false,
-              }
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
             }
           }
         }
@@ -1173,16 +1324,24 @@ describe("state-util", () => {
     const curFunction = {
       ".function": {
         "0x111": {
-          "function_type": "NATIVE",
+          "function_type": "REST",
           "function_id": "0x111"
         },
         "0x222": {
-          "function_type": "NATIVE",
+          "function_type": "REST",
           "function_id": "0x222"
         },
         "0x333": {
-          "function_type": "NATIVE",
+          "function_type": "REST",
           "function_id": "0x333"
+        }
+      },
+      "deeper": {
+        ".function": {  // deeper function
+          "0x999": {
+            "function_type": "REST",
+            "function_id": "0x999"
+          }
         }
       }
     };
@@ -1198,9 +1357,9 @@ describe("state-util", () => {
         },
         "deeper": {
           ".function": {  // deeper function
-            "0x999": {
+            "0x888": {
               "function_type": "REST",
-              "function_id": "0x999"
+              "function_id": "0x888"
             }
           }
         }
@@ -1214,9 +1373,9 @@ describe("state-util", () => {
         },
         "deeper": {
           ".function": {
-            "0x999": {
+            "0x888": {
               "function_type": "REST",
-              "function_id": "0x999"
+              "function_id": "0x888"
             }
           }
         }
@@ -1229,7 +1388,8 @@ describe("state-util", () => {
           "0x111": null,  // delete
           "0x222": {  // modify
             "function_type": "REST",
-            "function_id": "0x222"
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
           },
           "0x444": {  // add
             "function_type": "REST",
@@ -1240,29 +1400,14 @@ describe("state-util", () => {
         ".function": {
           "0x222": {  // modified
             "function_type": "REST",
-            "function_id": "0x222"
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
           },
           "0x333": {  // untouched
-            "function_type": "NATIVE",
+            "function_type": "REST",
             "function_id": "0x333"
           },
           "0x444": {  // added
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        }
-      });
-    });
-
-    it("add / delete / modify existing function with deeper function", () => {
-      assert.deepEqual(applyFunctionChange(curFunction, {
-        ".function": {
-          "0x111": null,  // delete
-          "0x222": {  // modify
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-          "0x444": {  // add
             "function_type": "REST",
             "function_id": "0x444"
           }
@@ -1275,19 +1420,48 @@ describe("state-util", () => {
             }
           }
         }
-      }), {
-        ".function": {  // deeper function has no effect
-          "0x222": {  // modified
+      });
+    });
+
+    it("replace existing function with deeper function", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, {
+        ".function": {
+          "0x222": {  // modify
             "function_type": "REST",
-            "function_id": "0x222"
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
           },
-          "0x333": {  // untouched
-            "function_type": "NATIVE",
-            "function_id": "0x333"
-          },
-          "0x444": {  // added
+          "0x444": {  // add
             "function_type": "REST",
             "function_id": "0x444"
+          }
+        },
+        "deeper": {
+          ".function": {  // deeper function
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
+          }
+        }
+      }), {
+        ".function": {  // replaced
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
+          },
+          "0x444": {
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        },
+        "deeper": {  // replaced
+          ".function": {
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
           }
         }
       });
@@ -1295,6 +1469,218 @@ describe("state-util", () => {
 
     it("with null function change", () => {
       assert.deepEqual(applyFunctionChange(curFunction, null), null);
+    });
+  });
+
+  describe("applyOwnerChange()", () => {
+    const curOwner = {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+          "aaaa": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+          "bbbb": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          }
+        }
+      },
+      "deeper": {
+        ".owner": {  // deeper owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing owner", () => {
+      assert.deepEqual(applyOwnerChange(null, {
+        ".owner": {  // owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      }), {  // the same as the given owner change.
+        ".owner": {  // owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      });
+    });
+
+    it("add / delete / modify existing owner", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, {
+        ".owner": {
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "aaaa": null,  // delete
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        }
+      }), {
+        ".owner": {
+          "owners": {
+            "*": {  // modified
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "bbbb": {  // untouched
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+            "cccc": {  // added
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      });
+    });
+
+    it("replace existing owner with deeper owner", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, {
+        ".owner": {
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "CCCC": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }
+      }), {
+        ".owner": {  // replaced
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {  // replaced
+          ".owner": {
+            "owners": {
+              "CCCC": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }
+      });
+    });
+
+    it("with null owner change", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, null), null);
     });
   });
 

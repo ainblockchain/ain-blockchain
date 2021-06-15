@@ -1131,4 +1131,95 @@ describe("ChainUtil", () => {
       assert.deepEqual(ChainUtil.getTotalGasCost(undefined, 1), 0);
     })
   })
+
+  describe('getDependentAppNameFromRef', () => {
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(null), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(undefined), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(''), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/'), null);
+    });
+
+    it("when normal input (app-dependent service path)", () => {
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/manage_app/app_a'), 'app_a');
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/payments/app_a'), 'app_a');
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/staking/app_a'), 'app_a');
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/staking/app_a/some/nested/path'), 'app_a');
+    });
+    
+    it("when normal input (app-independent service path)", () => {
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/accounts/0xabcd/value'), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/service_accounts/staking'), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/gas_fee/gas_fee'), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/escrow/source/target/id/key/value'), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/sharding/config'), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/transfer'), null);
+      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/transfer/from/to/key/value'), null);
+    });
+  })
+
+  describe('getServiceDependentAppNameList', () => { 
+    it("when abnormal input", () => {
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList(), []);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList(null), []);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList(undefined), []);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({}), []);
+    });
+
+    it("when normal input", () => {
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+        ref: '/'
+      }), []);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+        ref: '/transfer/from/to/key/value'
+      }), []);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+        ref: '/manage_app/app_a/create/key'
+      }), ['app_a']);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+        op_list: [
+          {
+            ref: '/'
+          }
+        ]
+      }), []);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+        op_list: [
+          {
+            ref: '/transfer/from/to/key/value'
+          },
+          {
+            ref: '/manage_app/app_a/create/key'
+          }
+        ]
+      }), ['app_a']);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+        op_list: [
+          {
+            ref: '/transfer/from/to/key/value'
+          },
+          {
+            ref: '/manage_app/app_a/create/key'
+          },
+          {
+            ref: '/payments/app_a/user/id/pay/key'
+          }
+        ]
+      }), ['app_a']);
+      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+        op_list: [
+          {
+            ref: '/transfer/from/to/key/value'
+          },
+          {
+            ref: '/manage_app/app_a/create/key'
+          },
+          {
+            ref: '/payments/app_b/user/id/pay/key'
+          }
+        ]
+      }), ['app_a', 'app_b']);
+    });
+  })
 })

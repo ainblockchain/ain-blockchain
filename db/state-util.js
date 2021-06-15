@@ -7,9 +7,11 @@ const ChainUtil = require('../common/chain-util');
 const {
   FunctionProperties,
   FunctionTypes,
+  isNativeFunctionId,
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
+  STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 const Functions = require('./functions');
 
@@ -88,6 +90,11 @@ function isWritablePathWithSharding(fullPath, root) {
   return {isValid, invalidPath: isValid ? '' : ChainUtil.formatPath(path)};
 }
 
+function hasVarNamePattern(name) {
+  const varNameRegex = /^[A-Za-z_]+[A-Za-z0-9_]*$/gm;
+  return ChainUtil.isString(name) ? varNameRegex.test(name) : false;
+}
+
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]/gm;
   return ChainUtil.isString(label) ? reservedCharRegex.test(label) : false;
@@ -100,9 +107,14 @@ function hasAllowedPattern(label) {
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
+function isValidServiceName(name) {
+  return hasVarNamePattern(name);
+}
+
 function isValidStateLabel(label) {
   if (!ChainUtil.isString(label) ||
       label === '' ||
+      label.length > STATE_LABEL_LENGTH_LIMIT ||
       (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
@@ -156,51 +168,51 @@ function isValidJsObjectForStates(obj) {
 /**
  * Checks the validity of the given rule configuration.
  */
- function isValidRuleConfig(ruleConfig) {
-  if (!ChainUtil.isBool(ruleConfig) && !ChainUtil.isString(ruleConfig)) {
+ function isValidRuleConfig(ruleConfigObj) {
+  if (!ChainUtil.isBool(ruleConfigObj) && !ChainUtil.isString(ruleConfigObj)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
   }
 
   return { isValid: true, invalidPath: '' };
 }
 
-function sanitizeFunctionInfo(functionInfo) {
-  if (!functionInfo) {
+function sanitizeFunctionInfo(functionInfoObj) {
+  if (!functionInfoObj) {
     return null;
   }
 
-  const functionType = functionInfo[FunctionProperties.FUNCTION_TYPE];
+  const functionType = functionInfoObj[FunctionProperties.FUNCTION_TYPE];
   const sanitized = {};
   if (functionType === FunctionTypes.NATIVE) {
     sanitized[FunctionProperties.FUNCTION_TYPE] = functionType;
     sanitized[FunctionProperties.FUNCTION_ID] =
-        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.FUNCTION_ID]);
+        ChainUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_ID]);
   } else if (functionType === FunctionTypes.REST) {
     sanitized[FunctionProperties.FUNCTION_TYPE] = functionType;
     sanitized[FunctionProperties.FUNCTION_ID] =
-        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.FUNCTION_ID]);
+        ChainUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_ID]);
     sanitized[FunctionProperties.EVENT_LISTENER] =
-        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.EVENT_LISTENER]);
+        ChainUtil.stringOrEmpty(functionInfoObj[FunctionProperties.EVENT_LISTENER]);
     sanitized[FunctionProperties.SERVICE_NAME] =
-        ChainUtil.stringOrEmpty(functionInfo[FunctionProperties.SERVICE_NAME]);
+        ChainUtil.stringOrEmpty(functionInfoObj[FunctionProperties.SERVICE_NAME]);
   }
 
   return sanitized;
 }
 
-function isValidFunctionInfo(functionInfo) {
-  if (ChainUtil.isEmpty(functionInfo)) {
+function isValidFunctionInfo(functionInfoObj) {
+  if (ChainUtil.isEmpty(functionInfoObj)) {
     return false;
   }
-  const sanitized = sanitizeFunctionInfo(functionInfo);
+  const sanitized = sanitizeFunctionInfo(functionInfoObj);
   const isIdentical =
-      _.isEqual(JSON.parse(JSON.stringify(sanitized)), functionInfo, { strict: true });
+      _.isEqual(JSON.parse(JSON.stringify(sanitized)), functionInfoObj, { strict: true });
   if (!isIdentical) {
     return false;
   }
-  const eventListener = functionInfo[FunctionProperties.EVENT_LISTENER];
+  const eventListener = functionInfoObj[FunctionProperties.EVENT_LISTENER];
   if (eventListener !== undefined &&
-      !validUrl.isUri(functionInfo[FunctionProperties.EVENT_LISTENER])) {
+      !validUrl.isUri(functionInfoObj[FunctionProperties.EVENT_LISTENER])) {
     return false;
   }
   return true;
@@ -209,17 +221,17 @@ function isValidFunctionInfo(functionInfo) {
 /**
  * Checks the validity of the given function configuration.
  */
-function isValidFunctionConfig(functionConfig) {
-  if (!ChainUtil.isDict(functionConfig)) {
+function isValidFunctionConfig(functionConfigObj) {
+  if (!ChainUtil.isDict(functionConfigObj)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
   }
-  const fidList = Object.keys(functionConfig);
+  const fidList = Object.keys(functionConfigObj);
   if (ChainUtil.isEmpty(fidList)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
   }
   for (const fid of fidList) {
     const invalidPath = ChainUtil.formatPath([fid]);
-    const functionInfo = functionConfig[fid];
+    const functionInfo = functionConfigObj[fid];
     if (functionInfo === null) {
       // Function deletion.
       continue;
@@ -238,41 +250,41 @@ function isValidFunctionConfig(functionConfig) {
   return { isValid: true, invalidPath: '' };
 }
 
-function sanitizeOwnerPermissions(ownerPermissions) {
-  if (!ownerPermissions) {
+function sanitizeOwnerPermissions(ownerPermissionsObj) {
+  if (!ownerPermissionsObj) {
     return null;
   }
   return {
     [OwnerProperties.BRANCH_OWNER]:
-        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.BRANCH_OWNER]),
+        ChainUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.BRANCH_OWNER]),
     [OwnerProperties.WRITE_FUNCTION]:
-        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.WRITE_FUNCTION]),
+        ChainUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.WRITE_FUNCTION]),
     [OwnerProperties.WRITE_OWNER]:
-        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.WRITE_OWNER]),
+        ChainUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.WRITE_OWNER]),
     [OwnerProperties.WRITE_RULE]:
-        ChainUtil.boolOrFalse(ownerPermissions[OwnerProperties.WRITE_RULE]),
+        ChainUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.WRITE_RULE]),
   };
 }
 
-function isValidOwnerPermissions(ownerPermissions) {
-  if (ChainUtil.isEmpty(ownerPermissions)) {
+function isValidOwnerPermissions(ownerPermissionsObj) {
+  if (ChainUtil.isEmpty(ownerPermissionsObj)) {
     return false;
   }
-  const sanitized = sanitizeOwnerPermissions(ownerPermissions);
+  const sanitized = sanitizeOwnerPermissions(ownerPermissionsObj);
   const isIdentical =
-      _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissions, { strict: true });
+      _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissionsObj, { strict: true });
   return isIdentical;
 }
 
 /**
  * Checks the validity of the given owner configuration.
  */
-function isValidOwnerConfig(ownerConfig) {
-  if (!ChainUtil.isDict(ownerConfig)) {
+function isValidOwnerConfig(ownerConfigObj) {
+  if (!ChainUtil.isDict(ownerConfigObj)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath([]) };
   }
   const path = [];
-  const ownersProp = ownerConfig[OwnerProperties.OWNERS];
+  const ownersProp = ownerConfigObj[OwnerProperties.OWNERS];
   if (ownersProp === undefined) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
   }
@@ -291,11 +303,15 @@ function isValidOwnerConfig(ownerConfig) {
         return { isValid: false, invalidPath };
       }
       const fid = owner.substring(OwnerProperties.FID_PREFIX.length);
-      if (!Functions.isNativeFunctionId(fid)) {
+      if (!isNativeFunctionId(fid)) {
         return { isValid: false, invalidPath };
       }
     }
-    const ownerPermissions = ChainUtil.getJsObject(ownerConfig, [...path, owner]);
+    const ownerPermissions = ChainUtil.getJsObject(ownerConfigObj, [...path, owner]);
+    if (ownerPermissions === null) {
+      // Owner deletion.
+      continue;
+    }
     if (!isValidOwnerPermissions(ownerPermissions)) {
       return { isValid: false, invalidPath };
     }
@@ -304,14 +320,14 @@ function isValidOwnerConfig(ownerConfig) {
   return { isValid: true, invalidPath: '' };
 }
 
-function isValidConfigTreeRecursive(stateTree, path, configLabel, stateConfigValidator) {
-  if (!ChainUtil.isDict(stateTree) || ChainUtil.isEmpty(stateTree)) {
+function isValidConfigTreeRecursive(stateTreeObj, path, configLabel, stateConfigValidator) {
+  if (!ChainUtil.isDict(stateTreeObj) || ChainUtil.isEmpty(stateTreeObj)) {
     return { isValid: false, invalidPath: ChainUtil.formatPath(path) };
   }
 
-  for (const label in stateTree) {
+  for (const label in stateTreeObj) {
     path.push(label);
-    const subtree = stateTree[label];
+    const subtree = stateTreeObj[label];
     if (label === configLabel) {
       const isValidConfig = stateConfigValidator(subtree);
       if (!isValidConfig.isValid) {
@@ -336,73 +352,140 @@ function isValidConfigTreeRecursive(stateTree, path, configLabel, stateConfigVal
 /**
  * Checks the validity of the given rule tree.
  */
-function isValidRuleTree(ruleTree) {
-  if (ruleTree === null) {
+function isValidRuleTree(ruleTreeObj) {
+  if (ruleTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ruleTree, [], RuleProperties.WRITE, isValidRuleConfig);
+  return isValidConfigTreeRecursive(ruleTreeObj, [], RuleProperties.WRITE, isValidRuleConfig);
 }
 
 /**
  * Checks the validity of the given function tree.
  */
-function isValidFunctionTree(functionTree) {
-  if (functionTree === null) {
+function isValidFunctionTree(functionTreeObj) {
+  if (functionTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      functionTree, [], FunctionProperties.FUNCTION, isValidFunctionConfig);
+      functionTreeObj, [], FunctionProperties.FUNCTION, isValidFunctionConfig);
 }
 
 /**
  * Checks the validity of the given owner tree.
  */
-function isValidOwnerTree(ownerTree) {
-  if (ownerTree === null) {
+function isValidOwnerTree(ownerTreeObj) {
+  if (ownerTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ownerTree, [], OwnerProperties.OWNER, isValidOwnerConfig);
+  return isValidConfigTreeRecursive(ownerTreeObj, [], OwnerProperties.OWNER, isValidOwnerConfig);
 }
 
 /**
- * Returns a new function created by applying the function change to the current function.
- * @param {Object} curFunction current function (to be modified and returned by this function)
+ * Returns whether the given state tree object has the given config label as a property.
+ */
+function hasConfigLabel(stateTreeObj, configLabel) {
+  if (!ChainUtil.isDict(stateTreeObj)) {
+    return false;
+  }
+  if (ChainUtil.getJsObject(stateTreeObj, [configLabel]) === null) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Returns whether the given state tree object has the given config label as the only property.
+ */
+function hasConfigLabelOnly(stateTreeObj, configLabel) {
+  if (!hasConfigLabel(stateTreeObj, configLabel)) {
+    return false;
+  }
+  if (Object.keys(stateTreeObj).length !== 1) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Returns a new function tree created by applying the function change to
+ * the current function tree.
+ * @param {Object} curFuncTree current function tree (to be modified by this function)
  * @param {Object} functionChange function change
  */
-function applyFunctionChange(curFunction, functionChange) {
-  if (curFunction === null) {
-    // Just write the function change.
-    return functionChange;
-  }
-  if (functionChange === null) {
-    // Just delete the existing value.
-    return null;
+function applyFunctionChange(curFuncTree, functionChange) {
+  // NOTE(platfowner): Partial set is applied only when the current function tree has
+  // .function property and the function change has .function property as the only property.
+  if (!hasConfigLabel(curFuncTree, FunctionProperties.FUNCTION) ||
+      !hasConfigLabelOnly(functionChange, FunctionProperties.FUNCTION)) {
+    return ChainUtil.isDict(functionChange) ?
+        JSON.parse(JSON.stringify(functionChange)) : functionChange;
   }
   const funcChangeMap = ChainUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
   if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
-    return curFunction;
+    return curFuncTree;
   }
-  const newFunction =
-      ChainUtil.isDict(curFunction) ? JSON.parse(JSON.stringify(curFunction)) : {};
-  let newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
-  if (!newFuncMap || !ChainUtil.isDict(newFunction)) {
+  const newFuncConfig =
+      ChainUtil.isDict(curFuncTree) ? JSON.parse(JSON.stringify(curFuncTree)) : {};
+  let newFuncMap = ChainUtil.getJsObject(newFuncConfig, [FunctionProperties.FUNCTION]);
+  if (!ChainUtil.isDict(newFuncMap)) {
     // Add a place holder.
-    ChainUtil.setJsObject(newFunction, [FunctionProperties.FUNCTION], {});
-    newFuncMap = ChainUtil.getJsObject(newFunction, [FunctionProperties.FUNCTION]);
+    ChainUtil.setJsObject(newFuncConfig, [FunctionProperties.FUNCTION], {});
+    newFuncMap = ChainUtil.getJsObject(newFuncConfig, [FunctionProperties.FUNCTION]);
   }
   for (const functionKey in funcChangeMap) {
-    const functionValue = funcChangeMap[functionKey];
-    if (functionValue === null) {
+    const functionInfo = funcChangeMap[functionKey];
+    if (functionInfo === null) {
       delete newFuncMap[functionKey];
     } else {
-      newFuncMap[functionKey] = functionValue;
+      newFuncMap[functionKey] = functionInfo;
     }
   }
 
-  return newFunction;
+  return newFuncConfig;
+}
+
+/**
+ * Returns a new owner tree created by applying the owner change to
+ * the current owner tree.
+ * @param {Object} curOwnerTree current owner tree (to be modified by this function)
+ * @param {Object} ownerChange owner change
+ */
+function applyOwnerChange(curOwnerTree, ownerChange) {
+  // NOTE(platfowner): Partial set is applied only when the current owner tree has
+  // .owner property and the owner change has .owner property as the only property.
+  if (!hasConfigLabel(curOwnerTree, OwnerProperties.OWNER) ||
+      !hasConfigLabelOnly(ownerChange, OwnerProperties.OWNER)) {
+    return ChainUtil.isDict(ownerChange) ?
+        JSON.parse(JSON.stringify(ownerChange)) : ownerChange;
+  }
+  const ownerMapPath = [OwnerProperties.OWNER, OwnerProperties.OWNERS];
+  const ownerChangeMap = ChainUtil.getJsObject(ownerChange, ownerMapPath);
+  if (!ownerChangeMap || Object.keys(ownerChangeMap).length === 0) {
+    return curOwnerTree;
+  }
+  const newOwnerConfig =
+      ChainUtil.isDict(curOwnerTree) ? JSON.parse(JSON.stringify(curOwnerTree)) : {};
+  let newOwnerMap = ChainUtil.getJsObject(newOwnerConfig, ownerMapPath);
+  if (!ChainUtil.isDict(newOwnerMap)) {
+    // Add a place holder.
+    ChainUtil.setJsObject(newOwnerConfig, ownerMapPath, {});
+    newOwnerMap = ChainUtil.getJsObject(newOwnerConfig, ownerMapPath);
+  }
+  for (const ownerKey in ownerChangeMap) {
+    const ownerPermissions = ownerChangeMap[ownerKey];
+    if (ownerPermissions === null) {
+      delete newOwnerMap[ownerKey];
+    } else {
+      newOwnerMap[ownerKey] = ownerPermissions;
+    }
+  }
+
+  return newOwnerConfig;
 }
 
 /**
@@ -592,6 +675,7 @@ module.exports = {
   hasReservedChar,
   hasAllowedPattern,
   isWritablePathWithSharding,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
@@ -602,6 +686,7 @@ module.exports = {
   isValidOwnerConfig,
   isValidOwnerTree,
   applyFunctionChange,
+  applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,

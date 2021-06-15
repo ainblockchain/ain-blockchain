@@ -126,6 +126,7 @@ printf "Starting up Node server.."
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
 
 # 7. Wait until the new node catches up
+SECONDS=0
 loopCount=0
 
 generate_post_data()
@@ -142,7 +143,8 @@ do
     printf "\nconsensusState = ${consensusState}"
     printf "\nlastBlockNumber = ${lastBlockNumber}"
     if [ "$consensusState" == "RUNNING" ]; then
-        printf "\nNode is synced & running!\n\n"
+        printf "\nNode is synced & running!"
+        printf "Time it took to sync in seconds: $SECONDS\n\n"
         break
     fi
     ((loopCount++))
