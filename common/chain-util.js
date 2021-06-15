@@ -150,6 +150,12 @@ class ChainUtil {
     return ruleUtil.toServiceAccountName(serviceType, serviceName, key);
   }
 
+  // NOTE(liayoo): billing is in the form <app name>|<billing id>
+  static toBillingAccountName(billing) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return `${PredefinedDbPaths.BILLING}|${billing}`;
+  }
+
   static toEscrowAccountName(source, target, escrowKey) {
     return ruleUtil.toEscrowAccountName(source, target, escrowKey);
   }
