@@ -170,6 +170,9 @@ class Transaction {
     if (txBody.gas_price !== undefined) {
       sanitized.gas_price = ChainUtil.numberOrZero(txBody.gas_price);
     }
+    if (txBody.billing !== undefined) {
+      sanitized.billing = ChainUtil.stringOrEmpty(txBody.billing);
+    }
     // A devel method for bypassing the transaction verification.
     if (txBody.address !== undefined) {
       sanitized.address = ChainUtil.stringOrEmpty(txBody.address);
@@ -205,6 +208,11 @@ class Transaction {
           `Transaction body has invalid gas price: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
+    if (!Transaction.isValidBilling(txBody.billing)) {
+      logger.info(
+          `Transaction body has invalid billing: ${JSON.stringify(txBody, null, 2)}`);
+      return false;
+    }
     return Transaction.isInStandardFormat(txBody);
   }
 
@@ -220,6 +228,10 @@ class Transaction {
   static isValidGasPrice(gasPrice) {
     // NOTE(platfowner): Allow 'undefined' value for backward compatibility.
     return gasPrice > 0 || ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
+  }
+
+  static isValidBilling(billing) {
+    return billing === undefined || (ChainUtil.isString(billing) && billing.split('|').length === 2);
   }
 
   static isInStandardFormat(txBody) {

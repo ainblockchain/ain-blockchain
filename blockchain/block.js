@@ -1,6 +1,7 @@
 const stringify = require('fast-json-stable-stringify');
 const sizeof = require('object-sizeof');
 const moment = require('moment');
+const _ = require('lodash');
 const logger = require('../logger')('BLOCK');
 const ChainUtil = require('../common/chain-util');
 const Transaction = require('../tx-pool/transaction');
@@ -259,7 +260,6 @@ class Block {
   }
 
   static buildGenesisStakingTxs(timestamp) {
-    const _ = require('lodash');
     const txs = [];
     Object.entries(GENESIS_VALIDATORS).forEach(([address, amount], index) => {
       const privateKey = _.get(GenesisAccounts,
