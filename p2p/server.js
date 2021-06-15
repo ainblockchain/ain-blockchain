@@ -421,6 +421,8 @@ class P2pServer {
             const dataVersionCheckForConsensus =
                 this.checkDataProtoVer(dataProtoVer, MessageTypes.CONSENSUS);
             if (dataVersionCheckForConsensus !== 0) {
+              logger.error(`[${LOG_HEADER}] The message DATA_PROTOCOL_VERSION(${dataProtoVer}) ` +
+                  'is not compatible. CANNOT proceed the CONSENSUS message.');
               return;
             }
             const consensusMessage = _.get(parsedMessage, 'data.message');
@@ -436,8 +438,8 @@ class P2pServer {
             const dataVersionCheckForTransaction =
                 this.checkDataProtoVer(dataProtoVer, MessageTypes.TRANSACTION);
             if (dataVersionCheckForTransaction > 0) {
-              logger.error('CANNOT deal with higher data protocol version. Discard the ' +
-                  'TRANSACTION message.');
+              logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
+                  `version(${dataProtoVer}). Discard the TRANSACTION message.`);
               return;
             } else if (dataVersionCheckForTransaction < 0) {
               // TODO(minsulee2): need to convert msg when updating TRANSACTION message necessary.
@@ -516,8 +518,8 @@ class P2pServer {
             }
             break;
           default:
-            logger.error(`Wrong message type(${parsedMessage.type}) has been specified.` +
-                'Ignore the message.');
+            logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
+                'specified. Ignore the message.');
             break;
         }
       } catch (err) {

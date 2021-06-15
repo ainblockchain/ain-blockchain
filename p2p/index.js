@@ -325,8 +325,8 @@ class P2pClient {
           const dataVersionCheckForChainSegment =
               this.server.checkDataProtoVer(dataProtoVer, MessageTypes.CHAIN_SEGMENT_RESPONSE);
           if (dataVersionCheckForChainSegment > 0) {
-            logger.error('CANNOT deal with higher data protocol version. Discard the ' +
-                'CHAIN_SEGMENT_RESPONSE message.');
+            logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
+                `version(${dataProtoVer}). Discard the CHAIN_SEGMENT_RESPONSE message.`);
             return;
           } else if (dataVersionCheckForChainSegment < 0) {
             // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
@@ -406,7 +406,7 @@ class P2pClient {
           }
           break;
         default:
-          logger.error(`[${LOG_HEADER}] Wrong message type(${parsedMessage.type}) has been ` +
+          logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
               `specified. Igonore the message.`);
           break;
       }
