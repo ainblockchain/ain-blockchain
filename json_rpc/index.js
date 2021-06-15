@@ -11,6 +11,8 @@ const {
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
+  TX_POOL_SIZE_LIMIT,
+  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const ChainUtil = require('../common/chain-util');
@@ -121,6 +123,18 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     // Transaction API
     ain_getPendingTransactions: function(args, done) {
       done(null, addProtocolVersion({result: node.tp.transactions}));
+    },
+
+    ain_getRemainingTransactionPoolSize: function(args, done) {
+      if (args.address) { // Per account
+        const remainingSizePerAccount = TX_POOL_SIZE_LIMIT_PER_ACCOUNT -
+            node.tp.getPerAccountPoolSize(args.address);
+        done(null, addProtocolVersion({result: remainingSizePerAccount}));
+      } else {
+        const remainingSize = TX_POOL_SIZE_LIMIT -
+            node.tp.getPoolSize();
+        done(null, addProtocolVersion({result: remainingSize}));
+      }
     },
 
     // TODO(platfowner): Instantly reject requests with invalid signatures.
