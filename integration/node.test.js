@@ -5944,6 +5944,8 @@ describe('Blockchain Node', () => {
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
+      // NOTE(liayoo): Checking the gas fee was collected instead of account balances, since the
+      // nodes also participate in consensus & get the collected fees as rewards.
       const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
       const gasFeeCollected = parseOrLog(syncRequest(
         'GET',
@@ -6017,6 +6019,8 @@ describe('Blockchain Node', () => {
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
+      // NOTE(liayoo): Checking the gas fee was collected instead of account balances, since the
+      // nodes also participate in consensus & get the collected fees as rewards.
       const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
       const gasFeeCollected = parseOrLog(syncRequest(
         'GET',
@@ -6072,6 +6076,8 @@ describe('Blockchain Node', () => {
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
+      // NOTE(liayoo): Checking the gas fee was collected instead of account balances, since the
+      // nodes also participate in consensus & get the collected fees as rewards.
       const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
       const gasFeeCollected = parseOrLog(syncRequest(
         'GET',
