@@ -937,7 +937,7 @@ class DB {
       return ChainUtil.returnTxResult(15, `Failed to collect gas fee: ${reason}`, 0);
     }
     const billingAppName = billingParsed[0];
-    const billingServiceAcntName = `billing|${billing}`;
+    const billingServiceAcntName = ChainUtil.toBillingAccountName(billing);
     const appNameList = ChainUtil.getServiceDependentAppNameList(op);
     if (appNameList.length > 1) {
       // More than 1 apps are involved. Cannot charge an app-related billing account.
