@@ -18,11 +18,11 @@ describe('Transaction', () => {
   let txBodyCustomAddress;
   let txCustomAddress;
   let txBodyParentHash;
-  let txBodyBilling;
   let txParentHash;
+  let txBodyBilling;
+  let txBilling;
   let txBodyForNode;
   let txForNode;
-  let txBilling;
 
   beforeEach(() => {
     rimraf.sync(CHAINS_DIR);
