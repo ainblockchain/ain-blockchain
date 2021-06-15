@@ -3,15 +3,14 @@ const Websocket = require('ws');
 const ip = require('ip');
 const publicIp = require('public-ip');
 const axios = require('axios');
-const semver = require('semver');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
 const _ = require('lodash');
+const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
 const logger = require('../logger')('P2P_SERVER');
 const Consensus = require('../consensus');
-const { Block } = require('../blockchain/block');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
@@ -323,50 +322,27 @@ class P2pServer {
     });
   }
 
-  // TODO(minsulee2): This check will be updated when data compatibility version up.
-  checkDataProtoVerForAddressRequest(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsulee2): Compatible message.
-    }
-    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
-      // TODO(minsulee2): Compatible message.
-    }
-  }
-
-  checkDataProtoVerForConsensus(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
-    if (isGreater) {
-      // TODO(minsulee2): Compatible message.
-    }
-    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
+  checkDataProtoVer(messageVersion, msgType) {
+    const messageMajorVersion = VersionUtil.toMajorVersion(messageVersion);
+    const isLower = semver.lt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isLower) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with higher data protocol version.' +
-            'Discard the CONSENSUS message.');
+        logger.error(`The given ${msgType} message has unsupported DATA_PROTOCOL_VERSION: ` +
+            `theirs(${messageVersion}) < ours(${this.majorDataProtocolVersion})`);
       }
-      return false;
+      return -1;
     }
-    return true;
-  }
-
-  checkDataProtoVerForTransaction(version) {
-    const majorVersion = VersionUtil.toMajorVersion(version);
-    const isGreater = semver.gt(this.majorDataProtocolVersion, majorVersion);
+    const isGreater = semver.gt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isGreater) {
-      // TODO(minsulee2): Compatible message.
-    }
-    const isLower = semver.lt(this.majorDataProtocolVersion, majorVersion);
-    if (isLower) {
       if (FeatureFlags.enableRichP2pCommunicationLogging) {
-        logger.error('CANNOT deal with higher data protocol ver. Discard the TRANSACTION message.');
+        logger.error('I may be running of the old DATA_PROTOCOL_VERSION ' +
+            `theirs(${messageVersion}) > ours(${this.majorDataProtocolVersion}). ` +
+            'Please check the new release via visiting the URL below:\n' +
+            'https://github.com/ainblockchain/ain-blockchain');
       }
-      return false;
+      return 1;
     }
-    return true;
+    return 0;
   }
 
   setPeerEventHandlers(socket) {
@@ -390,8 +366,12 @@ class P2pServer {
 
         switch (_.get(parsedMessage, 'type')) {
           case MessageTypes.ADDRESS_REQUEST:
-            // TODO(minsulee2): Add compatibility check here after data version up.
-            // this.checkDataProtoVerForAddressRequest(dataProtoVer);
+            const dataVersionCheckForAddress =
+                this.checkDataProtoVer(dataProtoVer, MessageTypes.ADDRESS_REQUEST);
+            if (dataVersionCheckForAddress < 0) {
+              // TODO(minsulee2): need to convert message when updating ADDRESS_REQUEST necessary.
+              // this.convertAddressMessage();
+            }
             const address = _.get(parsedMessage, 'data.body.address');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
@@ -438,12 +418,16 @@ class P2pServer {
             }
             break;
           case MessageTypes.CONSENSUS:
+            const dataVersionCheckForConsensus =
+                this.checkDataProtoVer(dataProtoVer, MessageTypes.CONSENSUS);
+            if (dataVersionCheckForConsensus !== 0) {
+              logger.error(`[${LOG_HEADER}] The message DATA_PROTOCOL_VERSION(${dataProtoVer}) ` +
+                  'is not compatible. CANNOT proceed the CONSENSUS message.');
+              return;
+            }
             const consensusMessage = _.get(parsedMessage, 'data.message');
             logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
                 `${JSON.stringify(consensusMessage)}`);
-            if (!this.checkDataProtoVerForConsensus(dataProtoVer)) {
-              return;
-            }
             if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(consensusMessage);
             } else {
@@ -451,6 +435,16 @@ class P2pServer {
             }
             break;
           case MessageTypes.TRANSACTION:
+            const dataVersionCheckForTransaction =
+                this.checkDataProtoVer(dataProtoVer, MessageTypes.TRANSACTION);
+            if (dataVersionCheckForTransaction > 0) {
+              logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
+                  `version(${dataProtoVer}). Discard the TRANSACTION message.`);
+              return;
+            } else if (dataVersionCheckForTransaction < 0) {
+              // TODO(minsulee2): need to convert msg when updating TRANSACTION message necessary.
+              // this.convertTransactionMessage();
+            }
             const tx = _.get(parsedMessage, 'data.transaction');
             logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
             if (this.node.tp.transactionTracker[tx.hash]) {
@@ -463,9 +457,6 @@ class P2pServer {
               return;
             }
             if (Transaction.isBatchTransaction(tx)) {
-              if (!this.checkDataProtoVerForTransaction(dataProtoVer)) {
-                return;
-              }
               const newTxList = [];
               for (const subTx of tx.tx_list) {
                 const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
@@ -491,8 +482,6 @@ class P2pServer {
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
             const lastBlockNumber = _.get(parsedMessage, 'data.lastBlockNumber');
-            // NOTE(minsulee2): Communicate with each other
-            // even if the data protocol is incompatible.
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ${lastBlockNumber}`);
             if (this.node.bc.chain.length === 0) {
               return;
@@ -529,8 +518,8 @@ class P2pServer {
             }
             break;
           default:
-            logger.error(`Wrong message type(${parsedMessage.type}) has been specified.`);
-            logger.error('Ignore the message.');
+            logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
+                'specified. Ignore the message.');
             break;
         }
       } catch (err) {
