@@ -75,7 +75,7 @@
       "$from": {
         "$block_number": {
           "$tx_hash": {
-            ".write": "(auth.addr === $from || (util.isServAcntName($from) && getValue(util.getBillingUserPath($from, auth.addr)))) && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount <= getValue(util.getBalancePath($from))"
+            ".write": "(auth.addr === $from || (util.isServAcntName($from) && getValue(util.getBillingUserPath($from, auth.addr)) === true)) && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount <= getValue(util.getBalancePath($from))"
           }
         }
       }
