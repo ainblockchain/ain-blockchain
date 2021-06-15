@@ -18,9 +18,11 @@ describe('Transaction', () => {
   let txBodyCustomAddress;
   let txCustomAddress;
   let txBodyParentHash;
+  let txBodyBilling;
   let txParentHash;
   let txBodyForNode;
   let txForNode;
+  let txBilling;
 
   beforeEach(() => {
     rimraf.sync(CHAINS_DIR);
@@ -65,6 +67,19 @@ describe('Transaction', () => {
       parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
     };
     txParentHash = Transaction.fromTxBody(txBodyParentHash, node.account.private_key);
+
+    txBodyBilling = {
+      operation: {
+        type: 'SET_VALUE',
+        ref: '/apps/app_a/path',
+        value: 'val',
+      },
+      timestampe: 1568798344000,
+      nonce: 10,
+      gas_price: 1,
+      billing: 'app_a|0'
+    };
+    txBilling = Transaction.fromTxBody(txBodyBilling, node.account.private_key);
 
     txBodyForNode = {
       operation: {
@@ -149,6 +164,22 @@ describe('Transaction', () => {
     it('fail with invalid gas_price', () => {
       txBody.gas_price = -1;
       let tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx3, null);
+    });
+
+    it('succeed with absent billing', () => {
+      delete txBody.billing;
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      expect(tx2).to.not.equal(null);
+    });
+
+    it('fail with invalid billing', () => {
+      txBody.billing = 'app_a';
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx2, null);
+
+      txBody.billing = 'app_a|0|1';
+      const tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx3, null);
     });
   });
@@ -275,6 +306,11 @@ describe('Transaction', () => {
 
     it('fail to verify an invalid transaction with altered parent_tx_hash', () => {
       txParentHash.tx_body.parent_tx_hash = '';
+      expect(Transaction.verifyTransaction(txParentHash)).to.equal(false);
+    });
+
+    it('fail to verify an invalid transaction with altered billing', () => {
+      txParentHash.tx_body.billing = 'app_b|0';
       expect(Transaction.verifyTransaction(txParentHash)).to.equal(false);
     });
   });
