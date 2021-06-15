@@ -1166,6 +1166,7 @@ describe("ChainUtil", () => {
       assert.deepEqual(ChainUtil.getServiceDependentAppNameList(undefined), []);
       assert.deepEqual(ChainUtil.getServiceDependentAppNameList({}), []);
     });
+
     it("when normal input", () => {
       assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
         ref: '/'
