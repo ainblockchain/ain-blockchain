@@ -5962,12 +5962,7 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
         }
       }).body.toString('utf-8'));
-      expect(txResBody.code).to.equals(1);
-      assert.deepEqual(txResBody.result.result, {
-        "error_message": "Failed to collect gas fee: Invalid billing param",
-        "code": 15,
-        "gas_amount": 0
-      });
+      assert.deepEqual(txResBody, {code: 1, result: { tx_hash: null, result: false }});
     });
 
     it('app-dependent service tx: not a billing account user', async () => {
@@ -5981,7 +5976,7 @@ describe('Blockchain Node', () => {
         }
       }).body.toString('utf-8'));
       expect(txResBody.code).to.equals(1);
-      expect(txResBody.result.result.code, 15);
+      expect(txResBody.result.result.code, 18);
       expect(txResBody.result.result.error_message.includes('No .write permission on: /gas_fee/collect/billing|test_billing|B'), true);
     });
 
@@ -6175,7 +6170,7 @@ describe('Blockchain Node', () => {
       }).body.toString('utf-8'));
       assert.deepEqual(txResBody.result.result, {
         "error_message": "Failed to collect gas fee: Multiple app-dependent service operations for a billing account",
-        "code": 15,
+        "code": 16,
         "gas_amount": 0
       });
     });
