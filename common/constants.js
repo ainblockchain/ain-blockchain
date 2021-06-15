@@ -480,11 +480,11 @@ function isServiceType(type) {
  * Service types allowed to create service accounts.
  */
 const SERVICE_ACCOUNT_SERVICE_TYPES = [
+  PredefinedDbPaths.BILLING,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.PAYMENTS,
   PredefinedDbPaths.STAKING,
-  PredefinedDbPaths.BILLING,
 ];
 
 function isServiceAccountServiceType(type) {
