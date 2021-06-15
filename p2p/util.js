@@ -10,7 +10,7 @@ const logger = require('../logger')('SERVER_UTIL');
 const {
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
-  P2P_MESSAGE_TIMEOUT_MS
+  P2P_MESSAGE_TIMEOUT_MS,
 } = require('../common/constants');
 const ChainUtil = require('../common/chain-util');
 
