@@ -365,14 +365,14 @@ class ChainUtil {
       return [];
     }
     if (op.op_list) {
-      const appNames = {};
+      const appNames = new Set();
       for (const innerOp of op.op_list) {
         const name = ChainUtil.getDependentAppNameFromRef(innerOp.ref);
         if (name) {
-          appNames[name] = true;
+          appNames.add(name);
         }
       }
-      return Object.keys(appNames);
+      return [...appNames];
     }
     const name = ChainUtil.getDependentAppNameFromRef(op.ref);
     return name ? [name] : [];
