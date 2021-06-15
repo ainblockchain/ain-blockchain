@@ -492,7 +492,7 @@ function isServiceAccountServiceType(type) {
 }
 
 /**
- * Service types that are NOT app-dependent.
+ * Service types that are app-dependent.
  */
 const APP_DEPENDENT_SERVICE_TYPES = [
   PredefinedDbPaths.MANAGE_APP,
