@@ -125,15 +125,21 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
-    ain_getRemainingTransactionPoolSize: function(args, done) {
+    ain_getTransactionPoolSizeUtilization: function(args, done) {
       if (args.address) { // Per account
-        const remainingSizePerAccount = TX_POOL_SIZE_LIMIT_PER_ACCOUNT -
-            node.tp.getPerAccountPoolSize(args.address);
-        done(null, addProtocolVersion({result: remainingSizePerAccount}));
+        done(null, addProtocolVersion({
+          result: {
+            limit: TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
+            used: node.tp.getPerAccountPoolSize(args.address),
+          }
+        }));
       } else {
-        const remainingSize = TX_POOL_SIZE_LIMIT -
-            node.tp.getPoolSize();
-        done(null, addProtocolVersion({result: remainingSize}));
+        done(null, addProtocolVersion({
+          result: {
+            limit: TX_POOL_SIZE_LIMIT,
+            used: node.tp.getPoolSize(),
+          }
+        }));
       }
     },
 
