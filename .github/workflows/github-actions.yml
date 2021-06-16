@@ -25,11 +25,11 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: yarn install
         run: yarn install
-      - name: run unittest
-        run: yarn run test_unit
+      # - name: run unittest
+      #   run: yarn run test_unit
       - name: run integration test
         if: github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
-        run: yarn run test_integration
+        run: yarn run test_dapp
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
