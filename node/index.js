@@ -22,7 +22,9 @@ const {
   GenesisSharding,
   StateVersions,
   SyncModeOptions,
-  LIGHTWEIGHT
+  LIGHTWEIGHT,
+  TX_POOL_SIZE_LIMIT,
+  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const ChainUtil = require('../common/chain-util');
@@ -261,6 +263,18 @@ class BlockchainNode {
       }
     }
     return shardingInfo;
+  }
+
+  getTxPoolSizeUtilization(address) {
+    const result = {};
+    if (address) { // Per account
+      result.limit = TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+      result.used = this.tp.getPerAccountPoolSize(address);
+    } else { // Total
+      result.limit = TX_POOL_SIZE_LIMIT;
+      result.used = this.tp.getPoolSize();
+    }
+    return result;
   }
 
   /**

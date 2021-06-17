@@ -16,8 +16,6 @@ const {
   BlockchainNodeStates,
   WriteDbOperations,
   TransactionStatus,
-  TX_POOL_SIZE_LIMIT,
-  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
 } = require('../common/constants');
 const { ConsensusStatus } = require('../consensus/constants');
 
@@ -382,19 +380,10 @@ app.get('/dump_final_version', (req, res) => {
 
 app.get('/tx_pool_size_util', (req, res) => {
   const address = req.query.address;
-  const result = {};
-
-  if (address) { // Per account
-    result.limit = TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
-    result.used = node.tp.getPerAccountPoolSize(address);
-  } else {
-    result.limit = TX_POOL_SIZE_LIMIT;
-    result.used = node.tp.getPoolSize();
-  }
-
+  const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({code: 0, result: txPoolSizeUtil})
     .end();
 });
 
