@@ -378,6 +378,15 @@ app.get('/dump_final_version', (req, res) => {
     .end();
 });
 
+app.get('/tx_pool_size_util', (req, res) => {
+  const address = req.query.address;
+  const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result: txPoolSizeUtil})
+    .end();
+});
+
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
