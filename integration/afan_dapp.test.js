@@ -54,26 +54,14 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 async function setUp() {
-  console.log(server1, server2, server3, server4);
   const server1Addr = parseOrLog(syncRequest(
       'GET', server1 + '/get_address').body.toString('utf-8')).result;
-      console.log('server1 passed');
   const server2Addr = parseOrLog(syncRequest(
       'GET', server2 + '/get_address').body.toString('utf-8')).result;
-      console.log('server2 passed');
   const server3Addr = parseOrLog(syncRequest(
       'GET', server3 + '/get_address').body.toString('utf-8')).result;
-      console.log('server3 passed');
   const server4Addr = parseOrLog(syncRequest(
       'GET', server4 + '/get_address').body.toString('utf-8')).result;
-      console.log('server4 passed');
-
-  console.log('--------------------------------------------------------------')
-  console.log(server1Addr)
-  console.log(server2Addr)
-  console.log(server3Addr)
-  console.log(server4Addr)
-
   const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
     json: {
       ref: `/staking/afan/${server1Addr}/0/stake/${Date.now()}/value`,
@@ -82,7 +70,7 @@ async function setUp() {
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
   if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-    console.log(`setUp(): Failed to check finalization of app staking tx.`)
+    console.log(`setUp(): Failed to check finalization of app staking tx.`);
   }
 
   const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
@@ -201,123 +189,123 @@ describe('DApp Test', async () => {
       });
     });
 
-    // describe('tx_crushOnPost', () => {
-    //   beforeEach(() => {
-    //     return set_value('/apps/afan', null)
-    //     .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
-    //   });
+    describe('tx_crushOnPost', () => {
+      beforeEach(() => {
+        return set_value('/apps/afan', null)
+        .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
+      });
 
-    //   it('no fan', () => {
-    //     const afanClient = new AfanClient(server1);
+      it('no fan', () => {
+        const afanClient = new AfanClient(server1);
 
-    //     return set_value('/apps/afan/balance/uid0', 10)
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/balance/uid1', 10))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 1))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => get_value('/apps/afan'))
-    //       .then((res) => {
-    //         const expected = require('./data/tx_crushOnPost_no_fan_result.js');
-    //         assert.deepEqual(res.result, expected);
-    //       });
-    //   });
+        return set_value('/apps/afan/balance/uid0', 10)
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/balance/uid1', 10))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 1))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => get_value('/apps/afan'))
+          .then((res) => {
+            const expected = require('./data/tx_crushOnPost_no_fan_result.js');
+            assert.deepEqual(res.result, expected);
+          });
+      });
 
-    //   it('two fans', async () => {
-    //     const afanClient = new AfanClient(server2);
-    //     await ChainUtil.sleep(200);
-    //     return set_value('/apps/afan/balance/uid0', 30)
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/balance/uid1', 10))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/investors/uid1/uid2', 3))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/investors/uid1/uid3', 7))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => get_value('/apps/afan'))
-    //       .then((res) => {
-    //         const expected = require('./data/tx_crushOnPost_two_fans_result.js');
-    //         assert.deepEqual(res.result, expected);
-    //       });
-    //   });
-    // });
+      it('two fans', async () => {
+        const afanClient = new AfanClient(server2);
+        await ChainUtil.sleep(200);
+        return set_value('/apps/afan/balance/uid0', 30)
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/balance/uid1', 10))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/investors/uid1/uid2', 3))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/investors/uid1/uid3', 7))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => afanClient.tx_crushOnPost('uid0', 'uid1', 'post0', 20))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => get_value('/apps/afan'))
+          .then((res) => {
+            const expected = require('./data/tx_crushOnPost_two_fans_result.js');
+            assert.deepEqual(res.result, expected);
+          });
+      });
+    });
 
-    // describe('tx_crushOnReply', () => {
-    //   beforeEach(() => {
-    //     return set_value('/apps/afan', null)
-    //     .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
-    //   });
+    describe('tx_crushOnReply', () => {
+      beforeEach(() => {
+        return set_value('/apps/afan', null)
+        .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
+      });
 
-    //   it('no fan', () => {
-    //     const afanClient = new AfanClient(server3);
-    //     return set_value('/apps/afan/balance/uid0', 10)
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/balance/uid1', 10))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => get_value('/apps/afan'))
-    //       .then((res) => {
-    //         const expected = require('./data/tx_crushOnReply_no_fan_result.js');
-    //         assert.deepEqual(res.result, expected);
-    //       });
-    //   });
+      it('no fan', () => {
+        const afanClient = new AfanClient(server3);
+        return set_value('/apps/afan/balance/uid0', 10)
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/balance/uid1', 10))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 1))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => get_value('/apps/afan'))
+          .then((res) => {
+            const expected = require('./data/tx_crushOnReply_no_fan_result.js');
+            assert.deepEqual(res.result, expected);
+          });
+      });
 
-    //   it('three fans', () => {
-    //     const afanClient = new AfanClient(server4);
+      it('three fans', () => {
+        const afanClient = new AfanClient(server4);
 
-    //     return set_value('/apps/afan/balance/uid0', 20)
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/balance/uid1', 10))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/investors/uid1/uid2', 3))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/investors/uid1/uid3', 2))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => set_value('/apps/afan/investors/uid1/uid4', 1))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => get_value('/apps/afan'))
-    //       .then((res) => {
-    //         const expected = require('./data/tx_crushOnReply_three_fans_result.js');
-    //         assert.deepEqual(res.result, expected);
-    //       });
-    //   });
-    // });
+        return set_value('/apps/afan/balance/uid0', 20)
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/balance/uid1', 10))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/investors/uid1/uid2', 3))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/investors/uid1/uid3', 2))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => set_value('/apps/afan/investors/uid1/uid4', 1))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => afanClient.tx_crushOnReply('uid0', 'uid1', 'post0', 'reply0', 12))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => get_value('/apps/afan'))
+          .then((res) => {
+            const expected = require('./data/tx_crushOnReply_three_fans_result.js');
+            assert.deepEqual(res.result, expected);
+          });
+      });
+    });
 
-    // describe('tx_adpropose', () => {
-    //   beforeEach(() => {
-    //     return set_value('/apps/afan', null)
-    //     .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
-    //   });
+    describe('tx_adpropose', () => {
+      beforeEach(() => {
+        return set_value('/apps/afan', null)
+        .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')));
+      });
 
-    //   it('ad propose', () => {
-    //     const afanClient = new AfanClient(server2);
-    //     const op_list = [
-    //       {
-    //         type: 'SET_VALUE',
-    //         ref: '/apps/afan/balance/uid0',
-    //         value: 10,
-    //       },
-    //       {
-    //         type: 'SET_VALUE',
-    //         ref: '/apps/afan/balance/uid1',
-    //         value: 10,
-    //       },
-    //     ];
-    //     return set(op_list)
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
-    //       .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
-    //       .then(() => get_value('/apps/afan'))
-    //       .then((res) => {
-    //         const expected = require('./data/tx_adpropose_result.js');
-    //         assert.deepEqual(res.result, expected);
-    //       });
-    //   });
-    // });
+      it('ad propose', () => {
+        const afanClient = new AfanClient(server2);
+        const op_list = [
+          {
+            type: 'SET_VALUE',
+            ref: '/apps/afan/balance/uid0',
+            value: 10,
+          },
+          {
+            type: 'SET_VALUE',
+            ref: '/apps/afan/balance/uid1',
+            value: 10,
+          },
+        ];
+        return set(op_list)
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => afanClient.tx_adpropose('uid0', 'uid1', 1, 'intermed'))
+          .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
+          .then(() => get_value('/apps/afan'))
+          .then((res) => {
+            const expected = require('./data/tx_adpropose_result.js');
+            assert.deepEqual(res.result, expected);
+          });
+      });
+    });
   });
 });
