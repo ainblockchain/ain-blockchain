@@ -14,7 +14,7 @@ on:
 jobs:
   build_and_test:
     if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
@@ -32,7 +32,7 @@ jobs:
         run: yarn run test_dapp
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: test

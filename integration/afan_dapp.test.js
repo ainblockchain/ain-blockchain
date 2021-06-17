@@ -128,8 +128,6 @@ async function cleanUp() {
   }
 }
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 describe('DApp Test', async () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
@@ -144,8 +142,7 @@ describe('DApp Test', async () => {
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await ChainUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    // await ChainUtil.sleep(10000);
-    await delay(10000);
+    await ChainUtil.sleep(2000);
   });
 
   after(() => {
