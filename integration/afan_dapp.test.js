@@ -54,14 +54,19 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 async function setUp() {
+  console.log(server1, server2, server3, server4);
   const server1Addr = parseOrLog(syncRequest(
       'GET', server1 + '/get_address').body.toString('utf-8')).result;
+      console.log('server1 passed');
   const server2Addr = parseOrLog(syncRequest(
       'GET', server2 + '/get_address').body.toString('utf-8')).result;
+      console.log('server2 passed');
   const server3Addr = parseOrLog(syncRequest(
       'GET', server3 + '/get_address').body.toString('utf-8')).result;
+      console.log('server3 passed');
   const server4Addr = parseOrLog(syncRequest(
       'GET', server4 + '/get_address').body.toString('utf-8')).result;
+      console.log('server4 passed');
 
   console.log('--------------------------------------------------------------')
   console.log(server1Addr)
@@ -137,7 +142,7 @@ describe('DApp Test', async () => {
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await ChainUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await ChainUtil.sleep(2000);
+    await ChainUtil.sleep(10000);
   });
 
   after(() => {
