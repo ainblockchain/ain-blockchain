@@ -14,7 +14,7 @@ on:
 jobs:
   build_and_test:
     if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-18.04
+    runs-on: macos-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
@@ -25,14 +25,14 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: yarn install
         run: yarn install
-      # - name: run unittest
-      #   run: yarn run test_unit
+      - name: run unittest
+        run: yarn run test_unit
       - name: run integration test
         if: github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
-        run: yarn run test_dapp
+        run: yarn run test_integration
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-18.04
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: test
