@@ -14,27 +14,25 @@ on:
 jobs:
   build_and_test:
     if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Setup node environment for testing
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: '12.16'
+          node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
-      - name: test
-        run: echo ${{github.event_name}}
-      - name: npm install
-        run: npm install
+      - name: yarn install
+        run: yarn install
       - name: run unittest
-        run: npm run test_unit
+        run: yarn run test_unit
       - name: run integration test
         if: github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
-        run: npm run test_integration
+        run: yarn run test_integration
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: test
