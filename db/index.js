@@ -542,7 +542,7 @@ class DB {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
         resultList.push(this.getValue(op.ref, op.is_global, op.is_shallow));
       } else if (op.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(op.ref, op.is_global));
+        resultList.push(this.getRule(op.ref, op.is_global, op.is_shallow));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
         resultList.push(this.getFunction(op.ref, op.is_global, op.is_shallow));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
