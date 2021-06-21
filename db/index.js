@@ -395,7 +395,7 @@ class DB {
     return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
-  static readFromStateRoot(stateRoot, rootLabel, refPath, isGlobal, shardingPath) {
+  static readFromStateRoot(stateRoot, rootLabel, refPath, isGlobal, shardingPath, isShallow) {
     if (!stateRoot) return null;
     const parsedPath = ChainUtil.parsePath(refPath);
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
@@ -405,28 +405,37 @@ class DB {
     }
     const fullPath = DB.getFullPath(localPath, rootLabel);
     const stateNode = DB.getRefForReadingFromStateRoot(stateRoot, fullPath);
-    return stateNode !== null ? stateNode.toJsObject() : null;
+    if (stateNode === null) {
+      return null;
+    }
+    if (isShallow === true) {
+      const childLabels = stateNode.getChildLabels();
+      return childLabels.length > 0 ? childLabels : null;
+    } else {
+      const stateObj = stateNode.toJsObject();
+      return stateObj;
+    }
   }
 
-  readDatabase(refPath, rootLabel, isGlobal) {
-    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isGlobal, this.shardingPath);
+  readDatabase(refPath, rootLabel, isGlobal, isShallow) {
+    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isGlobal, this.shardingPath, isShallow);
   }
 
   // TODO(platfowner): Support lookups on the final version.
-  getValue(valuePath, isGlobal) {
-    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isGlobal);
+  getValue(valuePath, isGlobal, isShallow) {
+    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isGlobal, isShallow);
   }
 
-  getFunction(functionPath, isGlobal) {
-    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, isGlobal);
+  getFunction(functionPath, isGlobal, isShallow) {
+    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, isGlobal, isShallow);
   }
 
-  getRule(rulePath, isGlobal) {
-    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, isGlobal);
+  getRule(rulePath, isGlobal, isShallow) {
+    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, isGlobal, isShallow);
   }
 
-  getOwner(ownerPath, isGlobal) {
-    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, isGlobal);
+  getOwner(ownerPath, isGlobal, isShallow) {
+    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, isGlobal, isShallow);
   }
 
   /**
@@ -456,7 +465,7 @@ class DB {
 
   static getValueFromStateRoot(stateRoot, statePath) {
     return DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, []);
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, [], false);
   }
 
   /**
@@ -531,7 +540,7 @@ class DB {
     const resultList = [];
     opList.forEach((op) => {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(op.ref, op.is_global));
+        resultList.push(this.getValue(op.ref, op.is_global, op.is_shallow));
       } else if (op.type === ReadDbOperations.GET_RULE) {
         resultList.push(this.getRule(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
@@ -680,7 +689,7 @@ class DB {
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, isGlobal);
+    const valueBefore = this.getValue(valuePath, isGlobal, false);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`);
@@ -690,7 +699,7 @@ class DB {
   }
 
   decValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, isGlobal);
+    const valueBefore = this.getValue(valuePath, isGlobal, false);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`);
