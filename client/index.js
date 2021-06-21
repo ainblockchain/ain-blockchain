@@ -86,7 +86,8 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global),
+      ChainUtil.toBool(req.query.is_shallow));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
