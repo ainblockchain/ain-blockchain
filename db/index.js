@@ -544,7 +544,7 @@ class DB {
       } else if (op.type === ReadDbOperations.GET_RULE) {
         resultList.push(this.getRule(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(op.ref, op.is_global));
+        resultList.push(this.getFunction(op.ref, op.is_global, op.is_shallow));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
@@ -738,7 +738,7 @@ class DB {
     if (!this.getPermissionForFunction(localPath, auth)) {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
-    const curFunction = this.getFunction(functionPath, isGlobal);
+    const curFunction = this.getFunction(functionPath, isGlobal, false);
     const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
