@@ -546,7 +546,7 @@ class DB {
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
         resultList.push(this.getFunction(op.ref, op.is_global, op.is_shallow));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(op.ref, op.is_global));
+        resultList.push(this.getOwner(op.ref, op.is_global, op.is_shallow));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
         resultList.push(this.matchFunction(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
@@ -798,7 +798,7 @@ class DB {
       return ChainUtil.returnTxResult(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
-    const curOwner = this.getOwner(ownerPath, isGlobal);
+    const curOwner = this.getOwner(ownerPath, isGlobal, false);
     const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, newOwner);
